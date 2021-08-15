@@ -6,6 +6,7 @@
 You must stop the pipdeal service before launching a debug instance of pipedal:
 
 >   sudo systemctl stop pipedal
+
 or
 
 >   pipedalconfig -stop
@@ -15,16 +16,18 @@ socket of a production instance of pipedal.
 
 PipPedal consists of the following subprojects:
 
-*    A web application build in React. 
+*    A web application build in React, found in the react subdirectory.
 
-*    pipedald: a Web server, written in C++, serving a web socket, and pre-built HTML components from the React app.
+*    *pipedald*: a Web server, written in C++, serving a web socket, and pre-built HTML components from the React app.
      All audio services are provided by the pipedal process.
 
-*   pipedalshutdownd: A service to execute operations that require root credentials on behalf of pipedald. (e.g. shutdown, reboot,
+*   *pipedalshutdownd*: A service to execute operations that require root credentials on behalf of pipedald. (e.g. shutdown, reboot,
     and pushing configuration changes.)
 
+*   *pipedalconfig*: A CLI utility for managing and configuring the pipedald service.
+
 In production, the pipedald web server serves the PiPedal web socket, as well as HTML from the  built 
-react components. While debugging, it is much more convenient to use the React debug server for 
+react components. But while debugging, it is much more convenient to use the React debug server for 
 React sources, and configure pipedald to serve only the websocket. 
 
 To start the React debug server, from a shell, cd to the react directory, and run "./start". The react debug 
@@ -35,17 +38,19 @@ To get this to work on Raspberry Pi, you will probably have to make a configurat
 
 Edit the file '/etc/sysctl.conf', and add or increase the value for the maximum number of watchable user 
 files:
-     fs.inotify.max_user_watches=524288
+
+>    fs.inotify.max_user_watches=524288
 
 followed by 'sudo sysctl -p'. (VS Code and React both need this change).     
 
-By default, the React app will attempt to contact the pipedal server on ws:*:8080. This can be reconfigured
+By default, the React app will attempt to contact the pipedal server on ws:*:8080 -- the address on which
+the debug version of systemctld listens on. This can be reconfigured
 in the file react/src/public/var/config.json. (The pipedal server intercepts requests for this file and 
 points the react app at itself in production). The React app will display the message 
 "Error: Failed to connect to the server", until you start the pipedal websocket server in the VSCode debugger.
 It's quite reasonable to point the react debug app at a production instance of the pipedal server.
 
->    react/src/public/var/config.json: 
+>    react/public/var/config.json: 
 >    {
 >        "socket_server_port": 80,
 >        "socket_server_address": "*",
@@ -71,7 +76,7 @@ Commandline arguments can be set in the file .vscode/settings.json:
     ...
     "cmake.debugConfig": {
         "args": [
-          "<projectdiretory>/debugConfig","<projectdiretory>/build/react/src/build",  "-port", "0.0.0.0:8080"
+          "\<projectdirectory\>/debugConfig","\<projectdirectory\>/build/react/src/build",  "-port", "0.0.0.0:8080"
         ],
 
     ...
