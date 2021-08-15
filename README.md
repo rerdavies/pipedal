@@ -1,6 +1,7 @@
-## PiPedal
+# PiPedal
 
 PiPedal is a multi-effect guitar pedal that provides a compact web interface that's suitable for use on devices like phones and tablets.
+
 
 ### Configuration
 
