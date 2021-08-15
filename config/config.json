@@ -1,0 +1,31 @@
+{
+    /* One or more directories containing LV2 plugins, seperated by ':' */
+    "lv2_path": "/usr/modep/lv2:/usr/local/lib/lv2",
+
+
+    /* A writable directory in which state files can be stored, preferrably only by the server process. */
+    "local_storage_path": "/var/pipedal",
+    /* whether to lock a process pages into memroy. should be true unless running on a very memory constrained system.
+       Setting to false will cause unpredictable audio dropouts.
+     */
+    "mlock": true,
+
+    /* Address on which Piddle listens for websocket connections */
+    "socketServerAddress": "0.0.0.0:80",
+
+    /* Number of threads to use for servicing websockets */
+    "threads" :  5,
+
+    "logHttpRequests": false,
+    /* { None=0,Error =1,Warning =2,Info = 3, Debug=4} */
+    "logLevel": 3,
+
+    /* Maximum filesize to allow when uploading */
+    "maxUploadSize": 1048576,
+
+    /* Provide access point capture redirects on this gateway. -- provides automatic browser launching on Access Point access. */
+    "accessPointGateway": "172.24.1.0/24",
+    "accessPointServerAddress": "172.24.1.1"
+
+
+}

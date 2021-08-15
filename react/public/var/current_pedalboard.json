@@ -1,0 +1,76 @@
+{
+    "name": "Untitled",
+    "items": [
+        {
+            "uri": "uri://two-play/piddle/pedalboard#Empty",
+            "isEnabled": true,
+            "controlValues": []
+
+        },
+        {
+            "uri": "uri://two-play/piddle/pedalboard#Empty",
+            "controlValues": []
+        },
+        {
+            "uri": "uri://two-play/piddle/pedalboard#Split",
+            "isEnabled": true,
+            "controlValues": [
+                { "key": "splitType", "value": 0},
+                { "key": "select", "value": 1},
+                { "key": "mix", "value": 0.3}
+            ],
+
+            "topChain": [
+                {
+                    "uri": "uri://two-play/piddle/pedalboard#Empty",
+                    "isEnabled": true,
+                    "controlValues": []
+                }, 
+                {
+
+                    "uri": "uri://two-play/piddle/pedalboard#Split",
+                    "isEnabled": true,
+                    "controlValues": [
+                        { "key": "splitType", "value": 0},
+                        { "key": "select", "value": 1},
+                        { "key": "mix", "value": 0.3}
+                    ],
+                    "topChain": [
+                        {
+                            "uri": "uri://two-play/piddle/pedalboard#Empty",
+                            "isEnabled": true,
+                            "controlValues": []
+                        }
+                    ],
+                    "bottomChain": [
+                        {
+                            "uri": "uri://two-play/piddle/pedalboard#Empty",
+                            "isEnabled": true,
+                            "controlValues": []
+                        }
+                    ]
+                }
+        
+            ],
+            "bottomChain": [
+                {
+                    "uri": "uri://two-play/piddle/pedalboard#Empty",
+                    "isEnabled": true,
+                    "controlValues": []
+                }
+            ]
+        },
+        {
+            "uri": "uri://two-play/piddle/pedalboard#Empty",
+            "isEnabled": true,
+            "controlValues": []
+        },
+        {
+            "uri": "uri://two-play/piddle/pedalboard#Empty",
+            "isEnabled": true,
+            "controlValues": []
+        }
+
+
+    ]
+}

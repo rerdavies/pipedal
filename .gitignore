@@ -1,0 +1,8 @@
+#build files
+build/
+
+#settings
+.vscode
+
+Testing/
+

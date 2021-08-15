@@ -1,0 +1,23 @@
+
+https://raspberrypi.stackexchange.com/questions/119026/connect-to-wifi-access-point-repeater-when-uplink-is-not-present/119178#119178?newreg=1aefd433cbd64cd4aaadbd0557d59391
+
+
+/etc/wpa_supplicant/wpa_supplicant.conf:
+
+add
+
+   p2p_disable=1
+   
+Delete the network
+
+
+
+/etc/dnsmasq.d/dnsmasq.config
+
+Remove server= line.
+
+Add 172.24.1.1 piddle  to /etc/hosts
+
+
+
+

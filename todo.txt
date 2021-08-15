@@ -1,0 +1,68 @@
+Features:
+
+
+Patches.
+
+8 Updload/download patches.
+9 Upload/download banks.
+
+
+ - have to make sure it's set in the USER's environment.
+
+10 Test missing plugin handling.
+10 Handle 12TET and Midi control types, trigger types.
+
+
+7 Popless loading of presets. 10hz hipass?
+4 Bypass view?
+
+4 Midi Bindings.
+3 OpenSound wire control protocol bindings.
+
+
+
+Bugs:
+
+Delete bank confirmation.
+
+Deal with aftermath of config. :-/
+pulseaudio --kill
+
+Reconnect of controls after config change.
+
+
+Layout of 2nd and subsequent splits.
+
+Crash when changing input channels to mono.
+
+frequency response is routed to both instances of ToobInput. Did we fail to detect the instanceID change?
+
+scrollto fix for Load Dialog.
+
+
+Access Point: must disable wpa_supplicant when running Access Point.
+
+
+Config issues:
+
+Build: cmake was installed by code. :-/ Package hell.
+
+Open source copyrights.
+
+10 JACK_PROMISCUOUS_SERVER -- must be set in all user environments. Create jack group, add JACK_PROMISCUOUS_SERVER to jackd. RTPriority for Jack?
+
+10 Wireless host. dnsmasq configuration.
+
+add pipedal.local to etc/hosts.
+
+
+
+
+
+
+
+
+
+
+
+

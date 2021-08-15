@@ -1,0 +1,13 @@
+[Unit]
+Description=${DESCRIPTION}
+After=network.target
+
+[Service]
+ExecStart=${COMMAND} 
+Restart=always
+RestartSec=60
+WorkingDirectory=/var/pipedal
+
+
+[Install]
+WantedBy=multi-user.target

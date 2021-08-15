@@ -1,0 +1,112 @@
+import React from 'react';
+import Typography from '@material-ui/core/Typography';
+
+
+const RED_COLOR = "#C00";
+const GREEN_COLOR = "#666";
+
+
+
+function tempDisplay(mC: number): string
+{
+    return (mC/1000).toFixed(1) + "\u00B0C"; // degrees C.
+}
+function cpuDisplay(cpu: number): string
+{
+    return cpu.toFixed(1)+"%";
+}
+
+export default class JackHostStatus {
+    deserialize(input: any): JackHostStatus
+    {
+        this.active = input.active;
+        this.restarting = input.restarting;
+        this.underruns = input.underruns;
+        this.cpuUsage = input.cpuUsage;
+        this.msSinceLastUnderrun = input.msSinceLastUnderrun;
+        this.temperaturemC = input.temperaturemC;
+        return this;
+    }
+    hasTemperature() : boolean {
+        return this.temperaturemC >= -100000;
+    }
+    active: boolean = false;
+    restarting: boolean = false;
+    underruns: number = 0;
+    cpuUsage: number = 0;
+    msSinceLastUnderrun: number = -5000*1000;
+    temperaturemC: number = -1000000;
+
+    static getDisplayView(label: string,status?: JackHostStatus): React.ReactNode {
+        if (!status) {
+            return (<div style={{whiteSpace: "nowrap"}}>
+                <Typography variant="caption" color="textSecondary">{label}</Typography>
+                <Typography variant="caption">&nbsp;</Typography>
+            </div>);
+        }
+        if (status.restarting)
+        {
+            return (
+                <div style={{whiteSpace: "nowrap"}}>
+                    <Typography variant="caption" color="textSecondary">{label}</Typography>
+                    <span style={{color: RED_COLOR}}>
+                        <Typography variant="caption" color="inherit">Restarting&nbsp;&nbsp;</Typography>
+                    </span>
+                    {
+                        status.temperaturemC > -100000 &&
+                        (
+                            <span style={{color: status.temperaturemC > 75000? RED_COLOR: GREEN_COLOR}}>
+                                <Typography variant="caption" color="inherit">{tempDisplay(status.temperaturemC)}</Typography>
+                            </span>
+                        )
+                    }
+
+                </div>
+            );
+
+        } else if (!status.active) {
+            return (
+                <div style={{whiteSpace: "nowrap"}}>
+                    <Typography variant="caption" color="textSecondary">{label}</Typography>
+
+                    <span style={{color: RED_COLOR}}>
+                        <Typography variant="caption" color="inherit">Stopped&nbsp;&nbsp;</Typography>
+                    </span>
+                    {
+                        status.temperaturemC > -100000 &&
+                        (
+                            <span style={{color: status.temperaturemC > 75000? RED_COLOR: GREEN_COLOR}}>
+                                <Typography variant="caption" color="inherit">{tempDisplay(status.temperaturemC)}</Typography>
+                            </span>
+                        )
+                    }
+                </div>
+            );
+        } else {
+            let underrunError = status.msSinceLastUnderrun < 15*1000;
+            return (
+                <div style={{whiteSpace: "nowrap"}}>
+                    <Typography variant="caption" color="textSecondary">{label}</Typography>
+                    <span style={{color: underrunError? RED_COLOR: GREEN_COLOR}}>
+                        <Typography variant="caption" color="inherit">
+                            XRuns:&nbsp;{status.underruns+""}&nbsp;&nbsp;
+                        </Typography>
+                    </span>
+                    <span style={{color: underrunError? RED_COLOR: GREEN_COLOR}}>
+                        <Typography variant="caption" color="inherit">
+                            CPU:&nbsp;{cpuDisplay(status.cpuUsage)}&nbsp;&nbsp;
+                        </Typography>
+                    </span>
+
+                    <span style={{color: GREEN_COLOR}}>
+                        <Typography variant="caption" color="inherit">{tempDisplay(status.temperaturemC)}</Typography>
+                    </span>
+
+                </div>
+            );
+
+
+        }
+    }
+
+};

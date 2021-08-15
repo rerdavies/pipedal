@@ -1,0 +1,971 @@
+[
+    {
+        "uri": "http://guitarix.sourceforge.net/plugins/gxtubetremelo#tubetremelo",
+        "name": "GxTubeTremelo",
+        "plugin_class": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
+        "supported_features": [
+            "http://lv2plug.in/ns/lv2core#hardRTCapable"
+        ],
+        "required_features": [],
+        "optional_features": [
+            "http://lv2plug.in/ns/lv2core#hardRTCapable"
+        ],
+        "author_name": "Guitarix team",
+        "author_homepage": "",
+        "comment": "\n\nModel of a vactrol tremolo unit by \"transmogrify\"\nc.f. http://sourceforge.net/apps/phpbb/guitarix/viewtopic.php?f=7&t=44&p=233&hilit=transmogrifox#p233\nhttp://transmogrifox.webs.com/vactrol.m\n\n*Unofficial documentation\n\n",
+        "ports": [
+            {
+                "port_index": 0,
+                "symbol": "sinewave",
+                "name": "SineWave",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 1,
+                "symbol": "depth",
+                "name": "Depth",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 2,
+                "symbol": "speed",
+                "name": "Speed",
+                "min_value": 0.100000001,
+                "max_value": 14,
+                "default_value": 0.100000001,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 3,
+                "symbol": "drive",
+                "name": "Drive",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0.5,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 4,
+                "symbol": "gain",
+                "name": "Gain",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0.200000003,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 5,
+                "symbol": "out",
+                "name": "Out",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": false,
+                "is_output": true,
+                "is_control_port": false,
+                "is_audio_port": true,
+                "is_atom_port": true,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 6,
+                "symbol": "in",
+                "name": "In",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": true,
+                "is_control_port": false,
+                "is_audio_port": true,
+                "is_atom_port": true,
+                "is_valid": true,
+                "supports_midi": false
+            }
+        ]
+    },
+    {
+        "uri": "http://guitarix.sourceforge.net/plugins/gxtubevibrato#tubevibrato",
+        "name": "GxTubeVibrato",
+        "plugin_class": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
+        "supported_features": [
+            "http://lv2plug.in/ns/lv2core#hardRTCapable"
+        ],
+        "required_features": [],
+        "optional_features": [
+            "http://lv2plug.in/ns/lv2core#hardRTCapable"
+        ],
+        "author_name": "Guitarix team",
+        "author_homepage": "",
+        "comment": "\n\nAttempt at a true vibrato\nAnd it works well!\nSounds very sweet with tubes wrapped\n\n*Unofficial documentation\n\n",
+        "ports": [
+            {
+                "port_index": 0,
+                "symbol": "sinewave",
+                "name": "SineWave",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 1,
+                "symbol": "depth",
+                "name": "Depth",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 2,
+                "symbol": "speed",
+                "name": "Speed",
+                "min_value": 0.100000001,
+                "max_value": 14,
+                "default_value": 0.100000001,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 3,
+                "symbol": "drive",
+                "name": "Drive",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0.100000001,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 4,
+                "symbol": "gain",
+                "name": "Gain",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0.100000001,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 5,
+                "symbol": "out",
+                "name": "Out",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": false,
+                "is_output": true,
+                "is_control_port": false,
+                "is_audio_port": true,
+                "is_atom_port": true,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 6,
+                "symbol": "in",
+                "name": "In",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": true,
+                "is_control_port": false,
+                "is_audio_port": true,
+                "is_atom_port": true,
+                "is_valid": true,
+                "supports_midi": false
+            }
+        ]
+    },
+    {
+        "uri": "http://guitarix.sourceforge.net/plugins/gxtuner#tuner",
+        "name": "GxTuner",
+        "plugin_class": "http://lv2plug.in/ns/lv2core#AnalyserPlugin",
+        "supported_features": [
+            "http://lv2plug.in/ns/lv2core#hardRTCapable"
+        ],
+        "required_features": [],
+        "optional_features": [
+            "http://lv2plug.in/ns/lv2core#hardRTCapable"
+        ],
+        "author_name": "Guitarix team",
+        "author_homepage": "",
+        "comment": "\n\n...\n\n",
+        "ports": [
+            {
+                "port_index": 0,
+                "symbol": "FREQ",
+                "name": "FREQ",
+                "min_value": 0,
+                "max_value": 1000,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": false,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": false,
+                "supports_midi": false
+            },
+            {
+                "port_index": 1,
+                "symbol": "REFFREQ",
+                "name": "REFFREQ",
+                "min_value": 427,
+                "max_value": 453,
+                "default_value": 440,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 2,
+                "symbol": "TUNER_MODE",
+                "name": "Tuner Mode",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [
+                    {
+                        "value": 8,
+                        "label": "Double Drop D"
+                    },
+                    {
+                        "value": 7,
+                        "label": "1 and 1/2 Steps Down"
+                    },
+                    {
+                        "value": 9,
+                        "label": "Drop C"
+                    },
+                    {
+                        "value": 6,
+                        "label": "Full Step Down"
+                    },
+                    {
+                        "value": 12,
+                        "label": "Drop A#"
+                    },
+                    {
+                        "value": 10,
+                        "label": "Drop C#"
+                    },
+                    {
+                        "value": 11,
+                        "label": "Drop B"
+                    },
+                    {
+                        "value": 14,
+                        "label": "Open D"
+                    },
+                    {
+                        "value": 16,
+                        "label": "Open G"
+                    },
+                    {
+                        "value": 15,
+                        "label": "Open D Minor"
+                    },
+                    {
+                        "value": 17,
+                        "label": "Open G Minor"
+                    },
+                    {
+                        "value": 13,
+                        "label": "Drop A"
+                    },
+                    {
+                        "value": 19,
+                        "label": "Open C#"
+                    },
+                    {
+                        "value": 20,
+                        "label": "Open C Minor"
+                    },
+                    {
+                        "value": 21,
+                        "label": "Open E7"
+                    },
+                    {
+                        "value": 22,
+                        "label": "Open E Minor7"
+                    },
+                    {
+                        "value": 23,
+                        "label": "Open G Major7"
+                    },
+                    {
+                        "value": 24,
+                        "label": "Open A Minor"
+                    },
+                    {
+                        "value": 25,
+                        "label": "Open A Minor7"
+                    },
+                    {
+                        "value": 26,
+                        "label": "Open A"
+                    },
+                    {
+                        "value": 27,
+                        "label": "C Tuning"
+                    },
+                    {
+                        "value": 28,
+                        "label": "C# Tuning"
+                    },
+                    {
+                        "value": 29,
+                        "label": "Bb Tuning"
+                    },
+                    {
+                        "value": 30,
+                        "label": "A to A (Baritone)"
+                    },
+                    {
+                        "value": 31,
+                        "label": "Open Dsus2"
+                    },
+                    {
+                        "value": 32,
+                        "label": "Open Gsus2"
+                    },
+                    {
+                        "value": 33,
+                        "label": "G6"
+                    },
+                    {
+                        "value": 34,
+                        "label": "Overtone"
+                    },
+                    {
+                        "value": 35,
+                        "label": "Pentatonic"
+                    },
+                    {
+                        "value": 0,
+                        "label": "(Chromatic)"
+                    },
+                    {
+                        "value": 36,
+                        "label": "Minor Third"
+                    },
+                    {
+                        "value": 37,
+                        "label": "Major Third"
+                    },
+                    {
+                        "value": 38,
+                        "label": "All Fourths"
+                    },
+                    {
+                        "value": 39,
+                        "label": "Augmented Fourths"
+                    },
+                    {
+                        "value": 40,
+                        "label": "Slow Motion"
+                    },
+                    {
+                        "value": 41,
+                        "label": "Admiral"
+                    },
+                    {
+                        "value": 42,
+                        "label": "Buzzard"
+                    },
+                    {
+                        "value": 43,
+                        "label": "Face"
+                    },
+                    {
+                        "value": 44,
+                        "label": "Four and Twenty"
+                    },
+                    {
+                        "value": 45,
+                        "label": "Ostrich"
+                    },
+                    {
+                        "value": 1,
+                        "label": "Standard/E"
+                    },
+                    {
+                        "value": 46,
+                        "label": "Capo 200"
+                    },
+                    {
+                        "value": 47,
+                        "label": "Balalaika"
+                    },
+                    {
+                        "value": 48,
+                        "label": "Cittern One"
+                    },
+                    {
+                        "value": 49,
+                        "label": "Cittern Two"
+                    },
+                    {
+                        "value": 50,
+                        "label": "Dobro"
+                    },
+                    {
+                        "value": 51,
+                        "label": "Lefty"
+                    },
+                    {
+                        "value": 52,
+                        "label": "Mandoguitar"
+                    },
+                    {
+                        "value": 53,
+                        "label": "Rusty Cage"
+                    },
+                    {
+                        "value": 54,
+                        "label": "Hardcore"
+                    },
+                    {
+                        "value": 2,
+                        "label": "Standard/Es"
+                    },
+                    {
+                        "value": 3,
+                        "label": "Open E"
+                    },
+                    {
+                        "value": 4,
+                        "label": "Drop D"
+                    },
+                    {
+                        "value": 5,
+                        "label": "Half Step Down"
+                    },
+                    {
+                        "value": 18,
+                        "label": "Open C"
+                    }
+                ],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 3,
+                "symbol": "TEMPERAMENT",
+                "name": "TEMPERAMENT",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 4,
+                "symbol": "THRESHOLD",
+                "name": "THRESHOLD",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 5,
+                "symbol": "MAXL",
+                "name": "MAXL",
+                "min_value": 0,
+                "max_value": 1000,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": false,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": false,
+                "supports_midi": false
+            },
+            {
+                "port_index": 6,
+                "symbol": "RESET",
+                "name": "RESET",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 7,
+                "symbol": "LEVEL",
+                "name": "LEVEL",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 8,
+                "symbol": "CHANNEL",
+                "name": "CHANNELL",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [
+                    {
+                        "value": 6,
+                        "label": "6"
+                    },
+                    {
+                        "value": 4,
+                        "label": "4"
+                    },
+                    {
+                        "value": 5,
+                        "label": "5"
+                    },
+                    {
+                        "value": 0,
+                        "label": "0"
+                    },
+                    {
+                        "value": 3,
+                        "label": "3"
+                    },
+                    {
+                        "value": 1,
+                        "label": "1"
+                    },
+                    {
+                        "value": 2,
+                        "label": "2"
+                    },
+                    {
+                        "value": 7,
+                        "label": "7"
+                    },
+                    {
+                        "value": 14,
+                        "label": "14"
+                    },
+                    {
+                        "value": 16,
+                        "label": "16"
+                    },
+                    {
+                        "value": 13,
+                        "label": "13"
+                    },
+                    {
+                        "value": 8,
+                        "label": "8"
+                    },
+                    {
+                        "value": 15,
+                        "label": "15"
+                    },
+                    {
+                        "value": 12,
+                        "label": "12"
+                    },
+                    {
+                        "value": 9,
+                        "label": "9"
+                    },
+                    {
+                        "value": 11,
+                        "label": "11"
+                    },
+                    {
+                        "value": 10,
+                        "label": "10"
+                    }
+                ],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 9,
+                "symbol": "MIDI_ON",
+                "name": "MIDI_ON",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 10,
+                "symbol": "FASTNOTE",
+                "name": "FASTNOTE",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 11,
+                "symbol": "PITCHBEND",
+                "name": "PITCHBEND",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 12,
+                "symbol": "SINGLENOTE",
+                "name": "SINGLENOTE",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 13,
+                "symbol": "BPM",
+                "name": "BPM",
+                "min_value": 0,
+                "max_value": 360,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 14,
+                "symbol": "VELOCITY",
+                "name": "VELOCITY",
+                "min_value": 0,
+                "max_value": 127,
+                "default_value": 64,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 15,
+                "symbol": "VERIFY",
+                "name": "VERIFY",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 16,
+                "symbol": "GATE",
+                "name": "GATE",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 17,
+                "symbol": "SYNTHFREQ",
+                "name": "SYNTHFREQ",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 18,
+                "symbol": "GAIN",
+                "name": "GAIN",
+                "min_value": 0,
+                "max_value": 0,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": true,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 19,
+                "symbol": "midi_out",
+                "name": "MIDI Out",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": false,
+                "is_output": false,
+                "is_control_port": false,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": false,
+                "supports_midi": true
+            },
+            {
+                "port_index": 20,
+                "symbol": "out",
+                "name": "Out",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": false,
+                "is_output": true,
+                "is_control_port": false,
+                "is_audio_port": true,
+                "is_atom_port": true,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 21,
+                "symbol": "in",
+                "name": "In",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": true,
+                "is_control_port": false,
+                "is_audio_port": true,
+                "is_atom_port": true,
+                "is_valid": true,
+                "supports_midi": false
+            }
+        ]
+    },
+    {
+        "uri": "http://lv2plug.in/plugins/eg-echo",
+        "name": "Object Serialization Tester",
+        "plugin_class": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
+        "supported_features": [
+            "http://lv2plug.in/ns/lv2core#hardRTCapable",
+            "http://lv2plug.in/ns/ext/urid#map"
+        ],
+        "required_features": [
+            "http://lv2plug.in/ns/ext/urid#map"
+        ],
+        "optional_features": [
+            "http://lv2plug.in/ns/lv2core#hardRTCapable"
+        ],
+        "author_name": "Robin Davies",
+        "author_homepage": "http://two-play.com/",
+        "comment": "Plugin used to test text conversion of patch property objects.",
+        "ports": [
+            {
+                "port_index": 0,
+                "symbol": "control",
+                "name": "Control",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": true,
+                "is_output": false,
+                "is_control_port": false,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": true,
+                "supports_midi": false
+            },
+            {
+                "port_index": 1,
+                "symbol": "notify",
+                "name": "Notify",
+                "min_value": 0,
+                "max_value": 1,
+                "default_value": 0,
+                "scale_points": [],
+                "is_input": false,
+                "is_output": false,
+                "is_control_port": false,
+                "is_audio_port": false,
+                "is_atom_port": false,
+                "is_valid": false,
+                "supports_midi": false
+            }
+        ]
+    }
+]
