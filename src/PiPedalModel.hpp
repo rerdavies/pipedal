@@ -12,6 +12,7 @@
 #include "Banks.hpp"
 #include "PiPedalConfiguration.hpp"
 #include "JackServerSettings.hpp"
+#include "WifiConfigSettings.hpp"
 
 
 namespace pipedal {
@@ -34,6 +35,7 @@ public:
     virtual void OnLoadPluginPreset(int64_t instanceId,const std::vector<ControlValue>&controlValues) = 0;
     virtual void OnMidiValueChanged(int64_t instanceId, const std::string&symbol, float value) = 0;
     virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) = 0;
+    virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings&wifiConfigSettings) = 0;
     virtual void Close() = 0;
 };
 
@@ -144,6 +146,10 @@ public:
 
     void setJackChannelSelection(int64_t clientId,const JackChannelSelection &channelSelection);
     JackChannelSelection getJackChannelSelection();
+
+    void setWifiConfigSettings(const WifiConfigSettings&wifiConfigSettings);
+    WifiConfigSettings getWifiConfigSettings();
+
 
 
     int64_t addVuSubscription(int64_t instanceId);

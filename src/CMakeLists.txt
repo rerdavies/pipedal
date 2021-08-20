@@ -4,13 +4,27 @@ cmake_minimum_required(VERSION 3.19.0)
 
 include(FindPkgConfig)
 
+# Can't get the pkg_check to work.
+# pkg_check_modules(LIBNL3 "nl-genl-3")
+# if(!LIBNL3_FOUND)
+#   message(ERROR "libnl-genl-3-dev package not installed.")
+# else()
+#   message(STATUS "LIBNL3 libraries: ${LIBNL3_LIBRARIES}")
+#   message(STATUS "LBNL3 includes: ${LIBNL3_INCLUDE_DIRS}")
+# endif()
+
+# nlgenl-3 library.
+execute_process(COMMAND ls /usr/include/libnl3/netlink/netlink.h RESULT_VARIABLE LNL3_MISSING OUTPUT_QUIET ERROR_QUIET)
+if(LNL3_MISSING)
+    message(ERROR " Need to: sudo apt get libnl-3-dev libnl-genl-3-dev ")
+endif()
+set(LIBNL3_INCLUDE_DIRS /usr/include/libnl3)
+set(LIBNL3_LIBRARIES nl-3 nl-genl-3)
+
 
 pkg_check_modules(SYSTEMD "systemd")
 if(!SYSTEMD_FOUND)
   message(ERROR "libsystemd-dev package not installed.")
-else()
-  message(STATUS "SYSTEMD_LIBRARIES: ${SYSTEMD_LIBRARIES}")
-  message(STATUS "SYSTEMD_INCLUDE_DIRS: ${SYSTEMD_INCLUDE_DIRS}")
 endif()
 
 
@@ -55,8 +69,10 @@ message (STATUS "Cxx flags: ${CMAKE_CXX_FLAGS}"  )
 
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 
-add_executable(pipedald BeastServer.cpp BeastServer.hpp HtmlHelper.cpp HtmlHelper.hpp pch.h Uri.cpp Uri.hpp
-    RequestHandler.hpp main.cpp json.cpp json.hpp Scratch.cpp Lv2Host.hpp Lv2Host.cpp
+set (PIPEDAL_SOURCES
+    BeastServer.cpp BeastServer.hpp HtmlHelper.cpp HtmlHelper.hpp pch.h Uri.cpp Uri.hpp
+    WifiConfigSettings.hpp WifiConfigSettings.cpp
+    RequestHandler.hpp json.cpp json.hpp Scratch.cpp Lv2Host.hpp Lv2Host.cpp
     PluginType.hpp PluginType.cpp
     Lv2Log.hpp Lv2Log.cpp
     PiPedalSocket.hpp PiPedalSocket.cpp
@@ -93,22 +109,51 @@ add_executable(pipedald BeastServer.cpp BeastServer.hpp HtmlHelper.cpp HtmlHelpe
     Locale.hpp Locale.cpp
     Lv2EventBufferWriter.hpp Lv2EventBufferWriter.cpp
     IpSubnet.hpp
-    )
+    WifiChannels.hpp
+    WifiChannels.cpp
+    RegDb.cpp RegDb.hpp
+)
 
 configure_file(config.hpp.in config.hpp)
+
+#################################
+add_executable(pipedald ${PIPEDAL_SOURCES} main.cpp 
+    )
+
 include_directories( ${PiPedal_SOURCE_DIR}/. ../build/src) 
 
 target_precompile_headers(pipedald PRIVATE pch.h)
 
 
 target_include_directories(pipedald PRIVATE
-   ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS} ${SYSTEMD_INCLUDE_DIRS}
+   ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS}
     )
 
 target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs
-    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${SYSTEMD_LIBRARIES} systemd
+    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd
     )
-#target_link_libraries(pipedald boost_system)
+
+#################################
+add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
+    jsonTest.cpp
+    WifiChannelsTest.cpp
+    )
+
+configure_file(config.hpp.in config.hpp)
+include_directories( ${PiPedal_SOURCE_DIR}/. ../build/src) 
+
+target_precompile_headers(pipedaltest PRIVATE pch.h)
+
+
+target_include_directories(pipedaltest PRIVATE
+   ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS}
+    )
+
+target_link_libraries(pipedaltest PRIVATE pthread atomic stdc++fs
+    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd
+    )
+
+#################################
 
 
 add_executable(pipedalconfig json.cpp json.hpp 

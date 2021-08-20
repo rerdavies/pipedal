@@ -5,7 +5,6 @@ import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import ButtonBase from "@material-ui/core/ButtonBase";
 import { TransitionProps } from '@material-ui/core/transitions/transition';
 import Slide from '@material-ui/core/Slide';
-import Dialog from '@material-ui/core/Dialog';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
@@ -18,6 +17,9 @@ import SelectHoverBackground from './SelectHoverBackground';
 import JackServerSettings from './JackServerSettings';
 import JackServerSettingsDialog from './JackServerSettingsDialog';
 import JackHostStatus from './JackHostStatus';
+import WifiConfigSettings from './WifiConfigSettings';
+import WifiConfigDialog from './WifiConfigDialog';
+import DialogEx from './DialogEx'
 
 
 
@@ -34,6 +36,9 @@ interface SettingsDialogState {
     jackServerSettings: JackServerSettings;
     jackStatus?: JackHostStatus;
 
+    wifiConfigSettings: WifiConfigSettings;
+
+    showWifiConfigDialog: boolean;
     showInputSelectDialog: boolean;
     showOutputSelectDialog: boolean;
     showMidiSelectDialog: boolean;
@@ -120,6 +125,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 jackConfiguration: this.model.jackConfiguration.get(),
                 jackStatus: undefined,
                 jackSettings: this.model.jackSettings.get(),
+                wifiConfigSettings: this.model.wifiConfigSettings.get(),
+                showWifiConfigDialog: false,
                 showInputSelectDialog: false,
                 showOutputSelectDialog: false,
                 showMidiSelectDialog: false,
@@ -132,10 +139,28 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.handleJackConfigurationChanged = this.handleJackConfigurationChanged.bind(this);
             this.handleJackSettingsChanged = this.handleJackSettingsChanged.bind(this);
             this.handleJackServerSettingsChanged = this.handleJackServerSettingsChanged.bind(this);
+            this.handleWifiConfigSettingsChanged = this.handleWifiConfigSettingsChanged.bind(this);
 
         }
 
+        handleApplyWifiConfig(wifiConfigSettings: WifiConfigSettings): void {
+            this.setState({showWifiConfigDialog: false});
+            this.model.setWifiConfigSettings(wifiConfigSettings)
+            .then(() => {
 
+            })
+            .catch((err) => {
+                this.model.showAlert(err);
+            });
+        }
+
+        handleWifiConfigSettingsChanged(): void {
+            this.setState(
+                {
+                    wifiConfigSettings: this.model.wifiConfigSettings.get()
+                }
+            )
+        }
         handleJackSettingsChanged(): void {
             this.setState({
                 jackSettings: this.model.jackSettings.get()
@@ -177,6 +202,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.jackSettings.addOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackConfiguration.addOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.jackServerSettings.addOnChangedHandler(this.handleJackServerSettingsChanged);
+                    this.model.wifiConfigSettings.addOnChangedHandler(this.handleWifiConfigSettingsChanged);
                     this.model.getJackStatus()
                         .then((jackStatus) =>
                             this.setState(
@@ -193,7 +219,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.handleJackConfigurationChanged();
                     this.handleJackSettingsChanged();
                     this.handleJackServerSettingsChanged();
-                    this.timerHandle = setInterval(() => this.tick(), 1000);
+                    this.handleWifiConfigSettingsChanged();
+                    // xxx UNCOMMENT ME!  this.timerHandle = setInterval(() => this.tick(), 1000);
                 } else {
                     if (this.timerHandle) {
                         clearInterval(this.timerHandle);
@@ -201,6 +228,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.jackConfiguration.removeOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.jackSettings.removeOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackServerSettings.removeOnChangedHandler(this.handleJackServerSettingsChanged);
+                    this.model.wifiConfigSettings.removeOnChangedHandler(this.handleWifiConfigSettingsChanged);
+
                 }
             }
 
@@ -292,25 +321,33 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             if (ports.length === 1) return ports[0];
             return ports.length + " channels";
         }
-
+        handleShowWifiConfigDialog() {
+            this.setState({
+                showWifiConfigDialog: true
+            });
+        }
         handleRestart() {
+            this.setState({ restarting: true });
             this.model.restart()
                 .then(() => {
-                    this.setState({ restarting: true });
+                    // this.setState({ restarting: true });
                 })
                 .catch((error) => {
                     this.model.showAlert(error);
+                    this.setState({ restarting: false });
                 });
 
         }
 
         handleShutdown() {
+            this.setState({ shuttingDown: true });
             this.model.shutdown()
                 .then(() => {
                     this.setState({ shuttingDown: true });
                 })
                 .catch((error) => {
                     this.model.showAlert(error);
+                    this.setState({ shuttingDown: false });
                 });
 
         }
@@ -322,7 +359,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             let disableShutdown = this.state.shuttingDown || this.state.restarting;
 
             return (
-                <Dialog fullScreen open={this.props.open}
+                <DialogEx tag="SettingsDialog" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}>
 
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
@@ -428,6 +465,18 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                             <Divider />
                             <div >
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">SYSTEM</Typography>
+                                <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                    onClick={() => this.handleShowWifiConfigDialog()}  >
+                                    <SelectHoverBackground selected={false} showHover={true} />
+                                    <div style={{ width: "100%" }}>
+                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                            Configure Wi-fi Hotspot</Typography>
+                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
+                                            {this.state.wifiConfigSettings.getSummaryText()}
+                                        </Typography>
+
+                                    </div>
+                                </ButtonBase>
                                 <ButtonBase className={classes.setting} disabled={!isConfigValid || disableShutdown}
                                     onClick={() => this.handleRestart()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
@@ -452,7 +501,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             ) : (
                                                 <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Shut down</Typography>
                                             )
-                                        } 
+                                        }
                                     </div >
                                 </ButtonBase>
                             </div>
@@ -483,8 +532,12 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                         )
                     }
+                    <WifiConfigDialog wifiConfigSettings={this.state.wifiConfigSettings} open={this.state.showWifiConfigDialog}
+                        onClose={()=> this.setState({showWifiConfigDialog: false})}
+                        onOk={(wifiConfigSettings) => this.handleApplyWifiConfig(wifiConfigSettings)}
+                        />
 
-                </Dialog >
+                </DialogEx >
 
             );
 

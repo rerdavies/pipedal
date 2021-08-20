@@ -458,6 +458,9 @@ public:
     {
         this->ws_.close(websocket::close_reason());
     }
+    virtual std::string getFromAddress() const {
+        return this->fromAddress;
+    }
     virtual void writeCallback(const std::string &text)
     {
         {

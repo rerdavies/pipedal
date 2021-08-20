@@ -95,7 +95,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
     }
     componentWillUnmount()
     {
-        super.componentDidMount();
+        super.componentWillUnmount();
         this.mounted = false;
         this.updateHooks();
     }

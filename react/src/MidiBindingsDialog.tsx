@@ -187,7 +187,7 @@ export const MidiBindingDialog =
                 this.updateHooks();
             }
             componentWillUnmount() {
-                super.componentDidMount();
+                super.componentWillUnmount();
 
                 this.mounted = false;
                 this.updateHooks();

@@ -5,6 +5,7 @@
 #include "Presets.hpp"
 #include "Banks.hpp"
 #include "JackConfiguration.hpp"
+#include "WifiConfigSettings.hpp"
 
 
 namespace pipedal {
@@ -17,7 +18,7 @@ private:
     std::filesystem::path dataRoot;
     BankIndex bankIndex;
     BankFile currentBank;
-
+    
 private:
     static std::string SafeEncodeName(const std::string& name);
     static std::string SafeDecodeName(const std::string& name);
@@ -39,6 +40,7 @@ private:
     std::string GetPresetCopyName(const std::string &name);
     bool isJackChannelSelectionValid = false;
     JackChannelSelection jackChannelSelection;
+    WifiConfigSettings wifiConfigSettings;
 public:
     Storage();
     void Initialize();
@@ -51,6 +53,7 @@ public:
     const BankIndex & GetBanks() const { return bankIndex; }
 
 
+    void LoadWifiConfigSettings();
     void LoadBank(int64_t instanceId);
     const PedalBoard& GetCurrentPreset();
     void saveCurrentPreset(const PedalBoard&pedalBoard);
@@ -76,6 +79,9 @@ public:
 
     void SetJackChannelSelection(const JackChannelSelection&channelSelection);
     const JackChannelSelection&GetJackChannelSelection(const JackConfiguration &jackConfiguration);
+
+    void SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings);
+    WifiConfigSettings GetWifiConfigSettings();
 
 
 };

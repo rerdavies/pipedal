@@ -3,9 +3,10 @@ Features:
 
 Patches.
 
-8 Updload/download patches.
-9 Upload/download banks.
-
+9 Hotspot config.
+9 Upload/download banks. 
+9 Delete bank warning dialo.
+7 Settings dialog doesn't have back button nav.
 
  - have to make sure it's set in the USER's environment.
 
@@ -30,8 +31,7 @@ pulseaudio --kill
 
 Reconnect of controls after config change.
 
-
-Layout of 2nd and subsequent splits.
+Run when there's no midi device.
 
 Crash when changing input channels to mono.
 
@@ -55,6 +55,12 @@ Open source copyrights.
 
 add pipedal.local to etc/hosts.
 
+/etc/dhcpcd.config:
+  nohook wpa_supplicant
+  
+Dependents:
+
+libnl-3-dev libnl-genl-3-dev
 
 
 

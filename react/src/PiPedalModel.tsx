@@ -13,6 +13,8 @@ import JackHostStatus from './JackHostStatus';
 import JackServerSettings from './JackServerSettings';
 import MidiBinding from './MidiBinding';
 import PluginPreset from './PluginPreset';
+import WifiConfigSettings from './WifiConfigSettings';
+import WifiChannel from './WifiChannel';
 
 
 export enum State {
@@ -235,6 +237,7 @@ interface ControlChangedBody {
 
 export interface PiPedalModel {
     clientId: number;
+    countryCodes: Object;
     serverVersion?: PiPedalVersion;
     errorMessage: ObservableProperty<string>;
     alertMessage: ObservableProperty<string>;
@@ -245,6 +248,7 @@ export interface PiPedalModel {
     jackSettings: ObservableProperty<JackChannelSelection>;
     banks: ObservableProperty<BankIndex>;
     jackServerSettings: ObservableProperty<JackServerSettings>;
+    wifiConfigSettings: ObservableProperty<WifiConfigSettings>;
 
     presets: ObservableProperty<PresetIndex>;
 
@@ -320,13 +324,17 @@ export interface PiPedalModel {
 
     uploadPreset(file: File, uploadAfter: number): Promise<number>;
 
+    setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void>;
+
+    getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>;
+
 };
 
 class PiPedalModelImpl implements PiPedalModel {
     clientId: number = -1;
 
     serverVersion?: PiPedalVersion;
-
+    countryCodes: Object = {};
     socketServerUrl: string = "";
     varServerUrl: string = "";
     lv2Path: string = "";
@@ -345,6 +353,8 @@ class PiPedalModelImpl implements PiPedalModel {
         = new ObservableProperty<BankIndex>(new BankIndex());
     jackServerSettings: ObservableProperty<JackServerSettings>
         = new ObservableProperty<JackServerSettings>(new JackServerSettings());
+
+    wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
 
 
     presets: ObservableProperty<PresetIndex> = new ObservableProperty<PresetIndex>
@@ -459,6 +469,9 @@ class PiPedalModelImpl implements PiPedalModel {
         } else if (message === "onJackServerSettingsChanged") {
             let jackServerSettings = new JackServerSettings().deserialize(body);
             this.jackServerSettings.set(jackServerSettings);
+        } else if (message === "onWifiConfigSettingsChanged") {
+            let wifiConfigSettings = new WifiConfigSettings().deserialize(body);
+            this.wifiConfigSettings.set(wifiConfigSettings);
         } else if (message === "onBanksChanged") {
             let banks = new BankIndex().deserialize(body);
             this.banks.set(banks);
@@ -537,6 +550,11 @@ class PiPedalModelImpl implements PiPedalModel {
             .then(data => {
                 this.pedalBoard.set(new PedalBoard().deserialize(data));
 
+                return this.getWebSocket().request<any>("getWifiConfigSettings");
+            })
+            .then(data => {
+                this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
+
                 return this.getWebSocket().request<any>("getJackServerSettings");
             })
             .then(data => {
@@ -573,7 +591,7 @@ class PiPedalModelImpl implements PiPedalModel {
             })
     }
     makeSocketServerUrl(hostName: string, port: number): string {
-        return "ws://" + hostName + ":" + port + "/piddle";
+        return "ws://" + hostName + ":" + port + "/pipedal";
 
     }
     makeVarServerUrl(protocol: string, hostName: string, port: number): string {
@@ -587,11 +605,12 @@ class PiPedalModelImpl implements PiPedalModel {
         const myRequest = new Request(this.varRequest('config.json'));
         return fetch(myRequest)
             .then(
-                response => response.json()
-
+                (response) => 
+                {
+                    return response.json();
+                }
             )
             .then(data => {
-                console.log("Got config");
                 if (data.max_upload_size)
                 {
                     this.maxUploadSize = data.max_upload_size;
@@ -617,6 +636,15 @@ class PiPedalModelImpl implements PiPedalModel {
                 return this.webSocket.connect();
             })
             .then(() => {
+                const isoRequest = new Request('iso_codes.json');
+                return fetch(isoRequest);
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((countryCodes) => {
+                this.countryCodes = countryCodes as Object;
+
                 return this.getWebSocket().request<number>("hello");
             })
             .then((clientId) => {
@@ -652,7 +680,12 @@ class PiPedalModelImpl implements PiPedalModel {
                     })
                     .then((data) => {
                         this.presets.set(new PresetIndex().deserialize(data));
-
+                        return this.getWebSocket().request<any>("getWifiConfigSettings");
+                    })
+                    .then(data => {
+                        this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
+        
+        
                         return this.getWebSocket().request<any>("getJackServerSettings");
                     })
                     .then(data => {
@@ -1427,6 +1460,75 @@ class PiPedalModelImpl implements PiPedalModel {
         });
         return result;
     }
+    setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void>
+    {
+        let result = new Promise<void>((resolve,reject) =>{
+            let oldSettings = this.wifiConfigSettings.get();
+            wifiConfigSettings = wifiConfigSettings.clone();
+
+            if ((!oldSettings.enable) && (!wifiConfigSettings.enable))
+            {
+                // no effective change.
+                resolve();
+                return;
+            }
+            let countryCodeChanged = wifiConfigSettings.countryCode !== oldSettings.countryCode;
+            if (!wifiConfigSettings.enable)
+            {
+                wifiConfigSettings.hasPassword = false;
+                wifiConfigSettings.hotspotName = oldSettings.hotspotName;
+            } else {
+                if (!wifiConfigSettings.hasPassword) {
+                    if (wifiConfigSettings.hotspotName === oldSettings.hotspotName && !countryCodeChanged) {
+                        // no effective change.
+                        resolve();
+                        return;
+                    }
+                }
+            }
+            // save a  version for the server (potentially carrying a password)
+            let serverConfigSettings = wifiConfigSettings.clone();
+
+            
+
+            // notify the server.
+            let ws = this.webSocket;
+            if (!ws)
+            {
+                reject("Not connected.");
+                return;
+            }
+            ws.request<void>(
+                "setWifiConfigSettings",
+                serverConfigSettings
+            )
+            .then(()=> {
+                resolve();
+            })
+            .catch((err) =>{
+                reject(err);
+            });
+
+        });
+        return result;
+    }
+
+    getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>
+    {
+        let result = new Promise<WifiChannel[]>((resolve,reject) => {
+            if (!this.webSocket) {
+                reject("Connection closed.");
+                return;
+            }
+            this.webSocket.request<WifiChannel[]>("getWifiChannels",countryIso3661)
+            .then((data) => {
+                resolve(WifiChannel.deserialize_array(data));
+            })
+            .catch((err)=> reject(err));
+        });
+        return result;
+    }
+
 
 };
 

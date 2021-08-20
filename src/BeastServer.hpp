@@ -28,6 +28,7 @@ public:
         virtual void close() = 0;
 
         virtual void writeCallback(const std::string& text) = 0;
+        virtual std::string getFromAddress() const = 0;
     };
 
 private:
@@ -43,6 +44,7 @@ private:
 protected:
     virtual void onReceive(const std::string_view&text) = 0;
 public:
+    std::string getFromAddress() const { return writeCallback_->getFromAddress(); }
     void receive(const std::string_view&text) {
         onReceive(text);
     }

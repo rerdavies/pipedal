@@ -5,20 +5,22 @@ find_program(NPM_COMMAND npm)
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
    set(BUILD_REACT "echo")
+   set(BUILD_REACT_ARGS Skipping react debug build)
 else()
     set(BUILD_REACT ${NPM_COMMAND})
+    set(BUILD_REACT_ARGS run build)
 endif()
 
 set (BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/build/react/build)
-message(STATUS "React Build...")
 
 add_custom_command(
     OUTPUT ${BUILD_DIRECTORY}/index.html
     COMMAND ${BUILD_REACT}
-    ARGS  run build
+    ARGS  ${BUILD_REACT_ARGS}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/react
 
     DEPENDS 
+        src/WifiChannel.tsx
         src/JackServerSettingsDialog.tsx
         src/JackServerSettings.tsx
         
@@ -74,7 +76,13 @@ add_custom_command(
         src/Utility.tsx
         src/VuMeter.tsx
         src/PluginPreset.tsx
+        src/XxxSnippet.tsx
+        src/WifiConfigSettings.tsx
+        src/WifiConfigDialog.tsx
+        src/NoChangePassword.tsx
+        src/XxxSnippet.tsx
 
+        public/iso_codes.json
         public/logo512.png
         public/index.html
         public/manifest.json

@@ -11,6 +11,8 @@ using namespace pipedal;
 const char *BANK_EXTENSION = ".bank";
 const char *BANKS_FILENAME = "index.banks";
 
+#define WIFI_CONFIG_SETTINGS_FILENAME "wifiConfigSettings.json";
+
 Storage::Storage()
 {
     SetDataRoot("~/var/PiPedal");
@@ -157,6 +159,7 @@ void Storage::Initialize()
     catch (const std::exception &)
     {
     }
+    LoadWifiConfigSettings();
 }
 
 void Storage::LoadBank(int64_t instanceId)
@@ -683,3 +686,72 @@ int64_t  Storage::UploadPreset(const BankFile&bankFile,int64_t uploadAfter)
     this->SaveCurrentBank();
     return lastPreset;
 }
+
+void Storage::SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings)
+{
+    WifiConfigSettings copyToSave = wifiConfigSettings;
+    copyToSave.rebootRequired_ = false;
+    if (!copyToSave.enable_)
+    {
+        copyToSave.hasPassword_ = false;
+    }
+    copyToSave.password_ = "";
+
+    std::filesystem::path path = this->dataRoot / WIFI_CONFIG_SETTINGS_FILENAME;
+    {
+        std::ofstream f(path);
+        if (!f.is_open())
+        {
+            throw PiPedalException("Unable to write to " + ((std::string)path));
+        }
+        json_writer writer(f);
+        writer.write(&copyToSave);
+    }
+
+    WifiConfigSettings copyToStore = wifiConfigSettings;
+    if (copyToStore.enable_)
+    {
+        copyToStore.hasPassword_ = copyToStore.password_.length() != 0 || this->wifiConfigSettings.hasPassword_;
+    } else {
+        copyToStore.hasPassword_ = false;
+    }
+    copyToStore.password_ = "";
+    copyToStore.rebootRequired_ = true;
+    if (copyToStore.enable_ && !copyToStore.hasPassword_) 
+    {
+        copyToStore.hasPassword_ = this->wifiConfigSettings.hasPassword_;
+    }
+    this->wifiConfigSettings = copyToStore;
+}
+
+void Storage::LoadWifiConfigSettings()
+{
+    std::filesystem::path path = this->dataRoot / WIFI_CONFIG_SETTINGS_FILENAME;
+
+    try {
+        if (std::filesystem::is_regular_file(path))
+        {
+            std::ifstream f(path);
+            if (!f.is_open())
+            {
+                throw PiPedalException("Unable to write to " + ((std::string)path));
+            }
+            json_reader reader(f);
+            WifiConfigSettings wifiConfigSettings;
+            reader.read(&wifiConfigSettings);
+            this->wifiConfigSettings = wifiConfigSettings;
+        }
+    } catch (const std::exception&)
+    {
+
+    }
+    this->wifiConfigSettings.valid_ = true;
+}
+
+
+WifiConfigSettings Storage::GetWifiConfigSettings()
+{
+    return this->wifiConfigSettings;
+}
+
+

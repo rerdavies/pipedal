@@ -11,6 +11,8 @@
 #include <atomic>
 
 #include "ShutdownClient.hpp"
+#include "WifiConfigSettings.hpp"
+#include "WifiChannels.hpp"
 
 using namespace std;
 using namespace pipedal;
@@ -667,6 +669,12 @@ public:
         {
             JackHostStatus status = model.getJackStatus();
             this->Reply(replyTo,"getJackStatus",status);
+        } else if (message == "getWifiChannels")
+        {
+            std::string country;
+            pReader->read(&country);
+            std::vector<WifiChannel> channels = pipedal::getWifiChannels(country.c_str());
+            this->Reply(replyTo,"getWifiChannels",channels);
         }
         else if (message == "getPluginPresets")
         {
@@ -688,6 +696,28 @@ public:
             this->Reply(replyTo,"setJackserverSettings");
 
         }
+        else if (message == "setWifiConfigSettings") {
+            WifiConfigSettings wifiConfigSettings;
+            pReader->read(&wifiConfigSettings);
+            if (!ShutdownClient::CanUseShutdownClient())
+            {
+                throw PiPedalException("Can't change server settings when running interactively.");
+            }
+            std::string fromAddress = this->getFromAddress();
+            if (!ShutdownClient::IsOnLocalSubnet(fromAddress))
+            {
+                throw PiPedalException("Permission denied. Not on local subnet.");
+            }
+
+
+            this->model.setWifiConfigSettings(wifiConfigSettings);
+            this->Reply(replyTo,"setWifiConfigSettings");
+        }
+        else if (message == "getWifiConfigSettings") {
+            this->Reply(replyTo, "getWifiConfigSettings", model.getWifiConfigSettings());
+
+        }
+
         else if (message == "getJackServerSettings") {
             this->Reply(replyTo, "getJackServerSettings", model.GetJackServerSettings());
 
@@ -1218,6 +1248,10 @@ public:
     virtual void OnJackServerSettingsChanged(const JackServerSettings& jackServerSettings) 
     {
         Send("onJackServerSettingsChanged",jackServerSettings);
+    }
+
+    virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings&wifiConfigSettings) {
+        Send("onWifiConfigSettingsChanged",wifiConfigSettings);
     }
 
     virtual void OnPedalBoardChanged(int64_t clientId, const PedalBoard &pedalBoard)

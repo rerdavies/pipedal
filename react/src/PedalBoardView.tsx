@@ -117,7 +117,7 @@ const pedalBoardStyles = (theme: Theme) => createStyles({
         marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
-        border: "1pt black solid",
+        border: "1pt #666 solid",
         borderRadius: 6
     },
     pedalIcon: {

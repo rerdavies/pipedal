@@ -11,6 +11,7 @@ public:
     static bool CanUseShutdownClient();
     static bool RequestShutdown(bool restart);
     static bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
+    static bool IsOnLocalSubnet(const std::string&fromAddress);
 };
 
 } // namespace

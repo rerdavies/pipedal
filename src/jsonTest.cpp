@@ -5,9 +5,9 @@
 #include <string>
 
 
-#include <json.hpp>
+#include "json.hpp"
 
-using namespace piddle;
+using namespace pipedal;
 
 class JsonTestTarget {
 private:

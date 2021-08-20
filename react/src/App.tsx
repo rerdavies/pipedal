@@ -646,7 +646,7 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                                 )}
                             </div>
                         )}
-                    <TemporaryDrawer position='left' title="piddle"
+                    <TemporaryDrawer position='left' title="PiPedal"
                         is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
                         <List subheader={
                             <ListSubheader component="div" id="nested-list-subheader">Banks</ListSubheader>

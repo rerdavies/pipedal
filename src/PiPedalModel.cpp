@@ -95,7 +95,6 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
 
     this->jackHost->SetNotificationCallbacks(this);
 
-
     if (configuration.GetMLock())
     {
 #ifndef NO_MLOCK
@@ -126,10 +125,8 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
         catch (PiPedalException &e)
         {
             Lv2Log::error("Failed to load initial plugin. (%s)", e.what());
-            
         }
     }
-
 }
 
 IPiPedalModelSubscriber *PiPedalModel::GetNotificationSubscriber(int64_t clientId)
@@ -278,7 +275,6 @@ void PiPedalModel::setPedalBoard(int64_t clientId, PedalBoard &pedalBoard)
     }
 }
 
-
 void PiPedalModel::setPedalBoardItemEnable(int64_t clientId, int64_t pedalItemId, bool enabled)
 {
     std::lock_guard(this->mutex);
@@ -317,7 +313,6 @@ PedalBoard PiPedalModel::getPreset(int64_t instanceId)
     std::lock_guard guard(mutex);
     return this->storage.GetPreset(instanceId);
 }
-
 
 void PiPedalModel::setPresetChanged(int64_t clientId, bool value)
 {
@@ -369,14 +364,13 @@ int64_t PiPedalModel::saveCurrentPresetAs(int64_t clientId, const std::string &n
     return result;
 }
 
-int64_t PiPedalModel::uploadPreset(const BankFile&bankFile,int64_t uploadAfter)
+int64_t PiPedalModel::uploadPreset(const BankFile &bankFile, int64_t uploadAfter)
 {
     std::lock_guard(this->mutex);
 
-    int64_t newPreset = this->storage.UploadPreset(bankFile,uploadAfter);
+    int64_t newPreset = this->storage.UploadPreset(bankFile, uploadAfter);
     firePresetsChanged(-1);
     return newPreset;
-
 }
 
 void PiPedalModel::loadPreset(int64_t clientId, int64_t instanceId)
@@ -460,6 +454,35 @@ bool PiPedalModel::renamePreset(int64_t clientId, int64_t instanceId, const std:
     {
         throw PiPedalStateException("Rename failed.");
     }
+}
+
+void PiPedalModel::setWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings)
+{
+    std::lock_guard lock(this->mutex);
+    // xxx Commit to local!
+    this->storage.SetWifiConfigSettings(wifiConfigSettings);
+
+    {
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+
+        WifiConfigSettings tWifiConfigSettings = storage.GetWifiConfigSettings(); // (the passwordless version)
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            t[i]->OnWifiConfigSettingsChanged(tWifiConfigSettings);
+        }
+        delete[] t;
+    }
+}
+WifiConfigSettings PiPedalModel::getWifiConfigSettings()
+{
+    std::lock_guard lock(this->mutex);
+    return this->storage.GetWifiConfigSettings();
 }
 
 JackConfiguration PiPedalModel::getJackConfiguration()
@@ -983,4 +1006,3 @@ void PiPedalModel::cancelListenForMidiEvent(int64_t clientId, int64_t clientHand
         jackHost->SetListenForMidiEvent(false);
     }
 }
-
