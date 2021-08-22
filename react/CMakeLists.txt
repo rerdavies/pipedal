@@ -82,6 +82,20 @@ add_custom_command(
         src/NoChangePassword.tsx
         src/XxxSnippet.tsx
 
+        public/css/roboto.css
+        public/fonts/Roboto-BlackItalic.woff2
+        public/fonts/Roboto-Black.woff2
+        public/fonts/Roboto-BoldItalic.woff2
+        public/fonts/Roboto-Bold.woff2
+        public/fonts/Roboto-Italic.woff2
+        public/fonts/Roboto-LightItalic.woff2
+        public/fonts/Roboto-Light.woff2
+        public/fonts/Roboto-MediumItalic.woff2
+        public/fonts/Roboto-Medium.woff2
+        public/fonts/Roboto-Regular.woff2
+        public/fonts/Roboto-ThinItalic.woff2
+        public/fonts/Roboto-Thin.woff2
+
         public/iso_codes.json
         public/logo512.png
         public/index.html

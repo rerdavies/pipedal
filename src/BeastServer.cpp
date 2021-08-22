@@ -88,7 +88,8 @@ std::map<std::string, std::string> extensionsToMimeType = {
     {".tif", "image/tiff"},
     {".svg", "image/svg+xml"},
     {".svgz", "image/svg+xml"},
-
+    {".woff", "font/woff2" },
+    {".woff2", "font/woff2"}
 };
 // Return a reasonable mime type based on the extension of a file.
 std::string

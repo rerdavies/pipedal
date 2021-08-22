@@ -2,8 +2,8 @@ import { PiPedalArgumentError } from './PiPedalError';
 import MidiBinding from './MidiBinding';
 
 
-const SPLIT_PEDALBOARD_ITEM_URI = "uri://two-play/piddle/pedalboard#Split";
-const EMPTY_PEDALBOARD_ITEM_URI = "uri://two-play/piddle/pedalboard#Empty";
+const SPLIT_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Split";
+const EMPTY_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Empty";
 
 
 interface Deserializable<T> {

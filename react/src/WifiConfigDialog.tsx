@@ -52,11 +52,6 @@ export interface WifiConfigState {
 };
 
 
-let validNameRegex = /^[a-zA-Z][a-zA-Z0-9_-]*$/
-function isValidName(text: string)
-{
-    return validNameRegex.test(text);
-}
 
 const WifiConfigDialog = withStyles(styles, { withTheme: true })( 
     class extends ResizeResponsiveComponent<WifiConfigProps, WifiConfigState> {
@@ -105,7 +100,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
         this.stateWasPopped = true;
         let shouldClose = (!e.state || !e.state.WifiConfig);
         if (shouldClose) {
-            this.props.onClose();
+            this.preventPasswordPrompt();
+            setTimeout(()=> {
+                this.props.onClose();
+            });
         }
     }
 
@@ -193,16 +191,23 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
             if (name.length === 0) {
                 this.setState({nameError: true, nameErrorMessage: "* Required"});
                 hasError = true;
-            } else {
-                if (!isValidName(name))
-                {
-                    this.setState({nameError: true, nameErrorMessage: "Invalid name"});
+            } else if (name.length > 31) 
+            {
+                this.setState({nameError: true, nameErrorMessage: "> 31 characters"});
+                hasError = true;
+            }
+            let password = this.state.newPassword;
+            if (password.length > 0) {
+                if (password.length < 8) {
+                    this.setState({passwordError: true, passwordErrorMessage: "Less than 8 characters"});
                     hasError = true;
-                } else if (name.length > 15) 
-                {
-                    this.setState({nameError: true, nameErrorMessage: "> 15 characters"});
+
+                } else if (password.length > 63) {
+                    this.setState({passwordError: true, passwordErrorMessage: "> 63 characters"});
                     hasError = true;
+
                 }
+
             }
         }
         if (this.state.enabled && (!this.props.wifiConfigSettings.hasPassword) && this.state.newPassword.length === 0)
@@ -229,10 +234,22 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                 this.setState({showWifiWarningDialog: true});
             } else {
                 wifiConfigSettings.wifiWarningGiven = true;
-                this.props.onOk(wifiConfigSettings);
+                this.preventPasswordPrompt();
+                setTimeout(()=> {
+                    this.props.onOk(wifiConfigSettings);
+                });
             }
         }
     
+    }
+    preventPasswordPrompt()
+    {
+        let passwordInput = this.refPassword.current;
+        if (passwordInput)
+        {
+            passwordInput.value = "";
+            passwordInput.type = "text";
+        }
     }
     handleChannelChange(e: any)
     {
@@ -257,7 +274,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
         let { open, onClose} = props;
 
         const handleClose = () => {
-            onClose();
+            this.preventPasswordPrompt();
+            setTimeout(()=> {
+                onClose();
+            });
         };
 
         return (
@@ -295,7 +315,9 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                         disabled={!this.state.enabled}
                     />
                     <div style={{ marginBottom: 16 }}>
+                        <input type="password" style={{display:"none"}}/>
                         <NoChangePassword 
+                            inputRef={this.refPassword}
                             onPasswordChange={(text): void => { this.setState({ newPassword: text, passwordError: false, passwordErrorMessage: NBSP }); }}
                             hasPassword={this.props.wifiConfigSettings.hasPassword}
                             label="WEP Passphrase"

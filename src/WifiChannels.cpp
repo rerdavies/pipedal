@@ -1,5 +1,7 @@
 
 #include "pch.h"
+#include <unistd.h>
+#include <fcntl.h>
 #include <string>
 #include <net/if.h>
 #include <netlink/netlink.h>
@@ -16,6 +18,7 @@
 #include "Lv2Log.hpp"
 
 #include "RegDb.hpp"
+
 /*
    Heavily based on code from iw (1) command.
    https://kernel.googlesource.com/pub/scm/linux/kernel/git/jberg/iw/+/v0.9/COPYING
@@ -596,7 +599,7 @@ std::vector<WifiChannel> pipedal::getWifiChannels(const char*countryIso3661)
                     t << " (2.4GHz)";
                 
                 if (channel.indoorOnly) {
-                    t << " Indoor only";
+                    t << " Indoors only";
                 } 
                 ch.channelName_ = t.str();
                 result.push_back(ch);

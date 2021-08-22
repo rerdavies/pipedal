@@ -90,6 +90,10 @@ bool ShutdownClient::WriteMessage(const char*message) {
     while (!eolFound)
     {
         ssize_t nRead = read(sock,pWrite,available);
+        if (nRead == 0) {
+            *pWrite = 0;
+            break;
+        }
         if (nRead <= 0) {
             Lv2Log::error("Failed to read shutdown server response.");
             close(sock);
@@ -186,7 +190,21 @@ bool ShutdownClient::IsOnLocalSubnet(const std::string&fromAddress)
     }
     freeifaddrs(ifap);
     return result;
+}
 
-
-    
+void ShutdownClient::SetWifiConfig(const WifiConfigSettings & settings)
+{
+    if (!CanUseShutdownClient())
+    {
+        throw PiPedalException("Can't use ShutdownClient when running interactively.");
+    }
+    std::stringstream cmd;
+    cmd << "WifiConfigSettings ";
+    json_writer writer(cmd,true);
+    writer.write(settings);
+    cmd << '\n';
+    bool result = WriteMessage(cmd.str().c_str());
+    if (!result) { // unexpected. Should throw exception on failure.
+        throw PiPedalException("Operation failed.");
+    }
 }

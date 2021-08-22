@@ -19,6 +19,7 @@ interface NoChangePasswordProps {
     disabled?: boolean;
     helperText?: string;
     error?: boolean;
+    inputRef?: React.RefObject<any>
 };
 
 interface NoChangePasswordState {
@@ -88,6 +89,7 @@ class NoChangePassword extends React.Component<NoChangePasswordProps, NoChangePa
                     color="primary"
                     spellCheck="false"
                     autoComplete="off"
+                    inputRef={this.props.inputRef}
                     readOnly
                     id="standard-adornment-password"
                     onChange={(e) => this.handleChange(e)}

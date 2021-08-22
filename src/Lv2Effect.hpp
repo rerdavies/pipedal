@@ -11,6 +11,8 @@
 #include "lv2/log/log.h"
 #include "lv2/log/logger.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
+#include "lv2/atom/forge.h"
+
 namespace pipedal
 {
 

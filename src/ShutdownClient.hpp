@@ -2,6 +2,7 @@
 
 #include <string>
 #include "JackServerSettings.hpp"
+#include "WifiConfigSettings.hpp"
 
 namespace pipedal {
 
@@ -12,6 +13,7 @@ public:
     static bool RequestShutdown(bool restart);
     static bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
     static bool IsOnLocalSubnet(const std::string&fromAddress);
+    static void SetWifiConfig(const WifiConfigSettings & settings);
 };
 
 } // namespace

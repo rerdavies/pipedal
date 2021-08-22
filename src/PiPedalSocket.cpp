@@ -13,6 +13,7 @@
 #include "ShutdownClient.hpp"
 #include "WifiConfigSettings.hpp"
 #include "WifiChannels.hpp"
+#include "SysExec.hpp"
 
 using namespace std;
 using namespace pipedal;
@@ -277,7 +278,7 @@ static void requestShutdown(bool restart)
         }
         s << " now";
 
-        if (system(s.str().c_str()) != EXIT_SUCCESS)
+        if (SysExec(s.str().c_str()) != EXIT_SUCCESS)
         {
             Lv2Log::error("shutdown failed.");
             if (restart) {

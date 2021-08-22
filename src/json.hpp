@@ -246,6 +246,13 @@ private:
 
 
 public:
+    static std::string encode_string(const std::string &text)
+    {
+        std::stringstream s;
+        json_writer writer(s);
+        writer.write(text);
+        return s.str();
+    }
     void write_raw(const char*text) {
         os << text;
     }

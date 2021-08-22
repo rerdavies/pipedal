@@ -599,20 +599,18 @@ class PiPedalModelImpl implements PiPedalModel {
 
     }
 
-    maxUploadSize: number = 512*1024;
+    maxUploadSize: number = 512 * 1024;
 
     requestConfig(): Promise<boolean> {
         const myRequest = new Request(this.varRequest('config.json'));
         return fetch(myRequest)
             .then(
-                (response) => 
-                {
+                (response) => {
                     return response.json();
                 }
             )
             .then(data => {
-                if (data.max_upload_size)
-                {
+                if (data.max_upload_size) {
                     this.maxUploadSize = data.max_upload_size;
                 }
                 let { socket_server_port, socket_server_address } = data;
@@ -622,7 +620,7 @@ class PiPedalModelImpl implements PiPedalModel {
                 if (!socket_server_port) socket_server_port = 8080;
                 let socket_server = this.makeSocketServerUrl(socket_server_address, socket_server_port);
                 let var_server_url = this.makeVarServerUrl("http", socket_server_address, socket_server_port);
-                
+
 
                 this.socketServerUrl = socket_server;
                 this.varServerUrl = var_server_url;
@@ -684,8 +682,8 @@ class PiPedalModelImpl implements PiPedalModel {
                     })
                     .then(data => {
                         this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
-        
-        
+
+
                         return this.getWebSocket().request<any>("getJackServerSettings");
                     })
                     .then(data => {
@@ -1421,8 +1419,7 @@ class PiPedalModelImpl implements PiPedalModel {
     uploadPreset(file: File, uploadAfter: number): Promise<number> {
         let result = new Promise<number>((resolve, reject) => {
             try {
-                if (file.size > this.maxUploadSize) 
-                {
+                if (file.size > this.maxUploadSize) {
                     reject("File is too large.");
                 }
                 let url = this.varServerUrl + "uploadPreset";
@@ -1436,7 +1433,7 @@ class PiPedalModelImpl implements PiPedalModel {
                         body: file,
                         headers: {
                             'Content-Type': 'application/json',
-                        },                        
+                        },
                     }
                 )
                     .then((response: Response) => {
@@ -1460,26 +1457,24 @@ class PiPedalModelImpl implements PiPedalModel {
         });
         return result;
     }
-    setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void>
-    {
-        let result = new Promise<void>((resolve,reject) =>{
+    setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void> {
+        let result = new Promise<void>((resolve, reject) => {
             let oldSettings = this.wifiConfigSettings.get();
             wifiConfigSettings = wifiConfigSettings.clone();
 
-            if ((!oldSettings.enable) && (!wifiConfigSettings.enable))
-            {
+            if ((!oldSettings.enable) && (!wifiConfigSettings.enable)) {
                 // no effective change.
                 resolve();
                 return;
             }
-            let countryCodeChanged = wifiConfigSettings.countryCode !== oldSettings.countryCode;
-            if (!wifiConfigSettings.enable)
-            {
+            if (!wifiConfigSettings.enable) {
                 wifiConfigSettings.hasPassword = false;
                 wifiConfigSettings.hotspotName = oldSettings.hotspotName;
             } else {
-                if (!wifiConfigSettings.hasPassword) {
-                    if (wifiConfigSettings.hotspotName === oldSettings.hotspotName && !countryCodeChanged) {
+                if (wifiConfigSettings.countryCode === oldSettings.countryCode
+                    && wifiConfigSettings.channel === oldSettings.channel
+                    && wifiConfigSettings.hotspotName === oldSettings.hotspotName) {
+                    if (!wifiConfigSettings.hasPassword) {
                         // no effective change.
                         resolve();
                         return;
@@ -1488,13 +1483,14 @@ class PiPedalModelImpl implements PiPedalModel {
             }
             // save a  version for the server (potentially carrying a password)
             let serverConfigSettings = wifiConfigSettings.clone();
+            wifiConfigSettings.password = "";
+            this.wifiConfigSettings.set(wifiConfigSettings);
 
-            
+
 
             // notify the server.
             let ws = this.webSocket;
-            if (!ws)
-            {
+            if (!ws) {
                 reject("Not connected.");
                 return;
             }
@@ -1502,29 +1498,28 @@ class PiPedalModelImpl implements PiPedalModel {
                 "setWifiConfigSettings",
                 serverConfigSettings
             )
-            .then(()=> {
-                resolve();
-            })
-            .catch((err) =>{
-                reject(err);
-            });
+                .then(() => {
+                    resolve();
+                })
+                .catch((err) => {
+                    reject(err);
+                });
 
         });
         return result;
     }
 
-    getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>
-    {
-        let result = new Promise<WifiChannel[]>((resolve,reject) => {
+    getWifiChannels(countryIso3661: string): Promise<WifiChannel[]> {
+        let result = new Promise<WifiChannel[]>((resolve, reject) => {
             if (!this.webSocket) {
                 reject("Connection closed.");
                 return;
             }
-            this.webSocket.request<WifiChannel[]>("getWifiChannels",countryIso3661)
-            .then((data) => {
-                resolve(WifiChannel.deserialize_array(data));
-            })
-            .catch((err)=> reject(err));
+            this.webSocket.request<WifiChannel[]>("getWifiChannels", countryIso3661)
+                .then((data) => {
+                    resolve(WifiChannel.deserialize_array(data));
+                })
+                .catch((err) => reject(err));
         });
         return result;
     }

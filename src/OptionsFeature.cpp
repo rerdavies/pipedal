@@ -1,5 +1,20 @@
 #include "pch.h"
 #include "OptionsFeature.hpp"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/util.h"
+#include "lv2/core/lv2_util.h"
+#include "lv2/log/log.h"
+#include "lv2/log/logger.h"
+#include "lv2/midi/midi.h"
+#include "lv2/urid/urid.h"
+#include "lv2/log/logger.h"
+#include "lv2/uri-map/uri-map.h"
+#include "lv2/atom/forge.h"
+#include "lv2/worker/worker.h"
+#include "lv2/patch/patch.h"
+#include "lv2/parameters/parameters.h"
+#include "lv2/units/units.h"
+#include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
 using namespace pipedal;

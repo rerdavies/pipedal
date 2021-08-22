@@ -29,7 +29,7 @@ export type CloseEventHandler = () => void;
 export type OkEventHandler = (pluginUri: string) => void;
 
 const NARROW_DISPLAY_THRESHOLD = 600;
-const FILTER_STORAGE_KEY = "com.twoplay.piddle.load_dlg.filter";
+const FILTER_STORAGE_KEY = "com.twoplay.pipedal.load_dlg.filter";
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement },

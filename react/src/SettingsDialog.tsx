@@ -483,9 +483,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     <div style={{ width: "100%" }}>
                                         {
                                             this.state.restarting ? (
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textSecondary" noWrap>Restarting...</Typography>
+                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textSecondary" noWrap>Rebooting...</Typography>
                                             ) : (
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Restart</Typography>
+                                                <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Reboot</Typography>
                                             )
                                         }
                                     </div>

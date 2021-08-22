@@ -5,6 +5,7 @@
 #include "json.hpp"
 #include <fstream>
 #include "Lv2Log.hpp"
+#include <map>
 
 using namespace pipedal;
 
@@ -716,7 +717,7 @@ void Storage::SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSetting
         copyToStore.hasPassword_ = false;
     }
     copyToStore.password_ = "";
-    copyToStore.rebootRequired_ = true;
+    copyToStore.rebootRequired_ = false;
     if (copyToStore.enable_ && !copyToStore.hasPassword_) 
     {
         copyToStore.hasPassword_ = this->wifiConfigSettings.hasPassword_;

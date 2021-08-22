@@ -11,16 +11,13 @@ template <typename T> class TypeDisplay;
 #include <stdexcept>
 #include <sstream>
 #include <cstdlib>
+#include <map>
 
+#include "lv2/core/lv2.h"
 
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/http.hpp>
-
-// #include <lilv/lilv.h>
+/*
 #include "lv2/atom/atom.h"
 #include "lv2/atom/util.h"
-#include "lv2/core/lv2.h"
 #include "lv2/core/lv2_util.h"
 #include "lv2/log/log.h"
 #include "lv2/log/logger.h"
@@ -34,3 +31,6 @@ template <typename T> class TypeDisplay;
 #include "lv2/parameters/parameters.h"
 #include "lv2/units/units.h"
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
+*/
+
+#define SS(x) ( ((std::stringstream&)(std::stringstream() << x )).str())

@@ -16,6 +16,9 @@
 #include <cstdlib>
 #include "Lv2Log.hpp"
 #include "Lv2SystemdLogger.hpp"
+#include "WifiConfigSettings.hpp"
+#include "SetWifiConfig.hpp"
+#include "SysExec.hpp"
 
 
 using namespace std;
@@ -56,6 +59,7 @@ static void CaptureAccessPoint(const std::string gatewayAddress)
 static void ReleaseAccessPoint(const std::string gatewayAddress)
 {
 }
+
 
 bool setJackConfiguration(uint32_t sampleRate,uint32_t bufferSize,uint32_t numberOfBuffers)
 {
@@ -174,7 +178,22 @@ private:
     {
         int result = -1;
         try {
-            if (startsWith(s,"release_ap "))
+            if (startsWith(s,"WifiConfigSettings "))
+            {
+                std::string json = s.substr(strlen("WifiConfigSettings "));
+                std::stringstream ss(json);
+                WifiConfigSettings settings;
+                try {
+                    json_reader reader(ss);
+                    reader.read(&settings);
+                } catch (const std::exception &e)
+                {
+                    throw PiPedalArgumentException("Invalid arguments.");
+                }
+                pipedal::SetWifiConfig(settings);
+                result = 0;
+
+            } else if (startsWith(s,"release_ap "))
             {
                 std::vector<std::string> argv = tokenize(s);
                 if (argv.size() == 2) {
@@ -197,11 +216,11 @@ private:
 
             } else if (s == "shutdown")
             {
-                result = ::system("/usr/sbin/shutdown -P now");
+                result = SysExec("/usr/sbin/shutdown -P now");
             }
             else if (s == "restart")
             {
-                result = ::system("/usr/sbin/shutdown -r now");
+                result = SysExec("/usr/sbin/shutdown -r now");
             } else if (startsWith(s,"setJackConfiguration "))
             {
                 auto remainder = s.substr(strlen("setJackConfiguration "));

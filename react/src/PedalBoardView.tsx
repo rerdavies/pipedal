@@ -16,8 +16,8 @@ import {
     PedalBoard, PedalBoardItem, PedalBoardSplitItem, SplitType,
 } from './PedalBoard';
 
-const START_PEDALBOARD_ITEM_URI = "uri://two-play/piddle/pedalboard#Start";
-const END_PEDALBOARD_ITEM_URI = "uri://two-play/piddle/pedalboard#End";
+const START_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Start";
+const END_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#End";
 
 const ENABLED_CONNECTOR_COLOR = "#666";
 const DISABLED_CONNECTOR_COLOR = "#CCC";

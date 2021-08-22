@@ -459,7 +459,9 @@ bool PiPedalModel::renamePreset(int64_t clientId, int64_t instanceId, const std:
 void PiPedalModel::setWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings)
 {
     std::lock_guard lock(this->mutex);
-    // xxx Commit to local!
+
+    ShutdownClient::SetWifiConfig(wifiConfigSettings);
+
     this->storage.SetWifiConfigSettings(wifiConfigSettings);
 
     {

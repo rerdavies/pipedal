@@ -3,8 +3,10 @@
 #include <fstream>
 #include <filesystem>
 #include <unordered_set>
-
+#include <arpa/inet.h>
 #include "PiPedalException.hpp"
+#include <cstring>
+#include <fcntl.h>
 
 #define REGDB_MAGIC 0x52474442
 #define REGDB_VERSION 19

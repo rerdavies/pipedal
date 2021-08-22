@@ -486,5 +486,5 @@ int main(int argc, char *argv[])
         Lv2Log::error(e.what());
     }
     Lv2Log::info("PiPedal terminating.");
-    return EXIT_FAILURE; // only exit in response to a signal.
+    return EXIT_SUCCESS; // only exit in response to a signal.
 }
