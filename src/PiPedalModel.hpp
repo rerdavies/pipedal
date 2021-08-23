@@ -126,6 +126,9 @@ public:
 
     void getPresets(PresetIndex*pResult);
     PedalBoard getPreset(int64_t instanceId);
+    void getBank(int64_t instanceId, BankFile*pBank);
+
+    int64_t uploadBank(BankFile&bankFile, int64_t uploadAfter = -1);
     int64_t uploadPreset(const BankFile&bankFile, int64_t uploadAfter = -1);
     void saveCurrentPreset(int64_t clientId);
     int64_t saveCurrentPresetAs(int64_t clientId, const std::string& name,int64_t saveAfterInstanceId = -1);

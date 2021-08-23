@@ -145,7 +145,7 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
 
         handleDownloadPreset() {
             this.handleMoreClose();
-            this.model.download("downloadPreset", this.model.presets.get().selectedInstanceId);
+            this.model.download("downloadPreset", this.state.selectedItem);
         }
         handleUploadPreset() {
             this.handleMoreClose();

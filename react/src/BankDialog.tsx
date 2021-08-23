@@ -12,12 +12,22 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
 import DraggableGrid, { ScrollDirection } from './DraggableGrid';
+import Fade from '@material-ui/core/Fade';
 
 import SelectHoverBackground from './SelectHoverBackground';
 import CloseIcon from '@material-ui/icons/Close';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import EditIcon from '@material-ui/icons/Edit';
 import RenameDialog from './RenameDialog';
+
+import MoreVertIcon from '@material-ui/icons/MoreVert';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
+import DialogEx from './DialogEx';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogActions from '@material-ui/core/DialogActions';
 
 interface BankDialogProps extends WithStyles<typeof styles> {
     show: boolean;
@@ -35,6 +45,8 @@ interface BankDialogState {
 
     filenameDialogOpen: boolean;
     filenameSaveAs: boolean;
+    moreMenuAnchorEl: HTMLElement | null;
+    showDeletePrompt: boolean;
 
 };
 
@@ -101,10 +113,12 @@ const BankDialog = withStyles(styles, { withTheme: true })(
 
         model: PiPedalModel;
 
-
+        refUpload: React.RefObject<HTMLInputElement>;
 
         constructor(props: BankDialogProps) {
             super(props);
+
+            this.refUpload = React.createRef();
             this.model = PiPedalModelFactory.getInstance();
 
             this.handleDialogClose = this.handleDialogClose.bind(this);
@@ -114,17 +128,65 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                 showActionBar: false,
                 selectedItem: banks.selectedBank,
                 filenameDialogOpen: false,
-                filenameSaveAs: false
+                filenameSaveAs: false,
+                moreMenuAnchorEl: null,
+                showDeletePrompt: false
             };
             this.handleBanksChanged = this.handleBanksChanged.bind(this);
             this.handlePopState = this.handlePopState.bind(this);
 
         }
+        onMoreClick(e: React.SyntheticEvent): void {
+            this.setState({ moreMenuAnchorEl: e.currentTarget as HTMLElement })
+        }
 
-        selectItemAtIndex(index: number)
-        {
+        handleDownloadBank() {
+            this.handleMoreClose();
+            this.model.download("downloadBank", this.state.selectedItem);
+        }
+
+        async uploadFiles(fileList: FileList): Promise<number> {
+            let uploadAfter = this.state.selectedItem;
+            try {
+                for (let i = 0; i < fileList.length; ++i) {
+                    uploadAfter = await this.model.uploadBank(fileList[i], uploadAfter);
+                }
+            } catch (error) {
+                this.model.showAlert(error);
+            };
+            return uploadAfter;
+        }
+
+        handleUpload(e: any) {
+            if (!e.target.files) return;
+            if (e.target.files.length === 0) return;
+            var fileList = e.target.files;
+            this.uploadFiles(fileList)
+                .then((newSelection) => {
+                    e.target.value = ""; // clear the file list so we can get another change notice.
+                    this.setState({ selectedItem: newSelection });
+                })
+                .catch(err => {
+                    e.target.value = ""; // clear the file list so we can get another change notice.
+                    this.model.showAlert(err);
+                });
+        }
+        handleUploadBank() {
+            if (this.refUpload.current) {
+                this.refUpload.current.click();
+            }
+            this.handleMoreClose();
+
+        }
+        handleMoreClose(): void {
+            this.setState({ moreMenuAnchorEl: null });
+
+        }
+
+
+        selectItemAtIndex(index: number) {
             let instanceId = this.state.banks.entries[index].instanceId;
-            this.setState({selectedItem: instanceId});
+            this.setState({ selectedItem: instanceId });
         }
         isEditMode() {
             return this.state.showActionBar || this.props.isEditDialog;
@@ -133,46 +195,41 @@ const BankDialog = withStyles(styles, { withTheme: true })(
         handleBanksChanged() {
             let banks = this.model.banks.get();
 
-            if (!banks.areEqual(this.state.banks,false)) // avoid a bunch of peculiar effects if we update while a drag is in progress
+            if (!banks.areEqual(this.state.banks, false)) // avoid a bunch of peculiar effects if we update while a drag is in progress
             {
-                // if we don't have a valid selection, then use the current preset.
-                if (this.state.banks.getEntry(this.state.selectedItem) == null)
-                {
-                    this.setState({  banks: banks, selectedItem: banks.selectedBank});
+                // if we don't have a valid selection, then use the current bank.
+                if (this.state.banks.getEntry(this.state.selectedItem) == null) {
+                    this.setState({ banks: banks, selectedItem: banks.selectedBank });
                 } else {
                     this.setState({ banks: banks });
                 }
-                }
+            }
         }
 
         mounted: boolean = false;
 
         hasHooks: boolean = false;
-    
+
         stateWasPopped: boolean = false;
         handlePopState(e: any): any {
             let state: any = e.state;
-            if (!state || !state.bankDialog)
-            {
+            if (!state || !state.bankDialog) {
                 this.stateWasPopped = true;
                 this.props.onDialogClose();
             }
         }
-    
-        updateBackButtonHooks() : void {
+
+        updateBackButtonHooks(): void {
             let wantHooks = this.mounted && this.props.show;
-            if (wantHooks !== this.hasHooks)
-            {
+            if (wantHooks !== this.hasHooks) {
                 this.hasHooks = wantHooks;
-    
-                if (this.hasHooks)
-                {
+
+                if (this.hasHooks) {
                     this.stateWasPopped = false;
-                    window.addEventListener("popstate",this.handlePopState);
+                    window.addEventListener("popstate", this.handlePopState);
                     // eslint-disable-next-line no-restricted-globals
                     let newState: any = history.state;
-                    if (!newState)
-                    {
+                    if (!newState) {
                         newState = {};
                     }
                     newState.bankDialog = true;
@@ -183,22 +240,20 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                         "#Banks"
                     );
                 } else {
-                    window.removeEventListener("popstate",this.handlePopState);
-                    if (!this.stateWasPopped)
-                    {
+                    window.removeEventListener("popstate", this.handlePopState);
+                    if (!this.stateWasPopped) {
                         // eslint-disable-next-line no-restricted-globals
                         history.back();
                     }
                     // eslint-disable-next-line no-restricted-globals
-                    history.replaceState({},"PiPedal","#");
+                    history.replaceState({}, "PiPedal", "#");
                 }
-    
+
             }
         }
-    
-    
-        componentDidUpdate()
-        {
+
+
+        componentDidUpdate() {
             this.updateBackButtonHooks();
         }
         componentDidMount() {
@@ -215,31 +270,38 @@ const BankDialog = withStyles(styles, { withTheme: true })(
         }
 
         getSelectedIndex() {
-            let instanceId = this.isEditMode() ? this.state.selectedItem: this.state.banks.selectedBank;
+            let instanceId = this.isEditMode() ? this.state.selectedItem : this.state.banks.selectedBank;
             let banks = this.state.banks;
             for (let i = 0; i < banks.entries.length; ++i) {
                 if (banks.entries[i].instanceId === instanceId) return i;
             }
-            return -1; 
+            return -1;
         }
 
         handleDeleteClick() {
             if (!this.state.selectedItem) return;
+            this.setState({ showDeletePrompt: true });
+        }
+        handleDeletePromptClose() {
+            this.setState({ showDeletePrompt: false });
+        }
+        handleDeletePromptOk() {
+            this.handleDeletePromptClose();
+
             let selectedItem = this.state.selectedItem;
             if (selectedItem !== -1) {
                 this.model.deleteBankItem(selectedItem)
-                .then((newSelection: number) => {
-                    this.setState({
-                        selectedItem: newSelection
-                    });
-                })
-                .catch((error) => {
+                    .then((newSelection: number) => {
+                        this.setState({
+                            selectedItem: newSelection
+                        });
+                    })
+                    .catch((error) => {
                         this.model.showAlert(error);
                     });
             }
         }
-        handleDialogClose()
-        {
+        handleDialogClose() {
             this.props.onDialogClose();
         }
 
@@ -258,23 +320,23 @@ const BankDialog = withStyles(styles, { withTheme: true })(
 
 
         mapElement(el: any): React.ReactNode {
-            let presetEntry = el as BankIndexEntry;
+            let bankEntry = el as BankIndexEntry;
             let classes = this.props.classes;
             let selectedItem = this.isEditMode() ? this.state.selectedItem : this.state.banks.selectedBank;
             return (
-                <div key={presetEntry.instanceId} style={{ background: "white" }} >
+                <div key={bankEntry.instanceId} style={{ background: "white" }} >
 
                     <ButtonBase style={{ width: "100%", height: 48 }}
-                        onClick={() => this.handleItemClick(presetEntry.instanceId)}
+                        onClick={() => this.handleItemClick(bankEntry.instanceId)}
                     >
-                        <SelectHoverBackground selected={presetEntry.instanceId === selectedItem} showHover={true} />
+                        <SelectHoverBackground selected={bankEntry.instanceId === selectedItem} showHover={true} />
                         <div className={classes.itemFrame}>
                             <div className={classes.iconFrame}>
                                 <img src="img/ic_bank.svg" className={classes.itemIcon} alt="" />
                             </div>
                             <div className={classes.itemLabel}>
                                 <Typography>
-                                    {presetEntry.name}
+                                    {bankEntry.name}
                                 </Typography>
                             </div>
                         </div>
@@ -292,9 +354,9 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                 selectedItem: newBanks.entries[to].instanceId
             });
             this.model.moveBank(from, to)
-            .catch((error)=> {
-                this.model.showAlert(error);
-            });
+                .catch((error) => {
+                    this.model.showAlert(error);
+                });
         }
 
         getSelectedName(): string {
@@ -313,8 +375,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
             let item = this.state.banks.getEntry(this.state.selectedItem);
             if (!item) return;
             if (item.name !== text) {
-                if (this.state.banks.hasName(text))
-                {
+                if (this.state.banks.hasName(text)) {
                     this.model.showAlert("A bank with that name already exists.");
                 }
                 this.model.renameBank(this.state.selectedItem, text)
@@ -327,17 +388,15 @@ const BankDialog = withStyles(styles, { withTheme: true })(
         }
         handleSaveAsOk(text: string) {
             let item = this.state.banks.getEntry(this.state.selectedItem);
-            if (item) 
-            {
+            if (item) {
                 if (item.name !== text) {
-                    if (this.state.banks.hasName(text))
-                    {
+                    if (this.state.banks.hasName(text)) {
                         this.model.showAlert("A bank with that name already exists.");
                         return;
                     }
                     this.model.saveBankAs(this.state.selectedItem, text)
                         .then((newSelection) => {
-                            this.setState({selectedItem: newSelection});
+                            this.setState({ selectedItem: newSelection });
                         })
                         .catch((error) => {
                             this.onError(error);
@@ -358,6 +417,14 @@ const BankDialog = withStyles(styles, { withTheme: true })(
             this.model?.showAlert(error);
         }
 
+        getSelectedBankName() {
+            try {
+                return this.model.banks.get().getEntry(this.state.selectedItem)!.name;
+            } catch (error) {
+                return "";
+            }
+        }
+
 
 
         render() {
@@ -368,7 +435,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
 
             return (
                 <Dialog fullScreen open={this.props.show}
-                    onClose={() => {  this.handleDialogClose() }} TransitionComponent={Transition}>
+                    onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}>
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <AppBar className={classes.dialogAppBar} style={{ display: this.isEditMode() ? "none" : "block" }} >
@@ -414,14 +481,13 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                                 <Button color="inherit" onClick={() => this.handleRenameClick()}>
                                                     Rename
                                                 </Button>
-                                                <RenameDialog 
-                                                    open={this.state.filenameDialogOpen} 
+                                                <RenameDialog
+                                                    open={this.state.filenameDialogOpen}
                                                     defaultName={this.getSelectedName()}
-                                                    acceptActionName={ this.state.filenameSaveAs?  "SAVE AS": "RENAME"}
+                                                    acceptActionName={this.state.filenameSaveAs ? "SAVE AS" : "RENAME"}
                                                     onClose={() => { this.setState({ filenameDialogOpen: false }) }}
                                                     onOk={(text: string) => {
-                                                        if (this.state.filenameSaveAs)
-                                                        {
+                                                        if (this.state.filenameSaveAs) {
                                                             this.handleSaveAsOk(text);
                                                         } else {
                                                             this.handleRenameOk(text);
@@ -430,8 +496,43 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                                     }
                                                 />
                                                 <IconButton color="inherit" onClick={(e) => this.handleDeleteClick()} >
-                                                    <img src="/img/old_delete_outline_white_24dp.svg" alt="Delete" style={{width: 24, height: 24, opacity: 0.6}} />
+                                                    <img src="/img/old_delete_outline_white_24dp.svg" alt="Delete" style={{ width: 24, height: 24, opacity: 0.6 }} />
                                                 </IconButton>
+                                                <IconButton color="inherit" onClick={(e) => { this.onMoreClick(e) }} >
+                                                    <MoreVertIcon />
+                                                </IconButton>
+                                                <Menu
+                                                    id="more-menu"
+                                                    anchorEl={this.state.moreMenuAnchorEl}
+                                                    keepMounted
+                                                    open={Boolean(this.state.moreMenuAnchorEl)}
+                                                    onClose={() => this.handleMoreClose()}
+                                                    TransitionComponent={Fade}
+                                                >
+                                                    <MenuItem onClick={() => { this.handleDownloadBank(); }} >
+                                                        <ListItemIcon>
+                                                            <img src="img/file_download_black_24dp.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
+                                                        </ListItemIcon>
+                                                        <ListItemText>
+                                                            Download bank
+                                                        </ListItemText>
+
+                                                    </MenuItem>
+                                                    <label htmlFor="bankDialog_UploadInput">
+                                                        <MenuItem onClick={(e) => this.handleUploadBank()}>
+
+
+                                                            <ListItemIcon>
+                                                                <img src="img/file_upload_black_24dp.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
+                                                            </ListItemIcon>
+                                                            <ListItemText>
+                                                                Upload bank
+                                                            </ListItemText>
+
+                                                        </MenuItem>
+                                                    </label>
+                                                </Menu>
+
                                             </div>
                                         )
                                     }
@@ -443,20 +544,44 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                             <DraggableGrid
                                 onLongPress={(item) => this.showActionBar(true)}
                                 canDrag={this.isEditMode()}
-                                onDragStart={(index,x,y)=> {this.selectItemAtIndex(index) } }
+                                onDragStart={(index, x, y) => { this.selectItemAtIndex(index) }}
                                 moveElement={(from, to) => { this.moveElement(from, to); }}
                                 scroll={ScrollDirection.Y}
                                 defaultSelectedIndex={defaultSelectedIndex}
-                                >
+                            >
                                 {
-                                    this.state.banks.entries.map((element) =>
-                                    {
+                                    this.state.banks.entries.map((element) => {
                                         return this.mapElement(element);
                                     })
                                 }
                             </DraggableGrid>
                         </div>
                     </div>
+                    <input
+                        id="bankDialog_UploadInput"
+                        ref={this.refUpload}
+                        type="file"
+                        accept=".piBank"
+                        multiple
+                        onChange={(e) => this.handleUpload(e)}
+                        style={{ display: "none" }}
+                    />
+
+                    <DialogEx tag="deletePrompt" open={this.state.showDeletePrompt} onClose={() => this.handleDeletePromptClose()}>
+                        <DialogContent>
+                                <Typography>Are you sure you want to delete bank '{this.getSelectedBankName()}'?</Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={()=> this.handleDeletePromptClose()} color="primary">
+                                Cancel
+                            </Button>
+                            <Button onClick={()=> this.handleDeletePromptOk()}  color="secondary" >
+                                DELETE
+                            </Button>
+
+                        </DialogActions>
+                    </DialogEx>
+
                 </Dialog >
 
             );

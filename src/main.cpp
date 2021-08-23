@@ -62,8 +62,16 @@ public:
             std::string strInstanceId = request_uri.query("id");
             if (strInstanceId != "")
                 return true;
+        } else if (request_uri.segment(1) == "uploadPreset")
+        {
+            return true;
         }
-        if (request_uri.segment(1) == "uploadPreset")
+        if (request_uri.segment(1) == "downloadBank")
+        {
+            std::string strInstanceId = request_uri.query("id");
+            if (strInstanceId != "")
+                return true;
+        } else if (request_uri.segment(1) == "uploadBank")
         {
             return true;
         }
@@ -99,6 +107,20 @@ public:
         *pContent = s.str();
         *pName = pedalBoard.name();
     }
+    void GetBank(const uri &request_uri, std::string *pName, std::string *pContent)
+    {
+        std::string strInstanceId = request_uri.query("id");
+        int64_t instanceId = std::stol(strInstanceId);
+        BankFile bank;
+        model->getBank(instanceId,&bank);        
+
+
+        std::stringstream s;
+        json_writer writer(s,true); // do what we can to reduce the file size.
+        writer.write(bank);
+        *pContent = s.str();
+        *pName = bank.name();
+    }
 
     virtual void head_response(
         const uri &request_uri,
@@ -118,6 +140,18 @@ public:
                 res.set(http::field::cache_control, "no-cache");
                 res.set(http::field::content_length, content.length());
                 res.set(http::field::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
+                return;
+            } 
+            if (request_uri.segment(1) == "downloadBank")
+            {
+                std::string name;
+                std::string content;
+                GetBank(request_uri, &name, &content);
+
+                res.set(http::field::content_type, "application/octet-stream");
+                res.set(http::field::cache_control, "no-cache");
+                res.set(http::field::content_length, content.length());
+                res.set(http::field::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
                 return;
             } 
             throw PiPedalException("Not found.");
@@ -154,7 +188,20 @@ public:
                 res.set(http::field::content_length, content.length());
                 res.set(http::field::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
                 res.body() = content;
-            } 
+            } else if (request_uri.segment(1) == "downloadBank")
+            {
+                std::string name;
+                std::string content;
+                GetBank(request_uri, &name, &content);
+
+                res.set(http::field::content_type, "application/octet-stream");
+                res.set(http::field::cache_control, "no-cache");
+                res.set(http::field::content_length, content.length());
+                res.set(http::field::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
+                res.body() = content;
+            } else {
+                throw PiPedalException("Not found");
+            }
         }
         catch (const std::exception &e)
         {
@@ -202,6 +249,36 @@ public:
                 res.set(http::field::content_length, result.length());
 
                 res.body() = result;
+            } 
+            else if (request_uri.segment(1) == "uploadBank" ) 
+            {
+                std::string presetBody = req.body();
+                std::stringstream s(presetBody);
+                json_reader reader(s);
+
+                uint64_t uploadAfter = -1;
+                std::string strUploadAfter = request_uri.query("uploadAfter");
+                if (strUploadAfter.length() != 0)
+                {
+                    uploadAfter = std::stol(strUploadAfter);
+                }
+
+                BankFile bankFile;
+                reader.read(&bankFile);
+
+                uint64_t instanceId = model->uploadBank(bankFile,uploadAfter);
+
+                res.set(http::field::content_type, "application/json");
+                res.set(http::field::cache_control, "no-cache");
+                std::stringstream sResult;
+                sResult << instanceId;
+                std::string result = sResult.str();
+                res.set(http::field::content_length, result.length());
+
+                res.body() = result;
+            }
+            else {
+                throw PiPedalException("Not found");
             }
         }
         catch (const std::exception &e)

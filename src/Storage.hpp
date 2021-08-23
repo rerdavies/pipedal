@@ -23,8 +23,8 @@ private:
     static std::string SafeEncodeName(const std::string& name);
     static std::string SafeDecodeName(const std::string& name);
     std::filesystem::path GetPresetsDirectory() const;
-    std::filesystem::path GetIndexFileName();
-    std::filesystem::path GetBankFileName(const std::string & name);
+    std::filesystem::path GetIndexFileName() const;
+    std::filesystem::path GetBankFileName(const std::string & name) const;
     std::filesystem::path GetChannelSelectionFileName();
 
     void LoadBankIndex();
@@ -62,7 +62,9 @@ public:
     void GetPresetIndex(PresetIndex*pResult);
     void SetPresetIndex(const PresetIndex &presetIndex);
     PedalBoard GetPreset(int64_t instanceId) const;
+    void GetBankFile(int64_t instanceId,BankFile*pResult) const;
     int64_t UploadPreset(const BankFile&bankFile, int64_t uploadAfter);
+    int64_t UploadBank(BankFile&bankFile, int64_t uploadAfter);
 
 
     bool LoadPreset(int64_t presetId);

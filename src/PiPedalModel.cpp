@@ -313,6 +313,11 @@ PedalBoard PiPedalModel::getPreset(int64_t instanceId)
     std::lock_guard guard(mutex);
     return this->storage.GetPreset(instanceId);
 }
+void PiPedalModel::getBank(int64_t instanceId, BankFile*pResult)
+{
+    std::lock_guard guard(mutex);
+    this->storage.GetBankFile(instanceId, pResult);
+}
 
 void PiPedalModel::setPresetChanged(int64_t clientId, bool value)
 {
@@ -370,6 +375,14 @@ int64_t PiPedalModel::uploadPreset(const BankFile &bankFile, int64_t uploadAfter
 
     int64_t newPreset = this->storage.UploadPreset(bankFile, uploadAfter);
     firePresetsChanged(-1);
+    return newPreset;
+}
+int64_t PiPedalModel::uploadBank(BankFile &bankFile, int64_t uploadAfter)
+{
+    std::lock_guard(this->mutex);
+
+    int64_t newPreset = this->storage.UploadBank(bankFile, uploadAfter);
+    fireBanksChanged(-1);
     return newPreset;
 }
 

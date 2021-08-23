@@ -704,7 +704,7 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                                 </ListItemIcon>
                                 <ListItemText primary='Settings' />
                             </ListItem>
-                            <ListItem button key='Settings' onClick={() => { this.handleDrawerAboutClick() }}>
+                            <ListItem button key='About' onClick={() => { this.handleDrawerAboutClick() }}>
                                 <ListItemIcon>
                                     <img src="img/help_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
                                 </ListItemIcon>

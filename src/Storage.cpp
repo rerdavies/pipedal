@@ -163,6 +163,7 @@ void Storage::Initialize()
     LoadWifiConfigSettings();
 }
 
+
 void Storage::LoadBank(int64_t instanceId)
 {
     auto indexEntry = this->bankIndex.getBankIndexEntry(instanceId);
@@ -190,11 +191,11 @@ std::filesystem::path Storage::GetChannelSelectionFileName()
 {
     return this->dataRoot / "JackChannelSelection.json";
 }
-std::filesystem::path Storage::GetIndexFileName()
+std::filesystem::path Storage::GetIndexFileName() const
 {
     return this->GetPresetsDirectory() / BANKS_FILENAME;
 }
-std::filesystem::path Storage::GetBankFileName(const std::string &name)
+std::filesystem::path Storage::GetBankFileName(const std::string &name) const
 {
     std::string fileName = SafeEncodeName(name) + BANK_EXTENSION;
     return this->GetPresetsDirectory() / fileName;
@@ -272,6 +273,16 @@ void Storage::CreateBank(const std::string &name)
     SaveBankFile(name, bankFile);
     this->bankIndex.addBank(-1,name);
     this->SaveBankIndex();
+}
+
+void Storage::GetBankFile(int64_t instanceId,BankFile *pBank) const {
+    auto indexEntry = this->bankIndex.getBankIndexEntry(instanceId);
+    auto name = indexEntry.name();
+    std::filesystem::path fileName = GetBankFileName(name);
+    std::ifstream is(fileName);
+    json_reader reader(is);
+    reader.read(pBank);
+    pBank->name(indexEntry.name());
 }
 
 void Storage::LoadBankFile(const std::string &name, BankFile *pBank)
@@ -400,6 +411,7 @@ void Storage::GetPresetIndex(PresetIndex *pResult)
         pResult->presets().push_back(entry);
     }
 }
+
 PedalBoard Storage::GetPreset(int64_t instanceId) const
 {
     for (size_t i = 0; i < currentBank.presets().size(); ++i)
@@ -687,6 +699,40 @@ int64_t  Storage::UploadPreset(const BankFile&bankFile,int64_t uploadAfter)
     this->SaveCurrentBank();
     return lastPreset;
 }
+int64_t  Storage::UploadBank(BankFile&bankFile,int64_t uploadAfter)
+{
+    int64_t lastBank = this->bankIndex.selectedBank();
+    if (uploadAfter != -1)
+    {
+        lastBank = uploadAfter;
+    }
+
+    if (bankFile.presets().size() == 0) {
+        throw PiPedalException("Invalid bank.");
+    }
+    bankFile.updateNextIndex();
+
+    int n = 2;
+    std::string baseName = bankFile.name();
+    while (this->bankIndex.hasName(bankFile.name()))
+    {
+        std::stringstream s;
+        s << baseName << "(" << n++ << ")";
+        bankFile.name(s.str());
+    }
+    std::filesystem::path path = this->GetBankFileName(bankFile.name());
+    std::ofstream f(path);
+    if (!f.is_open()) {
+        throw PiPedalException("Can't write to bank file.");
+    }
+    json_writer writer(f);
+    writer.write(bankFile);
+
+    lastBank = this->bankIndex.addBank(lastBank,bankFile.name());
+    this->SaveBankIndex();
+    return lastBank;
+}
+
 
 void Storage::SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings)
 {

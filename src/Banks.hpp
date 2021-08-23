@@ -93,6 +93,16 @@ public:
         presets_.erase(presets_.begin()+from);
         presets_.insert(presets_.begin()+to,std::move(t));
     }
+    void updateNextIndex() {
+        int64_t t = 0;
+        for (size_t i = 0; i < this->presets_.size(); ++i)
+        {
+            int64_t instanceId = this->presets_[i]->instanceId();
+            if (instanceId > t) t = instanceId;
+
+        }
+        this->nextInstanceId_ = t;
+    }
     int64_t addPreset(const PedalBoard&preset, int64_t afterItem = -1)
     {
         if (hasName(preset.name()))
@@ -220,6 +230,14 @@ public:
     GETTER_SETTER_VEC(entries);
 
     DECLARE_JSON_MAP(BankIndex);
+
+    bool hasName(const std::string&name) const {
+        for (size_t i = 0; i < this->entries_.size(); ++i)
+        {
+            if (this->entries_[i].name() == name) return true;
+        }
+        return false;
+    }
 
     void move(size_t from, size_t to)
     {

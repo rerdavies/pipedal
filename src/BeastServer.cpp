@@ -325,7 +325,7 @@ void handle_request(
                 {
                     return send(server_error(ec.message()));
                 }
-                req.prepare_payload();
+                res.prepare_payload();
                 return send(std::move(res));
             }
             else if (req.method() == http::verb::post)
@@ -341,7 +341,7 @@ void handle_request(
                 res.set(http::field::date, HtmlHelper::timeToHttpDate(time(nullptr)));
                 res.set(http::field::access_control_allow_origin, req[http::field::origin]);
                 requestHandler->post_response(request_uri, req, res, ec);
-                res.keep_alive(req.keep_alive());
+                res.keep_alive(false); // bug in Beast Server -- posted body not reset.
                 if (ec == boost::system::errc::no_such_file_or_directory)
                     return send(not_found(req.target()));
 
@@ -349,7 +349,7 @@ void handle_request(
                 {
                     return send(server_error(ec.message()));
                 }
-                req.prepare_payload();
+                res.prepare_payload();
                 return send(std::move(res));
             }
             return send(bad_request("Unknown HTTP-method"));

@@ -323,6 +323,7 @@ export interface PiPedalModel {
     download(targetType: string, isntanceId: number): void;
 
     uploadPreset(file: File, uploadAfter: number): Promise<number>;
+    uploadBank(file: File, uploadAfter: number): Promise<number>;
 
     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void>;
 
@@ -1423,6 +1424,48 @@ class PiPedalModelImpl implements PiPedalModel {
                     reject("File is too large.");
                 }
                 let url = this.varServerUrl + "uploadPreset";
+                if (uploadAfter && uploadAfter !== -1) {
+                    url += "?uploadAfter=" + uploadAfter;
+                }
+                fetch(
+                    url,
+                    {
+                        method: "POST",
+                        body: file,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                )
+                    .then((response: Response) => {
+                        if (!response.ok) {
+                            reject("Upload failed. " + response.statusText);
+                            return;
+                        } else {
+                            return response.json(); // read the empty body to keep the connection alive.
+                        }
+                    })
+                    .then((json) => {
+                        resolve(json as number);
+                    })
+                    .catch((error) => {
+                        reject("Upload failed. " + error);
+                    })
+                    ;
+            } catch (error) {
+                reject("Upload failed. " + error);
+            }
+        });
+        return result;
+    }
+    uploadBank(file: File, uploadAfter: number): Promise<number> {
+        let result = new Promise<number>((resolve, reject) => {
+            try {
+                console.log("File: " + file.name + " Size: " + file.size);
+                if (file.size > this.maxUploadSize) {
+                    reject("File is too large.");
+                }
+                let url = this.varServerUrl + "uploadBank";
                 if (uploadAfter && uploadAfter !== -1) {
                     url += "?uploadAfter=" + uploadAfter;
                 }
