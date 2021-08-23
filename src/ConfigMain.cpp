@@ -1,3 +1,22 @@
+// Copyright (c) 2021 Robin Davies
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 #include <iostream>
 #include "CommandLineParser.hpp"
 #include "PiPedalException.hpp"
@@ -278,6 +297,7 @@ int main(int argc, char **argv)
     bool install = false;
     bool uninstall = false;
     bool help = false;
+    bool helpError = false;
     bool stop = false, start = false;
     bool enable = false, disable = false, restart = false;
     bool enable_ap = false, disable_ap = false;
@@ -285,20 +305,20 @@ int main(int argc, char **argv)
     std::string prefixOption;
     std::string portOption;
 
-    parser.AddOption("-nopkexec", &nopkexec); // strictly a debugging aid.
-    parser.AddOption("-install", &install);
-    parser.AddOption("-uninstall", &uninstall);
-    parser.AddOption("-stop", &stop);
-    parser.AddOption("-start", &start);
-    parser.AddOption("-enable", &enable);
-    parser.AddOption("-disable", &disable);
-    parser.AddOption("-restart", &restart);
+    parser.AddOption("--nopkexec", &nopkexec); // strictly a debugging aid.
+    parser.AddOption("--install", &install);
+    parser.AddOption("--uninstall", &uninstall);
+    parser.AddOption("--stop", &stop);
+    parser.AddOption("--start", &start);
+    parser.AddOption("--enable", &enable);
+    parser.AddOption("--disable", &disable);
+    parser.AddOption("--restart", &restart);
     parser.AddOption("-h", &help);
     parser.AddOption("--help", &help);
-    parser.AddOption("-prefix", &prefixOption);
-    parser.AddOption("-port", &portOption);
-    parser.AddOption("-enable_ap", &enable_ap);
-    parser.AddOption("-disable_ap", &disable_ap);
+    parser.AddOption("--prefix", &prefixOption);
+    parser.AddOption("--port", &portOption);
+    parser.AddOption("--enable_ap", &enable_ap);
+    parser.AddOption("--disable_ap", &disable_ap);
     try
     {
         parser.Parse(argc, (const char **)argv);
@@ -317,8 +337,8 @@ int main(int argc, char **argv)
             if (parser.Arguments().size() != 4)
             {
                 cout << "Error: "
-                     << "Incorrect number of arguments supplied for -enable_ap option." << endl;
-                return EXIT_FAILURE;
+                     << "Incorrect number of arguments supplied for --enable_ap option." << endl;
+                helpError = true;
             }
         }
         else
@@ -326,7 +346,7 @@ int main(int argc, char **argv)
             if (parser.Arguments().size() != 0)
             {
                 cout << "Error: Unexpected argument : " << parser.Arguments()[0] << endl;
-                return EXIT_FAILURE;
+                helpError = true;
             }
         }
     }
@@ -334,11 +354,13 @@ int main(int argc, char **argv)
     {
         std::string s = e.what();
         cout << "Error: " << s << endl;
-        exit(EXIT_FAILURE);
+        helpError = true;
     }
 
-    if (help)
+    if (help || helpError)
     {
+        if (helpError) cout << endl;
+
         cout << "pipedalconfig - Post-install configuration for pipdeal" << endl
              << "Copyright (c) 2021 Robin Davies. All rights reserved." << endl
              << endl
@@ -346,32 +368,43 @@ int main(int argc, char **argv)
              << "    pipedalconfig [Options...]" << endl
              << "Options: " << endl
              << "    -h --help     Display this message." << endl
-             << "    -install      Install services and service accounts." << endl
-             << "    -prefix       Either /usr/local or /usr as appropriate for the install" << endl
+             << endl
+             << "    --install     Install services and service accounts." << endl
+             << endl
+             << "    --prefix      Either /usr/local or /usr as appropriate for the install" << endl
              << "                  (only valid with the -install option). Usually determined " << endl
              << "                  automatically." << endl
-             << "    -uninstall    Remove installed services and service accounts." << endl
-             << "    -enable       Start the pipedal service at boot time." << endl
-             << "    -disable      Do not start the pipedal service at boot time." << endl
-             << "    -stop         Stop the pipedal services." << endl
-             << "    -start        Start the pipedal services." << endl
-             << "    -restart      Restart the pipedal services." << endl
-             << "    -port         Port for the web server (only with -install option)." << endl
+             << endl
+             << "    --uninstall   Remove installed services and service accounts." << endl
+             << endl
+             << "    --enable      Start the pipedal service at boot time." << endl
+             << endl
+             << "    --disable     Do not start the pipedal service at boot time." << endl
+             << endl
+             << "    --stop        Stop the pipedal services." << endl
+             << endl
+             << "    --start       Start the pipedal services." << endl
+             << endl
+             << "    --restart     Restart the pipedal services." << endl
+             << endl
+             << "    --port        Port for the web server (only with -install option)." << endl
              << "                  Either a port (e.g. '81'), or a full endpoint (e.g.: " << endl
              << "                 '127.0.0.1:8080'). If no address is specified, the " << endl
              << "                  web server will listen on 0.0.0.0 (any)." << endl
-             << "   -enable_ap <country_code> <ssid> <wep_password> <channel>" << endl
+             << endl
+             << "   --enable_ap <country_code> <ssid> <wep_password> <channel>" << endl
              << "                  Enable the Wi-Fi access point. <country_code> is the 2-letter " << endl
              << "                  ISO-3166 country code for the country in which you are currently" << endl
              << "                  located. The country code determines which channels may be legally" << endl
              << "                  used in (and which features need to be enabled) in order to use a " << endl
              << "                  Wi-Fi channel in your legislative regime." << endl
-             << "   -disable_ap    Disabled the Wi-Fi access point." << endl
+             << endl
+             << "   --disable_ap    Disabled the Wi-Fi access point." << endl
              << endl
              << "Description:" << endl
              << "    pipedalconfig performs post-install configuration of pipedal." << endl
              << endl;
-        exit(EXIT_SUCCESS);
+        exit(helpError? EXIT_FAILURE: EXIT_SUCCESS);
     }
     if (portOption.size() != 0 && !install)
     {

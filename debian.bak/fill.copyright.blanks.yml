@@ -1,0 +1,174 @@
+---
+src/react/:
+  license: Expat
+  copyright: 2021, Robin Davies.
+
+react/node_modules/webpack/:
+  license: Expat
+  copyright:  Tobias Koppers @sokra
+
+
+react/node_modules/webpack/node_modules/is-number/:
+  license: Expat
+  copyright: Copyright 2014-2018, Jon Schlinkert
+
+react/node_modules/websocket-driver/:
+  license: Apache-2.0
+  copyright: Copyright 2010-2020 James Coglan
+
+react/node_modules/whatwg-encoding/:
+  license: Expat
+  copyright: © 2016–2018 Domenic Denicola <d@domenic.me>
+
+react/node_modules/whatwg-fetch/:
+  license: Expat
+  copyright: Copyright (c) 2014-2016 GitHub, Inc
+
+react/node_modules/whatwg-url/:  
+  license: Expat
+  copyright: Copyright (c) 2015–2016 Sebastian Mayr
+
+react/node_modules/whatwg-mimetype/: 
+  license: Expat
+  copyright: Copyright © 2017–2018 Domenic Denicola <d@domenic.me>
+
+react/node_modules/which-boxed-primitive/:
+  license: Expat
+  copyright: Copyright (c) 2019 Jordan Harband
+
+react/node_modules/which-module/:
+  license: ISC
+  copyright: Copyright (c) 2016, Contributors
+
+react/node_modules/which/:
+  license: ISC
+  copyright: Copyright (c) Isaac Z. Schlueter and Contributors
+
+react/node_modules/word-wrap/:
+  license: Expat
+  copyright: Copyright (c) 2014-2017, Jon Schlinkert
+
+react/node_modules/workbox-background-sync/:
+  license: Expat
+  copyright: Copyright 2018 Google LLC
+
+react/node_modules/workbox-build/:
+  license: Expat
+  copyright: Copyright 2018 Google LLC
+
+react/node_modules/workbox-window/:
+  license: Expat
+  copyright: Copyright 2018, 2019, Google LLC
+
+react/node_modules/workbox-cacheable-response/:
+  license: Expat
+  copyright: Copyright 2018 Google LLC
+
+react/node_modules/workbox-core/:
+  license: Expat
+  copyright: Copyright 2018 Google LLC
+
+react/node_modules/workbox-google-analytics/:
+  license: Expat
+  copyright: Copyright 2018 Google LLC
+
+react/node_modules/workbox-navigation-preload/:
+  license: Expat
+  copyright: Copyright 2018, Google LLC
+
+react/node_modules/workbox-precaching/:
+  license: Expat
+  copyright: 2018, 2019, Google LLC
+    
+react/node_modules/workbox-range-requests/:
+  license: Expat
+
+react/node_modules/workbox-routing/*:
+  license: Expat
+  copyright: 2018, 2019, Google LLC
+
+react/node_modules/workbox-strategies/:
+  license: Expat
+  copyright: 2018, 2019, Google LLC
+
+react/node_modules/workbox-streams/:
+  license: Expat
+  copyright: 2018, 2019, Google LLC
+
+react/node_modules/workbox-sw/:
+  license: Expat
+  copyright: Copyright 2018 Google LLC
+
+react/node_modules/workbox-webpack-plugin/:
+  license: Expat
+  copyright: Copyright 2018 Google LLC
+
+react/node_modules/worker-farm/:
+  license: Expat
+  copyright: Copyright (c) 2014 LevelUP contributors
+
+react/node_modules/worker-rpc/:
+  license: Expat
+  copyright: Copyright (c) 2016 Christian Speckner <cnspeckn@googlemail.com>
+
+react/node_modules/wrap-ansi/:
+  license: Expat
+  copyright: Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+
+react/node_modules/wrappy/:
+  license: ISC
+  copyright: Copyright (c) Isaac Z. Schlueter and Contributors
+
+react/node_modules/write-file-atomic/:
+  license: ISC
+  copyright: Copyright (c) 2015, Rebecca Turner
+
+react/node_modules/ws/:
+  license: Expat
+  copyright: Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com>
+
+react/node_modules/xml-name-validator/:
+  license: Apache-2.0
+
+react/node_modules/xmlchars/:
+  license: Expat
+  copyright: Louis-Dominique Dubeau and contributors to xmlchars
+
+react/node_modules/xtend/:
+  license: Expat
+  copyright: Copyright (c) 2012-2014 Raynos.
+ 
+react/node_modules/y18n/:
+  license: ISC
+  copyright: Copyright (c) 2015, Contributors
+
+react/node_modules/yallist/:
+  license: ISC
+  copyright: Copyright (c) Isaac Z. Schlueter and Contributors
+
+react/node_modules/yaml/:
+  license: ISC
+  copyright: Copyright 2018 Eemeli Aro <eemeli@gmail.com>
+
+react/node_modules/yargs-parser/:  
+  license: (Expat)
+  copyright: 2010, James Halliday (mail@substack.net)
+
+src/Lv2EventBufferWriter.hpp:
+  license: ISC
+  copyright: Copyright 2008-2014 David Robillard <d@drobilla.net>
+
+react/node_modules/webpack/node_modules/serialize-javascript/:
+  license:  BSD-3-clause
+  copyright: 2014, Yahoo! Inc.
+
+react/node_modules/webpack/node_modules/to-regex-range/:
+  copyright: 2014-2018, Jon Schlinkert
+  license: Expat
+ 
+react/node_modules/workbox-build/node_modules/source-map/:
+  copyright: 2009-2011, 2014, Mozilla Foundation and contributors
+  license: BSD-2-clause
+
+
+

@@ -1,111 +1,62 @@
+// Copyright (c) 2021 Robin Davies
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 #pragma once
 
-// =============================================================================
-// deferred_call:
-// --------------
-// This struct enables us to implement deferred function calls simply in
-// the defer() function below.  It forces a given function to automatically
-// be called at the end of scope using move-only semantics.  Most
-// commonly, the given function will be a lambda but that is not required.
-// See the defer() function (below) for more on this
-// =============================================================================
 template <typename FUNC>
-struct deferred_call
+class deferred_call
 {
-    // Disallow assignment and copy
-
-
-    deferred_call(const deferred_call& that) = delete;
-    deferred_call& operator=(const deferred_call& that) = delete;
-
-    // Pass in a lambda
-
+private:
+    deferred_call(const deferred_call& other) = delete;
+    deferred_call& operator=(const deferred_call& other) = delete;
+public:
     deferred_call(FUNC&& f) 
-        : m_func(std::forward<FUNC>(f)), m_bOwner(true) 
+        : fn(std::forward<FUNC>(f)), owned(true) 
     {
     }
 
-    // Move constructor, since we disallow the copy
-
-    deferred_call(deferred_call&& that)
-        : m_func(std::move(that.m_func)), m_bOwner(that.m_bOwner)
+    deferred_call(deferred_call&& other)
+        : fn(std::move(other.fn)), owned(other.owned)
     {
-        that.m_bOwner = false;
+        other.owned = false;
     }
-
-    // Destructor forces deferred call to be executed
 
     ~deferred_call()
     {
         execute();
     }
 
-    // Prevent the deferred call from ever being invoked
-
-    bool cancel()
-    {
-        bool bWasOwner = m_bOwner;
-        m_bOwner = false;
-        return bWasOwner;
-    }
-
-    // Cause the deferred call to be invoked NOW
-
     bool execute()
     {
-        const auto bWasOwner = m_bOwner;
-
-        if (m_bOwner)
+        if (owned)
         {
-            m_bOwner = false;
-            m_func();
+            owned = false;
+            fn();
+            return true;
         }
-
-        return bWasOwner;
+        return false;
     }
 
 private:
-    FUNC m_func;
-    bool m_bOwner;
+    FUNC fn;
+    bool owned;
 };
-
-
-// -----------------------------------------------------------------------------
-// defer:  Generic, deferred function calls
-// ----------------------------------------
-//      This function template the user the ability to easily set up any 
-//      arbitrary  function to be called *automatically* at the end of 
-//      the current scope, even if return is called or an exception is 
-//      thrown.  This is sort of a fire-and-forget.  Saves you from having
-//      to repeat the same code over and over or from having to add
-//      exception blocks just to be sure that the given function is called.
-//
-//      If you wish, you may cancel the deferred call as well as force it
-//      to be executed BEFORE the end of scope.
-//
-// Example:
-//      void Foo()
-//      {
-//          auto callOnException  = defer([]{ SomeGlobalFunction(); });
-//          auto callNoMatterWhat = defer([pObj](pObj->SomeMemberFunction(); });
-//
-//          // Do dangerous stuff that might throw an exception ...
-//
-//          ...
-//          ... blah blah blah
-//          ...
-//
-//          // Done with dangerous code.  We can now...
-//          //      a) cancel either of the above calls (i.e. call cancel()) OR
-//          //      b) force them to be executed (i.e. call execute()) OR
-//          //      c) do nothing and they'll be executed at end of scope.
-//
-//          callOnException.cancel();    // no exception, prevent this from happening
-//
-//          // End of scope,  If we had not canceled or executed the two
-//          // above objects, they'd both be executed now.
-//      }
-// -----------------------------------------------------------------------------
 
 template <typename F>
 deferred_call<F> defer(F&& f)

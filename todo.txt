@@ -61,6 +61,7 @@ add pipedal.local to etc/hosts.
 Dependents:
 
 libnl-3-dev libnl-genl-3-dev
+libnl-3-200 libnl-genl-3-200
 
 
 

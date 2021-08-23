@@ -1,0 +1,41 @@
+---
+ignore:
+  pattern:
+  - /.cache/
+  - /react/public/
+  - /debian/
+  - /build/
+  - /CMakeFiles/
+  - /test/
+  - react/src/react-app-env.d.ts
+  - react/src/reportWebVitals.ts
+  - react/src/setupTests.ts
+  - /usr/share/perl5/Dpkg/Copyright/Scanner.pm
+
+  suffixes:
+  - generic
+  - rst
+  - jpg
+  - png
+  - txt
+  - install
+  - M
+  - json
+  - m4
+  - map
+  - ico
+  - woff2
+  - svg
+  - mjs
+  - d.ts
+  - yml
+  - jshintrc
+  - editorConfig
+  - lcl
+  - lock
+  - service
+  - eslintignore
+  - eslintrc
+  - nycrc
+  - flow
+  - bundle.js

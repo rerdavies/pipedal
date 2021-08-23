@@ -22,6 +22,9 @@ set (REACT_BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/build/react/build/)
 install(
     DIRECTORY config/ DESTINATION /etc/pipedal/config
 )
+install(   
+     FILES ${PROJECT_SRC_DIR}/debian/copyright DESTINATION /usr/share/doc/pipedal/copyright
+)
 install (
     DIRECTORY ${REACT_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
 )
@@ -39,11 +42,25 @@ install(CODE
 )
 
 install(
-    CODE "execute_process(COMMAND ${CMAKE_INSTALL_PREFIX}/bin/pipedalconfig -install)"
+    CODE "execute_process(COMMAND ${CMAKE_INSTALL_PREFIX}/bin/pipedalconfig --install)"
 )
 
 
-
+set(CPACK_GENERATOR "DEB")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Robin Davies<rerdavies@gmail.com") # required
+set(CPACK_PACKAGE_VENDOR "Robin Davies")
+set(CPACK_PACKAGE_VERSION_PATCH 1)
+set(CPACK_PACKAGE_DESCRIPTION "IoT guitar effect pedal for Raspberry Pi, with phone-friendly web interface.")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IoT guitar effect for Raspberry Pi")
+set(CPACK_DEBIAN_PACKAGE_SECTION non-free/sound)
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_PREDEPENDS hostapd)
+set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
+set(CPACK_PACKAGING_INSTALL_PREFIX /usr/local)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst")
+
+
 include(CPack)

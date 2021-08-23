@@ -1,0 +1,1 @@
+cpack -G DEB -C Release -config build/CPackConfig.cmake pipedal
