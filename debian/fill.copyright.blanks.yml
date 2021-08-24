@@ -170,5 +170,12 @@ react/node_modules/workbox-build/node_modules/source-map/:
   copyright: 2009-2011, 2014, Mozilla Foundation and contributors
   license: BSD-2-clause
 
+react/node_modules/atob/:
+  copyright: 2012-2018, AJ ONeal
+  license:  Apache-2.0 or Expat
+
+
+
+
 
 

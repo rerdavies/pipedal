@@ -283,23 +283,27 @@ public:
     {
         this->CRLF = compressed? "" : "\r\n";
     }
+    void write(long long value)
+    {
+        os << value;
+    }
+    void write(unsigned long long value)
+    {
+        os << value;
+    }
     void write(long value)
     {
         os << value;
     }
-    void write(int64_t value)
+    void write(unsigned long value)
     {
         os << value;
     }
-    void write(uint64_t value)
+    void write(int value)
     {
         os << value;
     }
-    void write(int32_t value)
-    {
-        os << value;
-    }
-    void write(uint32_t value)
+    void write(unsigned int value)
     {
         os << value;
     }
@@ -356,7 +360,7 @@ public:
             {
                 write(value[0]);
             }
-            for (int i = 1; i < value.size(); ++i)
+            for (size_t i = 1; i < value.size(); ++i)
             {
                 os << ",";
                 write(value[i]);
@@ -367,7 +371,7 @@ public:
             os << "[" << CRLF;
             indent_level += TAB_SIZE;
             bool first = true;
-            for (int i = 0; i < value.size(); ++i)
+            for (size_t i = 0; i < value.size(); ++i)
             {
                 if (!first)
                 {
@@ -682,27 +686,37 @@ public:
         skip_whitespace();
         *value = read_boolean();
     }
+    void read(int *value) {
+        skip_whitespace();
+        is_ >> *value;
+        if (is_.fail()) throw PiPedalException("Invalid format.");
+    }
     void read(long*value)
     {
         is_ >> *value;
         if (is_.fail()) throw PiPedalException("Invalid format.");
     }
-    void read(int32_t *value) {
+    void read(long long*value) {
         skip_whitespace();
         is_ >> *value;
         if (is_.fail()) throw PiPedalException("Invalid format.");
     }
-    void read(int64_t*value) {
+    void read(int *value) {
         skip_whitespace();
         is_ >> *value;
         if (is_.fail()) throw PiPedalException("Invalid format.");
     }
-    void read(uint32_t *value) {
-        skip_whitespace();
+    void read(unsigned int*value)
+    {
         is_ >> *value;
         if (is_.fail()) throw PiPedalException("Invalid format.");
     }
-    void read(uint64_t*value) {
+    void read(unsigned long*value)
+    {
+        is_ >> *value;
+        if (is_.fail()) throw PiPedalException("Invalid format.");
+    }
+    void read(unsigned long long*value) {
         skip_whitespace();
         is_ >> *value;
         if (is_.fail()) throw PiPedalException("Invalid format.");

@@ -74,7 +74,7 @@ public:
 };
 
 class PedalBoardItem: public JsonWritable {
-    long instanceId_ = 0;
+    int64_t instanceId_ = 0;
     std::string uri_;
     std::string pluginName_;
     bool isEnabled_ = true;
