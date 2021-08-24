@@ -80,16 +80,28 @@ PiPedal has only been tested on Raspbian. But we will gladly accept pull request
 To build PiPedal, a Raspberry Pi 4B, with at least 4GB of memory is recommended. You should be able to cross-compile PiPedal easily enough,
 but we do not currently provide support for this. Consult CMake documentation on how to cross-compile source.
 
+Run the following commands to install build tools required by the PiPedal build.
+
+    # install CMake
+    sudo apt update
+    sudo apt install cmake 
+
+    # install NodeJS lastest LTS release.
+    curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+
+
 Run the following commands to install dependent components required by the PiPedal build.
 
     sudo apt update
-    sudo apt install liblilv-dev libboost-dev libjack-jack2-dev
+    sudo apt install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libboost-all-dev
 
 The PiPedal build process also requires version 14 or later of `node.js`. Type `node --version` to see if you have a version 
 of `node.js` installed already. Otherwise run the following commands as root to install the v14.x lts version of `node.js`: 
 
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
     apt-get install -y nodejs
+
 
 ### Building PiPedal
 
@@ -100,7 +112,7 @@ itself, build commands should appear on the bottom line of the Visual Studio Cod
 To install PiPedal, run a full non-debug build using Visual Studio Code, and then run the following command 
 in the root project directory:
 
-    sudo ./install
+    sudo ./init
 
 If you are using a different development environment, you can build the project by running the following 
 command in the root project directory.

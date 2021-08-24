@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(pipedal VERSION 0.1.0)
 
 include(CTest)

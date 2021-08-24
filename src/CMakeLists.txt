@@ -1,5 +1,5 @@
 set(VERBOSE true)
-cmake_minimum_required(VERSION 3.19.0)
+cmake_minimum_required(VERSION 3.16.0)
 
 
 include(FindPkgConfig)
@@ -16,7 +16,7 @@ include(FindPkgConfig)
 # nlgenl-3 library.
 execute_process(COMMAND ls /usr/include/libnl3/netlink/netlink.h RESULT_VARIABLE LNL3_MISSING OUTPUT_QUIET ERROR_QUIET)
 if(LNL3_MISSING)
-    message(ERROR " Need to: sudo apt get libnl-3-dev libnl-genl-3-dev ")
+    message(ERROR " Need to: sudo apt install libnl-3-dev libnl-genl-3-dev ")
 endif()
 set(LIBNL3_INCLUDE_DIRS /usr/include/libnl3)
 set(LIBNL3_LIBRARIES nl-3 nl-genl-3)

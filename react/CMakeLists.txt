@@ -7,7 +7,7 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
    set(BUILD_REACT "echo")
    set(BUILD_REACT_ARGS Skipping react debug build)
 else()
-    set(BUILD_REACT ${NPM_COMMAND})
+    set(BUILD_REACT npm)
     set(BUILD_REACT_ARGS run build)
 endif()
 
