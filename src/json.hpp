@@ -701,11 +701,6 @@ public:
         is_ >> *value;
         if (is_.fail()) throw PiPedalException("Invalid format.");
     }
-    void read(int *value) {
-        skip_whitespace();
-        is_ >> *value;
-        if (is_.fail()) throw PiPedalException("Invalid format.");
-    }
     void read(unsigned int*value)
     {
         is_ >> *value;
