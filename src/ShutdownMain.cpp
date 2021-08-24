@@ -119,11 +119,13 @@ private:
     std::string response;
 
 public:
-    Reader(io_service &ios)
+    template <typename T>  // either execution_context (boost 1.74) or io_context (boost 1.63)
+    Reader(T &ios)
         : socket(ios)
     {
     }
-    static std::shared_ptr<Reader> Create(io_service &ios)
+    template <typename T>  // either execution_context (boost 1.74) or io_context (boost 1.63)
+    static std::shared_ptr<Reader> Create(T &ios)
     {
         return std::make_shared<Reader>(ios);
     }
