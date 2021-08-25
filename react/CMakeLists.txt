@@ -13,6 +13,7 @@ endif()
 
 set (BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/build/react/build)
 
+
 add_custom_command(
     OUTPUT ${BUILD_DIRECTORY}/index.html
     COMMAND ${BUILD_REACT}

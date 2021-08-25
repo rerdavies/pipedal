@@ -12,6 +12,7 @@ import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/s
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import Divider from '@material-ui/core/Divider';
 import JackHostStatus from './JackHostStatus';
+import {PiPedalError} from './PiPedalError';
 
 
 interface AboutDialogProps extends WithStyles<typeof styles> {
@@ -23,6 +24,8 @@ interface AboutDialogProps extends WithStyles<typeof styles> {
 
 interface AboutDialogState {
     jackStatus?: JackHostStatus;
+
+    openSourceNotices: string;
 };
 
 
@@ -90,16 +93,17 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
     class extends Component<AboutDialogProps, AboutDialogState> {
 
         model: PiPedalModel;
-
+        refNotices: React.RefObject<HTMLDivElement>;
 
 
         constructor(props: AboutDialogProps) {
             super(props);
             this.model = PiPedalModelFactory.getInstance();
-
+            this.refNotices = React.createRef();
             this.handleDialogClose = this.handleDialogClose.bind(this);
             this.state = {
-                jackStatus: undefined
+                jackStatus: undefined,
+                openSourceNotices: ""
 
             };
         }
@@ -134,10 +138,37 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
             }
         }
 
+        startFossRequest()
+        {
+            if (this.state.openSourceNotices === "")
+            {
+                fetch("var/notices.txt")
+                .then((request)=>
+                {
+                    if (!request.ok)
+                    {
+                        throw new PiPedalError("notices request failed.");
+                    }
+                    return request.text();
+                })
+                .then((text) => {
+                    if (this.mounted)
+                    {
+                        this.setState({ openSourceNotices: text});
+                    }
+            
+                })
+                .catch((err) => {
+                    // ok in debug builds. File doesn't get placed until install time.
+                    console.log("Failed to fetch open-source notices. " + err);
+                });
+            }
+        }
 
         componentDidMount() {
             this.mounted = true;
             this.updateNotifications();
+            this.startFossRequest();
         }
         componentWillUnmount() {
             this.mounted = false;
@@ -175,10 +206,10 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                         </div>
                         <div style={{
                             flex: "1 1 auto", position: "relative", overflow: "hidden",
-                            overflowX: "hidden", overflowY: "auto", margin: 22
+                            overflowX: "hidden", overflowY: "auto" 
                         }}
                         >
-                            <div>
+                            <div style={{margin: 24}}>
                                 <Typography display="block" variant="h6" color="textPrimary">
                                     PiPedal <span style={{fontSize: "0.7em"}}>
                                         {(this.model.serverVersion? this.model.serverVersion.serverVersion : "")
@@ -201,12 +232,8 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                                 <Typography display="block" variant="caption"  >
                                     LEGAL NOTICES
                                 </Typography>
-                                <Typography display="block" variant="caption" style={{paddingTop: 12, paddingBottom: 12}} >
-                                    Pi Pedal uses the following open-source components.
-                                </Typography>
-                                <Typography display="block" variant="caption" style={{paddingTop: 12, paddingBottom: 12}} >
-                                    TBD
-                                </Typography>
+                                <div  dangerouslySetInnerHTML={{__html: this.state.openSourceNotices}}>
+                                </div>
 
                             </div>
                         </div>

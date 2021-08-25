@@ -47,7 +47,8 @@ public:
 
     static std::string Rfc5987EncodeFileName(const std::string&name);
 
-    static std::string SafeFileName(const std::string name);
+    static std::string SafeFileName(const std::string &name);
+    static std::string HtmlEncode(const std::string& text);
 
 };
 

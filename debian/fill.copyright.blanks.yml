@@ -1,4 +1,8 @@
 ---
+/:
+  license: Expat
+  copyright: 2021, Robin Davies.
+
 src/react/:
   license: Expat
   copyright: 2021, Robin Davies.
@@ -174,8 +178,54 @@ react/node_modules/atob/:
   copyright: 2012-2018, AJ ONeal
   license:  Apache-2.0 or Expat
 
+react/node_modules/fs.realpath/old.js:
+  copyright: Copyright Joyent, Inc. and other Node contributors.
+  license:  Expat
+  
 
+react/node_modules/fs.realpath/:
+  copyright: Copyright (c) Isaac Z. Schlueter and Contributors
+  license:  ISC
 
+react/node_modules/glob/:
+  license: CC-BY-SA-4.0 or ISC
 
+debian/:
+  skip: 1
 
+~/src/pipedal/react/node_modules/indefinite-observable/AUTHORS:
+  skip: 1
+
+react/node_modules/node-notifier/vendor/snoreToast/:
+   license: LGPL-3
+
+react/node_modules/sockjs-client/AUTHORS:
+  skip: 1
+
+react/node_modules/terser/bin/:
+  skip: 1
+
+react/node_modules/unquote/:
+  license: Expat
+
+react/node_modules/css-select/:
+  license: BSD-2-clause
+
+react/node_modules/css-what/:
+  license: BSD-2-clause
+
+react/node_modules/dom-serializer/:
+  license: BSD-2-clause
+
+react/node_modules/domelementtype/:
+  license: BSD-2-clause
+
+react/node_modules/domelementtype/:
+  license: BSD-2-clause
+
+react/node_modules/domelementtype/:
+  license: BSD-2-clause
+
+react/node_modules/domutils/:
+  license: BSD-2-clause
 

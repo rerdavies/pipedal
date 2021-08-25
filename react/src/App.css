@@ -1,1 +1,14 @@
-
+.fossCopyrights P {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+.fossCopyrights {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+.fossLicense {
+    padding-left: 36px;
+    border-bottom: 1px #CCC solid
+}

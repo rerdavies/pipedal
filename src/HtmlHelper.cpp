@@ -221,7 +221,7 @@ std::string HtmlHelper::Rfc5987EncodeFileName(const std::string&name)
 
 const std::string SF_SPECIALS = " <>@;:\"\'/[]?=";
 
-std::string HtmlHelper::SafeFileName(const std::string name)
+std::string HtmlHelper::SafeFileName(const std::string &name)
 {
     std::stringstream s;
     for (char c : name)
@@ -239,6 +239,22 @@ std::string HtmlHelper::SafeFileName(const std::string name)
     return s.str();
 }
 
+std::string HtmlHelper::HtmlEncode(const std::string& text)
+{
+    std::stringstream os;
+    for (char c: text)
+    {
+        switch(c)
+        {
+            case '<': os << "&lt;"; break;
+            case '>': os << "&gt;"; break;
+            case '&': os << "&amp;"; break;
+            default: os << c; break;
+
+        }
+    }
+    return os.str();
+}
 
 
 

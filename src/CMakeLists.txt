@@ -30,7 +30,7 @@ endif()
 
 pkg_check_modules(LILV_0 "lilv-0")
 if(!LILV_0_FOUND)
-  message(ERROR "lilv-0 package not installed.")
+  message(ERROR "liblilv-dev package not installed.")
 else()
   message(STATUS "LILV_0_LIBRARIES: ${LILV_0_LIBRARIES}")
   message(STATUS "LILV_0_INCLUDE_DIRS: ${LILV_0_INCLUDE_DIRS}")
@@ -121,7 +121,7 @@ configure_file(config.hpp.in config.hpp)
 add_executable(pipedald ${PIPEDAL_SOURCES} main.cpp 
     )
 
-include_directories( ${PiPedal_SOURCE_DIR}/. ../build/src) 
+include_directories( ${pipedald_SOURCE_DIR}/. ../build/src) 
 
 target_precompile_headers(pipedald PRIVATE pch.h)
 
@@ -144,7 +144,7 @@ add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
     )
 
 configure_file(config.hpp.in config.hpp)
-include_directories( ${PiPedal_SOURCE_DIR}/. ../build/src) 
+include_directories( ${pipedald_SOURCE_DIR}/. ../build/src) 
 
 target_precompile_headers(pipedaltest PRIVATE pch.h)
 
@@ -170,7 +170,8 @@ add_executable(pipedalconfig json.cpp json.hpp
     SetWifiConfig.hpp SetWifiConfig.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     SysExec.hpp SysExec.cpp
-)
+    asan_options.cpp
+    )
 
 target_link_libraries(pipedalconfig PRIVATE pthread atomic stdc++fs
     )
@@ -183,9 +184,38 @@ add_executable(pipedalshutdownd ShutdownMain.cpp CommandLineParser.hpp
     SetWifiConfig.hpp SetWifiConfig.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp    
     SysExec.hpp SysExec.cpp
-
+    asan_options.cpp
     )
 target_link_libraries(pipedalshutdownd PRIVATE pthread atomic stdc++fs systemd)
+
+
+add_executable(processcopyrights copyrightMain.cpp
+    CommandLineParser.hpp 
+    PiPedalException.hpp 
+    HtmlHelper.hpp HtmlHelper.cpp
+    asan_options.cpp    )
+target_link_libraries(processcopyrights PRIVATE stdc++fs)
+
+set (REACT_BUILD_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/react/build/)
+set (REACT_NOTICES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../build/src/notices.txt)
+set (DEBIAN_COPYRIGHT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../debian/copyright)
+
+# generate Copyright section of settings page.
+
+add_custom_command(OUTPUT ${REACT_NOTICES_FILE} 
+    COMMAND "$<TARGET_FILE:processcopyrights>"
+        --output ${REACT_NOTICES_FILE} 
+        --projectCopyright ${DEBIAN_COPYRIGHT_FILE} 
+        liblilv-0-0 libboost-system1.67-dev libnl-3-dev libnl-3-dev  lv2-dev
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ${DEBIAN_COPYRIGHT_FILE} "$<TARGET_FILE:processcopyrights>"
+    COMMENT "Updating copyright notices."
+)
+
+add_custom_target (
+    CopyrightBuild ALL
+    DEPENDS ${REACT_NOTICES_FILE} 
+)
 
 
 install (TARGETS pipedalconfig pipedald pipedalshutdownd DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

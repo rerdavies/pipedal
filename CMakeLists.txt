@@ -18,16 +18,19 @@ add_subdirectory("src")
 
 set (REACT_BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/build/react/build/)
 
+# install
 
 install(
     DIRECTORY config/ DESTINATION /etc/pipedal/config
 )
 install(   
-     FILES ${PROJECT_SRC_DIR}/debian/copyright DESTINATION /usr/share/doc/pipedal/copyright
+     FILES ${PROJECT_SOURCE_DIR}/debian/copyright DESTINATION /usr/share/doc/pipedal/copyright
 )
 install (
     DIRECTORY ${REACT_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
 )
+install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
+    DESTINATION /etc/pipedal/react/var/)
 
 install (FILES  ${PROJECT_SOURCE_DIR}/src/template.service 
                 ${PROJECT_SOURCE_DIR}/src/templateShutdown.service 

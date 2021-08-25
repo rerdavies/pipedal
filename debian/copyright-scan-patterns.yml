@@ -1,16 +1,33 @@
 ---
+check:
+  pattern:
+  - license.*
+  - LICENSE.*
+  - license
+  - LICENSE
+
 ignore:
   pattern:
   - /.cache/
   - /react/public/
   - /debian/
+  - /source-map/
   - /build/
   - /CMakeFiles/
+  - /
   - /test/
+  - /atob/
   - react/src/react-app-env.d.ts
   - react/src/reportWebVitals.ts
   - react/src/setupTests.ts
   - /usr/share/perl5/Dpkg/Copyright/Scanner.pm
+  - react/node_modules/glob/
+  - react/node_modules/fs.realpath/
+  - react/node_modules/sax/
+  - react/node_modules/sha.js/
+  - AUTHORS
+  - /debian/copyright/
+  
 
   suffixes:
   - generic
@@ -39,3 +56,7 @@ ignore:
   - nycrc
   - flow
   - bundle.js
+  - js
+  - tsx
+  - md
+  - yml

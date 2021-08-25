@@ -14,7 +14,7 @@
     "socketServerAddress": "0.0.0.0:80",
 
     /* Number of threads to use for servicing websockets */
-    "threads" :  5,
+    "threads" :  10,
 
     "logHttpRequests": false,
     /* { None=0,Error =1,Warning =2,Info = 3, Debug=4} */

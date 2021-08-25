@@ -3,3 +3,4790 @@ Upstream-Name: pipedal
 Upstream-Contact: Robin Davies <rerdavies@gmail.com>
 Source: https://www.example.com/software/project
 
+Files: *
+Copyright: 2021, Robin Davies
+License: Expat
+
+Files: src/*
+Copyright: 2021, Robin Davies
+License: Expat
+
+
+Files: react/src
+Copyright: 2020, Robin Davies.
+License: Expat
+
+Files: src/Lv2EventBufferWriter.hpp
+Copyright: 2008-2014, David Robillard <d@drobilla.net>
+    2021, Robin Davies
+License: ISC and Expat
+
+Files: react/node_modules/@babel/*
+Copyright: 2014, -present Sebastian McKenzie and other contributors
+License: Expat
+
+Files: react/node_modules/@babel/core/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/@babel/helper-compilation-targets/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/@babel/helper-define-polyfill-provider/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/@babel/parser/*
+Copyright: 2012-2020, various contributors (see AUTHORS)
+License: Expat
+
+Files: react/node_modules/@babel/plugin-transform-runtime/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/@babel/preset-env/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/@babel/preset-modules/*
+Copyright: 2020, Babel
+License: Expat
+
+Files: react/node_modules/@cnakazawa/*
+Copyright: Copyright 2010-2011 Mikeal Rogers
+License: Apache-2.0
+
+Files: react/node_modules/@emotion/*
+Copyright: Emotion team and other contributors
+License: Expat
+
+Files: react/node_modules/@eslint/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/@eslint/eslintrc/node_modules/ignore/*
+Copyright: 2013, Kael Zhang <i@kael.me>, contributors
+License: Expat
+
+Files: react/node_modules/@istanbuljs/*
+Copyright: 2015, 2016, 2019, Contributors
+License: ISC
+
+Files: react/node_modules/@istanbuljs/load-nyc-config/node_modules/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/@istanbuljs/schema/*
+Copyright: 2019, 2020, CFWare, LLC
+License: Expat
+
+Files: react/node_modules/@jest/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/@jest/console/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/@jest/console/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/@jest/console/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/@jest/core/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/@jest/core/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/@jest/core/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/@jest/core/node_modules/jest-resolve/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/@jest/reporters/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/@jest/reporters/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/@jest/reporters/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/@jest/reporters/node_modules/jest-resolve/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/@jest/reporters/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/@jest/source-map/node_modules/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/@jest/transform/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/@jest/transform/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/@jest/transform/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/@jest/transform/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/@jest/types/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/@jest/types/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/@jest/types/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/@material-ui/*
+Copyright: 2014, Call-Em-All
+License: Expat
+
+Files: react/node_modules/@material-ui/styles/node_modules/*
+Copyright: 2017, 2018, Fredrik Nicol
+License: Expat
+
+Files: react/node_modules/@material-ui/system/node_modules/*
+Copyright: 2017, 2018, Fredrik Nicol
+License: Expat
+
+Files: react/node_modules/@nodelib/*
+Copyright: Denis Malinochkin
+License: Expat
+
+Files: react/node_modules/@npmcli/*
+Copyright: James Halliday (mail@substack.net) and Isaac Z. Schlueter (i@izs.me)
+License: Expat
+
+Files: react/node_modules/@pmmmwh/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/@rollup/*
+Copyright: 2019, RollupJS Plugin Contributors (https:github.com/rollup/plugins/graphs/contributors)
+License: Expat
+
+Files: react/node_modules/@rollup/pluginutils/node_modules/*
+Copyright: Microsoft Corporation.
+License: Expat
+
+Files: react/node_modules/@sinonjs/*
+Copyright: 2018, Sinon.JS
+License: BSD-3-clause
+
+Files: react/node_modules/@sinonjs/fake-timers/*
+Copyright: 2010-2014, Christian Johansen, christian@cjohansen.no.
+License: BSD-3-clause
+
+Files: react/node_modules/@surma/*
+Copyright: Copyright 2018 Google Inc.
+License: Apache-2.0
+
+Files: react/node_modules/@svgr/*
+Copyright: 2017, Smooth Code
+License: Expat
+
+Files: react/node_modules/@testing-library/dom/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/@testing-library/dom/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/@testing-library/jest-dom/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/@testing-library/jest-dom/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/@testing-library/jest-dom/node_modules/css/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/@testing-library/jest-dom/node_modules/source-map-resolve/*
+Copyright: 2019, ZHAO Jinxiang
+  2014-2020, Simon Lydell
+License: Expat
+
+Files: react/node_modules/@testing-library/jest-dom/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/@testing-library/react/*
+Copyright: 2017, Kent C. Dodds
+License: Expat
+
+Files: react/node_modules/@testing-library/user-event/*
+Copyright: 2020, Giorgio Polvara
+License: Expat
+
+Files: react/node_modules/@types/*
+Copyright: Microsoft Corporation.
+License: Expat
+
+Files: react/node_modules/@types/uglify-js/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/@types/webpack-sources/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/@types/webpack/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/@typescript-eslint/*
+Copyright: 2019, TypeScript ESLint and other contributors
+License: Expat
+
+Files: react/node_modules/@typescript-eslint/eslint-plugin/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/@typescript-eslint/parser/*
+Copyright: JS Foundation and other contributors, https:js.foundation
+License: BSD-2-clause
+
+Files: react/node_modules/@typescript-eslint/typescript-estree/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/@webassemblyjs/*
+Copyright: 2018, Sven Sauleau <sven@sauleau.com>
+License: Expat
+
+Files: react/node_modules/@webassemblyjs/floating-point-hex-parser/*
+Copyright: 2017, Mauro Bringolf
+License: Expat
+
+Files: react/node_modules/@xtuc/*
+Copyright: info-missing
+License: Apache-2.0
+
+Files: react/node_modules/@xtuc/ieee754/*
+Copyright: 2008, Fair Oaks Labs, Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/accepts/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2013, 2014, Jonathan Ong <me@jongleberry.com>
+License: Expat
+
+Files: react/node_modules/acorn-globals/*
+Copyright: 2013, 2014, Forbes Lindesay
+License: Expat
+
+Files: react/node_modules/acorn-jsx/*
+Copyright: 2012-2017, Ingvar Stepanyan
+License: Expat
+
+Files: react/node_modules/acorn-walk/*
+Copyright: 2012-2020, various contributors (see AUTHORS)
+License: Expat
+
+Files: react/node_modules/acorn/*
+Copyright: 2012-2020, various contributors (see AUTHORS)
+License: Expat
+
+Files: react/node_modules/adjust-sourcemap-loader/*
+Copyright: 2016, 2019, Ben Holloway
+License: Expat
+
+Files: react/node_modules/ajv-errors/*
+Copyright: 2015-2021, Evgeny Poberezkin
+License: Expat
+
+Files: react/node_modules/ajv-keywords/*
+Copyright: 2015-2021, Evgeny Poberezkin
+License: Expat
+
+Files: react/node_modules/ajv/*
+Copyright: 2015-2021, Evgeny Poberezkin
+License: Expat
+
+Files: react/node_modules/alphanum-sort/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/ansi-colors/*
+Copyright: 2015, -present, Brian Woodward.
+License: Expat
+
+Files: react/node_modules/ansi-escapes/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/ansi-escapes/node_modules/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:/sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/ansi-html/*
+Copyright: info-missing
+License: Apache-2.0
+
+Files: react/node_modules/anymatch/*
+Copyright: 2019, Elan Shanker, Paul Miller (https:paulmillr.com)
+License: ISC
+
+Files: react/node_modules/aproba/*
+Copyright: 2015, 2017, Rebecca Turner <me@re-becca.org>
+License: ISC
+
+Files: react/node_modules/argparse/*
+Copyright: 2011-2015, Vitaly Puzrin
+License: Expat
+
+Files: react/node_modules/aria-query/*
+Copyright: 2020 A11yance
+License: Apache-2.0
+
+Files: react/node_modules/arity-n/*
+Copyright: 2015, Christoph Hermann
+License: Expat
+
+Files: react/node_modules/arr-diff/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/arr-flatten/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/arr-union/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/array-flatten/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/array-includes/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/array-unique/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/array.prototype.flat/*
+Copyright: 2017, ECMAScript Shims
+License: Expat
+
+Files: react/node_modules/array.prototype.flatmap/*
+Copyright: 2017, ECMAScript Shims
+License: Expat
+
+Files: react/node_modules/asn1.js/*
+Copyright: 2017, Fedor Indutny
+License: Expat
+
+Files: react/node_modules/asn1.js/node_modules/*
+Copyright: Fedor Indutny, 2015.
+License: Expat
+
+Files: react/node_modules/assert/*
+Copyright: Joyent, Inc. and other Node contributors.
+License: Expat
+
+Files: react/node_modules/assert/node_modules/inherits/*
+Copyright: Isaac Z. Schlueter
+License: ISC
+
+Files: react/node_modules/assign-symbols/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/astral-regex/*
+Copyright: Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
+License: Expat
+
+Files: react/node_modules/async-limiter/*
+Copyright: 2017, Samuel Reed <samuel.trace.reed@gmail.com>
+License: Expat
+
+Files: react/node_modules/async/*
+Copyright: 2010-2018, Caolan McMahon
+License: Expat
+
+Files: react/node_modules/asynckit/*
+Copyright: 2016, Alex Indigo
+License: Expat
+
+Files: react/node_modules/at-least-node/*
+Copyright: 2020, Ryan Zimmerman <opensrc@ryanzim.com>
+License: ISC
+
+Files: react/node_modules/autoprefixer/*
+Copyright: 2013, 2017, Andrey Sitnik <andrey@sitnik.ru>
+License: Expat
+
+Files: react/node_modules/axe-core/*
+Copyright: Copyright (c) 2021 Deque Systems, Inc.
+License: MPL-2.0
+
+Files: react/node_modules/axobject-query/*
+Copyright: Copyright 2020 A11yance
+License: Apache-2.0
+
+Files: react/node_modules/babel-eslint/node_modules/eslint-visitor-keys/*
+Copyright: Contributors
+License: Apache-2.0
+
+
+Files: react/node_modules/babel-eslint/*
+Copyright: Copyright (c) 2014-2016 Sebastian McKenzie <sebmck@gmail.com>
+License: Expat
+
+Files: react/node_modules/babel-extract-comments/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/babel-jest/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/babel-jest/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/babel-loader/*
+Copyright: 2014-2019, Luís Couto <hello@luiscouto.pt>
+License: Expat
+
+Files: react/node_modules/babel-loader/node_modules/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/babel-plugin-dynamic-import-node/*
+Copyright: 2016, Airbnb
+License: Expat
+
+Files: react/node_modules/babel-plugin-istanbul/*
+Copyright: 2016, Istanbul Code Coverage
+License: BSD-3-clause
+
+Files: react/node_modules/babel-plugin-jest-hoist/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/babel-plugin-macros/*
+Copyright: 2017, Kent C. Dodds
+License: Expat
+
+Files: react/node_modules/babel-plugin-macros/node_modules/*
+Copyright: 2015, David Clark
+License: Expat
+
+Files: react/node_modules/babel-plugin-named-asset-import/*
+Copyright: 2013, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/babel-plugin-polyfill-corejs2/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/babel-plugin-polyfill-corejs3/*
+Copyright: 2014, -present Nicolò Ribaudo and other contributors
+License: Expat
+
+Files: react/node_modules/babel-plugin-polyfill-regenerator/*
+Copyright: 2014, -present Nicolò Ribaudo and other contributors
+License: Expat
+
+Files: react/node_modules/babel-plugin-transform-react-remove-prop-types/*
+Copyright: 2015, Nikita Gusakov
+License: Expat
+
+Files: react/node_modules/babel-preset-current-node-syntax/*
+Copyright: 2020, Nicolò Ribaudo and other contributors
+License: Expat
+
+Files: react/node_modules/babel-preset-jest/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/babel-preset-react-app/*
+Copyright: 2014, -present Sebastian McKenzie and other contributors
+License: Expat
+
+Files: react/node_modules/babel-preset-react-app/node_modules/semver/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/babel-runtime/*
+Copyright: 2014-2021, Denis Pushkarev
+License: Expat
+
+Files: react/node_modules/babylon/*
+Copyright: 2012-2020, various contributors (see AUTHORS)
+License: Expat
+
+Files: react/node_modules/base/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/base/node_modules/define-property/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/base64-js/*
+Copyright: 2014, Jameson Little
+License: Expat
+
+Files: react/node_modules/batch/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/bfj/*
+Copyright: 2012-2019, Phil Booth
+License: Expat
+
+Files: react/node_modules/big.js/*
+Copyright: 2018, Michael Mclaughlin
+License: Expat
+
+Files: react/node_modules/binary-extensions/*
+Copyright: 2019, Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com), Paul Miller (https:paulmillr.com)
+License: Expat
+
+Files: react/node_modules/bluebird/*
+Copyright: 2013-2018, Petka Antonov
+License: Expat
+
+Files: react/node_modules/bn.js/*
+Copyright: Fedor Indutny, 2015.
+License: Expat
+
+Files: react/node_modules/body-parser/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/body-parser/node_modules/bytes/*
+Copyright: 2015, Jed Watson <jed.watson@me.com>
+  2012-2014, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/bonjour/*
+Copyright: 2015-2018, Thomas Watson Steen
+License: Expat
+
+Files: react/node_modules/brace-expansion/*
+Copyright: 2013, Julian Gruber <julian@juliangruber.com>
+License: Expat
+
+Files: react/node_modules/braces/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/browser-process-hrtime/*
+Copyright: 2014, kumavis
+License: BSD-2-clause
+
+Files: react/node_modules/browserify-aes/*
+Copyright: 2014-2017, browserify-aes contributors
+License: Expat
+
+Files: react/node_modules/browserify-cipher/*
+Copyright: 2014-2017, Calvin Metcalf & contributors
+License: Expat
+
+Files: react/node_modules/browserify-des/*
+Copyright: 2014-2017, Calvin Metcalf, Fedor Indutny & contributors
+License: Expat
+
+Files: react/node_modules/browserify-rsa/*
+Copyright: 2014-2017, Calvin Metcalf & contributors
+License: Expat
+
+Files: react/node_modules/browserify-sign/*
+Copyright: 2014, 2015, Calvin Metcalf and browserify-sign contributors
+License: ISC
+
+Files: react/node_modules/browserify-sign/node_modules/*
+Copyright: Node.js contributors.
+License: Expat
+
+Files: react/node_modules/browserify-sign/node_modules/safe-buffer/*
+Copyright: Feross Aboukhadijeh
+License: Expat
+
+Files: react/node_modules/browserify-zlib/*
+Copyright: 2014, 2015, Devon Govett <devongovett@gmail.com>
+License: Expat
+
+Files: react/node_modules/browserslist/*
+Copyright: 2014, Andrey Sitnik <andrey@sitnik.ru> and other contributors
+License: Expat
+
+Files: react/node_modules/buffer-from/*
+Copyright: 2016, 2018, Linus Unnebäck
+License: Expat
+
+Files: react/node_modules/buffer-indexof/*
+Copyright: 2013, Ryan Day
+License: Expat
+
+Files: react/node_modules/buffer-xor/*
+Copyright: 2014, 2015, Daniel Cousens
+License: Expat
+
+Files: react/node_modules/buffer/*
+Copyright: Feross Aboukhadijeh, and other contributors.
+License: Expat
+
+Files: react/node_modules/builtin-modules/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/builtin-status-codes/*
+Copyright: Ben Drucker <bvdrucker@gmail.com> (bendrucker.me)
+License: Expat
+
+Files: react/node_modules/bytes/*
+Copyright: 2015, Jed Watson <jed.watson@me.com>
+  2012-2014, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/cacache/*
+Copyright: James Halliday (mail@substack.net) and Isaac Z. Schlueter (i@izs.me)
+License: Expat
+
+Files: react/node_modules/cache-base/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/call-bind/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/camel-case/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/camelcase/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/caniuse-api/*
+Copyright: 2014, Sébastien Balayn
+License: Expat
+
+Files: react/node_modules/caniuse-lite/*
+Copyright: caniuse.com
+License: CC-BY-4.0
+
+Files: react/node_modules/case-sensitive-paths-webpack-plugin/*
+Copyright: 2018, Michael Pratt
+License: Expat
+
+Files: react/node_modules/char-regex/*
+Copyright: 2019, Richie Bendall
+License: Expat
+
+Files: react/node_modules/check-types/*
+Copyright: 2012-2019, Phil Booth
+License: Expat
+
+Files: react/node_modules/chokidar/*
+Copyright: 2012-2019, Paul Miller (https:paulmillr.com), Elan Shanker
+License: Expat
+
+Files: react/node_modules/chownr/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/ci-info/*
+Copyright: 2015-2018, Thomas Watson Steen
+License: Expat
+
+Files: react/node_modules/cipher-base/*
+Copyright: 2017, crypto-browserify contributors
+License: Expat
+
+Files: react/node_modules/cjs-module-lexer/*
+Copyright: 2018-2020, Guy Bedford
+License: Expat
+
+Files: react/node_modules/class-utils/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/clean-css/*
+Copyright: 2017, JakubPawlowicz.com
+License: Expat
+
+Files: react/node_modules/clean-css/node_modules/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/clsx/*
+Copyright: Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
+License: Expat
+
+Files: react/node_modules/co/*
+Copyright: 2014, TJ Holowaychuk &lt;tj@vision-media.ca&gt;
+License: Expat
+
+Files: react/node_modules/coa/*
+Copyright: 2015, -present Sergey Berezhnoy <veged@ya.ru>
+License: Expat
+
+Files: react/node_modules/collect-v8-coverage/*
+Copyright: 2019, Simen Bekkhus
+License: Expat
+
+Files: react/node_modules/collection-visit/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/color-string/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/color/*
+Copyright: 2012, Heather Arthur
+License: Expat
+
+Files: react/node_modules/combined-stream/*
+Copyright: 2011, Debuggable Limited <felix@debuggable.com>
+License: Expat
+
+Files: react/node_modules/commander/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/commondir/*
+Copyright: 2010, 2013, James Halliday (mail@substack.net)
+License: Expat
+
+Files: react/node_modules/component-emitter/*
+Copyright: 2014, Component contributors <dev@component.io>
+License: Expat
+
+Files: react/node_modules/compressible/*
+Copyright: 2015, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2014, Jeremiah Senkpiel <fishrock123@rocketmail.com>
+  2013, Jonathan Ong <me@jongleberry.com>
+License: Expat
+
+Files: react/node_modules/compression/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/concat-map/*
+Copyright: info-missing
+License: Expat
+
+Files: react/node_modules/concat-stream/*
+Copyright: 2013, Max Ogden
+License: Expat
+
+Files: react/node_modules/confusing-browser-globals/*
+Copyright: 2013, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/connect-history-api-fallback/*
+Copyright: 2012, Ben Ripkens http:bripkens.de
+License: Expat
+
+Files: react/node_modules/console-browserify/*
+Copyright: 2012-2014, Raynos.
+License: Expat
+
+Files: react/node_modules/content-disposition/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/content-type/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/convert-source-map/*
+Copyright: 2013, Thorsten Lorenz.
+License: Expat
+
+Files: react/node_modules/cookie/*
+Copyright: 2015, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2012-2014, Roman Shtylman <shtylman@gmail.com>
+License: Expat
+
+Files: react/node_modules/copy-concurrently/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/copy-descriptor/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/core-js-compat/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/core-js-pure/*
+Copyright: 2014-2021, Denis Pushkarev
+License: Expat
+
+Files: react/node_modules/core-js/*
+Copyright: 2014-2021, Denis Pushkarev
+License: Expat
+
+Files: react/node_modules/core-util-is/*
+Copyright: Node.js contributors.
+License: Expat
+
+Files: react/node_modules/cosmiconfig/*
+Copyright: 2015, David Clark
+License: Expat
+
+Files: react/node_modules/create-ecdh/*
+Copyright: 2014-2017, createECDH contributors
+License: Expat
+
+Files: react/node_modules/create-ecdh/node_modules/*
+Copyright: Fedor Indutny, 2015.
+License: Expat
+
+Files: react/node_modules/create-hash/*
+Copyright: 2017, crypto-browserify contributors
+License: Expat
+
+Files: react/node_modules/create-hmac/*
+Copyright: 2017, crypto-browserify contributors
+License: Expat
+
+Files: react/node_modules/cross-spawn/*
+Copyright: 2018, Made With MOXY Lda <hello@moxy.studio>
+License: Expat
+
+Files: react/node_modules/cross-spawn/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/crypto-browserify/*
+Copyright: 2013, Dominic Tarr
+License: Expat
+
+Files: react/node_modules/css-has-pseudo/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/css-loader/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/css-select-base-adapter/*
+Copyright: 2018, Nik Coughlin
+License: Expat
+
+Files: react/node_modules/css-select/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+Files: react/node_modules/css-tree/*
+Copyright: 2016-2019, Roman Dvornov
+License: Expat
+
+Files: react/node_modules/css-tree/node_modules/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/css-vendor/*
+Copyright: 2014, -present Oleg Slobodskoi
+License: Expat
+
+Files: react/node_modules/css-what/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+Files: react/node_modules/css/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/cssnano-preset-default/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/cssnano-util-get-arguments/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/cssnano-util-get-match/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/cssnano-util-raw-cache/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/cssnano-util-same-parent/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/cssnano/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/cssnano/node_modules/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/cssnano/node_modules/cosmiconfig/*
+Copyright: 2015, David Clark
+License: Expat
+
+Files: react/node_modules/csso/*
+Copyright: 2016-2019, Roman Dvornov
+License: Expat
+
+Files: react/node_modules/csso/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/cssstyle/*
+Copyright: Chad Walker
+License: Expat
+
+Files: react/node_modules/csstype/*
+Copyright: 2017, 2018, Fredrik Nicol
+License: Expat
+
+Files: react/node_modules/cyclist/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/d/*
+Copyright: 2011-2020, Mariusz Nowak, @medikoo, medikoo.com
+License: ISC
+
+Files: react/node_modules/damerau-levenshtein/*
+Copyright: 2018, Tadeusz Łazurski
+License: BSD-2-clause
+
+Files: react/node_modules/debug/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/decode-uri-component/*
+Copyright: Sam Verschueren <sam.verschueren@gmail.com> (github.com/SamVerschueren)
+License: Expat
+
+Files: react/node_modules/dedent/*
+Copyright: 2015, Desmond Brand (dmnd@desmondbrand.com)
+License: Expat
+
+Files: react/node_modules/deep-equal/*
+Copyright: 2012-2014, James Halliday <mail@substack.net>, 2009, Thomas Robinson <280north.com>
+License: Expat
+
+Files: react/node_modules/deep-is/*
+Copyright: 2012, James Halliday <mail@substack.net>
+  2012, 2013, Thorsten Lorenz <thlorenz@gmx.de>
+  2009, Thomas Robinson <280north.com>
+License: Expat
+
+Files: react/node_modules/default-gateway/*
+Copyright: silverwind
+License: BSD-2-clause
+
+Files: react/node_modules/define-properties/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/define-property/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/del/node_modules/rimraf/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/delayed-stream/*
+Copyright: 2011, Debuggable Limited <felix@debuggable.com>
+License: Expat
+
+Files: react/node_modules/depd/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/destroy/*
+Copyright: 2014, Jonathan Ong me@jongleberry.com
+License: Expat
+
+Files: react/node_modules/detect-node/*
+Copyright: 2017, Ilya Kantor
+License: Expat
+
+Files: react/node_modules/detect-port-alt/*
+Copyright: 2015, xdf
+License: Expat
+
+Files: react/node_modules/detect-port-alt/node_modules/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/diff-sequences/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/diffie-hellman/*
+Copyright: 2017, Calvin Metcalf
+License: Expat
+
+Files: react/node_modules/diffie-hellman/node_modules/*
+Copyright: Fedor Indutny, 2015.
+License: Expat
+
+Files: react/node_modules/dir-glob/*
+Copyright: Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
+License: Expat
+
+Files: react/node_modules/dns-equal/*
+Copyright: 2015-2018, Thomas Watson Steen
+License: Expat
+
+Files: react/node_modules/dns-packet/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/dns-txt/*
+Copyright: 2015-2018, Thomas Watson Steen
+License: Expat
+
+Files: react/node_modules/doctrine/*
+Copyright: JS Foundation and other contributors, https://js.foundation
+  Copyright (C) 2012, 2011 [Ariya Hidayat](http://ariya.ofilabs.com/about)
+License: Apache-2.0
+
+Files: react/node_modules/dom-converter/*
+Copyright: 2013-2015, Aria Minaei
+License: Expat
+
+Files: react/node_modules/dom-helpers/*
+Copyright: 2015, Jason Quense
+License: Expat
+
+Files: react/node_modules/dom-serializer/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+Files: react/node_modules/domelementtype/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+react/node_modules/domelementtype/*
+
+Files: react/node_modules/domhandler/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+ 
+Files: react/node_modules/domutils/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+Files: react/node_modules/dot-case/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/dotenv-expand/*
+Copyright: 2015, 2016, Scott Motte
+License: BSD-2-clause
+
+Files: react/node_modules/dotenv/*
+Copyright: 2015, 2016, Scott Motte
+License: BSD-2-clause
+
+Files: react/node_modules/duplexer/*
+Copyright: 2012-2014, Raynos.
+License: Expat
+
+Files: react/node_modules/duplexify/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/ee-first/*
+Copyright: 2014, Jonathan Ong me@jongleberry.com
+License: Expat
+
+Files: react/node_modules/ejs/*
+Copyright: Copyright 2112 Matthew Eernisse (mde@fleegix.org)
+License: Apache-2.0
+
+Files: react/node_modules/electron-to-chromium/*
+Copyright: 2018, Kilian Valkhof
+License: ISC
+
+Files: react/node_modules/elliptic/*
+Copyright: Fedor Indutny, 2015.
+License: Expat
+
+Files: react/node_modules/emittery/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/encodeurl/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/end-of-stream/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/enhanced-resolve/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/enquirer/*
+Copyright: 2016, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/entities/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+Files: react/node_modules/error-ex/*
+Copyright: 2015, JD Ballard
+License: Expat
+
+Files: react/node_modules/error-stack-parser/*
+Copyright: 2017, Eric Wendelin and other contributors
+License: Expat
+
+Files: react/node_modules/es-abstract/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/es-to-primitive/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/es5-ext/*
+Copyright: 2011-2020, Mariusz Nowak, @medikoo, medikoo.com
+License: ISC
+
+Files: react/node_modules/es6-iterator/*
+Copyright: 2013-2017, Mariusz Nowak (www.medikoo.com)
+License: Expat
+
+Files: react/node_modules/es6-symbol/*
+Copyright: 2011-2020, Mariusz Nowak, @medikoo, medikoo.com
+License: ISC
+
+Files: react/node_modules/escalade/*
+Copyright: Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
+License: Expat
+
+Files: react/node_modules/escape-html/*
+Copyright: 2015, Tiancheng "Timothy" Gu
+  2015, Andreas Lubbe
+  2012, 2013, TJ Holowaychuk
+License: Expat
+
+Files: react/node_modules/escodegen/*
+Copyright: 2012, Yusuke Suzuki (twitter: @Constellation) and other contributors.
+License: BSD-2-clause
+
+Files: react/node_modules/escodegen/node_modules/*
+Copyright: George Zahariev
+License: Expat
+
+Files: react/public/fonts/*
+Copyright: Google LLC
+License: Apache-2.0
+
+Files: react/node_modules/escodegen/node_modules/estraverse/*
+Copyright: Copyright (C) 2012-2016 [Yusuke Suzuki](http://github.com/Constellation)
+License: BSD-2-clause
+
+Files: react/node_modules/escodegen/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/eslint-config-react-app/*
+Copyright: 2013, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/eslint-import-resolver-node/*
+Copyright: 2015, Ben Mosher
+License: Expat
+
+Files: react/node_modules/eslint-import-resolver-node/node_modules/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/eslint-module-utils/node_modules/debug/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/eslint-plugin-flowtype/*
+Copyright: 2015, 2018, Gajus Kuizinas (http:gajus.com/)
+License: BSD-3-clause
+
+Files: react/node_modules/eslint-plugin-import/*
+Copyright: 2015, Ben Mosher
+License: Expat
+
+Files: react/node_modules/eslint-plugin-import/node_modules/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/eslint-plugin-import/node_modules/debug/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/eslint-plugin-import/node_modules/doctrine/*
+Copyright: Copyright JS Foundation and other contributors, https://js.foundation
+    Copyright (C) 2012, 2011 [Ariya Hidayat](http://ariya.ofilabs.com/about)
+License: Apache-2.0
+
+Files: react/node_modules/eslint-plugin-import/node_modules/resolve/*
+Copyright: 2012, 2013, James Halliday
+License: Expat
+
+Files: react/node_modules/eslint-plugin-jest/*
+Copyright: 2018, Jonathan Kim
+License: Expat
+
+Files: react/node_modules/eslint-plugin-react-hooks/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/eslint-plugin-react/*
+Copyright: 2012, 2013, James Halliday
+License: Expat
+
+Files: react/node_modules/eslint-plugin-react/node_modules/doctrine/*
+Copyright: Copyright JS Foundation and other contributors, https://js.foundation
+    Copyright (C) 2012, 2011 [Ariya Hidayat](http://ariya.ofilabs.com/about)
+License: Apache-2.0
+
+Files: react/node_modules/eslint-plugin-testing-library/*
+Copyright: 2019, Mario Beltrán Alarcón
+License: Expat
+
+Files: react/node_modules/eslint-plugin-testing-library/node_modules/*
+Copyright: 2018, Toru Nagashima
+License: Expat
+
+Files: react/node_modules/eslint-plugin-testing-library/node_modules/@typescript-eslint/*
+Copyright: 2019, TypeScript ESLint and other contributors
+License: Expat
+
+Files: react/node_modules/eslint-plugin-testing-library/node_modules/@typescript-eslint/typescript-estree/*
+Copyright: JS Foundation and other contributors, https:js.foundation
+License: BSD-2-clause
+
+Files: react/node_modules/eslint-plugin-testing-library/node_modules/eslint-visitor-keys/*
+Copyright: Contributors
+License: Apache-2.0
+
+Files: react/node_modules/eslint-scope/*
+Copyright: JS Foundation and other contributors, https:js.foundation / 2012-2013, Yusuke Suzuki (twitter: @Constellation) and other contributors.
+License: BSD-2-clause
+
+Files: react/node_modules/eslint-utils/*
+Copyright: 2018, Toru Nagashima
+License: Expat
+
+Files: react/node_modules/eslint-visitor-keys/*
+Copyright: Contributors
+License: Apache-2.0
+
+Files: react/node_modules/eslint-webpack-plugin/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/@babel/*
+Copyright: 2014, -present Sebastian McKenzie and other contributors
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/cross-spawn/*
+Copyright: 2018, Made With MOXY Lda <hello@moxy.studio>
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/escape-string-regexp/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/eslint-utils/*
+Copyright: 2018, Toru Nagashima
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/eslint-utils/node_modules/*
+Copyright: Contributors
+License: Apache-2.0
+
+Files: react/node_modules/eslint/node_modules/globals/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/ignore/*
+Copyright: 2013, Kael Zhang <i@kael.me>, contributors
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/shebang-command/*
+Copyright: Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
+License: Expat
+
+Files: react/node_modules/eslint/node_modules/which/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/espree/*
+Copyright: Open JS Foundation
+License: BSD-2-clause
+
+Files: react/node_modules/espree/node_modules/*
+Copyright: contributors
+License: Apache-2.0
+
+Files: react/node_modules/esprima/*
+Copyright: JS Foundation and other contributors, https:js.foundation
+License: BSD-2-clause
+
+Files: react/node_modules/esquery/*
+Copyright: Copyright (c) 2013, Joel Feenstra
+License: BSD-2-clause
+
+Files: react/node_modules/esrecurse/*
+Copyright: Copyright (C) 2012-2016 [Yusuke Suzuki](http://github.com/Constellation)
+License: BSD-2-clause
+
+Files: react/node_modules/estraverse/*
+Copyright: 2012-2016, Yusuke Suzuki <utatane.tea@gmail.com>
+    2012. Ariya Hidayat <ariya.hidayat@gmail.com>
+License: BSD-2-clause
+
+Files: react/node_modules/esutils/*
+Copyright: 2013, [Yusuke Suzuki](http://github.com/Constellation)
+License: BSD-2-clause
+
+Files: react/node_modules/etag/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/eventemitter3/*
+Copyright: 2014, Arnout Kazemier
+License: Expat
+
+Files: react/node_modules/events/*
+Copyright: Joyent, Inc. and other Node contributors.
+License: Expat
+
+Files: react/node_modules/eventsource/*
+Copyright: EventSource GitHub organisation
+License: Expat
+
+Files: react/node_modules/evp_bytestokey/*
+Copyright: 2017, crypto-browserify contributors
+License: Expat
+
+Files: react/node_modules/exec-sh/*
+Copyright: 2014, Aleksandr Tsertkov <tsertkov@gmail.com>
+License: Expat
+
+Files: react/node_modules/exit/*
+Copyright: 2013
+License: Expat
+
+Files: react/node_modules/expand-brackets/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/expand-brackets/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/expand-brackets/node_modules/debug/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/expect/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/expect/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/express/*
+Copyright: 2014, 2015, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2013, 2014, Roman Shtylman <shtylman+expressjs@gmail.com>
+  2009-2014, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/express/node_modules/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/express/node_modules/array-flatten/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/ext/*
+Copyright: 2011-2020, Mariusz Nowak, @medikoo, medikoo.com
+License: ISC
+
+Files: react/node_modules/extend-shallow/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/extglob/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/extglob/node_modules/define-property/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/fast-deep-equal/*
+Copyright: 2015-2021, Evgeny Poberezkin
+License: Expat
+
+Files: react/node_modules/fast-glob/*
+Copyright: Denis Malinochkin
+License: Expat
+
+Files: react/node_modules/fast-json-stable-stringify/*
+Copyright: 2017, Evgeny Poberezkin
+  2013, James Halliday
+License: Expat
+
+Files: react/node_modules/fastq/*
+Copyright: 2015-2020, Matteo Collina <matteo.collina@gmail.com>
+License: ISC
+
+Files: react/node_modules/file-entry-cache/*
+Copyright: 2015, Roy Riojas
+License: Expat
+
+Files: react/node_modules/file-loader/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/filesize/*
+Copyright: 2020, Jason Mulligan
+License: BSD-3-clause
+
+Files: react/node_modules/fill-range/*
+Copyright: 2014, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/finalhandler/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+License: Expat
+
+Files: react/node_modules/finalhandler/node_modules/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/find-cache-dir/*
+Copyright: James Talmage <james@talmage.io> (github.com/jamestalmage)
+License: Expat
+
+Files: react/node_modules/flat-cache/*
+Copyright: 2015, Roy Riojas
+License: Expat
+
+Files: react/node_modules/flatted/*
+Copyright: 2018-2020, Andrea Giammarchi, @WebReflection
+License: ISC
+
+Files: react/node_modules/flatten/*
+Copyright: 2016, Joshua Holbrook
+License: Expat
+
+Files: react/node_modules/flush-write-stream/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/follow-redirects/*
+Copyright: 2014, –present Olivier Lalonde <olalonde@gmail.com>, James Talmage <james@talmage.io>, Ruben Verborgh
+License: Expat
+
+Files: react/node_modules/for-in/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/fork-ts-checker-webpack-plugin/*
+Copyright: 2020, TypeStrong
+License: Expat
+
+Files: react/node_modules/fork-ts-checker-webpack-plugin/node_modules/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/fork-ts-checker-webpack-plugin/node_modules/braces/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/fork-ts-checker-webpack-plugin/node_modules/fill-range/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/fork-ts-checker-webpack-plugin/node_modules/micromatch/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/fork-ts-checker-webpack-plugin/node_modules/semver/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/form-data/*
+Copyright: 2012, Felix Geisendörfer (felix@debuggable.com) and contributors
+License: Expat
+
+Files: react/node_modules/forwarded/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/fragment-cache/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/fresh/*
+Copyright: 2015-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2012-2014, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/fs-extra/*
+Copyright: 2011-2017, JP Richardson
+License: Expat
+
+Files: react/node_modules/fs-minipass/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/fs-write-stream-atomic/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/function-bind/*
+Copyright: 2012-2014, Raynos.
+License: Expat
+
+Files: react/node_modules/functional-red-black-tree/*
+Copyright: 2013, Mikola Lysenko
+License: Expat
+
+Files: react/node_modules/gensync/*
+Copyright: 2018, Logan Smyth <loganfsmyth@gmail.com>
+License: Expat
+
+Files: react/node_modules/get-intrinsic/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/get-own-enumerable-property-symbols/*
+Copyright: 2019, Shahar Or
+License: ISC
+
+Files: react/node_modules/get-package-type/*
+Copyright: 2019, 2020, CFWare, LLC
+License: Expat
+
+Files: react/node_modules/get-value/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/glob-parent/*
+Copyright: 2014, 2015, 2019, Elan Shanker
+License: ISC
+
+Files: react/node_modules/global-modules/*
+Copyright: 2015, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/global-prefix/*
+Copyright: 2015, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/graceful-fs/*
+Copyright: Isaac Z. Schlueter, Ben Noordhuis, and Contributors
+License: ISC
+
+Files: react/node_modules/has-bigints/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/has-symbols/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/has-value/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/has-values/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/has/*
+Copyright: 2013, Thiago de Arruda
+License: Expat
+
+Files: react/node_modules/hash-base/*
+Copyright: 2016, Kirill Fomichev
+License: Expat
+
+Files: react/node_modules/hash-base/node_modules/*
+Copyright: Node.js contributors.
+License: Expat
+
+Files: react/node_modules/hash-base/node_modules/safe-buffer/*
+Copyright: Feross Aboukhadijeh
+License: Expat
+
+Files: react/node_modules/hoopy/*
+Copyright: 2012-2019, Phil Booth
+License: Expat
+
+Files: react/node_modules/hosted-git-info/*
+Copyright: 2015, Rebecca Turner
+License: ISC
+
+Files: react/node_modules/html-entities/*
+Copyright: 2013, Dulin Marat
+License: Expat
+
+Files: react/node_modules/html-minifier-terser/*
+Copyright: 2010-2019, Juriy "kangax" Zaytsev
+License: Expat
+
+Files: react/node_modules/html-webpack-plugin/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/html-webpack-plugin/node_modules/loader-utils/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/htmlparser2/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+Files: react/node_modules/htmlparser2/node_modules/dom-serializer/*
+Copyright: 2014, The cheeriojs contributors
+License: Expat
+
+Files: react/node_modules/http-errors/*
+Copyright: 2016, Douglas Christopher Wilson doug@somethingdoug.com
+  2014, Jonathan Ong me@jongleberry.com
+License: Expat
+
+Files: react/node_modules/http-errors/node_modules/*
+Copyright: Isaac Z. Schlueter
+License: ISC
+
+Files: react/node_modules/http-proxy-middleware/*
+Copyright: 2015, Steven Chim
+License: Expat
+
+Files: react/node_modules/http-proxy-middleware/node_modules/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/http-proxy-middleware/node_modules/braces/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/http-proxy-middleware/node_modules/fill-range/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/http-proxy-middleware/node_modules/micromatch/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/http-proxy/*
+Copyright: 2010-2016, Charlie Robbins, Jarrett Cruger & the Contributors.
+License: Expat
+
+Files: react/node_modules/https-browserify/*
+Copyright: James Halliday
+License: Expat
+
+Files: react/node_modules/human-signals/*
+Copyright: Copyright 2019 ehmicky <ehmicky@gmail.com>
+License: Apache-2.0
+
+Files: react/node_modules/hyphenate-style-name/*
+Copyright: 2015, Espen Hovlandsdal
+License: BSD-3-clause
+
+Files: react/node_modules/iconv-lite/*
+Copyright: 2011, Alexander Shtuchkin
+License: Expat
+
+Files: react/node_modules/identity-obj-proxy/*
+Copyright: 2015, Keyan Zhang
+License: Expat
+
+Files: react/node_modules/ieee754/*
+Copyright: 2008, Fair Oaks Labs, Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/iferr/*
+Copyright: 2014, Nadav Ivgi
+License: Expat
+
+Files: react/node_modules/ignore/*
+Copyright: 2013, Kael Zhang <i@kael.me>, contributors
+License: Expat
+
+Files: react/node_modules/immer/*
+Copyright: 2017, Michel Weststrate
+License: Expat
+
+Files: react/node_modules/import-fresh/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/indexes-of/*
+Copyright: 2013, Dominic Tarr
+License: Expat
+
+Files: react/node_modules/infer-owner/*
+Copyright: npm, Inc. and Contributors
+License: ISC
+
+Files: react/node_modules/inflight/*
+Copyright: Isaac Z. Schlueter
+License: ISC
+
+Files: react/node_modules/inherits/*
+Copyright: Isaac Z. Schlueter
+License: ISC
+
+Files: react/node_modules/ini/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/internal-slot/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/ipaddr.js/*
+Copyright: 2011-2017, whitequark <whitequark@whitequark.org>
+License: Expat
+
+Files: react/node_modules/is-accessor-descriptor/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/is-arguments/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-arrayish/*
+Copyright: 2015, JD Ballard
+License: Expat
+
+Files: react/node_modules/is-bigint/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-binary-path/*
+Copyright: 2019, Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com), Paul Miller (https:paulmillr.com)
+License: Expat
+
+Files: react/node_modules/is-boolean-object/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-buffer/*
+Copyright: Feross Aboukhadijeh
+License: Expat
+
+Files: react/node_modules/is-callable/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-ci/*
+Copyright: 2015-2018, Thomas Watson Steen
+License: Expat
+
+Files: react/node_modules/is-color-stop/*
+Copyright: 2017, pigcan
+License: Expat
+
+Files: react/node_modules/is-core-module/*
+Copyright: 2014, Dave Justice
+License: Expat
+
+Files: react/node_modules/is-data-descriptor/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/is-date-object/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-descriptor/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/is-directory/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/is-docker/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/is-extendable/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/is-extglob/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/is-glob/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/is-negative-zero/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-number-object/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-number/*
+Copyright: 2014, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/is-plain-object/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/is-regex/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-resolvable/*
+Copyright: 2018, Shinnosuke Watanabe
+License: ISC
+
+Files: react/node_modules/is-string/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-symbol/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/is-windows/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/isexe/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/isobject/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/istanbul-lib-coverage/*
+Copyright: 2012-2015, Yahoo! Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/istanbul-lib-instrument/*
+Copyright: 2012-2015, Yahoo! Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/istanbul-lib-instrument/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/istanbul-lib-report/node_modules/semver/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/istanbul-lib-source-maps/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/istanbul-reports/*
+Copyright: 2012-2015, Yahoo! Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/jest-changed-files/node_modules/cross-spawn/*
+Copyright: 2018, Made With MOXY Lda <hello@moxy.studio>
+License: Expat
+
+Files: react/node_modules/jest-changed-files/node_modules/execa/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/jest-changed-files/node_modules/get-stream/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/jest-changed-files/node_modules/shebang-command/*
+Copyright: Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
+License: Expat
+
+Files: react/node_modules/jest-changed-files/node_modules/which/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/jest-circus/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-circus/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-config/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-config/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-config/node_modules/jest-resolve/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-diff/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-diff/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-docblock/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-each/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-each/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-environment-jsdom/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-environment-node/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-get-type/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-haste-map/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-jasmine2/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-jasmine2/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-leak-detector/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-matcher-utils/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-matcher-utils/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-message-util/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-message-util/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-mock/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-regex-util/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-resolve-dependencies/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-resolve/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-resolve/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-runner/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-runner/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-runner/node_modules/jest-resolve/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-runtime/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-runtime/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-runtime/node_modules/jest-resolve/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-serializer/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-snapshot/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-snapshot/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-snapshot/node_modules/jest-resolve/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/jest-util/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-util/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-validate/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-validate/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-watch-typeahead/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-watch-typeahead/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest-watcher/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest-watcher/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/jest/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/jest/node_modules/jest-cli/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/js-tokens/*
+Copyright: 2013-2018, Simon Lydell
+License: Expat
+
+Files: react/node_modules/js-yaml/*
+Copyright: 2011-2015, Vitaly Puzrin
+License: Expat
+
+Files: react/node_modules/jsdom/*
+Copyright: 2012-2020, various contributors (see AUTHORS)
+License: Expat
+
+Files: react/node_modules/json-schema-traverse/*
+Copyright: 2015-2021, Evgeny Poberezkin
+License: Expat
+
+Files: react/node_modules/json-stable-stringify-without-jsonify/*
+Copyright: info-missing
+License: Expat
+
+Files: react/node_modules/json3/*
+Copyright: 2013-2015, Benjamin Tan.
+  2012-2015, Kit Cambridge.
+License: Expat
+
+Files: react/node_modules/jsonfile/*
+Copyright: 2012-2015, JP Richardson <jprichardson@gmail.com>
+License: Expat
+
+Files: react/node_modules/jss-plugin-camel-case/*
+Copyright: 2014, -present Oleg Isonen (Slobodskoi) & contributors
+License: Expat
+
+Files: react/node_modules/jss-plugin-default-unit/*
+Copyright: 2014, -present Oleg Isonen (Slobodskoi) & contributors
+License: Expat
+
+Files: react/node_modules/jss-plugin-global/*
+Copyright: 2014, -present Oleg Isonen (Slobodskoi) & contributors
+License: Expat
+
+Files: react/node_modules/jss-plugin-nested/*
+Copyright: 2014, -present Oleg Isonen (Slobodskoi) & contributors
+License: Expat
+
+Files: react/node_modules/jss-plugin-props-sort/*
+Copyright: 2014, -present Oleg Isonen (Slobodskoi) & contributors
+License: Expat
+
+Files: react/node_modules/jss-plugin-rule-value-function/*
+Copyright: 2014, -present Oleg Isonen (Slobodskoi) & contributors
+License: Expat
+
+Files: react/node_modules/jss-plugin-vendor-prefixer/*
+Copyright: 2014, -present Oleg Isonen (Slobodskoi) & contributors
+License: Expat
+
+Files: react/node_modules/jss/*
+Copyright: 2014, -present Oleg Isonen (Slobodskoi) & contributors
+License: Expat
+
+Files: react/node_modules/killable/*
+Copyright: 2014, Marten de Vries
+License: ISC
+
+Files: react/node_modules/kind-of/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/kleur/*
+Copyright: Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
+License: Expat
+
+Files: react/node_modules/klona/*
+Copyright: Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
+License: Expat
+
+Files: react/node_modules/last-call-webpack-plugin/*
+Copyright: 2016, Nuno Rodrigues
+License: Expat
+
+Files: react/node_modules/levn/*
+Copyright: George Zahariev
+License: Expat
+
+Files: react/node_modules/lines-and-columns/*
+Copyright: 2015, Brian Donovan
+License: Expat
+
+Files: react/node_modules/loader-runner/*
+Copyright: Tobias Koppers @sokra
+License: Expat
+
+Files: react/node_modules/loader-utils/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/lodash.clonedeep/*
+Copyright: jQuery Foundation and other contributors <https:jquery.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/lodash.debounce/*
+Copyright: jQuery Foundation and other contributors <https:jquery.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/lodash.memoize/*
+Copyright: jQuery Foundation and other contributors <https:jquery.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/lodash.merge/*
+Copyright: OpenJS Foundation and other contributors <https:openjsf.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/lodash.template/*
+Copyright: OpenJS Foundation and other contributors <https:openjsf.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/lodash.templatesettings/*
+Copyright: OpenJS Foundation and other contributors <https:openjsf.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/lodash.truncate/*
+Copyright: jQuery Foundation and other contributors <https:jquery.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/lodash.uniq/*
+Copyright: jQuery Foundation and other contributors <https:jquery.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/lodash/*
+Copyright: OpenJS Foundation and other contributors <https:openjsf.org/> / Jeremy Ashkenas
+License: Expat
+
+Files: react/node_modules/loglevel/*
+Copyright: 2013, Tim Perry
+License: Expat
+
+Files: react/node_modules/loose-envify/*
+Copyright: 2015, Andres Suarez <zertosh@gmail.com>
+License: Expat
+
+Files: react/node_modules/lower-case/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/lru-cache/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/lz-string/*
+Copyright: 2008-2011, Pivotal Labs
+License: Expat
+
+Files: react/node_modules/magic-string/*
+Copyright: 2015, 2018, Rich Harris
+License: Expat
+
+Files: react/node_modules/make-dir/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/makeerror/*
+Copyright: 2014, Naitik Shah.
+License: BSD-3-clause
+
+Files: react/node_modules/map-cache/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/map-visit/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/md5.js/*
+Copyright: 2016, Kirill Fomichev
+License: Expat
+
+Files: react/node_modules/media-typer/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/merge-descriptors/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2013, 2014, Jonathan Ong <me@jongleberry.com>
+License: Expat
+
+Files: react/node_modules/merge-stream/*
+Copyright: Stephen Sugden <me@stephensugden.com> (stephensugden.com)
+License: Expat
+
+Files: react/node_modules/merge2/*
+Copyright: 2014-2020, Teambition
+License: Expat
+
+Files: react/node_modules/methods/*
+Copyright: 2015-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2012-2014, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/microevent.ts/*
+Copyright: 2016, Christian Speckner <cnspeckn@googlemail.com>
+License: Expat
+
+Files: react/node_modules/micromatch/*
+Copyright: 2014, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/miller-rabin/*
+Copyright: Fedor Indutny, 2015.
+License: Expat
+
+Files: react/node_modules/mime-db/*
+Copyright: 2014, Jonathan Ong me@jongleberry.com
+License: Expat
+
+Files: react/node_modules/mime-types/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2013, 2014, Jonathan Ong <me@jongleberry.com>
+License: Expat
+
+Files: react/node_modules/mime/*
+Copyright: 2010, Benjamin Thomas, Robert Kieffer
+License: Expat
+
+Files: react/node_modules/min-indent/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com), James Kyle <me@thejameskyle.com> (thejameskyle.com)
+License: Expat
+
+Files: react/node_modules/mini-css-extract-plugin/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/minimalistic-assert/*
+Copyright: 2015, Calvin Metcalf
+License: ISC
+
+Files: react/node_modules/minimatch/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/minimist/*
+Copyright: info-missing
+License: Expat
+
+Files: react/node_modules/minipass-collect/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/minipass-flush/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/minipass-pipeline/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/minipass/*
+Copyright: npm, Inc. and Contributors
+License: ISC
+
+Files: react/node_modules/minizlib/*
+Copyright: Node.js contributors. / Joyent, Inc. and other Node contributors. / Isaac Z. Schlueter and Contributors
+License: Expat
+
+Files: react/node_modules/mississippi/*
+Copyright: info-missing
+License: BSD-2-clause
+
+Files: react/node_modules/mixin-deep/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/mkdirp/*
+Copyright: 2010, 2013, James Halliday (mail@substack.net)
+License: Expat
+
+Files: react/node_modules/move-concurrently/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/multicast-dns-service-types/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/multicast-dns/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/nanoid/*
+Copyright: 2013, 2017, Andrey Sitnik <andrey@sitnik.ru>
+License: Expat
+
+Files: react/node_modules/nanomatch/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/native-url/*
+Copyright: info-missing
+License: Apache-2.0
+
+Files: react/node_modules/negotiator/*
+Copyright: 2014, 2015, Douglas Christopher Wilson
+  2012-2014, Isaac Z. Schlueter
+  2012-2014, Federico Romero
+License: Expat
+
+Files: react/node_modules/neo-async/*
+Copyright: Caolan McMahon / 2014-2018, Suguru Motegi
+License: Expat
+
+Files: react/node_modules/next-tick/*
+Copyright: 2012-2016, Mariusz Nowak
+License: Expat
+
+Files: react/node_modules/nice-try/*
+Copyright: 2018, Tobias Reich
+License: Expat
+
+Files: react/node_modules/no-case/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/node-forge/*
+Copyright: header is
+License: BSD-3-clause
+
+Files: react/node_modules/node-int64/*
+Copyright: 2014, Robert Kieffer
+License: Expat
+
+Files: react/node_modules/node-libs-browser/*
+Copyright: 2012, Tobias Koppers
+License: Expat
+
+Files: react/node_modules/node-modules-regexp/*
+Copyright: James Talmage <james@talmage.io> (github.com/jamestalmage)
+License: Expat
+
+Files: react/node_modules/node-notifier/*
+Copyright: 2017, Mikael Brevik
+License: Expat
+
+Files: react/node_modules/node-notifier/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/node-notifier/vendor/*
+Copyright: 2019, Solutions Paralint inc.
+License: BSD-3-clause
+
+Files: react/node_modules/node-notifier/vendor/snoreToast/*
+Copyright: 2007, Free Software Foundation, Inc. <http:fsf.org/>
+License: LGPL-3
+
+Files: react/node_modules/node-releases/*
+Copyright: 2017, Sergey Rubanov (https:github.com/chicoxyzzy)
+License: Expat
+
+Files: react/node_modules/normalize-package-data/*
+Copyright: Meryn Stol ("Author")
+License: BSD-2-clause
+
+Files: react/node_modules/normalize-package-data/node_modules/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/normalize-path/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/normalize-range/*
+Copyright: James Talmage <james@talmage.io> (github.com/jamestalmage)
+License: Expat
+
+Files: react/node_modules/nth-check/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+Files: react/node_modules/num2fraction/*
+Copyright: 2014, PostCSS
+License: Expat
+
+Files: react/node_modules/nwsapi/*
+Copyright: 2007-2019, Diego Perini (http:www.iport.it/)
+License: Expat
+
+Files: react/node_modules/object-copy/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/object-copy/node_modules/define-property/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/object-inspect/*
+Copyright: 2012, 2013, James Halliday
+License: Expat
+
+Files: react/node_modules/object-is/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/object-keys/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/object-visit/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/object.assign/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/object.entries/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/object.fromentries/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/object.getownpropertydescriptors/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/object.pick/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/object.values/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/obuf/*
+Copyright: Fedor Indutny, 2015.
+License: Expat
+
+Files: react/node_modules/on-finished/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2013, 2014, Jonathan Ong <me@jongleberry.com>
+License: Expat
+
+Files: react/node_modules/on-headers/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/once/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/onetime/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/open/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/optimize-css-assets-webpack-plugin/*
+Copyright: 2016, Nuno Rodrigues
+License: Expat
+
+Files: react/node_modules/optionator/*
+Copyright: George Zahariev
+License: Expat
+
+Files: react/node_modules/original/*
+Copyright: 2015, Unshift.io, Arnout Kazemier, the Contributors.
+License: Expat
+
+Files: react/node_modules/os-browserify/*
+Copyright: 2017, CoderPuppy
+License: Expat
+
+Files: react/node_modules/p-each-series/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/p-map/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/pako/*
+Copyright: 2014-2017, Vitaly Puzrin and Andrei Tuputcyn
+License: Expat
+
+Files: react/node_modules/pako/lib/*
+Copyright: 2014-2017, Vitaly Puzrin and Andrey Tupitsin / (C) 1995-2013, Jean-loup Gailly and Mark Adler
+License: Zlib
+
+Files: react/node_modules/parallel-transform/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/param-case/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/parse-asn1/*
+Copyright: 2017, crypto-browserify contributors
+License: ISC
+
+Files: react/node_modules/parse-json/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/parse5/*
+Copyright: 2013-2019, Ivan Nikulin (ifaaan@gmail.com, https:github.com/inikulin)
+License: Expat
+
+Files: react/node_modules/parseurl/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2013, 2014, Jonathan Ong <me@jongleberry.com>
+License: Expat
+
+Files: react/node_modules/pascal-case/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/pascalcase/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/path-browserify/*
+Copyright: Copyright Joyent, Inc. and other Node contributors.
+License: Expat
+
+Files: react/node_modules/path-dirname/*
+Copyright: Elan Shanker and Node.js contributors.
+License: Expat
+
+Files: react/node_modules/path-parse/*
+Copyright: 2015, Javier Blanco
+License: Expat
+
+Files: react/node_modules/path-to-regexp/*
+Copyright: 2014, Blake Embrey (hello@blakeembrey.com)
+License: Expat
+
+Files: react/node_modules/pbkdf2/*
+Copyright: 2014, 2015, Daniel Cousens
+License: Expat
+
+Files: react/node_modules/picomatch/*
+Copyright: 2017, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/pinkie-promise/*
+Copyright: Vsevolod Strukchinsky <floatdrop@gmail.com> (github.com/floatdrop)
+License: Expat
+
+Files: react/node_modules/pinkie/*
+Copyright: Vsevolod Strukchinsky <floatdrop@gmail.com> (github.com/floatdrop)
+License: Expat
+
+Files: react/node_modules/pirates/*
+Copyright: 2016-2018, Ari Porad
+License: Expat
+
+Files: react/node_modules/portfinder/*
+Copyright: 2012, Charlie Robbins
+License: Expat
+
+Files: react/node_modules/portfinder/node_modules/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/posix-character-classes/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/postcss-attribute-case-insensitive/*
+Copyright: 2016, Dmitry Semigradsky <semigradskyd@gmail.com>
+License: Expat
+
+Files: react/node_modules/postcss-calc/*
+Copyright: 2014, 2017, Maxime Thirouin
+License: Expat
+
+Files: react/node_modules/postcss-color-rebeccapurple/*
+Copyright: 2014, 2017, Maxime Thirouin
+License: Expat
+
+Files: react/node_modules/postcss-colormin/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-colormin/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-convert-values/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-convert-values/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-custom-selectors/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-dir-pseudo-class/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-discard-comments/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-discard-duplicates/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-discard-empty/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-discard-overridden/*
+Copyright: 2016, Justineo <justice360@gmail.com>
+License: Expat
+
+Files: react/node_modules/postcss-flexbugs-fixes/*
+Copyright: 2015, Luis Rudge <luis@luisrudge.net>
+License: Expat
+
+Files: react/node_modules/postcss-font-variant/*
+Copyright: 2014, Maxime Thirouin & Ian Storm Taylor
+License: Expat
+
+Files: react/node_modules/postcss-initial/*
+Copyright: 2015, Maksim Koretskiy <mr.green.tv@gmail.com>
+License: Expat
+
+Files: react/node_modules/postcss-load-config/node_modules/cosmiconfig/*
+Copyright: 2015, David Clark
+License: Expat
+
+Files: react/node_modules/postcss-loader/*
+Copyright: 2013, 2017, Andrey Sitnik <andrey@sitnik.ru>
+License: Expat
+
+Files: react/node_modules/postcss-loader/node_modules/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/postcss-media-minmax/*
+Copyright: 2014, PostCSS
+License: Expat
+
+Files: react/node_modules/postcss-merge-longhand/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-merge-longhand/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-merge-rules/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-minify-font-values/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-minify-gradients/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-minify-gradients/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-minify-params/*
+Copyright: 2015, 2018, Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-minify-params/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-minify-selectors/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-modules-extract-imports/*
+Copyright: 2015, Glen Maddern
+License: ISC
+
+Files: react/node_modules/postcss-modules-local-by-default/*
+Copyright: 2015, Mark Dalgleish <mark.john.dalgleish@gmail.com>
+License: Expat
+
+Files: react/node_modules/postcss-modules-scope/*
+Copyright: 2015, Glen Maddern
+License: ISC
+
+Files: react/node_modules/postcss-modules-values/*
+Copyright: 2015, Glen Maddern
+License: ISC
+
+Files: react/node_modules/postcss-normalize-charset/*
+Copyright: 2015, 2018, Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-normalize-display-values/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-display-values/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-normalize-positions/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-positions/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-normalize-repeat-style/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-repeat-style/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-normalize-string/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-string/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-normalize-timing-functions/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-timing-functions/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-normalize-unicode/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-unicode/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-normalize-url/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-url/node_modules/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-url/node_modules/postcss-value-parser/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-normalize-whitespace/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-normalize-whitespace/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-ordered-values/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-ordered-values/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-page-break/*
+Copyright: 2017, AUTHOR_NAME <AUTHOR_EMAIL>
+License: Expat
+
+Files: react/node_modules/postcss-pseudo-class-any-link/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-reduce-initial/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-reduce-transforms/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-reduce-transforms/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-replace-overflow-wrap/*
+Copyright: 2016, Matthias Müller <MattDiMu@users.noreply.github.com>
+License: Expat
+
+Files: react/node_modules/postcss-safe-parser/*
+Copyright: 2013, 2017, Andrey Sitnik <andrey@sitnik.ru>
+License: Expat
+
+Files: react/node_modules/postcss-selector-matches/*
+Copyright: 2014, 2017, Maxime Thirouin
+License: Expat
+
+Files: react/node_modules/postcss-selector-not/*
+Copyright: 2014, 2017, Maxime Thirouin
+License: Expat
+
+Files: react/node_modules/postcss-selector-parser/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-svgo/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-svgo/node_modules/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-unique-selectors/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/postcss-value-parser/*
+Copyright: Bogdan Chadkin <trysound@yandex.ru>
+License: Expat
+
+Files: react/node_modules/postcss-values-parser/*
+Copyright: Andrew Powell <andrew@shellscape.org>
+License: Expat
+
+Files: react/node_modules/postcss/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/prelude-ls/*
+Copyright: George Zahariev
+License: Expat
+
+Files: react/node_modules/pretty-bytes/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/pretty-error/*
+Copyright: 2013-2015, Aria Minaei
+License: Expat
+
+Files: react/node_modules/pretty-format/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/pretty-format/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/pretty-format/node_modules/react-is/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/process/*
+Copyright: 2013, Roman Shtylman <shtylman@gmail.com>
+License: Expat
+
+Files: react/node_modules/progress/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/promise-inflight/*
+Copyright: 2015, 2017, Rebecca Turner <me@re-becca.org>
+License: ISC
+
+Files: react/node_modules/promise/*
+Copyright: 2013, 2014, Forbes Lindesay
+License: Expat
+
+Files: react/node_modules/prompts/*
+Copyright: 2018, Terkel Gjervig Nielsen
+License: Expat
+
+Files: react/node_modules/prop-types/*
+Copyright: 2013, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/proxy-addr/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/psl/*
+Copyright: 2017, Lupo Montero lupomontero@gmail.com
+License: Expat
+
+Files: react/node_modules/public-encrypt/*
+Copyright: 2017, Calvin Metcalf
+License: Expat
+
+Files: react/node_modules/public-encrypt/node_modules/*
+Copyright: Fedor Indutny, 2015.
+License: Expat
+
+Files: react/node_modules/pump/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/pumpify/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/q/*
+Copyright: 2009-2017, Kristopher Michael Kowal.
+License: Expat
+
+Files: react/node_modules/qs/*
+Copyright: 2014, Nathan LaFreniere and other contributors.
+License: BSD-3-clause
+
+Files: react/node_modules/querystring/*
+Copyright: 2012, Irakli Gozalishvili
+License: Expat
+
+Files: react/node_modules/querystringify/*
+Copyright: 2015, Unshift.io, Arnout Kazemier, the Contributors.
+License: Expat
+
+Files: react/node_modules/queue-microtask/*
+Copyright: Feross Aboukhadijeh
+License: Expat
+
+Files: react/node_modules/raf/*
+Copyright: 2013, Chris Dickinson <chris@neversaw.us>
+License: Expat
+
+Files: react/node_modules/randombytes/*
+Copyright: 2016, 2017, crypto-browserify
+License: Expat
+
+Files: react/node_modules/randomfill/*
+Copyright: 2016, 2017, crypto-browserify
+License: Expat
+
+Files: react/node_modules/range-parser/*
+Copyright: 2015, 2016, Douglas Christopher Wilson <doug@somethingdoug.com
+  2012-2014, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/raw-body/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2013, 2014, Jonathan Ong <me@jongleberry.com>
+License: Expat
+
+Files: react/node_modules/raw-body/node_modules/*
+Copyright: 2015, Jed Watson <jed.watson@me.com>
+  2012-2014, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/react-app-polyfill/*
+Copyright: 2013, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/react-dev-utils/node_modules/@babel/*
+Copyright: 2014, -present Sebastian McKenzie and other contributors
+License: Expat
+
+Files: react/node_modules/react-dev-utils/node_modules/browserslist/*
+Copyright: 2014, Andrey Sitnik <andrey@sitnik.ru> and other contributors
+License: Expat
+
+Files: react/node_modules/react-dev-utils/node_modules/cross-spawn/*
+Copyright: 2018, Made With MOXY Lda <hello@moxy.studio>
+License: Expat
+
+Files: react/node_modules/react-dev-utils/node_modules/shebang-command/*
+Copyright: Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
+License: Expat
+
+Files: react/node_modules/react-dev-utils/node_modules/which/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/react-dom/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/react-error-overlay/*
+Copyright: 2013, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/react-is/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/react-refresh/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/react-scripts/*
+Copyright: 2013, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/react-transition-group/*
+Copyright: 2018, React Community / 2013, -present, Facebook, Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/react/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/readable-stream/*
+Copyright: Node.js contributors.
+License: Expat
+
+Files: react/node_modules/readdirp/*
+Copyright: 2012-2019, Thorsten Lorenz, Paul Miller (https:paulmillr.com)
+License: Expat
+
+Files: react/node_modules/recursive-readdir/*
+Copyright: <year> <copyright holders>
+License: Expat
+
+Files: react/node_modules/regenerator-runtime/*
+Copyright: 2014, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/regenerator-transform/*
+Copyright: 2014, -present, Facebook, Inc.
+License: Expat
+
+Files: react/node_modules/regex-not/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/regex-parser/*
+Copyright: 2014-2020, Ionică Bizău <bizauionica@gmail.com> (https:ionicabizau.net)
+License: Expat
+
+Files: react/node_modules/regexp.prototype.flags/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/regexpp/*
+Copyright: 2018, Toru Nagashima
+License: Expat
+
+Files: react/node_modules/regjsparser/*
+Copyright: Julian Viereck and Contributors
+License: BSD-2-clause
+
+Files: react/node_modules/relateurl/*
+Copyright: Steven Vachon <contact@svachon.com> (svachon.com)
+License: Expat
+
+Files: react/node_modules/remove-trailing-separator/*
+Copyright: info-missing
+License: ISC
+
+Files: react/node_modules/renderkid/*
+Copyright: Felix Böhm
+License: BSD-2-clause
+
+Files: react/node_modules/renderkid/node_modules/ansi-regex/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/renderkid/node_modules/dom-serializer/*
+Copyright: 2014, The cheeriojs contributors
+License: Expat
+
+Files: react/node_modules/renderkid/node_modules/strip-ansi/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/repeat-element/*
+Copyright: 2015, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/repeat-string/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/require-directory/*
+Copyright: 2011, Troy Goode <troygoode@gmail.com>
+License: Expat
+
+Files: react/node_modules/require-from-string/*
+Copyright: Vsevolod Strukchinsky <floatdrop@gmail.com> (github.com/floatdrop)
+License: Expat
+
+Files: react/node_modules/requires-port/*
+Copyright: 2015, Unshift.io, Arnout Kazemier, the Contributors.
+License: Expat
+
+Files: react/node_modules/resolve-url-loader/node_modules/convert-source-map/*
+Copyright: 2013, Thorsten Lorenz.
+License: Expat
+
+Files: react/node_modules/resolve-url-loader/node_modules/loader-utils/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/resolve-url-loader/node_modules/postcss/*
+Copyright: 2013, 2017, Andrey Sitnik <andrey@sitnik.ru>
+License: Expat
+
+Files: react/node_modules/resolve-url-loader/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/resolve-url/*
+Copyright: 2013-2018, Simon Lydell
+License: Expat
+
+Files: react/node_modules/resolve/*
+Copyright: 2012, 2013, James Halliday
+License: Expat
+
+Files: react/node_modules/ret/*
+Copyright: 2011, Roly Fentanes
+License: Expat
+
+Files: react/node_modules/retry/*
+Copyright: 2011
+License: Expat
+
+Files: react/node_modules/reusify/*
+Copyright: 2015, Matteo Collina
+License: Expat
+
+Files: react/node_modules/rework/*
+Copyright: 2013, Thorsten Lorenz.
+License: Expat
+
+Files: react/node_modules/rimraf/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/ripemd160/*
+Copyright: 2016, 2017, crypto-browserify
+License: Expat
+
+Files: react/node_modules/rollup-plugin-terser/node_modules/jest-worker/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/rollup-plugin-terser/node_modules/serialize-javascript/*
+Copyright: 2012-2015, Yahoo! Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/rsvp/*
+Copyright: 2014, Yehuda Katz, Tom Dale, Stefan Penner and contributors
+License: Expat
+
+Files: react/node_modules/run-parallel/*
+Copyright: Feross Aboukhadijeh
+License: Expat
+
+Files: react/node_modules/safe-buffer/*
+Copyright: Feross Aboukhadijeh
+License: Expat
+
+Files: react/node_modules/safe-regex/*
+Copyright: info-missing
+License: Expat
+
+Files: react/node_modules/safer-buffer/*
+Copyright: 2018, Nikita Skovoroda <chalkerx@gmail.com>
+License: Expat
+
+Files: react/node_modules/sane/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/sane/node_modules/anymatch/*
+Copyright: 2014, 2015, 2019, Elan Shanker
+License: ISC
+
+Files: react/node_modules/sane/node_modules/braces/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/sane/node_modules/fill-range/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/sane/node_modules/micromatch/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/sass-loader/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/scheduler/*
+Copyright: Facebook, Inc. and its affiliates.
+License: Expat
+
+Files: react/node_modules/schema-utils/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/selfsigned/*
+Copyright: 2013, José
+License: Expat
+
+Files: react/node_modules/semver/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/send/*
+Copyright: 2014-2016, Douglas Christopher Wilson
+  2012, TJ Holowaychuk
+License: Expat
+
+Files: react/node_modules/send/node_modules/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/serialize-javascript/*
+Copyright: 2012-2015, Yahoo! Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/serve-index/*
+Copyright: 2016, Douglas Christopher Wilson doug@somethingdoug.com
+  2014, Jonathan Ong me@jongleberry.com
+License: Expat
+
+Files: react/node_modules/serve-index/node_modules/debug/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/serve-index/node_modules/inherits/*
+Copyright: Isaac Z. Schlueter
+License: ISC
+
+Files: react/node_modules/serve-index/node_modules/setprototypeof/*
+Copyright: 2015, Wes Todd
+License: ISC
+
+Files: react/node_modules/serve-static/*
+Copyright: 2014-2016, Douglas Christopher Wilson
+  2011, TJ Holowaychuk
+  2011, LearnBoost
+  2010, Sencha Inc.
+License: Expat
+
+Files: react/node_modules/set-value/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/set-value/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/setprototypeof/*
+Copyright: 2015, Wes Todd
+License: ISC
+
+Files: react/node_modules/shebang-command/*
+Copyright: Kevin Martensson <kevinmartensson@gmail.com> (github.com/kevva)
+License: Expat
+
+Files: react/node_modules/shell-quote/*
+Copyright: 2010, 2013, James Halliday (mail@substack.net)
+License: Expat
+
+Files: react/node_modules/shellwords/*
+Copyright: 2011, Jimmy Cuadra
+License: Expat
+
+Files: react/node_modules/side-channel/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/simple-swizzle/*
+Copyright: 2015, JD Ballard
+License: Expat
+
+Files: react/node_modules/sisteransi/*
+Copyright: 2018, Terkel Gjervig Nielsen
+License: Expat
+
+Files: react/node_modules/slice-ansi/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/slice-ansi/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/snapdragon-node/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/snapdragon-node/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/snapdragon-node/node_modules/define-property/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/snapdragon-util/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/snapdragon/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/snapdragon/node_modules/debug/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/sockjs-client/node_modules/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/sockjs/*
+Copyright: 2011, VMware, Inc.
+License: Expat
+
+Files: react/node_modules/source-list-map/*
+Copyright: 2017, JS Foundation
+License: Expat
+
+Files: react/node_modules/source-map-js/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/source-map-resolve/*
+Copyright: 2019, ZHAO Jinxiang
+  2014-2020, Simon Lydell
+License: Expat
+
+Files: react/node_modules/source-map-support/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/source-map-url/*
+Copyright: 2013-2018, Simon Lydell
+License: Expat
+
+Files: react/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/sourcemap-codec/*
+Copyright: 2015, 2018, Rich Harris
+License: Expat
+
+Files: react/node_modules/spdx-correct/*
+Copyright: info-missing
+License: Apache-2.0
+
+Files: react/node_modules/spdx-expression-parse/*
+Copyright: 2015, Kyle E. Mitchell & other authors listed in AUTHORS
+License: Expat
+
+Files: react/node_modules/spdy-transport/*
+Copyright: Node.js contributors.
+License: Expat
+
+Files: react/node_modules/split-string/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/sprintf-js/*
+Copyright: 2007-2014, Alexandru Marasteanu <hello [at) alexei (dot] ro>
+License: BSD-3-clause
+
+Files: react/node_modules/stackframe/*
+Copyright: 2017, Eric Wendelin and other contributors
+License: Expat
+
+Files: react/node_modules/static-extend/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/statuses/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+  2013, 2014, Jonathan Ong <me@jongleberry.com>
+License: Expat
+
+Files: react/node_modules/stream-browserify/*
+Copyright: James Halliday
+License: Expat
+
+Files: react/node_modules/stream-each/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/stream-http/*
+Copyright: 2015, 2016, John Hiesey
+License: Expat
+
+Files: react/node_modules/stream-shift/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/strict-uri-encode/*
+Copyright: Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
+License: Expat
+
+Files: react/node_modules/string-length/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/string.prototype.matchall/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/string.prototype.trimend/*
+Copyright: 2017, Khaled Al-Ansari
+License: Expat
+
+Files: react/node_modules/string.prototype.trimstart/*
+Copyright: 2017, Khaled Al-Ansari
+License: Expat
+
+Files: react/node_modules/string_decoder/*
+Copyright: Node.js contributors.
+License: Expat
+
+Files: react/node_modules/strip-comments/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/strip-json-comments/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/style-loader/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/stylehacks/*
+Copyright: Ben Briggs <beneb.info@gmail.com> (http:beneb.info)
+License: Expat
+
+Files: react/node_modules/svgo/*
+Copyright: 2012-2016, Kir Belevich
+License: Expat
+
+Files: react/node_modules/symbol-observable/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com) / Ben Lesh <ben@benlesh.com>
+License: Expat
+
+Files: react/node_modules/symbol-tree/*
+Copyright: 2015, Joris van der Wel
+License: Expat
+
+Files: react/node_modules/table/*
+Copyright: 2015, 2018, Gajus Kuizinas (http:gajus.com/)
+License: BSD-3-clause
+
+Files: react/node_modules/table/node_modules/*
+Copyright: 2015-2021, Evgeny Poberezkin
+License: Expat
+
+Files: react/node_modules/tapable/*
+Copyright: Tobias Koppers @sokra
+License: Expat
+
+Files: react/node_modules/tar/*
+Copyright: James Halliday (mail@substack.net) and Isaac Z. Schlueter (i@izs.me)
+License: Expat
+
+Files: react/node_modules/terser-webpack-plugin/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/terser-webpack-plugin/node_modules/commander/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/terser-webpack-plugin/node_modules/make-dir/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/terser-webpack-plugin/node_modules/pkg-dir/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/terser-webpack-plugin/node_modules/schema-utils/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/terser-webpack-plugin/node_modules/semver/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/terser-webpack-plugin/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/terser-webpack-plugin/node_modules/terser/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/terser/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/terser/node_modules/commander/*
+Copyright: 2011-2014, 2017, TJ Holowaychuk <tj@vision-media.ca>
+License: Expat
+
+Files: react/node_modules/text-table/*
+Copyright: info-missing
+License: Expat
+
+Files: react/node_modules/throat/*
+Copyright: 2013, 2014, Forbes Lindesay
+License: Expat
+
+Files: react/node_modules/thunky/*
+Copyright: 2013-2016, 2018, Mathias Buus
+License: Expat
+
+Files: react/node_modules/tiny-warning/*
+Copyright: 2019, Alexander Reardon
+License: Expat
+
+Files: react/node_modules/tmpl/*
+Copyright: 2014, Naitik Shah.
+License: BSD-3-clause
+
+Files: react/node_modules/to-arraybuffer/*
+Copyright: 2015, 2016, John Hiesey
+License: Expat
+
+Files: react/node_modules/to-fast-properties/*
+Copyright: 2013-2018, Petka Antonov
+License: Expat
+
+Files: react/node_modules/to-object-path/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/to-regex-range/*
+Copyright: 2015, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/to-regex/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/toidentifier/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+License: Expat
+
+Files: react/node_modules/tough-cookie/*
+Copyright: 2015, Salesforce.com, Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/tough-cookie/node_modules/*
+Copyright: 2017, Ryan Zimmerman <opensrc@ryanzim.com>
+License: Expat
+
+Files: react/node_modules/tryer/*
+Copyright: 2012-2019, Phil Booth
+License: Expat
+
+Files: react/node_modules/tsconfig-paths/*
+Copyright: 2016, Jonas Kello
+License: Expat
+
+Files: react/node_modules/tsutils/*
+Copyright: 2017, Klaus Meinhardt
+License: Expat
+
+Files: react/node_modules/tty-browserify/*
+Copyright: info-missing
+License: Expat
+
+Files: react/node_modules/type-check/*
+Copyright: George Zahariev
+License: Expat
+
+Files: react/node_modules/type-detect/*
+Copyright: 2013, Jake Luer <jake@alogicalparadox.com> (http:alogicalparadox.com)
+License: Expat
+
+Files: react/node_modules/type-fest/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:/sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/type-is/*
+Copyright: 2014, Jonathan Ong <me@jongleberry.com>
+  2014, 2015, Douglas Christopher Wilson <doug@somethingdoug.com>
+License: Expat
+
+Files: react/node_modules/type/*
+Copyright: 2011-2020, Mariusz Nowak, @medikoo, medikoo.com
+License: ISC
+
+Files: react/node_modules/typedarray-to-buffer/*
+Copyright: Feross Aboukhadijeh
+License: Expat
+
+Files: react/node_modules/typedarray/*
+Copyright: 2012, Joshua Bell
+  2010, Linden Research, Inc.
+License: Expat
+
+Files: react/node_modules/unbox-primitive/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/union-value/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/uniq/*
+Copyright: 2013, Mikola Lysenko
+License: Expat
+
+Files: react/node_modules/unique-filename/*
+Copyright: npm, Inc
+License: ISC
+
+Files: react/node_modules/unique-slug/*
+Copyright: npm, Inc
+License: ISC
+
+Files: react/node_modules/universalify/*
+Copyright: 2017, Ryan Zimmerman <opensrc@ryanzim.com>
+License: Expat
+
+Files: react/node_modules/unpipe/*
+Copyright: 2014-2017, Douglas Christopher Wilson <doug@somethingdoug.com>
+License: Expat
+
+Files: react/node_modules/unquote/*
+Copyright: 2017, Cameron Lakenen
+License: Expat
+
+Files: react/node_modules/unset-value/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/unset-value/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/upath/*
+Copyright: 2014-2019, Angelos Pikoulas (agelos.pikoulas@gmail.com)
+License: Expat
+
+Files: react/node_modules/uri-js/*
+Copyright: 2011, Gary Court.
+License: BSD-2-clause
+
+Files: react/node_modules/urix/*
+Copyright: 2013-2018, Simon Lydell
+License: Expat
+
+Files: react/node_modules/url-loader/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/url-parse/*
+Copyright: 2015, Unshift.io, Arnout Kazemier, the Contributors.
+License: Expat
+
+Files: react/node_modules/url/*
+Copyright: Joyent, Inc. and other Node contributors.
+License: Expat
+
+Files: react/node_modules/use/*
+Copyright: 2015, -present, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/util-deprecate/*
+Copyright: 2014, Nathan Rajlich <nathan@tootallnate.net>
+License: Expat
+
+Files: react/node_modules/util.promisify/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/util/*
+Copyright: Joyent, Inc. and other Node contributors.
+License: Expat
+
+Files: react/node_modules/util/node_modules/*
+Copyright: Isaac Z. Schlueter
+License: ISC
+
+Files: react/node_modules/utila/*
+Copyright: 2013-2015, Aria Minaei
+License: Expat
+
+Files: react/node_modules/utils-merge/*
+Copyright: 2013-2017, Jared Hanson
+License: Expat
+
+Files: react/node_modules/v8-compile-cache/*
+Copyright: 2019, Andres Suarez
+License: Expat
+
+Files: react/node_modules/v8-to-istanbul/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/vary/*
+Copyright: 2014-2017, Douglas Christopher Wilson
+License: Expat
+
+Files: react/node_modules/vendors/*
+Copyright: 2016, Titus Wormer <tituswormer@gmail.com>
+License: Expat
+
+Files: react/node_modules/vm-browserify/*
+Copyright: info-missing
+License: Expat
+
+Files: react/node_modules/walker/*
+Copyright: 2013, Naitik Shah
+License: Apache-2.0
+
+Files: react/node_modules/watchpack-chokidar2/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/anymatch/*
+Copyright: 2014, 2015, 2019, Elan Shanker
+License: ISC
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/anymatch/node_modules/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/binary-extensions/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/braces/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/fill-range/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/glob-parent/*
+Copyright: 2014, 2015, 2019, Elan Shanker
+License: ISC
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/glob-parent/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/is-binary-path/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/micromatch/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/watchpack-chokidar2/node_modules/readdirp/*
+Copyright: 2012-2015, Thorsten Lorenz
+License: Expat
+
+Files: react/node_modules/watchpack/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/web-vitals/*
+Copyright: 2020, Google LLC
+License: Apache-2.0
+
+Files: react/node_modules/webpack-dev-middleware/*
+Copyright: 2010, Benjamin Thomas, Robert Kieffer
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/anymatch/*
+Copyright: 2014, 2015, 2019, Elan Shanker
+License: ISC
+
+Files: react/node_modules/webpack-dev-server/node_modules/anymatch/node_modules/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/braces/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/fill-range/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/fill-range/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/glob-parent/*
+Copyright: 2014, 2015, 2019, Elan Shanker
+License: ISC
+
+Files: react/node_modules/webpack-dev-server/node_modules/glob-parent/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/is-number/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/micromatch/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/readdirp/*
+Copyright: 2012-2015, Thorsten Lorenz
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/schema-utils/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/semver/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/webpack-dev-server/node_modules/to-regex-range/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/ws/*
+Copyright: 2011, Einar Otto Stangvik <einaros@gmail.com>
+License: Expat
+
+Files: react/node_modules/webpack-dev-server/node_modules/yargs/*
+Copyright: 2014, Contributors (ben@npmjs.com)
+  2010, James Halliday (mail@substack.net)
+License: Expat
+
+Files: react/node_modules/webpack-log/*
+Copyright: 2017, webpack-contrib
+License: Expat
+
+Files: react/node_modules/webpack-log/node_modules/*
+Copyright: 2015, -present, Brian Woodward.
+License: Expat
+
+Files: react/node_modules/webpack-manifest-plugin/*
+Copyright: 2011-2017, JP Richardson
+License: Expat
+
+Files: react/node_modules/webpack-manifest-plugin/node_modules/jsonfile/*
+Copyright: 2012-2015, JP Richardson <jprichardson@gmail.com>
+License: Expat
+
+Files: react/node_modules/webpack-manifest-plugin/node_modules/universalify/*
+Copyright: 2017, Ryan Zimmerman <opensrc@ryanzim.com>
+License: Expat
+
+Files: react/node_modules/webpack-sources/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/webpack/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/webpack/node_modules/acorn/*
+Copyright: Tobias Koppers @sokra
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/braces/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/eslint-scope/*
+Copyright: JS Foundation and other contributors, https:js.foundation / 2012-2013, Yusuke Suzuki (twitter: @Constellation) and other contributors.
+License: BSD-2-clause
+
+Files: react/node_modules/webpack/node_modules/fill-range/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/fill-range/node_modules/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/is-number/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/is-wsl/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/loader-utils/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/micromatch/*
+Copyright: 2014-2018, Jon Schlinkert.
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/schema-utils/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/serialize-javascript/*
+Copyright: 2012-2015, Yahoo! Inc.
+License: BSD-3-clause
+
+Files: react/node_modules/webpack/node_modules/source-map/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/webpack/node_modules/terser-webpack-plugin/*
+Copyright: JS Foundation and other contributors
+License: Expat
+
+Files: react/node_modules/webpack/node_modules/to-regex-range/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/whatwg-fetch/*
+Copyright: 2014-2016, GitHub, Inc.
+License: Expat
+
+Files: react/node_modules/which-boxed-primitive/*
+Copyright: 2013-2020, Jordan Harband
+License: Expat
+
+Files: react/node_modules/which-module/*
+Copyright: 2015, 2016, 2019, Contributors
+License: ISC
+
+Files: react/node_modules/which/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/which/bin/*
+Copyright: Copyright (c) Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/word-wrap/*
+Copyright: 2014-2017, Jon Schlinkert
+License: Expat
+
+Files: react/node_modules/workbox-background-sync/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-broadcast-update/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-build/*
+Copyright: 2009-2011, Mozilla Foundation and contributors
+License: BSD-2-clause
+
+Files: react/node_modules/workbox-build/node_modules/fs-extra/*
+Copyright: 2011-2017, JP Richardson
+License: Expat
+
+Files: react/node_modules/workbox-build/node_modules/jsonfile/*
+Copyright: 2012-2015, JP Richardson <jprichardson@gmail.com>
+License: Expat
+
+Files: react/node_modules/workbox-build/node_modules/universalify/*
+Copyright: 2017, Ryan Zimmerman <opensrc@ryanzim.com>
+License: Expat
+
+Files: react/node_modules/workbox-cacheable-response/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-core/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-expiration/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-google-analytics/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-navigation-preload/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-precaching/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-range-requests/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-routing/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-strategies/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-streams/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-sw/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-webpack-plugin/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/workbox-window/*
+Copyright: 2018, Google LLC
+License: Expat
+
+Files: react/node_modules/worker-rpc/*
+Copyright: 2016, Christian Speckner <cnspeckn@googlemail.com>
+License: Expat
+
+Files: react/node_modules/wrap-ansi/node_modules/color-convert/*
+Copyright: 2011-2016, Heather Arthur <fayearthur@gmail.com>
+License: Expat
+
+Files: react/node_modules/wrap-ansi/node_modules/color-name/*
+Copyright: 2015, Dmitry Ivanov
+License: Expat
+
+Files: react/node_modules/wrappy/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/write-file-atomic/*
+Copyright: 2015, Rebecca Turner
+License: ISC
+
+Files: react/node_modules/ws/*
+Copyright: 2011, Einar Otto Stangvik <einaros@gmail.com>
+License: Expat
+
+Files: react/node_modules/xmlchars/*
+Copyright: Louis-Dominique Dubeau and contributors to xmlchars
+License: Expat
+
+Files: react/node_modules/xtend/*
+Copyright: 2012-2014, Raynos.
+License: Expat
+
+Files: react/node_modules/y18n/*
+Copyright: 2015, 2016, 2019, Contributors
+License: ISC
+
+Files: react/node_modules/yallist/*
+Copyright: Isaac Z. Schlueter and Contributors
+License: ISC
+
+Files: react/node_modules/yaml/*
+Copyright: 2018, Eemeli Aro <eemeli@gmail.com>
+License: ISC
+
+Files: react/node_modules/yargs/*
+Copyright: 2010, James Halliday (mail@substack.net); Modified work Copyright 2014, Contributors (ben@npmjs.com)
+License: Expat
+
+Files: react/node_modules/yocto-queue/*
+Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https:sindresorhus.com)
+License: Expat
+
+License: Apache-2.0
+ This is free software, licensed under:
+ .
+   The Apache License, Version 2.0, January 2004
+ .
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ .
+     http://www.apache.org/licenses/LICENSE-2.0
+ .
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS"BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ 
+License: BSD-2-clause
+ Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 
+ .
+ 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ .
+ 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+
+License: BSD-3-clause
+ This is free software, licensed under:
+ .
+   The (three-clause) BSD License
+ .
+ The BSD License
+ .
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
+ .
+   * Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+ .
+   * Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution. 
+ .
+   * Neither the name of the licensor nor the names of its
+     contributors may be used to endorse or promote products derived from
+     this software without specific prior written permission. 
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License: Expat
+ This is free software, licensed under:
+ .
+   The MIT (X11) License
+ .
+ The MIT License
+ .
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated
+ documentation files (the "Software"), to deal in the Software
+ without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to
+ whom the Software is furnished to do so, subject to the
+ following conditions:
+ .
+ The above copyright notice and this permission notice shall
+ be included in all copies or substantial portions of the
+ Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT
+ WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+
+License: ISC
+ Please fill license ISC from header of react/node_modules/@babel/core/node_modules/*
+
+
+License: MPL-2.0
+ This is free software, licensed under:
+ .
+   Mozilla Public License Version 2.0
+ .
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0.
+ On Debian systems, the complete text of Mozilla Public License v 2.0
+ can be found in '/usr/share/common-licenses/MPL-2.0'.
+
+License: ISC
+ Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+License: LGPL-3
+    GNU LESSER GENERAL PUBLIC LICENSE
+    .
+    Version 3, 29 June 2007
+    .
+    .
+    Copyright © 2007 Free Software Foundation, Inc. <https://fsf.org/>
+    .
+    Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed.
+    .
+    This version of the GNU Lesser General Public License incorporates the terms and conditions of version 3 of the GNU General Public License, supplemented by the additional permissions listed below.
+    .
+    0. Additional Definitions.
+    .
+    As used herein, “this License” refers to version 3 of the GNU Lesser General Public License, and the “GNU GPL” refers to version 3 of the GNU General Public License.
+    .
+    “The Library” refers to a covered work governed by this License, other than an Application or a Combined Work as defined below.
+    .
+    An “Application” is any work that makes use of an interface provided by the Library, but which is not otherwise based on the Library. Defining a subclass of a class defined by the Library is deemed a mode of using an interface provided by the Library.
+    .
+    A “Combined Work” is a work produced by combining or linking an Application with the Library. The particular version of the Library with which the Combined Work was made is also called the “Linked Version”.
+    .
+    The “Minimal Corresponding Source” for a Combined Work means the Corresponding Source for the Combined Work, excluding any source code for portions of the Combined Work that, considered in isolation, are based on the Application, and not on the Linked Version.
+    .
+    The “Corresponding Application Code” for a Combined Work means the object code and/or source code for the Application, including any data and utility programs needed for reproducing the Combined Work from the Application, but excluding the System Libraries of the Combined Work.
+    .
+    1. Exception to Section 3 of the GNU GPL.
+    .
+    You may convey a covered work under sections 3 and 4 of this License without being bound by section 3 of the GNU GPL.
+    .
+    2. Conveying Modified Versions.
+    .
+    If you modify a copy of the Library, and, in your modifications, a facility refers to a function or data to be supplied by an Application that uses the facility (other than as an argument passed when the facility is invoked), then you may convey a copy of the modified version:
+    .
+    a) under this License, provided that you make a good faith effort to ensure that, in the event an Application does not supply the function or data, the facility still operates, and performs whatever part of its purpose remains meaningful, or
+    .
+    b) under the GNU GPL, with none of the additional permissions of this License applicable to that copy.
+    .
+    3. Object Code Incorporating Material from Library Header Files.
+    .
+    The object code form of an Application may incorporate material from a header file that is part of the Library. You may convey such object code under terms of your choice, provided that, if the incorporated material is not limited to numerical parameters, data structure layouts and accessors, or small macros, inline functions and templates (ten or fewer lines in length), you do both of the following:
+    .
+    a) Give prominent notice with each copy of the object code that the Library is used in it and that the Library and its use are covered by this License.
+    .
+    b) Accompany the object code with a copy of the GNU GPL and this license document.
+    .
+    4. Combined Works.
+    .
+    You may convey a Combined Work under terms of your choice that, taken together, effectively do not restrict modification of the portions of the Library contained in the Combined Work and reverse engineering for debugging such modifications, if you also do each of the following:
+    .
+    a) Give prominent notice with each copy of the Combined Work that the Library is used in it and that the Library and its use are covered by this License.
+    .
+    b) Accompany the Combined Work with a copy of the GNU GPL and this license document.
+    .
+    c) For a Combined Work that displays copyright notices during execution, include the copyright notice for the Library among these notices, as well as a reference directing the user to the copies of the GNU GPL and this license document.
+    .
+    d) Do one of the following:
+    .
+    0) Convey the Minimal Corresponding Source under the terms of this License, and the Corresponding Application Code in a form suitable for, and under terms that permit, the user to recombine or relink the Application with a modified version of the Linked Version to produce a modified Combined Work, in the manner specified by section 6 of the GNU GPL for conveying Corresponding Source.
+    .
+    1) Use a suitable shared library mechanism for linking with the Library. A suitable mechanism is one that (a) uses at run time a copy of the Library already present on the user's computer system, and (b) will operate properly with a modified version of the Library that is interface-compatible with the Linked Version.
+    .
+    e) Provide Installation Information, but only if you would otherwise be required to provide such information under section 6 of the GNU GPL, and only to the extent that such information is necessary to install and execute a modified version of the Combined Work produced by recombining or relinking the Application with a modified version of the Linked Version. (If you use option 4d0, the Installation Information must accompany the Minimal Corresponding Source and Corresponding Application Code. If you use option 4d1, you must provide the Installation Information in the manner specified by section 6 of the GNU GPL for conveying Corresponding Source.)
+    .
+    5. Combined Libraries.
+    .
+    You may place library facilities that are a work based on the Library side by side in a single library together with other library facilities that are not Applications and are not covered by this License, and convey such a combined library under terms of your choice, if you do both of the following:
+    .
+    a) Accompany the combined library with a copy of the same work based on the Library, uncombined with any other library facilities, conveyed under the terms of this License.
+    .
+    b) Give prominent notice with the combined library that part of it is a work based on the Library, and explaining where to find the accompanying uncombined form of the same work.
+    .
+    6. Revised Versions of the GNU Lesser General Public License.
+    .
+    The Free Software Foundation may publish revised and/or new versions of the GNU Lesser General Public License from time to time. Such new versions will be similar in spirit to the present version, but may differ in detail to address new problems or concerns.
+    .
+    Each version is given a distinguishing version number. If the Library as you received it specifies that a certain numbered version of the GNU Lesser General Public License “or any later version” applies to it, you have the option of following the terms and conditions either of that published version or of any later version published by the Free Software Foundation. If the Library as you received it does not specify a version number of the GNU Lesser General Public License, you may choose any version of the GNU Lesser General Public License ever published by the Free Software Foundation.
+    .
+    If the Library as you received it specifies that a proxy can decide whether future versions of the GNU Lesser General Public License shall apply, that proxy's public statement of acceptance of any version is permanent authorization for you to choose that version for the Library.
+    .
+
+License: CC-BY-4.0
+    Creative Commons Attribution 4.0 International Public License
+    .
+    By exercising the Licensed Rights (defined below), You accept and agree
+    to be bound by the terms and conditions of this Creative Commons
+    Attribution 4.0 International Public License ("Public License"). To the
+    extent this Public License may be interpreted as a contract, You are
+    granted the Licensed Rights in consideration of Your acceptance of
+    these terms and conditions, and the Licensor grants You such rights in
+    consideration of benefits the Licensor receives from making the
+    Licensed Material available under these terms and conditions.
+    .
+    .
+    Section 1 -- Definitions.
+    .
+    a. Adapted Material means material subject to Copyright and Similar
+    Rights that is derived from or based upon the Licensed Material
+    and in which the Licensed Material is translated, altered,
+    arranged, transformed, or otherwise modified in a manner requiring
+    permission under the Copyright and Similar Rights held by the
+    Licensor. For purposes of this Public License, where the Licensed
+    Material is a musical work, performance, or sound recording,
+    Adapted Material is always produced where the Licensed Material is
+    synched in timed relation with a moving image.
+    .
+    b. Adapter's License means the license You apply to Your Copyright
+    and Similar Rights in Your contributions to Adapted Material in
+    accordance with the terms and conditions of this Public License.
+    .
+    c. Copyright and Similar Rights means copyright and/or similar rights
+    closely related to copyright including, without limitation,
+    performance, broadcast, sound recording, and Sui Generis Database
+    Rights, without regard to how the rights are labeled or
+    categorized. For purposes of this Public License, the rights
+    specified in Section 2(b)(1)-(2) are not Copyright and Similar
+    Rights.
+    .
+    d. Effective Technological Measures means those measures that, in the
+    absence of proper authority, may not be circumvented under laws
+    fulfilling obligations under Article 11 of the WIPO Copyright
+    Treaty adopted on December 20, 1996, and/or similar international
+    agreements.
+    .
+    e. Exceptions and Limitations means fair use, fair dealing, and/or
+    any other exception or limitation to Copyright and Similar Rights
+    that applies to Your use of the Licensed Material.
+    .
+    f. Licensed Material means the artistic or literary work, database,
+    or other material to which the Licensor applied this Public
+    License.
+    .
+    g. Licensed Rights means the rights granted to You subject to the
+    terms and conditions of this Public License, which are limited to
+    all Copyright and Similar Rights that apply to Your use of the
+    Licensed Material and that the Licensor has authority to license.
+    .
+    h. Licensor means the individual(s) or entity(ies) granting rights
+    under this Public License.
+    .
+    i. Share means to provide material to the public by any means or
+    process that requires permission under the Licensed Rights, such
+    as reproduction, public display, public performance, distribution,
+    dissemination, communication, or importation, and to make material
+    available to the public including in ways that members of the
+    public may access the material from a place and at a time
+    individually chosen by them.
+    .
+    j. Sui Generis Database Rights means rights other than copyright
+    resulting from Directive 96/9/EC of the European Parliament and of
+    the Council of 11 March 1996 on the legal protection of databases,
+    as amended and/or succeeded, as well as other essentially
+    equivalent rights anywhere in the world.
+    .
+    k. You means the individual or entity exercising the Licensed Rights
+    under this Public License. Your has a corresponding meaning.
+    .
+    .
+    Section 2 -- Scope.
+    .
+    a. License grant.
+    .
+    1. Subject to the terms and conditions of this Public License,
+    the Licensor hereby grants You a worldwide, royalty-free,
+    non-sublicensable, non-exclusive, irrevocable license to
+    exercise the Licensed Rights in the Licensed Material to:
+    .
+    a. reproduce and Share the Licensed Material, in whole or
+    in part; and
+    .
+    b. produce, reproduce, and Share Adapted Material.
+    .
+    2. Exceptions and Limitations. For the avoidance of doubt, where
+    Exceptions and Limitations apply to Your use, this Public
+    License does not apply, and You do not need to comply with
+    its terms and conditions.
+    .
+    3. Term. The term of this Public License is specified in Section
+    6(a).
+    .
+    4. Media and formats; technical modifications allowed. The
+    Licensor authorizes You to exercise the Licensed Rights in
+    all media and formats whether now known or hereafter created,
+    and to make technical modifications necessary to do so. The
+    Licensor waives and/or agrees not to assert any right or
+    authority to forbid You from making technical modifications
+    necessary to exercise the Licensed Rights, including
+    technical modifications necessary to circumvent Effective
+    Technological Measures. For purposes of this Public License,
+    simply making modifications authorized by this Section 2(a)
+    (4) never produces Adapted Material.
+    .
+    5. Downstream recipients.
+    .
+    a. Offer from the Licensor -- Licensed Material. Every
+    recipient of the Licensed Material automatically
+    receives an offer from the Licensor to exercise the
+    Licensed Rights under the terms and conditions of this
+    Public License.
+    .
+    b. No downstream restrictions. You may not offer or impose
+    any additional or different terms or conditions on, or
+    apply any Effective Technological Measures to, the
+    Licensed Material if doing so restricts exercise of the
+    Licensed Rights by any recipient of the Licensed
+    Material.
+    .
+    6. No endorsement. Nothing in this Public License constitutes or
+    may be construed as permission to assert or imply that You
+    are, or that Your use of the Licensed Material is, connected
+    with, or sponsored, endorsed, or granted official status by,
+    the Licensor or others designated to receive attribution as
+    provided in Section 3(a)(1)(A)(i).
+    .
+    b. Other rights.
+    .
+    1. Moral rights, such as the right of integrity, are not
+    licensed under this Public License, nor are publicity,
+    privacy, and/or other similar personality rights; however, to
+    the extent possible, the Licensor waives and/or agrees not to
+    assert any such rights held by the Licensor to the limited
+    extent necessary to allow You to exercise the Licensed
+    Rights, but not otherwise.
+    .
+    2. Patent and trademark rights are not licensed under this
+    Public License.
+    .
+    3. To the extent possible, the Licensor waives any right to
+    collect royalties from You for the exercise of the Licensed
+    Rights, whether directly or through a collecting society
+    under any voluntary or waivable statutory or compulsory
+    licensing scheme. In all other cases the Licensor expressly
+    reserves any right to collect such royalties.
+    .
+    .
+    Section 3 -- License Conditions.
+    .
+    Your exercise of the Licensed Rights is expressly made subject to the
+    following conditions.
+    .
+    a. Attribution.
+    .
+    1. If You Share the Licensed Material (including in modified
+    form), You must:
+    .
+    a. retain the following if it is supplied by the Licensor
+    with the Licensed Material:
+    .
+    i. identification of the creator(s) of the Licensed
+    Material and any others designated to receive
+    attribution, in any reasonable manner requested by
+    the Licensor (including by pseudonym if
+    designated);
+    .
+    ii. a copyright notice;
+    .
+    iii. a notice that refers to this Public License;
+    .
+    iv. a notice that refers to the disclaimer of
+    warranties;
+    .
+    v. a URI or hyperlink to the Licensed Material to the
+    extent reasonably practicable;
+    .
+    b. indicate if You modified the Licensed Material and
+    retain an indication of any previous modifications; and
+    .
+    c. indicate the Licensed Material is licensed under this
+    Public License, and include the text of, or the URI or
+    hyperlink to, this Public License.
+    .
+    2. You may satisfy the conditions in Section 3(a)(1) in any
+    reasonable manner based on the medium, means, and context in
+    which You Share the Licensed Material. For example, it may be
+    reasonable to satisfy the conditions by providing a URI or
+    hyperlink to a resource that includes the required
+    information.
+    .
+    3. If requested by the Licensor, You must remove any of the
+    information required by Section 3(a)(1)(A) to the extent
+    reasonably practicable.
+    .
+    4. If You Share Adapted Material You produce, the Adapter's
+    License You apply must not prevent recipients of the Adapted
+    Material from complying with this Public License.
+    .
+    .
+    Section 4 -- Sui Generis Database Rights.
+    .
+    Where the Licensed Rights include Sui Generis Database Rights that
+    apply to Your use of the Licensed Material:
+    .
+    a. for the avoidance of doubt, Section 2(a)(1) grants You the right
+    to extract, reuse, reproduce, and Share all or a substantial
+    portion of the contents of the database;
+    .
+    b. if You include all or a substantial portion of the database
+    contents in a database in which You have Sui Generis Database
+    Rights, then the database in which You have Sui Generis Database
+    Rights (but not its individual contents) is Adapted Material; and
+    .
+    c. You must comply with the conditions in Section 3(a) if You Share
+    all or a substantial portion of the contents of the database.
+    .
+    For the avoidance of doubt, this Section 4 supplements and does not
+    replace Your obligations under this Public License where the Licensed
+    Rights include other Copyright and Similar Rights.
+    .
+    .
+    Section 5 -- Disclaimer of Warranties and Limitation of Liability.
+    .
+    a. UNLESS OTHERWISE SEPARATELY UNDERTAKEN BY THE LICENSOR, TO THE
+    EXTENT POSSIBLE, THE LICENSOR OFFERS THE LICENSED MATERIAL AS-IS
+    AND AS-AVAILABLE, AND MAKES NO REPRESENTATIONS OR WARRANTIES OF
+    ANY KIND CONCERNING THE LICENSED MATERIAL, WHETHER EXPRESS,
+    IMPLIED, STATUTORY, OR OTHER. THIS INCLUDES, WITHOUT LIMITATION,
+    WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR
+    PURPOSE, NON-INFRINGEMENT, ABSENCE OF LATENT OR OTHER DEFECTS,
+    ACCURACY, OR THE PRESENCE OR ABSENCE OF ERRORS, WHETHER OR NOT
+    KNOWN OR DISCOVERABLE. WHERE DISCLAIMERS OF WARRANTIES ARE NOT
+    ALLOWED IN FULL OR IN PART, THIS DISCLAIMER MAY NOT APPLY TO YOU.
+    .
+    b. TO THE EXTENT POSSIBLE, IN NO EVENT WILL THE LICENSOR BE LIABLE
+    TO YOU ON ANY LEGAL THEORY (INCLUDING, WITHOUT LIMITATION,
+    NEGLIGENCE) OR OTHERWISE FOR ANY DIRECT, SPECIAL, INDIRECT,
+    INCIDENTAL, CONSEQUENTIAL, PUNITIVE, EXEMPLARY, OR OTHER LOSSES,
+    COSTS, EXPENSES, OR DAMAGES ARISING OUT OF THIS PUBLIC LICENSE OR
+    USE OF THE LICENSED MATERIAL, EVEN IF THE LICENSOR HAS BEEN
+    ADVISED OF THE POSSIBILITY OF SUCH LOSSES, COSTS, EXPENSES, OR
+    DAMAGES. WHERE A LIMITATION OF LIABILITY IS NOT ALLOWED IN FULL OR
+    IN PART, THIS LIMITATION MAY NOT APPLY TO YOU.
+    .
+    c. The disclaimer of warranties and limitation of liability provided
+    above shall be interpreted in a manner that, to the extent
+    possible, most closely approximates an absolute disclaimer and
+    waiver of all liability.
+    .
+    .
+    Section 6 -- Term and Termination.
+    .
+    a. This Public License applies for the term of the Copyright and
+    Similar Rights licensed here. However, if You fail to comply with
+    this Public License, then Your rights under this Public License
+    terminate automatically.
+    .
+    b. Where Your right to use the Licensed Material has terminated under
+    Section 6(a), it reinstates:
+    .
+    1. automatically as of the date the violation is cured, provided
+    it is cured within 30 days of Your discovery of the
+    violation; or
+    .
+    2. upon express reinstatement by the Licensor.
+    .
+    For the avoidance of doubt, this Section 6(b) does not affect any
+    right the Licensor may have to seek remedies for Your violations
+    of this Public License.
+    .
+    c. For the avoidance of doubt, the Licensor may also offer the
+    Licensed Material under separate terms or conditions or stop
+    distributing the Licensed Material at any time; however, doing so
+    will not terminate this Public License.
+    .
+    d. Sections 1, 5, 6, 7, and 8 survive termination of this Public
+    License.
+    .
+    .
+    Section 7 -- Other Terms and Conditions.
+    .
+    a. The Licensor shall not be bound by any additional or different
+    terms or conditions communicated by You unless expressly agreed.
+    .
+    b. Any arrangements, understandings, or agreements regarding the
+    Licensed Material not stated herein are separate from and
+    independent of the terms and conditions of this Public License.
+    .
+    .
+    Section 8 -- Interpretation.
+    .
+    a. For the avoidance of doubt, this Public License does not, and
+    shall not be interpreted to, reduce, limit, restrict, or impose
+    conditions on any use of the Licensed Material that could lawfully
+    be made without permission under this Public License.
+    .
+    b. To the extent possible, if any provision of this Public License is
+    deemed unenforceable, it shall be automatically reformed to the
+    minimum extent necessary to make it enforceable. If the provision
+    cannot be reformed, it shall be severed from this Public License
+    without affecting the enforceability of the remaining terms and
+    conditions.
+    .
+    c. No term or condition of this Public License will be waived and no
+    failure to comply consented to unless expressly agreed to by the
+    Licensor.
+    .
+    d. Nothing in this Public License constitutes or may be interpreted
+    as a limitation upon, or waiver of, any privileges and immunities
+    that apply to the Licensor or You, including from the legal
+    processes of any jurisdiction or authority.
+
+License: Zlib
+    This is free software, licensed under:
+    .
+    The zlib License
+    .
+    The zlib License
+    .
+    This software is provided 'as-is', without any express or implied
+    warranty. In no event will the authors be held liable for any damages
+    arising from the use of this software.
+    .
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+    .
+    1. The origin of this software must not be misrepresented; you must
+        not claim that you wrote the original software. If you use this
+        software in a product, an acknowledgment in the product
+        documentation would be appreciated but is not required.
+    .
+    2. Altered source versions must be plainly marked as such, and must
+        not be misrepresented as being the original software.
+    .
+    3. This notice may not be removed or altered from any source
+        distribution.
+    .
