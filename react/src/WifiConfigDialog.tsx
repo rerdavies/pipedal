@@ -20,7 +20,7 @@
 import React from 'react';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
-import Dialog from '@material-ui/core/Dialog';
+import DialogEx from './DialogEx';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
@@ -29,7 +29,6 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import WifiConfigSettings from './WifiConfigSettings';
 import NoChangePassword from './NoChangePassword';
-import DialogEx from './DialogEx'
 import Typography from '@material-ui/core/Typography';
 import { Theme, withStyles, WithStyles,createStyles } from '@material-ui/core/styles';
 import Select from '@material-ui/core/Select';
@@ -104,60 +103,14 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
 
         this.refName = React.createRef<HTMLInputElement>();
         this.refPassword = React.createRef<HTMLInputElement>();
-        this.handlePopState = this.handlePopState.bind(this);
     }
     mounted: boolean = false;
-
-    hasHooks: boolean = false;
-
-    stateWasPopped: boolean = false;
 
     handleEnableChanged(e: any) {
         this.setState({ enabled: e.target.checked });
     }
-    handlePopState(e: any): any {
-        this.stateWasPopped = true;
-        let shouldClose = (!e.state || !e.state.WifiConfig);
-        if (shouldClose) {
-            this.preventPasswordPrompt();
-            setTimeout(()=> {
-                this.props.onClose();
-            });
-        }
-    }
-
     
-    updateHooks(): void {
-        let wantHooks = this.mounted && this.props.open;
-        if (wantHooks !== this.hasHooks) {
-            this.hasHooks = wantHooks;
 
-            if (this.hasHooks) {
-                this.stateWasPopped = false;
-                window.addEventListener("popstate", this.handlePopState);
-                // eslint-disable-next-line no-restricted-globals
-                let state = history.state;
-                if (!state) {
-                    state = {};
-                }
-                state.WifiConfig = true;
-
-                // eslint-disable-next-line no-restricted-globals
-                history.pushState(
-                    state,
-                    "Wi-Fi Configuration",
-                    "#WifiConfig"
-                );
-            } else {
-                window.removeEventListener("popstate", this.handlePopState);
-                if (!this.stateWasPopped) {
-                    // eslint-disable-next-line no-restricted-globals
-                    history.back();
-                }
-            }
-
-        }
-    }
     onWindowSizeChanged(width: number, height: number): void {
         this.setState({ fullScreen: height < 200 })
     }
@@ -166,16 +119,13 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
     componentDidMount() {
         super.componentDidMount();
         this.mounted = true;
-        this.updateHooks();
     }
     componentWillUnmount() {
         super.componentWillUnmount();
         this.mounted = false;
-        this.updateHooks();
     }
 
     componentDidUpdate(prevProps: WifiConfigProps) {
-        this.updateHooks();
 
         if (this.props.open && !prevProps.open)
         {
@@ -300,7 +250,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
         };
 
         return (
-            <Dialog open={open} fullWidth onClose={handleClose} style={{}}
+            <DialogEx tag="WifiConfigDialog" open={open} fullWidth onClose={handleClose} style={{}}
                 fullScreen={this.state.fullScreen}
             >
                 { this.state.fullScreen && (
@@ -407,7 +357,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                         </Button>
                     </DialogActions>
                 </DialogEx>
-            </Dialog>
+            </DialogEx>
         );
     }
 });

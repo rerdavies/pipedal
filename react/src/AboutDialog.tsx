@@ -5,7 +5,6 @@ import Typography from '@material-ui/core/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import { TransitionProps } from '@material-ui/core/transitions/transition';
 import Slide from '@material-ui/core/Slide';
-import Dialog from '@material-ui/core/Dialog';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
@@ -13,6 +12,7 @@ import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import Divider from '@material-ui/core/Divider';
 import JackHostStatus from './JackHostStatus';
 import {PiPedalError} from './PiPedalError';
+import DialogEx from './DialogEx';
 
 
 interface AboutDialogProps extends WithStyles<typeof styles> {
@@ -187,7 +187,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
             let classes = this.props.classes;
 
             return (
-                <Dialog fullScreen open={this.props.open}
+                <DialogEx tag="AboutDlg" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}>
 
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
@@ -238,7 +238,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                             </div>
                         </div>
                     </div>
-                </Dialog >
+                </DialogEx >
 
             );
 

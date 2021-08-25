@@ -24,6 +24,7 @@ add_custom_command(
         src/WifiChannel.tsx
         src/JackServerSettingsDialog.tsx
         src/JackServerSettings.tsx
+        src/DialogEx.tsx
         
         src/AboutDialog.tsx
         src/App.test.tsx

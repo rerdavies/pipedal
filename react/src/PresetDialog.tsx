@@ -24,8 +24,8 @@ import { PiPedalModel, PiPedalModelFactory, PresetIndexEntry, PresetIndex } from
 import Button from "@material-ui/core/Button";
 import ButtonBase from "@material-ui/core/ButtonBase";
 import { TransitionProps } from '@material-ui/core/transitions/transition';
-import Slide from '@material-ui/core/Slide';
-import Dialog from '@material-ui/core/Dialog';
+import Slide from '@material-ui/core/Slide' ;
+import DialogEx from './DialogEx';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
@@ -334,7 +334,7 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
             let defaultSelectedIndex = this.getSelectedIndex();
 
             return (
-                <Dialog fullScreen open={this.props.show}
+                <DialogEx tag="PresetDialog" fullScreen open={this.props.show}
                     onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}>
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
@@ -456,7 +456,7 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
                             open={this.state.openUploadDialog} 
                             onClose={() => { this.setState({ openUploadDialog: false }) }} />
 
-                </Dialog >
+                </DialogEx>
 
             );
 

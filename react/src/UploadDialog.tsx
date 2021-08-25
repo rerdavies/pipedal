@@ -21,7 +21,7 @@ import React from 'react';
 import Button from '@material-ui/core/Button';
 import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
 
-import Dialog from '@material-ui/core/Dialog';
+import DialogEx from './DialogEx';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
@@ -55,52 +55,11 @@ export default class UploadDialog extends ResizeResponsiveComponent<UploadDialog
         };
         this.model = PiPedalModelFactory.getInstance();
 
-        this.handlePopState = this.handlePopState.bind(this);
     }
     mounted: boolean = false;
 
-    hasHooks: boolean = false;
 
-    stateWasPopped: boolean = false;
-    handlePopState(e: any): any {
-        this.stateWasPopped = true;
-        let shouldClose = (!e.state || !e.state.UploadDialog);
-        if (shouldClose) {
-            this.props.onClose();
-        }
-    }
 
-    updateHooks(): void {
-        let wantHooks = this.mounted && this.props.open;
-        if (wantHooks !== this.hasHooks) {
-            this.hasHooks = wantHooks;
-
-            if (this.hasHooks) {
-                this.stateWasPopped = false;
-                window.addEventListener("popstate", this.handlePopState);
-                // eslint-disable-next-line no-restricted-globals
-                let state = history.state;
-                if (!state) {
-                    state = {};
-                }
-                state.UploadDialog = true;
-
-                // eslint-disable-next-line no-restricted-globals
-                history.pushState(
-                    state,
-                    "Upload",
-                    "#UploadDialog"
-                );
-            } else {
-                window.removeEventListener("popstate", this.handlePopState);
-                if (!this.stateWasPopped) {
-                    // eslint-disable-next-line no-restricted-globals
-                    history.back();
-                }
-            }
-
-        }
-    }
     onWindowSizeChanged(width: number, height: number): void {
         this.setState({ fullScreen: height < 200 })
     }
@@ -109,16 +68,16 @@ export default class UploadDialog extends ResizeResponsiveComponent<UploadDialog
     componentDidMount() {
         super.componentDidMount();
         this.mounted = true;
-        this.updateHooks();
+        
     }
     componentWillUnmount() {
         super.componentWillUnmount();
         this.mounted = false;
-        this.updateHooks();
+        
     }
 
     componentDidUpdate() {
-        this.updateHooks();
+        
     }
 
     handleClose(): void {
@@ -194,7 +153,7 @@ export default class UploadDialog extends ResizeResponsiveComponent<UploadDialog
 
 
         return (
-            <Dialog open={this.props.open} fullWidth onClose={() => this.handleClose()} style={{}}
+            <DialogEx tag="UploadDialog" open={this.props.open} fullWidth onClose={() => this.handleClose()} style={{}}
                 fullScreen={this.state.fullScreen}
             >
                 <DialogTitle>Upload preset</DialogTitle>
@@ -234,7 +193,7 @@ export default class UploadDialog extends ResizeResponsiveComponent<UploadDialog
                         />
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </DialogEx>
         );
     }
 }

@@ -26,7 +26,6 @@ import Button from "@material-ui/core/Button";
 import ButtonBase from "@material-ui/core/ButtonBase";
 import { TransitionProps } from '@material-ui/core/transitions/transition';
 import Slide from '@material-ui/core/Slide';
-import Dialog from '@material-ui/core/Dialog';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
@@ -152,7 +151,6 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                 showDeletePrompt: false
             };
             this.handleBanksChanged = this.handleBanksChanged.bind(this);
-            this.handlePopState = this.handlePopState.bind(this);
 
         }
         onMoreClick(e: React.SyntheticEvent): void {
@@ -229,63 +227,18 @@ const BankDialog = withStyles(styles, { withTheme: true })(
 
         hasHooks: boolean = false;
 
-        stateWasPopped: boolean = false;
-        handlePopState(e: any): any {
-            let state: any = e.state;
-            if (!state || !state.bankDialog) {
-                this.stateWasPopped = true;
-                this.props.onDialogClose();
-            }
-        }
-
-        updateBackButtonHooks(): void {
-            let wantHooks = this.mounted && this.props.show;
-            if (wantHooks !== this.hasHooks) {
-                this.hasHooks = wantHooks;
-
-                if (this.hasHooks) {
-                    this.stateWasPopped = false;
-                    window.addEventListener("popstate", this.handlePopState);
-                    // eslint-disable-next-line no-restricted-globals
-                    let newState: any = history.state;
-                    if (!newState) {
-                        newState = {};
-                    }
-                    newState.bankDialog = true;
-                    // eslint-disable-next-line no-restricted-globals
-                    history.pushState(
-                        newState,
-                        "PiPedal - Banks",
-                        "#Banks"
-                    );
-                } else {
-                    window.removeEventListener("popstate", this.handlePopState);
-                    if (!this.stateWasPopped) {
-                        // eslint-disable-next-line no-restricted-globals
-                        history.back();
-                    }
-                    // eslint-disable-next-line no-restricted-globals
-                    history.replaceState({}, "PiPedal", "#");
-                }
-
-            }
-        }
-
 
         componentDidUpdate() {
-            this.updateBackButtonHooks();
         }
         componentDidMount() {
             this.model.banks.addOnChangedHandler(this.handleBanksChanged);
             this.handleBanksChanged();
             // scroll selected item into view.
             this.mounted = true;
-            this.updateBackButtonHooks();
         }
         componentWillUnmount() {
             this.model.banks.removeOnChangedHandler(this.handleBanksChanged);
             this.mounted = false;
-            this.updateBackButtonHooks();
         }
 
         getSelectedIndex() {
@@ -453,7 +406,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
             let defaultSelectedIndex = this.getSelectedIndex();
 
             return (
-                <Dialog fullScreen open={this.props.show}
+                <DialogEx tag="BankDialog" fullScreen open={this.props.show}
                     onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}>
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
@@ -601,7 +554,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                         </DialogActions>
                     </DialogEx>
 
-                </Dialog >
+                </DialogEx >
 
             );
 

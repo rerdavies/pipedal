@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { SyntheticEvent } from 'react';
-import Dialog from '@material-ui/core/Dialog';
+import DialogEx from './DialogEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { PiPedalModel, PiPedalModelFactory, ListenHandle } from './PiPedalModel';
 import Typography from '@material-ui/core/Typography';
@@ -86,21 +86,12 @@ export const MidiBindingDialog =
                     listenSnackbarOpen: false
                 };
                 this.model = PiPedalModelFactory.getInstance();
-                this.handlePopState = this.handlePopState.bind(this);
                 this.handleClose = this.handleClose.bind(this);
             }
             mounted: boolean = false;
 
             hasHooks: boolean = false;
 
-            stateWasPopped: boolean = false;
-            handlePopState(e: any): any {
-                this.stateWasPopped = true;
-                let shouldClose = (!e.state);
-                if (shouldClose) {
-                    this.props.onClose();
-                }
-            }
             handleClose() {
                 this.props.onClose();
             }
@@ -163,39 +154,6 @@ export const MidiBindingDialog =
 
             }
 
-            updateHooks(): void {
-                let wantHooks = this.mounted && this.props.open;
-                if (wantHooks !== this.hasHooks) {
-                    this.hasHooks = wantHooks;
-
-                    if (this.hasHooks) {
-                        this.stateWasPopped = false;
-                        window.addEventListener("popstate", this.handlePopState);
-                        // eslint-disable-next-line no-restricted-globals
-                        let state = history.state;
-                        if (!state) {
-                            state = {};
-                        }
-                        state.midiBindingDialog = true;
-
-                        // eslint-disable-next-line no-restricted-globals
-                        history.pushState(
-                            state,
-                            "Preset MIDI Bindings",
-                            "#MidiBindingDialog"
-                        );
-                    } else {
-                        window.removeEventListener("popstate", this.handlePopState);
-                        if (!this.stateWasPopped) {
-                            // eslint-disable-next-line no-restricted-globals
-                            history.back();
-                        }
-                        this.cancelListenForControl();
-
-                    }
-
-                }
-            }
             onWindowSizeChanged(width: number, height: number): void {
             }
 
@@ -203,18 +161,15 @@ export const MidiBindingDialog =
             componentDidMount() {
                 super.componentDidMount();
                 this.mounted = true;
-                this.updateHooks();
             }
             componentWillUnmount() {
                 super.componentWillUnmount();
 
                 this.mounted = false;
-                this.updateHooks();
 
             }
 
             componentDidUpdate() {
-                this.updateHooks();
             }
             handleItemChanged(instanceId: number, newBinding: MidiBinding) {
                 this.model.setMidiBinding(instanceId, newBinding);
@@ -311,7 +266,7 @@ export const MidiBindingDialog =
                 }
 
                 return (
-                    <Dialog open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
+                    <DialogEx tag="MidiBindingsDialog" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
                         fullScreen={true} 
                         style={{userSelect: "none"}}
                     >
@@ -353,7 +308,7 @@ export const MidiBindingDialog =
                                 onClose={() => this.setState({ listenSnackbarOpen: false })}
                                 message="Listening for MIDI input"
                             />
-                    </Dialog >
+                    </DialogEx >
                 );
             }
         });

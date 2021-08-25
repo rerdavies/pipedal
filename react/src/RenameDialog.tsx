@@ -20,7 +20,7 @@
 import React from 'react';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
-import Dialog from '@material-ui/core/Dialog';
+import DialogEx from './DialogEx';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import { nullCast } from './Utility';
@@ -49,57 +49,11 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
             fullScreen: false
         };
         this.refText = React.createRef<HTMLInputElement>();
-        this.handlePopState = this.handlePopState.bind(this);
     }
     mounted: boolean = false;
 
-    hasHooks: boolean = false;
 
-    stateWasPopped: boolean = false;
-    handlePopState(e: any): any {
-        this.stateWasPopped = true;
-        let shouldClose = (!e.state || !e.state.renameDialog);
-        if (shouldClose)
-        {
-            this.props.onClose();
-        }
-    }
 
-    updateHooks() : void {
-        let wantHooks = this.mounted && this.props.open;
-        if (wantHooks !== this.hasHooks)
-        {
-            this.hasHooks = wantHooks;
-
-            if (this.hasHooks)
-            {
-                this.stateWasPopped = false;
-                window.addEventListener("popstate",this.handlePopState);
-                // eslint-disable-next-line no-restricted-globals
-                let state = history.state;
-                if (!state)
-                {
-                    state = {};
-                }
-                state.renameDialog = true;
-
-                // eslint-disable-next-line no-restricted-globals
-                history.pushState(
-                    state,
-                    this.props.acceptActionName,
-                    "#RenameDialog"
-                );
-            } else {
-                window.removeEventListener("popstate",this.handlePopState);
-                if (!this.stateWasPopped)
-                {
-                    // eslint-disable-next-line no-restricted-globals
-                    history.back();
-                }
-            }
-
-        }
-    }
     onWindowSizeChanged(width: number, height: number): void 
     {
         this.setState({fullScreen: height < 200})
@@ -110,18 +64,15 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
     {
         super.componentDidMount();
         this.mounted = true;
-        this.updateHooks();
     }
     componentWillUnmount()
     {
         super.componentWillUnmount();
         this.mounted = false;
-        this.updateHooks();
     }
 
     componentDidUpdate()
     {
-        this.updateHooks();
     }
 
     render() {
@@ -145,7 +96,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
             }
         };
         return (
-            <Dialog open={open} fullWidth onClose={handleClose} aria-labelledby="Rename-dialog-title" style={{}}
+            <DialogEx tag="RenameDialog" open={open} fullWidth onClose={handleClose} aria-labelledby="Rename-dialog-title" style={{}}
                 fullScreen={this.state.fullScreen}
                 >
                 <DialogContent>
@@ -169,7 +120,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                         {acceptActionName}
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </DialogEx>
         );
     }
 }

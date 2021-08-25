@@ -1383,7 +1383,7 @@ Copyright: Open JS Foundation
 License: BSD-2-clause
 
 Files: react/node_modules/espree/node_modules/*
-Copyright: contributors
+Copyright: Contributors
 License: Apache-2.0
 
 Files: react/node_modules/esprima/*

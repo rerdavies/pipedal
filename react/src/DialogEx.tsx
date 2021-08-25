@@ -30,6 +30,38 @@ interface DialogExState {
 
 }
 
+class DialogStackEntry {
+    constructor(tag: string)
+    {
+        this.tag = tag;
+    }
+    tag: string;
+};
+
+let dialogStack: DialogStackEntry[] = [];
+
+function peekDialogStack(): string {
+    if (dialogStack.length !== 0) {
+        return dialogStack[dialogStack.length-1].tag;
+    }
+    return "";
+}
+
+let ignoreNextPop = false;
+
+function popDialogStack(ignoreNextPop_: boolean): void {
+    if (dialogStack.length !== 0)
+    {
+        ignoreNextPop = ignoreNextPop_;
+        dialogStack.splice(dialogStack.length-1,1);
+    }
+}
+function pushDialogStack(tag: string): void {
+    dialogStack.push(new DialogStackEntry(tag));
+}
+
+
+
 class DialogEx extends React.Component<DialogExProps,DialogExState>  {
     constructor(props: DialogExProps)
     {
@@ -47,14 +79,25 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
 
     stateWasPopped: boolean = false;
     handlePopState(e: any): any {
-        this.stateWasPopped = true;
-        let shouldClose = (!e.state || !e.state[this.props.tag]);
+        let shouldClose = (peekDialogStack() === this.props.tag);
         if (shouldClose)
         {
-            if (this.props.onClose)
+            if (ignoreNextPop)
             {
-                this.props.onClose(e,"backdropClick");
+                ignoreNextPop = false;
+            } else {
+                if (!this.stateWasPopped)
+                {
+                    this.stateWasPopped = true;
+
+                    if (this.props.onClose)
+                    {
+                        popDialogStack(false);
+                        this.props.onClose(e,"backdropClick");
+                    }
+                }
             }
+            e.stopPropagation();
         }
     }
 
@@ -76,28 +119,25 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
                 }
                 state[this.props.tag] = true;
 
+                pushDialogStack(this.props.tag);
                 // eslint-disable-next-line no-restricted-globals
                 history.pushState(
                     state,
                     "",
-                    "#" + this.props.tag
+                    "" //"#" + this.props.tag
                 );
             } else {
-                window.removeEventListener("popstate",this.handlePopState);
                 if (!this.stateWasPopped)
                 {
+                    this.stateWasPopped = true;
+                    popDialogStack(true);
                     // eslint-disable-next-line no-restricted-globals
                     history.back();
                 }
+                window.removeEventListener("popstate",this.handlePopState);
             }
-
         }
     }
-    onWindowSizeChanged(width: number, height: number): void 
-    {
-        this.setState({fullScreen: height < 200})
-    }
-
 
     componentDidMount()
     {
