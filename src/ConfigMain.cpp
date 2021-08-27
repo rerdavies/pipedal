@@ -172,6 +172,11 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     {
         //  throw PiPedalException("Failed to create service account.");
     }
+    // lock account for login.
+    SysExec("passwd -l " SERVICE_ACCOUNT_NAME);
+
+
+    // Add to audio groups.
     SysExec(USERMOD_BIN " -a -G jack " SERVICE_ACCOUNT_NAME);
     SysExec(USERMOD_BIN " -a -G audio " SERVICE_ACCOUNT_NAME);
 
