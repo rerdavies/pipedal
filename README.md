@@ -43,10 +43,15 @@ available configuration commands, some of which are not avaialbe from the web in
 of the Web App HTTP server if you need to, uusing pipedalconfig).
 
 
-## LV2 PLugin Support
+## LV2 PLugins
 
 PiPedal uses standard LV2 audio plugins for effects. There are currently a wide variety of available LV2 guitar effect plugins, foremost of
 which is the Guitarix plugin collection: https://guitarix.org/
+
+To get started, install the Guitarix LV2 plugin collection.
+
+  sudo apt install jackd 
+  sudo apt install guitarix-lv2
 
 But there are hundreds of other high-quality LV2 plugins that are suitable for use with PiPedal. 
 
