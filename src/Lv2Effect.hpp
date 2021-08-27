@@ -27,11 +27,11 @@
 
 #include "IEffect.hpp"
 #include "Worker.hpp"
-#include "lv2/patch/patch.h"
-#include "lv2/log/log.h"
-#include "lv2/log/logger.h"
+#include "lv2/patch.lv2/patch.h"
+#include "lv2/log.lv2/log.h"
+#include "lv2/log.lv2/logger.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
-#include "lv2/atom/forge.h"
+#include "lv2/atom.lv2/forge.h"
 
 namespace pipedal
 {
@@ -108,12 +108,12 @@ namespace pipedal
                 patch_body = pHost->GetLv2Urid(LV2_PATCH__body);
                 patch_subject = pHost->GetLv2Urid(LV2_PATCH__subject);
                 patch_property = pHost->GetLv2Urid(LV2_PATCH__property);
-                patch_accept = pHost->GetLv2Urid(LV2_PATCH__accept);
+                //patch_accept = pHost->GetLv2Urid(LV2_PATCH__accept);
                 patch_value = pHost->GetLv2Urid(LV2_PATCH__value);
                 unitsFrame = pHost->GetLv2Urid(LV2_UNITS__frame);
 
             }
-            LV2_URID patch_accept;
+            //LV2_URID patch_accept;
 
             LV2_URID unitsFrame;
             LV2_URID pluginUri;

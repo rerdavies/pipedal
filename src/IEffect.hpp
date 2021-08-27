@@ -19,7 +19,7 @@
 
 #pragma once 
 
-#include <lv2/urid/urid.h>
+#include <lv2/urid.lv2/urid.h>
 
 namespace pipedal {
     class RealtimeParameterRequest;

@@ -36,6 +36,11 @@ else()
   message(STATUS "LILV_0_INCLUDE_DIRS: ${LILV_0_INCLUDE_DIRS}")
 endif()
 
+
+# Use LV2 headers from the /usr/lib directory.
+set (LV2DEV_INCLUDE_DIRS /usr/lib)
+
+
 pkg_check_modules(JACK "jack")
 if(!JACK_FOUND)
   message(ERROR "jack package not installed.")
@@ -127,7 +132,8 @@ target_precompile_headers(pipedald PRIVATE pch.h)
 
 
 target_include_directories(pipedald PRIVATE
-   ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS}
+    ${LV2DEV_INCLUDE_DIRS}
+   ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS} ${LVDEV_INCLUDE_DIRS}
     )
 
 target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs
@@ -150,6 +156,7 @@ target_precompile_headers(pipedaltest PRIVATE pch.h)
 
 
 target_include_directories(pipedaltest PRIVATE
+   ${LV2DEV_INCLUDE_DIRS}
    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS}
     )
 
@@ -206,7 +213,7 @@ add_custom_command(OUTPUT ${REACT_NOTICES_FILE}
     COMMAND "$<TARGET_FILE:processcopyrights>"
         --output ${REACT_NOTICES_FILE} 
         --projectCopyright ${DEBIAN_COPYRIGHT_FILE} 
-        liblilv-0-0 libboost-system1.67-dev libnl-3-dev libnl-3-dev  lv2-dev
+        liblilv-0-0 libboost1.67-dev libnl-3-dev libnl-3-dev  lv2-dev
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${DEBIAN_COPYRIGHT_FILE} "$<TARGET_FILE:processcopyrights>"
     COMMENT "Updating copyright notices."
