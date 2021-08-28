@@ -103,6 +103,7 @@ Run the following commands to install dependent components required by the PiPed
 
     sudo apt update
     sudo apt install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
+    sudo apt install libasound2-dev
 
 The PiPedal build process also requires version 14 or later of `node.js`. Type `node --version` to see if you have a version 
 of `node.js` installed already. Otherwise run the following commands as root to install the v14.x lts version of `node.js`: 
