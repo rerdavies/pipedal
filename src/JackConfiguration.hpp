@@ -55,6 +55,7 @@ namespace pipedal
         size_t GetBlockLength() const { return blockLength_; }
         size_t GetMidiBufferSize() const { return midiBufferSize_;}
         double GetMaxAllowedMidiDelta() const { return maxAllowedMidiDelta_; }
+        void SetErrorStatus(const std::string&message) { this->errorStatus_ = message; }
 
         const std::vector<std::string> &GetInputAudioPorts() const { return inputAudioPorts_; }
         const std::vector<std::string> &GetOutputAudioPorts() const { return outputAudioPorts_; }

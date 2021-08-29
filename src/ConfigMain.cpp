@@ -18,6 +18,8 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <iostream>
+#include <stdlib.h>
+#include <unistd.h>
 #include "CommandLineParser.hpp"
 #include "PiPedalException.hpp"
 #include <filesystem>
@@ -27,27 +29,29 @@
 #include "SetWifiConfig.hpp"
 #include "SysExec.hpp"
 #include <sys/wait.h>
+#include <pwd.h>
 
 using namespace std;
 using namespace pipedal;
 
 #define SERVICE_ACCOUNT_NAME "pipedal_d"
 #define SERVICE_GROUP_NAME "pipedal_d"
+#define JACK_SERVICE_ACCOUNT_NAME "jack"
+#define JACK_SERVICE_GROUP_NAME "jack"
+#define AUDIO_SERVICE_GROUP_NAME "audio"
 
 #define SYSTEMCTL_BIN "/usr/bin/systemctl"
 #define GROUPADD_BIN "/usr/sbin/groupadd"
-#define USERADD_BIN  "/usr/sbin/useradd"
+#define USERADD_BIN "/usr/sbin/useradd"
 #define USERMOD_BIN "/usr/sbin/usermod"
 #define CHGRP_BIN "/usr/bin/chgrp"
 #define CHOWN_BIN "/usr/bin/chown"
 #define CHMOD_BIN "/usr/bin/chmod"
 
-
 #define SERVICE_PATH "/usr/lib/systemd/system"
 #define NATIVE_SERVICE "pipedald"
 #define SHUTDOWN_SERVICE "pipedalshutdownd"
-// #define REACT_SERVICE "pipedal_react"
-
+#define JACK_SERVICE "jack"
 
 std::filesystem::path GetServiceFileName(const std::string &serviceName)
 {
@@ -113,6 +117,14 @@ void StopService()
         cout << "Error: Failed to stop the " SHUTDOWN_SERVICE " service.";
     }
 }
+
+void Uninstall() {
+    StopService();
+    DisableService();
+    system(SYSTEMCTL_BIN " stop jack");
+    system(SYSTEMCTL_BIN " disable jack");
+}
+
 void StartService()
 {
 
@@ -132,8 +144,98 @@ void RestartService()
     StartService();
 }
 
+static bool userExists(const char *userName)
+{
+    struct passwd pwd;
+    struct passwd *result;
+    char *buf;
+    size_t bufsize;
+    int s;
+
+    bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (bufsize == -1)   /* Value was indeterminate */
+        bufsize = 16384; /* Should be more than enough */
+
+    buf = (char *)malloc(bufsize);
+    if (buf == NULL)
+    {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+
+    s = getpwnam_r(userName, &pwd, buf, bufsize, &result);
+    if (result == NULL)
+    {
+        return false;
+    }
+    return true;
+}
+
+void InstallLimits()
+{
+    if (SysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
+    {
+        throw PiPedalException("Failed to create audio service group.");
+    }
+
+    std::filesystem::path limitsConfig = "/usr/security/audio.conf";
+
+    if (!std::filesystem::exists(limitsConfig))
+    {
+        ofstream output(limitsConfig);
+        output << "# Realtime priority group used by pipedal/jack daemon" << endl;
+        output << "@audio   -  rtprio     95" << endl;
+        output << "@audio   -  memlock    unlimited" << endl;
+    }
+
+
+}
+
+void MaybeStartJackService() {
+    std::filesystem::path drcFile = "/etc/jackdrc";
+
+    if (std::filesystem::exists(drcFile) && std::filesystem::file_size(drcFile) != 0) {
+        system(SYSTEMCTL_BIN " start jack");
+    } else {
+        system(SYSTEMCTL_BIN " mask jack");
+    }
+}
+void InstallJackService()
+{
+    InstallLimits();
+    if (SysExec(GROUPADD_BIN " -f " JACK_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
+    {
+        throw PiPedalException("Failed to create jack service group.");
+    }
+    if (!userExists(JACK_SERVICE_ACCOUNT_NAME))
+    {
+        if (SysExec(USERADD_BIN " " JACK_SERVICE_ACCOUNT_NAME " -g " JACK_SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
+        {
+            //  throw PiPedalException("Failed to create service account.");
+        }
+        // lock account for login.
+        SysExec("passwd -l " JACK_SERVICE_ACCOUNT_NAME);
+    }
+
+    // Add to audio groups.
+    SysExec(USERMOD_BIN " -a -G " JACK_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
+    SysExec(USERMOD_BIN " -a -G" AUDIO_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
+
+    // deploy the systemd service file
+    std::map<std::string,std::string> map; // nothing to customize.
+
+    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/templateJack.service"), GetServiceFileName(JACK_SERVICE));
+
+
+    MaybeStartJackService();
+
+}
+
+
 void Install(const std::filesystem::path &programPrefix, const std::string endpointAddress)
 {
+
+    InstallJackService();
     auto endpos = endpointAddress.find_last_of(':');
     if (endpos == string::npos)
     {
@@ -168,13 +270,15 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     {
         throw PiPedalException("Failed to create service group.");
     }
-    if (SysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
+    if (!userExists(SERVICE_ACCOUNT_NAME))
     {
-        //  throw PiPedalException("Failed to create service account.");
+        if (SysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
+        {
+            //  throw PiPedalException("Failed to create service account.");
+        }
+        // lock account for login.
+        SysExec("passwd -l " SERVICE_ACCOUNT_NAME);
     }
-    // lock account for login.
-    SysExec("passwd -l " SERVICE_ACCOUNT_NAME);
-
 
     // Add to audio groups.
     SysExec(USERMOD_BIN " -a -G jack " SERVICE_ACCOUNT_NAME);
@@ -278,8 +382,9 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     cout << "Complete" << endl;
 }
 
-int SudoExec(char**argv) {
-     int pbPid;
+int SudoExec(char **argv)
+{
+    int pbPid;
     int returnValue = 0;
 
     if ((pbPid = fork()) == 0)
@@ -294,7 +399,6 @@ int SudoExec(char**argv) {
         return exitStatus;
     }
 }
-
 
 int main(int argc, char **argv)
 {
@@ -328,7 +432,7 @@ int main(int argc, char **argv)
     {
         parser.Parse(argc, (const char **)argv);
 
-        int actionCount = install + uninstall + stop + start + enable + disable + enable_ap + disable_ap;
+        int actionCount = install + uninstall + stop + start + enable + disable + enable_ap + disable_ap + restart;
         if (actionCount > 1)
         {
             throw PiPedalException("Please provide only one action.");
@@ -364,7 +468,8 @@ int main(int argc, char **argv)
 
     if (help || helpError)
     {
-        if (helpError) cout << endl;
+        if (helpError)
+            cout << endl;
 
         cout << "pipedalconfig - Post-install configuration for pipdeal" << endl
              << "Copyright (c) 2021 Robin Davies. All rights reserved." << endl
@@ -409,7 +514,7 @@ int main(int argc, char **argv)
              << "Description:" << endl
              << "    pipedalconfig performs post-install configuration of pipedal." << endl
              << endl;
-        exit(helpError? EXIT_FAILURE: EXIT_SUCCESS);
+        exit(helpError ? EXIT_FAILURE : EXIT_SUCCESS);
     }
     if (portOption.size() != 0 && !install)
     {
@@ -421,16 +526,16 @@ int main(int argc, char **argv)
     if (uid != 0 && !nopkexec)
     {
         // re-execute with PKEXEC in order to prompt form SUDO credentials.
-        std::vector<char*> args;
+        std::vector<char *> args;
         std::string pkexec = "/usr/bin/pkexec"; // staged because "ISO C++ forbids converting a string constant to std::vector<char*>::value_type"(!)
-        args.push_back((char*)(pkexec.c_str()));
+        args.push_back((char *)(pkexec.c_str()));
 
         std::filesystem::path path = std::filesystem::absolute(argv[0]);
         std::string sPath = path;
-        args.push_back((char*)path.c_str());
+        args.push_back((char *)path.c_str());
         for (int arg = 1; arg < argc; ++arg)
         {
-            args.push_back((char*)argv[arg]);
+            args.push_back((char *)argv[arg]);
         }
 
         std::string prefixArg; //  lifetime management for the prefix arguments
@@ -440,18 +545,14 @@ int main(int argc, char **argv)
         {
             std::filesystem::path prefix = std::filesystem::path(argv[0]).parent_path().parent_path();
             prefixOptionArg = "-prefix";
-            args.push_back((char*)(prefixOptionArg.c_str()));
+            args.push_back((char *)(prefixOptionArg.c_str()));
             prefixArg = prefix;
-            args.push_back((char*)prefixArg.c_str());
+            args.push_back((char *)prefixArg.c_str());
         }
         args.push_back(nullptr);
 
-        char**rawArgv = &args[0];
+        char **rawArgv = &args[0];
         return SudoExec(rawArgv);
-
-
-
-
     }
 
     try
@@ -488,6 +589,7 @@ int main(int argc, char **argv)
         }
         else if (uninstall)
         {
+            Uninstall();
         }
         else if (stop)
         {

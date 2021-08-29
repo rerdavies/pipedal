@@ -34,6 +34,7 @@ install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
 
 install (FILES  ${PROJECT_SOURCE_DIR}/src/template.service 
                 ${PROJECT_SOURCE_DIR}/src/templateShutdown.service 
+                ${PROJECT_SOURCE_DIR}/src/templateJack.service 
         DESTINATION /etc/pipedal )
 
 install(CODE 

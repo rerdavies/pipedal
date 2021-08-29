@@ -418,6 +418,8 @@ uint16_t g_ShutdownPort = 0;
 
 int main(int argc, char *argv[])
 {
+    
+
     sem_init(&signalSemaphore, 0, 0);
 
     signal(SIGINT, sig_handler);

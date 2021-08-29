@@ -118,6 +118,7 @@ set (PIPEDAL_SOURCES
     WifiChannels.hpp
     WifiChannels.cpp
     RegDb.cpp RegDb.hpp
+    PiPedalAlsa.hpp PiPedalAlsa.cpp
 )
 
 configure_file(config.hpp.in config.hpp)
@@ -136,7 +137,7 @@ target_include_directories(pipedald PRIVATE
    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS} ${LVDEV_INCLUDE_DIRS}
     )
 
-target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs
+target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs asound
     ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd
     )
 
@@ -144,6 +145,7 @@ target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs
 add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
     jsonTest.cpp
     WifiChannelsTest.cpp
+    PiPedalAlsaTest.cpp
 
     SystemConfigFile.hpp SystemConfigFile.cpp
     SystemConfigFileTest.cpp
@@ -160,7 +162,7 @@ target_include_directories(pipedaltest PRIVATE
    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS}
     )
 
-target_link_libraries(pipedaltest PRIVATE pthread atomic stdc++fs
+target_link_libraries(pipedaltest PRIVATE pthread atomic stdc++fs asound
     ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd
     )
 

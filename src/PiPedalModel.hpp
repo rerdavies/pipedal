@@ -60,6 +60,8 @@ public:
 
 class PiPedalModel: private IJackHostCallbacks {
 private:
+    PiPedalAlsaDevices alsaDevices;
+
 
     class MidiListener {
     public:
@@ -202,6 +204,7 @@ public:
 
     void listenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly);
     void cancelListenForMidiEvent(int64_t clientId, int64_t clientHandled);
+    std::vector<AlsaDeviceInfo> GetAlsaDevices();
 
 };
 } // namespace pipedal.

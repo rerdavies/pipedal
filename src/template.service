@@ -5,6 +5,7 @@ After=network.target
 BindsTo=jack.service
 
 
+
 [Service]
 LimitMEMLOCK=infinity
 LimitRTPRIO=95
@@ -12,11 +13,11 @@ ExecStart=${COMMAND}
 User=pipedal_d
 Group=pipedal_d
 Restart=always
-RestartSec=15
+RestartSec=25
 TimeoutStopSec=10
 WorkingDirectory=/var/pipedal
-Environment=JACK_PROMISCUOUS_SERVER=jack
-Environment=JACK_START_SERVER=1
+Environment=JACK_PROMISCUOUS_SERVER=
+Environment=JACK_STJACK_NO_START_SERVER=
 
 
 [Install]

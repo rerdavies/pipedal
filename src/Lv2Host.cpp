@@ -394,13 +394,14 @@ void Lv2Host::Load(const char *lv2Path)
         }
     }
 
-    auto compare = [](
+    const auto &collation = std::use_facet<std::collate<char> >(std::locale());
+    auto compare = [&collation](
                        const std::shared_ptr<Lv2PluginInfo> &left,
                        const std::shared_ptr<Lv2PluginInfo> &right)
     {
         const char *pb1 = left->name().c_str();
         const char *pb2 = right->name().c_str();
-        return Locale::collation.compare(
+        return collation.compare(
                    pb1, pb1 + left->name().size(),
                    pb2, pb2 + right->name().size()) < 0;
     };
@@ -1005,9 +1006,11 @@ std::vector<Lv2PluginPreset> Lv2Host::GetPluginPresets(const std::string &plugin
 	}
 	lilv_nodes_free(presets);
 
-    auto compare = [] (const Lv2PluginPreset&left, const Lv2PluginPreset&right)
+    auto& collation = std::use_facet<std::collate<char> >(std::locale());
+
+    auto compare = [&collation] (const Lv2PluginPreset&left, const Lv2PluginPreset&right)
     {
-        return Locale::collation.compare(
+        return collation.compare(
             left.name_.c_str(),
             left.name_.c_str()+left.name_.size(),
             right.name_.c_str(),

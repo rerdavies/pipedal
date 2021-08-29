@@ -87,6 +87,8 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
 
     this->jackServerSettings.ReadJackConfiguration();
 
+    alsaDevices.PreLoadJackDevice(this->jackServerSettings.GetAlsaDevice());
+
     storage.SetDataRoot(configuration.GetLocalStoragePath().c_str());
     storage.Initialize();
 
@@ -332,7 +334,7 @@ PedalBoard PiPedalModel::getPreset(int64_t instanceId)
     std::lock_guard guard(mutex);
     return this->storage.GetPreset(instanceId);
 }
-void PiPedalModel::getBank(int64_t instanceId, BankFile*pResult)
+void PiPedalModel::getBank(int64_t instanceId, BankFile *pResult)
 {
     std::lock_guard guard(mutex);
     this->storage.GetBankFile(instanceId, pResult);
@@ -855,12 +857,18 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 {
     std::lock_guard guard(mutex);
 
-    this->jackServerSettings = jackServerSettings;
-
     if (!ShutdownClient::CanUseShutdownClient())
     {
-        throw PiPedalException("Can't change server settings when running interactively.");
+        throw PiPedalException("Can't change server settings when running a debug server.");
     }
+
+    if (this->jackServerSettings.GetAlsaDevice() != jackServerSettings.GetAlsaDevice())
+    {
+        this->alsaDevices.PreLoadJackDevice(jackServerSettings.GetAlsaDevice());
+    }
+    this->jackServerSettings = jackServerSettings;
+
+
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
     IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -879,29 +887,38 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     {
         this->jackConfiguration.SetIsRestarting(true);
         fireJackConfigurationChanged(this->jackConfiguration);
-        this->jackHost->UpdateServerConfiguration(jackServerSettings,
-                                                  [this](bool success, const std::string &errorMessage)
-                                                  {
-                                                      std::lock_guard guard(mutex);
-                                                      if (!success)
-                                                      {
-                                                          std::stringstream s;
-                                                          s << "UpdateServerconfiguration failed: " << errorMessage;
-                                                          Lv2Log::error(s.str().c_str());
-                                                      }
-                                                      // Update jack server status.
-                                                      this->jackConfiguration.SetIsRestarting(false);
-                                                      fireJackConfigurationChanged(this->jackConfiguration);
+        this->jackHost->UpdateServerConfiguration(
+            jackServerSettings,
+            [this](bool success, const std::string &errorMessage)
+            {
+                std::lock_guard guard(mutex);
+                if (!success)
+                {
+                    std::stringstream s;
+                    s << "UpdateServerconfiguration failed: " << errorMessage;
+                    Lv2Log::error(s.str().c_str());
+                }
+                // Update jack server status.
+                this->jackConfiguration.SetIsRestarting(false);
+                if (!success)
+                {
+                    this->jackConfiguration.SetErrorStatus(errorMessage);
+                }
+                else
+                {
+                    this->jackConfiguration.SetErrorStatus("");
+                    fireJackConfigurationChanged(this->jackConfiguration);
 
-                                                      // restart the pedalboard on a new instance.
-                                                      std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
-                                                      this->lv2PedalBoard = lv2PedalBoard;
+                    // restart the pedalboard on a new instance.
+                    std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
+                    this->lv2PedalBoard = lv2PedalBoard;
 
-                                                      jackHost->SetPedalBoard(lv2PedalBoard);
-                                                      updateRealtimeVuSubscriptions();
-                                                      updateRealtimeMonitorPortSubscriptions();
-                                                  });
-    }
+                    jackHost->SetPedalBoard(lv2PedalBoard);
+                    updateRealtimeVuSubscriptions();
+                    updateRealtimeMonitorPortSubscriptions();
+                }
+            });
+    } 
 }
 
 void PiPedalModel::updateDefaults(PedalBoardItem *pedalBoardItem)
@@ -1039,4 +1056,8 @@ void PiPedalModel::cancelListenForMidiEvent(int64_t clientId, int64_t clientHand
     {
         jackHost->SetListenForMidiEvent(false);
     }
+}
+std::vector<AlsaDeviceInfo> PiPedalModel::GetAlsaDevices()
+{
+    return this->alsaDevices.GetAlsaDevices();
 }

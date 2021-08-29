@@ -17,16 +17,22 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
+#include "pch.h"
+#include "catch.hpp"
+#include <sstream>
+#include <cstdint>
+#include <string>
 
-#include <locale>
+#include "PiPedalAlsa.hpp"
 
-namespace pipedal {
+using namespace pipedal;
 
-    class Locale {
-    public:
-        static void setDefaultLocale();
+TEST_CASE( "ALSA Test", "[pipedal_alsa_test]" ) {
 
-        static const std::collate<char>& collation();
-    };
+    PiPedalAlsaDevices devices;
+    auto result = devices.GetAlsaDevices();
+    REQUIRE(result.size() >= 1);
 }
+
+
+

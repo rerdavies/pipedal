@@ -27,6 +27,7 @@
 #include "json.hpp"
 #include "JackServerSettings.hpp"
 #include <functional>
+#include "PiPedalAlsa.hpp"
 
 namespace pipedal {
 
@@ -118,7 +119,6 @@ public:
 class IHost;
 
 class JackHost {
-
 protected: 
     JackHost() { }
 public: 

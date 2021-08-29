@@ -25,6 +25,7 @@ add_custom_command(
         src/JackServerSettingsDialog.tsx
         src/JackServerSettings.tsx
         src/DialogEx.tsx
+        src/AlsaDeviceInfo.tsx
         
         src/AboutDialog.tsx
         src/App.test.tsx

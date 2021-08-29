@@ -23,31 +23,37 @@ export default class JackServerSettings {
     deserialize(input: any) : JackServerSettings{
         this.valid = input.valid;
         this.rebootRequired = input.rebootRequired;
+        this.alsaDevice = input.alsaDevice?? "";
         this.sampleRate = input.sampleRate;
         this.bufferSize = input.bufferSize;
         this.numberOfBuffers = input.numberOfBuffers;
         return this;
     }
-    constructor(sampleRate?: number, bufferSize?: number, numberOfBuffers?: number)
+    // constructor(alsaDevice: string, sampleRate?: number, bufferSize?: number, numberOfBuffers?: number)
+    // {
+    //     if (sampleRate) this.sampleRate = sampleRate;
+    //     if (bufferSize) this.bufferSize = bufferSize;
+    //     if (numberOfBuffers) this.numberOfBuffers = numberOfBuffers;
+    //     if (numberOfBuffers) {
+    //         this.valid = true;
+    //     }
+    // }
+    clone(): JackServerSettings
     {
-        if (sampleRate) this.sampleRate = sampleRate;
-        if (bufferSize) this.bufferSize = bufferSize;
-        if (numberOfBuffers) this.numberOfBuffers = numberOfBuffers;
-        if (numberOfBuffers) {
-            this.valid = true;
-        }
+        return new JackServerSettings().deserialize(this);
     }
     valid: boolean = false;
     rebootRequired = false;
+    alsaDevice: string = "";
     sampleRate = 48000;
     bufferSize = 64;
     numberOfBuffers = 3;
 
     getSummaryText() {
         if (this.valid) {
-            return "Sample Rate: " + this.sampleRate + " BufferSize: " + this.bufferSize + " Number of Buffers: " + this.numberOfBuffers;
+            return this.alsaDevice + " Sample Rate: " + this.sampleRate + " BufferSize: " + this.bufferSize + " Number of Buffers: " + this.numberOfBuffers;
         } else {
-            return "";
+            return "Not configured";
         }
     }
 

@@ -33,6 +33,7 @@
 #include "WifiConfigSettings.hpp"
 #include "WifiChannels.hpp"
 #include "SysExec.hpp"
+#include "PiPedalAlsa.hpp"
 
 using namespace std;
 using namespace pipedal;
@@ -689,6 +690,12 @@ public:
         {
             JackHostStatus status = model.getJackStatus();
             this->Reply(replyTo,"getJackStatus",status);
+        } else if (message == "getAlsaDevices")
+        {
+            std::vector<AlsaDeviceInfo> devices = model.GetAlsaDevices();
+            this->Reply(replyTo,"getAlsaDevices",devices);
+            
+
         } else if (message == "getWifiChannels")
         {
             std::string country;

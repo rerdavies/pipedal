@@ -109,7 +109,8 @@ bool ShutdownClient::WriteMessage(const char*message) {
     while (!eolFound)
     {
         ssize_t nRead = read(sock,pWrite,available);
-        if (nRead == 0) {
+        if (nRead == -1)
+        {
             *pWrite = 0;
             break;
         }
@@ -156,12 +157,11 @@ bool ShutdownClient::WriteMessage(const char*message) {
 bool ShutdownClient::SetJackServerConfiguration(const JackServerSettings & jackServerSettings)
 {
     std::stringstream s;
-    s << "setJackConfiguration " 
-      << jackServerSettings.GetSampleRate() 
-      << " " << jackServerSettings.GetBufferSize()
-      << " " << jackServerSettings.GetNumberOfBuffers()
-      << "\n";
-    
+    s << "setJackConfiguration ";
+
+    json_writer writer(s,true);
+    writer.write(jackServerSettings);
+    s << std::endl;
     return WriteMessage(s.str().c_str());
 }
 

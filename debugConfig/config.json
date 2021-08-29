@@ -1,7 +1,6 @@
 {
     /* One or more directories containing LV2 plugins, seperated by ':' */
-    "lv2_path": "/usr/modep/lv2:/usr/local/lib/lv2",
-    //"lv2_path" : "/usr/modep/lv2/rkr.lv2",
+    "lv2_path": "/usr/lib/lv2:/usr/local/lib/lv2:/usr/modep/lv2",
 
 
     /* A writable directory in which state files can be stored, preferrably only by the server process. */

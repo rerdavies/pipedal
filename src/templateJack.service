@@ -1,0 +1,24 @@
+[Unit]
+Description=Jack Audio Daemon
+After=sound.target
+After=local-fs.target
+After=dbus.socket
+
+
+[Service]
+LimitMEMLOCK=infinity
+LimitRTTIME=infinity
+LimitRTPRIO=95
+ExecStartPre=/bin/sleep 3
+ExecStart=/etc/jackdrc
+User=jack
+Group=jack
+Restart=always
+RestartSec=15
+
+Environment=JACK_PROMISCUOUS_SERVER=jack
+Environment=JACK_NO_AUDIO_RESERVATION=1
+
+
+[Install]
+WantedBy=multi-user.target

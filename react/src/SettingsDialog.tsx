@@ -400,36 +400,19 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                             overflowX: "hidden", overflowY: "auto", marginTop: 22
                         }}
                         >
-                            {!isConfigValid && (
-                                <div>
-                                    <Typography className={classes.sectionHead} display="block" variant="caption" color="error">
-                                        Error
-                                    </Typography>
-                                    <Typography className={classes.textBlock} display="block" variant="body2" >
-                                        The server encounter the following problem:
-                                    </Typography>
-                                    <Typography className={classes.textBlockIndented} display="block" variant="body2" >
-                                        {this.state.jackConfiguration.errorState}
-                                    </Typography>
-                                    <Typography className={classes.textBlock} display="block" variant="body2">
-                                        Please get the Jack Audio Server running properly on the server before attempting to configure audio.
-                                    </Typography>
-                                    <Divider style={{ marginTop: 16, marginBottom: 16 }} />
-                                </div>
-
-                            )}
-
-
-                            <div style={{ opacity: isConfigValid ? 1.0 : 0.6 }}>
+                            <div >
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
                                     AUDIO
                                 </Typography>
                                 <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                    {JackHostStatus.getDisplayView("Status:\u00A0", this.state.jackStatus)}
+                                    { (!isConfigValid) ? 
+                                    ( 
+                                        <Typography variant="caption" color="textSecondary">Status: <span style={{color: "#F00"}}>Not configured.</span></Typography>
+                                    ): 
+                                        JackHostStatus.getDisplayView("Status:\u00A0", this.state.jackStatus)
+                                    }
                                 </div>
                                 <ButtonBase className={classes.setting} onClick={() => this.handleJackServerSettings()}
-                                    disabled={!(isConfigValid && this.state.jackServerSettings.valid)}
-                                    style={{ opacity: !(isConfigValid && this.state.jackServerSettings.valid) ? 0.6 : 1.0 }}
                                 >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
@@ -441,9 +424,11 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     open={this.state.showJackServerSettingsDialog}
                                     jackServerSettings={this.state.jackServerSettings}
                                     onClose={() => this.setState({ showJackServerSettingsDialog: false })}
-                                    onApply={(sampleRate, bufferSize, numberOfBuffers) => {
-                                        this.setState({ showJackServerSettingsDialog: false });
-                                        this.model.setJackServerSettings(new JackServerSettings(sampleRate, bufferSize, numberOfBuffers));
+                                    onApply={(jackServerSettings) => {
+                                        this.setState({ showJackServerSettingsDialog: false,
+                                            jackServerSettings: jackServerSettings
+                                        });
+                                        this.model.setJackServerSettings(jackServerSettings);
                                     }}
                                 />
 

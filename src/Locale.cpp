@@ -22,6 +22,7 @@
 #include "Locale.hpp"
 
 #include <stdlib.h>
+#include "Lv2Log.hpp"
 
 
 // Must be UNICODE. Should reflect system locale.  (.e.g en-US.UTF8,  de-de.UTF8)
@@ -36,12 +37,29 @@ static const char*getLocale(const char*localeEnvironmentVariable)
     {
         result = getenv("LC_ALL");
     }
+
     if (result == nullptr) {
         result = "en_US.UTF-8";
     }
+    std::stringstream s;
+    s << "Locale: "  << result;
+    Lv2Log::error(s.str());
     return result;
 }
 
-static std::locale collationLocale(getLocale("LC_COLLATION"));
-const std::collate<char>& Locale::collation = std::use_facet<std::collate<char> >(collationLocale);
+
+void  Locale::setDefaultLocale() {
+    const char* locale = getLocale("LC_ALL");
+    try {
+        setlocale(LC_ALL,locale);
+    } catch (const std::exception&)
+    {
+        std::stringstream s;
+        s << "Failed to set default locale (" << locale << "). Defaulting to en_US.";
+        Lv2Log::error(s.str());
+        
+        std::setlocale(LC_ALL,"en_US.UTF-8");
+    }
+}
+const std::collate<char>& Locale::collation() { return std::use_facet<std::collate<char> >(std::locale()); }
 

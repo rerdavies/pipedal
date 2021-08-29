@@ -68,6 +68,7 @@ namespace pipedal
 class JackHostImpl : public JackHost
 {
 private:
+
     std::recursive_mutex mutex;
     int64_t overrunGracePeriodSamples = 0;
 
@@ -145,7 +146,7 @@ private:
                 auto port = outputPorts[i];
                 if (port != nullptr)
                 {
-                    jack_disconnect(client, channelSelection.getOutputAudioPorts()[i].c_str(), jack_port_name(port));
+                    jack_disconnect(client, jack_port_name(port),channelSelection.getOutputAudioPorts()[i].c_str());
                 }
             }
             for (size_t i = 0; i < midiInputPorts.size(); ++i)
@@ -906,6 +907,7 @@ public:
 
     virtual void Open(const JackChannelSelection &channelSelection)
     {
+
         std::lock_guard guard(mutex);
 
         this->currentSample = 0;
@@ -1262,11 +1264,18 @@ private:
         {
             this_->restarting = true;
             this_->Close();
-            ShutdownClient::SetJackServerConfiguration(jackServerSettings);
-            this_->Open(this_->channelSelection);
-            this_->restarting = false;
-            onComplete(true, "");
-            isComplete = true;
+            try {
+                ShutdownClient::SetJackServerConfiguration(jackServerSettings);
+                this_->Open(this_->channelSelection);
+                this_->restarting = false;
+                onComplete(true, "");
+                isComplete = true;
+            } catch (const std::exception &e)
+            {
+                onComplete(false,e.what());
+                this_->restarting = false;
+                isComplete = true;
+            }
         }
         static void ThreadProc_(RestartThread *this_)
         {

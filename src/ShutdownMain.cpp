@@ -80,27 +80,12 @@ static void ReleaseAccessPoint(const std::string gatewayAddress)
 }
 
 
-bool setJackConfiguration(uint32_t sampleRate,uint32_t bufferSize,uint32_t numberOfBuffers)
+bool setJackConfiguration(JackServerSettings serverSettings)
 {
     bool success = true;
-    JackServerSettings serverSettings(sampleRate,bufferSize,numberOfBuffers);
 
-    try {
-        serverSettings.Write();
-    } catch (const std::exception &e) {
-        std::stringstream s;
-         s << "Failed to write jackdrc settings. " << e.what();
-        Lv2Log::error(s.str());
-        success = false;
-    }
-    ::system("pulseaudio --kill");
-    
-    if (::system("systemctl restart jack") != 0)
-    {
-        Lv2Log::error("Failed to restart jack server.");
-        success = false;
-    }
-    return false;
+    serverSettings.Write();
+    return true;
 
 
 }
@@ -245,24 +230,28 @@ private:
             } else if (startsWith(s,"setJackConfiguration "))
             {
                 auto remainder = s.substr(strlen("setJackConfiguration "));
+                
+                // xxx delete me
+                Lv2Log::error("setJackConfiguration: " + remainder);
 
                 std::stringstream input(remainder);
-                uint32_t sampleRate;
-                uint32_t bufferSize;
-                uint32_t numberOfBuffers;
-                input >> sampleRate >> bufferSize >> numberOfBuffers;
+                JackServerSettings serverSettings;
+                json_reader reader(input);
+
+                reader.read(&serverSettings);
+
                 if (input.fail())
                 {
                     result = -1;
                 } else {
-                    result = setJackConfiguration(sampleRate,bufferSize,numberOfBuffers) ? 0: -1;
+                    result = setJackConfiguration(serverSettings) ? 0: -1;
                 }
 
             }
         } catch (const std::exception &e)
         {
             std::stringstream t;
-            t << "-2 " << e.what();
+            t << "-2 " << e.what() << "\n";
             this->response = t.str();
             this->writePosition = 0;
             WriteSome();

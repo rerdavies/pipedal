@@ -35,9 +35,15 @@ import DialogContent from '@material-ui/core/DialogContent';
 import MenuItem from '@material-ui/core/MenuItem';
 import { nullCast } from './Utility';
 import Typography from '@material-ui/core/Typography';
+import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 
+import AlsaDeviceInfo from './AlsaDeviceInfo';
+
+const INVALID_DEVICE_ID = "_invalid_";
 interface JackServerSettingsDialogState {
     latencyText: string;
+    jackServerSettings: JackServerSettings;
+    alsaDevices?: AlsaDeviceInfo[];
 };
 
 const styles = (theme: Theme) =>
@@ -54,116 +60,297 @@ export interface JackServerSettingsDialogProps extends WithStyles<typeof styles>
     open: boolean;
     jackServerSettings: JackServerSettings;
     onClose: () => void;
-    onApply: (sampleRate: number, bufferSize: number, numberOfBuffers: number) => void;
+    onApply: (jackServerSettings: JackServerSettings) => void;
 }
-    
-function getLatencyText(sampleRate: number, bufferSize: number, numberOfBuffers: number): string {
-    let ms = bufferSize * numberOfBuffers / sampleRate * 1000;
+
+function getLatencyText(settings: JackServerSettings ): string {
+    if (!settings.valid) return "\u00A0";
+    let ms = settings.bufferSize * settings.numberOfBuffers / settings.sampleRate * 1000;
     return ms.toFixed(1) + "ms";
 }
 
 const JackServerSettingsDialog = withStyles(styles)(
     class extends Component<JackServerSettingsDialogProps, JackServerSettingsDialogState> {
+
+        model: PiPedalModel;
+
         constructor(props: JackServerSettingsDialogProps) {
             super(props);
-            let jackServerSettings = props.jackServerSettings;
+            this.model = PiPedalModelFactory.getInstance();
+            
 
             this.state = {
-                latencyText:
-                    getLatencyText(
-                        jackServerSettings.sampleRate,
-                        jackServerSettings.bufferSize,
-                        jackServerSettings.numberOfBuffers)
+                latencyText: "\u00A0",
+                jackServerSettings: props.jackServerSettings.clone() // invalid, but not nullish
             };
         }
+        mounted: boolean = false;
 
-        updateLatency(e: any): void {
-            setTimeout(()=> {
-                let sampleRate: number = parseInt(nullCast<any>(document.getElementById('jsd_sampleRate')).value);
-                let bufferSize: number = parseInt(nullCast<any>(document.getElementById('jsd_bufferSize')).value);
-                let bufferCount: number = parseInt(nullCast<any>(document.getElementById('jsd_bufferCount')).value);
-                this.setState({
-                    latencyText: getLatencyText(sampleRate, bufferSize, bufferCount)
+        requestAlsaInfo() {
+            this.model.getAlsaDevices()
+                .then((devices) => {
+                    if (this.mounted) {
+                        if (this.props.open) {
+                            let settings = this.applyAlsaDevices(this.props.jackServerSettings, devices);
+                            this.setState({
+                                alsaDevices: devices,
+                                jackServerSettings: settings,
+                                latencyText: getLatencyText(settings)
+                            });
+                        } else {
+                            this.setState({ alsaDevices: devices });
+                        }
+                    }
+                })
+                .catch((error) => {
+
                 });
-            },0);
         }
-        handleApply() {
-            let sampleRate = parseInt(nullCast<any>(document.getElementById('jsd_sampleRate')).value);
-            let bufferSize = parseInt(nullCast<any>(document.getElementById('jsd_bufferSize')).value);
-            let bufferCount = parseInt(nullCast<any>(document.getElementById('jsd_bufferCount')).value);
 
-            this.props.onApply(sampleRate,bufferSize,bufferCount);
+        applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[]) {
+            let result = jackServerSettings.clone();
+            if (!alsaDevices) {
+                return result;
+            }
+            if (alsaDevices.length === 0) {
+                result.valid = false;
+                result.alsaDevice = INVALID_DEVICE_ID;
+                return result;
+            }
+
+            let selectedDevice: AlsaDeviceInfo | undefined = undefined;
+            for (let i = 0; i < alsaDevices.length; ++i) {
+                if (alsaDevices[i].id === result.alsaDevice) {
+                    selectedDevice = alsaDevices[i]
+                    break;
+                }
+            }
+            if (!selectedDevice) {
+                selectedDevice = alsaDevices[0];
+                result.alsaDevice = selectedDevice.id;
+
+            }
+            if (result.sampleRate === 0) result.sampleRate = 48000;
+            if (result.bufferSize === 0) result.bufferSize = 64;
+            if (result.numberOfBuffers === 0) result.numberOfBuffers = 3;
+            result.sampleRate = selectedDevice.closestSampleRate(result.sampleRate);
+            result.bufferSize = selectedDevice.closestBufferSize(result.bufferSize);
+            result.valid = true;
+            return result;
+        }
+
+        componentDidMount() {
+            this.mounted = true;
+            this.requestAlsaInfo();
+
+        }
+        componentDidUpdate(oldProps: JackServerSettingsDialogProps) {
+            if (this.props.open && !oldProps.open) {
+                let settings = this.applyAlsaDevices(this.props.jackServerSettings.clone(), this.state.alsaDevices);
+                this.setState({ 
+                    jackServerSettings: settings,
+                    latencyText: getLatencyText(settings)
+                 });
+                this.requestAlsaInfo();
+            }
+        }
+
+        componentWillUnmount() {
+            this.mounted = false;
+
+        }
+        getSelectedDevice(deviceId: string): AlsaDeviceInfo | null {
+            if (!this.state.alsaDevices) return null;
+            for (let i = 0; i < this.state.alsaDevices.length; ++i) {
+                if (this.state.alsaDevices[i].id === deviceId) {
+                    return this.state.alsaDevices[i];
+                }
+
+            }
+            return null;
+        }
+
+        handleDeviceChanged(e: any) {
+            let device = e.target.value as string;
+
+            let selectedDevice = this.getSelectedDevice(device);
+            if (!selectedDevice) return;
+            let settings = this.state.jackServerSettings.clone();
+            settings.alsaDevice = device;
+            settings.sampleRate = selectedDevice.closestSampleRate(settings.sampleRate);
+            settings.bufferSize = selectedDevice.closestSampleRate(settings.bufferSize);
+
+            this.setState({
+                jackServerSettings: settings,
+                latencyText: getLatencyText(settings)
+            });
+        }
+        handleRateChanged(e: any) {
+            let rate = e.target.value as number;
+            console.log("New rate: " + rate);
+            let selectedDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaDevice);
+            if (!selectedDevice) return;
+            let settings = this.state.jackServerSettings.clone();
+            settings.sampleRate = rate;
+
+            this.setState({
+                jackServerSettings: settings,
+                latencyText: getLatencyText(settings)
+            });
+        }
+        handleSizeChanged(e: any) {
+            let size = e.target.value as number;
+
+            let selectedDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaDevice);
+            if (!selectedDevice) return;
+            let settings = this.state.jackServerSettings.clone();
+            settings.bufferSize = size;
+
+            this.setState({
+                jackServerSettings: settings,
+                latencyText: getLatencyText(settings)
+            });
+        }
+        handleNumberOfBuffersChanged(e: any) {
+            let bufferCount = e.target.value as number;
+
+            let selectedDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaDevice);
+            if (!selectedDevice) return;
+            let settings = this.state.jackServerSettings.clone();
+            settings.numberOfBuffers = bufferCount;
+
+            this.setState({
+                jackServerSettings: settings,
+                latencyText: getLatencyText(settings)
+            });
+        }
+
+        handleApply() {
+
+            this.props.onApply(this.state.jackServerSettings.clone());
         };
-            
+        getBufferSizes(alsaDevice: AlsaDeviceInfo): number[] {
+            let result: number[] = [];
+            let max = alsaDevice.maxBufferSize;
+            if (max > 2048) max = 2048;
+
+            for (let i = 16; i <= max; i *= 2) {
+                if (i >= alsaDevice.minBufferSize) {
+                    result.push(i);
+                }
+            }
+            return result;
+        }
+
 
         render() {
             const classes = this.props.classes;
 
-            const { onClose, jackServerSettings, open } = this.props;
+            const { onClose, open } = this.props;
 
             const handleClose = () => {
                 onClose();
             };
+            let waitingForDevices = !this.state.alsaDevices
+            let noDevices = this.state.alsaDevices && this.state.alsaDevices.length === 0;
+            let selectedDevice: AlsaDeviceInfo | undefined = undefined;
+            if (this.state.alsaDevices) {
+                for (let device of this.state.alsaDevices) {
+                    if (device.id === this.state.jackServerSettings.alsaDevice) {
+                        selectedDevice = device;
+                        break;
+                    }
+                }
+            }
+            let bufferSizes: number[] = [];
+            if (selectedDevice) {
+                bufferSizes = this.getBufferSizes(selectedDevice);
+            }
 
             return (
                 <Dialog onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
                     <DialogContent>
-                        <FormControl className={classes.formControl}>
-                            <InputLabel htmlFor="sampleRate">Sample rate</InputLabel>
-                            <Select
-                                onChange={(e) => this.updateLatency(e)}
-                                defaultValue={jackServerSettings.sampleRate}
-                                inputProps={{
-                                    name: 'Sample Rate',
-                                    id: 'jsd_sampleRate',
-                                    style: {
-                                        textAlign: "right"
+                        <div>
+                            <FormControl className={classes.formControl}>
+                                <InputLabel htmlFor="jsd_device">Device</InputLabel>
+                                <Select onChange={(e) => this.handleDeviceChanged(e)}
+                                    value={this.state.jackServerSettings.alsaDevice}
+                                    style={{width: 220}}
+                                    inputProps={{
+                                        name: "Device",
+                                        id: "jsd_device",
+                                    }}
+                                >
+                                    {(noDevices && !waitingForDevices) &&
+                                        (
+                                            <MenuItem value={INVALID_DEVICE_ID}>No suitable devices.</MenuItem>
+                                        )
                                     }
-                                }}
-                            >
-                                <MenuItem value={44100}>44100</MenuItem>
-                                <MenuItem value={48000}>48000</MenuItem>
-                                <MenuItem value={88200}>88200</MenuItem>
-                                <MenuItem value={96000}>96000</MenuItem>
-                                <MenuItem value={176400}>176400</MenuItem>
-                                <MenuItem value={192000}>192000</MenuItem>
-                            </Select>
-                        </FormControl>
-                        <div style={{ display: "inline", whiteSpace: "nowrap" }}>
-                            <FormControl className={classes.formControl}>
-                                <InputLabel htmlFor="bufferSize">Buffer size</InputLabel>
-                                <Select
-                                    onChange={(e) => this.updateLatency(e)}
-                                    defaultValue={jackServerSettings.bufferSize}
-                                    inputProps={{
-                                        name: 'Buffer size',
-                                        id: 'jsd_bufferSize',
-                                    }}
-                                >
-                                    <MenuItem value={16}>16</MenuItem>
-                                    <MenuItem value={32}>32</MenuItem>
-                                    <MenuItem value={64}>64</MenuItem>
-                                    <MenuItem value={128}>128</MenuItem>
-                                    <MenuItem value={256}>256</MenuItem>
-                                    <MenuItem value={512}>512</MenuItem>
-                                    <MenuItem value={1024}>1024</MenuItem>
+                                    {((!noDevices) && !waitingForDevices) && (
+                                        this.state.alsaDevices!.map((device) =>
+                                        (
+                                            <MenuItem value={device.id}>{device.name}</MenuItem>
+                                        )
+
+                                        )
+                                    )}
                                 </Select>
                             </FormControl>
+                        </div><div>
                             <FormControl className={classes.formControl}>
-                                <InputLabel htmlFor="numberofBuffers">Buffers</InputLabel>
+                                <InputLabel htmlFor="jsd_sampleRate">Sample rate</InputLabel>
                                 <Select
-                                    onChange={(e) => this.updateLatency(e)}
-                                    defaultValue={jackServerSettings.numberOfBuffers}
+                                    onChange={(e) => this.handleRateChanged(e)}
+                                    value={this.state.jackServerSettings.sampleRate}
                                     inputProps={{
-                                        name: 'Number of buffers',
-                                        id: 'jsd_bufferCount',
+                                        id: 'jsd_sampleRate',
+                                        style: {
+                                            textAlign: "right"
+                                        }
                                     }}
                                 >
-                                    <MenuItem value={2}>2</MenuItem>
-                                    <MenuItem value={3}>3</MenuItem>
-                                    <MenuItem value={4}>4</MenuItem>
+                                    {selectedDevice &&
+                                        selectedDevice.sampleRates.map((sr) => {
+                                            return ( <MenuItem value={sr}>{sr}</MenuItem> );
+                                        })
+                                    }
                                 </Select>
                             </FormControl>
+                            <div style={{ display: "inline", whiteSpace: "nowrap" }}>
+                                <FormControl className={classes.formControl}>
+                                    <InputLabel htmlFor="bufferSize">Buffer size</InputLabel>
+                                    <Select
+                                        onChange={(e) => this.handleSizeChanged(e)}
+                                        value={this.state.jackServerSettings.bufferSize}
+                                        inputProps={{
+                                            name: 'Buffer size',
+                                            id: 'jsd_bufferSize',
+                                        }}
+                                    >
+                                        {bufferSizes.map((buffSize) =>
+                                        (
+                                            <MenuItem value={buffSize}>{buffSize}</MenuItem>
+
+                                        )
+                                        )}
+                                    </Select>
+                                </FormControl>
+                                <FormControl className={classes.formControl}>
+                                    <InputLabel htmlFor="numberofBuffers">Buffers</InputLabel>
+                                    <Select
+                                        onChange={(e) => this.handleNumberOfBuffersChanged(e)}
+                                        value={this.state.jackServerSettings.numberOfBuffers}
+                                        inputProps={{
+                                            name: 'Number of buffers',
+                                            id: 'jsd_bufferCount',
+                                        }}
+                                    >
+                                        <MenuItem value={2}>2</MenuItem>
+                                        <MenuItem value={3}>3</MenuItem>
+                                        <MenuItem value={4}>4</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </div>
                         </div>
                         <Typography display="block" variant="caption" style={{ textAlign: "left", marginTop: 8, marginLeft: 24 }}
                             color="textSecondary">
@@ -175,7 +362,8 @@ const JackServerSettingsDialog = withStyles(styles)(
                         <Button onClick={handleClose} color="primary">
                             Cancel
                         </Button>
-                        <Button onClick={()=> this.handleApply()} color="secondary">
+                        <Button onClick={() => this.handleApply()} color="secondary" disabled={
+                            (!this.state.alsaDevices) || !this.state.jackServerSettings.valid}>
                             OK
                         </Button>
                     </DialogActions>

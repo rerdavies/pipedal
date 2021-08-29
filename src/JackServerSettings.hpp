@@ -26,6 +26,7 @@ namespace pipedal {
     class JackServerSettings {
         bool valid_ = false;
         bool rebootRequired_ = false;
+        std::string alsaDevice_;
         uint64_t sampleRate_ = 0;
         uint32_t bufferSize_ = 0;
         uint32_t numberOfBuffers_ = 0;
@@ -36,6 +37,7 @@ namespace pipedal {
         uint64_t GetSampleRate() const { return sampleRate_; }
         uint32_t GetBufferSize() const { return bufferSize_; }
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
+        const std::string&GetAlsaDevice() const { return alsaDevice_; }
 
         void ReadJackConfiguration();
 

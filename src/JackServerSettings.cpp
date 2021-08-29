@@ -23,6 +23,9 @@
 #include "JackServerSettings.hpp"
 #include <fstream>
 #include "PiPedalException.hpp"
+#include <string>
+#include "unistd.h"
+#include <filesystem>
 
 #define DRC_FILENAME "/etc/jackdrc"
 
@@ -55,24 +58,46 @@ static std::vector<std::string> SplitArgs(const char *szBuff)
     return result;
 }
 
-static uint64_t GetJackArg(const std::vector<std::string> &args, const char *shortOption, const char *longOption)
+static std::string GetJackStringArg(const std::vector<std::string> &args, const std::string&shortOption, const std::string&longOption)
 {
-    int pos = -1;
+    std::string strVal;
     for (size_t i = 1; i < args.size(); ++i)
     {
-        if (args[i] == shortOption || args[i] == longOption)
-        {
-            pos = i;
+        auto pos = args[i].rfind(longOption,0);
+        if (pos != std::string::npos) {
+            if (args[i].length() == longOption.length())
+            {
+                if (i == args.size()-1) {
+                    throw PiPedalException("Can't read Jack configuration.");                    
+                }
+                strVal = args[i+1];
+            } else {
+                strVal = args[i].substr(longOption.length());
+            }
+            break;
+        }
+        pos = args[i].rfind(shortOption,0);
+        if (pos != std::string::npos) {
+            if (args[i].length() == shortOption.length())
+            {
+                if (i == args.size()-1) {
+                    throw PiPedalException("Can't read Jack configuration.");                    
+                }
+                strVal = args[i+1];
+            } else {
+                strVal = args[i].substr(shortOption.length());
+            }
             break;
         }
     }
-    if (pos == -1 || pos == args.size() - 1)
-    {
-        throw PiPedalException("Can't read Jack configuration.");
-    }
+    return strVal;
+}
+static std::int32_t GetJackArg(const std::vector<std::string> &args, const std::string&shortOption, const std::string&longOption)
+{
+    std::string strVal = GetJackStringArg(args,shortOption,longOption);
     try
     {
-        unsigned long value = std::stoul(args[pos + 1]);
+        unsigned long value = std::stoul(strVal);
         return value;
     }
     catch (const std::exception &)
@@ -80,35 +105,13 @@ static uint64_t GetJackArg(const std::vector<std::string> &args, const char *sho
         throw PiPedalException("Can't read Jack configuration.");
     }
 }
-static void SetJackArg(std::vector<std::string> &args, const char *shortOption, const char *longOption,uint64_t value)
-{
-    int pos = -1;
-    for (size_t i = 1; i < args.size(); ++i)
-    {
-        if (args[i] == shortOption || args[i] == longOption)
-        {
-            pos = i;
-            break;
-        }
-    }
-    if (pos == -1 || pos == args.size() - 1)
-    {
-        throw PiPedalException("Can't read Jack configuration.");
-    }
-    stringstream s;
-    s << value;
-    args[pos+1] = s.str();
-    return;
-}
-
 
 
 void JackServerSettings::ReadJackConfiguration()
 {
     this->valid_ = false;
 
-    char firstLine[1024];
-
+    std::string lastLine;
     {
         ifstream input(DRC_FILENAME);
 
@@ -120,22 +123,32 @@ void JackServerSettings::ReadJackConfiguration()
 
         while (true)
         {
-            if (input.eof())
-            {
-                Lv2Log::error("Premature end of file in " DRC_FILENAME);
-                return;
+            std::string line;
+            std::getline(input,line);
+            if (line.length() != 0) {
+                lastLine = line;
             }
-            input.getline(firstLine, sizeof(firstLine));
-            if (firstLine[0] != '#')
+            if (input.eof()) {
                 break;
+            }
         }
-        try {
-            std::vector < std::string> argv = SplitArgs(firstLine);
-            this->bufferSize_ = GetJackArg(argv, "-p", "-period");
-            this->numberOfBuffers_ = (uint32_t)GetJackArg(argv, "-n", "-nperiods");
-            this->sampleRate_ = (uint32_t)GetJackArg(argv, "-r", "-rate");
+        try
+        {
+            std::vector<std::string> argv = SplitArgs(lastLine.c_str());
+            for (auto i = argv.begin(); i != argv.end(); ++i)
+            {
+                if ((*i) == "-dalsa") {
+                    argv.erase(i);
+                    break;
+                }
+            }
+            this->bufferSize_ = GetJackArg(argv, "-p", "--period");
+            this->numberOfBuffers_ = (uint32_t)GetJackArg(argv, "-n", "--nperiods");
+            this->sampleRate_ = (uint32_t)GetJackArg(argv, "-r", "--rate");
+            this->alsaDevice_ = GetJackStringArg(argv,"-d", "--device");
             valid_ = true;
-        } catch (std::exception &)
+        }
+        catch (std::exception &)
         {
             Lv2Log::error("Can't parse " DRC_FILENAME);
         }
@@ -147,10 +160,10 @@ void JackServerSettings::Write()
     this->valid_ = false;
 
     std::vector<std::string> precedingLines;
-    std::vector < std::string> argv;
+    std::vector<std::string> argv;
+    std::string lastLine;
 
-    {
-        char firstLine[1024];
+    if (std::filesystem::exists(DRC_FILENAME)) {
         ifstream input(DRC_FILENAME);
 
         if (!input.is_open())
@@ -164,46 +177,64 @@ void JackServerSettings::Write()
             if (input.eof())
             {
                 Lv2Log::error("Premature end of file in " DRC_FILENAME);
-                return;
-            }
-            input.getline(firstLine, sizeof(firstLine));
-            if (firstLine[0] != '#')
                 break;
-            precedingLines.push_back(firstLine);
+            }
+            std::getline(input,lastLine);
+            precedingLines.push_back(lastLine);
+            if (input.eof())
+            {
+                break;
+            }
         }
-
-        // set new values for arguments.
-        argv = SplitArgs(firstLine);
-        try {
-            SetJackArg(argv, "-p", "-period", this->bufferSize_);
-            SetJackArg(argv, "-n", "-nperiods", this->numberOfBuffers_);
-            SetJackArg(argv, "-r", "-rate",this->sampleRate_);
-        } catch (std::exception &)
+        // erase blank lines at the end.
+        while (precedingLines.size() != 0 && precedingLines[precedingLines.size()-1] == "")
         {
-            Lv2Log::error("Can't parse " DRC_FILENAME);
-            return;
+            precedingLines.erase(precedingLines.begin()+precedingLines.size()-1);
         }
-    }
+        // erase the last line, which should contain the command invocation.
+        if (precedingLines.size() != 0)
+        {
+            precedingLines.erase(precedingLines.begin()+precedingLines.size()-1);
+        }
+     }
     // write to the output.
-    try {
+    try
+    {
         ofstream output(DRC_FILENAME);
         if (!output.is_open())
         {
             throw PiPedalException("Can't write " DRC_FILENAME);
         }
-        for (auto line: precedingLines)
+        if (precedingLines.size() == 0)
+        {
+            // jack1 incantation for promiscuous servers.
+            output << "#!/bin/sh" <<endl;
+            output << "export JACK_PROMISCUOUS_SERVER=" << endl;
+            output << "export JACK_NO_AUDIO_RESERVATION=" << endl;
+            output << "umask 0" << endl;
+        }
+        for (auto line : precedingLines)
         {
             output << line << endl;
         }
-        for (size_t i = 0; i < argv.size(); ++i)
+        // the style used by qjackctl. :-/
+        output << "/usr/bin/jackd "
+            << "-R -P90"
+            << " -driver alsa -d" << this->alsaDevice_ 
+            << " -r" << this->sampleRate_ 
+            << " -p" << this->bufferSize_ 
+            << " -n" << this->numberOfBuffers_ << " -Xseq" 
+            << endl;
+        system("/usr/bin/chmod 755 " DRC_FILENAME);
+        system("pulseaudio --kill");
+        system("/usr/bin/systemctl enable jack");
+        if (system("/usr/bin/systemctl restart jack") != 0)
         {
-            if (i != 0) {
-                output << " ";
-            }
-            output << argv[i];
+            throw PiPedalException("Failed to start jack audio service.");
         }
-        output << endl;
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
         stringstream s;
         s << "jack - " << e.what();
         Lv2Log::error(s.str());
@@ -211,10 +242,10 @@ void JackServerSettings::Write()
 }
 
 JSON_MAP_BEGIN(JackServerSettings)
-    JSON_MAP_REFERENCE(JackServerSettings,valid)
-    JSON_MAP_REFERENCE(JackServerSettings,rebootRequired)
-    JSON_MAP_REFERENCE(JackServerSettings,sampleRate)
-    JSON_MAP_REFERENCE(JackServerSettings,bufferSize)
-    JSON_MAP_REFERENCE(JackServerSettings,numberOfBuffers)
+JSON_MAP_REFERENCE(JackServerSettings, valid)
+JSON_MAP_REFERENCE(JackServerSettings, rebootRequired)
+JSON_MAP_REFERENCE(JackServerSettings, alsaDevice)
+JSON_MAP_REFERENCE(JackServerSettings, sampleRate)
+JSON_MAP_REFERENCE(JackServerSettings, bufferSize)
+JSON_MAP_REFERENCE(JackServerSettings, numberOfBuffers)
 JSON_MAP_END()
-

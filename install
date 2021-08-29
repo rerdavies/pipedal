@@ -1,1 +1,1 @@
-cmake --install /home/patch/src/pipedal/build --prefix /usr/local --config Release 
+cmake --install build --prefix /usr/local --config Release -v

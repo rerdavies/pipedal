@@ -17,16 +17,32 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
+#pragma once 
 
-#include <locale>
+#include "json.hpp"
 
 namespace pipedal {
-
-    class Locale {
+    class AlsaDeviceInfo {
     public:
-        static void setDefaultLocale();
+        int cardId_ = -1;
+        std::string id_;
+        std::string name_;
+        std::string longName_;
+        std::vector<uint32_t> sampleRates_;
+        uint32_t minBufferSize_ = 0,maxBufferSize_ = 0;
+    
+        DECLARE_JSON_MAP(AlsaDeviceInfo);
 
-        static const std::collate<char>& collation();
+    };
+
+    class PiPedalAlsaDevices {
+
+        bool hasJackDevice = false;
+        AlsaDeviceInfo currentJackDevice;
+        std::vector<AlsaDeviceInfo> GetAvailableAlsaDevices();
+    public:
+        void PreLoadJackDevice(const std::string&deviceName);
+
+        std::vector<AlsaDeviceInfo> GetAlsaDevices();
     };
 }

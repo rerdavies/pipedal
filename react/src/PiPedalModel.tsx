@@ -34,6 +34,7 @@ import MidiBinding from './MidiBinding';
 import PluginPreset from './PluginPreset';
 import WifiConfigSettings from './WifiConfigSettings';
 import WifiChannel from './WifiChannel';
+import AlsaDeviceInfo from './AlsaDeviceInfo';
 
 
 export enum State {
@@ -348,6 +349,7 @@ export interface PiPedalModel {
 
     getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>;
 
+    getAlsaDevices() : Promise<AlsaDeviceInfo[]>;
 };
 
 class PiPedalModelImpl implements PiPedalModel {
@@ -1584,6 +1586,23 @@ class PiPedalModelImpl implements PiPedalModel {
                 .catch((err) => reject(err));
         });
         return result;
+    }
+
+    getAlsaDevices() : Promise<AlsaDeviceInfo[]>
+    {
+        let result = new Promise<AlsaDeviceInfo[]>((resolve, reject) => {
+            if (!this.webSocket) {
+                reject("Connection closed.");
+                return;
+            }
+            this.webSocket.request<any>("getAlsaDevices")
+                .then((data) => {
+                    resolve(AlsaDeviceInfo.deserialize_array(data));
+                })
+                .catch((err) => reject(err));
+        });
+        return result;
+
     }
 
 
