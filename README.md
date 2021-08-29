@@ -102,7 +102,8 @@ Run the following commands to install build tools required by the PiPedal build.
 Run the following commands to install dependent components required by the PiPedal build.
 
     sudo apt update
-    sudo apt install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libboost-all-dev
+    sudo apt install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
+    sudo apt install libasound2-dev
 
 The PiPedal build process also requires version 14 or later of `node.js`. Type `node --version` to see if you have a version 
 of `node.js` installed already. Otherwise run the following commands as root to install the v14.x lts version of `node.js`: 
@@ -111,7 +112,7 @@ of `node.js` installed already. Otherwise run the following commands as root to 
     apt-get install -y nodejs
 
 
-### Building PiPedal
+### Building PiPedal.ini
 
 PiPedal was developed using Visual Studio Code. If you open the PiPedal project as a folder in VS Code, Code will 
 detect the CMake configuration files, and automatically configure itself. Once the VS Code CMake plugin has configured
@@ -120,7 +121,7 @@ itself, build commands should appear on the bottom line of the Visual Studio Cod
 To install PiPedal, run a full non-debug build using Visual Studio Code, and then run the following command 
 in the root project directory:
 
-    sudo ./init
+    sudo ,./init
 
 If you are using a different development environment, you can build the project by running the following 
 command in the root project directory.
