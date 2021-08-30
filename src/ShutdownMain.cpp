@@ -30,6 +30,7 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include <memory>
+#include <thread>
 #include <stdlib.h>
 #include "JackServerSettings.hpp"
 #include <cstdlib>
@@ -38,6 +39,7 @@
 #include "WifiConfigSettings.hpp"
 #include "SetWifiConfig.hpp"
 #include "SysExec.hpp"
+#include <filesystem>
 
 
 using namespace std;
@@ -47,6 +49,8 @@ using namespace boost::asio;
 using ip::tcp;
 
 const size_t MAX_LENGTH = 128;
+
+
 
 static bool startsWith(const std::string&s, const char*text)
 {
@@ -79,12 +83,24 @@ static void ReleaseAccessPoint(const std::string gatewayAddress)
 {
 }
 
+void delayedRestartProc()
+{
+    sleep(1); // give a chance for websocket messages to propagate.
+    std::string pipedalConfigPath = std::filesystem::path(GetSelfExePath()).parent_path() / "pipedalConfig";
+
+    std::stringstream s;
+     s << pipedalConfigPath.c_str() << " --restart --excludeShutdownService";
+     ::system(s.str().c_str());
+}
 
 bool setJackConfiguration(JackServerSettings serverSettings)
 {
     bool success = true;
 
     serverSettings.Write();
+
+    std::thread delayedRestartThread(delayedRestartProc);
+    delayedRestartThread.detach();
     return true;
 
 
@@ -319,9 +335,9 @@ void runServer(uint16_t port)
     }
 }
 
+
 int main(int argc, char **argv)
 {
-
     Lv2Log::set_logger(MakeLv2SystemdLogger());
     CommandLineParser parser;
 

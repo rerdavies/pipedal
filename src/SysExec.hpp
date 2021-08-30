@@ -27,4 +27,5 @@ int SysExec(const char*szCommand);
 // execute a command, suppressing output.
 void SilentSysExec(const char *szCommand);
 
+std::string GetSelfExePath();
 }

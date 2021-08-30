@@ -107,15 +107,18 @@ void DisableService()
     }
 }
 
-void StopService()
+void StopService(bool excludeShutdownService = false)
 {
     if (SysExec(SYSTEMCTL_BIN " stop " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to stop the " NATIVE_SERVICE " service.";
     }
-    if (SysExec(SYSTEMCTL_BIN " stop " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    if (!excludeShutdownService)
     {
-        cout << "Error: Failed to stop the " SHUTDOWN_SERVICE " service.";
+        if (SysExec(SYSTEMCTL_BIN " stop " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+        {
+            cout << "Error: Failed to stop the " SHUTDOWN_SERVICE " service.";
+        }
     }
     if (SysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
@@ -123,20 +126,24 @@ void StopService()
     }
 }
 
-void Uninstall() {
+void Uninstall()
+{
     StopService();
     DisableService();
     system(SYSTEMCTL_BIN " stop jack");
     system(SYSTEMCTL_BIN " disable jack");
 }
 
-void StartService()
+void StartService(bool excludeShutdownService = false)
 {
 
     SilentSysExec("/usr/bin/pulseaudio --kill"); // interferes with Jack audio service startup.
-    if (SysExec(SYSTEMCTL_BIN " start " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    if (!excludeShutdownService)
     {
-        throw PiPedalException("Failed to start the " SHUTDOWN_SERVICE " service.");
+        if (SysExec(SYSTEMCTL_BIN " start " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+        {
+            throw PiPedalException("Failed to start the " SHUTDOWN_SERVICE " service.");
+        }
     }
     if (SysExec(SYSTEMCTL_BIN " start " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
@@ -152,11 +159,11 @@ void StartService()
         }
     }
 }
-void RestartService()
+void RestartService(bool excludeShutdownService)
 {
 
-    StopService();
-    StartService();
+    StopService(excludeShutdownService);
+    StartService(excludeShutdownService);
 }
 
 static bool userExists(const char *userName)
@@ -202,16 +209,18 @@ void InstallLimits()
         output << "@audio   -  rtprio     95" << endl;
         output << "@audio   -  memlock    unlimited" << endl;
     }
-
-
 }
 
-void MaybeStartJackService() {
+void MaybeStartJackService()
+{
     std::filesystem::path drcFile = "/etc/jackdrc";
 
-    if (std::filesystem::exists(drcFile) && std::filesystem::file_size(drcFile) != 0) {
+    if (std::filesystem::exists(drcFile) && std::filesystem::file_size(drcFile) != 0)
+    {
         system(SYSTEMCTL_BIN " start jack");
-    } else {
+    }
+    else
+    {
         system(SYSTEMCTL_BIN " mask jack");
     }
 }
@@ -237,15 +246,12 @@ void InstallJackService()
     SysExec(USERMOD_BIN " -a -G" AUDIO_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
 
     // deploy the systemd service file
-    std::map<std::string,std::string> map; // nothing to customize.
+    std::map<std::string, std::string> map; // nothing to customize.
 
     WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/templateJack.service"), GetServiceFileName(JACK_SERVICE));
 
-
     MaybeStartJackService();
-
 }
-
 
 void Install(const std::filesystem::path &programPrefix, const std::string endpointAddress)
 {
@@ -391,7 +397,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     SysExec(SYSTEMCTL_BIN " daemon-reload");
 
     cout << "Starting service" << endl;
-    RestartService();
+    RestartService(false);
     EnableService();
 
     cout << "Complete" << endl;
@@ -426,6 +432,7 @@ int main(int argc, char **argv)
     bool enable = false, disable = false, restart = false;
     bool enable_ap = false, disable_ap = false;
     bool nopkexec = false;
+    bool excludeShutdownService = false;
     std::string prefixOption;
     std::string portOption;
 
@@ -443,6 +450,7 @@ int main(int argc, char **argv)
     parser.AddOption("--port", &portOption);
     parser.AddOption("--enable_ap", &enable_ap);
     parser.AddOption("--disable_ap", &disable_ap);
+    parser.AddOption("--excludeShutdownService", &excludeShutdownService); // private (unstable) option used by shutdown service.
     try
     {
         parser.Parse(argc, (const char **)argv);
@@ -540,30 +548,18 @@ int main(int argc, char **argv)
     auto uid = getuid();
     if (uid != 0 && !nopkexec)
     {
-        // re-execute with PKEXEC in order to prompt form SUDO credentials.
+        // re-execute with PKEXEC in order to prompt for SUDO credentials once only.
         std::vector<char *> args;
         std::string pkexec = "/usr/bin/pkexec"; // staged because "ISO C++ forbids converting a string constant to std::vector<char*>::value_type"(!)
         args.push_back((char *)(pkexec.c_str()));
 
-        std::filesystem::path path = std::filesystem::absolute(argv[0]);
-        std::string sPath = path;
-        args.push_back((char *)path.c_str());
+        std::string sPath = GetSelfExePath();
+        args.push_back(const_cast<char*>(sPath.c_str()));
         for (int arg = 1; arg < argc; ++arg)
         {
-            args.push_back((char *)argv[arg]);
+            args.push_back(const_cast<char *>(argv[arg]));
         }
 
-        std::string prefixArg; //  lifetime management for the prefix arguments
-        std::string prefixOptionArg;
-
-        if (prefixOption.length() == 0)
-        {
-            std::filesystem::path prefix = std::filesystem::path(argv[0]).parent_path().parent_path();
-            prefixOptionArg = "-prefix";
-            args.push_back((char *)(prefixOptionArg.c_str()));
-            prefixArg = prefix;
-            args.push_back((char *)prefixArg.c_str());
-        }
         args.push_back(nullptr);
 
         char **rawArgv = &args[0];
@@ -616,7 +612,7 @@ int main(int argc, char **argv)
         }
         else if (restart)
         {
-            RestartService();
+            RestartService(excludeShutdownService);
         }
         else if (enable)
         {

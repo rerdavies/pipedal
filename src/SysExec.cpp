@@ -24,6 +24,7 @@
 #include "PiPedalException.hpp"
 #include <string.h>
 #include <unistd.h>
+#include <linux/limits.h> // for PATH_MAX
 
 using namespace pipedal;
 using namespace std;
@@ -129,4 +130,14 @@ int pipedal::SysExec(const char *szCommand)
         int exitStatus = WEXITSTATUS(returnValue);
         return exitStatus;
     }
+}
+
+
+std::string pipedal::GetSelfExePath() 
+{
+    char result[PATH_MAX+1];
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    if (count < 0) throw PiPedalException("Can't find EXE path.");
+    result[count] = 0;
+    return result;
 }

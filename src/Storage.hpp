@@ -30,6 +30,14 @@
 namespace pipedal {
 
 
+class CurrentPreset {
+public:
+    bool modified_ = false;
+    PedalBoard preset_;
+
+    DECLARE_JSON_MAP(CurrentPreset);
+};
+
 // controls user-defined storage. Implmentation hidden to allow to later migration to a database (perhaps)
 
 class Storage {
@@ -45,6 +53,8 @@ private:
     std::filesystem::path GetIndexFileName() const;
     std::filesystem::path GetBankFileName(const std::string & name) const;
     std::filesystem::path GetChannelSelectionFileName();
+    std::filesystem::path GetCurrentPresetPath() const;
+
 
     void LoadBankIndex();
     void SaveBankIndex();
@@ -103,6 +113,10 @@ public:
 
     void SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings);
     WifiConfigSettings GetWifiConfigSettings();
+
+    void SaveCurrentPreset(const CurrentPreset &currentPreset);
+    bool RestoreCurrentPreset(CurrentPreset*pResult);
+
 
 
 };

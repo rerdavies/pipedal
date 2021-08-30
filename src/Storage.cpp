@@ -205,6 +205,11 @@ std::filesystem::path Storage::GetPresetsDirectory() const
 {
     return this->dataRoot / "presets";
 }
+std::filesystem::path Storage::GetCurrentPresetPath() const
+{
+    return this->dataRoot / "currentPreset.json";
+}
+
 
 std::filesystem::path Storage::GetChannelSelectionFileName()
 {
@@ -820,4 +825,43 @@ WifiConfigSettings Storage::GetWifiConfigSettings()
     return this->wifiConfigSettings;
 }
 
+
+void Storage::SaveCurrentPreset(const CurrentPreset &currentPreset)
+{
+    try {
+        std::filesystem::path path = GetCurrentPresetPath();
+
+        std::ofstream f(path);
+        json_writer writer(f);
+        writer.write(currentPreset);
+    } catch (std::exception&)
+    {
+        // called from destructor. Must be nothrow().
+    }
+
+}
+bool Storage::RestoreCurrentPreset(CurrentPreset*pResult)
+{
+    std::filesystem::path path = GetCurrentPresetPath();
+    if (std::filesystem::exists(path)) {
+        try {
+            std::ifstream f(path);
+            json_reader reader(f);
+            reader.read(pResult);
+            std::filesystem::remove(path); // one-shot only, restore the state from the last *orderly* shutdown.
+        } catch (const std::exception&)
+        {
+            return false;
+        }
+        return true;
+    } else {
+        return false;
+    }
+
+}
+
+JSON_MAP_BEGIN(CurrentPreset)
+    JSON_MAP_REFERENCE(CurrentPreset,modified)
+    JSON_MAP_REFERENCE(CurrentPreset,preset)
+JSON_MAP_END()
 

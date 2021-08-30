@@ -76,6 +76,11 @@ void PiPedalModel::Close()
 
 PiPedalModel::~PiPedalModel()
 {
+    CurrentPreset currentPreset;
+    currentPreset.modified_ = this->hasPresetChanged;
+    currentPreset.preset_ = this->pedalBoard;
+    storage.SaveCurrentPreset(currentPreset);
+    
     if (jackHost)
     {
         jackHost->Close();
@@ -109,7 +114,15 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
     }
     lv2Host.Load(configuration.GetLv2Path().c_str());
 
-    this->pedalBoard = storage.GetCurrentPreset();
+    this->pedalBoard = storage.GetCurrentPreset(); // the current *saved* preset.
+
+    // the current edited preset, saved only across orderly shutdowns.
+    CurrentPreset currentPreset;
+    if (storage.RestoreCurrentPreset(&currentPreset))
+    {
+        this->pedalBoard = currentPreset.preset_;
+        this->hasPresetChanged = currentPreset.modified_;
+    }
     updateDefaults(&this->pedalBoard);
 
     std::unique_ptr<JackHost> p{JackHost::CreateInstance(lv2Host.asIHost())};
@@ -372,6 +385,7 @@ void PiPedalModel::firePresetsChanged(int64_t clientId)
         delete[] t;
     }
 }
+
 
 void PiPedalModel::saveCurrentPreset(int64_t clientId)
 {
