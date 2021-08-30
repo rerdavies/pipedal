@@ -905,6 +905,8 @@ public:
         return result;
     }
 
+    static int jackInstanceId; 
+
     virtual void Open(const JackChannelSelection &channelSelection)
     {
 
@@ -929,14 +931,24 @@ public:
         jack_status_t status;
         try
         {
+            // need a unique instance name every timme.
+            std::stringstream s;
+            s << "PiPedal";
+            if (jackInstanceId != 0) {
+                s << jackInstanceId;
+            }
+            ++jackInstanceId;
 
-            client = jack_client_open("PiPedal", JackNullOption, &status);
+            std::string instanceName = s.str();
+
+            client = jack_client_open(instanceName.c_str(), JackNullOption, &status);
 
             if (client == nullptr || status & JackFailure)
             {
                 if (client)
                 {
                     jack_client_close(client);
+                    client = nullptr;
                 }
                 std::string error = GetJackErrorMessage(status);
                 Lv2Log::error(error);
@@ -1388,6 +1400,8 @@ public:
         this->listenForMidiEvent = listen;
     }
 };
+
+int JackHostImpl::jackInstanceId = 0;
 
 JackHost *JackHost::CreateInstance(IHost *pHost)
 {

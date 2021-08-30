@@ -20,7 +20,7 @@
 import React, { SyntheticEvent, Component } from 'react';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
-import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import ButtonBase from "@material-ui/core/ButtonBase";
 import { TransitionProps } from '@material-ui/core/transitions/transition';
 import Slide from '@material-ui/core/Slide';
@@ -159,7 +159,18 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.handleJackSettingsChanged = this.handleJackSettingsChanged.bind(this);
             this.handleJackServerSettingsChanged = this.handleJackServerSettingsChanged.bind(this);
             this.handleWifiConfigSettingsChanged = this.handleWifiConfigSettingsChanged.bind(this);
+            this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
 
+        }
+
+        handleConnectionStateChanged() : void {
+            if (this.model.state.get() === State.Ready)
+            {
+                if (this.state.shuttingDown || this.state.restarting)
+                {
+                    this.setState({shuttingDown: false, restarting: false});
+                }
+            }
         }
 
         handleApplyWifiConfig(wifiConfigSettings: WifiConfigSettings): void {
@@ -218,6 +229,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             if (active !== this.active) {
                 this.active = active;
                 if (active) {
+                    this.model.state.addOnChangedHandler(this.handleConnectionStateChanged);
                     this.model.jackSettings.addOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackConfiguration.addOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.jackServerSettings.addOnChangedHandler(this.handleJackServerSettingsChanged);
@@ -235,15 +247,17 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     jackStatus: undefined
                                 })
                         });
+                    this.handleConnectionStateChanged();
                     this.handleJackConfigurationChanged();
                     this.handleJackSettingsChanged();
                     this.handleJackServerSettingsChanged();
                     this.handleWifiConfigSettingsChanged();
-                    // xxx UNCOMMENT ME!  this.timerHandle = setInterval(() => this.tick(), 1000);
+                    this.timerHandle = setInterval(() => this.tick(), 1000);
                 } else {
                     if (this.timerHandle) {
                         clearInterval(this.timerHandle);
                     }
+                    this.model.state.removeOnChangedHandler(this.handleConnectionStateChanged);
                     this.model.jackConfiguration.removeOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.jackSettings.removeOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackServerSettings.removeOnChangedHandler(this.handleJackServerSettingsChanged);

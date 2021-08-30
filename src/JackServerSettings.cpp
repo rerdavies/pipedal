@@ -19,7 +19,6 @@
 
 #include "pch.h"
 
-#include "Lv2Log.hpp"
 #include "JackServerSettings.hpp"
 #include <fstream>
 #include "PiPedalException.hpp"
@@ -117,7 +116,6 @@ void JackServerSettings::ReadJackConfiguration()
 
         if (!input.is_open())
         {
-            Lv2Log::error("Can't read " DRC_FILENAME);
             return;
         }
 
@@ -146,11 +144,11 @@ void JackServerSettings::ReadJackConfiguration()
             this->numberOfBuffers_ = (uint32_t)GetJackArg(argv, "-n", "--nperiods");
             this->sampleRate_ = (uint32_t)GetJackArg(argv, "-r", "--rate");
             this->alsaDevice_ = GetJackStringArg(argv,"-d", "--device");
-            valid_ = true;
+            this->valid_ = true;
         }
         catch (std::exception &)
         {
-            Lv2Log::error("Can't parse " DRC_FILENAME);
+            //Lv2Log::error("Can't parse " DRC_FILENAME);
         }
     }
 }
@@ -168,7 +166,6 @@ void JackServerSettings::Write()
 
         if (!input.is_open())
         {
-            Lv2Log::error("Can't read " DRC_FILENAME);
             return;
         }
 
@@ -176,7 +173,6 @@ void JackServerSettings::Write()
         {
             if (input.eof())
             {
-                Lv2Log::error("Premature end of file in " DRC_FILENAME);
                 break;
             }
             std::getline(input,lastLine);
@@ -209,8 +205,8 @@ void JackServerSettings::Write()
         {
             // jack1 incantation for promiscuous servers.
             output << "#!/bin/sh" <<endl;
-            output << "export JACK_PROMISCUOUS_SERVER=" << endl;
-            output << "export JACK_NO_AUDIO_RESERVATION=" << endl;
+            output << "export JACK_PROMISCUOUS_SERVER=jack" << endl;
+            output << "export JACK_NO_AUDIO_RESERVATION=1" << endl;
             output << "umask 0" << endl;
         }
         for (auto line : precedingLines)
@@ -220,7 +216,7 @@ void JackServerSettings::Write()
         // the style used by qjackctl. :-/
         output << "/usr/bin/jackd "
             << "-R -P90"
-            << " -driver alsa -d" << this->alsaDevice_ 
+            << " -dalsa -d" << this->alsaDevice_ 
             << " -r" << this->sampleRate_ 
             << " -p" << this->bufferSize_ 
             << " -n" << this->numberOfBuffers_ << " -Xseq" 
@@ -235,9 +231,6 @@ void JackServerSettings::Write()
     }
     catch (const std::exception &e)
     {
-        stringstream s;
-        s << "jack - " << e.what();
-        Lv2Log::error(s.str());
     }
 }
 

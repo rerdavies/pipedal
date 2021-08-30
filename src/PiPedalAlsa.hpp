@@ -37,12 +37,12 @@ namespace pipedal {
 
     class PiPedalAlsaDevices {
 
-        bool hasJackDevice = false;
-        AlsaDeviceInfo currentJackDevice;
-        std::vector<AlsaDeviceInfo> GetAvailableAlsaDevices();
-    public:
-        void PreLoadJackDevice(const std::string&deviceName);
+        std::map<std::string,AlsaDeviceInfo> cachedDevices;
 
+        bool getCachedDevice(const std::string&name, AlsaDeviceInfo*pResult);
+        void cacheDevice(const std::string&name, const AlsaDeviceInfo&deviceInfo);
+    public:
+        
         std::vector<AlsaDeviceInfo> GetAlsaDevices();
     };
 }

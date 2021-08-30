@@ -37,6 +37,8 @@
 #include <signal.h>
 #include <semaphore.h>
 
+#include <systemd/sd-daemon.h>
+
 using namespace pipedal;
 using namespace boost::beast;
 
@@ -45,6 +47,16 @@ using namespace boost::beast;
 
 sem_t signalSemaphore;
 
+bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::string &deviceId)
+{
+    for (auto &device : devices)
+    {
+        if (device.id_ == deviceId)
+            return true;
+    }
+    return false;
+}
+
 class application_category : public boost::system::error_category
 {
 public:
@@ -52,12 +64,13 @@ public:
     std::string message(int ev) const { return "error message"; }
 };
 
+static volatile bool g_SigBreak = false;
 void sig_handler(int signo)
 {
+    g_SigBreak = true;
     sem_post(&signalSemaphore);
 }
 using namespace boost::system;
-
 
 class DownloadIntercept : public RequestHandler
 {
@@ -81,7 +94,8 @@ public:
             std::string strInstanceId = request_uri.query("id");
             if (strInstanceId != "")
                 return true;
-        } else if (request_uri.segment(1) == "uploadPreset")
+        }
+        else if (request_uri.segment(1) == "uploadPreset")
         {
             return true;
         }
@@ -90,19 +104,19 @@ public:
             std::string strInstanceId = request_uri.query("id");
             if (strInstanceId != "")
                 return true;
-        } else if (request_uri.segment(1) == "uploadBank")
+        }
+        else if (request_uri.segment(1) == "uploadBank")
         {
             return true;
         }
         return false;
     }
 
-
     std::string GetContentDispositionHeader(const std::string &name, const std::string &extension)
     {
-        std::string fileName = name.substr(0,64) + extension;
+        std::string fileName = name.substr(0, 64) + extension;
         std::stringstream s;
-        
+
         s << "attachment; filename*=" << HtmlHelper::Rfc5987EncodeFileName(fileName) << "; filename=\"" << HtmlHelper::SafeFileName(fileName) << "\"";
         std::string result = s.str();
         return result;
@@ -131,11 +145,10 @@ public:
         std::string strInstanceId = request_uri.query("id");
         int64_t instanceId = std::stol(strInstanceId);
         BankFile bank;
-        model->getBank(instanceId,&bank);        
-
+        model->getBank(instanceId, &bank);
 
         std::stringstream s;
-        json_writer writer(s,true); // do what we can to reduce the file size.
+        json_writer writer(s, true); // do what we can to reduce the file size.
         writer.write(bank);
         *pContent = s.str();
         *pName = bank.name();
@@ -160,7 +173,7 @@ public:
                 res.set(http::field::content_length, content.length());
                 res.set(http::field::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
                 return;
-            } 
+            }
             if (request_uri.segment(1) == "downloadBank")
             {
                 std::string name;
@@ -172,7 +185,7 @@ public:
                 res.set(http::field::content_length, content.length());
                 res.set(http::field::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
                 return;
-            } 
+            }
             throw PiPedalException("Not found.");
         }
         catch (const std::exception &e)
@@ -207,7 +220,8 @@ public:
                 res.set(http::field::content_length, content.length());
                 res.set(http::field::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
                 res.body() = content;
-            } else if (request_uri.segment(1) == "downloadBank")
+            }
+            else if (request_uri.segment(1) == "downloadBank")
             {
                 std::string name;
                 std::string content;
@@ -218,7 +232,9 @@ public:
                 res.set(http::field::content_length, content.length());
                 res.set(http::field::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
                 res.body() = content;
-            } else {
+            }
+            else
+            {
                 throw PiPedalException("Not found");
             }
         }
@@ -258,7 +274,7 @@ public:
                 BankFile bankFile;
                 reader.read(&bankFile);
 
-                uint64_t instanceId = model->uploadPreset(bankFile,uploadAfter);
+                uint64_t instanceId = model->uploadPreset(bankFile, uploadAfter);
 
                 res.set(http::field::content_type, "application/json");
                 res.set(http::field::cache_control, "no-cache");
@@ -268,8 +284,8 @@ public:
                 res.set(http::field::content_length, result.length());
 
                 res.body() = result;
-            } 
-            else if (request_uri.segment(1) == "uploadBank" ) 
+            }
+            else if (request_uri.segment(1) == "uploadBank")
             {
                 std::string presetBody = req.body();
                 std::stringstream s(presetBody);
@@ -285,7 +301,7 @@ public:
                 BankFile bankFile;
                 reader.read(&bankFile);
 
-                uint64_t instanceId = model->uploadBank(bankFile,uploadAfter);
+                uint64_t instanceId = model->uploadBank(bankFile, uploadAfter);
 
                 res.set(http::field::content_type, "application/json");
                 res.set(http::field::cache_control, "no-cache");
@@ -296,7 +312,8 @@ public:
 
                 res.body() = result;
             }
-            else {
+            else
+            {
                 throw PiPedalException("Not found");
             }
         }
@@ -312,7 +329,6 @@ public:
             }
         }
     }
-
 };
 
 /* When hosting a react app, replace /var/config.json with 
@@ -326,7 +342,7 @@ private:
     uint64_t maxUploadSize;
 
 public:
-    InterceptConfig(int portNumber,uint64_t maxUploadSize)
+    InterceptConfig(int portNumber, uint64_t maxUploadSize)
         : RequestHandler("/var/config.json"),
           maxUploadSize(maxUploadSize)
     {
@@ -414,11 +430,17 @@ public:
     }
 };
 
+static bool isJackServiceRunning()
+{
+    // look for the jack shmem .
+    std::filesystem::path path = "/dev/shm/jack_default_0";
+    return std::filesystem::exists(path);
+}
+
 uint16_t g_ShutdownPort = 0;
 
 int main(int argc, char *argv[])
 {
-    
 
     sem_init(&signalSemaphore, 0, 0);
 
@@ -471,7 +493,7 @@ int main(int argc, char *argv[])
     {
         std::cout << "Usage: pipedal <doc_root> [<web_root>] [options...]\n\n"
                   << "Options:\n"
-                  << "   -systemd: Log to systemd journals.\n"
+                  << "   -systemd: Log to systemd journals, wait for jack service.\n"
                   << "   -port: Port to listen on e.g. 0.0.0.0:80\n"
                   << "   -shutdownPort: Port for the shutdown service.\n"
                   << "Example:\n"
@@ -556,13 +578,65 @@ int main(int argc, char *argv[])
     {
         PiPedalModel model;
 
+        // Pre-populate ALSA device info,wait for jackd service (daemon only)
+        if (systemd)
+        {
+            auto devices = model.GetAlsaDevices();
+
+            auto serverSettings = model.GetJackServerSettings();
+            if (serverSettings.IsValid())
+            {
+                // wait up to 15 seconds for the midi device to come online.
+                if (!HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
+                {
+                    Lv2Log::info("Waiting for ALSA device " + serverSettings.GetAlsaDevice());
+                    for (int i = 0; i < 15; ++i)
+                    {
+                        sleep(1);
+                        devices = model.GetAlsaDevices();
+                        if (HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
+                        {
+                            break;
+                        }
+                        if (g_SigBreak)
+                            break;
+                    }
+                }
+            }
+            Lv2Log::info("Waiting for jack service.");
+
+            // pre-cache device info.
+            model.GetAlsaDevices();
+            sd_notify(0, "READY=1");
+
+            if (!isJackServiceRunning())
+            {
+                Lv2Log::info("Waiting for Jack service.");
+                // wait up to 15 seconds for the jack service to come online.
+                for (int i = 0; i < 15; ++i)
+                {
+                    // use the time to prepopulate ALSA device cache before jack
+                    // opens the device and we can't read properties.
+                    model.GetAlsaDevices();
+
+                    sleep(1);
+                    if (isJackServiceRunning())
+                    {
+                        break;
+                    }
+                }
+                Lv2Log::info("Found  Jack service.");
+            }
+            sleep(3); // jack needs a little time to get up to speed.
+        }
+
         model.Load(configuration);
 
         auto pipedalSocketFactory = MakePiPedalSocketFactory(model);
 
         server->AddSocketFactory(pipedalSocketFactory);
 
-        std::shared_ptr<RequestHandler> interceptConfig{new InterceptConfig(port,configuration.GetMaxUploadSize())};
+        std::shared_ptr<RequestHandler> interceptConfig{new InterceptConfig(port, configuration.GetMaxUploadSize())};
         server->AddRequestHandler(interceptConfig);
 
         std::shared_ptr<DownloadIntercept> downloadIntercept = std::make_shared<DownloadIntercept>(&model);
@@ -571,6 +645,11 @@ int main(int argc, char *argv[])
         server->RunInBackground();
 
         sem_wait(&signalSemaphore);
+
+        if (systemd)
+        {
+            sd_notify(0, "STOPPING=1");
+        }
 
         Lv2Log::info("Shutting down gracefully.");
         model.Close();

@@ -1,12 +1,14 @@
 [Unit]
 Description=${DESCRIPTION}
-After=jack.service
+Before=jack.service
 After=network.target
-BindsTo=jack.service
+After=sound.target
+After=local-fs.target
 
 
 
 [Service]
+Type=notify
 LimitMEMLOCK=infinity
 LimitRTPRIO=95
 ExecStart=${COMMAND} 
@@ -16,8 +18,8 @@ Restart=always
 RestartSec=25
 TimeoutStopSec=10
 WorkingDirectory=/var/pipedal
-Environment=JACK_PROMISCUOUS_SERVER=
-Environment=JACK_STJACK_NO_START_SERVER=
+Environment=JACK_PROMISCUOUS_SERVER=jack
+Environment=JACK_NO_START_SERVER=1
 
 
 [Install]

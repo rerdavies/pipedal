@@ -26,12 +26,26 @@
 using namespace pipedal;
 
 static uint32_t RATES[] = {
-    44100, 48000, 44100 * 2, 48000 * 2, 44100 * 4, 48000 * 4};
-
+    22050, 24000, 44100, 48000, 44100 * 2, 48000 * 2, 44100 * 4, 48000 * 4};
 
 std::mutex alsaMutex;
 
-std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAvailableAlsaDevices()
+bool PiPedalAlsaDevices::getCachedDevice(const std::string &name, AlsaDeviceInfo *pResult)
+{
+    auto it = cachedDevices.find(name);
+    if (it != cachedDevices.end())
+    {
+        *pResult = it->second;
+        return true;
+    }
+    return false;
+}
+void PiPedalAlsaDevices::cacheDevice(const std::string &name, const AlsaDeviceInfo &deviceInfo)
+{
+    cachedDevices[name] = deviceInfo;
+}
+
+std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 {
     std::lock_guard guard{alsaMutex};
 
@@ -50,7 +64,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAvailableAlsaDevices()
         if (cardNum < 0)
             // No more cards
             break;
-        
+
         {
             std::stringstream ss;
             ss << "hw:" << cardNum;
@@ -77,17 +91,17 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAvailableAlsaDevices()
                 AlsaDeviceInfo info;
                 info.cardId_ = cardNum;
                 info.id_ = std::string("hw:") + snd_ctl_card_info_get_id(alsaInfo);
-                const char* driver = snd_ctl_card_info_get_driver(alsaInfo);
+                const char *driver = snd_ctl_card_info_get_driver(alsaInfo);
 
                 info.name_ = snd_ctl_card_info_get_name(alsaInfo);
                 info.longName_ = snd_ctl_card_info_get_longname(alsaInfo);
-
 
                 snd_pcm_t *hDevice = nullptr;
 
                 // must support capture AND playback
                 err = snd_pcm_open(&hDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, 0);
-                if (err == 0) {
+                if (err == 0)
+                {
                     snd_pcm_close(hDevice);
                 }
                 if (err == 0)
@@ -104,7 +118,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAvailableAlsaDevices()
                         if (err == 0)
                         {
                             unsigned int minRate = 0, maxRate = 0;
-                            snd_pcm_uframes_t minBufferSize,maxBufferSize;
+                            snd_pcm_uframes_t minBufferSize, maxBufferSize;
                             int dir;
                             err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                             if (err == 0)
@@ -113,11 +127,11 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAvailableAlsaDevices()
                             }
                             if (err == 0)
                             {
-                                err = snd_pcm_hw_params_get_buffer_size_min(params,&minBufferSize);
+                                err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
                             }
-                            if (err == 0) 
+                            if (err == 0)
                             {
-                                err = snd_pcm_hw_params_get_buffer_size_max(params,&maxBufferSize);
+                                err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
                             }
                             if (err == 0)
                             {
@@ -131,13 +145,21 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAvailableAlsaDevices()
                                 }
                                 info.minBufferSize_ = (uint32_t)minBufferSize;
                                 info.maxBufferSize_ = (uint32_t)maxBufferSize;
-                                result.push_back(std::move(info));
+                                cacheDevice(info.name_, info);
+                                result.push_back(info);
                             }
                         }
                     }
                     if (params != nullptr)
                         snd_pcm_hw_params_free(params);
                     snd_pcm_close(hDevice);
+                }
+                else
+                {
+                    if (getCachedDevice(info.name_, &info))
+                    {
+                        result.push_back(info);
+                    }
                 }
             }
             snd_ctl_card_info_free(alsaInfo);
@@ -147,47 +169,6 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAvailableAlsaDevices()
     snd_config_update_free_global();
     return result;
 }
-
-
-void PiPedalAlsaDevices::PreLoadJackDevice(const std::string&deviceName)
-{
-    // save the device info before we start the jack server, because
-    // we won't be able to do it later.
-    std::vector<AlsaDeviceInfo> devices = GetAvailableAlsaDevices();
-    this->hasJackDevice = false;
-    for (auto &device : devices)
-    {
-        if (device.id_ == deviceName) {
-            this->currentJackDevice = device;
-            this->hasJackDevice = true;
-            break;
-        }
-    }
-}
-
-std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
-{
-    std::vector<AlsaDeviceInfo> devices = GetAvailableAlsaDevices();
-    if (this->hasJackDevice)
-    {
-        bool found = false;
-        for (auto &device: devices)
-        {
-            if (device.id_ == this->currentJackDevice.id_)
-            {
-                found = true;
-                break;
-            }
-        }
-        if (!found) 
-        {
-            devices.push_back(this->currentJackDevice);
-        }
-    }
-    return devices;
-}
-
-
 
 JSON_MAP_BEGIN(AlsaDeviceInfo)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, cardId)

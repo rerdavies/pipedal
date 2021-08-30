@@ -30,6 +30,7 @@
 #include "SysExec.hpp"
 #include <sys/wait.h>
 #include <pwd.h>
+#include "JackServerSettings.hpp"
 
 using namespace std;
 using namespace pipedal;
@@ -116,6 +117,10 @@ void StopService()
     {
         cout << "Error: Failed to stop the " SHUTDOWN_SERVICE " service.";
     }
+    if (SysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
+    {
+        throw PiPedalException("Failed to stop the " JACK_SERVICE " service.");
+    }
 }
 
 void Uninstall() {
@@ -128,13 +133,23 @@ void Uninstall() {
 void StartService()
 {
 
+    SilentSysExec("/usr/bin/pulseaudio --kill"); // interferes with Jack audio service startup.
+    if (SysExec(SYSTEMCTL_BIN " start " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    {
+        throw PiPedalException("Failed to start the " SHUTDOWN_SERVICE " service.");
+    }
     if (SysExec(SYSTEMCTL_BIN " start " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to start the " NATIVE_SERVICE " service.");
     }
-    if (SysExec(SYSTEMCTL_BIN " start " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    JackServerSettings serverSettings;
+    serverSettings.ReadJackConfiguration();
+    if (serverSettings.IsValid())
     {
-        throw PiPedalException("Failed to start the " SHUTDOWN_SERVICE " service.");
+        if (SysExec(SYSTEMCTL_BIN " start " JACK_SERVICE ".service") != EXIT_SUCCESS)
+        {
+            throw PiPedalException("Failed to start the " JACK_SERVICE " service.");
+        }
     }
 }
 void RestartService()

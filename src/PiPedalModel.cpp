@@ -47,6 +47,8 @@ std::string AtomToJson(int length, uint8_t *pData)
 PiPedalModel::PiPedalModel()
 {
     this->pedalBoard = PedalBoard::MakeDefault();
+    this->jackServerSettings.ReadJackConfiguration();
+
 }
 
 void PiPedalModel::Close()
@@ -87,7 +89,6 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
 
     this->jackServerSettings.ReadJackConfiguration();
 
-    alsaDevices.PreLoadJackDevice(this->jackServerSettings.GetAlsaDevice());
 
     storage.SetDataRoot(configuration.GetLocalStoragePath().c_str());
     storage.Initialize();
@@ -862,10 +863,6 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
         throw PiPedalException("Can't change server settings when running a debug server.");
     }
 
-    if (this->jackServerSettings.GetAlsaDevice() != jackServerSettings.GetAlsaDevice())
-    {
-        this->alsaDevices.PreLoadJackDevice(jackServerSettings.GetAlsaDevice());
-    }
     this->jackServerSettings = jackServerSettings;
 
 

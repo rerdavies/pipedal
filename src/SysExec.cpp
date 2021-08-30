@@ -28,7 +28,6 @@
 using namespace pipedal;
 using namespace std;
 
-
 // find on path, but ONLY /usr/bin and /usr/sbin
 
 static std::filesystem::path findOnSystemPath(const std::string &command)
@@ -60,23 +59,42 @@ static std::filesystem::path findOnSystemPath(const std::string &command)
     throw PiPedalException(s.str());
 }
 
+void pipedal::SilentSysExec(const char *szCommand)
+{
+    std::stringstream s;
+    s << szCommand << " 2>&1";
 
+    FILE *output = popen(s.str().c_str(), "r");
+    char buffer[512];
+    if (output)
+    {
+        while (!feof(output))
+        {
+            fgets(buffer, sizeof(buffer), output);
+        }
+        pclose(output);
+    }
+}
 
-int pipedal::SysExec(const char*szCommand) {
-    char*args = strdup(szCommand);
+int pipedal::SysExec(const char *szCommand)
+{
+    char *args = strdup(szCommand);
     int argc;
-    std::vector<char*> argv;
+    std::vector<char *> argv;
 
     char *p = args;
-    while (*p) {
+    while (*p)
+    {
         argv.push_back(p);
 
-        while (*p && *p != ' ') {
+        while (*p && *p != ' ')
+        {
             ++p;
         }
-        if (*p) {
+        if (*p)
+        {
             *p++ = '\0';
-            while (*p && *p == ' ') 
+            while (*p && *p == ' ')
             {
                 ++p;
             }
@@ -91,12 +109,11 @@ int pipedal::SysExec(const char*szCommand) {
     }
     if (!std::filesystem::exists(execPath))
     {
-        throw PiPedalException( SS("Path does not exist: " << execPath << "."));
+        throw PiPedalException(SS("Path does not exist: " << execPath << "."));
     }
-    argv[0] = (char*)(execPath.c_str());
-    
-    
-    char**rawArgv = &argv[0];
+    argv[0] = (char *)(execPath.c_str());
+
+    char **rawArgv = &argv[0];
     int pbPid;
     int returnValue = 0;
 
@@ -107,7 +124,7 @@ int pipedal::SysExec(const char*szCommand) {
     }
     else
     {
-        free((void*)args);
+        free((void *)args);
         waitpid(pbPid, &returnValue, 0);
         int exitStatus = WEXITSTATUS(returnValue);
         return exitStatus;

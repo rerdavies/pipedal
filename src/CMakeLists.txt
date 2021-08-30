@@ -176,6 +176,7 @@ add_executable(pipedalconfig json.cpp json.hpp
     PiPedalException.hpp 
     ConfigMain.cpp
     WifiConfigSettings.cpp WifiConfigSettings.hpp 
+    JackServerSettings.hpp JackServerSettings.cpp
     SetWifiConfig.hpp SetWifiConfig.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     SysExec.hpp SysExec.cpp

@@ -33,7 +33,6 @@ import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import DialogContent from '@material-ui/core/DialogContent';
 import MenuItem from '@material-ui/core/MenuItem';
-import { nullCast } from './Utility';
 import Typography from '@material-ui/core/Typography';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 
@@ -178,7 +177,7 @@ const JackServerSettingsDialog = withStyles(styles)(
             let settings = this.state.jackServerSettings.clone();
             settings.alsaDevice = device;
             settings.sampleRate = selectedDevice.closestSampleRate(settings.sampleRate);
-            settings.bufferSize = selectedDevice.closestSampleRate(settings.bufferSize);
+            settings.bufferSize = selectedDevice.closestBufferSize(settings.bufferSize);
 
             this.setState({
                 jackServerSettings: settings,

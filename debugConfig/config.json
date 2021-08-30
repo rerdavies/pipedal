@@ -25,6 +25,6 @@
 
     /* Provide access point capture redirects on this gateway. */
     "accessPointGateway": "192.168.0.0/24",
-    "accessPointServerAddress" : "192.168.0.23:8080"
+    "accessPointServerAddress" : "192.168.0.26:8080"
 
 }
