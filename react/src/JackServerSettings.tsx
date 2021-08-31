@@ -51,7 +51,9 @@ export default class JackServerSettings {
 
     getSummaryText() {
         if (this.valid) {
-            return this.alsaDevice + " Sample Rate: " + this.sampleRate + " BufferSize: " + this.bufferSize + " Number of Buffers: " + this.numberOfBuffers;
+            let device = this.alsaDevice;
+            if (device.startsWith("hw:")) device = device.substr(3);
+            return device + " - Rate: " + this.sampleRate + " BufferSize: " + this.bufferSize + " Buffers: " + this.numberOfBuffers;
         } else {
             return "Not configured";
         }

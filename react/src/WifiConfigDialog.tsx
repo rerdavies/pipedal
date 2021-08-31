@@ -250,7 +250,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
         };
 
         return (
-            <DialogEx tag="WifiConfigDialog" open={open} fullWidth onClose={handleClose} style={{}}
+            <DialogEx tag="WifiConfigDialog" open={open} fullWidth onClose={handleClose} style={{userSelect: "none"}}
                 fullScreen={this.state.fullScreen}
             >
                 { this.state.fullScreen && (
@@ -335,7 +335,8 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                         OK
                     </Button>
                 </DialogActions>
-                <DialogEx open={this.state.showWifiWarningDialog} tag="wifiConfirm" >
+                <DialogEx open={this.state.showWifiWarningDialog} tag="wifiConfirm" 
+                    style={{userSelect: "none"}}>
                     <DialogContent>
                         <Typography className={classes.pgraph} variant="body2" color="textPrimary">
                             Enabling the Wi-Fi hotspot will disable regular Wi-Fi network access on the PiPedal device. Once 

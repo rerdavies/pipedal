@@ -813,7 +813,11 @@ public:
     void
     do_read()
     {
-        // Set the timer
+        // make the request empty before reading
+        // otherwise the operation behavour is undefined.
+        req_ = {};
+
+        // Set the time
         timer_.expires_after(std::chrono::seconds(15));
 
         // Read a request

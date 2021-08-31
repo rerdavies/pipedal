@@ -193,6 +193,59 @@ static bool userExists(const char *userName)
     return true;
 }
 
+void InstallPamEnv()
+{
+    std::string newLine = "JACK_PROMISCOUS_SERVER      DEFAULT=jack";
+    std::vector<std::string> lines;
+    std::filesystem::path path = "/etc/security/pam_env.conf";
+    try
+    {
+        if (std::filesystem::exists(path))
+        {
+            {
+                ifstream f(path);
+                if (!f.is_open())
+                {
+                    throw PiPedalException("Can't open pam_env.conf");
+                }
+                while (true)
+                {
+                    std::string line;
+                    if (f.eof())
+                        break;
+                    std::getline(f, line);
+                    lines.push_back(line);
+                }
+            }
+
+            for (auto &line : lines)
+            {
+                if (line == newLine)
+                {
+                    return;
+                }
+            }
+            lines.push_back(newLine);
+
+            {
+                std::ofstream f(path);
+                if (!f.is_open())
+                {
+                    throw PiPedalException("Can't write to file.");
+                }
+                for (auto&line: lines)
+                {
+                    f << line << endl;
+                }
+            }
+        }
+    }
+    catch (const std::exception &e)
+    {
+        cout  << "Failed to update " << path << ". " << e.what();
+    }
+}
+
 void InstallLimits()
 {
     if (SysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
@@ -227,6 +280,7 @@ void MaybeStartJackService()
 void InstallJackService()
 {
     InstallLimits();
+    InstallPamEnv();
     if (SysExec(GROUPADD_BIN " -f " JACK_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to create jack service group.");
@@ -554,7 +608,7 @@ int main(int argc, char **argv)
         args.push_back((char *)(pkexec.c_str()));
 
         std::string sPath = GetSelfExePath();
-        args.push_back(const_cast<char*>(sPath.c_str()));
+        args.push_back(const_cast<char *>(sPath.c_str()));
         for (int arg = 1; arg < argc; ++arg)
         {
             args.push_back(const_cast<char *>(argv[arg]));

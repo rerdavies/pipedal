@@ -393,7 +393,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
             return (
                 <DialogEx tag="SettingsDialog" fullScreen open={this.props.open}
-                    onClose={() => { this.props.onClose() }} TransitionComponent={Transition}>
+                    onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
+                    style={{userSelect: "none"}}
+                    >
 
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
@@ -426,11 +428,19 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         JackHostStatus.getDisplayView("Status:\u00A0", this.state.jackStatus)
                                     }
                                 </div>
+                                { this.state.jackConfiguration.errorState !== "" &&
+                                    (
+                                        <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                            <Typography variant="caption" color="textSecondary"><span style={{color: "#F00"}}>{this.state.jackConfiguration.errorState }</span></Typography>
+                                        </div>
+
+                                    )
+                                }
                                 <ButtonBase className={classes.setting} onClick={() => this.handleJackServerSettings()}
                                 >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
-                                        <Typography display="block" variant="body2" noWrap>Jack Server Settings</Typography>
+                                        <Typography display="block" variant="body2" noWrap>Audio device</Typography>
                                         <Typography display="block" variant="caption" noWrap color="textSecondary">{this.state.jackServerSettings.getSummaryText()}</Typography>
                                     </div>
                                 </ButtonBase>
@@ -454,7 +464,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                 >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
-                                        <Typography display="block" variant="body2" noWrap>Input Channels</Typography>
+                                        <Typography display="block" variant="body2" noWrap>Input channels</Typography>
                                         <Typography display="block" variant="caption" color="textSecondary" noWrap>{this.state.jackSettings.getAudioInputDisplayValue(this.state.jackConfiguration)}</Typography>
                                     </div>
                                 </ButtonBase>
@@ -473,7 +483,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     <ButtonBase className={classes.setting} disabled={!isConfigValid} onClick={() => this.handleMidiSelection()}  >
                                         <SelectHoverBackground selected={false} showHover={true} />
                                         <div style={{ width: "100%" }}>
-                                            <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Select MIDI Input Channels</Typography>
+                                            <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Select MIDI input channels</Typography>
 
                                             <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>{this.midiSummary()}</Typography>
                                         </div>
@@ -488,7 +498,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
                                         <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Configure Wi-fi Hotspot</Typography>
+                                            Configure Wi-Fi hotspot</Typography>
                                         <Typography display="block" variant="caption" noWrap color="textSecondary">
                                             {this.state.wifiConfigSettings.getSummaryText()}
                                         </Typography>

@@ -407,7 +407,9 @@ const BankDialog = withStyles(styles, { withTheme: true })(
 
             return (
                 <DialogEx tag="BankDialog" fullScreen open={this.props.show}
-                    onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}>
+                    onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}
+                    style={{userSelect: "none"}}
+                    >
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <AppBar className={classes.dialogAppBar} style={{ display: this.isEditMode() ? "none" : "block" }} >
@@ -539,7 +541,8 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                         style={{ display: "none" }}
                     />
 
-                    <DialogEx tag="deletePrompt" open={this.state.showDeletePrompt} onClose={() => this.handleDeletePromptClose()}>
+                    <DialogEx tag="deletePrompt" open={this.state.showDeletePrompt} onClose={() => this.handleDeletePromptClose()}
+                        style={{userSelect: "none"}}>
                         <DialogContent>
                                 <Typography>Are you sure you want to delete bank '{this.getSelectedBankName()}'?</Typography>
                         </DialogContent>

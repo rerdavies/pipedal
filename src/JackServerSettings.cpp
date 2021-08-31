@@ -214,20 +214,17 @@ void JackServerSettings::Write()
             output << line << endl;
         }
         // the style used by qjackctl. :-/
+        // Lower to -P70 in order to allow the USB soft-irq to run at higher priority than JACK (it runs at 80).
         output << "/usr/bin/jackd "
-            << "-R -P90"
+            << "-R -P70 --silent"
             << " -dalsa -d" << this->alsaDevice_ 
             << " -r" << this->sampleRate_ 
             << " -p" << this->bufferSize_ 
             << " -n" << this->numberOfBuffers_ << " -Xseq" 
             << endl;
         system("/usr/bin/chmod 755 " DRC_FILENAME);
-        system("pulseaudio --kill");
+        system("/usr/bin/systemctl unmask jack");
         system("/usr/bin/systemctl enable jack");
-        if (system("/usr/bin/systemctl restart jack") != 0)
-        {
-            throw PiPedalException("Failed to start jack audio service.");
-        }
     }
     catch (const std::exception &e)
     {

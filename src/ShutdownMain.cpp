@@ -86,11 +86,16 @@ static void ReleaseAccessPoint(const std::string gatewayAddress)
 void delayedRestartProc()
 {
     sleep(1); // give a chance for websocket messages to propagate.
-    std::string pipedalConfigPath = std::filesystem::path(GetSelfExePath()).parent_path() / "pipedalConfig";
+    Lv2Log::error("Delayed Restart");
+    std::string pipedalConfigPath = std::filesystem::path(GetSelfExePath()).parent_path() / "pipedalconfig";
 
     std::stringstream s;
      s << pipedalConfigPath.c_str() << " --restart --excludeShutdownService";
-     ::system(s.str().c_str());
+    if (::system(s.str().c_str())!= EXIT_SUCCESS)
+    {
+        Lv2Log::error("Delayed Restart failed.");
+
+    }
 }
 
 bool setJackConfiguration(JackServerSettings serverSettings)
@@ -247,8 +252,6 @@ private:
             {
                 auto remainder = s.substr(strlen("setJackConfiguration "));
                 
-                // xxx delete me
-                Lv2Log::error("setJackConfiguration: " + remainder);
 
                 std::stringstream input(remainder);
                 JackServerSettings serverSettings;

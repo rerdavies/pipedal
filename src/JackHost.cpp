@@ -1275,10 +1275,10 @@ private:
         void ThreadProc()
         {
             this_->restarting = true;
-            this_->Close();
+            // this_->Close(); (JackServerConfiguration now does a service restart.)
             try {
                 ShutdownClient::SetJackServerConfiguration(jackServerSettings);
-                this_->Open(this_->channelSelection);
+                //this_->Open(this_->channelSelection);
                 this_->restarting = false;
                 onComplete(true, "");
                 isComplete = true;
