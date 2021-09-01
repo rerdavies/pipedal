@@ -910,13 +910,17 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
                     Lv2Log::error(s.str().c_str());
                 }
                 // Update jack server status.
-                this->jackConfiguration.SetIsRestarting(false);
                 if (!success)
                 {
+                    this->jackConfiguration.SetIsRestarting(false);
                     this->jackConfiguration.SetErrorStatus(errorMessage);
+                    fireJackConfigurationChanged(this->jackConfiguration);
                 }
                 else
                 {
+                    // we now do a complete restart of the services,
+                    // so just sit tight and wait for the restart.
+#ifdef JUNK
                     this->jackConfiguration.SetErrorStatus("");
                     fireJackConfigurationChanged(this->jackConfiguration);
 
@@ -927,6 +931,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
                     jackHost->SetPedalBoard(lv2PedalBoard);
                     updateRealtimeVuSubscriptions();
                     updateRealtimeMonitorPortSubscriptions();
+#endif
                 }
             });
     } 

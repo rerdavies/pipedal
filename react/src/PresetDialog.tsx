@@ -335,7 +335,8 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
 
             return (
                 <DialogEx tag="PresetDialog" fullScreen open={this.props.show}
-                    onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}>
+                    onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}
+                    style={{userSelect: "none"}}>
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <AppBar className={classes.dialogAppBar} style={{ display: this.isEditMode() ? "none" : "block" }} >

@@ -188,7 +188,9 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
 
             return (
                 <DialogEx tag="AboutDlg" fullScreen open={this.props.open}
-                    onClose={() => { this.props.onClose() }} TransitionComponent={Transition}>
+                    onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
+                    style={{userSelect: "none"}}
+                    >
 
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
@@ -206,7 +208,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                         </div>
                         <div style={{
                             flex: "1 1 auto", position: "relative", overflow: "hidden",
-                            overflowX: "hidden", overflowY: "auto" 
+                            overflowX: "hidden", overflowY: "auto" , userSelect: "text"
                         }}
                         >
                             <div style={{margin: 24}}>

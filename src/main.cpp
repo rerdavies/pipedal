@@ -579,9 +579,10 @@ int main(int argc, char *argv[])
         PiPedalModel model;
 
         // Pre-populate ALSA device info,wait for jackd service (daemon only)
+        model.GetAlsaDevices(); // pre-cache ALSA devices.
         if (systemd)
         {
-            auto devices = model.GetAlsaDevices();
+            auto devices = model.GetAlsaDevices(); // pre-cache ALSA devices (most especially, the one which Jack will open, that we can no longer read)
 
             auto serverSettings = model.GetJackServerSettings();
             if (serverSettings.IsValid())
@@ -590,7 +591,7 @@ int main(int argc, char *argv[])
                 if (!HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
                 {
                     Lv2Log::info("Waiting for ALSA device " + serverSettings.GetAlsaDevice());
-                    for (int i = 0; i < 15; ++i)
+                    for (int i = 0; i < 10; ++i)
                     {
                         sleep(1);
                         devices = model.GetAlsaDevices();

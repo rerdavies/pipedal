@@ -60,7 +60,7 @@ void json_writer::write(string_view v,bool enforceValidUtf8Encoding)
 {
     // convert to utf-32.
     // convert utf-32 to normalized utf-16.
-    // write non-7-bit and unsafe characters as \uxxxx.
+    // write non-7-bit and unsafe characters as \uHHHH.
 
     auto p = v.begin();
     os << '"';

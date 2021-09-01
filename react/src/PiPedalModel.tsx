@@ -408,9 +408,9 @@ class PiPedalModelImpl implements PiPedalModel {
         this.onSocketReconnected = this.onSocketReconnected.bind(this);
     }
     onSocketReconnecting(retry: number, maxRetries: number): void {
-        if (retry !== 0) {
+        //if (retry !== 0) {
             this.setState(State.Reconnecting);
-        }
+        //}
     }
 
 
@@ -455,14 +455,10 @@ class PiPedalModelImpl implements PiPedalModel {
             );
         } else if (message === "onPedalBoardChanged") {
             let pedalChangedBody = body as PedalBoardChangedBody;
-            // xxx: do we want to optimize for messages we went ourselves??
-            // we could actually protect against preview collisions in the model.
             this.pedalBoard.set(new PedalBoard().deserialize(pedalChangedBody.pedalBoard));
 
         } else if (message === "onMidiValueChanged") {
             let controlChangedBody = body as ControlChangedBody;
-            // xxx: do we want to optimize for messages we went ourselves??
-            // we could actually protect against preview collisions in the model.
             this._setPedalBoardControlValue(
                 controlChangedBody.instanceId,
                 controlChangedBody.symbol,
@@ -480,8 +476,6 @@ class PiPedalModelImpl implements PiPedalModel {
             this.handleNotifyMidiListener(clientHandle, isNote, noteOrControl);
         } else if (message === "onControlChanged") {
             let controlChangedBody = body as ControlChangedBody;
-            // xxx: do we want to optimize for messages we went ourselves??
-            // we could actually protect against preview collisions in the model.
             this._setPedalBoardControlValue(
                 controlChangedBody.instanceId,
                 controlChangedBody.symbol,
