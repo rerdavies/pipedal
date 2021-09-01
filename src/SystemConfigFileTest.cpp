@@ -33,7 +33,7 @@ using namespace pipedal;
 
 
 TEST_CASE( "SystemConfigFile Test", "[system_config_file_test]" ) {
-    boost::filesystem::path path("/etc/hostapd/hostapd.conf");
+    std::filesystem::path path("/etc/hostapd/hostapd.conf");
 
     SystemConfigFile file(path);
     std::string driverName;

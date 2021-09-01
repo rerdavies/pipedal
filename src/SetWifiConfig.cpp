@@ -26,31 +26,46 @@
 
 using namespace pipedal;
 
+#define IP_RANGE "172.22.0"
+#define PIPEDAL_IP IP_RANGE ".1"
 
+#define PIPEDAL_NETWORK PIPEDAL_IP "/24"
+
+#define SYSTEMCTL_BIN "/usr/bin/systemctl"
 void pipedal::SetWifiConfig(const WifiConfigSettings&settings)
 {
     char band;
     if (!settings.enable_)
     {
-        SysExec("/usr/bin/systemctl stop hostapd");
-        SysExec("/usr/bin/systemctl disable hostapd");
+        SysExec(SYSTEMCTL_BIN " stop hostapd");
+        SysExec(SYSTEMCTL_BIN " disable hostapd");
 
-        SysExec("/usr/bin/systemctl enable wpa_supplicant");
-        SysExec("/usr/bin/systemctl start wpa_supplicant");
+        SysExec(SYSTEMCTL_BIN " enable wpa_supplicant");
+        SysExec(SYSTEMCTL_BIN " start wpa_supplicant");
     } else {
-        boost::filesystem::path path("/etc/hostapd/hostapd.conf");
-        SystemConfigFile apdConfig(path);
-        apdConfig.Set("ieee80211n","1",false);
-        apdConfig.Set("ieee80211d","1",false);
-        apdConfig.Set("ieee80211ac","1",false);
-        apdConfig.Set("ieee80211d","1",false);
-        apdConfig.Set("ht_capab","[HT40][SHORT-GI-20][DSSS_CCK-40]",false);
-        apdConfig.Set("rsn_pairwise","CCMP",false);
+        std::filesystem::path path("/etc/hostapd/hostapd.conf");
+        SystemConfigFile apdConfig;
+        if (std::filesystem::exists(path))
+        {
+            apdConfig.Load(path);
+        }
+        apdConfig.Set("interface","wlan0");
+        apdConfig.Set("driver","nl80211");
+        apdConfig.Set("country_code",settings.countryCode_);
 
-        apdConfig.Set("wmm_enabled","1");
+        apdConfig.Set("ieee80211n","1","Wi-Fi features");
+        apdConfig.SetDefault("ieee80211d","1");
+        apdConfig.SetDefault("ieee80211ac","1");
+        apdConfig.SetDefault("ieee80211d","1");
+        apdConfig.Set("ht_capab","[HT40][SHORT-GI-20][DSSS_CCK-40]");
+
+
+        apdConfig.Set("wmm_enabled","1","Authentication options");
         apdConfig.Set("auth_algs","1");
         apdConfig.Set("wpa","2");
-
+        apdConfig.SetDefault("wpa_pairwise","TKIP CCMP");
+        apdConfig.SetDefault("wpa_ptk_rekey","600");
+        apdConfig.SetDefault("rsn_pairwise","CCMP");
 
         std::string hwMode = "g";
         if (settings.channel_.length() > 0 && settings.channel_[0] == 'a') {
@@ -72,22 +87,94 @@ void pipedal::SetWifiConfig(const WifiConfigSettings&settings)
             }
         }
 
+        apdConfig.Set("ssid",settings.hotspotName_,"Access point configuration");
         if (settings.password_.length() != 0)
         {
             apdConfig.Set("wpa_passphrase",settings.password_);
         }
-        apdConfig.Set("ssid",settings.hotspotName_);
-        apdConfig.Set("country_code",settings.countryCode_);
         apdConfig.Set("hw_mode",hwMode);
         apdConfig.Set("channel",channel);
-        apdConfig.Save();
 
-        SysExec("/usr/bin/systemctl daemon-reload");
+        // ******************** dsnmasq ******
+        std::filesystem::path dnsMasqPath("/etc/dnsmasq.conf");
+        SystemConfigFile dnsMasq;
+        
+        try {
+            dnsMasq.Load(dnsMasqPath);
+        } catch (const std::exception &)
+        {
+            // ignore.
+        }
 
-        SysExec("/usr/bin/systemctl mask wpa_supplicant");
-        SysExec("/usr/bin/systemctl stop wpa_supplicant");
+        
+        dnsMasq.Set("interface","wlan0","Name of the Wi-Fi interface");
+        dnsMasq.Set("listen-address",PIPEDAL_IP);
 
-        if (SysExec("/usr/bin/systemctl restart hostapd") != 0)
+        dnsMasq.SetDefault("dhcp-range", IP_RANGE ".3," IP_RANGE ".127,12h","dhcp configuration");
+        dnsMasq.SetDefault("domain","local");
+        std::stringstream sAddress;
+        sAddress << "/" << settings.mdnsName_ << ".local/" IP_RANGE << ".1";
+        dnsMasq.Set("address",sAddress.str());
+
+        // ****** dhcpd.conf ***/
+        std::filesystem::path dhcpcdConfig("/etc/dhcpcd.conf");
+        if (std::filesystem::exists(dhcpcdConfig))
+        {
+            SystemConfigFile dhcpcd(dhcpcdConfig);
+
+            int line = dhcpcd.GetLineThatStartsWith("hostname");
+            std::string hostNameLine;
+            if (settings.mdnsName_ != "")
+            {
+                hostNameLine = "hostname " + settings.mdnsName_;
+            } else {
+                hostNameLine = "hostname"; // the default value.
+            }
+            if (line != -1) {
+                dhcpcd.SetLineValue(line,hostNameLine);
+            } else {
+                dhcpcd.AppendLine(hostNameLine);
+            }
+            line = dhcpcd.GetLineNumber("interface wlan0");
+            if (line != -1) {
+                dhcpcd.EraseLine(line);
+                while (line < dhcpcd.GetLineCount())
+                {
+                    const std::string &lineValue = dhcpcd.GetLineValue(line);
+                    if (lineValue.length() > 0 && (lineValue[0] == ' ' || lineValue[0] == '\t'))
+                    {
+                        dhcpcd.EraseLine(line);
+                    } else {
+                        break;
+                    }
+                }
+            }
+            if (line == -1) {
+                dhcpcd.AppendLine("");
+                line = dhcpcd.GetLineCount();
+            }
+            dhcpcd.InsertLine(line++,"interface wlan0");
+            dhcpcd.InsertLine(line++,"   static ip_address=" PIPEDAL_NETWORK);
+            dhcpcd.InsertLine(line++,"   nohook wpa_supplicant");
+            dhcpcd.Save(dhcpcdConfig);
+        }
+
+        // ***** save the config files ***
+
+        apdConfig.Save(path);
+        dnsMasq.Save(dnsMasqPath);
+
+
+
+        // **************** start services ************
+        SysExec("rfkill unblock wlan");
+        SysExec(SYSTEMCTL_BIN " daemon-reload");
+
+        SysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
+        SysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
+
+        SysExec(SYSTEMCTL_BIN " unmask hostapd");
+        if (SysExec(SYSTEMCTL_BIN " restart hostapd") != 0)
         {
             throw PiPedalException("Unable to start the access point.");
 
@@ -96,8 +183,15 @@ void pipedal::SetWifiConfig(const WifiConfigSettings&settings)
         {
             throw PiPedalException("Unable to start the access point.");
         }
-        SysExec("/usr/bin/systemctl enable hostapd");
+        SysExec(SYSTEMCTL_BIN " enable hostapd");
+        
+        SysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
+        SysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
+
+        SysExec(SYSTEMCTL_BIN " restart dnsmasq");
+        SysExec(SYSTEMCTL_BIN " enable dnsmasq");
 
     }
 
 }
+

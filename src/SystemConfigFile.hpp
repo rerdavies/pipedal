@@ -18,12 +18,12 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 namespace pipedal {
 
 class SystemConfigFile {
-    boost::filesystem::path currentPath;
+    std::filesystem::path currentPath;
     std::vector<std::string> lines;
     void SetLine(int64_t lineIndex,const std::string&key,const std::string &value );
     bool LineMatches(const std::string &line, const std::string&key) const;
@@ -31,15 +31,15 @@ public:
     SystemConfigFile() {
 
     }
-    SystemConfigFile(const boost::filesystem::path& path)
+    SystemConfigFile(const std::filesystem::path& path)
     {
         Load(path);
     }
 
-    void Load(const boost::filesystem::path&path);
+    void Load(const std::filesystem::path&path);
 
     void Save(std::ostream &os);
-    void Save(const boost::filesystem::path&path);
+    void Save(const std::filesystem::path&path);
     void Save();
 
     int64_t GetLine(const std::string &key) const;
@@ -47,12 +47,23 @@ public:
     bool Get(const std::string&key,std::string*pResult) const;
     std::string Get(const std::string&key) const;
     void Set(const std::string&key,const std::string &value);
-    void Set(const std::string&key,const std::string &value, bool overwrite);
     void Set(const std::string&key,const std::string &value, const std::string&comment);
+    void SetDefault(const std::string&key, const std::string &value);
+    void SetDefault(const std::string&key,const std::string &value, const std::string &comment);
+
     bool Erase(const std::string&key);
     int64_t Insert(int64_t position, const std::string&key, const std::string&value);
     int64_t Insert(int64_t position, const std::string&line);
-
+    int GetLineNumber(const std::string&line) const;
+    bool HasLine(const std::string&line) const { return GetLineNumber(line) != -1; }
+    void EraseLine(int i);
+    int GetLineThatStartsWith(const std::string&text) const;
+    int GetLineCount() const { return (int)lines.size();}
+    const std::string & GetLineValue(int line) const { return lines[line]; }
+    bool EraseLine(const std::string&line);
+    void InsertLine(int position, const std::string&line);
+    void AppendLine(const std::string&line);
+    void SetLineValue(int index, const std::string&line) { lines[index] = line; }
 };
 
 };

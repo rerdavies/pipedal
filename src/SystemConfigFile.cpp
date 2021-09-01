@@ -27,7 +27,22 @@
 using namespace pipedal;
 using namespace std;
 
-void SystemConfigFile::Load(const boost::filesystem::path&path)
+
+static std::string makeLine(const std::string &key, const std::string &value)
+{
+    stringstream s;
+    if (value.length() == 0)
+    {
+        s << key;
+    }
+    else
+    {
+        s << key << "=" << value;
+    }
+    return s.str();
+}
+
+void SystemConfigFile::Load(const std::filesystem::path &path)
 {
     this->lines.clear();
 
@@ -42,7 +57,7 @@ void SystemConfigFile::Load(const boost::filesystem::path&path)
     while (true)
     {
         std::string line;
-        std::getline(f,line);
+        std::getline(f, line);
         if (f.fail())
         {
             break;
@@ -50,107 +65,130 @@ void SystemConfigFile::Load(const boost::filesystem::path&path)
         lines.push_back(line);
     }
     this->currentPath = path;
-
-
 }
 
 int64_t SystemConfigFile::GetLine(const std::string &key) const
 {
     for (size_t i = 0; i < lines.size(); ++i)
     {
-        if (LineMatches(lines[i],key)) 
+        if (LineMatches(lines[i], key))
         {
             return i;
         }
     }
+    std::string commentedKey = "#" + key;
+    for (size_t i = 0; i < lines.size(); ++i)
+    {
+        if (LineMatches(lines[i], commentedKey))
+        {
+            return i;
+        }
+    }
+
     return -1;
 }
 
-bool SystemConfigFile::HasValue(const std::string&key) const
+bool SystemConfigFile::HasValue(const std::string &key) const
 {
-    return GetLine(key) != -1;
+    int line = GetLine(key);
+    if (line == -1)
+        return false;
+    return lines[line][0] != '#';
 }
 
 static inline std::string ValuePart(const std::string &line)
 {
     auto pos = line.find('=');
-    if (pos == std::string::npos) throw PiPedalException("Value not found.");
-    return line.substr(pos+1);
-
+    if (pos == std::string::npos)
+        throw PiPedalException("Value not found.");
+    return line.substr(pos + 1);
 }
-std::string SystemConfigFile::Get(const std::string&key) const
+std::string SystemConfigFile::Get(const std::string &key) const
 {
     int64_t lineIndex = GetLine(key);
-    if (lineIndex == -1) throw PiPedalArgumentException("Not found.");
+    if (lineIndex == -1)
+        throw PiPedalArgumentException("Not found.");
     return ValuePart(lines[lineIndex]);
-
 }
 
-bool SystemConfigFile::Get(const std::string&key,std::string*pResult) const
+bool SystemConfigFile::Get(const std::string &key, std::string *pResult) const
 {
     int64_t lineIndex = GetLine(key);
-    if (lineIndex == -1) return false;
+    if (lineIndex == -1)
+        return false;
     *pResult = ValuePart(lines[lineIndex]);
     return true;
 }
-void SystemConfigFile::Set(const std::string&key,const std::string &value)
+void SystemConfigFile::Set(const std::string &key, const std::string &value)
 {
-    stringstream s;
-    s << key << "=" << value;
-    std::string line = s.str();
+    std::string line = makeLine(key, value);
+
     int lineIndex = GetLine(key);
-    if (lineIndex != -1) {
+    if (lineIndex != -1)
+    {
         lines[lineIndex] = line;
-    } else {
+    }
+    else
+    {
         lines.push_back(line);
     }
 }
+void SystemConfigFile::SetDefault(const std::string &key, const std::string &value)
+{
+    int lineIndex = GetLine(key);
+    if (lineIndex == -1)
+    {
+        lines.push_back(makeLine(key, value));
+    } else if (lines[lineIndex][0] != '#') {
+        lines[lineIndex] = makeLine(key,value);
+    }
+}
 
-bool SystemConfigFile::Erase(const std::string&key)
+
+
+bool SystemConfigFile::Erase(const std::string &key)
 {
     bool matched = false;
     for (size_t i = 0; i < lines.size(); ++i)
     {
-        if (LineMatches(lines[i],key))
+        if (LineMatches(lines[i], key))
         {
             matched = true;
-            lines.erase(lines.begin()+i);
+            lines.erase(lines.begin() + i);
             --i;
         }
     }
     return matched;
-
 }
 
-static std::string makeLine(const std::string&key, const std::string&value) {
-    stringstream s;
-    s << key << "=" << value;
-    return s.str();
-}
-int64_t SystemConfigFile::Insert(int64_t position, const std::string&key, const std::string&value)
+int64_t SystemConfigFile::Insert(int64_t position, const std::string &key, const std::string &value)
 {
     if (position < 0 || position >= lines.size())
     {
-        lines.push_back(makeLine(key,value));
+        lines.push_back(makeLine(key, value));
         return (int64_t)lines.size();
-    } else {
-        lines.insert(lines.begin()+position,makeLine(key,value));
-        return position+1;
+    }
+    else
+    {
+        lines.insert(lines.begin() + position, makeLine(key, value));
+        return position + 1;
     }
 }
-int64_t SystemConfigFile::Insert(int64_t position, const std::string&line)
+int64_t SystemConfigFile::Insert(int64_t position, const std::string &line)
 {
     if (position < 0 || position >= lines.size())
     {
         lines.push_back(line);
         return (int64_t)lines.size();
-    } else {
-        lines.insert(lines.begin()+position,line);
-        return position+1;
+    }
+    else
+    {
+        lines.insert(lines.begin() + position, line);
+        return position + 1;
     }
 }
 
-bool SystemConfigFile::LineMatches(const std::string &line, const std::string&key) const
+inline bool SystemConfigFile::LineMatches(const std::string &line, const std::string &key) const
 {
     // (very permissive interpretation)
     int pos = 0;
@@ -158,46 +196,61 @@ bool SystemConfigFile::LineMatches(const std::string &line, const std::string&ke
     {
         ++pos;
     }
-    if (line.compare(pos,pos+key.length(),key) != 0) return false;
-    pos += key.length();\
+    if (line.compare(pos, pos + key.length(), key) != 0)
+        return false;
+    pos += key.length();
     while (pos < line.length() && (line[pos] == ' ' || line[pos] == '\t'))
     {
         ++pos;
     }
+    if (pos == line.length())
+        return true;
     return pos < line.length() && line[pos] == '=';
 }
 
-void SystemConfigFile::SetLine(int64_t lineIndex,const std::string&key,const std::string &value )
+void SystemConfigFile::SetLine(int64_t lineIndex, const std::string &key, const std::string &value)
 {
-    stringstream s;
-    s << key << "=" << value;
+    std::string line = makeLine(key, value);
     if (lineIndex >= 0 && lineIndex < this->lines.size())
     {
-        this->lines[lineIndex] = s.str();
-    } else {
-        this->lines.push_back(s.str());
+        this->lines[lineIndex] = line;
+    }
+    else
+    {
+        this->lines.push_back(line);
     }
 }
 
-void SystemConfigFile::Set(const std::string&key,const std::string &value, bool overwrite)
-{
-    if (!overwrite)
-    {
-        if (HasValue(key)) return;
-    }
-    Set(key,value);
-}
 
-void SystemConfigFile::Set(const std::string&key,const std::string &value, const std::string&comment)
+void SystemConfigFile::SetDefault(const std::string &key, const std::string &value, const std::string &comment)
 {
-    uint64_t lineIndex = GetLine(key);
-    if (lineIndex != -1) 
+    int lineIndex = GetLine(key);
+    if (lineIndex == -1)
     {
-        SetLine(lineIndex, key, value);
-    } else {
         lines.push_back("");
         lines.push_back("# " + comment);
-        SetLine(-1,key,value);
+
+        lines.push_back(makeLine(key, value));
+    } else {
+        if (lines[lineIndex][0] == '#')
+        {
+            lines[lineIndex] = makeLine(key,value);
+        }
+    }
+}
+
+void SystemConfigFile::Set(const std::string &key, const std::string &value, const std::string &comment)
+{
+    auto lineIndex = GetLine(key);
+    if (lineIndex != -1)
+    {
+        SetLine(lineIndex, key, value);
+    }
+    else
+    {
+        lines.push_back("");
+        lines.push_back("# " + comment);
+        SetLine(-1, key, value);
     }
 }
 
@@ -207,13 +260,13 @@ void SystemConfigFile::Save(std::ostream &os)
     {
         os << lines[i] << std::endl;
     }
-
 }
-void SystemConfigFile::Save(const boost::filesystem::path&path)
+void SystemConfigFile::Save(const std::filesystem::path &path)
 {
     ofstream f(path);
 
-    if (!f.is_open()) {
+    if (!f.is_open())
+    {
         stringstream s;
         s << "Unable to write to " << path;
         throw PiPedalException(s.str());
@@ -230,3 +283,50 @@ void SystemConfigFile::Save()
 {
     Save(this->currentPath);
 }
+
+int SystemConfigFile::GetLineNumber(const std::string &line) const {
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        if (lines[i] == line)
+        {
+            return i;
+        }
+    }
+    return -1;
+
+}
+void SystemConfigFile::EraseLine(int i)
+{
+    if (i < 0 || i >= lines.size()) throw PiPedalArgumentException("Range error.");
+    lines.erase(lines.begin()+i);
+}
+
+bool SystemConfigFile::EraseLine(const std::string &line)
+{
+    int lineNumber = GetLineNumber(line);
+    if (lineNumber == -1) return false;
+    lines.erase(lines.begin() + lineNumber);
+    return true;
+}
+
+void SystemConfigFile::InsertLine(int position, const std::string&line)
+{
+    this->lines.insert(lines.begin()+position,line);
+}
+
+int SystemConfigFile::GetLineThatStartsWith(const std::string&text) const
+{
+    for (size_t i = 0; i < lines.size(); ++i)
+    {
+        if (lines[i].rfind(text,0) != std::string::npos) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+void SystemConfigFile::AppendLine(const std::string &line)
+{
+    lines.push_back(line);
+}
+

@@ -31,6 +31,7 @@ namespace pipedal {
         bool enable_ = false;
         std::string countryCode_ = "US"; // iso 3661
         std::string hotspotName_ = "pipedal";
+        std::string mdnsName_ = "pipedal";
         bool hasPassword_ = false;
         std::string password_;
         std::string channel_ = "g6";
