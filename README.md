@@ -117,6 +117,7 @@ Run the following commands to install dependent libraries required by the PiPeda
     sudo apt update
     sudo apt install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
     sudo apt install libasound2-dev
+    sudo apt install libwebsocketpp-dev
 
 Run the following command to install and configure React dependencies.
 
