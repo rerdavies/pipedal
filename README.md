@@ -102,7 +102,10 @@ Run the following commands to install build tools required by the PiPedal build.
 
     # install CMake
     sudo apt update
-    sudo apt install cmake 
+    sudo apt install cmake ninja-build
+
+The PiPedal build process also requires version 14 or later of `node.js`. Type `node --version` to see if you have a version 
+of `node.js` installed already. Otherwise run the following commands as root to install the v14.x lts version of `node.js`: 
 
     # install NodeJS lastest LTS release.
     curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
@@ -114,14 +117,12 @@ Run the following commands to install dependent libraries required by the PiPeda
     sudo apt update
     sudo apt install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
     sudo apt install libasound2-dev
+    sudo apt install libwebsocketpp-dev
 
-The PiPedal build process also requires version 14 or later of `node.js`. Type `node --version` to see if you have a version 
-of `node.js` installed already. Otherwise run the following commands as root to install the v14.x lts version of `node.js`: 
+Run the following command to install and configure React dependencies.
 
-    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-    apt-get install -y nodejs
-
-
+   ./react-config   # Configure React dependencies.
+  
 ### Building PiPedal
 
 PiPedal was developed using Visual Studio Code. If you open the PiPedal project as a folder in VS Code, Code will 
@@ -130,7 +131,7 @@ available through the plugins store) has configured itself, build commands shoul
 Code. Visual Studio Code will take care of automatically configuring the project.
 
 If you are not using Visual Studio Code, you can configure, build and install PiPedal using CMake build tools. For your convenience,
-the following shell scripts have been provided in the root of the project.
+the following shell scripts have been provided in the root of the project in order to provide convenent CLI build commands.ka
 
     sudo ./init    # Configure the CMake build
 
@@ -141,7 +142,7 @@ the following shell scripts have been provided in the root of the project.
     ./pkg    # Build a .deb file for distribution.
     
 If you are using a development environment other than Visual Studio Code, it should be fairly straightforward to figure out how
-to incorporate the PiPedal build procedure into your IDE workflow by examining the contents of the build shell scripts.
+to incorporate the PiPedal build procedure into your IDE workflow by examining the contents of the build shell scripts.npm
 
 The CMake toolchain can be used to generate build scripts for other build environments as well (e.g. Visuual Studio .csproj files, Ant, or Linux
  Makefiles); and can be configured to perform cross-compiled builds as well. Consult documentation for CMake for instructions on how to
