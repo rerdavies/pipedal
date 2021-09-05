@@ -31,7 +31,7 @@
 #include <filesystem>
 #include <cmath>
 
-#include "lv2/lv2core.lv2/lv2.h"
+#include "lv2.h"
 #include "Units.hpp"
 
 

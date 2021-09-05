@@ -24,7 +24,7 @@
 #include <lilv/lilv.h>
 #include "lv2/atom.lv2/atom.h"
 #include "lv2/atom.lv2/util.h"
-#include "lv2/lv2core.lv2/lv2.h"
+#include "lv2.h"
 #include "lv2/log.lv2/log.h"
 #include "lv2/log.lv2/logger.h"
 #include "lv2/midi.lv2/midi.h"

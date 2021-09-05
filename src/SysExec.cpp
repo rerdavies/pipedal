@@ -29,7 +29,10 @@
 using namespace pipedal;
 using namespace std;
 
+#pragma GCC diagnostic ignored "-Wunused-result"
+
 // find on path, but ONLY /usr/bin and /usr/sbin
+
 
 static std::filesystem::path findOnSystemPath(const std::string &command)
 {
@@ -76,7 +79,6 @@ void pipedal::SilentSysExec(const char *szCommand)
         pclose(output);
     }
 }
-
 int pipedal::SysExec(const char *szCommand)
 {
     char *args = strdup(szCommand);

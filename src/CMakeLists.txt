@@ -149,6 +149,7 @@ add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
 
     SystemConfigFile.hpp SystemConfigFile.cpp
     SystemConfigFileTest.cpp
+    BeastServerTest.cpp
     )
 
 configure_file(config.hpp.in config.hpp)
@@ -211,12 +212,21 @@ set (REACT_NOTICES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../build/src/notices.txt)
 set (DEBIAN_COPYRIGHT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../debian/copyright)
 
 # generate Copyright section of settings page.
+# warning: there may be multiple versions. Pick the latest.
+if(EXISTS "/usr/share/doc/libboost1.71-dev")
+   set (BOOST_COPYRIGHT_DIR "libboost1.71-dev")
+elseif(EXISTS "/usr/share/doc/libboost1.67-dev")
+   set (BOOST_COPYRIGHT_DIR "libboost1.67-dev")
+else()
+    message(ERROR "Boost libary version has changed. Please update me.")
+endif()
+
 
 add_custom_command(OUTPUT ${REACT_NOTICES_FILE} 
     COMMAND "$<TARGET_FILE:processcopyrights>"
         --output ${REACT_NOTICES_FILE} 
         --projectCopyright ${DEBIAN_COPYRIGHT_FILE} 
-        liblilv-0-0 libboost1.67-dev libnl-3-dev libnl-3-dev  lv2-dev
+        liblilv-0-0 ${BOOST_COPYRIGHT_DIR} libnl-3-dev libnl-3-dev  lv2-dev
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${DEBIAN_COPYRIGHT_FILE} "$<TARGET_FILE:processcopyrights>"
     COMMENT "Updating copyright notices."

@@ -1,7 +1,10 @@
 #pragma once
+
+#include <string.h>
+
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/http.hpp>
 #include <boost/asio/ip/network_v4.hpp>
+#include <cstring>
 
 
 #include <mutex> 
@@ -11,17 +14,63 @@
 #include <filesystem>
 
 
+
+
+
 // forward declaration.
 
 class websocket_session;
 
 namespace pipedal {
-using HttpRequest =boost::beast::http::request<boost::beast::http::string_body>;
 
 
+class  HttpRequest {
+public:
+    virtual const std::string&body() const = 0;
+    virtual const std::string &method() const = 0;
+    virtual const std::string&get(const std::string&key) const = 0;
+    virtual bool keepAlive() const = 0;
+};
+
+class HttpResponse {
+public:
+    virtual void set(const std::string&key, const std::string&value) = 0;
+    virtual void setContentLength(size_t size) = 0;
+    virtual void setBody(const std::string&body) = 0;
+    virtual void  keepAlive(bool value)  = 0;
+};
+
+
+struct HttpVerb {
+    constexpr static const char * options = "OPTIONS";
+    constexpr static const char * get = "GET";
+    constexpr static const char * post = "POST";
+    constexpr static const char * head = "HEAD";
+};
+
+
+class HttpField {
+public:
+    constexpr static const char * LastModified = "Last-Modified";
+    constexpr static const char* content_length = "Content-Length";
+    constexpr static const char* content_type = "Content-Type";
+    constexpr static const char* cache_control = "Cache-Control";
+    constexpr static const char* content_disposition = "Content-Disposition";
+    constexpr static const char* access_control_allow_origin = "Access-Control-Allow-Origin";
+    constexpr static const char* access_control_allow_methods= "Access-Control-Allow-Methods";
+    constexpr static const char* access_control_allow_headers = "Acess-Control-Allow-Headers";
+    constexpr static const char* origin = "Origin";
+    constexpr static const char* date = "Date";
+};
+
+
+//xxx move this to HtmlHelpers.
 std::string last_modified(const std::filesystem::path& path);
 
+class BeastServerImpl;
+
 class SocketHandler {
+    friend class BeastServerImpl;
 public:
 
     class IWriteCallback {
@@ -33,16 +82,15 @@ public:
     };
 
 private:
-    friend class ::websocket_session;
 
 
     IWriteCallback *writeCallback_;
-
+public:
     void setWriteCallback(IWriteCallback *writeCallback) {
         writeCallback_ = writeCallback;
     }
 
-protected:
+public:
     virtual void onReceive(const std::string_view&text) = 0;
 public:
     std::string getFromAddress() const { return writeCallback_->getFromAddress(); }
@@ -76,6 +124,7 @@ class RequestHandler {
 private:
     uri target_url_;
 public:
+
     RequestHandler(const char*target_url)
     : target_url_(target_url)
     {
@@ -92,7 +141,7 @@ public:
         return requestUri;
     }
 
-    virtual bool wants(boost::beast::http::verb verb,const uri &request_uri) const {
+    virtual bool wants(const std::string& method,const uri &request_uri) const {
         if (request_uri.segment_count() < target_url_.segment_count())
         {
             return false;
@@ -107,105 +156,48 @@ public:
         return true;
     }
 
+
     virtual void head_response(
         const uri&request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::empty_body> &res,
-        boost::beast::error_code &ec) = 0;
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec) = 0;
 
     virtual void get_response(
         const uri&request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::string_body> &res,
-        boost::beast::error_code &ec) = 0;
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec) = 0;
 
     virtual void post_response(
         const uri&request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::string_body> &res,
-        boost::beast::error_code &ec) 
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec) 
     {
         get_response(request_uri,req,res,ec);    
     }
-
-
 };
+
 class BeastServer {
-private:
-    boost::asio::ip::address address;
-    unsigned short port;
-    std::string doc_root;
-    int threads;
-    std::mutex log_mutex;
-    std::vector<std::shared_ptr<RequestHandler> > request_handlers;
-    std::vector<std::shared_ptr<ISocketFactory> > socket_factories;
-    std::mutex io_mutex;
-    boost::asio::io_context *pIoContext = nullptr;
-    void*pListener = nullptr;
-    std::thread*pBgThread = nullptr;
-
-    bool logHttpRequests = false;
-
-    bool hasAccessPointGateway = false;
-    boost::asio::ip::network_v4 accessPointGateway;
-    std::string accessPointServerAddress;
-    bool stopping = false;
-
-
 public:
+    virtual ~BeastServer() { }
 
-    BeastServer(
-        const boost::asio::ip::address& address, 
-        int port, 
-        const char*rootPath,
-        int threads = 10);
+    virtual void SetLogHttpRequests(bool enableLogging) = 0;
 
-    void Run();
-    void RunInBackground();
-    bool Stopping() const { return this->stopping; }
-    void Stop();
-    void Join();
+    virtual void AddRequestHandler(std::shared_ptr<RequestHandler> requestHandler) = 0;
+    virtual void AddSocketFactory(std::shared_ptr<ISocketFactory> &socketHandler) = 0;
 
-    void SetLogHttpRequests(bool logRequests) { this->logHttpRequests = logRequests; }
-    bool LogHttpRequests() const { return this->logHttpRequests; }
-    boost::asio::io_context& IoContext() { 
-        return *pIoContext;
-    }
+    virtual void ShutDown(int timeoutMs) = 0;
+    virtual void Join() = 0;
 
-    void AddRequestHandler(std::shared_ptr<RequestHandler> requestHandler)
-    {
-        request_handlers.push_back(requestHandler);
-    }
-
-    void AddSocketFactory(const std::shared_ptr<ISocketFactory> &socketHandler)
-    {
-        socket_factories.push_back(socketHandler);
-    }
-
-    std::vector<std::shared_ptr<RequestHandler> > &RequestHandlers() { return request_handlers; }
-
-    const std::string&GetDocRoot() { return doc_root; }
-
-    virtual ~BeastServer();
-
-    std::shared_ptr<ISocketFactory> GetSocketFactory(const uri &request_uri);
-
-    void SetAccessPointGateway(const boost::asio::ip::network_v4 &gateway, const std::string&accessPointServerAddress)
-    {
-        this->accessPointGateway = gateway;
-        this->hasAccessPointGateway = true;
-        this->accessPointServerAddress = accessPointServerAddress;
-    }
-    bool HasAccessPointGateway() const { return hasAccessPointGateway; }
-    boost::asio::ip::network_v4 &GetAccessPointGateway() { return this->accessPointGateway; }
-    const std::string & GetAccessPointServerAddress() const { return this->accessPointServerAddress; }
-
-public:
-    virtual void onError(boost::system::error_code ec, char const* what);
-    virtual void onWarning(boost::system::error_code ec, char const* what);
-    virtual void onInfo(char const* what);
-
-    virtual void onListenerClosed();
+    virtual void RunInBackground() = 0;
 };
+
+
+std::shared_ptr<BeastServer> createBeastServer(const boost::asio::ip::address &address, int port, const char *rootPath, int threads);
+
+
+
 
 } // namespace pipedal;

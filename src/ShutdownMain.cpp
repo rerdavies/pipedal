@@ -125,13 +125,11 @@ private:
     std::string response;
 
 public:
-    template <typename T>  // either execution_context (boost 1.74) or io_context (boost 1.63)
-    Reader(T &ios)
+    Reader(asio::io_service &ios)
         : socket(ios)
     {
     }
-    template <typename T>  // either execution_context (boost 1.74) or io_context (boost 1.63)
-    static std::shared_ptr<Reader> Create(T &ios)
+    static std::shared_ptr<Reader> Create(asio::io_service &ios)
     {
         return std::make_shared<Reader>(ios);
     }
@@ -290,6 +288,7 @@ class Server
 {
 private:
     tcp::acceptor acceptor_;
+    boost::asio::io_service &io_service;
 
     void HandleAccept(std::shared_ptr<Reader> connection, const boost::system::error_code &err)
     {
@@ -303,7 +302,7 @@ private:
     void StartAccept()
     {
         // socket
-        std::shared_ptr<Reader> reader = Reader::Create(acceptor_.get_executor().context());
+        std::shared_ptr<Reader> reader = Reader::Create(io_service);
 
         // asynchronous accept operation and wait for a new connection.
         acceptor_.async_accept(reader->Socket(),
@@ -314,7 +313,9 @@ private:
 public:
     //constructor for accepting connection from client
     Server(boost::asio::io_service &io_service, const tcp::endpoint &endpoint)
-        : acceptor_(io_service, endpoint)
+        : acceptor_(io_service, endpoint),
+            io_service(io_service)
+
     {
         StartAccept();
     }

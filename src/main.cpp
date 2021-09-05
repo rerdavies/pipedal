@@ -40,7 +40,6 @@
 #include <systemd/sd-daemon.h>
 
 using namespace pipedal;
-using namespace boost::beast;
 
 #define PRESET_EXTENSION ".piPreset"
 #define BANK_EXTENSION ".piBank"
@@ -83,7 +82,7 @@ public:
     {
     }
 
-    virtual bool wants(boost::beast::http::verb verb, const uri &request_uri) const
+    virtual bool wants(const std::string& method, const uri &request_uri) const
     {
         if (request_uri.segment_count() != 2 || request_uri.segment(0) != "var")
         {
@@ -156,9 +155,9 @@ public:
 
     virtual void head_response(
         const uri &request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::empty_body> &res,
-        boost::beast::error_code &ec)
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec)
     {
         try
         {
@@ -168,10 +167,10 @@ public:
                 std::string content;
                 GetPreset(request_uri, &name, &content);
 
-                res.set(http::field::content_type, "application/octet-stream");
-                res.set(http::field::cache_control, "no-cache");
-                res.set(http::field::content_length, content.length());
-                res.set(http::field::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
+                res.set(HttpField::content_type, "application/octet-stream");
+                res.set(HttpField::cache_control, "no-cache");
+                res.setContentLength(content.length());
+                res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
                 return;
             }
             if (request_uri.segment(1) == "downloadBank")
@@ -180,10 +179,10 @@ public:
                 std::string content;
                 GetBank(request_uri, &name, &content);
 
-                res.set(http::field::content_type, "application/octet-stream");
-                res.set(http::field::cache_control, "no-cache");
-                res.set(http::field::content_length, content.length());
-                res.set(http::field::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
+                res.set(HttpField::content_type, "application/octet-stream");
+                res.set(HttpField::cache_control, "no-cache");
+                res.set(HttpField::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
+                res.setContentLength(content.length());
                 return;
             }
             throw PiPedalException("Not found.");
@@ -203,9 +202,9 @@ public:
 
     virtual void get_response(
         const uri &request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::string_body> &res,
-        boost::beast::error_code &ec)
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec)
     {
         try
         {
@@ -215,11 +214,11 @@ public:
                 std::string content;
                 GetPreset(request_uri, &name, &content);
 
-                res.set(http::field::content_type, "application/octet-stream");
-                res.set(http::field::cache_control, "no-cache");
-                res.set(http::field::content_length, content.length());
-                res.set(http::field::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
-                res.body() = content;
+                res.set(HttpField::content_type, "application/octet-stream");
+                res.set(HttpField::cache_control, "no-cache");
+                res.setContentLength(content.length());
+                res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
+                res.setBody(content);
             }
             else if (request_uri.segment(1) == "downloadBank")
             {
@@ -227,11 +226,11 @@ public:
                 std::string content;
                 GetBank(request_uri, &name, &content);
 
-                res.set(http::field::content_type, "application/octet-stream");
-                res.set(http::field::cache_control, "no-cache");
-                res.set(http::field::content_length, content.length());
-                res.set(http::field::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
-                res.body() = content;
+                res.set(HttpField::content_type, "application/octet-stream");
+                res.set(HttpField::cache_control, "no-cache");
+                res.setContentLength(content.length());
+                res.set(HttpField::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
+                res.setBody(content);
             }
             else
             {
@@ -252,15 +251,15 @@ public:
     }
     virtual void post_response(
         const uri &request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::string_body> &res,
-        boost::beast::error_code &ec)
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec)
     {
         try
         {
             if (request_uri.segment(1) == "uploadPreset")
             {
-                std::string presetBody = req.body();
+                const std::string& presetBody = req.body();
                 std::stringstream s(presetBody);
                 json_reader reader(s);
 
@@ -276,19 +275,19 @@ public:
 
                 uint64_t instanceId = model->uploadPreset(bankFile, uploadAfter);
 
-                res.set(http::field::content_type, "application/json");
-                res.set(http::field::cache_control, "no-cache");
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
                 std::stringstream sResult;
                 sResult << instanceId;
                 std::string result = sResult.str();
-                res.set(http::field::content_length, result.length());
+                res.setContentLength(result.length());
 
-                res.body() = result;
+                res.setBody(result);
             }
             else if (request_uri.segment(1) == "uploadBank")
             {
-                std::string presetBody = req.body();
-                std::stringstream s(presetBody);
+                const std::string& presetBody = req.body();
+                std::istringstream s(presetBody);
                 json_reader reader(s);
 
                 uint64_t uploadAfter = -1;
@@ -303,14 +302,14 @@ public:
 
                 uint64_t instanceId = model->uploadBank(bankFile, uploadAfter);
 
-                res.set(http::field::content_type, "application/json");
-                res.set(http::field::cache_control, "no-cache");
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
                 std::stringstream sResult;
                 sResult << instanceId;
                 std::string result = sResult.str();
-                res.set(http::field::content_length, result.length());
+                res.setContentLength(result.length());
 
-                res.body() = result;
+                res.setBody(result);
             }
             else
             {
@@ -354,81 +353,31 @@ public:
     }
     virtual ~InterceptConfig() {}
 
-    virtual void head_response(
-        const uri &request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::empty_body> &res,
-        boost::beast::error_code &ec)
+   virtual void head_response(
+        const uri&request_uri,
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec) 
     {
-        res.set(http::field::content_type, "application/json");
-        res.set(http::field::cache_control, "no-cache");
-        res.content_length(response.length());
+        res.set(HttpField::content_type, "application/json");
+        res.set(HttpField::cache_control, "no-cache");
+        res.setContentLength(response.length());
         return;
     }
 
     virtual void get_response(
         const uri &request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::string_body> &res,
-        boost::beast::error_code &ec)
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec)
     {
-        res.set(http::field::content_type, "application/json");
-        res.set(http::field::cache_control, "no-cache");
-        res.content_length(response.length());
-        res.body() = response;
+        res.set(HttpField::content_type, "application/json");
+        res.set(HttpField::cache_control, "no-cache");
+        res.setContentLength(response.length());
+        res.setBody(response);
     }
 };
 
-class ReactRedirector : public RequestHandler
-{
-    PiPedalConfiguration config;
-
-public:
-    ReactRedirector(const PiPedalConfiguration &config)
-        : RequestHandler("/"),
-          config(config)
-
-    {
-    }
-    virtual ~ReactRedirector() {}
-
-    virtual bool wantsRedirect(const uri &requestUri)
-    {
-        if (requestUri.segment_count() == 0 || (requestUri.segment_count() == 1 && requestUri.segment(0) == "index.htm"))
-        {
-            return true;
-        }
-        return false;
-    }
-    uri GetRedirect(const uri &requestUri)
-    {
-        return requestUri;
-    }
-
-    virtual bool wants(boost::beast::http::verb verb, const uri &request_uri) const
-    {
-        return false;
-    }
-
-    virtual void head_response(
-        const uri &request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::empty_body> &res,
-        boost::beast::error_code &ec)
-    {
-        ec = errc::make_error_code(errc::no_such_file_or_directory);
-        return;
-    }
-
-    virtual void get_response(
-        const uri &request_uri,
-        const boost::beast::http::request<boost::beast::http::string_body> &req,
-        boost::beast::http::response<boost::beast::http::string_body> &res,
-        boost::beast::error_code &ec)
-    {
-        ec = errc::make_error_code(errc::no_such_file_or_directory);
-    }
-};
 
 static bool isJackServiceRunning()
 {
@@ -553,18 +502,13 @@ int main(int argc, char *argv[])
 
         auto const threads = std::max<int>(1, configuration.GetThreads());
 
-        server = std::make_shared<BeastServer>(
+        server = createBeastServer(
             address, port, web_root.c_str(), threads);
 
         Lv2Log::info("Document root: %s Threads: %d", doc_root.c_str(), (int)threads);
 
         server->SetLogHttpRequests(configuration.LogHttpRequests());
 
-        boost::asio::ip::network_v4 gateway;
-        if (configuration.GetAccessPointGateway(&gateway))
-        {
-            server->SetAccessPointGateway(gateway, configuration.GetAccessPointServerAddress());
-        }
     }
     catch (const std::exception &e)
     {
@@ -655,7 +599,7 @@ int main(int argc, char *argv[])
         Lv2Log::info("Shutting down gracefully.");
         model.Close();
         Lv2Log::info("Stopping web server.");
-        server->Stop();
+        server->ShutDown(5000);
         server->Join();
         Lv2Log::info("Shutdown complete.");
     }

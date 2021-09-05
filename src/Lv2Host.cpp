@@ -31,7 +31,7 @@
 #include "OptionsFeature.hpp"
 #include "JackConfiguration.hpp"
 #include "lv2/urid.lv2/urid.h"
-#include "lv2/lv2core.lv2/lv2.h"
+#include "lv2.h"
 #include "lv2/atom.lv2/atom.h"
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"

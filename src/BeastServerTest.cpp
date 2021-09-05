@@ -22,20 +22,21 @@
 
 #include "BeastServer.hpp"
 
-using namespace piddle;
+using namespace pipedal;
 
-TEST_CASE( "BeastServer shutodwn", "[beastServerShutdown]" ) {
+TEST_CASE( "BeastServer shutdown", "[beastServerShutdown]" ) {
 
     auto const address = boost::asio::ip::make_address("0.0.0.0");
     auto const port = 8081;
-    std::string doc_root = "/bad";
+    std::string doc_root = ".";
     auto const threads = 3;
 
-    auto server = std::make_shared<BeastServer>(
+    auto server = createBeastServer(
         address,port,doc_root.c_str(),threads);
     server->RunInBackground();
-    sleep(3);
-    server->Stop();
+    sleep(30000);
+    server->ShutDown(1000);
+    sleep(1);
     server->Join();
 
 }
