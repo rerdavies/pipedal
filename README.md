@@ -4,7 +4,7 @@ PiPedal is a multi-effect guitar pedal for Raspberry Pi devices. You will need a
 
 PiPedal is controlled via a clean compact web app that's suitable for use on small-form devices, like phones and tablets, although it works gloriously with desktop browers as well. You should not have to carry around a laptop to control your PiPedal when you're out gigging; and the web interface for PiPedal has been designed with that scenario specifically in mind. PiPedal has been designed with compact display formats, and touch user-interfaces in mind. Just connect to the PiPedal Wi-Fi access point with your phone, and you have complete control over your PiPedal.
 
-PiPedal uses LV2 audio plugin effectgs. You will need to install LV2 plugins before you can get started. See the LV2 Plugins section, below, for a list of good plugin collections to get started with.
+PiPedal uses LV2 audio plugin effects. You will need to install LV2 plugins before you can get started. See the LV2 Plugins section, below, for a list of good plugin collections to get started with.
 
 You can add as many plugins to your patch as your CPU will support (well over a dozen on a Raspberry Pi 4+). Signal chains
 can have an arbitrary number of split chains, which may be A/B-selected or mixed if you wish.
@@ -100,9 +100,10 @@ To configure PiPedal to only accept connections on the Wi-Fi host access point:
 ## LV2 PLugins
 
 PiPedal uses standard LV2 audio plugins for effects. There's a huge variety ofo LV2 guitar effect plugins, and plugins collections, many 
-of which are specifically intended for use as guitar effect plugins. 
+of which are specifically intended for use as guitar effect plugins. Ubuntu Studio comes with a huge collection of LV2 plugins preinstalled. On Rasbian, you will have to manually select and isntall
+the plugins you want to use.
      
-Foremost among these is the Guitarix plugin collection: https://guitarix.org/. You should definitely install Guitarix:
+Foremost among these collections of LV2 plugins is the Guitarix plugin collection: https://guitarix.org/. You should definitely install Guitarix:
 
       sudo apt install guitarix-lv2    
 
@@ -138,12 +139,16 @@ following conditions:
 
 - Must be remotely controllable (no hard dependency on GUI-only controls), which is true of the vast majority of LV2 plugins).
 
-Althouhg most LV2 plugins provide GUI interfaces, when running on a LINUX desktop, the LV2 plugin standard is specifically designed to allow remote control 
+If you install new LV2 plugins, you will have to restart the PiPedal web service (or reboot the machine) to get them to show up in the web interface.
+
+   sudo pipedalconfig --restart
+
+Although most LV2 plugins provide GUI interfaces, when running on a LINUX desktop, the LV2 plugin standard is specifically designed to allow remote control 
 without using the provided desktop GUI interface. And all but a tiny minority of LV2 plugins support this.
 
 ## Building and Installing PiPedal
 
-PiPedal has only been tested on Raspbian, and has limited testing on Ubuntu Studio. But pull requests to correct problems with building PiPedal on other versions of Linux are welcome.
+PiPedal has only been tested on Raspbian, and has limited testing on Ubuntu Studio. But pull requests to correct problems with building PiPedal on other versions of Linux are welcome. 
 
 To build PiPedal, a Raspberry Pi 4B, with at least 4GB of memory is recommended. You should be able to cross-compile PiPedal easily enough,
 but we do not currently provide support for this. Consult CMake documentation on how to cross-compile source.
