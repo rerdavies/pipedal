@@ -88,7 +88,7 @@ If your Pi already has a web server on port 80, you can reconfigure PiPedal to u
      
      sudo pipedalconfig --install --port 81
      
-You can optionally restrict the ports on which PiPedal will respond by providing an explicit IP address. For example, to configure PiPedal to only accept connections from the local host:
+You can optionally restrict the addresses on which PiPedal will respond by providing an explicit IP address. For example, to configure PiPedal to only accept connections from the local host:
      
      sudo pipedalconfig --install --port 127.0.0.1:80
      
@@ -271,7 +271,7 @@ The original development for this app was done with Visual Studio Code. Open the
 Visual Studio Code, and it will detect the CMake build files, and configure itself appropriately. Wait for 
 the CMake plugin in Visual Studio Code to configure itself, after loading. 
 
-Once CMake has configured itself, build and debug commands are avaialble on the CMake toolbar at the 
+Once CMake has configured itself, build and debug commands are available on the CMake toolbar at the 
 bottom of the Visual Studio Code window. Set the build variant to debug. Set the debug target to "pipedald". 
 Click on the Build button to build the app. Click on the Debug button to launch a debugger.
 
