@@ -4,20 +4,47 @@ PiPedal is a multi-effect guitar pedal for Raspberry Pi devices. You will need a
 
 PiPedal is controlled via a clean compact web app that's suitable for use on small-form devices, like phones and tablets, although it works gloriously with desktop browers as well. You should not have to carry around a laptop to control your PiPedal when you're out gigging; and the web interface for PiPedal has been designed with that scenario specifically in mind. PiPedal has been designed with compact display formats, and touch user-interfaces in mind. Just connect to the PiPedal Wi-Fi access point with your phone, and you have complete control over your PiPedal.
 
-PiPedal effects are LV2 audio plugins. There are currently a wide variety of sources for excellent LV2 guitar plugins. 
+PiPedal uses LV2 audio plugin effectgs. You will need to install LV2 plugins before you can get started. See the LV2 Plugins section, below, for a list of good plugin collections to get started with.
 
 You can add as many plugins to your patch as your CPU will support (well over a dozen on a Raspberry Pi 4+). Signal chains
-can have an arbitrary number of split chains, which maybe A/B-selected or mixed if you wish.
+can have an arbitrary number of split chains, which may be A/B-selected or mixed if you wish.
 
 PiPedal allows you to easily bind Midi controls and notes to LV2 plugin controls using the Midi Bindings dialog. USB micro controllers such as the Korg nano series of MIDI controllers, or the AKAI pad controllers are perfectly suited for selecting and tweaking patches while performing; or you can connect regular MIDI controllers and pedalboards via the MIDI ports on your USB Audio device, if it supports MIDI. 
+
+PiPedal is intended for use on Raspberry Pi devices running Raspbian; but it has also been tested on Ubuntu Studio.
+
+## Latency
+
+Note that Pipedal is not intended for use when logged in to Raspbian. Screen updates and heavy filesystem activity will cause audio dropouts. For best results, access PiPedal using the web interface remotely, through the Wi-Fi hotspot. Accessing the web interface via Wi-Fi has little or no effect on audio latency or dropouts.
+
+With a good USB audio device, PiPedal should be able to provide stable audio with 4ms (good), or 2ms (excellent) latency on a Raspberry Pi 4 when running on a Realtime kernel. Your results may vary.
+
+Make sure your system is fully updated, and that you are running with a kernel version of 5.10 or later, since version 5.10 of the Linux kernel provides significantly improved support for USB audio devices. 
+
+We currently recommend installing a realtime Raspbian kernel. PiPedal provides slightly better (but not dramatically better) latency when running on a Raspbian Realtime kernel. Stock Raspbian provides realtime scheduling, but does not currently have all of the realtime patches, so interrupt latency is slightly more variable on stock Rasbian. If you want to install a realtime kernel on Raspian, please visit
+
+    https://github.com/kdoren/linux/releases/tag/5.10.35-rt39
+    
+As of September 2021, this site provides a working Realtime kernel for Raspbian 5.10 on Raspberry Pi 3, 3+ and 4, with support for other versions in progress.
+
+Ubuntu Studio comes with the Realtime kernel patches preinstalled. 
+
+On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SDCARD access are performed over separate buses (which is not true for previous versions of Raspberry Pi). It's therefore a good idea to ensure that your USB audio device is either the only device connected to the USB 2.0 ports, or the only device connected to the UBS 3.0 ports. There's no significant advantage to using USB 3.0 over USB 2.0 for USB audio. 
+
+In theory, USB audio devices should be able to run even with significant filesystem or display device activity on a realtime kernel; but that does not seem to be the case currently. There is some reason to beleive that there are outstanding issues with the Broadcom 2711 PCI Express bus drivers on realtime kernels, but as of September 2021, this is still a research issue. If you are brave, there are suggestions that these issues arise when the PCI-express bus goes into power-saving mode, which can be prevented by building a realtime kernel with all power-saving options disabled. But this is currently unconfirmed speculation.
+
 
 ## Configuring PiPedal After Installation
 
 After PiPedal is installed, you can connect to the web interface as follows: via the mDNS address "http://pipedal.local" (on Windows, Mac, or iPhone web 
 browsers), at http://127.0.0.1 if you are interactively logged into your Raspberry Pi device, or at port 80 of the current network address of your 
-Raspberry Pi, if you are connected from an Android device (which does not currently support mDNS).
+Raspberry Pi, if you are connected from an Android device (which does not currently support mDNS). 
+
+Android devices do not support mDNS. If you are connecting to PiPedal with an Android device, via the Host Access Point, PiPedal, the PiPedal user interace can be reached at http://172.22.1.1 If you are connecting via the Raspberry Pi's Ethernet port, connect to http://<address of your Pi>:80
 
 To complete the initial configuration, you must either connect an Ethernet cable to your Raspberry pi so you can connect to the Web App (after which you should be able to connect to http://pipedal.local); or you must launch a web browser on your Raspberry pi device while logged in interactively. 
+     
+If you already have another web server on port 80, see the section "Changing the Web Server Port", below.
 
 Once connected, select the Settings menu item on the Hamburger menu at the top left corner of the display. Click on Audio Device Settings to select and configure the audio device you want to use. 
 
@@ -29,34 +56,57 @@ You can also activate PiPedal's Wi-Fi hotspot connection from the Settings dialo
      outbound access to the Internet, unless an Ethernet cable is connected to the Raspberry Pi.
 
 If you need access to the internet once the hotspot has been enabled, connect an Ethernet cable to
-the Raspberry Pi. 
+the Raspberry Pi. Note that the PiPedal hotspot is NOT configured to forward internet traffic from the Wi-Fi hotspot to the LAN connection, and 
+generally, the Raspberry Pi will not be able to access the internet via devices connected to the Wi-Fi hotspot. Consult documentation for hostapd 
+if you want to do this.
 
 There are a number of other useful settings in the hamburger menu/Settings dialog. For example, most USB audio devices route instrument
 input onto the right channel of the USB audio inputs. So you probably want to configure PiPedal to use only the right USB audio input channel. 
 You can choose how to bind USB audio input and output channels (stereo, left only, right only) in the settings dialog. If you are using a Audio 
 device that has more than two channels, you will be offered a list of channels to choose from instead.
 
-
-
 ## Command Line Configuration of PiPedal
 
 The pipedalconfig program can be used to modify configuration of PiPedal from a shell command line. Run 'pipedalconfig --help' to view
 available configuration commands, some of which are not avaialbe from the web interface. For example, you can change the port number
 of the Web App HTTP server if you need to, using pipedalconfig.
+     
+Things you can do with pipedalconfig:
+     
+     - Stop, start or restart the PiPedal services.
+     
+     - Choose whether to automatically start PiPedal services on reboot.
+     
+     - Select an alternate web server port.
+     
+     - enable or disable the Wi-Fi hotspot.
+     
+
+## Changing the web server port.
+     
+If your Pi already has a web server on port 80, you can reconfigure PiPedal to use a different port. After installing PiPedal, run the following command on your Raspberry Pi:
+     
+     sudo pipedalconfig --install --port 81
+     
+You can optionally restrict the ports on which PiPedal will respond by providing an explicit IP address. For example, to configure PiPedal to only accept connections from the local host:
+     
+     sudo pipedalconfig --install --port 127.0.0.1:80
+     
+To configure PiPedal to only accept connections on the Wi-Fi host access point:
+     
+     sudo pipedalconfig --install --port 172.22.1.1:80
 
 
 ## LV2 PLugins
 
-PiPedal uses standard LV2 audio plugins for effects. There are currently a wide variety of available LV2 guitar effect plugins, and among 
-these are a number of LV2 plugin collections that are specifically meant for use as guitar effects. 
-
+PiPedal uses standard LV2 audio plugins for effects. There's a huge variety ofo LV2 guitar effect plugins, and plugins collections, many 
+of which are specifically intended for use as guitar effect plugins. 
+     
 Foremost among these is the Guitarix plugin collection: https://guitarix.org/. You should definitely install Guitarix:
 
       sudo apt install guitarix-lv2    
 
-The Guitarix amp modelling plugins are on par with the best amp modelling effects anywhere.
-
-Other highly recommended guitar effect collections:L
+Other highly recommended guitar effect collections:
   
   sudo apt install zam-plugins    # http://www.zamaudio.com/
   
@@ -67,9 +117,9 @@ Other highly recommended guitar effect collections:L
   sudo apt install fomp  # http://drobilla.net/software/fomp/
 
 
-But there are hundreds of other high-quality LV2 plugins that are suitable for use with PiPedal. 
+But there are many more.
 
-Visit https://lv2plug.in/pages/projects.html for a more suggestions.
+Visit https://lv2plug.in/pages/projects.html for more suggestions.
 
 There is also a set of supplementary Gx effect plugins which did not make it into the main Guitarix distribution. You will
 have to compile these plugins yourself, as they are not currently avaiable via apt. But if you are comfortable building
@@ -93,7 +143,7 @@ without using the provided desktop GUI interface. And all but a tiny minority of
 
 ## Building and Installing PiPedal
 
-PiPedal has only been tested on Raspbian. But we pull requests to correct problems with building PiPedal on other versions of Linux are welcome.
+PiPedal has only been tested on Raspbian, and has limited testing on Ubuntu Studio. But pull requests to correct problems with building PiPedal on other versions of Linux are welcome.
 
 To build PiPedal, a Raspberry Pi 4B, with at least 4GB of memory is recommended. You should be able to cross-compile PiPedal easily enough,
 but we do not currently provide support for this. Consult CMake documentation on how to cross-compile source.
@@ -123,17 +173,20 @@ Run the following command to install and configure React dependencies.
 
    ./react-config   # Configure React dependencies.
   
-### Building PiPedal
+### Building PiPedal from Source
 
-PiPedal was developed using Visual Studio Code. If you open the PiPedal project as a folder in VS Code, Code will 
+PiPedal was developed using Visual Studio Code. Using Visual Studio Code to build PiPedal is recommended, but not required. The PiPedal
+build procedure uses CMake project files, which are supported by most major Integrated Development Environments.
+     
+If you open the PiPedal project as a folder in VS Code, Code will 
 detect the CMake configuration files, and automatically configure itself. Once the VS Code CMake plugin (written by Microsoft,
 available through the plugins store) has configured itself, build commands should appear on the bottom line of Visual Studio 
 Code. Visual Studio Code will take care of automatically configuring the project.
 
 If you are not using Visual Studio Code, you can configure, build and install PiPedal using CMake build tools. For your convenience,
-the following shell scripts have been provided in the root of the project in order to provide convenent CLI build commands.ka
+the following shell scripts have been provided in the root of the project in order to provide convenent CLI build commands.
 
-    sudo ./init    # Configure the CMake build
+    sudo ./init    # Configure the CMake build (required if you change one of the CMakeList.txt files)
 
     ./mk   # Build all targets.
     
@@ -142,13 +195,13 @@ the following shell scripts have been provided in the root of the project in ord
     ./pkg    # Build a .deb file for distribution.
     
 If you are using a development environment other than Visual Studio Code, it should be fairly straightforward to figure out how
-to incorporate the PiPedal build procedure into your IDE workflow by examining the contents of the build shell scripts.npm
+to incorporate the PiPedal build procedure into your IDE workflow by examining the contents of the build shell scripts as a model.
 
-The CMake toolchain can be used to generate build scripts for other build environments as well (e.g. Visuual Studio .csproj files, Ant, or Linux
+The CMake toolchain can be used to generate build scripts for other build environments as well (e.g. Visual Studio .csproj files, Ant, or Linux
  Makefiles); and can be configured to perform cross-compiled builds as well. Consult documentation for CMake for instructions on how to
-do that if you're interested. Visual Studio Code also provides quite painless procedures for cross-compiling CMake projects, and for 
-remote building, and debugging. If you need to build for platforms other than Raspbian, or build on platforms other than Rasbian, 
-you make want to investigate what Visual Studio Code's CMake integration provides in that regard.
+do that if you're interested. Visual Studio Code also provides quite painless procedures for cross-compiling CMake projects, and mostly-painless 
+procedures for remote building, and/or debugging. If you need to build for platforms other than Raspbian, or build on platforms other than Rasbian, 
+you may want to investigate what Visual Studio Code's CMake integration provides in that regard.
 
 ### How to Debug PiPedal.
 
@@ -175,6 +228,8 @@ PipPedal consists of the following subprojects:
     and pushing configuration changes.)
 
 *   `pipedalconfig`: A CLI utility for managing and configuring the pipedald service.
+     
+*   `pipedaltest`: Test cases for pipedald.
 
 In production, the pipedald web server serves the PiPedal web socket, as well as HTML from the  built 
 react components. But while debugging, it is much more convenient to use the React debug server for 
@@ -191,12 +246,13 @@ files:
 
     fs.inotify.max_user_watches=524288
 
-followed by `sudo sysctl -p`. (VS Code and React both need this change).     
+followed by `sudo sysctl -p`. Note that VS Code and the React framework both need this change.
 
 By default, the React app will attempt to contact the pipedal server on ws:*:8080 -- the address on which
 the debug version of systemctld listens on. This can be reconfigured
-in the file react/src/public/var/config.json if desired. (The pipedal server intercepts requests for this file and 
-points the react app at itself in production, so the file has no effect when running in production). 
+in the file react/src/public/var/config.json if desired. If you connect to the the pipedald server port, pipedald intercepts requests for this file and 
+points the react app at itself, so the file has no effect when running in production. 
+
 The React app will display the message "Error: Failed to connect to the server", until you start the pipedal websocket server in the VSCode debugger. It's quite reasonable to point the react debug app at a production instance of the pipedal server instead.
 
     react/public/var/config.json: 
@@ -242,8 +298,10 @@ entire directory before doing so, to ensure that none of the files in that direc
 incorrectly. 
 
 You will need to add your userid to the pipedal_d group if you plan to share the /var/pipedal directory. 
+     
+     sudo usermod -a -G pipedal_d *youruserid*
 
-You can avoid all of this, by configuring the debug instance to use a data folder in your home directory. Edit 
+Or you can avoid all of this, by configuring the debug instance to use a data folder in your home directory. Edit 
 `debugConfig/config.json`:
 
     {
