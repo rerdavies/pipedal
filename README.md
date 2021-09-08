@@ -231,7 +231,7 @@ PipPedal consists of the following subprojects:
      
 *   `pipedaltest`: Test cases for pipedald.
 
-In production, the pipedald web server serves the PiPedal web socket, as well as HTML from the  built 
+In production, the pipedald web server serves the PiPedal web socket, as well as static HTML from the  built 
 react components. But while debugging, it is much more convenient to use the React debug server for 
 React sources, and configure pipedald to serve only the websocket. 
 
