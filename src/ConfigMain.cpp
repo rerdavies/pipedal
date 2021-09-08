@@ -38,8 +38,8 @@ using namespace pipedal;
 #define SERVICE_ACCOUNT_NAME "pipedal_d"
 #define SERVICE_GROUP_NAME "pipedal_d"
 #define JACK_SERVICE_ACCOUNT_NAME "jack"
-#define JACK_SERVICE_GROUP_NAME "jack"
 #define AUDIO_SERVICE_GROUP_NAME "audio"
+#define JACK_SERVICE_GROUP_NAME AUDIO_SERVICE_GROUP_NAME
 
 #define SYSTEMCTL_BIN "/usr/bin/systemctl"
 #define GROUPADD_BIN "/usr/sbin/groupadd"
@@ -86,22 +86,22 @@ std::filesystem::path findOnPath(const std::string &command)
 
 void EnableService()
 {
-    if (SysExec(SYSTEMCTL_BIN " enable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " enable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to enable the " NATIVE_SERVICE " service.";
     }
-    if (SysExec(SYSTEMCTL_BIN " enable " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " enable " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to enable the " SHUTDOWN_SERVICE " service.";
     }
 }
 void DisableService()
 {
-    if (SysExec(SYSTEMCTL_BIN " disable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " disable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to disable the " NATIVE_SERVICE " service.";
     }
-    if (SysExec(SYSTEMCTL_BIN " disable " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " disable " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to disable the " SHUTDOWN_SERVICE " service.";
     }
@@ -109,18 +109,18 @@ void DisableService()
 
 void StopService(bool excludeShutdownService = false)
 {
-    if (SysExec(SYSTEMCTL_BIN " stop " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " stop " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to stop the " NATIVE_SERVICE " service.";
     }
     if (!excludeShutdownService)
     {
-        if (SysExec(SYSTEMCTL_BIN " stop " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+        if (sysExec(SYSTEMCTL_BIN " stop " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
         {
             cout << "Error: Failed to stop the " SHUTDOWN_SERVICE " service.";
         }
     }
-    if (SysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to stop the " JACK_SERVICE " service.");
     }
@@ -130,22 +130,25 @@ void Uninstall()
 {
     StopService();
     DisableService();
-    system(SYSTEMCTL_BIN " stop jack");
-    system(SYSTEMCTL_BIN " disable jack");
+    silentSysExec(SYSTEMCTL_BIN " stop jack");
+    silentSysExec(SYSTEMCTL_BIN " disable jack");
+    std::filesystem::remove("/usr/bin/systemd/system/" SHUTDOWN_SERVICE ".service");
+    std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
+    std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
 }
 
 void StartService(bool excludeShutdownService = false)
 {
 
-    SilentSysExec("/usr/bin/pulseaudio --kill"); // interferes with Jack audio service startup.
+    silentSysExec("/usr/bin/pulseaudio --kill"); // interferes with Jack audio service startup.
     if (!excludeShutdownService)
     {
-        if (SysExec(SYSTEMCTL_BIN " start " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+        if (sysExec(SYSTEMCTL_BIN " start " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
         {
             throw PiPedalException("Failed to start the " SHUTDOWN_SERVICE " service.");
         }
     }
-    if (SysExec(SYSTEMCTL_BIN " start " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " start " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to start the " NATIVE_SERVICE " service.");
     }
@@ -153,7 +156,7 @@ void StartService(bool excludeShutdownService = false)
     serverSettings.ReadJackConfiguration();
     if (serverSettings.IsValid())
     {
-        if (SysExec(SYSTEMCTL_BIN " start " JACK_SERVICE ".service") != EXIT_SUCCESS)
+        if (sysExec(SYSTEMCTL_BIN " start " JACK_SERVICE ".service") != EXIT_SUCCESS)
         {
             throw PiPedalException("Failed to start the " JACK_SERVICE " service.");
         }
@@ -195,7 +198,7 @@ static bool userExists(const char *userName)
 
 void InstallPamEnv()
 {
-    std::string newLine = "JACK_PROMISCOUS_SERVER      DEFAULT=jack";
+    std::string newLine = "JACK_PROMISCUOUS_SERVER      DEFAULT=" JACK_SERVICE_GROUP_NAME;
     std::vector<std::string> lines;
     std::filesystem::path path = "/etc/security/pam_env.conf";
     try
@@ -248,7 +251,7 @@ void InstallPamEnv()
 
 void InstallLimits()
 {
-    if (SysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
+    if (sysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to create audio service group.");
     }
@@ -270,34 +273,34 @@ void MaybeStartJackService()
 
     if (std::filesystem::exists(drcFile) && std::filesystem::file_size(drcFile) != 0)
     {
-        system(SYSTEMCTL_BIN " start jack");
+        sysExec(SYSTEMCTL_BIN " start jack");
     }
     else
     {
-        system(SYSTEMCTL_BIN " mask jack");
+        silentSysExec(SYSTEMCTL_BIN " mask jack");
     }
 }
 void InstallJackService()
 {
     InstallLimits();
     InstallPamEnv();
-    if (SysExec(GROUPADD_BIN " -f " JACK_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
+    if (sysExec(GROUPADD_BIN " -f " JACK_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to create jack service group.");
     }
     if (!userExists(JACK_SERVICE_ACCOUNT_NAME))
     {
-        if (SysExec(USERADD_BIN " " JACK_SERVICE_ACCOUNT_NAME " -g " JACK_SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
+        if (sysExec(USERADD_BIN " " JACK_SERVICE_ACCOUNT_NAME " -g " JACK_SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
         {
             //  throw PiPedalException("Failed to create service account.");
         }
         // lock account for login.
-        SysExec("passwd -l " JACK_SERVICE_ACCOUNT_NAME);
+        silentSysExec("passwd -l " JACK_SERVICE_ACCOUNT_NAME);
     }
 
     // Add to audio groups.
-    SysExec(USERMOD_BIN " -a -G " JACK_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
-    SysExec(USERMOD_BIN " -a -G" AUDIO_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
+    // sysExec(USERMOD_BIN " -a -G " JACK_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
+    sysExec(USERMOD_BIN " -a -G" AUDIO_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
 
     // deploy the systemd service file
     std::map<std::string, std::string> map; // nothing to customize.
@@ -309,6 +312,10 @@ void InstallJackService()
 
 void Install(const std::filesystem::path &programPrefix, const std::string endpointAddress)
 {
+    if (sysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
+    {
+        throw PiPedalException("Failed to create audio service group.");
+    }
 
     InstallJackService();
     auto endpos = endpointAddress.find_last_of(':');
@@ -341,23 +348,23 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
     // Create and configure service account.
 
-    if (SysExec(GROUPADD_BIN " -f " SERVICE_GROUP_NAME) != EXIT_SUCCESS)
+    if (sysExec(GROUPADD_BIN " -f " SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to create service group.");
     }
+
     if (!userExists(SERVICE_ACCOUNT_NAME))
     {
-        if (SysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
+        if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
         {
             //  throw PiPedalException("Failed to create service account.");
         }
         // lock account for login.
-        SysExec("passwd -l " SERVICE_ACCOUNT_NAME);
+        silentSysExec("passwd -l " SERVICE_ACCOUNT_NAME);
     }
 
     // Add to audio groups.
-    SysExec(USERMOD_BIN " -a -G jack " SERVICE_ACCOUNT_NAME);
-    SysExec(USERMOD_BIN " -a -G audio " SERVICE_ACCOUNT_NAME);
+    sysExec(USERMOD_BIN " -a -G  " AUDIO_SERVICE_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
 
     // create and configure /var directory.
 
@@ -367,51 +374,55 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     {
         std::stringstream s;
         s << CHGRP_BIN " " SERVICE_GROUP_NAME " " << varDirectory.c_str();
-        SysExec(s.str().c_str());
+        sysExec(s.str().c_str());
     }
     {
         std::stringstream s;
         s << CHOWN_BIN << " " << SERVICE_ACCOUNT_NAME << " " << varDirectory.c_str();
-        SysExec(s.str().c_str());
+        sysExec(s.str().c_str());
     }
 
     {
         std::stringstream s;
         s << CHMOD_BIN << " 775 " << varDirectory.c_str();
-        SysExec(s.str().c_str());
+        sysExec(s.str().c_str());
     }
     {
         std::stringstream s;
         s << CHMOD_BIN << " g+s " << varDirectory.c_str(); // child files/directories inherit ownership.
-        SysExec(s.str().c_str());
+        sysExec(s.str().c_str());
     }
 
     // authbind port.
 
     if (authBindRequired)
     {
+        std::filesystem::create_directories("/etc/authbind/byport");
         std::filesystem::path portAuthFile = std::filesystem::path("/etc/authbind/byport") / strPort;
 
         {
             // create it.
             std::ofstream f(portAuthFile);
+            if (!f.is_open()) {
+                throw PiPedalException("Failed to create " + portAuthFile.string());
+            }
         }
         {
             // own it.
             std::stringstream s;
             s << CHOWN_BIN << " " SERVICE_ACCOUNT_NAME " " << portAuthFile.c_str();
-            SysExec(s.str().c_str());
+            sysExec(s.str().c_str());
         }
         {
             // group own it.
             std::stringstream s;
             s << CHGRP_BIN << " " SERVICE_GROUP_NAME " " << portAuthFile.c_str();
-            SysExec(s.str().c_str());
+            sysExec(s.str().c_str());
         }
         {
             std::stringstream s;
             s << CHMOD_BIN << " 770 " << portAuthFile.c_str();
-            SysExec(s.str().c_str());
+            sysExec(s.str().c_str());
         }
     }
 
@@ -448,7 +459,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     }
     WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/templateShutdown.service"), GetServiceFileName(SHUTDOWN_SERVICE));
 
-    SysExec(SYSTEMCTL_BIN " daemon-reload");
+    sysExec(SYSTEMCTL_BIN " daemon-reload");
 
     cout << "Starting service" << endl;
     RestartService(false);
@@ -607,7 +618,7 @@ int main(int argc, char **argv)
         std::string pkexec = "/usr/bin/pkexec"; // staged because "ISO C++ forbids converting a string constant to std::vector<char*>::value_type"(!)
         args.push_back((char *)(pkexec.c_str()));
 
-        std::string sPath = GetSelfExePath();
+        std::string sPath = getSelfExePath();
         args.push_back(const_cast<char *>(sPath.c_str()));
         for (int arg = 1; arg < argc; ++arg)
         {

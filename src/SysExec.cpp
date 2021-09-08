@@ -63,7 +63,7 @@ static std::filesystem::path findOnSystemPath(const std::string &command)
     throw PiPedalException(s.str());
 }
 
-void pipedal::SilentSysExec(const char *szCommand)
+int pipedal::silentSysExec(const char *szCommand)
 {
     std::stringstream s;
     s << szCommand << " 2>&1";
@@ -76,10 +76,11 @@ void pipedal::SilentSysExec(const char *szCommand)
         {
             fgets(buffer, sizeof(buffer), output);
         }
-        pclose(output);
+        return pclose(output);
     }
+    return -1;
 }
-int pipedal::SysExec(const char *szCommand)
+int pipedal::sysExec(const char *szCommand)
 {
     char *args = strdup(szCommand);
     int argc;
@@ -135,7 +136,7 @@ int pipedal::SysExec(const char *szCommand)
 }
 
 
-std::string pipedal::GetSelfExePath() 
+std::string pipedal::getSelfExePath() 
 {
     char result[PATH_MAX+1];
     ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);

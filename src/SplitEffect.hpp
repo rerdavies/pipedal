@@ -117,66 +117,66 @@ namespace pipedal
             }
         }
 
-        void AbTopMonoMono(uint32_t frames)
+        void abTopMonoMono(uint32_t frames)
         {
             Copy(this->inputs[0], this->topInputs[0], frames);
         }
-        void AbTopMonoStereo(uint32_t frames)
+        void abTopMonoStereo(uint32_t frames)
         {
             Copy(this->inputs[0], this->topInputs[0], frames);
             Copy(this->inputs[0], this->topInputs[1], frames);
         }
-        void AbTopStereoStereo(uint32_t frames)
+        void abTopStereoStereo(uint32_t frames)
         {
             Copy(this->inputs[0], this->topInputs[0], frames);
             Copy(this->inputs[1], this->topInputs[1], frames);
         }
 
-        void AbBottomMonoMono(uint32_t frames)
+        void abBottomMonoMono(uint32_t frames)
         {
             Copy(this->inputs[0], this->bottomInputs[0], frames);
         }
-        void AbBottomMonoStereo(uint32_t frames)
+        void abBottomMonoStereo(uint32_t frames)
         {
             Copy(this->inputs[0], this->bottomInputs[0], frames);
             Copy(this->inputs[0], this->bottomInputs[1], frames);
         }
-        void AbBottomStereoStereo(uint32_t frames)
+        void abBottomStereoStereo(uint32_t frames)
         {
             Copy(this->inputs[0], this->bottomInputs[0], frames);
             Copy(this->inputs[1], this->bottomInputs[1], frames);
         }
-        void LrTopMonoMono(uint32_t frames)
+        void lrTopMonoMono(uint32_t frames)
         {
             Copy(this->inputs[0], this->topInputs[0], frames);
         }
-        void LrTopMonoStereo(uint32_t frames)
+        void lrTopMonoStereo(uint32_t frames)
         {
             Copy(this->inputs[0], this->topInputs[0], frames);
             Copy(this->inputs[0], this->topInputs[1], frames);
         }
-        void LrTopStereoStereo(uint32_t frames)
+        void lrTopStereoStereo(uint32_t frames)
         {
             Copy(this->inputs[0], this->topInputs[0], frames);
             Copy(this->inputs[0], this->topInputs[1], frames);
         }
 
-        void LrBottomMonoMono(uint32_t frames)
+        void lrBottomMonoMono(uint32_t frames)
         {
             Copy(this->inputs[0], this->bottomInputs[0], frames);
         }
-        void LrBottomMonoStereo(uint32_t frames)
+        void lrBottomMonoStereo(uint32_t frames)
         {
             Copy(this->inputs[0], this->bottomInputs[0], frames);
             Copy(this->inputs[0], this->bottomInputs[1], frames);
         }
-        void LrBottomStereoStereo(uint32_t frames)
+        void lrBottomStereoStereo(uint32_t frames)
         {
             Copy(this->inputs[1], this->bottomInputs[0], frames);
             Copy(this->inputs[1], this->bottomInputs[1], frames);
         }
 
-        void UpdateMixFunction()
+        void updateMixFunction()
         {
             if (activated)
             {
@@ -187,37 +187,37 @@ namespace pipedal
                     if (this->inputs.size() == 1)
                     {
                         if (this->topInputs.size() == 1)
-                            this->preAbTop = &SplitEffect::AbTopMonoMono;
+                            this->preAbTop = &SplitEffect::abTopMonoMono;
                         else
                         {
-                            this->preAbTop = &SplitEffect::AbTopMonoStereo;
+                            this->preAbTop = &SplitEffect::abTopMonoStereo;
                         }
                         if (this->bottomInputs.size() == 1)
                         {
-                            this->preAbBottom = &SplitEffect::AbBottomMonoMono;
+                            this->preAbBottom = &SplitEffect::abBottomMonoMono;
                         }
                         else
                         {
-                            this->preAbBottom = &SplitEffect::AbBottomMonoStereo;
+                            this->preAbBottom = &SplitEffect::abBottomMonoStereo;
                         }
                     }
                     else
                     {
                         if (this->topInputs.size() == 1)
                         {
-                            this->preAbTop == &SplitEffect::AbTopMonoMono;
+                            this->preAbTop == &SplitEffect::abTopMonoMono;
                         }
                         else
                         {
-                            this->preAbTop = &SplitEffect::AbTopStereoStereo;
+                            this->preAbTop = &SplitEffect::abTopStereoStereo;
                         }
                         if (this->bottomInputs.size() == 1)
                         {
-                            this->preAbBottom == &SplitEffect::AbBottomMonoMono;
+                            this->preAbBottom == &SplitEffect::abBottomMonoMono;
                         }
                         else
                         {
-                            this->preAbBottom = &SplitEffect::AbBottomStereoStereo;
+                            this->preAbBottom = &SplitEffect::abBottomStereoStereo;
                         }
                     }
                 }
@@ -226,37 +226,37 @@ namespace pipedal
                     if (this->inputs.size() == 1)
                     {
                         if (this->topInputs.size() == 1)
-                            this->preAbTop = &SplitEffect::LrTopMonoMono;
+                            this->preAbTop = &SplitEffect::lrTopMonoMono;
                         else
                         {
-                            this->preAbTop = &SplitEffect::LrTopMonoStereo;
+                            this->preAbTop = &SplitEffect::lrTopMonoStereo;
                         }
                         if (this->bottomInputs.size() == 1)
                         {
-                            this->preAbBottom = &SplitEffect::LrBottomMonoMono;
+                            this->preAbBottom = &SplitEffect::lrBottomMonoMono;
                         }
                         else
                         {
-                            this->preAbBottom = &SplitEffect::LrBottomMonoStereo;
+                            this->preAbBottom = &SplitEffect::lrBottomMonoStereo;
                         }
                     }
                     else
                     {
                         if (this->topInputs.size() == 1)
                         {
-                            this->preAbTop == &SplitEffect::LrTopMonoMono;
+                            this->preAbTop == &SplitEffect::lrTopMonoMono;
                         }
                         else
                         {
-                            this->preAbTop = &SplitEffect::LrTopStereoStereo;
+                            this->preAbTop = &SplitEffect::lrTopStereoStereo;
                         }
                         if (this->bottomInputs.size() == 1)
                         {
-                            this->preAbBottom == &SplitEffect::LrBottomMonoMono;
+                            this->preAbBottom == &SplitEffect::lrBottomMonoMono;
                         }
                         else
                         {
-                            this->preAbBottom = &SplitEffect::LrBottomStereoStereo;
+                            this->preAbBottom = &SplitEffect::lrBottomStereoStereo;
                         }
                     }
                 }
@@ -303,7 +303,7 @@ namespace pipedal
         void Activate()
         {
             activated = true;
-            UpdateMixFunction();
+            updateMixFunction();
             snapToMixTarget();
 
             mixBottomInputs.clear();
@@ -471,7 +471,7 @@ namespace pipedal
                 if (splitType != t)
                 {
                     splitType = t;
-                    UpdateMixFunction();
+                    updateMixFunction();
                 }
                 break;
             }

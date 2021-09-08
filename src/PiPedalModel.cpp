@@ -880,7 +880,6 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     this->jackServerSettings = jackServerSettings;
 
 
-
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
     IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
     for (size_t i = 0; i < subscribers.size(); ++i)
@@ -896,6 +895,13 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 
     if (ShutdownClient::CanUseShutdownClient())
     {
+
+        // save the current (edited) preset now in case the service shutdown isn't clean.
+        CurrentPreset currentPreset;
+        currentPreset.modified_ = this->hasPresetChanged;
+        currentPreset.preset_ = this->pedalBoard;
+        storage.SaveCurrentPreset(currentPreset);
+    
         this->jackConfiguration.SetIsRestarting(true);
         fireJackConfigurationChanged(this->jackConfiguration);
         this->jackHost->UpdateServerConfiguration(

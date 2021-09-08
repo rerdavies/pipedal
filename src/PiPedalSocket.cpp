@@ -298,7 +298,7 @@ static void requestShutdown(bool restart)
         }
         s << " now";
 
-        if (SysExec(s.str().c_str()) != EXIT_SUCCESS)
+        if (sysExec(s.str().c_str()) != EXIT_SUCCESS)
         {
             Lv2Log::error("shutdown failed.");
             if (restart) {

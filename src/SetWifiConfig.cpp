@@ -37,11 +37,11 @@ void pipedal::SetWifiConfig(const WifiConfigSettings&settings)
     char band;
     if (!settings.enable_)
     {
-        SysExec(SYSTEMCTL_BIN " stop hostapd");
-        SysExec(SYSTEMCTL_BIN " disable hostapd");
+        sysExec(SYSTEMCTL_BIN " stop hostapd");
+        sysExec(SYSTEMCTL_BIN " disable hostapd");
 
-        SysExec(SYSTEMCTL_BIN " enable wpa_supplicant");
-        SysExec(SYSTEMCTL_BIN " start wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " enable wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " start wpa_supplicant");
     } else {
         std::filesystem::path path("/etc/hostapd/hostapd.conf");
         SystemConfigFile apdConfig;
@@ -167,29 +167,29 @@ void pipedal::SetWifiConfig(const WifiConfigSettings&settings)
 
 
         // **************** start services ************
-        SysExec("rfkill unblock wlan");
-        SysExec(SYSTEMCTL_BIN " daemon-reload");
+        sysExec("rfkill unblock wlan");
+        sysExec(SYSTEMCTL_BIN " daemon-reload");
 
-        SysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
-        SysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
 
-        SysExec(SYSTEMCTL_BIN " unmask hostapd");
-        if (SysExec(SYSTEMCTL_BIN " restart hostapd") != 0)
+        sysExec(SYSTEMCTL_BIN " unmask hostapd");
+        if (sysExec(SYSTEMCTL_BIN " restart hostapd") != 0)
         {
             throw PiPedalException("Unable to start the access point.");
 
         }
-        if (SysExec("systemctl is-active --quiet hostapd") != 0)
+        if (sysExec("systemctl is-active --quiet hostapd") != 0)
         {
             throw PiPedalException("Unable to start the access point.");
         }
-        SysExec(SYSTEMCTL_BIN " enable hostapd");
+        sysExec(SYSTEMCTL_BIN " enable hostapd");
         
-        SysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
-        SysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
 
-        SysExec(SYSTEMCTL_BIN " restart dnsmasq");
-        SysExec(SYSTEMCTL_BIN " enable dnsmasq");
+        sysExec(SYSTEMCTL_BIN " restart dnsmasq");
+        sysExec(SYSTEMCTL_BIN " enable dnsmasq");
 
     }
 

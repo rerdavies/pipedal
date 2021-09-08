@@ -57,13 +57,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
-    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -fsanitize=address -static-libasan -O0 -DDEBUG" )
+    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -fsanitize=address -static-libasan -O0 -DDEBUG -Werror" )
 elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     message(STATUS "RelWithgDebInfo build")
-    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi" )
+    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -Werror" )
 else()
     message(STATUS "Release build")
-    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi" )
+    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -Werror" )
 endif()
 
 
@@ -182,6 +182,7 @@ add_executable(pipedalconfig json.cpp json.hpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     SysExec.hpp SysExec.cpp
     asan_options.cpp
+    Lv2Log.cpp Lv2Log.hpp
     )
 
 target_link_libraries(pipedalconfig PRIVATE pthread atomic stdc++fs

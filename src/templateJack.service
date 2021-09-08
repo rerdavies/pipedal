@@ -16,7 +16,7 @@ Group=jack
 Restart=always
 RestartSec=15
 
-Environment=JACK_PROMISCUOUS_SERVER=jack
+Environment=JACK_PROMISCUOUS_SERVER=audio
 Environment=JACK_NO_AUDIO_RESERVATION=1
 
 

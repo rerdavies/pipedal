@@ -25,6 +25,8 @@
 #include <string>
 #include "unistd.h"
 #include <filesystem>
+#include "Lv2Log.hpp"
+#include "SysExec.hpp"
 
 #define DRC_FILENAME "/etc/jackdrc"
 
@@ -205,7 +207,7 @@ void JackServerSettings::Write()
         {
             // jack1 incantation for promiscuous servers.
             output << "#!/bin/sh" <<endl;
-            output << "export JACK_PROMISCUOUS_SERVER=jack" << endl;
+            output << "export JACK_PROMISCUOUS_SERVER=audio" << endl;
             output << "export JACK_NO_AUDIO_RESERVATION=1" << endl;
             output << "umask 0" << endl;
         }
@@ -222,9 +224,10 @@ void JackServerSettings::Write()
             << " -p" << this->bufferSize_ 
             << " -n" << this->numberOfBuffers_ << " -Xseq" 
             << endl;
-        system("/usr/bin/chmod 755 " DRC_FILENAME);
-        system("/usr/bin/systemctl unmask jack");
-        system("/usr/bin/systemctl enable jack");
+        if (silentSysExec("/usr/bin/chmod 755 " DRC_FILENAME) != 0)
+        {
+            Lv2Log::error("Failed to set permissions on /etc/jackdrc");
+        }
     }
     catch (const std::exception &e)
     {

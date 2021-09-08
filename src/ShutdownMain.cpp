@@ -87,7 +87,7 @@ void delayedRestartProc()
 {
     sleep(1); // give a chance for websocket messages to propagate.
     Lv2Log::error("Delayed Restart");
-    std::string pipedalConfigPath = std::filesystem::path(GetSelfExePath()).parent_path() / "pipedalconfig";
+    std::string pipedalConfigPath = std::filesystem::path(getSelfExePath()).parent_path() / "pipedalconfig";
 
     std::stringstream s;
      s << pipedalConfigPath.c_str() << " --restart --excludeShutdownService";
@@ -103,6 +103,9 @@ bool setJackConfiguration(JackServerSettings serverSettings)
     bool success = true;
 
     serverSettings.Write();
+
+    silentSysExec("/usr/bin/systemctl unmask jack");
+    silentSysExec("/usr/bin/systemctl enable jack");
 
     std::thread delayedRestartThread(delayedRestartProc);
     delayedRestartThread.detach();
@@ -241,11 +244,11 @@ private:
 
             } else if (s == "shutdown")
             {
-                result = SysExec("/usr/sbin/shutdown -P now");
+                result = sysExec("/usr/sbin/shutdown -P now");
             }
             else if (s == "restart")
             {
-                result = SysExec("/usr/sbin/shutdown -r now");
+                result = sysExec("/usr/sbin/shutdown -r now");
             } else if (startsWith(s,"setJackConfiguration "))
             {
                 auto remainder = s.substr(strlen("setJackConfiguration "));
