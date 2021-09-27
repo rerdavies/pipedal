@@ -65,6 +65,7 @@ export function SelectBaseIcon(plugin_type: PluginType): string {
             return "fx_highpass.svg";
         case PluginType.ParaEQPlugin:
         case PluginType.LowpassPlugin:
+        case PluginType.HighpassPlugin:            
         case PluginType.MultiEQPlugin:
         case PluginType.EQPlugin:
             return "fx_eq.svg";

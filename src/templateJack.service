@@ -12,7 +12,7 @@ LimitRTPRIO=95
 ExecStartPre=/bin/sleep 3
 ExecStart=/etc/jackdrc
 User=jack
-Group=jack
+Group=audio
 Restart=always
 RestartSec=15
 

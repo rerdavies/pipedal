@@ -185,7 +185,8 @@ export enum PluginType {
     SpatialPlugin = "SpatialPlugin",
     SpectralPlugin = "SpectralPlugin",
     UtilityPlugin = "UtilityPlugin",
-    WaveshaperPlugin = "WaveshaperPlugin"
+    WaveshaperPlugin = "WaveshaperPlugin",
+
 }
 
 
