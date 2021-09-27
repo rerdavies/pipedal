@@ -51,6 +51,8 @@ using namespace pipedal;
 #include <unistd.h>
 #endif
 
+#define JACK_SESSION_CALLBACKS 0
+
 #include "ShutdownClient.hpp"
 
 const double VU_UPDATE_RATE_S = 1.0 / 30;
@@ -162,7 +164,9 @@ private:
 
             jack_set_process_callback(client, nullptr, nullptr);
             jack_on_shutdown(client, nullptr, nullptr);
-            jack_set_session_callback(client, nullptr, NULL);
+            #if JACK_SESSION_CALLBACK // (deprecated, and not actually useful)
+                jack_set_session_callback(client, nullptr, nullptr);
+            #endif
             jack_set_xrun_callback(client, nullptr, nullptr);
 
             active = false;
@@ -599,6 +603,7 @@ private:
 
     void OnSessionCallback(jack_session_event_t *event)
     {
+        #if JACK_SESSION_CALLBACK // deprecated and not actually useful.
         char retval[100];
         Lv2Log::info("path %s, uuid %s, type: %s\n", event->session_dir, event->client_uuid, event->type == JackSessionSave ? "save" : "quit");
 
@@ -613,6 +618,7 @@ private:
         }
 
         jack_session_event_free(event);
+        #endif
     }
 
     static void jack_error_fn(const char *msg)
@@ -964,7 +970,9 @@ public:
 
             jack_on_shutdown(client, jack_shutdown_fn, this);
 
-            jack_set_session_callback(client, session_callback_fn, NULL);
+            #if JACK_SESSION_CALLBACK
+                jack_set_session_callback(client, session_callback_fn, NULL);
+            #endif
 
             jack_set_xrun_callback(client, xrun_callback_fn, this);
 
