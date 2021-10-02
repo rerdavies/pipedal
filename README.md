@@ -1,8 +1,8 @@
-# PiPedal
+# PiPedal v0.0,1 (Alpha)
 
 PiPedal is a multi-effect guitar pedal for Raspberry Pi devices. You will need a suitable audio input/output device to use PiPedal, which can be either an external USB audio adapter, or a Raspberry Pi ADC/DAC hat, providing at least one input and one output audio channel.
 
-PiPedal is controlled via a clean compact web app that's suitable for use on small-form devices, like phones and tablets, although it works gloriously with desktop browers as well. You should not have to carry around a laptop to control your PiPedal when you're out gigging; and the web interface for PiPedal has been designed with that scenario specifically in mind. PiPedal has been designed with compact display formats, and touch user-interfaces in mind. Just connect to the PiPedal Wi-Fi access point with your phone, and you have complete control over your PiPedal.
+PiPedal is controlled via a clean compact web app that's suitable for use on small-form-factor devices, like phones and tablets, although it works gloriously with desktop browers as well. You should not have to carry around a laptop to control your PiPedal when you're out gigging; and the web interface for PiPedal has been designed with that scenario specifically in mind. PiPedal has been designed with compact display formats, and touch user-interfaces in mind. Just connect to the PiPedal Wi-Fi access point with your phone, and you have complete control over your PiPedal.
 
 PiPedal uses LV2 audio plugin effects. You will need to install LV2 plugins before you can get started. See the LV2 Plugins section, below, for a list of good plugin collections to get started with.
 
@@ -17,7 +17,7 @@ PiPedal is intended for use on Raspberry Pi devices running Raspbian; but it has
 
 Note that Pipedal is not intended for use when logged in to Raspbian. Screen updates and heavy filesystem activity will cause audio dropouts. For best results, access PiPedal using the web interface remotely, through the Wi-Fi hotspot. Accessing the web interface via Wi-Fi has little or no effect on audio latency or dropouts.
 
-With a good USB audio device, PiPedal should be able to provide stable audio with 4ms (good), or 2ms (excellent) latency on a Raspberry Pi 4 when running on a Realtime kernel. Your results may vary.
+With a good USB audio device, PiPedal should be able to provide stable audio with 4ms (good), or 2ms (excellent) latency on a Raspberry Pi 4 when running on a Realtime kernel. Your actual results may vary.
 
 Make sure your system is fully updated, and that you are running with a kernel version of 5.10 or later, since version 5.10 of the Linux kernel provides significantly improved support for USB audio devices. 
 
@@ -33,6 +33,35 @@ On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SDCARD access are perfor
 
 In theory, USB audio devices should be able to run even with significant filesystem or display device activity on a realtime kernel; but that does not seem to be the case currently. There is some reason to beleive that there are outstanding issues with the Broadcom 2711 PCI Express bus drivers on realtime kernels, but as of September 2021, this is still a research issue. If you are brave, there are suggestions that these issues arise when the PCI-express bus goes into power-saving mode, which can be prevented by building a realtime kernel with all power-saving options disabled. But this is currently unconfirmed speculation.
 
+## Hardware Requirements
+
+* A Raspberry PI 4B, with at least 2GB of RAM to run, and at least 4GB of RAM to build.
+* An external USB Audio Adapater with at least one audio input, and one audio output.
+
+PiPedal has been tested on the following Operating Systems:
+
+* Raspbian 32-bit
+* Ubuntu Gnome 3 21.04 32-bit or 64-bit.
+
+But it should work on most debian-derived Linux variants.
+
+PiPedal will definitely proved better latency when installed on a Linux OS with a full realtime kernel. But standard PREEMPT variants of the Linux Kernel work very well for all practical purposes.
+
+When running on Ubuntu, you should install the Ubunto Studio addons and enable the low-latency settings and performance tweaks options.
+
+    sudo apt install ubuntustudio-installer
+    
+(You probably want to install the Audio Plugins options as well).
+
+To get PiPedal to work properly on Ubuntu while not logged on, you must install PulseAudio
+
+    sudo apt remove pulseaudio
+    
+If you choose not to do that, it is possible to use PiPedal with pulseaudio installed, but you will have to start and stop the jack audio service installed by PiPedal manually 
+    
+    sudo pipedalconfig --restart
+
+(which will kill the Pulse Audio daemon as part of the restart process).
 
 ## Configuring PiPedal After Installation
 
