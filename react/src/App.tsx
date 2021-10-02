@@ -86,6 +86,7 @@ const appStyles = ({ palette, spacing, mixins }: Theme) => createStyles({
         zIndex: 2010
     },
     errorContent: {
+        
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",

@@ -66,8 +66,11 @@ public:
 static volatile bool g_SigBreak = false;
 void sig_handler(int signo)
 {
-    g_SigBreak = true;
-    sem_post(&signalSemaphore);
+    if (!g_SigBreak)
+    {
+        g_SigBreak = true;
+        sem_post(&signalSemaphore);
+    }
 }
 using namespace boost::system;
 
@@ -465,6 +468,7 @@ int main(int argc, char *argv[])
         Lv2Log::set_logger(MakeLv2SystemdLogger());
     }
     signal(SIGTERM, sig_handler);
+    signal(SIGUSR1, sig_handler);
 
     std::filesystem::path doc_root = parser.Arguments()[0];
     std::filesystem::path web_root = doc_root;
@@ -548,10 +552,13 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-            Lv2Log::info("Waiting for jack service.");
 
-            // pre-cache device info.
+            // pre-cache device info before we let audio services run.
             model.GetAlsaDevices();
+
+            // Get heavy IO out of the way before letting dependent (Jack) services run.
+            model.LoadLv2PluginInfo(configuration);
+            // Tell systemd we're done.
             sd_notify(0, "READY=1");
 
             if (!isJackServiceRunning())
@@ -570,9 +577,14 @@ int main(int argc, char *argv[])
                         break;
                     }
                 }
-                Lv2Log::info("Found  Jack service.");
             }
-            sleep(3); // jack needs a little time to get up to speed.
+            if (isJackServiceRunning())
+            {
+                Lv2Log::info("Found  Jack service.");
+                sleep(3); // jack needs a little time to get up to speed.
+            } else {
+                Lv2Log::info("Jack service not started.");
+            }
         }
 
         model.Load(configuration);
@@ -587,7 +599,7 @@ int main(int argc, char *argv[])
         std::shared_ptr<DownloadIntercept> downloadIntercept = std::make_shared<DownloadIntercept>(&model);
         server->AddRequestHandler(downloadIntercept);
 
-        server->RunInBackground();
+        server->RunInBackground(SIGUSR1);
 
         sem_wait(&signalSemaphore);
 

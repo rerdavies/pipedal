@@ -61,8 +61,6 @@ export function SelectBaseIcon(plugin_type: PluginType): string {
             return "fx_distortion.svg";
         case PluginType.FlangerPlugin:
             return "fx_flanger.svg";
-        case PluginType.HighpassPlugin:
-            return "fx_highpass.svg";
         case PluginType.ParaEQPlugin:
         case PluginType.LowpassPlugin:
         case PluginType.HighpassPlugin:            

@@ -191,7 +191,8 @@ public:
     virtual void ShutDown(int timeoutMs) = 0;
     virtual void Join() = 0;
 
-    virtual void RunInBackground() = 0;
+    // signalOnDone: fire the specified POSIX signal when the service thread terminates. -1 for no signal.
+    virtual void RunInBackground(int signalOnDone = -1) = 0;
 };
 
 

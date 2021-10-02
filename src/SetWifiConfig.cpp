@@ -156,7 +156,7 @@ void pipedal::SetWifiConfig(const WifiConfigSettings&settings)
             dhcpcd.InsertLine(line++,"interface wlan0");
             dhcpcd.InsertLine(line++,"   static ip_address=" PIPEDAL_NETWORK);
             dhcpcd.InsertLine(line++,"   nohook wpa_supplicant");
-            dhcpcd.Save(dhcpcdConfig);adding 
+            dhcpcd.Save(dhcpcdConfig); 
         }
 
         // ***** save the config files ***

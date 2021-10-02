@@ -97,6 +97,7 @@ namespace pipedal {
 class BeastServerImpl : public BeastServer
 {
 private:
+    int signalOnDone = -1;
     std::string address;
     int port = -1;
     std::filesystem::path rootPath;
@@ -210,6 +211,9 @@ private:
         }
         void on_close(connection_hdl hdl)
         {
+            #ifndef NDEBUG
+
+            #endif
             auto shThis = this->shared_from_this(); // we will destruct as we return.
             pServer->on_session_closed(shThis,hdl);
         }
@@ -472,13 +476,19 @@ private:
             using websocketpp::lib::bind;
             using websocketpp::lib::placeholders::_1;
             using websocketpp::lib::placeholders::_2;
+
             m_endpoint.set_open_handler(bind(&BeastServerImpl::on_open, this, _1));
             m_endpoint.set_close_handler(bind(&BeastServerImpl::on_close, this, _1));
             m_endpoint.set_http_handler(bind(&BeastServerImpl::on_http, this, _1));
 
+            {
+                std::stringstream ss;
+                ss << "Listening on " << this->address << ":" << this->port;
+                Lv2Log::info(ss.str());
+            }
+
             std::stringstream ss;
             ss << port;
-
             m_endpoint.listen(this->address, ss.str());
             m_endpoint.start_accept();
 
@@ -494,11 +504,6 @@ private:
 
             // Start the ASIO io_service run loop
 
-            {
-                std::stringstream ss;
-                ss << "Listening on " << this->address << ":" << this->port;
-                Lv2Log::info(ss.str());
-            }
             m_endpoint.run();
             //ioc.run();
             /****************** */
@@ -514,8 +519,11 @@ private:
         catch (websocketpp::exception const &e)
         {
             std::cout << e.what() << std::endl;
-            return;
         }
+        if (this->signalOnDone != -1) {
+            kill(getpid(),this->signalOnDone);
+        }
+
     }
 
     static void ThreadProc(BeastServerImpl *server)
@@ -565,12 +573,13 @@ public:
         this->pBgThread = nullptr;
     }
 
-    virtual void RunInBackground()
+    virtual void RunInBackground(int signalOnDone)
     {
         if (this->pBgThread != nullptr)
         {
             throw std::runtime_error("Bad state.");
         }
+        this->signalOnDone = signalOnDone;
         this->pBgThread = new std::thread(ThreadProc, this);
     }
 

@@ -127,6 +127,7 @@ public:
     virtual ~PiPedalModel();
 
     void Close();
+    void LoadLv2PluginInfo(const PiPedalConfiguration&configuration);
     void Load(const PiPedalConfiguration&configuration);
 
     const Lv2Host& getPlugins() const { return lv2Host; }

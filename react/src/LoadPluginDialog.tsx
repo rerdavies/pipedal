@@ -18,7 +18,6 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { ReactNode, SyntheticEvent } from 'react';
-import Grid from '@material-ui/core/Grid';
 import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { UiPlugin, PluginType } from './Lv2Plugin';
@@ -41,6 +40,8 @@ import ClearIcon from '@material-ui/icons/Clear';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { TransitionProps } from '@material-ui/core/transitions/transition';
 import Slide from '@material-ui/core/Slide';
+import SearchControl from './SearchControl';
+import SearchFilter from './SearchFilter';
 
 
 export type CloseEventHandler = () => void;
@@ -154,9 +155,12 @@ interface PluginGridProps extends WithStyles<typeof pluginGridStyles> {
 type PluginGridState = {
     selected_uri?: string,
     hover_uri?: string,
+    search_string: string;
+    search_collapsed: boolean;
     filterType: PluginType,
     client_width: number,
     client_height: number,
+    grid_cell_width: number,
     minimumItemWidth: number,
 
 }
@@ -173,10 +177,12 @@ export const LoadPluginDialog =
         class extends ResizeResponsiveComponent<PluginGridProps, PluginGridState>
         {
             model: PiPedalModel;
+            searchInputRef: React.RefObject<HTMLInputElement>;
 
             constructor(props: PluginGridProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
+                this.searchInputRef = React.createRef<HTMLInputElement>();
 
                 let filterType_ = PluginType.Plugin; // i.e. "Any".
                 let persistedFilter = window.localStorage.getItem(FILTER_STORAGE_KEY);
@@ -187,21 +193,68 @@ export const LoadPluginDialog =
                 this.state = {
                     selected_uri: this.props.uri,
                     hover_uri: "",
+                    search_string: "",
+                    search_collapsed: true,
                     filterType: filterType_,
                     client_width: window.innerWidth,
                     client_height: window.innerHeight,
+                    grid_cell_width: this.getCellWidth(window.innerWidth),
                     minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220
                 };
 
                 this.updateWindowSize = this.updateWindowSize.bind(this);
                 this.handleCancel = this.handleCancel.bind(this);
                 this.handleOk = this.handleOk.bind(this);
+                this.handleSearchStringReady = this.handleSearchStringReady.bind(this);
+                this.handleKeyPress = this.handleKeyPress.bind(this);
+            }
+
+            nominal_column_width: number = 250;
+            margin_reserve: number = 30;
+
+            getCellWidth(width: number)
+            {
+                let gridWidth = width-this.margin_reserve;
+                let columns = Math.floor((gridWidth)/this.nominal_column_width);
+                if (columns < 1) columns = 1;
+
+                return Math.floor(gridWidth/columns);
+            }
+
+            handleKeyPress(e: React.KeyboardEvent<HTMLDivElement>)
+            {
+                let searchInput = this.searchInputRef.current;
+                if (searchInput && e.target !== searchInput) // if the search input doesn't have focus.
+                {
+                    if (this.searchInputRef.current) // we do have one, right?
+                    {
+                        if (e.key.length === 1)
+                        {
+                            if (/[a-zA-Z0-9]/.exec(e.key))  // if it's alpha-numeric.
+                            {
+                                if (this.state.search_collapsed) // and search is collapsed.
+                                {
+                                    e.preventDefault();
+
+                                    let newValue = searchInput.value + e.key;
+                                    searchInput.value = newValue; // add the key. to the value.
+                                    searchInput.focus();
+                                    this.setState({
+                                        search_string: newValue,
+                                        search_collapsed: false})
+
+                                } 
+                            }
+                        }
+                    }
+                }
             }
 
             updateWindowSize() {
                 this.setState({
                     client_width: window.innerWidth,
-                    client_height: window.innerHeight
+                    client_height: window.innerHeight,
+                    grid_cell_width: this.getCellWidth(window.innerWidth)
                 });
             }
             componentDidMount() {
@@ -213,6 +266,16 @@ export const LoadPluginDialog =
                 super.componentWillUnmount();
                 window.removeEventListener('resize', this.updateWindowSize);
             }
+
+            componentDidUpdate(oldProps: PluginGridProps) {
+                if (oldProps.open !== this.props.open)
+                {
+                    if (this.props.open)
+                    {
+                        this.setState({ search_string: "", search_collapsed: true});
+                    }
+                }
+            }   
 
             onWindowSizeChanged(width: number, height: number): void {
                 super.onWindowSizeChanged(width, height);
@@ -324,18 +387,48 @@ export const LoadPluginDialog =
                 return result;
 
             }
+            applySearchFilter(plugins: UiPlugin[],searchString: string): UiPlugin[]
+            {
+                let results: { score: number; plugin: UiPlugin}[] = [];
+                let searchFilter = new SearchFilter(searchString);
+                
+                for (let i = 0; i < plugins.length; ++i)
+                {
+                    let plugin = plugins[i];
+                    let score = searchFilter.score(plugin.name,plugin.plugin_display_type,plugin.author_name);
+                    if (score !== 0)
+                    {
+                        results.push({score:score, plugin:plugin});
+                    }
+                }
+                results.sort((left: {score:number; plugin: UiPlugin},right: {score:number; plugin: UiPlugin}) => {
+                    if (right.score < left.score) return -1;
+                    if (right.score > left.score) return 1;
+                    return left.plugin.name.localeCompare(right.plugin.name);
+                });
+                let t: UiPlugin[] = [];
+                for (let i = 0; i < results.length; ++i)
+                {
+                    t.push(results[i].plugin);
+                }
+                return t;
+            }
             filterPlugins(plugins: UiPlugin[]): ReactNode[] {
                 let result: ReactNode[] = [];
                 let filterType = this.state.filterType;
                 let classes = this.props.classes;
                 let rootClass = this.model.plugin_classes.get();
+                if (this.state.search_string.length !== 0)
+                {
+                    plugins = this.applySearchFilter(plugins,this.state.search_string);
+                }
 
                 for (let i = 0; i < plugins.length; ++i) {
                     let value = plugins[i];
                     if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, value.plugin_type)) {
                         result.push(
                             (
-                                <Grid key={value.uri} xs={12} sm={6} md={4} lg={3} xl={3} item
+                                <div key={value.uri} style={{width: this.state.grid_cell_width, height: 64}}
                                     onDoubleClick={(e) => { this.onDoubleClick(e, value.uri) }}
                                     onClick={(e) => { this.onClick(e, value.uri) }}
                                     onMouseEnter={(e) => { this.handleMouseEnter(e, value.uri) }}
@@ -358,13 +451,37 @@ export const LoadPluginDialog =
                                             </div>
                                         </div>
                                     </ButtonBase>
-                                </Grid>
+                                </div>
                             )
                         );
 
                     }
                 }
                 return result;
+            }
+            changedSearchString? : string = undefined;
+            hSearchTimeout?: NodeJS.Timeout;
+
+            handleSearchStringReady() {
+                if (this.changedSearchString !== undefined)
+                {
+                    this.setState({search_string: this.changedSearchString});
+                    this.changedSearchString = undefined;
+                }
+                this.hSearchTimeout = undefined;
+            }
+
+
+            handleSearchStringChanged(text: string) : void {
+                if (this.hSearchTimeout) {
+                    clearTimeout(this.hSearchTimeout);
+                    this.hSearchTimeout = undefined;
+                }
+                this.changedSearchString = text;
+                this.hSearchTimeout = setTimeout(
+                    this.handleSearchStringReady,
+                    2000);
+
             }
 
 
@@ -381,10 +498,17 @@ export const LoadPluginDialog =
                     if (t) selectedPlugin = t;
                 }
 
+                let showSearchIcon = true;
+                if (this.state.client_width < 500)
+                {
+                    showSearchIcon = this.state.search_collapsed
+                }
+
                 return (
 
                     <React.Fragment>
                         <Dialog
+                            onKeyPress={(e)=> { this.handleKeyPress(e); }}
                             fullScreen={true}
                             TransitionComponent={Transition}
                             maxWidth={false}
@@ -393,16 +517,37 @@ export const LoadPluginDialog =
                             onClose={this.handleCancel}
                             style={{ overflowX: "hidden", overflowY: "hidden", display: "flex", flexDirection: "column", flexWrap: "nowrap" }}
                             aria-labelledby="select-plugin-dialog-title">
-                            <DialogTitle id="select-plugin-dialog-title" style={{ flex: "0 0 auto" }}>
-                                <div style={{ display: "flex", flexDirection: "row", flexWrap: "nowrap", width: "100%", alignItems: "center" }}>
+                            <DialogTitle id="select-plugin-dialog-title" style={{ flex: "0 0 auto", padding: "0px",height: 54 }}>
+                                <div style={{ display: "flex", flexDirection: "row", paddingTop: 3, paddingBottom: 3,flexWrap: "nowrap", width: "100%", alignItems: "center" }}>
                                     <IconButton onClick={() => { this.cancel(); }} style={{ flex: "0 0 auto" }} >
                                         <ArrowBackIcon />
                                     </IconButton>
 
-                                    <Typography display="block" variant="h6" style={{ flex: "0 1 auto" }}>
+                                    <Typography display="inline" noWrap variant="h6" style={{ flex: "0 0 auto", height: "auto", verticalAlign: "center",
+                                        visibility: (this.state.search_collapsed? "visible": "collapse"),
+                                        width: (this.state.search_collapsed? undefined: "0px")}}>
                                         {this.state.client_width > 520 ? "Select Plugin" : ""}
                                     </Typography>
-                                    <div style={{ flex: "1 1 auto" }} />
+                                    <div style={{ flex: "1 1 auto" }} >
+                                        <SearchControl collapsed={this.state.search_collapsed}  searchText={this.state.search_string}
+                                            inputRef={this.searchInputRef}
+                                            showSearchIcon={showSearchIcon}
+                                            onTextChanged={(text)=> { 
+                                                this.handleSearchStringChanged(text);
+                                            }}
+                                            onClearFilterClick={()=> {
+                                                this.setState({search_collapsed: true,search_string:""});
+                                            }}
+                                            onClick={()=> {
+                                                if (this.state.search_collapsed) {
+                                                    this.setState({search_collapsed: false});
+                                                } else {
+                                                    this.setState({ search_collapsed: true, search_string: ""});
+                                                }
+
+                                            }}
+                                        />
+                                    </div>
                                     <Select defaultValue={this.state.filterType} key={this.state.filterType} onChange={(e) => { this.onFilterChange(e); }}
                                         style={{ flex: "0 0 160px" }}
                                     >
@@ -420,13 +565,13 @@ export const LoadPluginDialog =
                                 padding: 8,
                                 display: "1 1 flex"
                             }} >
-                                <Grid container justify="flex-start"  >
+                                <div style={{display: "flex", width: this.state.client_width-30,flexDirection: "row",flexWrap: "wrap",
+                                    justifyContent: "flex-start"}}
+                                >
                                     {
                                         this.filterPlugins(plugins)
                                     }
-
-
-                                </Grid>
+                                </div>
                             </DialogContent>
                             {(this.state.client_width >= NARROW_DISPLAY_THRESHOLD) ? (
                                 <DialogActions style={{ flex: "0 0 auto" }} >

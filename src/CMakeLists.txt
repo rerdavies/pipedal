@@ -72,7 +72,7 @@ endif()
 
 message (STATUS "Cxx flags: ${CMAKE_CXX_FLAGS}"  )
 
-add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 set (PIPEDAL_SOURCES
     SysExec.cpp SysExec.hpp

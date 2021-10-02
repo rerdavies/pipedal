@@ -15,6 +15,7 @@ ExecStart=${COMMAND}
 User=pipedal_d
 Group=pipedal_d
 Restart=always
+TimeoutStartSec=60
 RestartSec=25
 TimeoutStopSec=10
 WorkingDirectory=/var/pipedal
