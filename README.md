@@ -2,18 +2,32 @@
 
 ![Screenshot](artifacts/PiPedalSshots.png)
 
-PiPedal is a multi-effect guitar pedal for Raspberry Pi devices. You will need a suitable audio input/output device to use PiPedal, which can be either an external USB audio adapter, or a Raspberry Pi ADC/DAC hat, providing at least one input and one output audio channel.
+PiPedal is a multi-effect guitar pedal for Raspberry Pi devices, running Raspbian, or Ubuntu. 
 
-PiPedal is controlled via a clean compact web app that's suitable for use on small-form-factor devices, like phones and tablets, although it works gloriously with desktop browers as well. You should not have to carry around a laptop to control your PiPedal when you're out gigging; and the web interface for PiPedal has been designed with that scenario specifically in mind. PiPedal has been designed with compact display formats, and touch user-interfaces in mind. Just connect to the PiPedal Wi-Fi access point with your phone, and you have complete control over your PiPedal.
+You will need a suitable audio input/output device to use PiPedal, which can be either an external USB audio device, or a Raspberry Pi ADC/DAC hat, providing at least one input and one output audio channel.
+
+PiPedal is controlled via a web app that's been designed to support small-form-factor devices, like phones and tablets, although it works gloriously with desktop browers as well. You should not have to carry around a laptop to control your PiPedal when you're out gigging; and the web interface for PiPedal has been designed with that scenario specifically in mind. Just connect your phone to the PiPedal Wi-Fi hotspot and you have complete control over your PiPedal.
 
 PiPedal uses LV2 audio plugin effects. You will need to install LV2 plugins before you can get started. See the LV2 Plugins section, below, for a list of good plugin collections to get started with.
 
 You can add as many plugins to your patch as your CPU will support (well over a dozen on a Raspberry Pi 4+). Signal chains
 can have an arbitrary number of split chains, which may be A/B-selected or mixed if you wish.
 
-PiPedal allows you to easily bind Midi controls and notes to LV2 plugin controls using the Midi Bindings dialog. USB micro controllers such as the Korg nano series of MIDI controllers, or the AKAI pad controllers are perfectly suited for selecting and tweaking patches while performing; or you can connect regular MIDI controllers and pedalboards via the MIDI ports on your USB Audio device, if it supports MIDI. 
+Bind MIDI controls and notes to LV2 plugin controls using the Midi Bindings dialog. USB micro controllers such as the Korg nano series of MIDI controllers, or the AKAI pad controllers are perfectly suited for selecting and tweaking patches while performing; or you can connect regular MIDI controllers and pedalboards via the MIDI ports on your USB Audio device, if it has them.
 
-PiPedal is intended for use on Raspberry Pi devices running Raspbian; but it has also been tested on Ubuntu Studio.
+## System Requirements
+
+* A Raspberry PI 4B or 400, with at least 2GB of RAM to run, and at least 4GB of RAM to build.
+* An external USB Audio Adapter, or a Pi audio hat with at least one audio input, and one audio output.
+
+PiPedal has been tested on the following Operating Systems:
+
+* Raspbian 32-bit
+* Ubuntu Gnome3 21.04 32-bit or 64-bit (Ubuntu KDE will not work)
+
+But it should work on most Debian-derived Linux variants.
+
+An RT_PREEMPT kernel does provide better latency; but modern PREEMPT kernels provide enough real-time support to run PiPedal without problems.
 
 ## Latency
 
@@ -34,36 +48,6 @@ Ubuntu Studio comes with the Realtime kernel patches preinstalled.
 On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SDCARD access are performed over separate buses (which is not true for previous versions of Raspberry Pi). It's therefore a good idea to ensure that your USB audio device is either the only device connected to the USB 2.0 ports, or the only device connected to the UBS 3.0 ports. There's no significant advantage to using USB 3.0 over USB 2.0 for USB audio. 
 
 In theory, USB audio devices should be able to run even with significant filesystem or display device activity on a realtime kernel; but that does not seem to be the case currently. There is some reason to beleive that there are outstanding issues with the Broadcom 2711 PCI Express bus drivers on realtime kernels, but as of September 2021, this is still a research issue. If you are brave, there are suggestions that these issues arise when the PCI-express bus goes into power-saving mode, which can be prevented by building a realtime kernel with all power-saving options disabled. But this is currently unconfirmed speculation.
-
-## Hardware Requirements
-
-* A Raspberry PI 4B, with at least 2GB of RAM to run, and at least 4GB of RAM to build.
-* An external USB Audio Adapater with at least one audio input, and one audio output.
-
-PiPedal has been tested on the following Operating Systems:
-
-* Raspbian 32-bit
-* Ubuntu Gnome 3 21.04 32-bit or 64-bit.
-
-But it should work on most debian-derived Linux variants.
-
-PiPedal will definitely proved better latency when installed on a Linux OS with a full realtime kernel. But standard PREEMPT variants of the Linux Kernel work very well for all practical purposes.
-
-When running on Ubuntu, you should install the Ubunto Studio addons and enable the low-latency settings and performance tweaks options.
-
-    sudo apt install ubuntustudio-installer
-    
-(You probably want to install the Audio Plugins options as well).
-
-To get PiPedal to work properly on Ubuntu while not logged on, you must install PulseAudio
-
-    sudo apt remove pulseaudio
-    
-If you choose not to do that, it is possible to use PiPedal with pulseaudio installed, but you will have to start and stop the jack audio service installed by PiPedal manually 
-    
-    sudo pipedalconfig --restart
-
-(which will kill the Pulse Audio daemon as part of the restart process).
 
 ## Configuring PiPedal After Installation
 
@@ -95,6 +79,24 @@ There are a number of other useful settings in the hamburger menu/Settings dialo
 input onto the right channel of the USB audio inputs. So you probably want to configure PiPedal to use only the right USB audio input channel. 
 You can choose how to bind USB audio input and output channels (stereo, left only, right only) in the settings dialog. If you are using a Audio 
 device that has more than two channels, you will be offered a list of channels to choose from instead.
+
+## Running on Ubuntu
+
+When running on Ubuntu, you should install the Ubunto Studio addons and enable the low-latency settings and performance tweaks options.
+
+    sudo apt install ubuntustudio-installer
+    
+You probably want to install the Audio Plugins options as well. 
+
+To get PiPedal to work properly on Ubuntu while not logged on, you must remove PulseAudio
+
+    sudo apt remove pulseaudio
+    
+If you choose not to do that, it is possible to use PiPedal with pulseaudio installed, but you will have to start and stop the jack audio service installed by PiPedal manually 
+    
+    sudo pipedalconfig --restart
+
+which will kill the Pulse Audio daemon as part of the restart process.
 
 ## Command Line Configuration of PiPedal
 
@@ -131,14 +133,13 @@ To configure PiPedal to only accept connections on the Wi-Fi host access point:
 ## LV2 PLugins
 
 PiPedal uses standard LV2 audio plugins for effects. There's a huge variety ofo LV2 guitar effect plugins, and plugins collections, many 
-of which are specifically intended for use as guitar effect plugins. Ubuntu Studio comes with a huge collection of LV2 plugins preinstalled. On Rasbian, you will have to manually select and isntall
-the plugins you want to use.
-     
-Foremost among these collections of LV2 plugins is the Guitarix plugin collection: https://guitarix.org/. You should definitely install Guitarix:
+of which are specifically intended for use as guitar effect plugins. Ubuntu Studio comes with a huge collection of LV2 plugins preinstalled. On Rasbian, you will have to manually select and install the plugins you want to use.
 
-      sudo apt install guitarix-lv2    
+On Ubuntu, you can install Ubuntu Studio (sudo apt install ubunt-studio-install), and ask it to install Audio Plugins. This will install a large collection of LV2 plugins, which will be automatically detected by PiPedal. Or you can choose your LV2 plugin collections manually.
 
-Other highly recommended guitar effect collections:
+The following LV2 Plugin collections are available on both Rasbian and Ubuntu.
+
+  sudo apt install guitarix-lv2     # https://guitarix.org/
   
   sudo apt install zam-plugins    # http://www.zamaudio.com/
   
@@ -147,7 +148,6 @@ Other highly recommended guitar effect collections:
   sudo apt install calf-plugins  # http://calf-studio-gear.org/
   
   sudo apt install fomp  # http://drobilla.net/software/fomp/
-
 
 But there are many more.
 
@@ -168,7 +168,7 @@ following conditions:
 
 - Must not be MIDI instruments or have CV (Control Voltage) inputs or outputs.
 
-- Must be remotely controllable (no hard dependency on GUI-only controls), which is true of the vast majority of LV2 plugins).
+- Must be remotely controllable (no hard dependency on GUI-only controls), which is true of the vast majority of LV2 plugins.
 
 If you install new LV2 plugins, you will have to restart the PiPedal web service (or reboot the machine) to get them to show up in the web interface.
 
@@ -179,10 +179,12 @@ without using the provided desktop GUI interface. And all but a tiny minority of
 
 ## Building and Installing PiPedal
 
-PiPedal has only been tested on Raspbian, and has limited testing on Ubuntu Studio. But pull requests to correct problems with building PiPedal on other versions of Linux are welcome. 
+PiPedal has only been tested on Raspbian, and Ubuntu. But pull requests to correct problems with building PiPedal on other versions of Linux are welcome. 
 
 To build PiPedal, a Raspberry Pi 4B, with at least 4GB of memory is recommended. You should be able to cross-compile PiPedal easily enough,
-but we do not currently provide support for this. Consult CMake documentation on how to cross-compile source.
+but we do not currently provide support on how to do this. Visual Studio Code provides excellent support for cross-compiling, which will work with the PiPedal build. Or consult CMake documentation on how to cross-compile source.
+
+### Prerequisites
 
 Run the following commands to install build tools required by the PiPedal build.
 
@@ -215,9 +217,9 @@ PiPedal was developed using Visual Studio Code. Using Visual Studio Code to buil
 build procedure uses CMake project files, which are supported by most major Integrated Development Environments.
      
 If you open the PiPedal project as a folder in VS Code, Code will 
-detect the CMake configuration files, and automatically configure itself. Once the VS Code CMake plugin (written by Microsoft,
+detect the CMake configuration files, and automatically configure the project to use available toolchains. Once the VS Code CMake plugin (written by Microsoft,
 available through the plugins store) has configured itself, build commands should appear on the bottom line of Visual Studio 
-Code. Visual Studio Code will take care of automatically configuring the project.
+Code. 
 
 If you are not using Visual Studio Code, you can configure, build and install PiPedal using CMake build tools. For your convenience,
 the following shell scripts have been provided in the root of the project in order to provide convenent CLI build commands.
@@ -231,7 +233,7 @@ the following shell scripts have been provided in the root of the project in ord
     ./pkg    # Build a .deb file for distribution.
     
 If you are using a development environment other than Visual Studio Code, it should be fairly straightforward to figure out how
-to incorporate the PiPedal build procedure into your IDE workflow by examining the contents of the build shell scripts as a model.
+to incorporate the PiPedal build procedure into your IDE workflow by using the contents of the build shell scripts as a model.
 
 The CMake toolchain can be used to generate build scripts for other build environments as well (e.g. Visual Studio .csproj files, Ant, or Linux
  Makefiles); and can be configured to perform cross-compiled builds as well. Consult documentation for CMake for instructions on how to
