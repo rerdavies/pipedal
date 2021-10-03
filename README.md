@@ -2,7 +2,7 @@
 
 ![Screenshot](artifacts/PiPedalSshots.png)
 
-PiPedal is a multi-effect guitar pedal for Raspberry Pi devices, running Raspbian, or Ubuntu. 
+PiPedal is a multi-effect guitar pedal for Raspberry Pi devices, running Raspbian, or Ubuntu. It is controlled via a web interface that has been designed to work well with small-form-factor devices like phones and tablets.
 
 You will need a suitable audio input/output device to use PiPedal, which can be either an external USB audio device, or a Raspberry Pi ADC/DAC hat, providing at least one input and one output audio channel.
 
@@ -27,6 +27,8 @@ PiPedal has been tested on the following Operating Systems:
 
 But it should work on most Debian-derived Linux variants.
 
+If you are using Rasbian, make sure to upgrade to the latest version, because versions of the Linux kernel later than 5.10 provide dramatically improved support for external USB audio devices.
+
 An RT_PREEMPT kernel does provide better latency; but modern PREEMPT kernels provide enough real-time support to run PiPedal without problems.
 
 ## Latency
@@ -35,19 +37,23 @@ Note that Pipedal is not intended for use when logged in to Raspbian. Screen upd
 
 With a good USB audio device, PiPedal should be able to provide stable audio with 4ms (good), or 2ms (excellent) latency on a Raspberry Pi 4 when running on a Realtime kernel. Your actual results may vary.
 
-Make sure your system is fully updated, and that you are running with a kernel version of 5.10 or later, since version 5.10 of the Linux kernel provides significantly improved support for USB audio devices. 
+The current Linux kernel provides best latency on USB audio devices when they are configured with a sampling rate of 48kHZ, and 3 buffers. Cheap USB audio devices (e.g. M-Audio  M-Track Solo, available for less than $60) should be able to run without dropouts at 48kHz with 3x64 sample buffers. Most devices in this class use the same Burr-Brown chipset. Premium USB Audio devices should run stably at 48kHZ 3x32 sample buffers (about 4ms latency). I personally use the MOTU M2 USB audio adapter, which I highly recommmend -- stable, quiet, low-latency, great controls, and built like a tank).
 
-We currently recommend installing a realtime Raspbian kernel. PiPedal provides slightly better (but not dramatically better) latency when running on a Raspbian Realtime kernel. Stock Raspbian provides realtime scheduling, but does not currently have all of the realtime patches, so interrupt latency is slightly more variable on stock Rasbian. If you want to install a realtime kernel on Raspian, please visit
+Make sure your system is fully updated, and that you are running with a kernel version of 5.10 or later, since version 5.10 of the Linux kernel incorporates significantly improved support for class-compliant USB audio devices. The MOTU M2 will not run on versions of the kernel prior to 5.10.
+
+RT_PREEMPT realtime kernels are recommended but not required. PiPedal provides better (but not dramatically better) latency when running on a Raspbian Realtime kernel. Stock Raspbian provides PREEMPT real-time scheduling, but does not currently have all of the realtime patches, so interrupt latency is slightly more variable on stock Rasbian than on custom builds of Raspbian with RT_PREEMPT patches applied. If you want to install a realtime kernel on Raspian, please visit
 
     https://github.com/kdoren/linux/releases/tag/5.10.35-rt39
     
-As of September 2021, this site provides a working Realtime kernel for Raspbian 5.10 on Raspberry Pi 3, 3+ and 4, with support for other versions in progress.
+As of September 2021, this site provides a working Realtime kernel for Raspbian 5.10 on Raspberry Pi 3, 3+ and 4, with support for other versions in progress. This kernel may allow you to run with 4ms latency instead of 8ms.
 
-Ubuntu Studio comes with the Realtime kernel patches preinstalled. 
+The Ubuntu Studio installer will install a realtime kernel if there is one avialable. But -- at least for Ubuntu 21.04 -- there is no stock RT_PREEMPT kernel for ARM aarch64.
 
-On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SDCARD access are performed over separate buses (which is not true for previous versions of Raspberry Pi). It's therefore a good idea to ensure that your USB audio device is either the only device connected to the USB 2.0 ports, or the only device connected to the UBS 3.0 ports. There's no significant advantage to using USB 3.0 over USB 2.0 for USB audio. 
+On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SDCARD access are performed over separate buses (which is not true for previous versions of Raspberry Pi). It's therefore a good idea to ensure that your USB audio device is either the only device connected to the USB 2.0 ports, or the only device connected to the UBS 3.0 ports. There's no significant advantage to using USB 3.0 over USB 2.0 for USB audio. TCP/IP network traffic does not seem to adversely affect USB audio operation. Filesystem activity does affect USB audio operation on Rasbian, even with an RT_PREEMPT kernel; but interestingly, filesystem activity has much less effect on UBS audio on Ubuntu 21.04, even on a plain PREEMPT kernel. 
 
-In theory, USB audio devices should be able to run even with significant filesystem or display device activity on a realtime kernel; but that does not seem to be the case currently. There is some reason to beleive that there are outstanding issues with the Broadcom 2711 PCI Express bus drivers on realtime kernels, but as of September 2021, this is still a research issue. If you are brave, there are suggestions that these issues arise when the PCI-express bus goes into power-saving mode, which can be prevented by building a realtime kernel with all power-saving options disabled. But this is currently unconfirmed speculation.
+There is some reason to beleive that there are outstanding issues with the Broadcom 2711 PCI Express bus drivers on Rasbian realtime kernels, but as of September 2021, this is still a research issue. If you are brave, there is strong annecdotal evidence that these issues arise when the Pi 4 PCI-express bus goes into and out of power-saving mode, which can be prevented by building a realtime kernel with all power-saving options disabled. But this is currently unconfirmed speculation. And building realtime kernels is well outside the scope of this document. (source: a youtube video on horrendously difficult bugs encountered while supporting RT_PREEMPT, by one of the RT_PREEMPT team members).
+
+For the meantime, for best results, log off from your Raspberry Pi, and use the web interface only.
 
 ## Configuring PiPedal After Installation
 
@@ -82,7 +88,7 @@ device that has more than two channels, you will be offered a list of channels t
 
 ## Running on Ubuntu
 
-When running on Ubuntu, you should install the Ubunto Studio addons and enable the low-latency settings and performance tweaks options.
+When running on stock Ubuntu, you should install Ubuntu Studio addons and enable the low-latency settings and performance tweaks options.
 
     sudo apt install ubuntustudio-installer
     
@@ -114,6 +120,8 @@ Things you can do with pipedalconfig:
      
      - enable or disable the Wi-Fi hotspot.
      
+Run `pipedalconfig --help` for available options.
+     
 
 ## Changing the web server port.
      
@@ -132,12 +140,12 @@ To configure PiPedal to only accept connections on the Wi-Fi host access point:
 
 ## LV2 PLugins
 
-PiPedal uses standard LV2 audio plugins for effects. There's a huge variety ofo LV2 guitar effect plugins, and plugins collections, many 
-of which are specifically intended for use as guitar effect plugins. Ubuntu Studio comes with a huge collection of LV2 plugins preinstalled. On Rasbian, you will have to manually select and install the plugins you want to use.
+PiPedal uses standard LV2 audio plugins for effects. There's a huge variety of LV2 guitar effect plugins, and plugins collections, many 
+of which are specifically intended for use as guitar effect plugins. Ubuntu Studio comes with an enormous collection of LV2 plugins preinstalled. On Rasbian, you will have to manually select and install the plugins you want to use.
 
-On Ubuntu, you can install Ubuntu Studio (sudo apt install ubunt-studio-install), and ask it to install Audio Plugins. This will install a large collection of LV2 plugins, which will be automatically detected by PiPedal. Or you can choose your LV2 plugin collections manually.
+On stock Ubuntu, you can install Ubuntu Studio addons (sudo apt install ubuntu-studio-install), and ask it to install Audio Plugins. This will install a large collection of LV2 plugins, which will be automatically detected by PiPedal. Or you can choose your LV2 plugin collections manually, as for Rasbian.
 
-The following LV2 Plugin collections are available on both Rasbian and Ubuntu.
+The following LV2 Plugin collections (all recommended) are available on both Rasbian and Ubuntu.
 
   sudo apt install guitarix-lv2     # https://guitarix.org/
   
@@ -155,11 +163,12 @@ Visit https://lv2plug.in/pages/projects.html for more suggestions.
 
 There is also a set of supplementary Gx effect plugins which did not make it into the main Guitarix distribution. You will
 have to compile these plugins yourself, as they are not currently avaiable via apt. But if you are comfortable building
-packages on Raspbian, the effort is well worthwhile. The GxPlugins collection provides a number of boutique amp emulations,
-as well as emulations of famous distortion effect pedals.
+packages on Raspbian, the effort is well worthwhile. The GxPlugins collection provides a number of excellent boutique amp emulations,
+as well as emulations of famous distortion effect pedals that are not part of the main Guitarix distribution.
 
 - https://github.com/brummer10/GxPlugins.lv2
 
+## Which LV2 Plugins does PiPedal support?
 
 PiPedal will automatically detect installed LV2 plugins and make them selectable from the web app interface, as long as they meet the 
 following conditions:
@@ -175,16 +184,17 @@ If you install new LV2 plugins, you will have to restart the PiPedal web service
    sudo pipedalconfig --restart
 
 Although most LV2 plugins provide GUI interfaces, when running on a LINUX desktop, the LV2 plugin standard is specifically designed to allow remote control 
-without using the provided desktop GUI interface. And all but a tiny minority of LV2 plugins support this.
+without using the provided desktop GUI interface. And all but a tiny minority of LV2 plugins (most of them analyzers, unfortunately) support this.
 
 ## Building and Installing PiPedal
 
 PiPedal has only been tested on Raspbian, and Ubuntu. But pull requests to correct problems with building PiPedal on other versions of Linux are welcome. 
 
 To build PiPedal, a Raspberry Pi 4B, with at least 4GB of memory is recommended. You should be able to cross-compile PiPedal easily enough,
-but we do not currently provide support on how to do this. Visual Studio Code provides excellent support for cross-compiling, which will work with the PiPedal build. Or consult CMake documentation on how to cross-compile source.
+but we do not currently provide support on how to do this. Visual Studio Code provides excellent support for cross-compiling, and good support for remote
+debugging, which will work with the PiPedal build. Or consult CMake documentation on how to cross-compile source.
 
-### Prerequisites
+### Build Prerequisites
 
 Run the following commands to install build tools required by the PiPedal build.
 
@@ -218,7 +228,7 @@ build procedure uses CMake project files, which are supported by most major Inte
      
 If you open the PiPedal project as a folder in VS Code, Code will 
 detect the CMake configuration files, and automatically configure the project to use available toolchains. Once the VS Code CMake plugin (written by Microsoft,
-available through the plugins store) has configured itself, build commands should appear on the bottom line of Visual Studio 
+available through the plugins store) has configured itself, build commands and configuration options should appear on the bottom line of Visual Studio 
 Code. 
 
 If you are not using Visual Studio Code, you can configure, build and install PiPedal using CMake build tools. For your convenience,
@@ -243,18 +253,6 @@ you may want to investigate what Visual Studio Code's CMake integration provides
 
 ### How to Debug PiPedal.
 
-
-You must stop the pipdeal service before launching a debug instance of pipedald:
-
-    sudo systemctl stop pipedald
-
-or
-
-    pipedalconfig -stop
-
-But there's no harm in running a debug react server that's configured to connect to the web 
-socket of a production instance of pipedal. 
-
 PipPedal consists of the following subprojects:
 
 *    A web application build in React, found in the react subdirectory.
@@ -263,11 +261,23 @@ PipPedal consists of the following subprojects:
      All audio services are provided by the pipedal process.
 
 *   `pipedalshutdownd`: A service to execute operations that require root credentials on behalf of pipedald. (e.g. shutdown, reboot,
-    and pushing configuration changes.)
+    and pushing configuration changes).
 
-*   `pipedalconfig`: A CLI utility for managing and configuring the pipedald service.
+*   `pipedalconfig`: A CLI utility for managing and configuring the pipedald services.
      
-*   `pipedaltest`: Test cases for pipedald.
+*   `pipedaltest`: Test cases for pipedald, built using the Catch2 framework.
+
+
+You must stop the pipdeal service before launching a debug instance of pipedald:
+
+    sudo systemctl stop pipedald
+
+or
+
+    pipedalconfig -stop  #Stops the Jack service as well.
+
+But there's no harm in running a debug react server that's configured to connect to the web 
+socket of a production instance of pipedal on port 80, if you aren't planning to debug C++ code.
 
 In production, the pipedald web server serves the PiPedal web socket, as well as static HTML from the  built 
 react components. But while debugging, it is much more convenient to use the React debug server for 
