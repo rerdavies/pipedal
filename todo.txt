@@ -1,75 +1,11 @@
-Features:
+SCRUM ACTIVITIES LIST
 
-
-Patches.
-
-9 Hotspot config.
-9 Upload/download banks. 
-9 Delete bank warning dialo.
-7 Settings dialog doesn't have back button nav.
-
- - have to make sure it's set in the USER's environment.
-
-10 Test missing plugin handling.
-10 Handle 12TET and Midi control types, trigger types.
-
-
-7 Popless loading of presets. 10hz hipass?
-4 Bypass view?
-
-4 Midi Bindings.
-3 OpenSound wire control protocol bindings.
-
-
-
-Bugs:
-
-Delete bank confirmation.
-
-Deal with aftermath of config. :-/
-pulseaudio --kill
-
-Reconnect of controls after config change.
-
-Run when there's no midi device.
-
-Crash when changing input channels to mono.
-
-frequency response is routed to both instances of ToobInput. Did we fail to detect the instanceID change?
-
-scrollto fix for Load Dialog.
-
-
-Access Point: must disable wpa_supplicant when running Access Point.
-
-
-Config issues:
-
-Build: cmake was installed by code. :-/ Package hell.
-
-Open source copyrights.
-
-10 JACK_PROMISCUOUS_SERVER -- must be set in all user environments. Create jack group, add JACK_PROMISCUOUS_SERVER to jackd. RTPriority for Jack?
-
-10 Wireless host. dnsmasq configuration.
-
-add pipedal.local to etc/hosts.
-
-/etc/dhcpcd.config:
-  nohook wpa_supplicant
-  
-Dependents:
-
-libnl-3-dev libnl-genl-3-dev
-libnl-3-200 libnl-genl-3-200
-
-
-
-
-
-
-
-
-
-
-
+Pri Description
+-----------------
+9 Move Activity List to Issues.
+5 Re-use plugin instances when rebuilding pedalboard.
+4 Popless loading of presets. 10hz hipass?
+3 OpenSound support.
+2 MIDI Routing.
+2 Bypass view?
+1 Handle LV2 12TET/19TET/24TET Controls
