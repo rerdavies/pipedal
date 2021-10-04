@@ -1,4 +1,4 @@
-# PiPedal v0.0,1 (Alpha)
+# PiPedal v0.0.1 (Alpha)
 
 ![Screenshot](artifacts/PiPedalSshots.png)
 
