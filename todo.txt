@@ -1,10 +1,7 @@
-SCRUM ACTIVITIES LIST
 
 Pri Description
 -----------------
-9 Move Activity List to Issues.
 5 Re-use plugin instances when rebuilding pedalboard.
-4 Popless loading of presets. 10hz hipass?
 3 OpenSound support.
 2 MIDI Routing.
 2 Bypass view?
