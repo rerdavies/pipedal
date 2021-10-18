@@ -917,6 +917,11 @@ public:
     {
 
         std::lock_guard guard(mutex);
+        if (channelSelection.GetInputAudioPorts().size() == 0
+        || channelSelection.getOutputAudioPorts().size() == 0)
+        {
+            return;
+        }
 
         this->currentSample = 0;
         this->underruns = 0;

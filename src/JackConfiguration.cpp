@@ -176,12 +176,12 @@ void JackConfiguration::Initialize()
 
 JackChannelSelection JackChannelSelection::MakeDefault(const JackConfiguration&config){
     JackChannelSelection result;
-    for (size_t i = 0; i < std::max((size_t)2,config.GetInputAudioPorts().size()); ++i)
+    for (size_t i = 0; i < std::min((size_t)2,config.GetInputAudioPorts().size()); ++i)
     {
         result.inputAudioPorts_.push_back(config.GetInputAudioPorts()[i]);
 
     }
-    for (size_t i = 0; i < std::max((size_t)2,config.GetOutputAudioPorts().size()); ++i)
+    for (size_t i = 0; i < std::min((size_t)2,config.GetOutputAudioPorts().size()); ++i)
     {
         result.outputAudioPorts_.push_back(config.GetOutputAudioPorts()[i]);
     }

@@ -648,7 +648,7 @@ const PedalBoardView =
             isTouchDevice(): boolean {
                 return (('ontouchstart' in window) ||
                     (navigator.maxTouchPoints > 0) ||
-                    (navigator.msMaxTouchPoints > 0));
+                    (navigator["msMaxTouchPoints"] > 0));
             }
 
             onItemDoubleClick(event: SyntheticEvent, instanceId?: number): void {
@@ -737,8 +737,8 @@ const PedalBoardView =
                 let xEnd = shortSplitOutput ? item.bounds.right : item.bounds.right + CELL_WIDTH / 2;
                 let xTee0 = item.bounds.right - CELL_WIDTH / 2;
 
-                let firstPath: string;
-                let secondPath: string;
+                let firstPath: string;  // top or bottom depending on draw order.
+                let secondPath: string;  // top or bottom depending on draw order.
 
                 let firstPathStereo: boolean;
                 let secondPathStereo: boolean;
@@ -751,7 +751,24 @@ const PedalBoardView =
                 let bottomPathFirst = topEnabled && !bottomEnabled;
                 let topPathFirst = bottomEnabled && !topEnabled;
 
-                if (bottomPathFirst || (topEnabled && lastTop.stereoOutput)) {
+
+                // Third case: L/R stereo output, when both outputs are mono, requires a third stroke.
+                let thirdPath: string | null = null; // for L/R stereo output (which can be stereo even if both outputs are mono)
+                let hasThirdPath = item.stereoOutput && (!lastTop.stereoOutput) && (!lastBottom.stereoOutput);
+
+                if (hasThirdPath) {
+                    firstPathStereo = false;
+                    secondPathStereo = false;
+                    xTee = xTee0 - monoAdjustment;
+                    firstPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).toString();
+
+                    secondPath = new SvgPathBuilder().moveTo(xTop, yTop).lineTo(xTee, yTop).lineTo(xTee, y_).toString();
+
+                    hasThirdPath = true;
+                    thirdPath= new SvgPathBuilder().moveTo(xTee0,y_).lineTo(xEnd,y_).toString();
+                    firstPathEnabled = bottomEnabled;
+                    secondPathEnabled = topEnabled;
+                } else if (bottomPathFirst || (topEnabled && lastTop.stereoOutput)) {
                     // draw the bottom path first.
                     firstPathStereo = item.stereoOutput && lastBottom.stereoOutput;
                     secondPathStereo = item.stereoOutput && lastTop.stereoOutput;
@@ -839,6 +856,18 @@ const PedalBoardView =
                         ));
 
                     }
+                }
+                if (thirdPath != null)
+                {
+                    // stereo output of L/R splitter
+                    output.push((
+                        <path d={thirdPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
+                    ));
+                    output.push((
+                        <path d={thirdPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
+                    ));
+
+
                 }
             }
             getScrollContainer()
@@ -1078,6 +1107,8 @@ const PedalBoardView =
                             } else {
                                 item.stereoOutput = bottomStereo;
                             }
+                        } else if (splitter.getSplitType() === SplitType.Lr) {
+                            item.stereoOutput = true;   
                         } else {
                             item.stereoOutput = topStereo || bottomStereo;
                         }

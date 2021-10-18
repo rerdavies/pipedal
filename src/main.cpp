@@ -552,39 +552,44 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-
+        
             // pre-cache device info before we let audio services run.
             model.GetAlsaDevices();
+        }
 
-            // Get heavy IO out of the way before letting dependent (Jack) services run.
-            model.LoadLv2PluginInfo(configuration);
+        // Get heavy IO out of the way before letting dependent (Jack) services run.
+        model.LoadLv2PluginInfo(configuration);
+        if (systemd)
+        {
             // Tell systemd we're done.
-            sd_notify(0, "READY=1");
+            sd_notifyf(0, "READY=1\n"
+                    "MAINPID=%lu",
+                    (unsigned long) getpid());
+        }
 
-            if (!isJackServiceRunning())
+        if (!isJackServiceRunning())
+        {
+            Lv2Log::info("Waiting for Jack service.");
+            // wait up to 15 seconds for the jack service to come online.
+            for (int i = 0; i < 15; ++i)
             {
-                Lv2Log::info("Waiting for Jack service.");
-                // wait up to 15 seconds for the jack service to come online.
-                for (int i = 0; i < 15; ++i)
-                {
-                    // use the time to prepopulate ALSA device cache before jack
-                    // opens the device and we can't read properties.
-                    model.GetAlsaDevices();
+                // use the time to prepopulate ALSA device cache before jack
+                // opens the device and we can't read properties.
+                model.GetAlsaDevices();
 
-                    sleep(1);
-                    if (isJackServiceRunning())
-                    {
-                        break;
-                    }
+                sleep(1);
+                if (isJackServiceRunning())
+                {
+                    break;
                 }
             }
-            if (isJackServiceRunning())
-            {
-                Lv2Log::info("Found  Jack service.");
-                sleep(3); // jack needs a little time to get up to speed.
-            } else {
-                Lv2Log::info("Jack service not started.");
-            }
+        }
+        if (isJackServiceRunning())
+        {
+            Lv2Log::info("Found  Jack service.");
+            sleep(3); // jack needs a little time to get up to speed.
+        } else {
+            Lv2Log::info("Jack service not started.");
         }
 
         model.Load(configuration);

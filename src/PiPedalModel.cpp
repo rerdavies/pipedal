@@ -92,19 +92,6 @@ PiPedalModel::~PiPedalModel()
 
 void PiPedalModel::LoadLv2PluginInfo(const PiPedalConfiguration&configuration)
 {
-    lv2Host.Load(configuration.GetLv2Path().c_str());
-
-}
-
-void PiPedalModel::Load(const PiPedalConfiguration &configuration)
-{
-
-    this->jackServerSettings.ReadJackConfiguration();
-
-
-    storage.SetDataRoot(configuration.GetLocalStoragePath().c_str());
-    storage.Initialize();
-
     // Not all Lv2 directories have the lv2 base declarations. Load a full set of plugin classes generated on a default /usr/local/lib/lv2 directory.
     std::filesystem::path pluginClassesPath = configuration.GetDocRoot() / "plugin_classes.json";
     try
@@ -119,6 +106,20 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
         s << "Unable to load " << pluginClassesPath << ". " << e.what();
         throw PiPedalException(s.str().c_str());
     }
+
+    lv2Host.Load(configuration.GetLv2Path().c_str());
+
+}
+
+void PiPedalModel::Load(const PiPedalConfiguration &configuration)
+{
+
+    this->jackServerSettings.ReadJackConfiguration();
+
+
+    storage.SetDataRoot(configuration.GetLocalStoragePath().c_str());
+    storage.Initialize();
+
     // lv2Host.Load(configuration.GetLv2Path().c_str());
 
     this->pedalBoard = storage.GetCurrentPreset(); // the current *saved* preset.

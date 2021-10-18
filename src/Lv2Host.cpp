@@ -352,12 +352,11 @@ void Lv2Host::Load(const char *lv2Path)
     pWorld = lilv_world_new();
     lilv_world_load_all(pWorld);
 
-    if (!classesLoaded)
-    {
-        LoadPluginClassesFromLilv();
-    }
 
     const LilvPlugins *plugins = lilv_world_get_all_plugins(pWorld);
+
+    LoadPluginClassesFromLilv();
+
 
     LILV_FOREACH(plugins, iPlugin, plugins)
     {

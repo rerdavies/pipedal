@@ -81,7 +81,7 @@ class Lv2PluginClass {
 public:
     friend class Lv2Host;
 private:
-    Lv2PluginClass*  parent_; // NOT SERIALIZED!
+    Lv2PluginClass*  parent_ = nullptr; // NOT SERIALIZED!
     std::string parent_uri_;
     std::string display_name_;
     std::string uri_;
