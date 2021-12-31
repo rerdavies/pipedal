@@ -169,7 +169,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                     uploadAfter = await this.model.uploadBank(fileList[i], uploadAfter);
                 }
             } catch (error) {
-                this.model.showAlert(error);
+                this.model.showAlert(error +"");
             };
             return uploadAfter;
         }

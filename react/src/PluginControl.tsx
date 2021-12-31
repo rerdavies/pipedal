@@ -24,9 +24,9 @@ import Typography from '@material-ui/core/Typography';
 import Input from '@material-ui/core/Input';
 import Select from '@material-ui/core/Select';
 import Switch from '@material-ui/core/Switch';
-import Units from './Units';
 import Utility, {nullCast} from './Utility';
 import MenuItem from '@material-ui/core/MenuItem';
+import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
 
 
 const MIN_ANGLE = -135;
@@ -78,6 +78,7 @@ const styles = (theme: Theme) => createStyles({
 
 export interface PluginControlProps extends WithStyles<typeof styles> {
     uiControl?: UiControl;
+    instanceId: number;
     value: number;
     onPreviewChange?: (value: number) => void;
     onChange: (value: number) => void;
@@ -92,11 +93,15 @@ const PluginControl =
     withStyles(styles, { withTheme: true })(
         class extends Component<PluginControlProps, PluginControlState>
         {
+
+            frameRef: React.RefObject<HTMLDivElement>;
             imgRef: React.RefObject<HTMLImageElement>;
             inputRef: React.RefObject<HTMLInputElement>;
             selectRef: React.RefObject<HTMLSelectElement>;
 
             displayValueRef: React.RefObject<HTMLDivElement>;
+            model: PiPedalModel;
+
 
             constructor(props: PluginControlProps) {
                 super(props);
@@ -104,11 +109,12 @@ const PluginControl =
                 this.state = {
                     error: false
                 };
-
+                this.model = PiPedalModelFactory.getInstance();
                 this.imgRef = React.createRef();
                 this.inputRef = React.createRef();
                 this.selectRef = React.createRef();
                 this.displayValueRef = React.createRef();
+                this.frameRef = React.createRef();
 
 
                 this.onPointerDown = this.onPointerDown.bind(this);
@@ -127,7 +133,29 @@ const PluginControl =
                 this.onInputFocus = this.onInputFocus.bind(this);
                 this.onInputKeyPress = this.onInputKeyPress.bind(this);
             }
+            isTouchDevice(): boolean {
+                return Utility.isTouchDevice();
+            }
 
+            showZoomedControl()
+            {
+                if (this.props.uiControl && this.frameRef.current)
+                {
+                    this.model.zoomUiControl(this.frameRef.current,this.props.instanceId,this.props.uiControl);
+                }
+            }
+            hideZoomedControl()
+            {
+                if (this.frameRef.current && this.model.zoomedUiControl.get()?.source === this.frameRef.current)
+                {
+                    this.model.clearZoomedControl();
+                }
+            }
+
+            componentWillUnmount()
+            {
+                this.hideZoomedControl();
+            }
             inputChanged: boolean = false;
 
             onInputLostFocus(event: any): void {
@@ -190,11 +218,12 @@ const PluginControl =
                     // clamp and quantize.
                     let range = this.valueToRange(result);
                     result = this.rangeToValue(range);
+                    let displayVal = this.props.uiControl?.formatShortValue(result)??"";
                     if (event.currentTarget) {
-                        event.currentTarget.value = this.formatValue(this.props.uiControl, result);
+                        event.currentTarget.value = displayVal;
                     }
                     this.previewInputValue(result, true);
-                    this.inputRef.current.value = this.formatValue(this.props.uiControl, result); // no rerender because the value won't change.
+                    this.inputRef.current.value = displayVal; // no rerender because the value won't change.
                 } else {
                     this.setState({ error: !valid });
                     if (valid) {
@@ -266,11 +295,20 @@ const PluginControl =
 
             onPointerDown(e: PointerEvent<HTMLImageElement>): void {
                 if (!this.mouseDown && this.isValidPointer(e)) {
-                    ++this.pointersDown;
-
-
                     e.preventDefault();
                     e.stopPropagation();
+
+                    if (this.isTouchDevice())
+                    {
+                        if (this.props.uiControl?.isDial()??false)
+                        {
+                            this.showZoomedControl();
+                            return;
+                        }
+                    }
+
+                    ++this.pointersDown;
+
 
                     this.mouseDown = true;
 
@@ -443,7 +481,7 @@ const PluginControl =
                 }
                 let inputElement = this.inputRef.current;
                 if (inputElement) {
-                    let v = this.formatValue(this.props.uiControl, value);
+                    let v = this.props.uiControl?.formatShortValue(value)??"";
                     inputElement.value = v;
                 }
                 let displayValue = this.displayValueRef.current;
@@ -528,69 +566,10 @@ const PluginControl =
 
             formatDisplayValue(uiControl: UiControl | undefined, value: number): string {
                 if (!uiControl) return "";
-                for (let i = 0; i < uiControl.scale_points.length; ++i)
-                {
-                    let scalePoint = uiControl.scale_points[i];
-                    if (scalePoint.value === value)
-                    {
-                        return scalePoint.label;
-                    }
-                }
-                let text = this.formatValue(uiControl, value);
 
-                switch (uiControl.units) {
-                    case Units.bpm:
-                        text += "bpm";
-                        break;
-                    case Units.cent:
-                        text += "cents";
-                        break;
-                    case Units.cm:
-                        text += "cm";
-                        break;
-                    case Units.db:
-                        text += "dB";
-                        break;
-                    case Units.hz:
-                        text += "Hz";
-                        break;
-                    case Units.khz:
-                        text += "kHz";
-                        break;
-                    case Units.km:
-                        text += "km";
-                        break;
-                    case Units.m:
-                        text += "m";
-                        break;
-                    case Units.mhz:
-                        text += "MHz";
-                        break;
-                    case Units.min:
-                        text += "min";
-                        break;
-                    case Units.ms:
-                        text += "ms";
-                        break;
-                    case Units.pc:
-                        text += "%";
-                        break;
-                    case Units.s:
-                        text += "s";
-                        break;
-                    // Midinote: not handled.
-                    // semitone12TET not handled.
+                return uiControl.formatDisplayValue(value);
 
 
-
-                }
-                return text;
-
-
-            }
-            formatValue(uiControl: UiControl | undefined, value: number): string {
-                if (!uiControl) return "";
-                return uiControl.formatValue(value);
             }
 
             valueToRange(value: number): number {
@@ -681,7 +660,7 @@ const PluginControl =
 
 
                 return (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", width: item_width, margin: 8 }}>
+                    <div ref={this.frameRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", width: item_width, margin: 8 }}>
                         {/* TITLE SECTION */}
                         <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8,marginLeft: isSelect? 16: 0, marginRight: 0 }}>
                             <Typography  variant="caption" display="block" noWrap style={{
@@ -697,7 +676,8 @@ const PluginControl =
                             ) : (
                                 <div style={{ flex: "0 1 auto" }}>
                                     <img ref={this.imgRef} src="img/fx_dial.svg"
-                                        style={{ overscrollBehavior: "none", touchAction: "none", width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform() }}
+                                        style={{ overscrollBehavior: "none", touchAction: "none",
+                                         width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform() }}
                                         draggable="true"
                                         onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
                                         onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp} onPointerMoveCapture={this.onPointerMove} onDrag={this.onDrag}
@@ -720,7 +700,7 @@ const PluginControl =
                                         <div>
                                             <Input key={value} 
                                                 type="number"
-                                                defaultValue={this.formatValue(control, value)}
+                                                defaultValue={control.formatShortValue(value)}
                                                 error={this.state.error}
                                                 inputProps={{
                                                     'aria-label':

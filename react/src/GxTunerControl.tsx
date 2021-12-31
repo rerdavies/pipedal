@@ -19,7 +19,7 @@
 
 import React, {Component} from 'react';
 import { createStyles, Theme, withStyles, WithStyles } from '@material-ui/core/styles';
-import { MonitorPortHandle, PiPedalModel, PiPedalModelFactory } from "./PiPedalModel";
+import { MonitorPortHandle, PiPedalModel, State, PiPedalModelFactory } from "./PiPedalModel";
 import SvgPathBuilder from './SvgPathBuilder'
 
 //const char* model[] = {"12-TET","19-TET","24-TET", "31-TET", "53-TET"};
@@ -120,6 +120,7 @@ const GxTunerControl =
 
                 };
                 this.onFrequencyUpdated = this.onFrequencyUpdated.bind(this);
+                this.onStateChanged = this.onStateChanged.bind(this);
             }
 
 
@@ -225,8 +226,19 @@ const GxTunerControl =
                     
                 }
             }
+
+            onStateChanged(state: State)
+            {
+                // initial or reconnect
+                if (state === State.Ready)
+                {
+                    this.removeSubscription();
+                    this.updateSubscription();
+                }
+            }
             componentDidMount()
             {
+                this.model.state.addOnChangedHandler(this.onStateChanged);
                 this.addSubscription();
             }
             componentDidUpdate() {
@@ -234,6 +246,7 @@ const GxTunerControl =
             }
             componentWillUnmount()
             {
+                this.model.state.removeOnChangedHandler(this.onStateChanged);
                 this.removeSubscription();
             }
 

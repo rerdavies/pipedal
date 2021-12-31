@@ -189,6 +189,12 @@ export enum PluginType {
 
 }
 
+export enum ControlType {
+    Dial,
+    OnOffSwitch,
+    Toggle,
+    Select
+}
 
 export class  UiControl implements Deserializable<UiControl> {
     deserialize(input: any): UiControl
@@ -210,9 +216,31 @@ export class  UiControl implements Deserializable<UiControl> {
         this.scale_points = ScalePoint.deserialize_array(input.scale_points);
         this.port_group = input.port_group;
         this.units = input.units as Units;
+
+        this.controlType = ControlType.Dial;
+        if (this.enumeration_property && this.scale_points.length === 2)
+        {
+            this.controlType = ControlType.Toggle;
+        } else {
+            if (this.min_value === 0 && this.max_value === 1)
+            {
+                if (this.toggled_property || this.enumeration_property || this.integer_property)
+                {
+                    this.controlType = ControlType.OnOffSwitch;
+                }
+            }
+        }
+        if (this.controlType === ControlType.Dial && this.enumeration_property)
+        {
+            this.controlType = ControlType.Select;
+        }
+
         return this;
 
     }
+
+    controlType: ControlType = ControlType.Dial; // non-serializable.
+
     static deserialize_array(input: any): UiControl[] {
         let result: UiControl[] = [];
         for (let i = 0; i < input.length; ++i)
@@ -240,18 +268,18 @@ export class  UiControl implements Deserializable<UiControl> {
     units: Units = Units.none;
 
     isOnOffSwitch() : boolean {
-        if (this.isAbToggle()) return false;
-        if (this.min_value !== 0 || this.max_value !== 1) return false;
-        return (this.toggled_property || this.enumeration_property || this.integer_property);
-            ;
+        return this.controlType === ControlType.OnOffSwitch;
     }
 
     isAbToggle(): boolean {
-        if (this.min_value !== 0 || this.max_value !== 1) return false;
-        return this.enumeration_property && this.scale_points.length === 2;
+        return this.controlType === ControlType.Toggle;
     }
     isSelect() : boolean {
-        return this.enumeration_property && !this.isOnOffSwitch() && !this.isAbToggle();
+        return this.controlType === ControlType.Select;
+    }
+
+    isDial() : boolean {
+        return this.controlType === ControlType.Dial;
     }
 
     valueToRange(value: number): number {
@@ -289,10 +317,71 @@ export class  UiControl implements Deserializable<UiControl> {
         return this.rangeToValue(this.valueToRange(value));
     }
 
-    formatValue(value: number): string {
+    formatDisplayValue(value: number): string {
         if (this.integer_property || this.enumeration_property) {
             value = Math.round(value);
         }
+
+        for (let i = 0; i < this.scale_points.length; ++i)
+        {
+            let scalePoint = this.scale_points[i];
+            if (scalePoint.value === value)
+            {
+                return scalePoint.label;
+            }
+        }
+        let text = this.formatShortValue(value);
+
+        switch (this.units) {
+            case Units.bpm:
+                text += "bpm";
+                break;
+            case Units.cent:
+                text += "cents";
+                break;
+            case Units.cm:
+                text += "cm";
+                break;
+            case Units.db:
+                text += "dB";
+                break;
+            case Units.hz:
+                text += "Hz";
+                break;
+            case Units.khz:
+                text += "kHz";
+                break;
+            case Units.km:
+                text += "km";
+                break;
+            case Units.m:
+                text += "m";
+                break;
+            case Units.mhz:
+                text += "MHz";
+                break;
+            case Units.min:
+                text += "min";
+                break;
+            case Units.ms:
+                text += "ms";
+                break;
+            case Units.pc:
+                text += "%";
+                break;
+            case Units.s:
+                text += "s";
+                break;
+            // Midinote: not handled.
+            // semitone12TET not handled.
+
+
+
+        }
+        return text;
+    }
+    formatShortValue(value: number): string
+    {
         if (this.enumeration_property) {
             for (let i = 0; i < this.scale_points.length; ++i) {
                 let scale_point = this.scale_points[i];

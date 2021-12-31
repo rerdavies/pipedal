@@ -39,7 +39,8 @@ export interface ControlEntry {
 
 const Utility = class {
     static isTouchDevice(): boolean {
-        return navigator.maxTouchPoints > 0;
+        return (('ontouchstart' in window) &&
+        ((navigator.maxTouchPoints??0) > 0) );
     }
 
     static hasIMEKeyboard(): boolean {

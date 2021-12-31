@@ -164,7 +164,7 @@ class PiPedalSocket {
             }
         } catch (error) {
             if (this.onError) {
-                this.onError("Invalid server response. " + error, error);
+                this.onError("Invalid server response. " + error, error as Error);
             } else {
                 throw new PiPedalStateError("Invalid server response.");
             }
@@ -189,6 +189,9 @@ class PiPedalSocket {
             return;
 
         }
+        this._reconnect();
+    }
+    _reconnect() {
         this._discardReplyReservations();
         this.retrying = true;
         this.retryCount = 0;
@@ -197,6 +200,20 @@ class PiPedalSocket {
         this.totalRetryDelay = 0;
 
         this.reconnect();
+    }
+
+    isBackground: boolean = false;
+
+    enterBackgroundState()
+    {
+        this.isBackground = true;
+        this.socket?.close();
+
+    }
+    exitBackgroundState()
+    {
+        this.isBackground = false;
+        this._reconnect();
     }
 
     reconnect() {

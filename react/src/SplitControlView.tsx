@@ -185,7 +185,7 @@ const SplitControlView =
                         </div>
                         <div className={gridClass}  >
                             <div style={{ flex: "0 0 auto" }}>
-                                <PluginControl uiControl={SplitTypeControl} value={typeValue.value}
+                                <PluginControl instanceId={this.props.instanceId} uiControl={SplitTypeControl} value={typeValue.value}
                                     onChange={(value: number) => { this.onValueChanged(typeValue.key, value) }}
                                     onPreviewChange={(value: number) => { this.onPreviewChange(typeValue.key, value) }}
                                     requestIMEEdit={(uiControl, value) => { }}
@@ -195,7 +195,7 @@ const SplitControlView =
                             {
                                 typeValue.value === 0 && (
                                     <div style={{ flex: "0 0 auto" }}>
-                                        <PluginControl uiControl={SplitAbControl} value={selectValue.value}
+                                        <PluginControl instanceId={this.props.instanceId} uiControl={SplitAbControl} value={selectValue.value}
                                             onChange={(value: number) => { this.onValueChanged(selectValue.key, value) }}
                                             onPreviewChange={(value: number) => { this.onPreviewChange(selectValue.key, value) }}
                                             requestIMEEdit={(uiControl, value) => { }}
@@ -208,7 +208,7 @@ const SplitControlView =
                             {
                                 typeValue.value === 1 && (
                                     <div style={{ flex: "0 0 auto" }}>
-                                        <PluginControl uiControl={SplitMixControl} value={mixValue.value}
+                                        <PluginControl instanceId={this.props.instanceId} uiControl={SplitMixControl} value={mixValue.value}
                                             onChange={(value: number) => { this.onValueChanged(mixValue.key, value) }}
                                             onPreviewChange={(value: number) => { this.onPreviewChange(mixValue.key, value) }}
                                             requestIMEEdit={(uiControl, value) => { }}
@@ -221,7 +221,7 @@ const SplitControlView =
                             {
                                 typeValue.value === 2 && (
                                     <div style={{ flex: "0 0 auto" }}>
-                                        <PluginControl uiControl={SplitPanLeftControl} value={panLValue.value}
+                                        <PluginControl instanceId={this.props.instanceId} uiControl={SplitPanLeftControl} value={panLValue.value}
                                             onChange={(value: number) => { this.onValueChanged(panLValue.key, value) }}
                                             onPreviewChange={(value: number) => { this.onPreviewChange(panLValue.key, value) }}
                                             requestIMEEdit={(uiControl, value) => { }}
@@ -233,7 +233,7 @@ const SplitControlView =
                             {
                                 typeValue.value === 2 && (
                                     <div style={{ flex: "0 0 auto" }}>
-                                        <PluginControl uiControl={SplitVolLeftControl} value={volumeLValue.value}
+                                        <PluginControl instanceId={this.props.instanceId} uiControl={SplitVolLeftControl} value={volumeLValue.value}
                                             onChange={(value: number) => { this.onValueChanged(volumeLValue.key, value) }}
                                             onPreviewChange={(value: number) => { this.onPreviewChange(volumeLValue.key, value) }}
                                             requestIMEEdit={(uiControl, value) => { }}
@@ -245,7 +245,7 @@ const SplitControlView =
                             {
                                 typeValue.value === 2 && (
                                     <div style={{ flex: "0 0 auto" }}>
-                                        <PluginControl uiControl={SplitPanRightControl} value={panRValue.value}
+                                        <PluginControl instanceId={this.props.instanceId}  uiControl={SplitPanRightControl} value={panRValue.value}
                                             onChange={(value: number) => { this.onValueChanged(panRValue.key, value) }}
                                             onPreviewChange={(value: number) => { this.onPreviewChange(panRValue.key, value) }}
                                             requestIMEEdit={(uiControl, value) => { }}
@@ -257,7 +257,7 @@ const SplitControlView =
                             {
                                 typeValue.value === 2 && (
                                     <div style={{ flex: "0 0 auto" }}>
-                                        <PluginControl uiControl={SplitVolRightControl} value={volumeRValue.value}
+                                        <PluginControl instanceId={this.props.instanceId} uiControl={SplitVolRightControl} value={volumeRValue.value}
                                             onChange={(value: number) => { this.onValueChanged(volumeRValue.key, value) }}
                                             onPreviewChange={(value: number) => { this.onPreviewChange(volumeRValue.key, value) }}
                                             requestIMEEdit={(uiControl, value) => { }}

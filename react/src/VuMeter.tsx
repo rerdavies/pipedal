@@ -19,7 +19,7 @@
 
 import React, { Component } from 'react';
 import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
-import { PiPedalModel, PiPedalModelFactory, VuUpdateInfo, VuSubscriptionHandle } from './PiPedalModel';
+import { PiPedalModel, State,PiPedalModelFactory, VuUpdateInfo, VuSubscriptionHandle } from './PiPedalModel';
 
 
 const DISPLAY_HEIGHT = 110;
@@ -226,6 +226,7 @@ export const VuMeter =
                 this.yYellow = dbToY(DB_YELLOW);
 
                 this.onVuChanged = this.onVuChanged.bind(this);
+                this.onStateChanged = this.onStateChanged.bind(this);
 
             }
 
@@ -401,13 +402,22 @@ export const VuMeter =
                 }
             }
 
+            onStateChanged(state: State) {
+                // initial connection or reconnect
+                if (state === State.Ready)
+                {
+                    this.addVuSubscription(); // re-subscribe.
+                }
+            }
 
             componentDidMount() {
+                this.model.state.addOnChangedHandler(this.onStateChanged);
 
                 this.addVuSubscription();
             }
             componentWillUnmount() {
                 this.removeVuSubscription();
+                this.model.state.removeOnChangedHandler(this.onStateChanged);
             }
         }
     );

@@ -193,7 +193,7 @@ void Storage::LoadBank(int64_t instanceId)
         this->bankIndex.selectedBank(instanceId);
         SaveBankIndex();
     }
-    this->LoadPreset(this->bankIndex.selectedBank());
+    this->LoadPreset(this->currentBank.selectedPreset());
 }
 
 void Storage::LoadCurrentBank()
@@ -368,8 +368,10 @@ bool Storage::LoadPreset(int64_t instanceId)
 {
     if (!currentBank.hasItem(instanceId))
         return false; 
-    currentBank.selectedPreset(instanceId);
-    SaveCurrentBank();
+    if (instanceId != currentBank.selectedPreset()) {
+        currentBank.selectedPreset(instanceId);
+        SaveCurrentBank();
+    }
     return true;
 }
 void Storage::saveCurrentPreset(const PedalBoard &pedalBoard)

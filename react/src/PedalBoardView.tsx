@@ -29,6 +29,7 @@ import SvgPathBuilder from './SvgPathBuilder';
 import Draggable from './Draggable'
 import Rect from './Rect';
 import {PiPedalStateError} from './PiPedalError';
+import Utility from './Utility'
 
 
 import {
@@ -645,12 +646,6 @@ const PedalBoardView =
                 }
             }
 
-            isTouchDevice(): boolean {
-                return (('ontouchstart' in window) ||
-                    (navigator.maxTouchPoints > 0) ||
-                    (navigator["msMaxTouchPoints"] > 0));
-            }
-
             onItemDoubleClick(event: SyntheticEvent, instanceId?: number): void {
                 event.preventDefault();
                 event.stopPropagation();
@@ -665,7 +660,7 @@ const PedalBoardView =
                 event.preventDefault();
                 event.stopPropagation();
 
-                if (!this.isTouchDevice()) {
+                if (!Utility.isTouchDevice()) {
                     if (this.props.onDoubleClick && instanceId) {
                         this.props.onDoubleClick(instanceId);
                     }
@@ -673,7 +668,7 @@ const PedalBoardView =
 
             }
 
-
+            // XXX set keys on output objects !!
             renderConnector(output: ReactNode[], item: PedalLayout, enabled: boolean): void {
                 // let classes = this.props.classes;
                 let x_ = item.bounds.x + CELL_WIDTH / 2;

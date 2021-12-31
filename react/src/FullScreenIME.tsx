@@ -203,7 +203,7 @@ const FullScreenIME =
                             <Typography variant="body2">{this.props.caption}</Typography>
                             <Input key={value}
                                 type="number"
-                                defaultValue={control.formatValue(value)}
+                                defaultValue={control.formatShortValue(value)}
                                 error={this.state.error}
                                 autoFocus
                                 inputProps={{

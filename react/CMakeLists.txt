@@ -85,6 +85,7 @@ add_custom_command(
         src/WifiConfigDialog.tsx
         src/NoChangePassword.tsx
         src/XxxSnippet.tsx
+        src/ZoomedUiControl.tsx
 
         public/css/roboto.css
         public/fonts/Roboto-BlackItalic.woff2

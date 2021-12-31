@@ -288,7 +288,7 @@ const PluginControlView =
                 }
                 return ((
                     
-                        <PluginControl uiControl={uiControl} value={controlValue.value}
+                        <PluginControl instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
                             onChange={(value: number) => { this.onValueChanged(controlValue!.key, value) }}
                             onPreviewChange={(value: number) => { this.onPreviewChange(controlValue!.key, value) }}
                             requestIMEEdit={(uiControl, value) => this.requestImeEdit(uiControl, value)}
@@ -353,7 +353,7 @@ const PluginControlView =
 
 
                 let controls = shortList.map((controlValue) => (
-                            <PluginControl uiControl={plugin.getControl(controlValue.key)} value={controlValue.value}
+                            <PluginControl instanceId={this.props.instanceId} uiControl={plugin.getControl(controlValue.key)} value={controlValue.value}
                                 onChange={(value: number) => { this.onValueChanged(controlValue.key, value) }}
                                 onPreviewChange={(value: number) => { this.onPreviewChange(controlValue.key, value) }}
                                 requestIMEEdit={(uiControl, value) => this.requestImeEdit(uiControl, value)}

@@ -41,9 +41,15 @@ export enum State {
     Loading,
     Ready,
     Error,
+    Background,
     Reconnecting
 };
 
+export interface ZoomedControlInfo {
+    source: HTMLElement;
+    instanceId: number;
+    uiControl: UiControl;
+}
 
 export interface VuUpdateInfo {
     instanceId: number;
@@ -218,6 +224,10 @@ export class PresetIndex {
 
 }
 
+enum VisibilityState {
+    Visible,
+    Hidden
+};
 interface MonitorPortOutputBody {
     subscriptionHandle: number;
     value: number;
@@ -261,7 +271,10 @@ export interface PiPedalModel {
     serverVersion?: PiPedalVersion;
     errorMessage: ObservableProperty<string>;
     alertMessage: ObservableProperty<string>;
+
     state: ObservableProperty<State>;
+    visibilityState: ObservableProperty<VisibilityState>;
+
     ui_plugins: ObservableProperty<UiPlugin[]>;
     plugin_classes: ObservableProperty<PluginClass>;
     jackConfiguration: ObservableProperty<JackConfiguration>;
@@ -271,6 +284,9 @@ export interface PiPedalModel {
     wifiConfigSettings: ObservableProperty<WifiConfigSettings>;
 
     presets: ObservableProperty<PresetIndex>;
+
+
+    zoomedUiControl: ObservableProperty< ZoomedControlInfo| undefined >;
 
     setJackServerSettings(jackServerSettings: JackServerSettings): void;
     setMidiBinding(instanceId: number, midiBinding: MidiBinding): void;
@@ -350,6 +366,9 @@ export interface PiPedalModel {
     getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>;
 
     getAlsaDevices() : Promise<AlsaDeviceInfo[]>;
+
+    zoomUiControl(sourceElement: HTMLElement,instanceId: number,uiControl: UiControl): void;
+    clearZoomedControl(): void;
 };
 
 class PiPedalModelImpl implements PiPedalModel {
@@ -365,6 +384,8 @@ class PiPedalModelImpl implements PiPedalModel {
     ui_plugins: ObservableProperty<UiPlugin[]>
         = new ObservableProperty<UiPlugin[]>([]);
     state: ObservableProperty<State> = new ObservableProperty<State>(State.Loading);
+    visibilityState: ObservableProperty<VisibilityState> = new ObservableProperty<VisibilityState>(VisibilityState.Visible);
+
     errorMessage: ObservableProperty<string> = new ObservableProperty<string>("");
     alertMessage: ObservableProperty<string> = new ObservableProperty<string>("");
     pedalBoard: ObservableProperty<PedalBoard> = new ObservableProperty<PedalBoard>(new PedalBoard());
@@ -384,6 +405,7 @@ class PiPedalModelImpl implements PiPedalModel {
             new PresetIndex()
         );
 
+    zoomedUiControl: ObservableProperty<ZoomedControlInfo |  undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
 
     svgImgUrl(svgImage: string): string {
         //return this.varServerUrl + "img/" + svgImage;
@@ -406,8 +428,10 @@ class PiPedalModelImpl implements PiPedalModel {
         this.onSocketMessage = this.onSocketMessage.bind(this);
         this.onSocketReconnecting = this.onSocketReconnecting.bind(this);
         this.onSocketReconnected = this.onSocketReconnected.bind(this);
+        this.onVisibilityChanged = this.onVisibilityChanged.bind(this);
     }
     onSocketReconnecting(retry: number, maxRetries: number): void {
+        if (this.visibilityState.get() === VisibilityState.Hidden) return;
         //if (retry !== 0) {
             this.setState(State.Reconnecting);
         //}
@@ -415,9 +439,12 @@ class PiPedalModelImpl implements PiPedalModel {
 
 
     onSocketError(errorMessage: string, exception: any) {
+        if (this.visibilityState.get() === VisibilityState.Hidden) return;
         this.onError(errorMessage);
     }
     onSocketMessage(header: PiPedalMessageHeader, body?: any) {
+        if (this.visibilityState.get() === VisibilityState.Hidden) return;
+
         let message = header.message;
         if (message === "onMonitorPortOutput") {
             let monitorPortOutputBody = body as MonitorPortOutputBody;
@@ -557,6 +584,8 @@ class PiPedalModelImpl implements PiPedalModel {
     }
 
     onSocketReconnected() {
+        if (this.visibilityState.get() === VisibilityState.Hidden) return;
+
         // reload state, but not configuration.
         this.getWebSocket().request<number>("hello")
             .then(clientId => {
@@ -771,9 +800,52 @@ class PiPedalModelImpl implements PiPedalModel {
         this.state.set(State.Error);
 
     }
+
+    exitBackgroundState()
+    {
+        if (this.state.get() === State.Background)
+        {
+            console.log("Exiting background state.");
+            this.visibilityState.set(VisibilityState.Visible);
+            this.webSocket?.exitBackgroundState();
+        }
+
+    }
+    enterBackgroundState()
+    {
+        if (this.state.get() !== State.Background)
+        {
+            console.log("Entering background state.");
+            this.visibilityState.set(VisibilityState.Hidden);
+            this.setState(State.Background);
+            this.webSocket?.enterBackgroundState();
+        }
+    }
+
+
+    onVisibilityChanged(doc: Document, event: Event) : any
+    {
+        if (document.visibilityState) {
+            
+            switch (document.visibilityState)
+            {
+                case "visible":
+                    this.visibilityState.set(VisibilityState.Visible);
+                    this.exitBackgroundState();
+                    break;
+                case "hidden":
+                    this.visibilityState.set(VisibilityState.Hidden);
+                    this.enterBackgroundState();
+                    break;
+            }
+        }
+        return false;
+    }
+
     initialize(): void {
         this.setError("");
         this.setState(State.Loading);
+
         this.requestConfig()
             .then((succeeded) => {
                 if (succeeded) {
@@ -783,6 +855,11 @@ class PiPedalModelImpl implements PiPedalModel {
             .catch((error) => {
                 this.setError("Failed to get server state. \n\n" + error);
             });
+        let t = this.onVisibilityChanged;
+
+        (document as any).addEventListener("visibilitychange",(doc: Document,event: Event) => {
+            return t(doc,event);
+        });
     }
 
     getControl(uiPlugin: UiPlugin, portSymbol: string): UiControl | null {
@@ -1597,6 +1674,14 @@ class PiPedalModelImpl implements PiPedalModel {
         });
         return result;
 
+    }
+    zoomUiControl(sourceElement: HTMLElement,instanceId: number,uiControl: UiControl): void
+    {
+        this.zoomedUiControl.set({source: sourceElement,instanceId: instanceId,uiControl: uiControl});
+    }
+    clearZoomedControl(): void
+    {
+        this.zoomedUiControl.set(undefined);
     }
 
 

@@ -48,7 +48,8 @@ import SettingsDialog from './SettingsDialog';
 import AboutDialog from './AboutDialog';
 import BankDialog from './BankDialog';
 
-import { PiPedalModelFactory, PiPedalModel, State } from './PiPedalModel';
+import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo } from './PiPedalModel';
+import ZoomedUiControl from './ZoomedUiControl'
 import MainPage from './MainPage';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
@@ -58,6 +59,7 @@ import ListSubheader from '@material-ui/core/ListSubheader';
 import { BankIndex, BankIndexEntry } from './Banks';
 import RenameDialog from './RenameDialog';
 import JackStatusView from './JackStatusView';
+
 
 const theme = createMuiTheme({
     palette: {
@@ -86,7 +88,7 @@ const appStyles = ({ palette, spacing, mixins }: Theme) => createStyles({
         zIndex: 2010
     },
     errorContent: {
-        
+
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
@@ -270,6 +272,8 @@ function preventDefault(e: SyntheticEvent): void {
 }
 
 type AppState = {
+    zoomedControlInfo: ZoomedControlInfo | undefined;
+
     isDrawerOpen: boolean;
     errorMessage: string;
     displayState: State;
@@ -288,6 +292,7 @@ type AppState = {
     aboutDialogOpen: boolean;
     bankDialogOpen: boolean;
     editBankDialogOpen: boolean;
+    zoomedControlOpen: boolean;
 
 
     presetName: string;
@@ -309,7 +314,17 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
         super(props);
         this.model_ = PiPedalModelFactory.getInstance();
 
+        this.model_.zoomedUiControl.addOnChangedHandler(
+            ()=> {
+                this.setState({
+                    zoomedControlOpen: this.model_.zoomedUiControl.get()  !== undefined,
+                    zoomedControlInfo: this.model_.zoomedUiControl.get() 
+                });
+            }
+        );
+
         this.state = {
+            zoomedControlInfo: this.model_.zoomedUiControl.get(),
             isDrawerOpen: false,
             errorMessage: this.model_.errorMessage.get(),
             displayState: this.model_.state.get(),
@@ -328,6 +343,7 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
             aboutDialogOpen: false,
             bankDialogOpen: false,
             editBankDialogOpen: false,
+            zoomedControlOpen: false,
             bankDisplayItems: 5
 
         };
@@ -340,6 +356,7 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
         this.banksChangedHandler = this.banksChangedHandler.bind(this);
 
     }
+
 
     onOpenBank(bankId: number) {
         this.model_.openBank(bankId)
@@ -475,8 +492,7 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
 
         window.addEventListener("beforeunload", (e) => {
             e.preventDefault();
-            if (this.model_.state.get() === State.Ready)
-            {
+            if (this.model_.state.get() === State.Ready) {
                 e.returnValue = "Are you sure you want to leave this page?";
                 return "Are you sure you want to leave this page?";
             }
@@ -539,7 +555,7 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
         //   ENTRY_HEIGHT*6 +K = 727 from observation.
         const K = 450;
 
-        let bankEntries =  Math.floor((height-K)/ENTRY_HEIGHT);
+        let bankEntries = Math.floor((height - K) / ENTRY_HEIGHT);
         if (bankEntries < 1) bankEntries = 1;
         if (bankEntries > 7) bankEntries = 7;
         this.setState({ bankDisplayItems: bankEntries });
@@ -609,12 +625,11 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                     display: "flex", flexDirection: "column", flexWrap: "nowrap",
                     overscrollBehavior: this.state.isDebug ? "auto" : "none"
                 }}
-                onContextMenu={(e) => { 
-                    if (!this.model_.serverVersion?.debug??false)
-                    {
-                        e.preventDefault(); e.stopPropagation(); 
-                    }
-                }}
+                    onContextMenu={(e) => {
+                        if (!this.model_.serverVersion?.debug ?? false) {
+                            e.preventDefault(); e.stopPropagation();
+                        }
+                    }}
                 >
                     <CssBaseline />
                     {(!this.state.tinyToolBar) ?
@@ -769,6 +784,13 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                         }
                     />
 
+                    <ZoomedUiControl 
+                        dialogOpen={this.state.zoomedControlOpen}
+                        controlInfo={this.state.zoomedControlInfo} 
+                        onDialogClose={()=>{ this.setState({zoomedControlOpen: false});} }
+                        onDialogClosed={()=>{ this.model_.zoomedUiControl.set(undefined); }
+                    }
+                    />
                     <Dialog
                         open={this.state.alertDialogOpen}
                         onClose={this.handleCloseAlert}
