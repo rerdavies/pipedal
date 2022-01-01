@@ -23,7 +23,9 @@
     /* Maximum filesize to allow when uploading */
     "maxUploadSize": 1048576,
 
-    /* Provide access point capture redirects on this gateway. -- provides automatic browser launching on Access Point access. */
+    /* Provide access point capture redirects on this gateway. -- provides automatic browser launching on Access Point access. 
+    (not implemented)
+    */
     "accessPointGateway": "172.24.1.0/24",
     "accessPointServerAddress": "172.24.1.1"
 

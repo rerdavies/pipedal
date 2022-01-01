@@ -23,7 +23,7 @@
     /* Maximum filesize to allow when uploading */
     "maxUploadSize": 1048576,
 
-    /* Provide access point capture redirects on this gateway. */
+    /* Provide access point capture redirects on this gateway. (not implemented) */
     "accessPointGateway": "192.168.0.0/24",
     "accessPointServerAddress" : "192.168.0.26:8080"
 

@@ -163,25 +163,23 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
         }
 
-        handleConnectionStateChanged() : void {
-            if (this.model.state.get() === State.Ready)
-            {
-                if (this.state.shuttingDown || this.state.restarting)
-                {
-                    this.setState({shuttingDown: false, restarting: false});
+        handleConnectionStateChanged(): void {
+            if (this.model.state.get() === State.Ready) {
+                if (this.state.shuttingDown || this.state.restarting) {
+                    this.setState({ shuttingDown: false, restarting: false });
                 }
             }
         }
 
         handleApplyWifiConfig(wifiConfigSettings: WifiConfigSettings): void {
-            this.setState({showWifiConfigDialog: false});
+            this.setState({ showWifiConfigDialog: false });
             this.model.setWifiConfigSettings(wifiConfigSettings)
-            .then(() => {
+                .then(() => {
 
-            })
-            .catch((err) => {
-                this.model.showAlert(err);
-            });
+                })
+                .catch((err) => {
+                    this.model.showAlert(err);
+                });
         }
 
         handleWifiConfigSettingsChanged(): void {
@@ -394,8 +392,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             return (
                 <DialogEx tag="SettingsDialog" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
-                    style={{userSelect: "none"}}
-                    >
+                    style={{ userSelect: "none" }}
+                >
 
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
@@ -420,18 +418,25 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
                                     AUDIO
                                 </Typography>
-                                <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                    { (!isConfigValid) ? 
-                                    ( 
-                                        <Typography variant="caption" color="textSecondary">Status: <span style={{color: "#F00"}}>Not configured.</span></Typography>
-                                    ): 
-                                        JackHostStatus.getDisplayView("Status:\u00A0", this.state.jackStatus)
-                                    }
-                                </div>
-                                { this.state.jackConfiguration.errorState !== "" &&
+                                {(!isConfigValid) ?
                                     (
                                         <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                            <Typography variant="caption" color="textSecondary"><span style={{color: "#F00"}}>{this.state.jackConfiguration.errorState }</span></Typography>
+                                            <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
+                                            <Typography display="block" variant="caption" color="textSecondary">CPU: </Typography>
+                                        </div>
+                                    ) :
+                                    (
+                                        <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                            {JackHostStatus.getDisplayView("Status:\u00A0", this.state.jackStatus)}
+                                            {JackHostStatus.getCpuInfo("CPU:\u00A0", this.state.jackStatus)}
+                                        </div>
+                                    )
+                                }
+
+                                {this.state.jackConfiguration.errorState !== "" &&
+                                    (
+                                        <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                            <Typography variant="caption" color="textSecondary"><span style={{ color: "#F00" }}>{this.state.jackConfiguration.errorState}</span></Typography>
                                         </div>
 
                                     )
@@ -449,7 +454,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     jackServerSettings={this.state.jackServerSettings}
                                     onClose={() => this.setState({ showJackServerSettingsDialog: false })}
                                     onApply={(jackServerSettings) => {
-                                        this.setState({ showJackServerSettingsDialog: false,
+                                        this.setState({
+                                            showJackServerSettingsDialog: false,
                                             jackServerSettings: jackServerSettings
                                         });
                                         this.model.setJackServerSettings(jackServerSettings);
@@ -561,9 +567,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         )
                     }
                     <WifiConfigDialog wifiConfigSettings={this.state.wifiConfigSettings} open={this.state.showWifiConfigDialog}
-                        onClose={()=> this.setState({showWifiConfigDialog: false})}
+                        onClose={() => this.setState({ showWifiConfigDialog: false })}
                         onOk={(wifiConfigSettings) => this.handleApplyWifiConfig(wifiConfigSettings)}
-                        />
+                    />
 
                 </DialogEx >
 

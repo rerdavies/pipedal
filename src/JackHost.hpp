@@ -110,6 +110,9 @@ public:
     float cpuUsage_ = 0;
     uint64_t msSinceLastUnderrun_ = 0;
     int32_t temperaturemC_ = -100000;
+    uint64_t cpuFreqMax_ = 0;
+    uint64_t cpuFreqMin_ = 0;
+    std::string governor_;
 
     DECLARE_JSON_MAP(JackHostStatus);
 

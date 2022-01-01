@@ -21,8 +21,6 @@ import React, {SyntheticEvent} from 'react';
 import { Theme, withStyles, WithStyles,createStyles } from '@material-ui/core/styles';
 import { ZoomedControlInfo } from './PiPedalModel';
 import DialogEx from './DialogEx';
-import { TransitionProps } from '@material-ui/core/transitions/transition';
-import Slide from '@material-ui/core/Slide';
 import Typography from '@material-ui/core/Typography';
 import { PiPedalModelFactory,PiPedalModel } from './PiPedalModel';
 import ZoomedDial from './ZoomedDial';
@@ -43,12 +41,14 @@ interface ZoomedUiControlState {
     value: number
 };
 
+/*
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement },
     ref: React.Ref<unknown>,
 ) {
     return <Slide direction="up" ref={ref} {...props} />;
 });
+*/
 
 
 const ZoomedUiControl = withStyles(styles, { withTheme: true })(

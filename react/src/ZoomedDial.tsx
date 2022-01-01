@@ -168,7 +168,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
                 let instanceId = this.props.controlInfo.instanceId;
                 if (instanceId === -1) return 0;
                 let pedalBoardItem = this.model.pedalBoard.get()?.getItem(instanceId);
-                let value: number = pedalBoardItem?.getControlValue(this.props.controlInfo.uiControl.symbol) ?? 0;
+                let value: number = pedalBoardItem?.getControlValue(uiControl.symbol) ?? 0;
                 this.defaultValue = value;
                 return value;
             }
@@ -350,7 +350,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
         render() {
             return (
-                <img  ref={this.imgRef} src="img/fx_dial.svg"
+                <img  ref={this.imgRef} src="img/fx_dial.svg" alt=""
                     style={{
                         overscrollBehavior: "none", touchAction: "none", 
                         width: this.props.size, height: this.props.size, opacity: DEFAULT_OPACITY,

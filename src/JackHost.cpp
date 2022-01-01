@@ -67,6 +67,50 @@ namespace pipedal
     std::string GetJackErrorMessage(jack_status_t status);
 }
 
+static void GetCpuFrequency(uint64_t*freqMin,uint64_t*freqMax)
+{
+    uint64_t fMax = 0;
+    uint64_t fMin = UINT64_MAX;
+    char deviceName[128];
+    try {
+    for (int i = 0; true; ++i)
+    {
+        
+        snprintf(deviceName,sizeof(deviceName),"/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq",i);
+        std::ifstream f(deviceName);
+        if (!f)
+        {
+            break;
+        }
+        uint64_t freq;
+        f >> freq;
+        if (!f) break;
+        if (freq < fMin) fMin = freq;
+        if (freq > fMax) fMax = freq;
+    }
+    } catch (const std::exception &)
+    {
+
+    }
+    if (fMin == 0) fMax = 0;
+    *freqMin = fMin;
+    *freqMax = fMax;
+}
+static std::string GetGovernor()
+{
+    std::string result;
+    try {
+        std::ifstream f("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+        f >> result;
+    } catch (const std::exception &)
+    {
+
+    }
+    return result;
+}
+
+
+
 class JackHostImpl : public JackHost
 {
 private:
@@ -1404,6 +1448,9 @@ public:
         {
             result.cpuUsage_ = 0;
         }
+        GetCpuFrequency(&result.cpuFreqMax_,&result.cpuFreqMin_);
+        result.governor_ = GetGovernor();
+
         return result;
     }
     volatile bool listenForMidiEvent;
@@ -1428,4 +1475,7 @@ JSON_MAP_REFERENCE(JackHostStatus, underruns)
 JSON_MAP_REFERENCE(JackHostStatus, cpuUsage)
 JSON_MAP_REFERENCE(JackHostStatus, msSinceLastUnderrun)
 JSON_MAP_REFERENCE(JackHostStatus, temperaturemC)
+JSON_MAP_REFERENCE(JackHostStatus, cpuFreqMin)
+JSON_MAP_REFERENCE(JackHostStatus, cpuFreqMax)
+JSON_MAP_REFERENCE(JackHostStatus, governor)
 JSON_MAP_END()
