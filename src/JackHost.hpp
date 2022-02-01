@@ -23,8 +23,8 @@
 
 #include "Lv2PedalBoard.hpp"
 #include "VuUpdate.hpp"
-#include "RingBuffer.hpp"
 #include "json.hpp"
+#include "JackHost.hpp"
 #include "JackServerSettings.hpp"
 #include <functional>
 #include "PiPedalAlsa.hpp"
@@ -97,6 +97,7 @@ public:
     virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
     virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;
     virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) = 0;
+    virtual void OnNotifyAtomOutput(uint64_t instanceId, const std::string&atomType,const std::string&atomJson) = 0;
 
 
 };
@@ -119,6 +120,7 @@ public:
 
 };
 
+
 class IHost;
 
 class JackHost {
@@ -134,6 +136,7 @@ public:
     virtual void SetNotificationCallbacks(IJackHostCallbacks *pNotifyCallbacks) = 0;
 
     virtual void SetListenForMidiEvent(bool listen) = 0;
+    virtual void SetListenForAtomOutput(bool listen) = 0;
 
 
     virtual void Open(const JackChannelSelection & channelSelection) = 0;
@@ -145,9 +148,9 @@ public:
 
     virtual void SetPedalBoard(const std::shared_ptr<Lv2PedalBoard> &pedalBoard) = 0;
 
-    virtual void SetControlValue(long instanceId,const std::string&symbol, float value) = 0;
-    virtual void SetPluginPreset(long isntanceId, const std::vector<ControlValue> & values) = 0;
-    virtual void SetBypass(long instanceId, bool enabled) = 0;
+    virtual void SetControlValue(uint64_t instanceId,const std::string&symbol, float value) = 0;
+    virtual void SetPluginPreset(uint64_t instanceId, const std::vector<ControlValue> & values) = 0;
+    virtual void SetBypass(uint64_t instanceId, bool enabled) = 0;
 
     virtual bool IsOpen() const = 0;
 

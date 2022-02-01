@@ -274,17 +274,18 @@ namespace pipedal
                 }
             }
         }
-        long instanceId;
+        uint64_t instanceId;
 
         virtual uint8_t *GetAtomInputBuffer() { return nullptr; }
         virtual uint8_t *GetAtomOutputBuffer() { return nullptr; }
         virtual void RequestParameter(LV2_URID uridUri) {}
         virtual void GatherParameter(RealtimeParameterRequest *pRequest) {}
         virtual std::string AtomToJson(uint8_t *pAtom) { return ""; }
+        virtual std::string GetAtomObjectType(uint8_t*pData) { return "not implemented";}
 
     public:
         SplitEffect(
-            long instanceId,
+            uint64_t instanceId,
             double sampleRate,
             const std::vector<float *> &inputs)
             : instanceId(instanceId), inputs(inputs), sampleRate(sampleRate)

@@ -241,7 +241,7 @@ class PiPedalSocket {
                     this.totalRetryDelay += this.retryDelay;
                     Utility.delay(this.retryDelay).then(() => this.reconnect());
                     this.retryDelay *= 2;
-                    if (this.retryDelay > 5000) this.retryDelay = 5000;
+                    if (this.retryDelay > 3000) this.retryDelay = 3000;
                 }
             });
     }

@@ -45,6 +45,8 @@ export enum State {
     Reconnecting
 };
 
+export type ControlValueChangedHandler = (key: string, value: number) => void;
+
 export interface ZoomedControlInfo {
     source: HTMLElement;
     instanceId: number;
@@ -66,6 +68,17 @@ export interface VuUpdateInfo {
 export interface MonitorPortHandle {
 
 };
+export interface ControlValueChangedHandle {
+    _ControlValueChangedHandle: number;
+
+};
+
+interface ControlValueChangeItem {
+    handle: number;
+    instanceId: number;
+    onValueChanged: ControlValueChangedHandler;
+
+};
 
 class MidiEventListener {
     constructor(handle: number, callback: (isNote: boolean, noteOrControl: number) => void) {
@@ -75,6 +88,18 @@ class MidiEventListener {
     handle: number;
     callback: (isNote: boolean, noteOrControl: number) => void;
 };
+class AtomOutputListener {
+    constructor(handle: number, instanceId: number, callback: (instanceId: number, atomObject: any) => void) {
+        this.handle = handle;
+        this.instanceId = instanceId;
+        this.callback = callback;
+    }
+    handle: number;
+    instanceId: number;
+    callback: (instanceId: number, atomObject: any) => void;
+};
+
+
 
 export interface ListenHandle {
     _handle: number;
@@ -356,6 +381,14 @@ export interface PiPedalModel {
     listenForMidiEvent(listenForControlsOnly: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle;
     cancelListenForMidiEvent(listenHandle: ListenHandle): void;
 
+    addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle
+    removeControlValueChangeListener(handle: ControlValueChangedHandle): void; 
+
+    listenForAtomOutput(instanceId: number, onComplete: (instanceId: number, atomOutput: any) => void): ListenHandle;
+    cancelListenForAtomOutput(listenHandle: ListenHandle): void;
+
+
+
     download(targetType: string, isntanceId: number): void;
 
     uploadPreset(file: File, uploadAfter: number): Promise<number>;
@@ -501,6 +534,14 @@ class PiPedalModelImpl implements PiPedalModel {
             let isNote = body.isNote as boolean;
             let noteOrControl = body.noteOrControl as number;
             this.handleNotifyMidiListener(clientHandle, isNote, noteOrControl);
+        } else if (message === "onNotifyAtomOut") {
+            let clientHandle = body.clientHandle as number;
+            let instanceId  = body.instanceId as number;
+            let atomJson = body.atomJson as string;
+            this.handleNotifyAtomOutput(clientHandle, instanceId,atomJson);
+            if (header.replyTo) {
+                this.webSocket?.reply(header.replyTo,"onNotifyAtomOut",true);
+            }
         } else if (message === "onControlChanged") {
             let controlChangedBody = body as ControlChangedBody;
             this._setPedalBoardControlValue(
@@ -917,6 +958,26 @@ class PiPedalModelImpl implements PiPedalModel {
         }
     }
 
+    
+    _controlValueChangeItems: ControlValueChangeItem[] = [];
+
+    addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle
+    {
+        let handle = ++this.nextListenHandle;
+        this._controlValueChangeItems.push({ handle: handle, instanceId: instanceId,onValueChanged: onValueChanged});
+        return { _ControlValueChangedHandle: handle};
+    }
+    removeControlValueChangeListener(handle: ControlValueChangedHandle)
+    {
+        for (let i = 0; i < this._controlValueChangeItems.length; ++i)
+        {
+            if (this._controlValueChangeItems[i].handle === handle._ControlValueChangedHandle)
+            {
+                this._controlValueChangeItems.splice(i,1);
+                return;
+            }
+        }
+    }
 
 
     _setPedalBoardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
@@ -930,6 +991,14 @@ class PiPedalModelImpl implements PiPedalModel {
             this.pedalBoard.set(newPedalBoard);
             if (notifyServer) {
                 this._setServerControl("setControl", instanceId, key, value);
+            }
+            for (let i = 0; i < this._controlValueChangeItems.length; ++i)
+            {
+                let item = this._controlValueChangeItems[i];
+                if (instanceId === item.instanceId)
+                {
+                    item.onValueChanged(key,value);
+                }
             }
         }
 
@@ -1470,6 +1539,7 @@ class PiPedalModelImpl implements PiPedalModel {
         }
     }
     midiListeners: MidiEventListener[] = [];
+    atomOutputListeners: AtomOutputListener[] = [];
 
     nextListenHandle = 1;
     listenForMidiEvent(listenForControlsOnly: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle {
@@ -1484,13 +1554,34 @@ class PiPedalModelImpl implements PiPedalModel {
 
     }
 
+    listenForAtomOutput(instanceId: number, onComplete: (instanceId: number, atomOutput: any) => void): ListenHandle {
+        let handle = this.nextListenHandle++;
+
+        this.atomOutputListeners.push(new AtomOutputListener(handle,instanceId, onComplete));
+
+        this.webSocket?.send("listenForAtomOutput", { instanceId: instanceId, handle: handle });
+        return {
+            _handle: handle
+        };
+    }
+
+    handleNotifyAtomOutput(clientHandle: number, instanceId: number, atomJson: string) {
+        let jsonObject: any = JSON.parse(atomJson);
+        for (let i = 0; i < this.atomOutputListeners.length; ++i) {
+            let listener = this.atomOutputListeners[i];
+            if (listener.handle === clientHandle && listener.instanceId === instanceId) {
+                listener.callback(instanceId,jsonObject);
+            }
+        }
+    }
+
+
     handleNotifyMidiListener(clientHandle: number, isNote: boolean, noteOrControl: number) {
         for (let i = 0; i < this.midiListeners.length; ++i) {
             let listener = this.midiListeners[i];
             if (listener.handle === clientHandle) {
                 listener.callback(isNote, noteOrControl);
 
-                this.midiListeners.splice(i, 1);
             }
         }
     }
@@ -1498,9 +1589,19 @@ class PiPedalModelImpl implements PiPedalModel {
         for (let i = 0; i < this.midiListeners.length; ++i) {
             if (this.midiListeners[i].handle === listenHandle._handle) {
                 this.midiListeners.splice(i, 1);
+                break;
             }
         }
         this.webSocket?.send("cancelListenForMidiEvent", listenHandle._handle);
+    }
+    cancelListenForAtomOutput(listenHandle: ListenHandle): void {
+        for (let i = 0; i < this.midiListeners.length; ++i) {
+            if (this.midiListeners[i].handle === listenHandle._handle) {
+                this.midiListeners.splice(i, 1);
+                break;
+            }
+        }
+        this.webSocket?.send("cancelListenForAtomOutput", listenHandle._handle);
     }
 
     download(targetType: string, instanceId: number): void {

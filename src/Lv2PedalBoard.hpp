@@ -32,6 +32,7 @@ namespace pipedal {
 
 class RealtimeVuBuffers;
 class RealtimeParameterRequest;
+class RealtimeRingBufferWriter;
 
 class Lv2PedalBoard {
     IHost *pHost = nullptr;
@@ -53,6 +54,8 @@ class Lv2PedalBoard {
     std::vector<Action> deactivateActions;
 
     float *CreateNewAudioBuffer();
+
+    RealtimeRingBufferWriter *ringBufferWriter;
 
     enum class MappingType {
         Linear,
@@ -94,14 +97,14 @@ public:
 
     void Prepare(IHost *pHost,const PedalBoard&pedalBoard);
 
-    int GetIndexOfInstanceId(long instanceId) {
+    int GetIndexOfInstanceId(uint64_t instanceId) {
         for (int i = 0; i < this->realtimeEffects.size(); ++i)
         {
             if (this->realtimeEffects[i]->GetInstanceId() == instanceId) return i;
         }
         return -1;
     }
-    IEffect*GetEffect(long instanceId) {
+    IEffect*GetEffect(uint64_t instanceId) {
         for (int i = 0; i < realtimeEffects.size(); ++i) {
             if (realtimeEffects[i]->GetInstanceId() == instanceId)
             {
@@ -112,7 +115,7 @@ public:
     }
     void Activate();
     void Deactivate();
-    bool Run(float**inputBuffers, float**outputBuffers,uint32_t samples);
+    bool Run(float**inputBuffers, float**outputBuffers,uint32_t samples, RealtimeRingBufferWriter*realtimeWriter);
 
     void ResetAtomBuffers();
 
@@ -126,7 +129,7 @@ public:
 
 
 
-    int GetControlIndex(long instanceId,const std::string&symbol);
+    int GetControlIndex(uint64_t instanceId,const std::string&symbol);
     void SetControlValue(int effectIndex, int portIndex, float value);
     void SetBypass(int effectIndex,bool enabled);
 

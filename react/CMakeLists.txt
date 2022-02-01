@@ -74,6 +74,7 @@ add_custom_command(
         src/TemporaryDrawer.tsx
         src/ToobCabSimView.tsx
         src/ToobFrequencyResponseView.tsx
+        src/ToobPowerStage2View.tsx
         src/ToobInputStageView.tsx
         src/ToobToneStackView.tsx
         src/Units.tsx

@@ -54,6 +54,7 @@ public:
     virtual void OnLoadPluginPreset(int64_t instanceId,const std::vector<ControlValue>&controlValues) = 0;
     virtual void OnMidiValueChanged(int64_t instanceId, const std::string&symbol, float value) = 0;
     virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) = 0;
+    virtual void OnNotifyAtomOutput(int64_t clientModel,uint64_t instanceId,const std::string&atomType, const std::string&atomJson) = 0;
     virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings&wifiConfigSettings) = 0;
     virtual void Close() = 0;
 };
@@ -61,6 +62,7 @@ public:
 class PiPedalModel: private IJackHostCallbacks {
 private:
     PiPedalAlsaDevices alsaDevices;
+    std::recursive_mutex mutex;
 
 
     class MidiListener {
@@ -69,13 +71,20 @@ private:
         int64_t clientHandle;
         bool listenForControlsOnly;
     };
+    class AtomOutputListener {
+    public:
+        int64_t clientId;
+        int64_t clientHandle;
+        uint64_t instanceId;
+    };
     void deleteMidiListeners(int64_t clientId);
+    void deleteAtomOutputListeners(int64_t clientId);
 
     std::vector<MidiListener> midiEventListeners;
+    std::vector<AtomOutputListener> atomOutputListeners;
 
     JackServerSettings jackServerSettings;
     Lv2Host lv2Host;
-    std::recursive_mutex mutex;
     PedalBoard pedalBoard;
     Storage storage;
     bool hasPresetChanged = false;
@@ -120,7 +129,7 @@ private: // IJackHostCallbacks
     virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update);
     virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value); 
     virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl);
-
+    virtual void OnNotifyAtomOutput(uint64_t instanceId, const std::string&atomType,const std::string&atomJson);
 
 public:
     PiPedalModel();
@@ -132,7 +141,7 @@ public:
 
     const Lv2Host& getPlugins() const { return lv2Host; }
     PedalBoard  getCurrentPedalBoardCopy() { 
-        std::lock_guard guard(mutex);
+        std::lock_guard<std::recursive_mutex> guard(mutex);
         return pedalBoard; 
     }
     std::vector<Lv2PluginPreset> GetPluginPresets(std::string pluginUri);
@@ -204,8 +213,13 @@ public:
     void SetJackServerSettings(const JackServerSettings& jackServerSettings);
 
     void listenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly);
-    void cancelListenForMidiEvent(int64_t clientId, int64_t clientHandled);
+    void cancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
+
+    void listenForAtomOutputs(int64_t clientId, int64_t clientHandle, uint64_t instanceId);
+    void cancelListenForAtomOutputs(int64_t clientId, int64_t clientHandle);
+
     std::vector<AlsaDeviceInfo> GetAlsaDevices();
 
 };
+
 } // namespace pipedal.

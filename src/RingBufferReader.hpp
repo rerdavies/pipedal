@@ -23,7 +23,6 @@
 #include "Lv2Log.hpp"
 #include "VuUpdate.hpp"
 #include "JackHost.hpp"
-
 namespace pipedal
 {
 
@@ -49,6 +48,8 @@ namespace pipedal
         MidiValueChanged = 15,
 
         OnMidiListen = 16,
+
+        AtomOutput = 17,
 
     };
 
@@ -186,6 +187,16 @@ namespace pipedal
             }
             return true;
         }
+
+        bool read(size_t size, uint8_t*data)
+        {
+            if (!ringBuffer->read(size,data))
+            {
+                throw PiPedalStateException("Ringbuffer read failed. Did you forget to check for space?");
+            }
+            return true;
+
+        }
         template <typename T>
         void readComplete(T *output)
         {
@@ -250,6 +261,24 @@ namespace pipedal
                 return;
 
             }
+        }
+        template <typename T>
+        void write(RingBufferCommand command, const T &value, size_t dataLength, uint8_t*variableData)
+        {
+
+            // the goal: to atomically write the command and associated data.
+            CommandBuffer<T> buffer(command, value);
+
+            if (!ringBuffer->write(buffer.size(),(uint8_t *)&buffer,dataLength,variableData))
+            {
+                Lv2Log::error("No space in audio service ringbuffer.");
+                return;
+
+            }
+        }
+        void AtomOutput(uint64_t instanceId, size_t bytes, uint8_t*data)
+        {
+            write(RingBufferCommand::AtomOutput,instanceId,bytes,data);
         }
         void ParameterRequest(RealtimeParameterRequest *pRequest)
         {
@@ -353,5 +382,26 @@ namespace pipedal
             write(RingBufferCommand::EffectReplaced, pedalBoard);
         }
     };
+
+    typedef RingBufferReader<true, false> RealtimeRingBufferReader;
+    typedef RingBufferReader<false, true> HostRingBufferReader;
+    typedef RingBufferWriter<true, false> HostRingBufferWriter;
+
+    // cures a forward-declaration problem.
+    class RealtimeRingBufferWriter: public RingBufferWriter<false, true> 
+    {
+    public:
+        RealtimeRingBufferWriter()
+        {
+        }
+        RealtimeRingBufferWriter(RingBuffer<false,true>*ringBuffer)
+            : RingBufferWriter<false, true> (ringBuffer)
+        {
+        }
+
+
+
+    };
+
 
 } //namespace

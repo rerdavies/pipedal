@@ -29,12 +29,14 @@ import IControlViewFactory from './IControlViewFactory';
 import ToobInputStageViewFactory from './ToobInputStageView';
 import ToobToneStackViewFactory from './ToobToneStackView';
 import ToobCabSimViewFactory from './ToobCabSimView';
+import ToobPowerStage2Factory  from './ToobPowerStage2View';
 
 
 let pluginFactories: IControlViewFactory[] = [
     new ToobInputStageViewFactory(),
     new ToobToneStackViewFactory(),
-    new ToobCabSimViewFactory()
+    new ToobCabSimViewFactory(),
+    new ToobPowerStage2Factory()
 ];
 
 

@@ -122,8 +122,8 @@ public:
 class PedalBoard {
     std::string name_;
     std::vector<PedalBoardItem> items_;
-    long nextInstanceId_ = 0;
-    long NextInstanceId() { return ++nextInstanceId_; }
+    uint64_t nextInstanceId_ = 0;
+    uint64_t NextInstanceId() { return ++nextInstanceId_; }
 
 public:
     bool SetControlValue(long pedalItemId, const std::string &symbol, float value);

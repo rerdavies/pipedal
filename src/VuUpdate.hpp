@@ -26,7 +26,7 @@ namespace pipedal
     class VuUpdate
     {
     public:
-        long instanceId_ = 0;
+        uint64_t instanceId_ = 0;
         long sampleTime_ = 0;
         bool isStereoInput_ = false;
         bool isStereoOutput_ = false;

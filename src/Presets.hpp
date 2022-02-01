@@ -33,7 +33,7 @@ public:
 };
 
 class PedalBoardPreset {
-    long instanceId_;
+    uint64_t instanceId_;
     std::string displayName_;
     std::vector<std::unique_ptr<PedalPreset> > values_;
 public:

@@ -53,6 +53,21 @@ JSON_MAP_REFERENCE(NotifyMidiListenerBody, isNote)
 JSON_MAP_REFERENCE(NotifyMidiListenerBody, noteOrControl)
 JSON_MAP_END()
 
+class NotifyAtomOutputBody {
+public:
+    int64_t clientHandle_;
+    uint64_t instanceId_;
+
+    std::string atomJson_;
+
+    DECLARE_JSON_MAP(NotifyAtomOutputBody);
+};
+JSON_MAP_BEGIN(NotifyAtomOutputBody)
+JSON_MAP_REFERENCE(NotifyAtomOutputBody, clientHandle)
+JSON_MAP_REFERENCE(NotifyAtomOutputBody, instanceId)
+JSON_MAP_REFERENCE(NotifyAtomOutputBody, atomJson)
+JSON_MAP_END()
+
 class ListenForMidiEventBody {
 public: 
     bool listenForControlsOnly_;
@@ -63,6 +78,18 @@ public:
 JSON_MAP_BEGIN(ListenForMidiEventBody)
 JSON_MAP_REFERENCE(ListenForMidiEventBody, listenForControlsOnly)
 JSON_MAP_REFERENCE(ListenForMidiEventBody, handle)
+JSON_MAP_END()
+
+class ListenForAtomOutputBody {
+public: 
+    uint64_t instanceId_;
+    int64_t handle_;
+    DECLARE_JSON_MAP(ListenForAtomOutputBody);
+};
+
+JSON_MAP_BEGIN(ListenForAtomOutputBody)
+JSON_MAP_REFERENCE(ListenForAtomOutputBody, instanceId)
+JSON_MAP_REFERENCE(ListenForAtomOutputBody, handle)
 JSON_MAP_END()
 
 
@@ -390,7 +417,7 @@ private:
         writer.end_array();
 
         {
-            std::lock_guard guard(this->writeMutex);
+            std::lock_guard<std::recursive_mutex> guard(this->writeMutex);
             this->send(s.str());
         }
     }
@@ -421,7 +448,7 @@ private:
         }
         writer.end_array();
         {
-            std::lock_guard guard(this->writeMutex);
+            std::lock_guard<std::recursive_mutex> guard(this->writeMutex);
             this->send(s.str());
         }
     }
@@ -448,7 +475,7 @@ private:
         writer.end_array();
 
         {
-            std::lock_guard guard(this->writeMutex);
+            std::lock_guard<std::recursive_mutex> guard(this->writeMutex);
             this->send(s.str());
         }
     }
@@ -526,7 +553,7 @@ private:
         {
         }
     };
-    std::mutex requestMutex;
+    std::recursive_mutex requestMutex;
     std::vector<IRequestReservation *> requestReservations;
     std::atomic<int> nextRequestId{1};
 
@@ -543,7 +570,7 @@ public:
                 onSuccess,
                 onError);
             {
-                std::lock_guard lock(requestMutex);
+                std::lock_guard<std::recursive_mutex> lock(requestMutex);
                 requestReservations.push_back(reservation);
             }
             std::stringstream s(ios_base::out);
@@ -563,7 +590,7 @@ public:
             }
             writer.end_array();
             {
-                std::lock_guard guard(this->writeMutex);
+                std::lock_guard<std::recursive_mutex> guard(this->writeMutex);
                 this->send(s.str());
             }
         }
@@ -595,7 +622,7 @@ public:
     bool waitingForPortMonitorAck(uint64_t subscriptionId)
     {
         {
-            std::lock_guard guard(subscriptionMutex);
+            std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
             for (int i = 0; i < this->activePortMonitors.size(); ++i)
             {
                 auto &portMonitor = activePortMonitors[i];
@@ -613,7 +640,7 @@ public:
     void portMonitorAck(uint64_t subscriptionId)
     {
         {
-            std::lock_guard guard(subscriptionMutex);
+            std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
             for (int i = 0; i < this->activePortMonitors.size(); ++i)
             {
                 auto &portMonitor = activePortMonitors[i];
@@ -632,7 +659,7 @@ public:
         {
             IRequestReservation *reservation = nullptr;
             {
-                std::lock_guard guard(this->requestMutex);
+                std::lock_guard<std::recursive_mutex> guard(this->requestMutex);
                 for (auto i = this->requestReservations.begin(); i != this->requestReservations.end(); ++i)
                 {
                     if ((*i)->GetReservationid() == reply)
@@ -686,6 +713,19 @@ public:
             pReader->read(&handle);
             this->model.cancelListenForMidiEvent(this->clientId,handle);
         }
+        else if (message == "listenForAtomOutput")
+        {
+            ListenForAtomOutputBody body;
+            pReader->read(&body);
+            this->model.listenForAtomOutputs(this->clientId,body.handle_, body.instanceId_);
+        }
+        else if (message == "cancelListenForAtomOutput")
+        {
+            int64_t handle;
+            pReader->read(&handle);
+            this->model.cancelListenForMidiEvent(this->clientId,handle);
+        }
+
         else if (message == "getJackStatus")
         {
             JackHostStatus status = model.getJackStatus();
@@ -989,7 +1029,7 @@ public:
                     }
                 });
             {
-                std::lock_guard guard(subscriptionMutex);
+                std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
                 activePortMonitors.push_back(
                     PortMonitorSubscription{subscriptionHandle, body.instanceId_,false, body.key_});
             }
@@ -1002,7 +1042,7 @@ public:
             pReader->read(&subscriptionHandle);
             {
                 {
-                    std::lock_guard guard(subscriptionMutex);
+                    std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
                     for (auto i = this->activePortMonitors.begin(); i != this->activePortMonitors.end(); ++i)
                     {
                         if ((*i).subscriptionHandle == subscriptionHandle)
@@ -1024,7 +1064,7 @@ public:
             int64_t subscriptionHandle = model.addVuSubscription(instanceId);
 
             {
-                std::lock_guard guard(subscriptionMutex);
+                std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
                 activeVuSubscriptions.push_back(VuSubscription{subscriptionHandle, instanceId});
             }
             this->Reply(replyTo, "addVuSubscriptin", subscriptionHandle);
@@ -1034,7 +1074,7 @@ public:
             int64_t subscriptionHandle = -1;
             pReader->read(&subscriptionHandle);
             {
-                std::lock_guard guard(subscriptionMutex);
+                std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
 
                 for (auto i = activeVuSubscriptions.begin(); i != activeVuSubscriptions.end(); ++i)
                 {
@@ -1152,7 +1192,7 @@ public:
 
     virtual void OnVuMeterUpdate(const std::vector<VuUpdate> &updates)
     {
-        std::lock_guard guard(subscriptionMutex);
+        std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
         if (updateRequestOutstanding < 5) // throttle to accomodate a web page that can't keep up.
         {
             vuUpdateDropped = false;
@@ -1255,6 +1295,76 @@ public:
         }
     }
 
+    int outstandingNotifyAtomOutputs = 0;
+
+    class PendingNotifyAtomOutput {
+    public:
+        int64_t clientHandle;
+        uint64_t instanceId;
+        std::string atomType;
+        std::string json;
+    };
+
+    std::vector<PendingNotifyAtomOutput> pendingNotifyAtomOutputs;
+
+
+    void OnAckNotifyAtomOutput() {
+        std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
+        if (--outstandingNotifyAtomOutputs <= 0)
+        {
+            outstandingNotifyAtomOutputs = 0;
+            if (pendingNotifyAtomOutputs.size() != 0)
+            {
+                PendingNotifyAtomOutput t = pendingNotifyAtomOutputs[0];
+                pendingNotifyAtomOutputs.erase(pendingNotifyAtomOutputs.begin());
+                OnNotifyAtomOutput(
+                    t.clientHandle,
+                    t.instanceId,
+                    t.atomType,
+                    t.json);
+                
+            }
+        }
+    }
+
+    virtual void OnNotifyAtomOutput(int64_t clientHandle,uint64_t instanceId,const std::string&atomType, const std::string&atomJson)
+    {
+        NotifyAtomOutputBody body;
+        body.clientHandle_ = clientHandle;
+        body.instanceId_ = instanceId;
+        body.atomJson_ = atomJson;
+
+        {
+            std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
+
+            if (outstandingNotifyAtomOutputs != 0)
+            {
+                for (size_t i = 0; i < pendingNotifyAtomOutputs.size(); ++i)
+                {
+                    auto &output = pendingNotifyAtomOutputs[i];
+                    if (output.clientHandle == clientHandle && output.instanceId == instanceId && output.atomType == atomType)
+                    {
+                        output.json = atomJson;
+                        return;
+                    }
+                }
+                pendingNotifyAtomOutputs.push_back(PendingNotifyAtomOutput{ clientHandle, instanceId,atomType,atomJson });
+                return;
+            }
+            ++outstandingNotifyAtomOutputs;
+        }
+        
+        Request<bool>("onNotifyAtomOut",body,
+            [this] (const bool& value)
+            {
+                this->OnAckNotifyAtomOutput();
+            },
+            [] (const std::exception &e) {
+                
+            }
+            );
+
+    }
     virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) 
     {
         NotifyMidiListenerBody body;

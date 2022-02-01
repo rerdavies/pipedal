@@ -44,6 +44,7 @@ namespace pipedal {
         virtual void GatherParameter(RealtimeParameterRequest*pRequest) = 0;
 
         virtual std::string AtomToJson(uint8_t*pAtom) = 0;
+        virtual std::string GetAtomObjectType(uint8_t*pData) = 0;
 
 
         virtual void SetAudioOutputBuffer(int index, float*buffer) = 0;

@@ -130,10 +130,12 @@ private:
     RingBuffer<true, false> inputRingBuffer;
     RingBuffer<false, true> outputRingBuffer;
 
-    RingBufferReader<true, false> realtimeReader;
-    RingBufferWriter<false, true> realtimeWriter;
-    RingBufferReader<false, true> hostReader;
-    RingBufferWriter<true, false> hostWriter;
+    RingBufferWriter<true,false> x;
+
+    RealtimeRingBufferReader realtimeReader;
+    RealtimeRingBufferWriter realtimeWriter;
+    HostRingBufferReader hostReader;
+    HostRingBufferWriter hostWriter;
 
     JackChannelSelection channelSelection;
     bool active = false;
@@ -577,7 +579,7 @@ private:
                     pedalBoard->ResetAtomBuffers();
                     pedalBoard->ProcessParameterRequests(pParameterRequests);
 
-                    processed = pedalBoard->Run(inputBuffers, outputBuffers, (uint32_t)nframes);
+                    processed = pedalBoard->Run(inputBuffers, outputBuffers, (uint32_t)nframes,&realtimeWriter);
                     if (processed)
                     {
                         if (this->realtimeVuBuffers != nullptr)
@@ -723,6 +725,8 @@ public:
         Lv2Log::error("Audio processing terminated unexpectedly.");
         realtimeWriter.AudioStopped();
     }
+    std::vector<uint8_t> atomBuffer;
+
     bool terminateThread;
     void ThreadProc()
     {
@@ -871,6 +875,26 @@ public:
                                     this->pNotifyCallbacks->OnNotifyVusSubscription(*updates);
                                 }
                                 this->hostWriter.AckVuUpdate(); // please sir, can I have some more?
+                            } else if (command == RingBufferCommand::AtomOutput)
+                            {
+                                uint64_t instanceId;
+                                hostReader.read(&instanceId);
+                                size_t extraBytes;
+                                hostReader.read(&extraBytes);
+                                if (atomBuffer.size() < extraBytes)
+                                {
+                                    atomBuffer.resize(extraBytes);
+                                }
+                                hostReader.read(extraBytes,&(atomBuffer[0]));
+
+                        
+                                IEffect *pEffect = currentPedalBoard->GetEffect(instanceId);
+                                if (pEffect != nullptr &&this->pNotifyCallbacks && listenForAtomOutput)
+                                {
+                                    std::string atomType = pEffect->GetAtomObjectType(&atomBuffer[0]);
+                                    auto json  = pEffect->AtomToJson(&(atomBuffer[0]));
+                                    this->pNotifyCallbacks->OnNotifyAtomOutput(instanceId,atomType,json);
+                                }
                             }
                             else if (command == RingBufferCommand::FreeVuSubscriptions)
                             {
@@ -1175,7 +1199,7 @@ public:
         }
     }
 
-    virtual void SetBypass(long instanceId, bool enabled)
+    virtual void SetBypass(uint64_t instanceId, bool enabled)
     {
         std::lock_guard guard(mutex);
         if (active && this->currentPedalBoard)
@@ -1189,7 +1213,7 @@ public:
         }
     }
 
-    virtual void SetPluginPreset(long instanceId, const std::vector<ControlValue> &values)
+    virtual void SetPluginPreset(uint64_t instanceId, const std::vector<ControlValue> &values)
     {
         std::lock_guard guard(mutex);
         if (active && this->currentPedalBoard)
@@ -1210,7 +1234,7 @@ public:
         }
     }
 
-    void SetControlValue(long instanceId, const std::string &symbol, float value)
+    void SetControlValue(uint64_t  instanceId, const std::string &symbol, float value)
     {
         std::lock_guard guard(mutex);
         if (active && this->currentPedalBoard)
@@ -1273,6 +1297,7 @@ public:
         result.subscriptionHandle = subscription.subscriptionHandle;
         result.instanceIndex = this->currentPedalBoard->GetIndexOfInstanceId(subscription.instanceid);
         IEffect *pEffect = this->currentPedalBoard->GetEffect(subscription.instanceid);
+
         result.portIndex = pEffect->GetControlIndex(subscription.key);
         result.sampleRate = (int)(this->GetSampleRate() * subscription.updateInterval);
         result.samplesToNextCallback = result.sampleRate;
@@ -1296,8 +1321,11 @@ public:
 
             for (size_t i = 0; i < subscriptions.size(); ++i)
             {
-                pSubscriptions->subscriptions.push_back(
-                    MakeRealtimeSubscription(subscriptions[i]));
+                if (this->currentPedalBoard->GetEffect(subscriptions[i].instanceid) != nullptr)
+                {
+                    pSubscriptions->subscriptions.push_back(
+                        MakeRealtimeSubscription(subscriptions[i]));
+                }
             }
             this->hostWriter.SetMonitorPortSubscriptions(pSubscriptions);
         }
@@ -1453,11 +1481,16 @@ public:
 
         return result;
     }
-    volatile bool listenForMidiEvent;
+    volatile bool listenForMidiEvent = false;
+    volatile bool listenForAtomOutput = false;
 
     virtual void SetListenForMidiEvent(bool listen)
     {
         this->listenForMidiEvent = listen;
+    }
+    virtual void SetListenForAtomOutput(bool listen)
+    {
+        this->listenForAtomOutput = listen;
     }
 };
 

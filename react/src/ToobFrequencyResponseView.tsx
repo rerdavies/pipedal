@@ -75,18 +75,18 @@ const ToobFrequencyResponseView =
                 {
                     this.requestDeferred = false;
                     this.requestOutstanding = false;
-                    this.updateFrequencyResponse(); // after a reconnect.
+                    this.updateAllWaveShapes(); // after a reconnect.
                 }
             }
             onPedalBoardChanged() 
             {
-                this.updateFrequencyResponse();
+                this.updateAllWaveShapes();
             }
             componentDidMount()
             {
                 this.model.state.addOnChangedHandler(this.onStateChanged);
                 this.model.pedalBoard.addOnChangedHandler(this.onPedalBoardChanged);
-                this.updateFrequencyResponse();
+                this.updateAllWaveShapes();
             }
             componentWillUnmount()
             {
@@ -154,7 +154,7 @@ const ToobFrequencyResponseView =
 
             }
 
-            updateFrequencyResponse() {
+            updateAllWaveShapes() {
                 if (this.requestOutstanding) { // throttling.
                     this.requestDeferred = true;
                     return;
@@ -169,7 +169,7 @@ const ToobFrequencyResponseView =
                                     () => {
                                         this.requestOutstanding = false;
                                         this.requestDeferred = false;
-                                        this.updateFrequencyResponse();
+                                        this.updateAllWaveShapes();
                                     }
 
                                 );

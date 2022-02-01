@@ -38,6 +38,8 @@
 #include "lv2/units.lv2/units.h"
 #include "lv2/atom.lv2/util.h"
 #include "JackHost.hpp"
+#include <exception>
+#include "RingBufferReader.hpp"
 
 using namespace pipedal;
 
@@ -93,6 +95,10 @@ Lv2Effect::Lv2Effect(
 
     LilvInstance *pInstance = lilv_plugin_instantiate(pPlugin, pHost->GetSampleRate(), myFeatures);
     this->pInstance = pInstance;
+    if (this->pInstance == nullptr)
+    {
+        throw PiPedalException("Failed to create plugin.");
+    }
 
     if (info_->hasExtension(LV2_WORKER__interface))
     {
@@ -329,7 +335,7 @@ static inline void CopyBuffer(float *input, float *output, uint32_t frames)
     }
 }
 
-void Lv2Effect::Run(uint32_t samples)
+void Lv2Effect::Run(uint32_t samples,uint64_t instanceId, RealtimeRingBufferWriter *realtimeRingBufferWriter)
 {
     // close off the atom input frame.
     if (this->inputAtomBuffers.size() != 0)
@@ -425,7 +431,9 @@ void Lv2Effect::Run(uint32_t samples)
             this->currentBypassDx = currentBypassDx;
             this->bypassSamplesRemaining = bypassSamplesRemaining;
         }
+        
     }
+    RelayOutputMessages(instanceId,realtimeRingBufferWriter);
 }
 
 LV2_Worker_Status Lv2Effect::worker_schedule_fn(LV2_Worker_Schedule_Handle handle,
@@ -510,6 +518,30 @@ void Lv2Effect::RequestParameter(LV2_URID uridUri)
     lv2_atom_forge_pop(&inputForgeRt, &objectFrame);
 }
 
+void Lv2Effect::RelayOutputMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter)
+{
+    LV2_Atom_Sequence*controlOutput = (LV2_Atom_Sequence*)GetAtomOutputBuffer();
+    if (controlOutput == nullptr)
+    {
+        return;
+    }
+
+    LV2_ATOM_SEQUENCE_FOREACH(controlOutput, ev)
+    {
+
+        // frame_offset = ev->time.frames;  // not really interested.
+
+        if (lv2_atom_forge_is_object_type(&this->outputForgeRt, ev->body.type))
+        {
+            const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+            if (obj->body.otype != uris.patch_Set) // patch_Set is handled elsewhere.
+            {
+                realtimeRingBufferWriter->AtomOutput(instanceId,obj->atom.size +sizeof(obj->atom),(uint8_t*)obj);
+            }
+        }
+    }
+}
+
 void Lv2Effect::GatherParameter(RealtimeParameterRequest *pRequest)
 {
     LV2_Atom_Sequence*controlInput = (LV2_Atom_Sequence*)GetAtomOutputBuffer();
@@ -544,12 +576,13 @@ void Lv2Effect::GatherParameter(RealtimeParameterRequest *pRequest)
                     LV2_URID key = ((const LV2_Atom_URID *)property)->body;
                     if (key == pRequest->uridUri)
                     {
-                        if (value->size > sizeof(pRequest->response))
+                        int atom_size = value->size + sizeof(LV2_Atom);
+                        if (atom_size > sizeof(pRequest->response))
                         {
                             pRequest->errorMessage = "Response is too large.";
                         } else {
-                            pRequest->responseLength = value->size;
-                            memcpy(pRequest->response,value,value->size);
+                            pRequest->responseLength = atom_size;
+                            memcpy(pRequest->response,value,atom_size);
                         }
                         break;
                     }
@@ -559,6 +592,16 @@ void Lv2Effect::GatherParameter(RealtimeParameterRequest *pRequest)
     }
 }
 
+std::string Lv2Effect::GetAtomObjectType(uint8_t*pData)
+{
+    LV2_Atom_Object *pAtom = (LV2_Atom_Object*)pData;
+    if (pAtom->atom.type != uris.atom_Object)
+    {
+        throw std::invalid_argument("Not an Lv2 Object");
+    }
+    return pHost->Lv2UriudToString(pAtom->body.otype);
+
+}
 std::string Lv2Effect::AtomToJson(uint8_t*pData)
 {
     std::stringstream s;
@@ -569,6 +612,18 @@ std::string Lv2Effect::AtomToJson(uint8_t*pData)
     return s.str();
 }
 
+static std::string UriToFieldName(const std::string&uri){
+    int pos;
+    for (pos = uri.length(); pos >= 0; --pos)
+    {
+        char c = uri[pos];
+        if (c == '#' || c == '/' || c == ':')
+        {
+            break;
+        }
+    }
+    return uri.substr(pos+1);
+}
 void Lv2Effect::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
 {
     if (pAtom->type == uris.atom_Blank)
@@ -612,7 +667,7 @@ void Lv2Effect::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
         LV2_Atom_Vector *pVector = (LV2_Atom_Vector*)pAtom;
         writer.start_array();
         {
-            size_t n = (pAtom->size-sizeof(LV2_Atom_Vector))/pVector->body.child_size;
+            size_t n = (pAtom->size-sizeof(pVector->body))/pVector->body.child_size;
             char *pItems = ((char*)pAtom) + sizeof(LV2_Atom_Vector);
             if (pVector->body.child_type == uris.atom_float)
             {
@@ -662,22 +717,36 @@ void Lv2Effect::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
         writer.start_object();
 
         const LV2_Atom_Object *obj = (const LV2_Atom_Object *)pAtom;
-        std::string id =  pHost->Lv2UriudToString(obj->body.id);
-        std::string type =  pHost->Lv2UriudToString(obj->body.otype);        
-
-        writer.write_json_member("id",id.c_str());
-        writer.write_json_member("lv2Type",type.c_str());
-
         bool firstMember = true;
+        if (obj->body.id != 0)
+        {
+            std::string id = pHost->Lv2UriudToString(obj->body.id);
+            writer.write_member("id",id.c_str());
+            firstMember = false;
+        }
+
+        if (obj->body.otype != 0)
+        {
+            std::string type =  pHost->Lv2UriudToString(obj->body.otype);        
+            writer.write_member("lv2Type",type.c_str());
+            if (!firstMember)
+            {
+                writer.write_raw(",");
+            }
+            firstMember = false;
+        }
+
         LV2_ATOM_OBJECT_FOREACH (obj, prop) {
             if (!firstMember) {
                 writer.write_raw(",");
             }
             firstMember = false;
             std::string key = pHost->Lv2UriudToString(prop->key);
+            key = UriToFieldName(key);
             writer.write(key);
             writer.write_raw(": ");
             LV2_Atom *value = &(prop->value);
+            WriteAtom(writer,value);
         }
         writer.end_object();
         

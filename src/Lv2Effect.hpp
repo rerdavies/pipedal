@@ -33,8 +33,11 @@
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
 #include "lv2/atom.lv2/forge.h"
 
+
 namespace pipedal
 {
+
+    class RealtimeRingBufferWriter;    
 
     class Lv2Effect : public IEffect
     {
@@ -144,7 +147,7 @@ namespace pipedal
 
         Uris uris;
 
-        long instanceId;
+        uint64_t instanceId;
         BufferPool bufferPool;
 
         static LV2_Worker_Status worker_schedule_fn(LV2_Worker_Schedule_Handle handle,
@@ -167,6 +170,8 @@ namespace pipedal
         virtual void RequestParameter(LV2_URID uridUri);
         virtual void GatherParameter(RealtimeParameterRequest*pRequest);
 
+        virtual void RelayOutputMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter);
+
         virtual uint8_t*GetAtomInputBuffer() {
             if (this->inputAtomBuffers.size() == 0) return nullptr;
             return (uint8_t*)this->inputAtomBuffers[0];
@@ -178,6 +183,8 @@ namespace pipedal
 
         }
         virtual std::string AtomToJson(uint8_t*pAtom);
+        virtual std::string GetAtomObjectType(uint8_t*pData);
+
 
 
 
@@ -261,7 +268,7 @@ namespace pipedal
         }
 
         void Activate();
-        void Run(uint32_t samples);
+        void Run(uint32_t samples, uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter);
         void Deactivate();
     };
 

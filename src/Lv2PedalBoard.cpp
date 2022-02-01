@@ -44,7 +44,7 @@ std::vector<float *> Lv2PedalBoard::AllocateAudioBuffers(int nChannels)
     return result;
 }
 
-int Lv2PedalBoard::GetControlIndex(long instanceId, const std::string &symbol)
+int Lv2PedalBoard::GetControlIndex(uint64_t instanceId, const std::string &symbol)
 {
     for (int i = 0; i < realtimeEffects.size(); ++i)
     {
@@ -109,7 +109,7 @@ std::vector<float *> Lv2PedalBoard::PrepareItems(
                 {
                     pEffect = pLv2Effect;
 
-                    long instanceId = pEffect->GetInstanceId();
+                    uint64_t instanceId = pEffect->GetInstanceId();
 
                     if (inputBuffers.size() == 1)
                     {
@@ -142,9 +142,9 @@ std::vector<float *> Lv2PedalBoard::PrepareItems(
                     }
 
                     this->processActions.push_back(
-                        [pLv2Effect](uint32_t frames)
+                        [pLv2Effect,this,instanceId](uint32_t frames)
                         {
-                            pLv2Effect->Run(frames);
+                            pLv2Effect->Run(frames,instanceId,this->ringBufferWriter);
                         });
                 }
             }
@@ -356,9 +356,9 @@ static void Copy(float *input, float *output, uint32_t samples)
         output[i] = input[i];
     }
 }
-bool Lv2PedalBoard::Run(float **inputBuffers, float **outputBuffers, uint32_t samples)
+bool Lv2PedalBoard::Run(float **inputBuffers, float **outputBuffers, uint32_t samples, RealtimeRingBufferWriter*ringBufferWriter)
 {
-
+    this->ringBufferWriter = ringBufferWriter;
     for (int i = 0; i < this->pedalBoardInputBuffers.size(); ++i)
     {
         if (inputBuffers[i] == nullptr)

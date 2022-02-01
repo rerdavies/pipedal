@@ -163,6 +163,69 @@ namespace pipedal
                 return true;
             }
         }
+        // Write two disjoint areas of memory atomically.
+        bool write(size_t bytes, uint8_t *data, size_t bytes2, uint8_t*data2)
+        {
+            if (MULTI_WRITER)
+            {
+                std::lock_guard guard(write_mutex);
+                if (writeSpace() <= bytes+sizeof(bytes2)+bytes2) {
+                    return false;
+                }
+                size_t index = this->writePosition;
+                for (size_t i = 0; i < bytes; ++i)
+                {
+                    buffer[(index+i) & ringBufferMask] = data[i];
+                }
+                index = (index+bytes) & ringBufferMask;
+                
+                for (size_t i = 0; i < sizeof(bytes2); ++i)
+                {
+                    buffer[(index+i) & ringBufferMask] = ((char*)&bytes2)[i];
+                }
+                index = (index+sizeof(bytes2)) & ringBufferMask;
+
+                for (size_t i = 0; i < bytes2; ++i)
+                {
+                    buffer[(index+i) & ringBufferMask] = data2[i];
+                }
+                this->writePosition = (index+bytes2) & ringBufferMask;
+                if (SEMAPHORE_READER)
+                {
+                    sem_post(&readSemaphore);
+                }
+                return true;
+            } else {
+                if (writeSpace() <= bytes+sizeof(bytes2)+bytes2) {
+                    return false;
+                }
+                size_t index = this->writePosition;
+                for (size_t i = 0; i < bytes; ++i)
+                {
+                    buffer[(index+i) & ringBufferMask] = data[i];
+                }
+                index = (index+bytes) & ringBufferMask;
+                
+                for (size_t i = 0; i < sizeof(bytes2); ++i)
+                {
+                    buffer[(index+i) & ringBufferMask] = ((char*)&bytes2)[i];
+                }
+                index = (index+sizeof(bytes2)) & ringBufferMask;
+
+                for (size_t i = 0; i < bytes2; ++i)
+                {
+                    buffer[(index+i) & ringBufferMask] = data2[i];
+                }
+                this->writePosition = (index+bytes2) & ringBufferMask;
+                
+                if (SEMAPHORE_READER)
+                {
+                    sem_post(&readSemaphore);
+                }
+                return true;
+            }
+        }
+
         bool read(size_t bytes, uint8_t*data)
         {
             if (readSpace() < bytes) return false;

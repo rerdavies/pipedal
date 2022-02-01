@@ -96,7 +96,7 @@ bool PedalBoard::SetControlValue(long pedalItemId, const std::string &symbol, fl
 
 PedalBoardItem PedalBoard::MakeEmptyItem()
 {
-    long instanceId = NextInstanceId();
+    uint64_t instanceId = NextInstanceId();
 
     PedalBoardItem result;
     result.instanceId(instanceId);
@@ -109,7 +109,7 @@ PedalBoardItem PedalBoard::MakeEmptyItem()
 
 PedalBoardItem PedalBoard::MakeSplit()
 {
-    long instanceId = NextInstanceId();
+    uint64_t instanceId = NextInstanceId();
 
     PedalBoardItem result;
     result.instanceId(instanceId);
