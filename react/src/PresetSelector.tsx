@@ -298,7 +298,7 @@ const PresetSelector =
                                     {
                                         presets.presets.map((preset) => {
                                             return (
-                                                <MenuItem value={preset.instanceId} >
+                                                <MenuItem key={preset.instanceId} value={preset.instanceId} >
                                                     {(presets.presetChanged && preset.instanceId === presets.selectedInstanceId)
                                                         ? (preset.name + "*")
                                                         : (preset.name)

@@ -556,7 +556,7 @@ const PluginControl =
                             style={{ marginLeft: 4, marginRight: 4, width: 140 }}
                         >
                             {control.scale_points.map((scale_point: ScalePoint) => (
-                                <MenuItem value={scale_point.value}>{scale_point.label}</MenuItem>
+                                <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>
 
                             ))}
                         </Select>

@@ -345,10 +345,14 @@ export const VuMeter =
 
             addVuSubscription() {
                 this.removeVuSubscription();
-                if (this.props.instanceId !== -1) {
-                    this.subscribedInstanceId = this.props.instanceId;
-                    this.subscriptionHandle = this.model.addVuSubscription(this.props.instanceId, this.onVuChanged);
-                    this.resetTelltales();
+
+                if (this.model.state.get() === State.Ready)
+                {
+                    if (this.props.instanceId !== -1) {
+                        this.subscribedInstanceId = this.props.instanceId;
+                        this.subscriptionHandle = this.model.addVuSubscription(this.props.instanceId, this.onVuChanged);
+                        this.resetTelltales();
+                    }
                 }
             }
             removeVuSubscription() {
@@ -407,6 +411,8 @@ export const VuMeter =
                 if (state === State.Ready)
                 {
                     this.addVuSubscription(); // re-subscribe.
+                } else {
+                    this.removeVuSubscription();
                 }
             }
 

@@ -30,13 +30,15 @@ import ToobInputStageViewFactory from './ToobInputStageView';
 import ToobToneStackViewFactory from './ToobToneStackView';
 import ToobCabSimViewFactory from './ToobCabSimView';
 import ToobPowerStage2Factory  from './ToobPowerStage2View';
+import ToobSpectrumAnalyzerViewFactory from './ToobSpectrumAnalyzerView';
 
 
 let pluginFactories: IControlViewFactory[] = [
     new ToobInputStageViewFactory(),
     new ToobToneStackViewFactory(),
     new ToobCabSimViewFactory(),
-    new ToobPowerStage2Factory()
+    new ToobPowerStage2Factory(),
+    new ToobSpectrumAnalyzerViewFactory()
 ];
 
 

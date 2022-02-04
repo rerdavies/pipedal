@@ -127,7 +127,7 @@ const MidiBindingView =
             generateControlSelects(): React.ReactNode[] {
 
                 return Utility.validMidiControllers.map((control) => (
-                    <MenuItem value={control.value}>{control.displayName}</MenuItem>
+                    <MenuItem key={control.value} value={control.value}>{control.displayName}</MenuItem>
                     )
                 );
             }

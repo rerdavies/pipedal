@@ -40,16 +40,6 @@ const styles = (theme: Theme) => createStyles({
     },
 });
 
-interface SvgRect 
-{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    color: string;
-
-}
-
 interface ToobWaveShapeProps extends WithStyles<typeof styles> {
     instanceId: number;
     controlNumber: number;

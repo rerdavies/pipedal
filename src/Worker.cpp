@@ -71,7 +71,11 @@ LV2_Worker_Status Worker::worker_respond_fn(LV2_Worker_Respond_Handle handle, ui
 
 LV2_Worker_Status Worker::WorkerResponse(uint32_t size, const void *data)
 {
-    if (responseRingBuffer.write(sizeof(size), (uint8_t *)&size))
+    if (responseRingBuffer.writeSpace() < sizeof(size)+size)
+    {
+        return LV2_WORKER_ERR_NO_SPACE;
+    }
+    if (!responseRingBuffer.write(sizeof(size), (uint8_t *)&size))
     {
         return LV2_WORKER_ERR_NO_SPACE;
     }
@@ -107,7 +111,7 @@ void Worker::ThreadProc()
             {
                 return;
             }
-            size_t size;
+            uint32_t size;
             while (requestRingBuffer.readSpace() > sizeof(size))
             {
                 if (!requestRingBuffer.read(sizeof(size), (uint8_t *)&size))

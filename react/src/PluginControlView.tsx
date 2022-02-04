@@ -365,6 +365,7 @@ const PluginControlView =
 
                 for (let i = 0; i < controls.length; ++i)
                 {
+                    controls[i].key = 'k'+i;
                     result.push(controls[i]);
                 }
 

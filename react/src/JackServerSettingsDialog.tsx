@@ -288,7 +288,7 @@ const JackServerSettingsDialog = withStyles(styles)(
                                     {((!noDevices) && !waitingForDevices) && (
                                         this.state.alsaDevices!.map((device) =>
                                         (
-                                            <MenuItem value={device.id}>{device.name}</MenuItem>
+                                            <MenuItem key={device.id} value={device.id}>{device.name}</MenuItem>
                                         )
 
                                         )

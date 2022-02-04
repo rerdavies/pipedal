@@ -658,7 +658,7 @@ void Lv2Effect::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
         );
     } else if (pAtom->type == uris.atom_String)
     {
-        const char *p = (const char*) (((char*) pAtom) + sizeof(LV2_Atom_String));
+        const char *p = (((const char*) pAtom) + sizeof(LV2_Atom_String));
         writer.write(
             p
         );
