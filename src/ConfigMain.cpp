@@ -461,7 +461,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
     sysExec(SYSTEMCTL_BIN " daemon-reload");
 
-    cout << "Starting service" << endl;
+    cout << "Starting services" << endl;
     RestartService(false);
     EnableService();
 
