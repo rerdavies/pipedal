@@ -4,6 +4,15 @@ cmake_minimum_required(VERSION 3.16.0)
 
 include(FindPkgConfig)
 
+
+#  apt install libsdbus-c++-dev
+# apt install libsdbus-c++-bin
+find_package(sdbus-c++ REQUIRED)
+
+
+
+
+
 # Can't get the pkg_check to work.
 # pkg_check_modules(LIBNL3 "nl-genl-3")
 # if(!LIBNL3_FOUND)
@@ -54,10 +63,14 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+set (USE_SANITIZE False)
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
-    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -fsanitize=address -static-libasan -O0 -DDEBUG -Werror" )
+    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -O0 -DDEBUG -Werror" )
+    if (USE_SANITIZE) 
+        set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fsanitize=address -static-libasan " )
+    endif()
 elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     message(STATUS "RelWithgDebInfo build")
     set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -Werror" )
@@ -72,7 +85,20 @@ endif()
 
 message (STATUS "Cxx flags: ${CMAKE_CXX_FLAGS}"  )
 
-add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_BIND_GLOBAL_PLACEHOLDERS)
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_BIND_GLOBAL_PLACEHOLDERS -DONBOARDING)
+
+# build Bluez dbus proxies
+# requires apt install libsdbus-c++-bin
+add_custom_command(
+    OUTPUT ${PROJECT_SOURCE_DIR}/src/dbus/bluez_proxy.h  ${PROJECT_SOURCE_DIR}/src/dbus/bluez_adaptor.h
+    DEPENDS ${PROJECT_SOURCE_DIR}/src/dbus/bluez.xml
+    COMMAND sdbus-c++-xml2cpp ${PROJECT_SOURCE_DIR}/src/dbus/bluez.xml 
+        --proxy=${PROJECT_SOURCE_DIR}/src/dbus/bluez_proxy.h 
+        --adaptor=${PROJECT_SOURCE_DIR}/src/dbus/bluez_adaptor.h 
+    
+    COMMENT "Generating D-Bus bindings for bluez"
+)
+ 
 
 set (PIPEDAL_SOURCES
     SysExec.cpp SysExec.hpp
@@ -101,7 +127,6 @@ set (PIPEDAL_SOURCES
     Worker.hpp Worker.cpp
     OptionsFeature.hpp OptionsFeature.cpp
     VuUpdate.hpp VuUpdate.cpp
-    asan_options.cpp
     Units.hpp Units.cpp
     RingBuffer.hpp
     PiPedalConfiguration.hpp PiPedalConfiguration.cpp
@@ -119,12 +144,15 @@ set (PIPEDAL_SOURCES
     WifiChannels.cpp
     RegDb.cpp RegDb.hpp
     PiPedalAlsa.hpp PiPedalAlsa.cpp
+    InheritPriorityMutex.hpp InheritPriorityMutex.cpp
 )
 
 configure_file(config.hpp.in config.hpp)
 
 #################################
-add_executable(pipedald ${PIPEDAL_SOURCES} main.cpp 
+add_executable(pipedald ${PIPEDAL_SOURCES}     
+    asan_options.cpp  # disable leak checking for sanitize=address.
+    main.cpp 
     )
 
 include_directories( ${pipedald_SOURCE_DIR}/. ../build/src) 
@@ -138,18 +166,24 @@ target_include_directories(pipedald PRIVATE
     )
 
 target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs asound
-    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd
+    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd SDBusCpp::sdbus-c++
     )
 
 #################################
 add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
+    dbus/bluez_proxy.h dbus/bluez_adaptor.h
+    dbus/bluez_test.cpp
     jsonTest.cpp
     WifiChannelsTest.cpp
     PiPedalAlsaTest.cpp
 
+    Lv2HostLeakTest.cpp
+
+
     SystemConfigFile.hpp SystemConfigFile.cpp
     SystemConfigFileTest.cpp
     BeastServerTest.cpp
+    MemDebug.cpp
     )
 
 configure_file(config.hpp.in config.hpp)
@@ -164,7 +198,7 @@ target_include_directories(pipedaltest PRIVATE
     )
 
 target_link_libraries(pipedaltest PRIVATE pthread atomic stdc++fs asound
-    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd
+    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd SDBusCpp::sdbus-c++
     )
 
 #################################

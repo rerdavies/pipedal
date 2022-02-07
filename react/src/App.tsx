@@ -61,14 +61,15 @@ import RenameDialog from './RenameDialog';
 import JackStatusView from './JackStatusView';
 
 
+
 const theme = createMuiTheme({
     palette: {
         primary: {
             main: "#324c6c"
+        },
+        secondary: {
+            main: "#FF6060"
         }
-        // secondary: {
-        //   main: "#00E676"
-        // }
     }
 });
 
@@ -315,10 +316,10 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
         this.model_ = PiPedalModelFactory.getInstance();
 
         this.model_.zoomedUiControl.addOnChangedHandler(
-            ()=> {
+            () => {
                 this.setState({
-                    zoomedControlOpen: this.model_.zoomedUiControl.get()  !== undefined,
-                    zoomedControlInfo: this.model_.zoomedUiControl.get() 
+                    zoomedControlOpen: this.model_.zoomedUiControl.get() !== undefined,
+                    zoomedControlInfo: this.model_.zoomedUiControl.get()
                 });
             }
         );
@@ -634,10 +635,10 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                     <CssBaseline />
                     {(!this.state.tinyToolBar) ?
                         (
-                            <AppBar position="absolute">
-                                <Toolbar variant="dense" >
+                            <AppBar position="absolute" style={{background: "white"}}>
+                                <Toolbar variant="dense"   >
                                     <IconButton edge="start"
-                                        color="inherit" aria-label="menu" onClick={() => { this.showDrawer() }}
+                                        aria-label="menu" onClick={() => { this.showDrawer() }}
                                     >
                                         <MenuButton />
                                     </IconButton>
@@ -648,7 +649,7 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                                     <div style={{ flex: "2 2 30px" }} />
                                     {this.state.canFullScreen &&
                                         <IconButton
-                                            color="inherit" aria-label="menu" onClick={() => { this.toggleFullScreen(); }}>
+                                            aria-label="menu" onClick={() => { this.toggleFullScreen(); }}>
                                             {this.state.isFullScreen ? (
                                                 <FullscreenExitIcon />
                                             ) : (
@@ -663,13 +664,13 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                         ) : (
                             <div className={classes.toolBarContent} >
                                 <IconButton style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
-                                    color="inherit" aria-label="menu" onClick={() => { this.showDrawer() }}
+                                    aria-label="menu" onClick={() => { this.showDrawer() }}
                                 >
                                     <MenuButton />
                                 </IconButton>
                                 {this.state.canFullScreen && (
                                     <IconButton style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
-                                        color="inherit" aria-label="menu" onClick={() => { this.toggleFullScreen(); }}>
+                                        aria-label="menu" onClick={() => { this.toggleFullScreen(); }}>
                                         {this.state.isFullScreen ? (
                                             <FullscreenExitIcon />
                                         ) : (
@@ -784,12 +785,12 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                         }
                     />
 
-                    <ZoomedUiControl 
+                    <ZoomedUiControl
                         dialogOpen={this.state.zoomedControlOpen}
-                        controlInfo={this.state.zoomedControlInfo} 
-                        onDialogClose={()=>{ this.setState({zoomedControlOpen: false});} }
-                        onDialogClosed={()=>{ this.model_.zoomedUiControl.set(undefined); }
-                    }
+                        controlInfo={this.state.zoomedControlInfo}
+                        onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
+                        onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
+                        }
                     />
                     <Dialog
                         open={this.state.alertDialogOpen}

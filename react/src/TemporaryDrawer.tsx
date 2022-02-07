@@ -95,10 +95,12 @@ export const TemporaryDrawer = withStyles(drawerStyles)(
                                 onClick={() => { this.fireClose(); }}
                                 onKeyDown={() => { this.fireClose(); }}
                             >
-                                <Toolbar className={classes.drawer_header} style={{backgroundImage: 'url("img/ic_drawer.svg")' }} >
+                                <Toolbar className={classes.drawer_header} 
+                                    style={{backgroundImage: 'url("img/ic_drawer_2.png")', border: "red solid", borderWidth: "0px 0px 3px 0px" }} 
+                                >
                                     <IconButton style={{ marginLeft: -24  }}
                                     >
-                                        <ArrowBackIcon />
+                                        <ArrowBackIcon style={{ fill: '#666' }} />
                                     </IconButton>
                                 </Toolbar>
                                 {this.props.children}

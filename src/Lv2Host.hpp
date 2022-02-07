@@ -100,6 +100,13 @@ private:
         this->parent_ = parent.get();
     }
     void add_child(std::shared_ptr<Lv2PluginClass> &child) {
+        for (size_t i = 0; i < children_.size(); ++i)
+        {
+            if (children_[i]->uri_ == child->uri_)
+            {
+                return;
+            }
+        }
         children_.push_back(child);
     }
 public:
@@ -180,9 +187,10 @@ enum class Lv2BufferType {
 };
 
 class Lv2PortInfo {
+public:
+    Lv2PortInfo(Lv2Host*lv2Host,const LilvPlugin*pPlugin,const LilvPort *pPort);
 private:
     friend class Lv2PluginInfo;
-    Lv2PortInfo(Lv2Host*lv2Host,const LilvPlugin*pPlugin,const LilvPort *pPort);
 
     uint32_t index_;
     std::string symbol_;
@@ -536,8 +544,66 @@ public:
     virtual Lv2Effect*CreateEffect(const PedalBoardItem &pedalBoard) = 0;
 };
 
+
+class LilvNodePtr {
+protected:
+    LilvNode *node = nullptr;
+    LilvNodePtr(const LilvNodePtr&) {}; // no copy.
+    LilvNodePtr(const LilvNode*) {}; // const LilvNodes are owned by lilv by convention.
+public:
+    LilvNodePtr() { }
+    LilvNodePtr(LilvNode*node) { this->node = node; }
+    ~LilvNodePtr() { Free(); }
+    void Free() { if (node != nullptr) lilv_node_free(node); node = nullptr;}
+
+    operator const LilvNode *()
+    {
+        return this->node;
+    }
+
+    LilvNode **operator&()
+    {
+        return &(this->node);
+    }
+    operator bool()
+    {
+        return this->node != nullptr;
+    }
+    LilvNodePtr&operator=(LilvNode*node) { Free(); this->node = node; return *this;}
+};
+
 class Lv2Host: private IHost {
 private:
+    static const char *RDFS_COMMENT_URI;
+    class LilvUris {
+    public:
+        void Initialize(LilvWorld*pWorld);
+        void Free();
+
+        LilvNodePtr  rdfsComment;
+        LilvNodePtr logarithic_uri;
+        LilvNodePtr display_priority_uri;
+        LilvNodePtr range_steps_uri;
+        LilvNodePtr integer_property_uri;
+        LilvNodePtr enumeration_property_uri;
+        LilvNodePtr toggle_property_uri;
+        LilvNodePtr not_on_gui_property_uri;
+        LilvNodePtr midiEventNode;
+        LilvNodePtr designationNode;
+        LilvNodePtr portGroupUri;
+        LilvNodePtr unitsUri;
+        LilvNodePtr bufferType_uri;
+        LilvNodePtr pset_Preset;
+        LilvNodePtr rdfs_label;
+        LilvNodePtr symbolUri;
+        LilvNodePtr nameUri;
+
+    };
+    LilvUris lilvUris;
+
+    LilvNode *get_comment(const std::string &uri);
+
+
     size_t maxBufferSize = 1024;
     size_t maxAtomBufferSize = 16*1024;
     bool hasMidiInputChannel;

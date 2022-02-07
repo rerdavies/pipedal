@@ -57,7 +57,7 @@ interface PresetSelectorState {
 };
 
 
-const selectColor = "white";
+const selectColor = "black";
 
 const styles = (theme: Theme) => createStyles({
     select: { // fu fu fu.Overrides for white selector on dark background.
@@ -279,12 +279,13 @@ const PresetSelector =
                 let presets = this.state.presets;
                 let classes = this.props.classes;
                 return (
-                    <div style={{ marginLeft: 12, display: "flex", flexDirection: "row", justifyContent: "left", flexWrap: "nowrap", alignItems: "center", height: "100%", position: "relative" }}>
+                    <div style={{ marginLeft: 12, display: "flex", flexDirection: "row",
+                     justifyContent: "left", flexWrap: "nowrap", alignItems: "center", height: "100%", position: "relative" }}>
                         <div style={{ flex: "1 1 auto", minWidth: 60, maxWidth: 300, position: "relative", paddingRight: 12 }} >
                             {true ? (
                                 <Select
                                     className={classes.select}
-                                    style={{ width: "100%", position: "relative", top: 0, color: "white" }} disabled={!this.state.enabled}
+                                    style={{ width: "100%", position: "relative", top: 0}} disabled={!this.state.enabled}
                                     onChange={(e, extra) => this.handleChange(e, extra)}
                                     onClose={(e) => this.handleSelectClose(e)}
                                     displayEmpty
@@ -328,13 +329,13 @@ const PresetSelector =
                             )}
                         </div>
                         <div style={{ flex: "0 0 auto" }}>
-                            <IconButton color="inherit" style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0 }}
+                            <IconButton style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0 }}
                                 onClick={(e) => { this.handleSave(); }}  >
                                 <SaveIconOutline style={{ opacity: 0.75 }} />
                             </IconButton>
                         </div>
                         <div style={{ flex: "0 0 auto" }}>
-                            <IconButton color="inherit" style={{ flex: "0 0 auto" }} onClick={(e) => this.handlePresetMenuClick(e)}>
+                            <IconButton style={{ flex: "0 0 auto" }} onClick={(e) => this.handlePresetMenuClick(e)}>
                                 <MoreVertIcon style={{ opacity: 0.75 }} />
                             </IconButton>
                             <Menu

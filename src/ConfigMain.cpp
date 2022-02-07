@@ -302,6 +302,11 @@ void InstallJackService()
     // sysExec(USERMOD_BIN " -a -G " JACK_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
     sysExec(USERMOD_BIN " -a -G" AUDIO_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
 
+    // If ONBOARDING, add to bluetooth group.
+    #ifdef ONBOARDING
+        sysExec(USERMOD_BIN " -a -G bluetooth " JACK_SERVICE_ACCOUNT_NAME);
+    #endif
+
     // deploy the systemd service file
     std::map<std::string, std::string> map; // nothing to customize.
 

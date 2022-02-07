@@ -139,6 +139,7 @@ add_custom_command(
         public/img/fx_dial.svg
         public/img/drive_file_rename_outline_black_24dp.svg
         public/img/fx_filter.svg
+        public/img/fx_filter_hp.svg
         public/img/cx_mono.svg
         public/img/fx_limiter.svg
         public/img/fx_converter.svg
@@ -157,6 +158,8 @@ add_custom_command(
         public/img/fx_amplifier.svg
         public/img/fx_plugin.svg
         public/img/ic_drawer.svg
+        public/img/ic_drawer_2.png
+        
         public/img/fx_terminal.svg
         public/img/fx_spatial.svg
         public/img/fx_pitch.svg

@@ -36,7 +36,7 @@ const styles = (theme: Theme) => createStyles({
         width: PLOT_WIDTH, height: PLOT_HEIGHT, background: "#444",
         borderRadius: 6,
         marginTop: 12, marginLeft: 8, marginRight: 8,
-        boxShadow: "1px 4px 8px #000 inset"
+        boxShadow: "1px 2px 4px #000 inset"
     },
 });
 
@@ -203,7 +203,7 @@ const ToobWaveShapeView =
             }
             toY(value: number): number {
                 let yMid = (this.yMin + this.yMax) / 2;
-                return yMid - yMid * value;
+                return yMid - (this.yMax-this.yMin)/2 * value;
             }
             toX(value: number): number {
                 let xMid = (this.xMin + this.xMax)/2;
@@ -358,6 +358,40 @@ const ToobWaveShapeView =
 
                 return result;
             }
+            grid() : React.ReactNode[] {
+                let result : React.ReactNode[] = [];
+                let xMid = (this.xMin+this.xMax)/2;
+                let yMid = (this.yMin+this.yMax)/2;
+                let color = "#888";
+                let kx = 0;
+                result.push(
+                    <line x1={this.xMin} y1={this.yMin} x2={this.xMax} y2={this.yMin} stroke={color} strokeWidth={0.5} 
+                        key={"grid"+ kx++}/>
+                ); 
+                result.push(
+                    <line x1={this.xMin} y1={yMid} x2={this.xMax} y2={yMid} stroke={color} strokeWidth={0.5} 
+                        key={"grid"+ kx++}/>
+                    ); 
+                result.push(
+                    <line x1={this.xMin} y1={this.yMax} x2={this.xMax} y2={this.yMax} stroke={color} strokeWidth={0.5} 
+                        key={"grid"+ kx++}/>
+                    ); 
+                result.push(
+                    <line x1={this.yMin} y1={this.yMin} x2={this.yMin} y2={this.yMax} stroke={color} strokeWidth={0.5} 
+                    key={"grid"+ kx++}/>
+                ); 
+                result.push(
+                    <line x1={xMid} y1={this.yMin} x2={xMid} y2={this.yMax} stroke={color} strokeWidth={0.5} 
+                        key={"grid"+ kx++}/>
+
+                ); 
+                result.push(
+                    <line x1={this.xMax} y1={this.yMin} x2={this.xMax} y2={this.yMax} stroke={color} strokeWidth={0.5} 
+                        key={"grid"+ kx++}/>
+                    ); 
+                return result;
+
+            }
             peakColor(value: number): string {
                 if (value >= 1.0 || value <= -1.0) return this.redColor;
                 if (value >= 0.5 || value <= -0.5) return this.yellowColor;
@@ -384,6 +418,9 @@ const ToobWaveShapeView =
                 return (
                     <div className={classes.frame} >
                         <svg width={PLOT_WIDTH} height={PLOT_HEIGHT} viewBox={"0 0 " + PLOT_WIDTH + " " + PLOT_HEIGHT} >
+                            {
+                                this.grid()
+                            }
                             { this.horizontalVuMeter(this.props.vuMin,this.props.vuMax,
                                 this.props.vuMinPeak,this.props.vuMaxPeak)
                             }

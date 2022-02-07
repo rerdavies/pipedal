@@ -93,6 +93,52 @@ namespace pipedal
     };
 }
 
+
+
+void Lv2Host::LilvUris::Initialize(LilvWorld*pWorld)
+{
+    rdfsComment = lilv_new_uri(pWorld, Lv2Host::RDFS_COMMENT_URI);
+    logarithic_uri = lilv_new_uri(pWorld, LV2_PORT_LOGARITHMIC);
+    display_priority_uri = lilv_new_uri(pWorld, LV2_PORT_DISPLAY_PRIORITY);
+    range_steps_uri = lilv_new_uri(pWorld, LV2_PORT_RANGE_STEPS);
+    integer_property_uri = lilv_new_uri(pWorld, LV2_INTEGER);
+    enumeration_property_uri = lilv_new_uri(pWorld, LV2_ENUMERATION);
+    toggle_property_uri = lilv_new_uri(pWorld, LV2_CORE__toggled);
+    not_on_gui_property_uri = lilv_new_uri(pWorld, LV2_PORT_PROPS__notOnGUI);
+    midiEventNode = lilv_new_uri(pWorld, LV2_MIDI_EVENT);
+    designationNode = lilv_new_uri(pWorld, LV2_DESIGNATION);
+    portGroupUri = lilv_new_uri(pWorld, LV2_PORT_GROUPS__group);
+    unitsUri = lilv_new_uri(pWorld, LV2_UNITS__unit);
+    bufferType_uri = lilv_new_uri(pWorld, LV2_ATOM__bufferType);
+    pset_Preset = lilv_new_uri(pWorld, LV2_PRESETS__Preset);
+    rdfs_label = lilv_new_uri(pWorld, LILV_NS_RDFS "label");
+    symbolUri = lilv_new_uri(pWorld, LV2_CORE__symbol);
+    nameUri = lilv_new_uri(pWorld, LV2_CORE__name);
+
+}
+
+void Lv2Host::LilvUris::Free()
+{
+    rdfsComment.Free();
+    logarithic_uri.Free();
+    display_priority_uri.Free();
+    range_steps_uri.Free();
+    integer_property_uri.Free();
+    enumeration_property_uri.Free();
+    toggle_property_uri.Free();
+    not_on_gui_property_uri.Free();
+    midiEventNode.Free();
+    designationNode.Free();
+    portGroupUri.Free();
+    unitsUri.Free();
+    bufferType_uri.Free();
+    pset_Preset.Free();
+    rdfs_label.Free();
+    symbolUri.Free();
+    nameUri.Free();
+
+}
+
 static std::string nodeAsString(const LilvNode *node)
 {
     if (node == nullptr)
@@ -134,11 +180,11 @@ static float nodeAsFloat(const LilvNode *node, float default_ = 0)
     return default_;
 }
 
-class NodeAutoFree
+class NodeAutoFree: public LilvNodePtr
 {
-    LilvNode *node = nullptr;
-
+    
     // const LilvNode* returns must not be freed, by convention.
+private:
     NodeAutoFree(const LilvNode *node)
     {
     }
@@ -146,25 +192,10 @@ class NodeAutoFree
 public:
     NodeAutoFree()
     {
-        this->node = nullptr;
     }
     NodeAutoFree(LilvNode *node)
+    :LilvNodePtr(node)
     {
-        this->node = node;
-    }
-    operator const LilvNode *()
-    {
-        return this->node;
-    }
-
-    LilvNode **operator&()
-    {
-        return &(this->node);
-    }
-
-    operator bool()
-    {
-        return this->node != nullptr;
     }
 
     float as_float(float defaultValue = 0)
@@ -194,11 +225,6 @@ public:
 
     ~NodeAutoFree()
     {
-        if (this->node != nullptr)
-        {
-            lilv_free(this->node);
-            this->node = nullptr;
-        }
     }
 };
 
@@ -235,6 +261,7 @@ void Lv2Host::OnConfigurationChanged(const JackConfiguration &configuration, con
 Lv2Host::~Lv2Host()
 {
     delete[] lv2Features;
+    lilvUris.Free();
     free_world();
     delete urids;
 }
@@ -290,21 +317,21 @@ std::shared_ptr<Lv2PluginClass> Lv2Host::GetPluginClass(const LilvPluginClass *p
 std::shared_ptr<Lv2PluginClass> Lv2Host::MakePluginClass(const LilvPluginClass *pClass)
 {
     std::string uri = nodeAsString(lilv_plugin_class_get_uri(pClass));
-
-    std::shared_ptr<Lv2PluginClass> pResult = this->classesMap[uri];
-    if (!pResult)
+    auto  t = this->classesMap.find(uri);
+    if (t != classesMap.end())
     {
-        const LilvNode *parentNode = lilv_plugin_class_get_parent_uri(pClass);
-        std::string parent_uri = nodeAsString(parentNode);
-
-        std::string name = nodeAsString(lilv_plugin_class_get_label(pClass));
-
-        std::shared_ptr<Lv2PluginClass> result = std::make_shared<Lv2PluginClass>(
-            name.c_str(), uri.c_str(), parent_uri.c_str());
-
-        classesMap[uri] = std::move(result);
+        return t->second;
     }
-    return pResult;
+    const LilvNode *parentNode = lilv_plugin_class_get_parent_uri(pClass);
+    std::string parent_uri = nodeAsString(parentNode);
+
+    std::string name = nodeAsString(lilv_plugin_class_get_label(pClass));
+
+    std::shared_ptr<Lv2PluginClass> result = std::make_shared<Lv2PluginClass>(
+        name.c_str(), uri.c_str(), parent_uri.c_str());
+
+    classesMap[uri] = result;
+    return result;
 }
 
 void Lv2Host::LoadPluginClassesFromLilv()
@@ -352,6 +379,7 @@ void Lv2Host::Load(const char *lv2Path)
     pWorld = lilv_world_new();
     lilv_world_load_all(pWorld);
 
+    lilvUris.Initialize(pWorld);
 
     const LilvPlugins *plugins = lilv_world_get_all_plugins(pWorld);
 
@@ -465,14 +493,13 @@ static std::vector<std::string> nodeAsStringArray(const LilvNodes *nodes)
     return result;
 }
 
-static const char *RDFS_COMMENT_URI = "http://www.w3.org/2000/01/rdf-schema#"
+const char *Lv2Host::RDFS_COMMENT_URI = "http://www.w3.org/2000/01/rdf-schema#"
                                       "comment";
 
-static LilvNode *get_comment(LilvWorld *pWorld, const std::string &uri)
+LilvNode *Lv2Host::get_comment(const std::string &uri)
 {
     NodeAutoFree uriNode = lilv_new_uri(pWorld, uri.c_str());
-    NodeAutoFree rdfsComment = lilv_new_uri(pWorld, RDFS_COMMENT_URI);
-    LilvNode *result = lilv_world_get(pWorld, uriNode, rdfsComment, nullptr);
+    LilvNode *result = lilv_world_get(pWorld, uriNode, lilvUris.rdfsComment, nullptr);
     return result;
 }
 
@@ -509,7 +536,7 @@ Lv2PluginInfo::Lv2PluginInfo(Lv2Host *lv2Host, const LilvPlugin *pPlugin)
     NodesAutoFree extensions = lilv_plugin_get_extension_data(pPlugin);
     this->extensions_ = nodeAsStringArray(extensions);
 
-    NodeAutoFree comment = get_comment(lv2Host->pWorld, this->uri_);
+    NodeAutoFree comment = lv2Host->get_comment(this->uri_);
     this->comment_ = nodeAsString(comment);
 
     uint32_t ports = lilv_plugin_get_num_ports(pPlugin);
@@ -521,7 +548,7 @@ Lv2PluginInfo::Lv2PluginInfo(Lv2Host *lv2Host, const LilvPlugin *pPlugin)
     {
         const LilvPort *pPort = lilv_plugin_get_port_by_index(pPlugin, i);
 
-        std::shared_ptr<Lv2PortInfo> portInfo{new Lv2PortInfo(lv2Host, pPlugin, pPort)};
+        std::shared_ptr<Lv2PortInfo> portInfo = std::make_shared<Lv2PortInfo>(lv2Host, pPlugin, pPort);
         if (!portInfo->is_valid())
         {
             isValid = false;
@@ -550,6 +577,7 @@ Lv2PluginInfo::Lv2PluginInfo(Lv2Host *lv2Host, const LilvPlugin *pPlugin)
             isValid = false;
         }
     }
+
     std::sort(ports_.begin(), ports_.end(), ports_sort_compare);
     this->is_valid_ = isValid;
 }
@@ -602,16 +630,16 @@ static bool scale_points_sort_compare(const Lv2ScalePoint &v1, const Lv2ScalePoi
 {
     return v1.value() < v2.value();
 }
-Lv2PortInfo::Lv2PortInfo(Lv2Host *plugins, const LilvPlugin *plugin, const LilvPort *pPort)
+Lv2PortInfo::Lv2PortInfo(Lv2Host *host, const LilvPlugin *plugin, const LilvPort *pPort)
 {
-    auto pWorld = plugins->pWorld;
+    auto pWorld = host->pWorld;
     index_ = lilv_port_get_index(plugin, pPort);
     symbol_ = nodeAsString(lilv_port_get_symbol(plugin, pPort));
 
     NodeAutoFree name = lilv_port_get_name(plugin, pPort);
     name_ = nodeAsString(name);
 
-    classes_ = plugins->GetPluginPortClass(plugin, pPort);
+    classes_ = host->GetPluginPortClass(plugin, pPort);
 
     NodeAutoFree minNode, maxNode, defaultNode;
     min_value_ = 0;
@@ -635,11 +663,9 @@ Lv2PortInfo::Lv2PortInfo(Lv2Host *plugins, const LilvPlugin *plugin, const LilvP
     if (default_value_ < min_value_)
         default_value_ = min_value_;
 
-    NodeAutoFree logarithic_uri = lilv_new_uri(pWorld, LV2_PORT_LOGARITHMIC);
-    this->is_logarithmic_ = lilv_port_has_property(plugin, pPort, logarithic_uri);
+    this->is_logarithmic_ = lilv_port_has_property(plugin, pPort, host->lilvUris.logarithic_uri);
 
-    NodeAutoFree display_priority_uri = lilv_new_uri(pWorld, LV2_PORT_DISPLAY_PRIORITY);
-    NodesAutoFree priority_nodes = lilv_port_get_value(plugin, pPort, display_priority_uri);
+    NodesAutoFree priority_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.display_priority_uri);
 
     this->display_priority_ = -1;
     if (priority_nodes)
@@ -651,8 +677,7 @@ Lv2PortInfo::Lv2PortInfo(Lv2Host *plugins, const LilvPlugin *plugin, const LilvP
         }
     }
 
-    NodeAutoFree range_steps_uri = lilv_new_uri(pWorld, LV2_PORT_RANGE_STEPS);
-    NodesAutoFree range_steps_nodes = lilv_port_get_value(plugin, pPort, range_steps_uri);
+    NodesAutoFree range_steps_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.range_steps_uri);
     this->range_steps_ = 0;
     if (range_steps_nodes)
     {
@@ -662,17 +687,13 @@ Lv2PortInfo::Lv2PortInfo(Lv2Host *plugins, const LilvPlugin *plugin, const LilvP
             this->range_steps_ = lilv_node_as_int(range_steps_node);
         }
     }
-    NodeAutoFree integer_property_uri = lilv_new_uri(pWorld, LV2_INTEGER);
-    this->integer_property_ = lilv_port_has_property(plugin, pPort, integer_property_uri);
+    this->integer_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.integer_property_uri);
 
-    NodeAutoFree enumeration_property_uri = lilv_new_uri(pWorld, LV2_ENUMERATION);
-    this->enumeration_property_ = lilv_port_has_property(plugin, pPort, enumeration_property_uri);
+    this->enumeration_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.enumeration_property_uri);
 
-    NodeAutoFree toggle_property_uri = lilv_new_uri(pWorld, LV2_CORE__toggled);
-    this->toggled_property_ = lilv_port_has_property(plugin, pPort, toggle_property_uri);
+    this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.toggle_property_uri);
 
-    NodeAutoFree not_on_gui_property_uri = lilv_new_uri(pWorld, LV2_PORT_PROPS__notOnGUI);
-    this->not_on_gui_ = lilv_port_has_property(plugin, pPort, not_on_gui_property_uri);
+    this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris.not_on_gui_property_uri);
 
     LilvScalePoints *pScalePoints = lilv_port_get_scale_points(plugin, pPort);
     LILV_FOREACH(scale_points, iSP, pScalePoints)
@@ -688,32 +709,27 @@ Lv2PortInfo::Lv2PortInfo(Lv2Host *plugins, const LilvPlugin *plugin, const LilvP
 
     std::sort(scale_points_.begin(), scale_points_.end(), scale_points_sort_compare);
 
-    is_input_ = is_a(plugins, LV2_INPUT_PORT);
-    is_output_ = is_a(plugins, LV2_OUTPUT_PORT);
+    is_input_ = is_a(host, LV2_INPUT_PORT);
+    is_output_ = is_a(host, LV2_OUTPUT_PORT);
 
-    is_control_port_ = is_a(plugins, LV2_CORE__ControlPort);
-    is_audio_port_ = is_a(plugins, LV2_CORE__AudioPort);
-    is_atom_port_ = is_a(plugins, LV2_ATOM_PORT);
-    is_cv_port_ = is_a(plugins, LV2_CORE__CVPort);
+    is_control_port_ = is_a(host, LV2_CORE__ControlPort);
+    is_audio_port_ = is_a(host, LV2_CORE__AudioPort);
+    is_atom_port_ = is_a(host, LV2_ATOM_PORT);
+    is_cv_port_ = is_a(host, LV2_CORE__CVPort);
 
-    NodeAutoFree midiEventNode = lilv_new_uri(plugins->pWorld, LV2_MIDI_EVENT);
-    supports_midi_ = lilv_port_supports_event(plugin, pPort, midiEventNode);
+    supports_midi_ = lilv_port_supports_event(plugin, pPort, host->lilvUris.midiEventNode);
 
-    NodeAutoFree designationNode = lilv_new_uri(plugins->pWorld, LV2_DESIGNATION);
-    NodeAutoFree designationValue = lilv_port_get(plugin, pPort, designationNode);
+    NodeAutoFree designationValue = lilv_port_get(plugin, pPort, host->lilvUris.designationNode);
     designation_ = nodeAsString(designationValue);
 
-    NodeAutoFree portGroupUri = lilv_new_uri(plugins->pWorld, LV2_PORT_GROUPS__group);
-    NodeAutoFree portGroup_value = lilv_port_get(plugin, pPort, portGroupUri);
+    NodeAutoFree portGroup_value = lilv_port_get(plugin, pPort, host->lilvUris.portGroupUri);
     port_group_ = nodeAsString(portGroup_value);
 
-    NodeAutoFree unitsUri = lilv_new_uri(plugins->pWorld, LV2_UNITS__unit);
-    NodeAutoFree unitsValueUri = lilv_port_get(plugin, pPort, unitsUri);
+    NodeAutoFree unitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris.unitsUri);
     this->units_ = UriToUnits(nodeAsString(unitsValueUri));
 
 
-    NodeAutoFree bufferType_uri = lilv_new_uri(pWorld, LV2_ATOM__bufferType);
-    NodeAutoFree bufferType = lilv_port_get(plugin, pPort, bufferType_uri);
+    NodeAutoFree bufferType = lilv_port_get(plugin, pPort, host->lilvUris.bufferType_uri);
 
     this->buffer_type_ = "";
     if (bufferType)
@@ -920,11 +936,8 @@ std::vector<ControlValue> Lv2Host::LoadPluginPreset(PedalBoardItem*pedalBoardIte
         throw PiPedalStateException("No such plugin.");
     }
 
-    NodeAutoFree pset_Preset = lilv_new_uri(pWorld, LV2_PRESETS__Preset);
-    NodeAutoFree rdfs_label = lilv_new_uri(pWorld, LILV_NS_RDFS "label");
-    
 
-    LilvNodes* presets = lilv_plugin_get_related(plugin, pset_Preset);
+    LilvNodes* presets = lilv_plugin_get_related(plugin, lilvUris.pset_Preset);
 	LILV_FOREACH(nodes, i, presets) {
 		const LilvNode* preset = lilv_nodes_get(presets, i);
 		lilv_world_load_resource(pWorld, preset);
@@ -980,17 +993,15 @@ std::vector<Lv2PluginPreset> Lv2Host::GetPluginPresets(const std::string &plugin
         throw PiPedalStateException("No such plugin.");
     }
 
-    NodeAutoFree pset_Preset = lilv_new_uri(pWorld, LV2_PRESETS__Preset);
-    NodeAutoFree rdfs_label = lilv_new_uri(pWorld, LILV_NS_RDFS "label");
     
 
-    LilvNodes* presets = lilv_plugin_get_related(plugin, pset_Preset);
+    LilvNodes* presets = lilv_plugin_get_related(plugin, lilvUris.pset_Preset);
 	LILV_FOREACH(nodes, i, presets) {
 		const LilvNode* preset = lilv_nodes_get(presets, i);
 		lilv_world_load_resource(pWorld, preset);
 
 		LilvNodes* labels = lilv_world_find_nodes(
-			pWorld, preset, rdfs_label, NULL);
+			pWorld, preset, lilvUris.rdfs_label, NULL);
 		if (labels) {
 			const LilvNode* label = lilv_nodes_get_first(labels);
             std::string presetName = nodeAsString(label);
@@ -1035,13 +1046,11 @@ Lv2PortGroup::Lv2PortGroup(Lv2Host *lv2Host, const std::string &groupUri)
 {
     LilvWorld *pWorld = lv2Host->pWorld;
 
-    NodeAutoFree symbolUri = lilv_new_uri(pWorld, LV2_CORE__symbol);
-    NodeAutoFree nameUri = lilv_new_uri(pWorld, LV2_CORE__name);
     this->uri_ = groupUri;
     NodeAutoFree uri = lilv_new_uri(pWorld, groupUri.c_str());
-    LilvNode *symbolNode = lilv_world_get(pWorld, uri, symbolUri, nullptr);
+    LilvNode *symbolNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris.symbolUri, nullptr);
     symbol_ = nodeAsString(symbolNode);
-    LilvNode *nameNode = lilv_world_get(pWorld, uri, nameUri, nullptr);
+    LilvNode *nameNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris.nameUri, nullptr);
     name_ = nodeAsString(nameNode);
 }
 

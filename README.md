@@ -221,6 +221,7 @@ Run the following commands to install dependent libraries required by the PiPeda
     sudo apt install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
     sudo apt install libasound2-dev
     sudo apt install libwebsocketpp-dev authbind
+    sudo apt install libsdbusc++-dev libsdbusc++-bin
 
 Run the following command to install and configure React dependencies.
 
@@ -353,6 +354,11 @@ incorrectly.
 You will need to add your userid to the pipedal_d group if you plan to share the /var/pipedal directory. 
      
      sudo usermod -a -G pipedal_d *youruserid*
+
+You will need to add your userid to the bluetooth group if you plan to debug Bluetooth onboarding code.
+
+    sudo usermod -a -G bluetooth *youruserid*
+
 
 Or you can avoid all of this, by configuring the debug instance to use a data folder in your home directory. Edit 
 `debugConfig/config.json`:

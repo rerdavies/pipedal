@@ -44,6 +44,7 @@ using namespace pipedal;
 #include <chrono>
 #include <fstream>
 #include "Lv2EventBufferWriter.hpp"
+#include "InheritPriorityMutex.hpp"
 
 #ifdef __linux__
 #include <sched.h>
@@ -115,7 +116,7 @@ class JackHostImpl : public JackHost
 {
 private:
 
-    std::recursive_mutex mutex;
+    inherit_priority_recursive_mutex mutex;
     int64_t overrunGracePeriodSamples = 0;
 
     IJackHostCallbacks *pNotifyCallbacks = nullptr;
@@ -1388,7 +1389,7 @@ private:
     std::vector<RestartThread *> restartThreads;
 
 public:
-    std::recursive_mutex restart_mutex;
+    inherit_priority_recursive_mutex restart_mutex;
     virtual void UpdateServerConfiguration(const JackServerSettings &jackServerSettings,
                                            std::function<void(bool success, const std::string &errorMessage)> onComplete)
     {
