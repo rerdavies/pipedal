@@ -338,6 +338,9 @@ private:
                     std::error_code ec;
                     res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));
                     res.set(HttpField::access_control_allow_origin, origin);
+
+                    res.set(HttpField::cache_control,"max-age: 31104000"); // cache for a year.
+
                     requestHandler->get_response(requestUri, req, res, ec);
                     res.keepAlive(req.keepAlive());
 

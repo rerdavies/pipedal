@@ -13,8 +13,8 @@ using BleDevice_Interfaces = sdbus::ProxyInterfaces<
 class BleDeviceProxy : public BleDevice_Interfaces
 {
 public:
-    BleDeviceProxy(std::string destination, std::string path)
-    : BleDevice_Interfaces(std::move(destination),std::move(path))
+    BleDeviceProxy(std::string devicePath)
+    : BleDevice_Interfaces("org.bluez",std::move(devicePath))
     {
         registerProxy();
     }

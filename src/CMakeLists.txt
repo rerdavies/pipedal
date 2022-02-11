@@ -193,6 +193,7 @@ target_precompile_headers(pipedaltest PRIVATE pch.h)
 
 
 target_include_directories(pipedaltest PRIVATE
+    .
    ${LV2DEV_INCLUDE_DIRS}
    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS}
     )

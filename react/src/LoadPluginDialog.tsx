@@ -17,7 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import React, { ReactNode, SyntheticEvent } from 'react';
+import React, { ReactNode, SyntheticEvent, CSSProperties } from 'react';
 import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { UiPlugin, PluginType } from './Lv2Plugin';
@@ -42,6 +42,9 @@ import { TransitionProps } from '@material-ui/core/transitions/transition';
 import Slide from '@material-ui/core/Slide';
 import SearchControl from './SearchControl';
 import SearchFilter from './SearchFilter';
+import { FixedSizeGrid } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+
 
 
 export type CloseEventHandler = () => void;
@@ -154,13 +157,13 @@ interface PluginGridProps extends WithStyles<typeof pluginGridStyles> {
 
 type PluginGridState = {
     selected_uri?: string,
-    hover_uri?: string,
     search_string: string;
     search_collapsed: boolean;
     filterType: PluginType,
     client_width: number,
     client_height: number,
     grid_cell_width: number,
+    grid_cell_columns: number,
     minimumItemWidth: number,
 
 }
@@ -192,13 +195,13 @@ export const LoadPluginDialog =
 
                 this.state = {
                     selected_uri: this.props.uri,
-                    hover_uri: "",
                     search_string: "",
                     search_collapsed: true,
                     filterType: filterType_,
                     client_width: window.innerWidth,
                     client_height: window.innerHeight,
                     grid_cell_width: this.getCellWidth(window.innerWidth),
+                    grid_cell_columns: this.getCellColumns(window.innerWidth),
                     minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220
                 };
 
@@ -212,24 +215,25 @@ export const LoadPluginDialog =
             nominal_column_width: number = 250;
             margin_reserve: number = 30;
 
-            getCellWidth(width: number)
-            {
-                let gridWidth = width-this.margin_reserve;
-                let columns = Math.floor((gridWidth)/this.nominal_column_width);
+            getCellColumns(width: number) {
+                let gridWidth = width - this.margin_reserve;
+                let columns = Math.floor((gridWidth) / this.nominal_column_width);
                 if (columns < 1) columns = 1;
-
-                return Math.floor(gridWidth/columns);
+                return columns;
             }
 
-            handleKeyPress(e: React.KeyboardEvent<HTMLDivElement>)
-            {
+
+            getCellWidth(width: number) {
+                return Math.floor(width / this.getCellColumns(width));
+            }
+
+            handleKeyPress(e: React.KeyboardEvent<HTMLDivElement>) {
                 let searchInput = this.searchInputRef.current;
                 if (searchInput && e.target !== searchInput) // if the search input doesn't have focus.
                 {
                     if (this.searchInputRef.current) // we do have one, right?
                     {
-                        if (e.key.length === 1)
-                        {
+                        if (e.key.length === 1) {
                             if (/[a-zA-Z0-9]/.exec(e.key))  // if it's alpha-numeric.
                             {
                                 if (this.state.search_collapsed) // and search is collapsed.
@@ -241,9 +245,10 @@ export const LoadPluginDialog =
                                     searchInput.focus();
                                     this.setState({
                                         search_string: newValue,
-                                        search_collapsed: false})
+                                        search_collapsed: false
+                                    })
 
-                                } 
+                                }
                             }
                         }
                     }
@@ -254,7 +259,8 @@ export const LoadPluginDialog =
                 this.setState({
                     client_width: window.innerWidth,
                     client_height: window.innerHeight,
-                    grid_cell_width: this.getCellWidth(window.innerWidth)
+                    grid_cell_width: this.getCellWidth(window.innerWidth),
+                    grid_cell_columns: this.getCellColumns(window.innerWidth)
                 });
             }
             componentDidMount() {
@@ -268,14 +274,12 @@ export const LoadPluginDialog =
             }
 
             componentDidUpdate(oldProps: PluginGridProps) {
-                if (oldProps.open !== this.props.open)
-                {
-                    if (this.props.open)
-                    {
-                        this.setState({ search_string: "", search_collapsed: true});
+                if (oldProps.open !== this.props.open) {
+                    if (this.props.open) {
+                        this.setState({ search_string: "", search_collapsed: true });
                     }
                 }
-            }   
+            }
 
             onWindowSizeChanged(width: number, height: number): void {
                 super.onWindowSizeChanged(width, height);
@@ -333,19 +337,16 @@ export const LoadPluginDialog =
                     this.setState({ selected_uri: item.uri });
                 }
             }
-            setHoverUri(uri: string) {
-                this.setState({ hover_uri: uri });
-            }
 
             onClick(e: SyntheticEvent, uri: string): void {
                 this.setState({ selected_uri: uri });
             }
             handleMouseEnter(e: SyntheticEvent, uri: string): void {
-                this.setHoverUri(uri);
+               // this.setHoverUri(uri);
 
             }
             handleMouseLeave(e: SyntheticEvent, uri: string): void {
-                this.setHoverUri("");
+              //  this.setHoverUri("");
 
             }
             onInfoClicked(): void {
@@ -387,92 +388,51 @@ export const LoadPluginDialog =
                 return result;
 
             }
-            applySearchFilter(plugins: UiPlugin[],searchString: string): UiPlugin[]
-            {
-                let results: { score: number; plugin: UiPlugin}[] = [];
+            getFilteredPlugins(): UiPlugin[] {
+                let plugins = this.model.ui_plugins.get();
+                let searchString = this.state.search_string;
+
+                let results: { score: number; plugin: UiPlugin }[] = [];
                 let searchFilter = new SearchFilter(searchString);
-                
-                for (let i = 0; i < plugins.length; ++i)
-                {
+                let filterType = this.state.filterType;
+                let rootClass = this.model.plugin_classes.get();
+
+
+                for (let i = 0; i < plugins.length; ++i) {
                     let plugin = plugins[i];
-                    let score = searchFilter.score(plugin.name,plugin.plugin_display_type,plugin.author_name);
-                    if (score !== 0)
-                    {
-                        results.push({score:score, plugin:plugin});
+                    if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
+                        let score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
+
+                        if (score !== 0) {
+                            results.push({ score: score, plugin: plugin });
+                        }
                     }
                 }
-                results.sort((left: {score:number; plugin: UiPlugin},right: {score:number; plugin: UiPlugin}) => {
+                results.sort((left: { score: number; plugin: UiPlugin }, right: { score: number; plugin: UiPlugin }) => {
                     if (right.score < left.score) return -1;
                     if (right.score > left.score) return 1;
                     return left.plugin.name.localeCompare(right.plugin.name);
                 });
                 let t: UiPlugin[] = [];
-                for (let i = 0; i < results.length; ++i)
-                {
+                for (let i = 0; i < results.length; ++i) {
                     t.push(results[i].plugin);
                 }
                 return t;
             }
-            filterPlugins(plugins: UiPlugin[]): ReactNode[] {
-                let result: ReactNode[] = [];
-                let filterType = this.state.filterType;
-                let classes = this.props.classes;
-                let rootClass = this.model.plugin_classes.get();
-                if (this.state.search_string.length !== 0)
-                {
-                    plugins = this.applySearchFilter(plugins,this.state.search_string);
-                }
 
-                for (let i = 0; i < plugins.length; ++i) {
-                    let value = plugins[i];
-                    if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, value.plugin_type)) {
-                        result.push(
-                            (
-                                <div key={value.uri} style={{width: this.state.grid_cell_width, height: 64}}
-                                    onDoubleClick={(e) => { this.onDoubleClick(e, value.uri) }}
-                                    onClick={(e) => { this.onClick(e, value.uri) }}
-                                    onMouseEnter={(e) => { this.handleMouseEnter(e, value.uri) }}
-                                    onMouseLeave={(e) => { this.handleMouseLeave(e, value.uri) }}
-                                >
-                                    <ButtonBase className={classes.buttonBase} >
-                                        <SelectHoverBackground selected={value.uri === this.state.selected_uri} showHover={true} />
-                                        <div className={classes.content}>
-                                            <div className={classes.iconBorder} >
-                                                <PluginIcon pluginType={value.plugin_type} pluginUri={value.uri} size={24} />
-                                            </div>
-                                            <div className={classes.content2}>
-                                                <Typography color="textPrimary" noWrap className={classes.label} >
-                                                    {value.name}
-                                                </Typography>
-                                                <Typography color="textSecondary" noWrap>
-                                                    {value.plugin_display_type} {this.stereo_indicator(value)}
-
-                                                </Typography>
-                                            </div>
-                                        </div>
-                                    </ButtonBase>
-                                </div>
-                            )
-                        );
-
-                    }
-                }
-                return result;
-            }
-            changedSearchString? : string = undefined;
+            changedSearchString?: string = undefined;
             hSearchTimeout?: NodeJS.Timeout;
 
             handleSearchStringReady() {
-                if (this.changedSearchString !== undefined)
-                {
-                    this.setState({search_string: this.changedSearchString});
+                if (this.changedSearchString !== undefined) {
+                    this.setState({ search_string: this.changedSearchString });
                     this.changedSearchString = undefined;
                 }
                 this.hSearchTimeout = undefined;
             }
 
 
-            handleSearchStringChanged(text: string) : void {
+            handleSearchStringChanged(text: string): void {
                 if (this.hSearchTimeout) {
                     clearTimeout(this.hSearchTimeout);
                     this.hSearchTimeout = undefined;
@@ -483,14 +443,48 @@ export const LoadPluginDialog =
                     2000);
 
             }
+            renderItem(row: number, column: number): React.ReactNode {
+                let item: number = (row) * this.gridColumnCount + (column);
 
+                if (item >= this.gridItems.length) {
+                    return (<div />);
+                }
+                let value = this.gridItems[item];
+
+                let classes = this.props.classes;
+                return (
+                    <div key={value.uri}
+                        onDoubleClick={(e) => { this.onDoubleClick(e, value.uri) }}
+                        onClick={(e) => { this.onClick(e, value.uri) }}
+                        onMouseEnter={(e) => { this.handleMouseEnter(e, value.uri) }}
+                        onMouseLeave={(e) => { this.handleMouseLeave(e, value.uri) }}
+                    >
+                        <ButtonBase className={classes.buttonBase} >
+                            <SelectHoverBackground selected={value.uri === this.state.selected_uri} showHover={true} />
+                            <div className={classes.content}>
+                                <div className={classes.iconBorder} >
+                                    <PluginIcon pluginType={value.plugin_type} pluginUri={value.uri} size={24} />
+                                </div>
+                                <div className={classes.content2}>
+                                    <Typography color="textPrimary" noWrap className={classes.label} >
+                                        {value.name}
+                                    </Typography>
+                                    <Typography color="textSecondary" noWrap>
+                                        {value.plugin_display_type} {this.stereo_indicator(value)}
+
+                                    </Typography>
+                                </div>
+                            </div>
+                        </ButtonBase>
+                    </div>
+                );
+
+            }
+            gridItems: UiPlugin[] = [];
+            gridColumnCount: number = 1;
 
             render() {
                 const { classes } = this.props;
-
-
-                let model = this.model;
-                let plugins = model.ui_plugins.get();
 
                 let selectedPlugin: UiPlugin | undefined = undefined;
                 if (this.state.selected_uri) {
@@ -499,16 +493,17 @@ export const LoadPluginDialog =
                 }
 
                 let showSearchIcon = true;
-                if (this.state.client_width < 500)
-                {
+                if (this.state.client_width < 500) {
                     showSearchIcon = this.state.search_collapsed
                 }
-
+                this.gridItems = this.getFilteredPlugins();
+                let gridColumnCount = this.state.grid_cell_columns;
+                this.gridColumnCount = gridColumnCount;
                 return (
 
                     <React.Fragment>
                         <Dialog
-                            onKeyPress={(e)=> { this.handleKeyPress(e); }}
+                            onKeyPress={(e) => { this.handleKeyPress(e); }}
                             fullScreen={true}
                             TransitionComponent={Transition}
                             maxWidth={false}
@@ -517,96 +512,127 @@ export const LoadPluginDialog =
                             onClose={this.handleCancel}
                             style={{ overflowX: "hidden", overflowY: "hidden", display: "flex", flexDirection: "column", flexWrap: "nowrap" }}
                             aria-labelledby="select-plugin-dialog-title">
-                            <DialogTitle id="select-plugin-dialog-title" style={{ flex: "0 0 auto", padding: "0px",height: 54 }}>
-                                <div style={{ display: "flex", flexDirection: "row", paddingTop: 3, paddingBottom: 3,flexWrap: "nowrap", width: "100%", alignItems: "center" }}>
-                                    <IconButton onClick={() => { this.cancel(); }} style={{ flex: "0 0 auto" }} >
-                                        <ArrowBackIcon />
-                                    </IconButton>
-
-                                    <Typography display="inline" noWrap variant="h6" style={{ flex: "0 0 auto", height: "auto", verticalAlign: "center",
-                                        visibility: (this.state.search_collapsed? "visible": "collapse"),
-                                        width: (this.state.search_collapsed? undefined: "0px")}}>
-                                        {this.state.client_width > 520 ? "Select Plugin" : ""}
-                                    </Typography>
-                                    <div style={{ flex: "1 1 auto" }} >
-                                        <SearchControl collapsed={this.state.search_collapsed}  searchText={this.state.search_string}
-                                            inputRef={this.searchInputRef}
-                                            showSearchIcon={showSearchIcon}
-                                            onTextChanged={(text)=> { 
-                                                this.handleSearchStringChanged(text);
-                                            }}
-                                            onClearFilterClick={()=> {
-                                                this.setState({search_collapsed: true,search_string:""});
-                                            }}
-                                            onClick={()=> {
-                                                if (this.state.search_collapsed) {
-                                                    this.setState({search_collapsed: false});
-                                                } else {
-                                                    this.setState({ search_collapsed: true, search_string: ""});
-                                                }
-
-                                            }}
-                                        />
-                                    </div>
-                                    <Select defaultValue={this.state.filterType} key={this.state.filterType} onChange={(e) => { this.onFilterChange(e); }}
-                                        style={{ flex: "0 0 160px" }}
-                                    >
-                                        {this.createFilterOptions()}
-                                    </Select>
-                                    <div style={{ flex: "0 0 auto", marginRight: 24, visibility: this.state.filterType === PluginType.Plugin ? "hidden" : "visible" }} >
-                                        <IconButton onClick={() => { this.onClearFilter(); }}>
-                                            <ClearIcon fontSize='small' style={{ opacity: 0.6 }} />
+                            <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", height: "100%" }}>
+                                <DialogTitle id="select-plugin-dialog-title" style={{ flex: "0 0 auto", padding: "0px", height: 54 }}>
+                                    <div style={{ display: "flex",flexDirection: "row", paddingTop: 3, paddingBottom: 3, flexWrap: "nowrap", width: "100%", alignItems: "center" }}>
+                                        <IconButton onClick={() => { this.cancel(); }} style={{ flex: "0 0 auto" }} >
+                                            <ArrowBackIcon />
                                         </IconButton>
+
+                                        <Typography display="inline" noWrap variant="h6" style={{
+                                            flex: "0 0 auto", height: "auto", verticalAlign: "center",
+                                            visibility: (this.state.search_collapsed ? "visible" : "collapse"),
+                                            width: (this.state.search_collapsed ? undefined : "0px")
+                                        }}>
+                                            {this.state.client_width > 520 ? "Select Plugin" : ""}
+                                        </Typography>
+                                        <div style={{ flex: "1 1 auto" }} >
+                                            <SearchControl collapsed={this.state.search_collapsed} searchText={this.state.search_string}
+                                                inputRef={this.searchInputRef}
+                                                showSearchIcon={showSearchIcon}
+                                                onTextChanged={(text) => {
+                                                    this.handleSearchStringChanged(text);
+                                                }}
+                                                onClearFilterClick={() => {
+                                                    this.setState({ search_collapsed: true, search_string: "" });
+                                                }}
+                                                onClick={() => {
+                                                    if (this.state.search_collapsed) {
+                                                        this.setState({ search_collapsed: false });
+                                                    } else {
+                                                        this.setState({ search_collapsed: true, search_string: "" });
+                                                    }
+
+                                                }}
+                                            />
+                                        </div>
+                                        <Select defaultValue={this.state.filterType} key={this.state.filterType} onChange={(e) => { this.onFilterChange(e); }}
+                                            style={{ flex: "0 0 160px" }}
+                                        >
+                                            {this.createFilterOptions()}
+                                        </Select>
+                                        <div style={{ flex: "0 0 auto", marginRight: 24, visibility: this.state.filterType === PluginType.Plugin ? "hidden" : "visible" }} >
+                                            <IconButton onClick={() => { this.onClearFilter(); }}>
+                                                <ClearIcon fontSize='small' style={{ opacity: 0.6 }} />
+                                            </IconButton>
+                                        </div>
                                     </div>
-                                </div>
-                            </DialogTitle>
-                            <DialogContent dividers style={{
-                                height: this.state.client_height - (this.state.client_width < NARROW_DISPLAY_THRESHOLD ? 150 + 64 : 160),
-                                padding: 8,
-                                display: "1 1 flex"
-                            }} >
-                                <div style={{display: "flex", width: this.state.client_width-30,flexDirection: "row",flexWrap: "wrap",
-                                    justifyContent: "flex-start"}}
-                                >
-                                    {
-                                        this.filterPlugins(plugins)
-                                    }
-                                </div>
-                            </DialogContent>
-                            {(this.state.client_width >= NARROW_DISPLAY_THRESHOLD) ? (
-                                <DialogActions style={{ flex: "0 0 auto" }} >
-                                    <div className={classes.bottom}>
-                                        <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", height: "100%", overflow: "hidden" }} >
+                                </DialogTitle>
+                                <DialogContent dividers style={{
+                                    height: "100px",
+                                    padding: 8,
+                                    flex: "1 1 100px",
+                                }} >
+                                    <AutoSizer>
+                                        {(arg: { height: number, width: number }) => {
+                                            return (
+                                                <FixedSizeGrid
+                                                    width={arg.width}
+                                                    columnCount={this.gridColumnCount}
+                                                    columnWidth={(arg.width - 40) / this.gridColumnCount}
+                                                    height={arg.height}
+                                                    rowHeight={64}
+                                                    overscanRowCount={10}
+                                                    rowCount={Math.ceil(this.gridItems.length / this.gridColumnCount)}
+                                                    itemKey={(args: { columnIndex: number, data: any, rowIndex: number }) => {
+                                                        let index = args.columnIndex + this.gridColumnCount * args.rowIndex;
+                                                        if (index >= this.gridItems.length) {
+                                                            return "blank-" + args.columnIndex + "-" + args.rowIndex;
+                                                        }
+                                                        let plugin = this.gridItems[index];
+                                                        return plugin.uri + "-" + args.rowIndex + "-" + args.columnIndex;
+
+                                                    }}
+
+                                                >
+                                                    {(arg: { columnIndex: number, rowIndex: number, style: CSSProperties }) => (
+                                                        <div style={arg.style} >
+                                                            {
+                                                                this.renderItem(arg.rowIndex, arg.columnIndex)
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </FixedSizeGrid>
+                                            );
+                                        }
+                                        }
+                                    </AutoSizer>
+                                </DialogContent>
+                                {(this.state.client_width >= NARROW_DISPLAY_THRESHOLD) ? (
+                                    <DialogActions style={{ flex: "0 0 auto" }} >
+                                        <div className={classes.bottom}>
+                                            <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", height: "100%", overflow: "hidden" }} >
+                                                <PluginInfoDialog plugin_uri={this.state.selected_uri ?? ""} />
+                                                <Typography display='block' variant='body2' color="textPrimary" noWrap >
+                                                    {this.info_string(selectedPlugin)}
+                                                </Typography>
+                                            </div>
+                                            <div style={{ position: "relative", float: "right", flex: "0 1 200px", width: 200, display: "flex", alignItems: "center" }}>
+                                                <Button onClick={this.handleCancel} style={{ width: 120 }} >Cancel</Button>
+                                                <Button onClick={this.handleOk} color="secondary" disabled={selectedPlugin === null} style={{ width: 180 }} >SELECT</Button>
+                                            </div>
+                                        </div>
+                                    </DialogActions>
+                                ) : (
+                                    <DialogActions style={{ flex: "0 0 auto", display: "block" }} >
+                                        <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", overflow: "hidden" }} >
                                             <PluginInfoDialog plugin_uri={this.state.selected_uri ?? ""} />
+                                            <div style={{ width: 1, height: 48 }} />
                                             <Typography display='block' variant='body2' color="textPrimary" noWrap >
                                                 {this.info_string(selectedPlugin)}
                                             </Typography>
                                         </div>
-                                        <div style={{ position: "relative", float: "right", flex: "0 1 200px", width: 200, display: "flex", alignItems: "center" }}>
-                                            <Button onClick={this.handleCancel} style={{ width: 120 }} >Cancel</Button>
-                                            <Button onClick={this.handleOk} color="secondary" disabled={selectedPlugin === null} style={{ width: 180 }} >SELECT</Button>
+                                        <div className={classes.bottom}>
+                                            <div style={{ flex: "1 1 1px" }} />
+                                            <div style={{ position: "relative", flex: "0 1 auto", display: "flex", alignItems: "center" }}>
+                                                <Button onClick={this.handleCancel} style={{ width: 120, height: 48 }} >Cancel</Button>
+                                                <Button onClick={this.handleOk} color="secondary" disabled={selectedPlugin === null} style={{ width: 120, height: 48 }} >SELECT</Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                </DialogActions>
-                            ) : (
-                                <DialogActions style={{ flex: "0 0 auto", display: "block" }} >
-                                    <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", overflow: "hidden" }} >
-                                        <PluginInfoDialog plugin_uri={this.state.selected_uri ?? ""} />
-                                        <div style={{ width: 1, height: 48 }} />
-                                        <Typography display='block' variant='body2' color="textPrimary" noWrap >
-                                            {this.info_string(selectedPlugin)}
-                                        </Typography>
-                                    </div>
-                                    <div className={classes.bottom}>
-                                        <div style={{ flex: "1 1 1px" }} />
-                                        <div style={{ position: "relative", flex: "0 1 auto", display: "flex", alignItems: "center" }}>
-                                            <Button onClick={this.handleCancel} style={{ width: 120, height: 48 }} >Cancel</Button>
-                                            <Button onClick={this.handleOk} color="secondary" disabled={selectedPlugin === null} style={{ width: 120, height: 48 }} >SELECT</Button>
-                                        </div>
-                                    </div>
-                                </DialogActions>
+                                    </DialogActions>
 
-                            )}
+                                )}
+                            </div>
                         </Dialog>
                     </React.Fragment >
                 );

@@ -32,6 +32,7 @@ class SearchFilter {
 
     score(...strings: string[]): number {
         let score = 0;
+        if (this.regexes.length === 0) return 1;
         for (let r = 0; r < this.regexes.length; ++r)
         {
             let regex = this.regexes[r];

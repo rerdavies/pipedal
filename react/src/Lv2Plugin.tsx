@@ -224,7 +224,7 @@ export class  UiControl implements Deserializable<UiControl> {
         } else {
             if (this.min_value === 0 && this.max_value === 1)
             {
-                if (this.toggled_property || this.enumeration_property || this.integer_property)
+                if (this.toggled_property || this.integer_property)
                 {
                     this.controlType = ControlType.OnOffSwitch;
                 }
@@ -267,6 +267,26 @@ export class  UiControl implements Deserializable<UiControl> {
     port_group: string = "";
     units: Units = Units.none;
 
+    // Return the value of the closest scale_point.
+    clampSelectValue(value: number): number{
+        if (this.scale_points.length !== 0)
+        {
+            let minError = 1.0E100;
+            let bestValue = value;
+            for (let i = 0; i < this.scale_points.length; ++i)
+            {
+                let error = Math.abs(this.scale_points[i].value-value);
+                if (error < minError)
+                {
+                    minError = error;
+                    bestValue = this.scale_points[i].value;
+                }
+            }
+            return bestValue;
+        } else {
+            return value;
+        }
+    }
     isOnOffSwitch() : boolean {
         return this.controlType === ControlType.OnOffSwitch;
     }

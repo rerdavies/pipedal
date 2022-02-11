@@ -546,7 +546,7 @@ const PluginControl =
                     return (
                         <Select
                             ref={this.selectRef}
-                            value={value}
+                            value={control.clampSelectValue(value)}
                             onChange={this.onSelectChanged}
                             inputProps={{
                                 name: control.name,
