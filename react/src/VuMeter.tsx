@@ -18,7 +18,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { Component } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, State,PiPedalModelFactory, VuUpdateInfo, VuSubscriptionHandle } from './PiPedalModel';
 
 
@@ -46,7 +49,7 @@ interface VuChannelData {
     greenDiv: HTMLDivElement;
     telltaleDiv: HTMLDivElement;
 
-};
+}
 
 class TelltaleState {
     telltaleDb: number = MIN_DB;
@@ -85,7 +88,7 @@ class TelltaleState {
         }
     }
 
-};
+}
 
 const LEFT_X = BORDER_THICKNESS;
 const RIGHT_X = BORDER_THICKNESS + + CHANNEL_WIDTH + BORDER_THICKNESS;
@@ -186,11 +189,11 @@ interface VuMeterProps extends WithStyles<typeof styles> {
     instanceId: number;
     display: "input" | "output";
     theme: Theme;
-};
+}
 
 interface VuMeterState {
     isStereo: boolean;
-};
+}
 
 function aToDb(value: number): number {
     if (value === 0) return -96;

@@ -18,7 +18,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { ReactNode } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { UiPlugin, UiControl } from './Lv2Plugin';
 import {
@@ -30,7 +33,7 @@ import VuMeter from './VuMeter';
 import { nullCast } from './Utility'
 import GxTunerControl from './GxTunerControl';
 import { PiPedalStateError } from './PiPedalError';
-import Typography from '@material-ui/core/Typography';
+import Typography from '@mui/material/Typography';
 import FullScreenIME from './FullScreenIME';
 
 
@@ -181,7 +184,7 @@ export type ControlNodes = (ReactNode | ControlGroup)[];
 export interface ControlViewCustomization {
     ModifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[];
 
-};
+}
 
 export interface PluginControlViewProps extends WithStyles<typeof styles> {
     theme: Theme;
@@ -189,7 +192,7 @@ export interface PluginControlViewProps extends WithStyles<typeof styles> {
     item: PedalBoardItem;
     customization?: ControlViewCustomization;
     customizationId?: number;
-};
+}
 type PluginControlViewState = {
     landscapeGrid: boolean;
     imeUiControl?: UiControl;

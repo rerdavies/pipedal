@@ -500,7 +500,6 @@ export const LoadPluginDialog =
                 let gridColumnCount = this.state.grid_cell_columns;
                 this.gridColumnCount = gridColumnCount;
                 return (
-
                     <React.Fragment>
                         <Dialog
                             onKeyPress={(e) => { this.handleKeyPress(e); }}
@@ -546,9 +545,12 @@ export const LoadPluginDialog =
                                                 }}
                                             />
                                         </div>
-                                        <Select defaultValue={this.state.filterType} key={this.state.filterType} onChange={(e) => { this.onFilterChange(e); }}
+                                        <Select
+                                            defaultValue={this.state.filterType}
+                                            key={this.state.filterType}
+                                            onChange={(e) => { this.onFilterChange(e); }}
                                             style={{ flex: "0 0 160px" }}
-                                        >
+                                            variant="standard">
                                             {this.createFilterOptions()}
                                         </Select>
                                         <div style={{ flex: "0 0 auto", marginRight: 24, visibility: this.state.filterType === PluginType.Plugin ? "hidden" : "visible" }} >

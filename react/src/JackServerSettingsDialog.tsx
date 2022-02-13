@@ -20,20 +20,24 @@
 
 import React, { Component } from 'react';
 
-import { createStyles, WithStyles, withStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
 
-import Button from '@material-ui/core/Button';
-import DialogActions from '@material-ui/core/DialogActions';
-import Dialog from '@material-ui/core/Dialog';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
+
+import Button from '@mui/material/Button';
+import DialogActions from '@mui/material/DialogActions';
+import Dialog from '@mui/material/Dialog';
 import JackServerSettings from './JackServerSettings';
 
 
-import InputLabel from '@material-ui/core/InputLabel';
-import FormControl from '@material-ui/core/FormControl';
-import Select from '@material-ui/core/Select';
-import DialogContent from '@material-ui/core/DialogContent';
-import MenuItem from '@material-ui/core/MenuItem';
-import Typography from '@material-ui/core/Typography';
+import InputLabel from '@mui/material/InputLabel';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import DialogContent from '@mui/material/DialogContent';
+import MenuItem from '@mui/material/MenuItem';
+import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 
 import AlsaDeviceInfo from './AlsaDeviceInfo';
@@ -43,7 +47,7 @@ interface JackServerSettingsDialogState {
     latencyText: string;
     jackServerSettings: JackServerSettings;
     alsaDevices?: AlsaDeviceInfo[];
-};
+}
 
 const styles = (theme: Theme) =>
     createStyles({

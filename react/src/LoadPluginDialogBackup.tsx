@@ -372,7 +372,6 @@ export const LoadPluginDialog =
                 }
 
                 return (
-
                     <React.Fragment>
                         <Dialog
                         TransitionComponent={Transition}
@@ -394,9 +393,12 @@ export const LoadPluginDialog =
                                         {  this.state.client_width > 520 ? "Select Plugin" : "" }
                                     </Typography>
                                     <div style={{ flex: "1 1 auto" }} />
-                                    <Select defaultValue={this.state.filterType} key={this.state.filterType} onChange={(e) => { this.onFilterChange(e); }}
+                                    <Select
+                                        defaultValue={this.state.filterType}
+                                        key={this.state.filterType}
+                                        onChange={(e) => { this.onFilterChange(e); }}
                                         style={{ flex: "0 0 160px" }}
-                                    >
+                                        variant="standard">
                                         {this.createFilterOptions()}
                                     </Select>
                                     <div style={{ flex: "0 0 auto", marginRight: 24, visibility: this.state.filterType === PluginType.Plugin? "hidden": "visible" }} >

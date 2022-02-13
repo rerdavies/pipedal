@@ -18,7 +18,12 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { Component, SyntheticEvent } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+
+
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 
 
 const styles = ({ palette }: Theme) => createStyles({
@@ -50,11 +55,11 @@ interface HoverProps extends WithStyles<typeof styles> {
     selected: boolean;
     showHover?: boolean;
     theme: Theme;
-};
+}
 
 interface HoverState {
     hovering: boolean;
-};
+}
 
 
 export const SelectHoverBackground =

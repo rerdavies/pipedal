@@ -18,27 +18,30 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SyntheticEvent, Component } from 'react';
-import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, PresetIndex } from './PiPedalModel';
-import SaveIconOutline from '@material-ui/icons/Save';
-import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
-import ButtonBase from "@material-ui/core/ButtonBase";
-import MoreVertIcon from '@material-ui/icons/MoreVert';
-import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
+import SaveIconOutline from '@mui/icons-material/Save';
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ButtonBase from "@mui/material/ButtonBase";
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
 import PresetDialog from './PresetDialog';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
-import Fade from '@material-ui/core/Fade';
-import Divider from '@material-ui/core/Divider';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Fade from '@mui/material/Fade';
+import Divider from '@mui/material/Divider';
 import RenameDialog from './RenameDialog'
-import Select from '@material-ui/core/Select';
+import Select from '@mui/material/Select';
 import UploadDialog from './UploadDialog';
 
 
 interface PresetSelectorProps extends WithStyles<typeof styles> {
 
-};
+}
 
 
 interface PresetSelectorState {
@@ -54,7 +57,7 @@ interface PresetSelectorState {
     renameDialogOnOk?: (name: string) => void;
     openUploadDialog: boolean;
 
-};
+}
 
 
 const selectColor = "black";
@@ -329,13 +332,18 @@ const PresetSelector =
                             )}
                         </div>
                         <div style={{ flex: "0 0 auto" }}>
-                            <IconButton style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0 }}
-                                onClick={(e) => { this.handleSave(); }}  >
+                            <IconButton
+                                style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0 }}
+                                onClick={(e) => { this.handleSave(); }}
+                                size="large">
                                 <SaveIconOutline style={{ opacity: 0.75 }} />
                             </IconButton>
                         </div>
                         <div style={{ flex: "0 0 auto" }}>
-                            <IconButton style={{ flex: "0 0 auto" }} onClick={(e) => this.handlePresetMenuClick(e)}>
+                            <IconButton
+                                style={{ flex: "0 0 auto" }}
+                                onClick={(e) => this.handlePresetMenuClick(e)}
+                                size="large">
                                 <MoreVertIcon style={{ opacity: 0.75 }} />
                             </IconButton>
                             <Menu
@@ -367,7 +375,7 @@ const PresetSelector =
                             onClose={() => { this.setState({ openUploadDialog: false }) }} />
 
                     </div>
-                )
+                );
 
             }
         });

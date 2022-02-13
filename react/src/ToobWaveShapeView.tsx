@@ -18,7 +18,11 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 
 import { PiPedalModelFactory, PiPedalModel, State, ControlValueChangedHandle } from "./PiPedalModel";
 import { StandardItemSize } from './PluginControlView';
@@ -55,10 +59,10 @@ interface ToobWaveShapeProps extends WithStyles<typeof styles> {
     vuOutMinPeak: number;
     vuOutMaxPeak: number;
 
-};
+}
 interface ToobWaveShapeState {
     data: number[];
-};
+}
 
 const HOLD_TIME: number = 1.6; // seconds.
 const DECAY_RATE = 1.0; // full range/second.

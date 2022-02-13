@@ -24,7 +24,7 @@ import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import {PedalBoardItem, PedalBoardSplitItem} from './PedalBoard';
 import PluginControlView from './PluginControlView';
 import SplitControlView from './SplitControlView';
-import Typography from '@material-ui/core/Typography';
+import Typography from '@mui/material/Typography';
 import IControlViewFactory from './IControlViewFactory';
 import ToobInputStageViewFactory from './ToobInputStageView';
 import ToobToneStackViewFactory from './ToobToneStackView';

@@ -18,7 +18,11 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel, State,ListenHandle } from "./PiPedalModel";
@@ -35,10 +39,10 @@ interface ToobPowerstage2Props extends WithStyles<typeof styles> {
     instanceId: number;
     item: PedalBoardItem;
 
-};
+}
 interface ToobPowerstage2State {
     uiState: number[];
-};
+}
 
 const ToobPowerstage2View =
     withStyles(styles, { withTheme: true })(
@@ -181,5 +185,5 @@ class ToobPowerstage2ViewFactory implements IControlViewFactory {
     }
 
 
-};
+}
 export default ToobPowerstage2ViewFactory;

@@ -18,7 +18,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { MouseEvent, PointerEvent, ReactNode, Component } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { PiPedalStateError } from './PiPedalError';
 
 
@@ -51,7 +54,7 @@ export interface DraggableProps extends WithStyles<typeof styles> {
     draggable?: boolean;
 
 
-};
+}
 type DraggableState = {
 };
 

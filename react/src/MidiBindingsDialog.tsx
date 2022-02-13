@@ -21,15 +21,18 @@ import React, { SyntheticEvent } from 'react';
 import DialogEx from './DialogEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { PiPedalModel, PiPedalModelFactory, ListenHandle } from './PiPedalModel';
-import Typography from '@material-ui/core/Typography';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-import IconButton from '@material-ui/core/IconButton';
+import Typography from '@mui/material/Typography';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import IconButton from '@mui/material/IconButton';
 import MidiBinding from './MidiBinding';
 import MidiBindingView from './MidiBindingView';
-import Snackbar from '@material-ui/core/Snackbar';
+import Snackbar from '@mui/material/Snackbar';
 
 const styles = (theme: Theme) => createStyles({
     dialogAppBar: {
@@ -63,14 +66,14 @@ const styles = (theme: Theme) => createStyles({
 export interface MidiBindingDialogProps extends WithStyles<typeof styles> {
     open: boolean,
     onClose: () => void
-};
+}
 
 export interface MidiBindingDialogState {
     listenInstanceId: number;
     listenSymbol: string;
     listenSnackbarOpen: boolean;
 
-};
+}
 
 export const MidiBindingDialog =
     withStyles(styles, { withTheme: true })(
@@ -274,8 +277,12 @@ export const MidiBindingDialog =
                                 <div style={{ flex: "0 0 auto" }}>
                                     <AppBar className={classes.dialogAppBar} >
                                         <Toolbar>
-                                            <IconButton edge="start" color="inherit" onClick={this.handleClose} aria-label="back"
-                                            >
+                                            <IconButton
+                                                edge="start"
+                                                color="inherit"
+                                                onClick={this.handleClose}
+                                                aria-label="back"
+                                                size="large">
                                                 <ArrowBackIcon />
                                             </IconButton>
                                             <Typography variant="h6" className={classes.dialogTitle}>

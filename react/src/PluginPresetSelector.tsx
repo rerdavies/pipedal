@@ -18,14 +18,17 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SyntheticEvent, Component } from 'react';
-import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
 import PresetDialog from './PresetDialog';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
-import Fade from '@material-ui/core/Fade';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Fade from '@mui/material/Fade';
 import RenameDialog from './RenameDialog'
 import PluginPreset from './PluginPreset';
 
@@ -34,7 +37,7 @@ interface PluginPresetSelectorProps extends WithStyles<typeof styles> {
     pluginUri?: string;
 
     onSelectPreset: (presetName: string) => void;
-};
+}
 
 
 interface PluginPresetSelectorState {
@@ -49,7 +52,7 @@ interface PluginPresetSelectorState {
     renameDialogActionName: string;
     renameDialogOnOk?: (name: string) => void;
 
-};
+}
 
 
 const styles = (theme: Theme) => createStyles({
@@ -257,7 +260,7 @@ const PluginPresetSelector =
                 }
                 return (
                     <div >
-                        <IconButton onClick={(e)=> this.handlePresetMenuClick(e)}>
+                        <IconButton onClick={(e)=> this.handlePresetMenuClick(e)} size="large">
                             <img src="img/ic_pluginpreset.svg" style={{ width: 24, height: 24,opacity: 0.6 }} alt="Plugin Presets" />
                         </IconButton>
                         <Menu
@@ -295,7 +298,7 @@ const PluginPresetSelector =
                             onClose={() => this.handleRenameDialogClose()}
                             onOk={(name: string) => this.handleRenameDialogOk(name)} />
                     </div>
-                )
+                );
 
             }
         });

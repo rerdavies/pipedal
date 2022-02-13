@@ -17,7 +17,8 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import React, { MouseEvent, PointerEvent, Component } from 'react';
-import { createStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import createStyles from '@mui/styles/createStyles';
 import { Property } from "csstype";
 import { nullCast} from './Utility'
 
@@ -63,7 +64,7 @@ class AnimationData {
         this.animating = true;
     }
 
-};
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const styles = (theme: Theme) => createStyles({
@@ -99,7 +100,7 @@ export interface DraggableGridProps
     moveElement: (from: number, to: number) => void;
     scroll: ScrollDirection;
 
-};
+}
 
 type DraggableGridState = {
     indexToSelect?: number;

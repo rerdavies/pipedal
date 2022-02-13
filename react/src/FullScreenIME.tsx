@@ -18,14 +18,17 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { ReactNode } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { UiControl } from './Lv2Plugin';
-import Dialog from '@material-ui/core/Dialog';
-import Input from '@material-ui/core/Input';
+import Dialog from '@mui/material/Dialog';
+import Input from '@mui/material/Input';
 import { nullCast } from './Utility';
-import Typography from '@material-ui/core/Typography';
+import Typography from '@mui/material/Typography';
 
 
 const styles = (theme: Theme) => createStyles({
@@ -51,7 +54,7 @@ interface FullScreenIMEProps extends WithStyles<typeof styles> {
     onChange: (key: string, value: number) => void;
     onClose: () => void;
     initialHeight: number;
-};
+}
 type FullScreenIMEState = {
     error: boolean;
 };

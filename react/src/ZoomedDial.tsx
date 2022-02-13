@@ -17,7 +17,10 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import React, { TouchEvent, PointerEvent, SyntheticEvent } from 'react'; import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
+import React, { TouchEvent, PointerEvent, SyntheticEvent } from 'react';import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
 import { PiPedalModel, PiPedalModelFactory, ZoomedControlInfo } from './PiPedalModel';
 
 const SELECTED_OPACITY = 0.8;
@@ -42,11 +45,11 @@ interface ZoomedDialProps extends WithStyles<typeof styles> {
 
     onPreviewValue(value: number): void,
     onSetValue(value: number): void
-};
+}
 
 interface ZoomedDialState {
 
-};
+}
 
 const ZoomedDial = withStyles(styles, { withTheme: true })(
 

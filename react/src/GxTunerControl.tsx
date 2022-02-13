@@ -18,7 +18,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, {Component} from 'react';
-import { createStyles, Theme, withStyles, WithStyles } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { MonitorPortHandle, PiPedalModel, State, PiPedalModelFactory } from "./PiPedalModel";
 import SvgPathBuilder from './SvgPathBuilder'
 
@@ -55,7 +58,7 @@ interface PitchInfo {
     fraction: number;
     
     semitoneCents: number
-};
+}
 
 const FLAT = "\u{266d}";
 const SHARP = "#";
@@ -64,7 +67,7 @@ const DOUBLE_SHARP =  "\uD834\uDD2A";
 const HALF_FLAT = "\uD834\uDD33";
 const HALF_SHARP = "\uD834\uDD32";
 
-        
+
 const NOTES_12TET: string[] = [
     "C", "C" + SHARP, "D", "E"+FLAT,"E", "F", "F" + SHARP, "G", "A"+FLAT,"A","B"+FLAT,"B"
 ];
@@ -86,7 +89,7 @@ const NOTES_53TET = ["la","laa","lo","law","ta","teh","te","tu","tuh","ti","tih"
 interface GxTunerControlProps extends WithStyles<typeof styles> {
     theme: Theme;
     instanceId: number;
-};
+}
 type GxTunerControlState = {
     pitchInfo: PitchInfo
     tet: number;

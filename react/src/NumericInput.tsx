@@ -18,8 +18,11 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { Component } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
-import Input from '@material-ui/core/Input';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
+import Input from '@mui/material/Input';
 
 
 
@@ -35,11 +38,11 @@ interface NumericInputProps extends WithStyles<typeof styles> {
     min: number;
     max: number;
     onChange: (value: number) => void;
-};
+}
 
 interface NumericInputState {
     error: boolean;
-};
+}
 
 export const NumericInput =
     withStyles(styles, { withTheme: true })(

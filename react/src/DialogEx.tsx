@@ -19,7 +19,7 @@
 
 import React from 'react';
 
-import Dialog, {DialogProps} from '@material-ui/core/Dialog';
+import Dialog, {DialogProps} from '@mui/material/Dialog';
 
 
 interface DialogExProps extends DialogProps {

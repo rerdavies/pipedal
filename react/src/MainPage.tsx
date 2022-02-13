@@ -18,24 +18,27 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SyntheticEvent } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import {
     PedalBoard, PedalBoardItem, PedalBoardSplitItem, SplitType
 } from './PedalBoard';
-import Button from '@material-ui/core/Button';
-import InputIcon from '@material-ui/icons/Input';
+import Button from '@mui/material/Button';
+import InputIcon from '@mui/icons-material/Input';
 import LoadPluginDialog from './LoadPluginDialog';
-import Switch from '@material-ui/core/Switch';
+import Switch from '@mui/material/Switch';
 
 import PedalBoardView from './PedalBoardView';
 import { PiPedalStateError } from './PiPedalError';
-import IconButton from '@material-ui/core/IconButton';
-import AddIcon from '@material-ui/icons/Add';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
-import Fade from '@material-ui/core/Fade';
-import Divider from '@material-ui/core/Divider';
+import IconButton from '@mui/material/IconButton';
+import AddIcon from '@mui/icons-material/Add';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Fade from '@mui/material/Fade';
+import Divider from '@mui/material/Divider';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import PluginInfoDialog from './PluginInfoDialog';
 import { GetControlView } from './ControlViewFactory';
@@ -88,7 +91,7 @@ const styles = ({ palette }: Theme) => createStyles({
 interface MainProps extends WithStyles<typeof styles> {
     hasTinyToolBar: boolean;
     theme: Theme;
-};
+}
 
 interface MainState {
     selectedPedal: number;
@@ -99,7 +102,7 @@ interface MainState {
     horizontalScrollLayout: boolean;
     showMidiBindingsDialog: boolean;
     screenHeight: number;
-};
+}
 
 
 export const MainPage =
@@ -392,7 +395,7 @@ export const MainPage =
 
                                 </div>
                                 <div style={{ flex: "0 0 auto", display: canAdd ? "block" : "none", paddingRight: 8 }}>
-                                    <IconButton onClick={(e) => { this.onAddClick(e) }} >
+                                    <IconButton onClick={(e) => { this.onAddClick(e) }} size="large">
                                         <AddIcon />
                                     </IconButton>
                                     <Menu
@@ -411,7 +414,9 @@ export const MainPage =
                                     </Menu>
                                 </div>
                                 <div style={{ flex: "0 0 auto", display: canDelete ? "block" : "none", paddingRight: 8 }}>
-                                    <IconButton onClick={() => { this.onDeletePedal(pedalBoardItem?.instanceId ?? -1) }} >
+                                    <IconButton
+                                        onClick={() => { this.onDeletePedal(pedalBoardItem?.instanceId ?? -1) }}
+                                        size="large">
                                         <img src="/img/old_delete_outline_black_24dp.svg" alt="Delete" style={{ width: 24, height: 24, opacity: 0.6 }} />
                                     </IconButton>
                                 </div>
@@ -428,7 +433,9 @@ export const MainPage =
                                     </Button>
                                 </div>
                                 <div style={{ flex: "0 0 auto" }}>
-                                    <IconButton onClick={(e) => { this.handleMidiConfiguration(instanceId); }}>
+                                    <IconButton
+                                        onClick={(e) => { this.handleMidiConfiguration(instanceId); }}
+                                        size="large">
                                         <img src="img/ic_midi.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="Midi configuration" />
                                     </IconButton>
 
@@ -462,7 +469,6 @@ export const MainPage =
                             )
                         }
                     </div>
-
                 );
             }
         }

@@ -18,31 +18,31 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SyntheticEvent } from 'react';
-import { ThemeProvider } from '@material-ui/styles';
-import { createMuiTheme } from '@material-ui/core/styles';
+import { ThemeProvider, WithStyles } from '@mui/styles';
+import { createTheme, StyledEngineProvider, adaptV4Theme, Theme } from '@mui/material/styles';
 
 import './App.css';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import Typography from '@material-ui/core/Typography';
-import { createStyles, withStyles, WithStyles } from '@material-ui/core/styles';
-import IconButton from '@material-ui/core/IconButton';
-import MenuButton from '@material-ui/icons/Menu';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import CssBaseline from '@mui/material/CssBaseline';
+import Typography from '@mui/material/Typography';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
+import IconButton from '@mui/material/IconButton';
+import MenuButton from '@mui/icons-material/Menu';
 import { TemporaryDrawer } from './TemporaryDrawer';
-import { Theme } from '@material-ui/core/styles/createMuiTheme';
-import FullscreenIcon from '@material-ui/icons/Fullscreen';
-import FullscreenExitIcon from '@material-ui/icons/FullscreenExit';
-import List from '@material-ui/core/List';
-import Divider from '@material-ui/core/Divider';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import List from '@mui/material/List';
+import Divider from '@mui/material/Divider';
+import ListItem from '@mui/material/ListItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import CircularProgress from '@mui/material/CircularProgress';
 import { OnChangedHandler } from './ObservableProperty';
-import ErrorOutlineIcon from '@material-ui/icons/Error';
+import ErrorOutlineIcon from '@mui/icons-material/Error';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import Button from '@material-ui/core/Button';
+import Button from '@mui/material/Button';
 import PresetSelector from './PresetSelector';
 import SettingsDialog from './SettingsDialog';
 import AboutDialog from './AboutDialog';
@@ -51,18 +51,27 @@ import BankDialog from './BankDialog';
 import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo } from './PiPedalModel';
 import ZoomedUiControl from './ZoomedUiControl'
 import MainPage from './MainPage';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import ListSubheader from '@material-ui/core/ListSubheader';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import ListSubheader from '@mui/material/ListSubheader';
 import { BankIndex, BankIndexEntry } from './Banks';
 import RenameDialog from './RenameDialog';
 import JackStatusView from './JackStatusView';
 
 
 
-const theme = createMuiTheme({
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
+
+
+
+const theme = createTheme(adaptV4Theme({
     palette: {
         primary: {
             main: "#324c6c"
@@ -71,7 +80,7 @@ const theme = createMuiTheme({
             main: "#FF6060"
         }
     }
-});
+}));
 
 const appStyles = ({ palette, spacing, mixins }: Theme) => createStyles({
     loadingContent: {
@@ -619,37 +628,68 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
 
 
         return (
-            <ThemeProvider theme={theme}>
-                <div style={{
-                    minHeight: 345, minWidth: 390,
-                    position: "absolute", width: "100%", height: "100%", background: "#F88", userSelect: "none",
-                    display: "flex", flexDirection: "column", flexWrap: "nowrap",
-                    overscrollBehavior: this.state.isDebug ? "auto" : "none"
-                }}
-                    onContextMenu={(e) => {
-                        if (!this.model_.serverVersion?.debug ?? false) {
-                            e.preventDefault(); e.stopPropagation();
-                        }
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={theme}>
+                    <div style={{
+                        minHeight: 345, minWidth: 390,
+                        position: "absolute", width: "100%", height: "100%", background: "#F88", userSelect: "none",
+                        display: "flex", flexDirection: "column", flexWrap: "nowrap",
+                        overscrollBehavior: this.state.isDebug ? "auto" : "none"
                     }}
-                >
-                    <CssBaseline />
-                    {(!this.state.tinyToolBar) ?
-                        (
-                            <AppBar position="absolute" style={{background: "white"}}>
-                                <Toolbar variant="dense"   >
-                                    <IconButton edge="start"
-                                        aria-label="menu" onClick={() => { this.showDrawer() }}
-                                    >
+                        onContextMenu={(e) => {
+                            if (!this.model_.serverVersion?.debug ?? false) {
+                                e.preventDefault(); e.stopPropagation();
+                            }
+                        }}
+                    >
+                        <CssBaseline />
+                        {(!this.state.tinyToolBar) ?
+                            (
+                                <AppBar position="absolute" style={{background: "white"}}>
+                                    <Toolbar variant="dense"   >
+                                        <IconButton
+                                            edge="start"
+                                            aria-label="menu"
+                                            onClick={() => { this.showDrawer() }}
+                                            size="large">
+                                            <MenuButton />
+                                        </IconButton>
+                                        <div style={{ flex: "1 1 1px" }} />
+                                        <div style={{ flex: "0 1 400px", minWidth: 100 }}>
+                                            <PresetSelector />
+                                        </div>
+                                        <div style={{ flex: "2 2 30px" }} />
+                                        {this.state.canFullScreen &&
+                                            <IconButton
+                                                aria-label="menu"
+                                                onClick={() => { this.toggleFullScreen(); }}
+                                                size="large">
+                                                {this.state.isFullScreen ? (
+                                                    <FullscreenExitIcon />
+                                                ) : (
+                                                    <FullscreenIcon />
+
+                                                )}
+
+                                            </IconButton>
+                                        }
+                                    </Toolbar>
+                                </AppBar>
+                            ) : (
+                                <div className={classes.toolBarContent} >
+                                    <IconButton
+                                        style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
+                                        aria-label="menu"
+                                        onClick={() => { this.showDrawer() }}
+                                        size="large">
                                         <MenuButton />
                                     </IconButton>
-                                    <div style={{ flex: "1 1 1px" }} />
-                                    <div style={{ flex: "0 1 400px", minWidth: 100 }}>
-                                        <PresetSelector />
-                                    </div>
-                                    <div style={{ flex: "2 2 30px" }} />
-                                    {this.state.canFullScreen &&
+                                    {this.state.canFullScreen && (
                                         <IconButton
-                                            aria-label="menu" onClick={() => { this.toggleFullScreen(); }}>
+                                            style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
+                                            aria-label="menu"
+                                            onClick={() => { this.toggleFullScreen(); }}
+                                            size="large">
                                             {this.state.isFullScreen ? (
                                                 <FullscreenExitIcon />
                                             ) : (
@@ -658,213 +698,193 @@ const App = withStyles(appStyles)(class extends ResizeResponsiveComponent<AppPro
                                             )}
 
                                         </IconButton>
-                                    }
-                                </Toolbar>
-                            </AppBar>
-                        ) : (
-                            <div className={classes.toolBarContent} >
-                                <IconButton style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
-                                    aria-label="menu" onClick={() => { this.showDrawer() }}
-                                >
-                                    <MenuButton />
-                                </IconButton>
-                                {this.state.canFullScreen && (
-                                    <IconButton style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
-                                        aria-label="menu" onClick={() => { this.toggleFullScreen(); }}>
-                                        {this.state.isFullScreen ? (
-                                            <FullscreenExitIcon />
-                                        ) : (
-                                            <FullscreenIcon />
+                                    )}
+                                </div>
+                            )}
+                        <TemporaryDrawer position='left' title="PiPedal"
+                            is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
+                            <List subheader={
+                                <ListSubheader component="div" id="nested-list-subheader">Banks</ListSubheader>
+                            }>
+                                {
+                                    shortBankList.map((bank) => {
+                                        return (
+                                            <ListItem button key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
+                                                onClick={() => this.onOpenBank(bank.instanceId)}
+                                            >
 
-                                        )}
+                                                <ListItemText primary={bank.name} />
+                                            </ListItem>
 
-                                    </IconButton>
-                                )}
-                            </div>
-                        )}
-                    <TemporaryDrawer position='left' title="PiPedal"
-                        is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
-                        <List subheader={
-                            <ListSubheader component="div" id="nested-list-subheader">Banks</ListSubheader>
-                        }>
-                            {
-                                shortBankList.map((bank) => {
-                                    return (
-                                        <ListItem button key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
-                                            onClick={() => this.onOpenBank(bank.instanceId)}
+                                        );
+                                    })
+                                }
+                                {
+                                    showBankSelectDialog && (
+                                        <ListItem button key={'bankDOTDOTDOT'} selected={false}
+                                            onClick={() => this.handleDrawerSelectBank()}
                                         >
 
-                                            <ListItemText primary={bank.name} />
+                                            <ListItemText primary={"..."} />
                                         </ListItem>
 
-                                    );
-                                })
-                            }
-                            {
-                                showBankSelectDialog && (
-                                    <ListItem button key={'bankDOTDOTDOT'} selected={false}
-                                        onClick={() => this.handleDrawerSelectBank()}
-                                    >
 
-                                        <ListItemText primary={"..."} />
-                                    </ListItem>
-
-
-                                )
-                            }
-                        </List>
-                        <Divider />
-                        <List>
-                            <ListItem button key='RenameBank' onClick={() => { this.handleDrawerRenameBank() }}>
-                                <ListItemIcon><img src="img/drive_file_rename_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} /></ListItemIcon>
-                                <ListItemText primary='Rename Bank' />
-                            </ListItem>
-                            <ListItem button key='SaveBank' onClick={() => { this.handleDrawerSaveBankAs() }} >
-                                <ListItemIcon>
-                                    <img src="img/save_bank_as.svg" alt="" style={{ opacity: 0.6 }} />
-                                </ListItemIcon>
-                                <ListItemText primary='Save As New Bank' />
-                            </ListItem>
-                            <ListItem button key='CreateBank' onClick={() => { this.handleDrawerManageBanks(); }}>
-                                <ListItemIcon>
-                                    <img src="img/edit_banks.svg" alt="" style={{ opacity: 0.6 }} />
-                                </ListItemIcon>
-                                <ListItemText primary='Manage Banks...' />
-                            </ListItem>
-                        </List>
-                        <Divider />
-                        <List>
-                            <ListItem button key='Settings' onClick={() => { this.handleDrawerSettingsClick() }}>
-                                <ListItemIcon>
-                                    <img src="img/settings_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
-                                </ListItemIcon>
-                                <ListItemText primary='Settings' />
-                            </ListItem>
-                            <ListItem button key='About' onClick={() => { this.handleDrawerAboutClick() }}>
-                                <ListItemIcon>
-                                    <img src="img/help_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
-                                </ListItemIcon>
-                                <ListItemText primary='About' />
-                            </ListItem>
-                        </List>
-
-                    </TemporaryDrawer>
-                    {!this.state.tinyToolBar && (
-                        <Toolbar className={classes.toolBarSpacer} variant="dense" />
-                    )}
-                    <main className={classes.mainFrame} >
-                        <div className={classes.mainSizingPosition}>
-                            <div className={classes.heroContent}>
-                                {(this.state.displayState !== State.Loading) && (
-                                    <MainPage hasTinyToolBar={this.state.tinyToolBar} />
-                                )}
-                            </div>
-
-                        </div>
-                    </main>
-                    <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
-                    <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
-                    <SettingsDialog open={this.state.isSettingsDialogOpen} onClose={() => this.handleSettingsDialogClose()} />
-                    <RenameDialog
-                        open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
-                        defaultName={this.model_.banks.get().getSelectedEntryName()}
-                        acceptActionName={"Rename"}
-                        onClose={() => {
-                            this.setState({
-                                renameBankDialogOpen: false,
-                                saveBankAsDialogOpen: false
-                            })
-                        }}
-                        onOk={(text: string) => {
-                            if (this.state.renameBankDialogOpen) {
-                                this.handleBankRenameOk(text);
-                            } else if (this.state.saveBankAsDialogOpen) {
-                                this.handleSaveBankAsOk(text);
-                            }
-                        }
-                        }
-                    />
-
-                    <ZoomedUiControl
-                        dialogOpen={this.state.zoomedControlOpen}
-                        controlInfo={this.state.zoomedControlInfo}
-                        onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
-                        onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
-                        }
-                    />
-                    <Dialog
-                        open={this.state.alertDialogOpen}
-                        onClose={this.handleCloseAlert}
-                        aria-describedby="alert-dialog-description"
-                    >
-                        <DialogContent>
-                            <DialogContentText id="alert-dialog-description">
-                                {
-                                    this.model_.alertMessage.get()
+                                    )
                                 }
-                            </DialogContentText>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={this.handleCloseAlert} color="primary" autoFocus>
-                                OK
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                    <JackStatusView />
-                    <div className={classes.errorContent} style={{ display: this.state.displayState === State.Reconnecting ? "block" : "none" }}
-                    >
-                        <div className={classes.errorContentMask} />
+                            </List>
+                            <Divider />
+                            <List>
+                                <ListItem button key='RenameBank' onClick={() => { this.handleDrawerRenameBank() }}>
+                                    <ListItemIcon><img src="img/drive_file_rename_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} /></ListItemIcon>
+                                    <ListItemText primary='Rename Bank' />
+                                </ListItem>
+                                <ListItem button key='SaveBank' onClick={() => { this.handleDrawerSaveBankAs() }} >
+                                    <ListItemIcon>
+                                        <img src="img/save_bank_as.svg" alt="" style={{ opacity: 0.6 }} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Save As New Bank' />
+                                </ListItem>
+                                <ListItem button key='CreateBank' onClick={() => { this.handleDrawerManageBanks(); }}>
+                                    <ListItemIcon>
+                                        <img src="img/edit_banks.svg" alt="" style={{ opacity: 0.6 }} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Manage Banks...' />
+                                </ListItem>
+                            </List>
+                            <Divider />
+                            <List>
+                                <ListItem button key='Settings' onClick={() => { this.handleDrawerSettingsClick() }}>
+                                    <ListItemIcon>
+                                        <img src="img/settings_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Settings' />
+                                </ListItem>
+                                <ListItem button key='About' onClick={() => { this.handleDrawerAboutClick() }}>
+                                    <ListItemIcon>
+                                        <img src="img/help_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='About' />
+                                </ListItem>
+                            </List>
 
-                        <div className={classes.loadingBox}>
-                            <div className={classes.loadingBoxItem}>
-                                <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                        </TemporaryDrawer>
+                        {!this.state.tinyToolBar && (
+                            <Toolbar className={classes.toolBarSpacer} variant="dense" />
+                        )}
+                        <main className={classes.mainFrame} >
+                            <div className={classes.mainSizingPosition}>
+                                <div className={classes.heroContent}>
+                                    {(this.state.displayState !== State.Loading) && (
+                                        <MainPage hasTinyToolBar={this.state.tinyToolBar} />
+                                    )}
+                                </div>
+
                             </div>
-                            <Typography variant="body2" className={classes.progressText}>
-                                Reconnecting...
-                            </Typography>
-                        </div>
-                    </div>
-                    <div className={classes.errorContent} style={{ display: this.state.displayState === State.Error ? "flex" : "none" }}
-                        onMouseDown={preventDefault} onKeyDown={preventDefault}
-                    >
-                        <div className={classes.errorContentMask} />
-                        <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
-                        <div className={classes.errorMessageBox} style={{ position: "relative" }} >
-                            <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 0, color: "#A00" }}>
-                                <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
-                            </div>
-                            <div style={{ marginLeft: 40, marginTop: 3 }}>
-                                <p className={classes.errorText}>
-                                    Error: {this.state.errorMessage}
-                                </p>
-                            </div>
-                            <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
-                                <Button variant='contained' color="primary" component='button'
-                                    onClick={() => window.location.reload()} >
-                                    Reload
+                        </main>
+                        <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
+                        <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
+                        <SettingsDialog open={this.state.isSettingsDialogOpen} onClose={() => this.handleSettingsDialogClose()} />
+                        <RenameDialog
+                            open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
+                            defaultName={this.model_.banks.get().getSelectedEntryName()}
+                            acceptActionName={"Rename"}
+                            onClose={() => {
+                                this.setState({
+                                    renameBankDialogOpen: false,
+                                    saveBankAsDialogOpen: false
+                                })
+                            }}
+                            onOk={(text: string) => {
+                                if (this.state.renameBankDialogOpen) {
+                                    this.handleBankRenameOk(text);
+                                } else if (this.state.saveBankAsDialogOpen) {
+                                    this.handleSaveBankAsOk(text);
+                                }
+                            }
+                            }
+                        />
+
+                        <ZoomedUiControl
+                            dialogOpen={this.state.zoomedControlOpen}
+                            controlInfo={this.state.zoomedControlInfo}
+                            onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
+                            onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
+                            }
+                        />
+                        <Dialog
+                            open={this.state.alertDialogOpen}
+                            onClose={this.handleCloseAlert}
+                            aria-describedby="alert-dialog-description"
+                        >
+                            <DialogContent>
+                                <DialogContentText id="alert-dialog-description">
+                                    {
+                                        this.model_.alertMessage.get()
+                                    }
+                                </DialogContentText>
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={this.handleCloseAlert} color="primary" autoFocus>
+                                    OK
                                 </Button>
+                            </DialogActions>
+                        </Dialog>
+                        <JackStatusView />
+                        <div className={classes.errorContent} style={{ display: this.state.displayState === State.Reconnecting ? "block" : "none" }}
+                        >
+                            <div className={classes.errorContentMask} />
+
+                            <div className={classes.loadingBox}>
+                                <div className={classes.loadingBoxItem}>
+                                    <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                                </div>
+                                <Typography variant="body2" className={classes.progressText}>
+                                    Reconnecting...
+                                </Typography>
+                            </div>
+                        </div>
+                        <div className={classes.errorContent} style={{ display: this.state.displayState === State.Error ? "flex" : "none" }}
+                            onMouseDown={preventDefault} onKeyDown={preventDefault}
+                        >
+                            <div className={classes.errorContentMask} />
+                            <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
+                            <div className={classes.errorMessageBox} style={{ position: "relative" }} >
+                                <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 0, color: "#A00" }}>
+                                    <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
+                                </div>
+                                <div style={{ marginLeft: 40, marginTop: 3 }}>
+                                    <p className={classes.errorText}>
+                                        Error: {this.state.errorMessage}
+                                    </p>
+                                </div>
+                                <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
+                                    <Button variant='contained' color="primary" component='button'
+                                        onClick={() => window.location.reload()} >
+                                        Reload
+                                    </Button>
+
+                                </div>
 
                             </div>
 
+                            <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
+
                         </div>
-
-                        <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
-
-                    </div>
-                    <div className={classes.errorContent} style={{ display: this.state.displayState === State.Loading ? "block" : "none" }}>
-                        <div className={classes.errorContentMask} />
-                        <div className={classes.loadingBox}>
-                            <div className={classes.loadingBoxItem}>
-                                <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                        <div className={classes.errorContent} style={{ display: this.state.displayState === State.Loading ? "block" : "none" }}>
+                            <div className={classes.errorContentMask} />
+                            <div className={classes.loadingBox}>
+                                <div className={classes.loadingBoxItem}>
+                                    <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                                </div>
+                                <Typography variant="body2" className={classes.loadingBoxItem}>
+                                    Loading...
+                                </Typography>
                             </div>
-                            <Typography variant="body2" className={classes.loadingBoxItem}>
-                                Loading...
-                            </Typography>
                         </div>
-                    </div>
 
-                </div >
-            </ThemeProvider>
+                    </div >
+                </ThemeProvider>
+            </StyledEngineProvider>
         );
     }
 }

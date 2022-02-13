@@ -19,15 +19,18 @@
 
 import { Component } from 'react';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
-import MenuItem from '@material-ui/core/MenuItem';
-import Select from '@material-ui/core/Select';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import MidiBinding from './MidiBinding';
 import Utility, { nullCast } from './Utility';
-import Typography from '@material-ui/core/Typography';
-import MicNoneOutlinedIcon from '@material-ui/icons/MicNoneOutlined';
-import MicOutlinedIcon from '@material-ui/icons/MicOutlined';
-import IconButton from '@material-ui/core/IconButton';
+import Typography from '@mui/material/Typography';
+import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
+import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
+import IconButton from '@mui/material/IconButton';
 import NumericInput from './NumericInput';
 
 
@@ -44,11 +47,11 @@ interface MidiBindingViewProps extends WithStyles<typeof styles> {
     midiBinding: MidiBinding;
     onChange: (instanceId: number, newBinding: MidiBinding) => void;
     onListen: (instanceId: number, key: string, listenForControl: boolean) => void;
-};
+}
 
 
 interface MidiBindingViewState {
-};
+}
 
 
 
@@ -191,14 +194,16 @@ const MidiBindingView =
                                             this.generateMidiSelects()
                                         }
                                     </Select>
-                                    <IconButton onClick={()=> {
-                                        if (this.props.listen)
-                                        {
-                                            this.props.onListen(-2, "", false)
-                                        } else {
-                                            this.props.onListen(this.props.instanceId, this.props.midiBinding.symbol, false)
-                                        }
-                                    }}>
+                                    <IconButton
+                                        onClick={()=> {
+                                            if (this.props.listen)
+                                            {
+                                                this.props.onListen(-2, "", false)
+                                            } else {
+                                                this.props.onListen(this.props.instanceId, this.props.midiBinding.symbol, false)
+                                            }
+                                        }}
+                                        size="large">
                                         { this.props.listen ? (
                                             <MicOutlinedIcon />
                                         ) : (
@@ -223,14 +228,16 @@ const MidiBindingView =
                                             this.generateControlSelects()
                                         }
                                     </Select>
-                                    <IconButton onClick={()=> {
-                                        if (this.props.listen)
-                                        {
-                                            this.props.onListen(-2, "", false)
-                                        } else {
-                                            this.props.onListen(this.props.instanceId, this.props.midiBinding.symbol, true)
-                                        }
-                                    }}>
+                                    <IconButton
+                                        onClick={()=> {
+                                            if (this.props.listen)
+                                            {
+                                                this.props.onListen(-2, "", false)
+                                            } else {
+                                                this.props.onListen(this.props.instanceId, this.props.midiBinding.symbol, true)
+                                            }
+                                        }}
+                                        size="large">
                                         { this.props.listen ? (
                                             <MicOutlinedIcon />
                                         ) : (
@@ -310,7 +317,7 @@ const MidiBindingView =
                             )
                         }
                     </div>
-                )
+                );
 
             }
         });

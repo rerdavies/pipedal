@@ -18,18 +18,21 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import { createStyles, Theme, withStyles, WithStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
-import Dialog from '@material-ui/core/Dialog';
-import MuiDialogTitle from '@material-ui/core/DialogTitle';
-import MuiDialogContent from '@material-ui/core/DialogContent';
-import MuiDialogActions from '@material-ui/core/DialogActions';
-import IconButton from '@material-ui/core/IconButton';
-import CloseIcon from '@material-ui/icons/Close';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import MuiDialogTitle from '@mui/material/DialogTitle';
+import MuiDialogContent from '@mui/material/DialogContent';
+import MuiDialogActions from '@mui/material/DialogActions';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import Typography from '@mui/material/Typography';
+import Grid from '@mui/material/Grid';
 import { PiPedalModelFactory } from "./PiPedalModel";
-import InfoOutlinedIcon from '@material-ui/icons/InfoOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { UiPlugin, UiControl } from './Lv2Plugin';
 import PluginIcon from './PluginIcon';
 
@@ -132,7 +135,7 @@ function makeParagraphs(description: string) {
 }
 function makeControls(controls: UiControl[]) {
     return (
-        <Grid container direction="row" justify="flex-start" alignItems="flex-start" spacing={1} style={{ paddingLeft: "24px" }}>
+        <Grid container direction="row" justifyContent="flex-start" alignItems="flex-start" spacing={1} style={{ paddingLeft: "24px" }}>
             {
                 controls.map((control) => (
                     <Grid item spacing={2} xs={6} sm={4} key={control.symbol} >
@@ -143,7 +146,6 @@ function makeControls(controls: UiControl[]) {
                 ))
             }
         </Grid>
-
     );
 
 }
@@ -176,8 +178,10 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
 
     return (
         <div>
-            <IconButton style={{ display: (props.plugin_uri !== "") ? "block" : "none" }} onClick={handleClickOpen}
-            >
+            <IconButton
+                style={{ display: (props.plugin_uri !== "") ? "block" : "none" }}
+                onClick={handleClickOpen}
+                size="large">
                 <InfoOutlinedIcon />
             </IconButton>
             {open && (
@@ -190,8 +194,12 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                             <div style={{ flex: "1 1 auto" }}>
                                 <Typography variant="h6">{plugin.name}</Typography>
                             </div>
-                            <IconButton aria-label="close" className={classes.closeButton} onClick={() => handleClose()}
-                                style={{ flex: "0 0 auto" }}>
+                            <IconButton
+                                aria-label="close"
+                                className={classes.closeButton}
+                                onClick={() => handleClose()}
+                                style={{ flex: "0 0 auto" }}
+                                size="large">
                                 <CloseIcon />
                             </IconButton>
                         </div>

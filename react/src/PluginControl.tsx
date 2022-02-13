@@ -18,14 +18,17 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { TouchEvent, PointerEvent, ReactNode, Component, SyntheticEvent } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { UiControl, ScalePoint } from './Lv2Plugin';
-import Typography from '@material-ui/core/Typography';
-import Input from '@material-ui/core/Input';
-import Select from '@material-ui/core/Select';
-import Switch from '@material-ui/core/Switch';
+import Typography from '@mui/material/Typography';
+import Input from '@mui/material/Input';
+import Select from '@mui/material/Select';
+import Switch from '@mui/material/Switch';
 import Utility, {nullCast} from './Utility';
-import MenuItem from '@material-ui/core/MenuItem';
+import MenuItem from '@mui/material/MenuItem';
 import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
 
 
@@ -60,7 +63,7 @@ const styles = (theme: Theme) => createStyles({
             duration: theme.transitions.duration.shortest
         }),
         backgroundColor: theme.palette.secondary.main,
-        opacity: theme.palette.type === 'light' ? 0.38 : 0.3
+        opacity: theme.palette.mode === 'light' ? 0.38 : 0.3
     },
     displayValue: {
         position: "absolute",
@@ -84,7 +87,7 @@ export interface PluginControlProps extends WithStyles<typeof styles> {
     onChange: (value: number) => void;
     theme: Theme;
     requestIMEEdit: (uiControl: UiControl, value: number) => void;
-};
+}
 type PluginControlState = {
     error: boolean;
 };

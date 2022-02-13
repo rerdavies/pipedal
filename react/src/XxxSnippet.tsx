@@ -18,7 +18,12 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import { Theme, withStyles, WithStyles,createStyles } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+
+
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
 
 
 const styles = (theme: Theme) => createStyles({
@@ -27,11 +32,11 @@ const styles = (theme: Theme) => createStyles({
 
 interface XxxProps extends WithStyles<typeof styles> {
     theme: Theme,
-};
+}
 
 interface XxxState {
 
-};
+}
 
 const Xxx = withStyles(styles, { withTheme: true })(
 

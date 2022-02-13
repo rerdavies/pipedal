@@ -18,7 +18,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { ReactNode } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { UiPlugin } from './Lv2Plugin';
 import {
@@ -95,7 +98,7 @@ interface SplitControlViewProps extends WithStyles<typeof styles> {
     theme: Theme;
     instanceId: number;
     item: PedalBoardSplitItem;
-};
+}
 type SplitControlViewState = {
     landscapeGrid: boolean;
 };

@@ -18,13 +18,15 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { Component } from 'react';
-import { withStyles, createStyles, WithStyles } from '@material-ui/core';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
 
-import Toolbar from '@material-ui/core/Toolbar';
-import IconButton from '@material-ui/core/Toolbar';
-import Drawer from '@material-ui/core/Drawer';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-import { Theme } from '@material-ui/core/styles/createMuiTheme';
+import Toolbar from '@mui/material/Toolbar';
+import IconButton from '@mui/material/Toolbar';
+import Drawer from '@mui/material/Drawer';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Theme } from '@mui/material/styles';
 
 
 const drawerStyles = ({ palette }: Theme) => createStyles({
@@ -55,7 +57,7 @@ interface DrawerProps extends WithStyles<typeof drawerStyles> {
     onClose?: CloseEventHandler;
     children?: React.ReactChild | React.ReactChild[];
 
-};
+}
 type DrawerState = {
     is_open: boolean;
 }
@@ -98,8 +100,7 @@ export const TemporaryDrawer = withStyles(drawerStyles)(
                                 <Toolbar className={classes.drawer_header} 
                                     style={{backgroundImage: 'url("img/ic_drawer_2.png")', border: "red solid", borderWidth: "0px 0px 3px 0px" }} 
                                 >
-                                    <IconButton style={{ marginLeft: -24  }}
-                                    >
+                                    <IconButton style={{ marginLeft: -24  }} >
                                         <ArrowBackIcon style={{ fill: '#666' }} />
                                     </IconButton>
                                 </Toolbar>

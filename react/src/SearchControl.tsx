@@ -18,12 +18,15 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
-import Input from '@material-ui/core/Input';
-import IconButton from '@material-ui/core/IconButton';
-import SearchIcon from '@material-ui/icons/Search';
-import ClearIcon from '@material-ui/icons/Clear';
-import InputAdornment from '@material-ui/core/InputAdornment';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
+import Input from '@mui/material/Input';
+import IconButton from '@mui/material/IconButton';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import InputAdornment from '@mui/material/InputAdornment';
 
 const styles = (theme: Theme) => createStyles({
 });
@@ -39,10 +42,10 @@ interface SearchControlProps extends WithStyles<typeof styles> {
     inputRef?: React.RefObject<HTMLInputElement>;
     showSearchIcon?: boolean
 
-};
+}
 
 interface SearchControlState {
-};
+}
 
 const SearchControl = withStyles(styles, { withTheme: true })(
 
@@ -87,8 +90,7 @@ const SearchControl = withStyles(styles, { withTheme: true })(
             return (
                 <div style={{ display: "flex", flexFlow: "row nowrap", justifyContent: "flex-end", alignItems: "center" }}>
                     {(this.props.showSearchIcon ?? true) && (
-                        <IconButton onClick={() => { this.props.onClick(); }}
-                        >
+                        <IconButton onClick={() => { this.props.onClick(); }} size="large">
                             <SearchIcon />
                         </IconButton>
                     )
@@ -112,7 +114,7 @@ const SearchControl = withStyles(styles, { withTheme: true })(
                                         }
                                     }}
                                     edge="end"
-                                >
+                                    size="large">
                                     <ClearIcon fontSize='small' style={{ opacity: 0.6 }} />
                                 </IconButton>
                             </InputAdornment>

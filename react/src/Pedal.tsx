@@ -18,8 +18,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { Component, ReactNode } from 'react';
-import { withStyles, createStyles, WithStyles } from '@material-ui/core';
-import { Theme } from '@material-ui/core/styles/createMuiTheme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
+import { Theme } from '@mui/material/styles';
 import { Lv2Plugin } from './Lv2Plugin'
 
 
@@ -31,7 +33,7 @@ interface PedalProps extends WithStyles<typeof pedalStyles> {
     plugin: Lv2Plugin;
     children?: React.ReactChild | React.ReactChild[];
 
-};
+}
 
 type PedalState = {
     

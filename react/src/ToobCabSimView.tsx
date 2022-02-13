@@ -18,7 +18,11 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
@@ -35,10 +39,10 @@ interface ToobCabSimProps extends WithStyles<typeof styles> {
     instanceId: number;
     item: PedalBoardItem;
 
-};
+}
 interface ToobCabSimState {
 
-};
+}
 
 const ToobCabSimView =
     withStyles(styles, { withTheme: true })(
@@ -84,5 +88,5 @@ class ToobCabSimViewFactory implements IControlViewFactory {
     }
 
 
-};
+}
 export default ToobCabSimViewFactory;

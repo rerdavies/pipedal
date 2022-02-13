@@ -18,23 +18,26 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import DialogEx from './DialogEx';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import Switch from '@material-ui/core/Switch';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import WifiConfigSettings from './WifiConfigSettings';
 import NoChangePassword from './NoChangePassword';
-import Typography from '@material-ui/core/Typography';
-import { Theme, withStyles, WithStyles,createStyles } from '@material-ui/core/styles';
-import Select from '@material-ui/core/Select';
-import FormControl from '@material-ui/core/FormControl';
-import InputLabel from '@material-ui/core/InputLabel';
-import MenuItem from '@material-ui/core/MenuItem';
+import Typography from '@mui/material/Typography';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
+import Select from '@mui/material/Select';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
 import WifiChannel from './WifiChannel';
 import {PiPedalModel, PiPedalModelFactory} from './PiPedalModel';
 
@@ -51,7 +54,7 @@ export interface WifiConfigProps extends WithStyles<typeof styles> {
     wifiConfigSettings: WifiConfigSettings,
     onOk: (wifiConfigSettings: WifiConfigSettings) => void,
     onClose: () => void
-};
+}
 
 export interface WifiConfigState {
     fullScreen: boolean;
@@ -67,7 +70,7 @@ export interface WifiConfigState {
     countryCode: string;
     channel: string;
     wifiChannels: WifiChannel[];
-};
+}
 
 
 

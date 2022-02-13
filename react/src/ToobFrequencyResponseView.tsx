@@ -18,7 +18,11 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 
 import { PiPedalModelFactory, PiPedalModel, State } from "./PiPedalModel";
 import { StandardItemSize } from './PluginControlView';
@@ -43,10 +47,10 @@ const styles = (theme: Theme) => createStyles({
 interface ToobFrequencyResponseProps extends WithStyles<typeof styles> {
     instanceId: number;
 
-};
+}
 interface ToobFrequencyResponseState {
     path: string;
-};
+}
 
 const ToobFrequencyResponseView =
     withStyles(styles, { withTheme: true })(

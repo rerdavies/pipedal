@@ -18,10 +18,13 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, {SyntheticEvent} from 'react';
-import { Theme, withStyles, WithStyles,createStyles } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import createStyles from '@mui/styles/createStyles';
 import { ZoomedControlInfo } from './PiPedalModel';
 import DialogEx from './DialogEx';
-import Typography from '@material-ui/core/Typography';
+import Typography from '@mui/material/Typography';
 import { PiPedalModelFactory,PiPedalModel } from './PiPedalModel';
 import ZoomedDial from './ZoomedDial';
 
@@ -35,11 +38,11 @@ interface ZoomedUiControlProps extends WithStyles<typeof styles> {
     onDialogClose: () => void;
     onDialogClosed: () => void;
     controlInfo: ZoomedControlInfo | undefined
-};
+}
 
 interface ZoomedUiControlState {
     value: number
-};
+}
 
 /*
 const Transition = React.forwardRef(function Transition(
@@ -120,10 +123,6 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                 <DialogEx tag="zoomedControlDlg" open={this.props.dialogOpen} 
                     onClose={()=> { this.props.onDialogClose()}}
                     onAbort={()=> { this.props.onDialogClose()}}
-                    onExited={ () => {
-                        this.props.onDialogClosed()
-                    }
-                }
                 >
                     <div style={{ width: 300, height: 300, background: "#FFF",
                         display: "flex", flexFlow: "column", alignItems: "center", alignContent: "center", justifyContent: "center"

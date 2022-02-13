@@ -18,11 +18,14 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { ReactNode, Component, SyntheticEvent } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+import { Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import createStyles from '@mui/styles/createStyles';
+import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { PluginType } from './Lv2Plugin';
-import ButtonBase from '@material-ui/core/ButtonBase';
-import Typography from '@material-ui/core/Typography';
+import ButtonBase from '@mui/material/ButtonBase';
+import Typography from '@mui/material/Typography';
 import { SelectIcon } from './PluginIcon';
 import { SelectHoverBackground } from './SelectHoverBackground';
 import SvgPathBuilder from './SvgPathBuilder';
@@ -174,11 +177,11 @@ interface PedalBoardProps extends WithStyles<typeof pedalBoardStyles> {
     onDoubleClick?: OnSelectHandler;
     hasTinyToolBar: boolean;
 
-};
+}
 interface LayoutSize {
     width: number;
     height: number;
-};
+}
 
 type PedalBoardState = {
     pedalBoard?: PedalBoard;
