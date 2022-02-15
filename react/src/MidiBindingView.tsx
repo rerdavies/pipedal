@@ -168,7 +168,7 @@ const MidiBindingView =
                 return (
                     <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", justifyContent: "left", alignItems: "center", minHeight: 48 }}>
                         <div className={classes.controlDiv} >
-                            <Select
+                            <Select variant="standard"
                                 style={{ width: 80, }}
                                 onChange={(e, extra) => this.handleTypeChange(e, extra)}
                                 value={midiBinding.bindingType}
@@ -184,7 +184,7 @@ const MidiBindingView =
                             (midiBinding.bindingType === MidiBinding.BINDING_TYPE_NOTE) &&
                             (
                                 <div className={classes.controlDiv2} >
-                                    <Select
+                                    <Select variant="standard"
                                         style={{ width:80}}
                                         onChange={(e, extra) => this.handleNoteChange(e, extra)}
                                         value={midiBinding.note}
@@ -218,7 +218,7 @@ const MidiBindingView =
                             (
                                 <div className={classes.controlDiv2} >
 
-                                    <Select
+                                    <Select variant="standard"
                                         style={{ width: 80 }}
                                         onChange={(e, extra) => this.handleControlChange(e, extra)}
                                         value={midiBinding.control}
@@ -252,7 +252,7 @@ const MidiBindingView =
                             ((canLatch) &&
                             (
                                 <div className={classes.controlDiv} >
-                                    <Select
+                                    <Select variant="standard"
                                         style={{ width: 120 }}
                                         onChange={(e, extra) => this.handleLatchControlTypeChange(e, extra)}
                                         value={midiBinding.switchControlType}
@@ -276,7 +276,7 @@ const MidiBindingView =
                             (showLinearControlTypeSelect) && 
                             (
                                 <div className={classes.controlDiv} >
-                                    <Select
+                                    <Select variant="standard"
                                         style={{ width: 120 }}
                                         onChange={(e, extra) => this.handleLinearControlTypeChange(e, extra)}
                                         value={midiBinding.linearControlType}

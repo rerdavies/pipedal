@@ -19,8 +19,7 @@
 
 import React, {SyntheticEvent} from 'react';
 import { Theme } from '@mui/material/styles';
-import { WithStyles } from '@mui/styles';
-import withStyles from '@mui/styles/withStyles';
+import { WithStyles,withStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import { ZoomedControlInfo } from './PiPedalModel';
 import DialogEx from './DialogEx';

@@ -385,7 +385,7 @@ export const MainPage =
                             }} >
                                 <div style={{ flex: "0 0 auto", width: 80 }} >
                                     <div style={{ display: bypassVisible ? "block" : "none", width: 80 }} >
-                                        <Switch checked={bypassChecked} onChange={this.handleEnableCurrentItemChanged} />
+                                        <Switch color="secondary" checked={bypassChecked} onChange={this.handleEnableCurrentItemChanged} />
                                     </div>
                                 </div>
                                 {

@@ -1,18 +1,19 @@
 
 import React, { SyntheticEvent, Component } from 'react';
-import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
-import { TransitionProps } from '@material-ui/core/transitions/transition';
-import Slide from '@material-ui/core/Slide';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-import Divider from '@material-ui/core/Divider';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import ArrowBackIcon from '@mui/icons-material//ArrowBack';
+import Divider from '@mui/material/Divider';
 import JackHostStatus from './JackHostStatus';
 import {PiPedalError} from './PiPedalError';
 import DialogEx from './DialogEx';
+
+import { Theme, createStyles } from '@mui/material/styles';
+import { withStyles, WithStyles} from '@mui/styles';
+import Slide, {SlideProps} from '@mui/material/Slide';
 
 
 interface AboutDialogProps extends WithStyles<typeof styles> {
@@ -81,10 +82,9 @@ const styles = (theme: Theme) => createStyles({
 
 
 const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children?: React.ReactElement },
-    ref: React.Ref<unknown>,
+    props: SlideProps, ref: React.Ref<unknown>
 ) {
-    return <Slide direction="up" ref={ref} {...props} />;
+    return (<Slide direction="up" ref={ref} {...props} />);
 });
 
 

@@ -18,33 +18,34 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { ReactNode, SyntheticEvent, CSSProperties } from 'react';
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles';
+
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { UiPlugin, PluginType } from './Lv2Plugin';
-import ButtonBase from '@material-ui/core/ButtonBase';
-import Button from '@material-ui/core/Button';
-import MenuItem from '@material-ui/core/MenuItem';
-import Typography from '@material-ui/core/Typography';
+import ButtonBase from '@mui/material/ButtonBase';
+import Button from '@mui/material/Button';
+import MenuItem from '@mui/material/MenuItem';
+import Typography from '@mui/material/Typography';
 import PluginInfoDialog from './PluginInfoDialog'
 import PluginIcon from './PluginIcon'
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import SelectHoverBackground from './SelectHoverBackground';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-import IconButton from '@material-ui/core/IconButton';
-import Select from '@material-ui/core/Select';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import IconButton from '@mui/material/IconButton';
+import Select from '@mui/material/Select';
 import PluginClass from './PluginClass'
-import ClearIcon from '@material-ui/icons/Clear';
+import ClearIcon from '@mui/icons-material/Clear';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import { TransitionProps } from '@material-ui/core/transitions/transition';
-import Slide from '@material-ui/core/Slide';
 import SearchControl from './SearchControl';
 import SearchFilter from './SearchFilter';
 import { FixedSizeGrid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
+import Slide, {SlideProps} from '@mui/material/Slide';
+import { createStyles, Theme } from '@mui/material/styles';
+import { WithStyles, withStyles} from '@mui/styles';
 
 
 export type CloseEventHandler = () => void;
@@ -167,13 +168,12 @@ type PluginGridState = {
     minimumItemWidth: number,
 
 }
-const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children?: React.ReactElement<any, any> },
-    ref: React.Ref<unknown>,
-) {
-    return <Slide direction="up" ref={ref} {...props} />;
-});
 
+const Transition = React.forwardRef(function Transition(
+    props: SlideProps, ref: React.Ref<unknown>
+) {
+    return (<Slide direction="up" ref={ref} {...props} />);
+});
 
 export const LoadPluginDialog =
     withStyles(pluginGridStyles, { withTheme: true })(
@@ -545,12 +545,12 @@ export const LoadPluginDialog =
                                                 }}
                                             />
                                         </div>
-                                        <Select
+                                        <Select variant="standard"
                                             defaultValue={this.state.filterType}
                                             key={this.state.filterType}
                                             onChange={(e) => { this.onFilterChange(e); }}
                                             style={{ flex: "0 0 160px" }}
-                                            variant="standard">
+                                            >
                                             {this.createFilterOptions()}
                                         </Select>
                                         <div style={{ flex: "0 0 auto", marginRight: 24, visibility: this.state.filterType === PluginType.Plugin ? "hidden" : "visible" }} >

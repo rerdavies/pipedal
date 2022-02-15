@@ -263,7 +263,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
 
                     <FormControlLabel
                         control={(
-                            <Switch
+                            <Switch 
                                 checked={this.state.enabled}
                                 onChange={(e: any) => this.handleEnableChanged(e)}
                                 color="secondary"
@@ -302,7 +302,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     <div style={{ marginBottom: 16}}>
                         <FormControl>
                             <InputLabel htmlFor="countryCodeSelect">Country</InputLabel>
-                            <Select id="countryCodeSelect" value={this.state.countryCode} style={{width: 220}} 
+                            <Select variant="standard" id="countryCodeSelect" value={this.state.countryCode} style={{width: 220}} 
                                 onChange={(event)=>this.handleCountryChanged(event)} >
                                 {Object.entries(this.model.countryCodes).map(([key,value])=> {
                                     return (
@@ -316,7 +316,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     <div style={{ marginBottom: 24}}>
                         <FormControl>
                             <InputLabel htmlFor="channelSelect">Channel</InputLabel>
-                            <Select id="channelSelect" value={this.state.channel} style={{width: 220}} onChange={(e)=>{
+                            <Select variant="standard" id="channelSelect" value={this.state.channel} style={{width: 220}} onChange={(e)=>{
                                 this.handleChannelChange(e);
                             }}>
                                 {this.state.wifiChannels.map((channel)=> {

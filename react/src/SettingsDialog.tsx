@@ -18,18 +18,15 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { SyntheticEvent, Component } from 'react';
-import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
-import ButtonBase from "@material-ui/core/ButtonBase";
-import { TransitionProps } from '@material-ui/core/transitions/transition';
-import Slide from '@material-ui/core/Slide';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
+import ButtonBase from "@mui/material/ButtonBase";
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import ArrowBackIcon from '@mui/icons-material//ArrowBack';
 import JackConfiguration, { JackChannelSelection } from './Jack';
-import Divider from '@material-ui/core/Divider';
+import Divider from '@mui/material/Divider';
 import SelectChannelsDialog from './SelectChannelsDialog';
 import SelectMidiChannelsDialog from './SelectMidiChannelsDialog';
 import SelectHoverBackground from './SelectHoverBackground';
@@ -39,6 +36,10 @@ import JackHostStatus from './JackHostStatus';
 import WifiConfigSettings from './WifiConfigSettings';
 import WifiConfigDialog from './WifiConfigDialog';
 import DialogEx from './DialogEx'
+
+import Slide, {SlideProps} from '@mui/material/Slide';
+import { createStyles, Theme } from '@mui/material/styles';
+import { WithStyles, withStyles} from '@mui/styles';
 
 
 
@@ -119,11 +120,11 @@ const styles = (theme: Theme) => createStyles({
 
 
 const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children?: React.ReactElement },
-    ref: React.Ref<unknown>,
+    props: SlideProps, ref: React.Ref<unknown>
 ) {
-    return <Slide direction="up" ref={ref} {...props} />;
+    return (<Slide direction="up" ref={ref} {...props} />);
 });
+
 
 
 const SettingsDialog = withStyles(styles, { withTheme: true })(

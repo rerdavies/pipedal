@@ -34,7 +34,6 @@ add_custom_command(
         src/WifiChannel.tsx
         src/PluginControlView.tsx
         src/TemporaryDrawer.tsx
-        src/LoadPluginDialogBackup.tsx
         src/logo.svg
         src/AlsaDeviceInfo.tsx
         src/JackServerSettingsDialog.tsx
@@ -42,6 +41,7 @@ add_custom_command(
         src/PedalBoardView.tsx
         src/MainPage.tsx
         src/App.tsx
+        src/AppThemed.tsx
         src/PresetDialog.tsx
         src/PluginPreset.tsx
         src/react-app-env.d.ts
@@ -89,7 +89,7 @@ add_custom_command(
         src/DialogEx.tsx
         src/ToobWaveShapeView.tsx
         src/FullScreenIME.tsx
-        src/App.css
+        src/AppThemed.css
         src/PluginPresetSelector.tsx
         src/Utility.tsx
         src/SelectMidiChannelsDialog.tsx

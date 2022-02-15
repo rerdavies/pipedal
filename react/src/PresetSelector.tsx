@@ -286,7 +286,7 @@ const PresetSelector =
                      justifyContent: "left", flexWrap: "nowrap", alignItems: "center", height: "100%", position: "relative" }}>
                         <div style={{ flex: "1 1 auto", minWidth: 60, maxWidth: 300, position: "relative", paddingRight: 12 }} >
                             {true ? (
-                                <Select
+                                <Select variant="standard"
                                     className={classes.select}
                                     style={{ width: "100%", position: "relative", top: 0}} disabled={!this.state.enabled}
                                     onChange={(e, extra) => this.handleChange(e, extra)}

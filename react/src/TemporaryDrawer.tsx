@@ -29,7 +29,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Theme } from '@mui/material/styles';
 
 
-const drawerStyles = ({ palette }: Theme) => createStyles({
+const drawerStyles = (theme: Theme) => {
+    return createStyles({
     list: {
         width: 250,
     },
@@ -39,10 +40,10 @@ const drawerStyles = ({ palette }: Theme) => createStyles({
 
     drawer_header: {
         color: 'white',
-        background: palette.primary.main,
+        background: theme.palette.primary.main,
 
     }
-});
+})};
 
 type Anchor = 'top' | 'left' | 'bottom' | 'right';
 

@@ -18,34 +18,34 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { Component } from 'react';
-import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { BankIndexEntry, BankIndex } from './Banks';
-import Button from "@material-ui/core/Button";
-import ButtonBase from "@material-ui/core/ButtonBase";
-import { TransitionProps } from '@material-ui/core/transitions/transition';
-import Slide from '@material-ui/core/Slide';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import { Theme, withStyles, WithStyles, createStyles } from '@material-ui/core/styles';
+import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
+import Slide, {SlideProps} from '@mui/material/Slide';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import { Theme, createStyles } from '@mui/material/styles';
+import { WithStyles,withStyles } from "@mui/styles";
 import DraggableGrid, { ScrollDirection } from './DraggableGrid';
-import Fade from '@material-ui/core/Fade';
+import Fade from '@mui/material/Fade';
 
 import SelectHoverBackground from './SelectHoverBackground';
-import CloseIcon from '@material-ui/icons/Close';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-import EditIcon from '@material-ui/icons/Edit';
+import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import EditIcon from '@mui/icons-material/Edit';
 import RenameDialog from './RenameDialog';
 
-import MoreVertIcon from '@material-ui/icons/MoreVert';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import DialogEx from './DialogEx';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 
 interface BankDialogProps extends WithStyles<typeof styles> {
     show: boolean;
@@ -110,18 +110,9 @@ const styles = (theme: Theme) => createStyles({
 
 
 const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children?: React.ReactElement },
-    ref: React.Ref<unknown>,
+    props: SlideProps, ref: React.Ref<unknown>
 ) {
-    return <Slide direction="up" ref={ref} {...props} />;
-});
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ActionBarTransition = React.forwardRef(function Transition(
-    props: TransitionProps & { children?: React.ReactElement },
-    ref: React.Ref<unknown>,
-) {
-    return <Slide direction="right" ref={ref} {...props} />;
+    return (<Slide direction="up" ref={ref} {...props} />);
 });
 
 

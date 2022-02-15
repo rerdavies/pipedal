@@ -276,7 +276,7 @@ const JackServerSettingsDialog = withStyles(styles)(
                         <div>
                             <FormControl className={classes.formControl}>
                                 <InputLabel htmlFor="jsd_device">Device</InputLabel>
-                                <Select onChange={(e) => this.handleDeviceChanged(e)}
+                                <Select variant="standard" onChange={(e) => this.handleDeviceChanged(e)}
                                     value={this.state.jackServerSettings.alsaDevice}
                                     style={{width: 220}}
                                     inputProps={{
@@ -302,7 +302,7 @@ const JackServerSettingsDialog = withStyles(styles)(
                         </div><div>
                             <FormControl className={classes.formControl}>
                                 <InputLabel htmlFor="jsd_sampleRate">Sample rate</InputLabel>
-                                <Select
+                                <Select variant="standard"
                                     onChange={(e) => this.handleRateChanged(e)}
                                     value={this.state.jackServerSettings.sampleRate}
                                     inputProps={{
@@ -322,7 +322,7 @@ const JackServerSettingsDialog = withStyles(styles)(
                             <div style={{ display: "inline", whiteSpace: "nowrap" }}>
                                 <FormControl className={classes.formControl}>
                                     <InputLabel htmlFor="bufferSize">Buffer size</InputLabel>
-                                    <Select
+                                    <Select variant="standard"
                                         onChange={(e) => this.handleSizeChanged(e)}
                                         value={this.state.jackServerSettings.bufferSize}
                                         inputProps={{
@@ -340,7 +340,7 @@ const JackServerSettingsDialog = withStyles(styles)(
                                 </FormControl>
                                 <FormControl className={classes.formControl}>
                                     <InputLabel htmlFor="numberofBuffers">Buffers</InputLabel>
-                                    <Select
+                                    <Select variant="standard"
                                         onChange={(e) => this.handleNumberOfBuffersChanged(e)}
                                         value={this.state.jackServerSettings.numberOfBuffers}
                                         inputProps={{

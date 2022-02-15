@@ -525,7 +525,7 @@ const PluginControl =
                 if (control.isOnOffSwitch()) {
                     // normal gray unchecked state.
                     return (
-                        <Switch checked={value !== 0}
+                        <Switch checked={value !== 0} color="secondary"
                             onChange={(event) => {
                                 this.onCheckChanged(event.target.checked);
                             }}
@@ -535,7 +535,7 @@ const PluginControl =
                 if (control.isAbToggle()) {
                     // unchecked color is not gray.
                     return (
-                        <Switch checked={value !== 0}
+                        <Switch checked={value !== 0} color="secondary"
                             onChange={(event) => {
                                 this.onCheckChanged(event.target.checked);
                             }}
@@ -547,7 +547,7 @@ const PluginControl =
                     );
                 } else {
                     return (
-                        <Select
+                        <Select variant="standard"
                             ref={this.selectRef}
                             value={control.clampSelectValue(value)}
                             onChange={this.onSelectChanged}
