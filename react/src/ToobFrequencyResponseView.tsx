@@ -46,6 +46,10 @@ const styles = (theme: Theme) => createStyles({
 
 interface ToobFrequencyResponseProps extends WithStyles<typeof styles> {
     instanceId: number;
+    maxDb?: number;
+    minDb?: number;
+    minFrequency?: number;
+    maxFrequency?: number;
 
 }
 interface ToobFrequencyResponseState {
@@ -104,8 +108,8 @@ const ToobFrequencyResponseView =
             requestOutstanding: boolean = false;
             requestDeferred: boolean = false;
 
-            dbMinOpt: number = -35;
-            dbMaxOpt: number = 5;
+            dbMinDefault: number = -35;
+            dbMaxDefault: number = 5;
             dbTickSpacingOpt: number = 10;
 
 
@@ -120,8 +124,6 @@ const ToobFrequencyResponseView =
             xMax: number = PLOT_WIDTH+4;
             yMin: number = 0;
             yMax: number = PLOT_HEIGHT;
-            dbMin: number = this.dbMaxOpt; // deliberately reversed to flip up and down.
-            dbMax: number = this.dbMinOpt;
             dbTickSpacing: number = this.dbTickSpacingOpt;
     
             toX(frequency: number): number 
@@ -189,6 +191,10 @@ const ToobFrequencyResponseView =
 
             currentPath: string = "";
 
+            majorGridLine(x0: number, y0: number, x1: number, y1: number): React.ReactNode {
+                return (<line x1={x0} y1={y0} x2={x1} y2={y1} fill='none' stroke="#FFF" strokeWidth="0.75" opacity="1" />);
+            }
+
             gridLine(x0: number, y0: number, x1: number, y1: number): React.ReactNode {
                 return (<line x1={x0} y1={y0} x2={x1} y2={y1} fill='none' stroke="#FFF" strokeWidth="0.25" opacity="1" />);
             }
@@ -199,27 +205,54 @@ const ToobFrequencyResponseView =
                 for (var db = Math.ceil(this.dbMax/this.dbTickSpacing)*this.dbTickSpacing; db < this.dbMin; db += this.dbTickSpacing )
                 {
                     var y = (db-this.dbMin)/(this.dbMax-this.dbMin)*(this.yMax-this.yMin);
-                    result.push( 
-                        this.gridLine(this.xMin,y,this.xMax,y)
-                        );
+                    if (db === 0)
+                    {
+                        result.push( 
+                            this.majorGridLine(this.xMin,y,this.xMax,y)
+                            );
+
+                    } else {
+                        result.push( 
+                            this.gridLine(this.xMin,y,this.xMax,y)
+                            );
+                    }
                 }
                 let decade0 = Math.pow(10,Math.floor(Math.log10(this.fMin)));
                 for (var decade = decade0; decade < this.fMax; decade *= 10)
                 {
-                    for (var i = 0; i < 10; ++i)
+                    for (var i = 1; i <= 10; ++i)
                     {
                         var f = decade*i;
                         if (f > this.fMin && f < this.fMax)
                         {
                             var x = this.toX(f);
-                            result.push(this.gridLine(x,this.yMin,x,this.yMax));
+                            if (i === 10)
+                            {
+                                result.push(this.majorGridLine(x,this.yMin,x,this.yMax));
+
+                            } else {
+                                result.push(this.gridLine(x,this.yMin,x,this.yMax));
+                            }
                         }
                     }
                 }
                 return result;                
             }
 
+            dbMin: number = 5;
+            dbMax: number = -35;
+
             render() {
+                // deliberately reversed to flip up and down.
+                this.dbMax  = this.props.minDb ?? this.dbMinDefault; 
+                this.dbMin = this.props.maxDb ?? this.dbMaxDefault;
+
+                this.fMin = this.props.minFrequency ?? 30;
+                this.fMax = this.props.maxFrequency ?? 20000;
+                this.logMin = Math.log(this.fMin);
+                this.logMax = Math.log(this.fMax);
+    
+    
                 let classes = this.props.classes;
                 return (
                     <div className={classes.frame} >

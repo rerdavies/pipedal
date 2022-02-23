@@ -22,6 +22,10 @@
 // Diagnostic type used to report calculated type T in an error message.
 template <typename T> class TypeDisplay;
 
+#ifndef SUPPORT_MIDI  // currently, only whether midi plugins can be loaded. No routing or handling implemented (yet).
+#define SUPPORT_MIDI 0
+#endif
+
 
 #include <mutex>
 #include <string>

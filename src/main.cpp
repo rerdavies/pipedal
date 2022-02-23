@@ -480,7 +480,7 @@ int main(int argc, char *argv[])
     PiPedalConfiguration configuration;
     try
     {
-        configuration.Load(doc_root);
+        configuration.Load(doc_root,web_root);
     }
     catch (const std::exception &e)
     {

@@ -208,6 +208,7 @@ private:
 
     bool is_valid_ = false;
     bool supports_midi_ = false;
+    bool supports_time_position_ = false;
     bool is_logarithmic_ = false;
     int display_priority_ = -1;
     int range_steps_ = 0;
@@ -267,6 +268,7 @@ public:
     LV2_PROPERTY_GETSET_SCALAR(is_cv_port);
     LV2_PROPERTY_GETSET_SCALAR(is_valid);
     LV2_PROPERTY_GETSET_SCALAR(supports_midi);
+    LV2_PROPERTY_GETSET_SCALAR(supports_time_position);
     LV2_PROPERTY_GETSET_SCALAR(is_logarithmic);
     LV2_PROPERTY_GETSET_SCALAR(display_priority);
     LV2_PROPERTY_GETSET_SCALAR(range_steps);
@@ -380,6 +382,24 @@ public:
             }
         }
         return false;
+    }
+    bool hasMidiInput() const {
+        for (size_t i = 0; i < ports_.size(); ++i)
+        {
+            if (ports_[i]->is_atom_port() && ports_[i]->supports_midi() && ports_[i]->is_input())
+            {
+                return true;
+            }
+        }
+    }
+    bool hasMidiOutput() const {
+        for (size_t i = 0; i < ports_.size(); ++i)
+        {
+            if (ports_[i]->is_atom_port() && ports_[i]->supports_midi() && ports_[i]->is_output())
+            {
+                return true;
+            }
+        }
     }
 
 
@@ -597,6 +617,12 @@ private:
         LilvNodePtr rdfs_label;
         LilvNodePtr symbolUri;
         LilvNodePtr nameUri;
+
+        LilvNodePtr time_Position;
+        LilvNodePtr time_barBeat;
+        LilvNodePtr time_beatsPerMinute;
+        LilvNodePtr time_speed;
+
 
     };
     LilvUris lilvUris;

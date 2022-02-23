@@ -34,6 +34,7 @@
 #include "WifiChannels.hpp"
 #include "SysExec.hpp"
 #include "PiPedalAlsa.hpp"
+#include <filesystem>
 
 using namespace std;
 using namespace pipedal;
@@ -344,6 +345,7 @@ private:
     std::recursive_mutex writeMutex;
     PiPedalModel &model;
     static std::atomic<uint64_t> nextClientId;
+    std::string imageList;
 
     uint64_t clientId;
     // pedalboard is mutable and not thread-safe.
@@ -390,6 +392,19 @@ public:
     PiPedalSocketHandler(PiPedalModel &model)
         : model(model), clientId(++nextClientId)
     {
+        std::stringstream imageList;
+        const std::filesystem::path& webRoot = model.GetWebRoot() / "img";
+        bool firstTime = true;
+        for (const auto&entry: std::filesystem::directory_iterator(webRoot))
+        {
+            if (!firstTime)
+            {
+                imageList << ";";
+            }
+            firstTime = false;
+            imageList << entry.path().filename().string();
+        }
+        this->imageList = imageList.str();        
     }
 
 private:
@@ -1067,7 +1082,7 @@ public:
                 std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
                 activeVuSubscriptions.push_back(VuSubscription{subscriptionHandle, instanceId});
             }
-            this->Reply(replyTo, "addVuSubscriptin", subscriptionHandle);
+            this->Reply(replyTo, "addVuSubscription", subscriptionHandle);
         }
         else if (message == "removeVuSubscription")
         {
@@ -1086,6 +1101,11 @@ public:
                 }
             }
             model.removeVuSubscription(subscriptionHandle);
+        }
+        else if (message == "imageList")
+        {
+  
+            this->Reply(replyTo, "imageList", imageList);
         }
         else
         {

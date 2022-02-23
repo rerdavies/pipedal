@@ -25,7 +25,7 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
-import { PiPedalModelFactory, PiPedalModel,ControlValueChangedHandle } from "./PiPedalModel";
+import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalBoardItem } from './PedalBoard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
@@ -35,70 +35,37 @@ import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 const styles = (theme: Theme) => createStyles({
 });
 
-interface ToobToneStackProps extends WithStyles<typeof styles> {
+interface ToobMLProps extends WithStyles<typeof styles> {
     instanceId: number;
     item: PedalBoardItem;
 
 }
-interface ToobToneStackState {
-    isBaxandall: boolean;
+interface ToobMLState {
+
 }
 
-const ToobToneStackView =
+const ToobMLView =
     withStyles(styles, { withTheme: true })(
-        class extends React.Component<ToobToneStackProps, ToobToneStackState> 
+        class extends React.Component<ToobMLProps, ToobMLState> 
         implements ControlViewCustomization
         {
             model: PiPedalModel;
 
             customizationId: number = 1; 
 
-            constructor(props: ToobToneStackProps) {
+            constructor(props: ToobMLProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
-                    isBaxandall: this.IsBaxandall()
-                }
-            }
-            IsBaxandall() : boolean {
-                return this.props.item.getControl("ampmodel").value === 2.0;
-            }
-
-
-            controlValueChangedHandle?: ControlValueChangedHandle;
-            componentDidMount()
-            {
-                this.controlValueChangedHandle = this.model.addControlValueChangeListener(
-                    this.props.instanceId,
-                    (key,value) => {
-                        if (key === "ampmodel")
-                        {
-                            this.setState({isBaxandall: value === 2.0});
-                        }
-                    }
-                );
-            }
-            componentWillUnmount() {
-                if (this.controlValueChangedHandle)
-                {
-                    this.model.removeControlValueChangeListener(this.controlValueChangedHandle);
-                    this.controlValueChangedHandle = undefined;
                 }
             }
 
             ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
-                if (this.state.isBaxandall)
-                {
-                    controls.splice(0,0,
-                        ( <ToobFrequencyResponseView instanceId={this.props.instanceId} 
-                            minDb={-20} maxDb={20} />)
-                        );
-                } else {
-                    controls.splice(0,0,
-                        ( <ToobFrequencyResponseView instanceId={this.props.instanceId}  />)
-                        );
-                }
+                let group = controls[1] as ControlGroup;
+                group.controls.splice(0,0,
+                    ( <ToobFrequencyResponseView instanceId={this.props.instanceId} minDb={-20} maxDb={20} />)
+                    );
                 return controls;
             }
             render() {
@@ -114,13 +81,13 @@ const ToobToneStackView =
 
 
 
-class ToobToneStackViewFactory implements IControlViewFactory {
-    uri: string = "http://two-play.com/plugins/toob-tone-stack";
+class ToobMLViewFactory implements IControlViewFactory {
+    uri: string = "http://two-play.com/plugins/toob-ml";
 
     Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<ToobToneStackView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+        return (<ToobMLView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
     }
 
 
 }
-export default ToobToneStackViewFactory;
+export default ToobMLViewFactory;

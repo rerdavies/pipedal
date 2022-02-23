@@ -92,6 +92,7 @@ private:
     std::unique_ptr<JackHost> jackHost;
     JackConfiguration jackConfiguration;
     std::shared_ptr<Lv2PedalBoard> lv2PedalBoard;
+    std::filesystem::path webRoot;
 
 
     std::vector<IPiPedalModelSubscriber*> subscribers;
@@ -219,7 +220,7 @@ public:
     void cancelListenForAtomOutputs(int64_t clientId, int64_t clientHandle);
 
     std::vector<AlsaDeviceInfo> GetAlsaDevices();
-
+    const std::filesystem::path& GetWebRoot() const;
 };
 
 } // namespace pipedal.

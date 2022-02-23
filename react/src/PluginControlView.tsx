@@ -31,7 +31,6 @@ import PluginControl from './PluginControl';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import VuMeter from './VuMeter';
 import { nullCast } from './Utility'
-import GxTunerControl from './GxTunerControl';
 import { PiPedalStateError } from './PiPedalError';
 import Typography from '@mui/material/Typography';
 import FullScreenIME from './FullScreenIME';
@@ -40,7 +39,6 @@ import FullScreenIME from './FullScreenIME';
 export const StandardItemSize = { width: 80, height: 110 };
 
 
-const GXTUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner";
 
 const LANDSCAPE_HEIGHT_BREAK = 500;
 
@@ -127,7 +125,7 @@ const styles = (theme: Theme) => createStyles({
         paddingTop: 0,
         paddingBottom: 0,
         border: "2pt #AAA solid",
-        borderRadius: 4,
+        borderRadius: 8,
         elevation: 12,
         display: "flex",
         flexDirection: "row", flexWrap: "wrap",
@@ -144,7 +142,7 @@ const styles = (theme: Theme) => createStyles({
         paddingTop: 0,
         paddingBottom: 0,
         border: "2pt #AAA solid",
-        borderRadius: 10,
+        borderRadius: 8,
         elevation: 12,
         display: "flex",
         flexDirection: "row", flexWrap: "nowrap",
@@ -152,7 +150,7 @@ const styles = (theme: Theme) => createStyles({
     },
     portGroupTitle: {
         position: "absolute",
-        top: -10,
+        top: -15,
         background: "white",
         marginLeft: 20,
         paddingLeft: 8,
@@ -344,35 +342,6 @@ const PluginControlView =
                 throw new Error("Not found.");
             }
 
-            getTunerControls(plugin: UiPlugin, controlValues: ControlValue[]): ControlNodes {
-                // display standard version of just a few controls.
-                let shortList: ControlValue[] = [];
-                // for (let i = 0; i < controlValues.length; ++i)
-                // {
-                //     shortList.push(controlValues[i]);
-                // }
-                shortList.push(this.getControl(controlValues, "REFFREQ"));
-                shortList.push(this.getControl(controlValues, "THRESHOLD"));
-
-
-                let controls = shortList.map((controlValue) => (
-                            <PluginControl instanceId={this.props.instanceId} uiControl={plugin.getControl(controlValue.key)} value={controlValue.value}
-                                onChange={(value: number) => { this.onValueChanged(controlValue.key, value) }}
-                                onPreviewChange={(value: number) => { this.onPreviewChange(controlValue.key, value) }}
-                                requestIMEEdit={(uiControl, value) => this.requestImeEdit(uiControl, value)}
-                            />
-                ));
-                let tunerControl = (<GxTunerControl instanceId={this.props.instanceId} />);
-                let result: ControlNodes = [];
-                result.push(tunerControl);
-
-                for (let i = 0; i < controls.length; ++i)
-                {
-                    result.push(controls[i]);
-                }
-
-                return result;
-            }
             onImeValueChange(key: string, value: number) {
                 this.model.setPedalBoardControlValue(this.props.instanceId, key, value);
                 this.onImeClose();
@@ -464,11 +433,8 @@ const PluginControlView =
                 let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
                 let controlNodes: ControlNodes;
 
-                if (plugin.uri === GXTUNER_URI) {
-                    controlNodes = this.getTunerControls(plugin, controlValues);
-                } else {
-                    controlNodes = this.getStandardControlNodes(plugin, controlValues);
-                }
+                controlNodes = this.getStandardControlNodes(plugin, controlValues);
+                
                 if (this.props.customization)
                 {
                     // allow wrapper class to insert/remove/rebuild controls.

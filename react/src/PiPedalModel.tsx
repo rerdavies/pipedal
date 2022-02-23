@@ -311,7 +311,7 @@ export interface PiPedalModel {
     presets: ObservableProperty<PresetIndex>;
 
 
-    zoomedUiControl: ObservableProperty< ZoomedControlInfo| undefined >;
+    zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined>;
 
     setJackServerSettings(jackServerSettings: JackServerSettings): void;
     setMidiBinding(instanceId: number, midiBinding: MidiBinding): void;
@@ -382,7 +382,7 @@ export interface PiPedalModel {
     cancelListenForMidiEvent(listenHandle: ListenHandle): void;
 
     addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle
-    removeControlValueChangeListener(handle: ControlValueChangedHandle): void; 
+    removeControlValueChangeListener(handle: ControlValueChangedHandle): void;
 
     listenForAtomOutput(instanceId: number, onComplete: (instanceId: number, atomOutput: any) => void): ListenHandle;
     cancelListenForAtomOutput(listenHandle: ListenHandle): void;
@@ -398,9 +398,9 @@ export interface PiPedalModel {
 
     getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>;
 
-    getAlsaDevices() : Promise<AlsaDeviceInfo[]>;
+    getAlsaDevices(): Promise<AlsaDeviceInfo[]>;
 
-    zoomUiControl(sourceElement: HTMLElement,instanceId: number,uiControl: UiControl): void;
+    zoomUiControl(sourceElement: HTMLElement, instanceId: number, uiControl: UiControl): void;
     clearZoomedControl(): void;
 };
 
@@ -438,7 +438,7 @@ class PiPedalModelImpl implements PiPedalModel {
             new PresetIndex()
         );
 
-    zoomedUiControl: ObservableProperty<ZoomedControlInfo |  undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
+    zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
 
     svgImgUrl(svgImage: string): string {
         //return this.varServerUrl + "img/" + svgImage;
@@ -466,7 +466,7 @@ class PiPedalModelImpl implements PiPedalModel {
     onSocketReconnecting(retry: number, maxRetries: number): void {
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
         //if (retry !== 0) {
-            this.setState(State.Reconnecting);
+        this.setState(State.Reconnecting);
         //}
     }
 
@@ -536,11 +536,11 @@ class PiPedalModelImpl implements PiPedalModel {
             this.handleNotifyMidiListener(clientHandle, isNote, noteOrControl);
         } else if (message === "onNotifyAtomOut") {
             let clientHandle = body.clientHandle as number;
-            let instanceId  = body.instanceId as number;
+            let instanceId = body.instanceId as number;
             let atomJson = body.atomJson as string;
-            this.handleNotifyAtomOutput(clientHandle, instanceId,atomJson);
+            this.handleNotifyAtomOutput(clientHandle, instanceId, atomJson);
             if (header.replyTo) {
-                this.webSocket?.reply(header.replyTo,"onNotifyAtomOut",true);
+                this.webSocket?.reply(header.replyTo, "onNotifyAtomOut", true);
             }
         } else if (message === "onControlChanged") {
             let controlChangedBody = body as ControlChangedBody;
@@ -733,6 +733,10 @@ class PiPedalModelImpl implements PiPedalModel {
             })
             .then((clientId) => {
                 this.clientId = clientId;
+                return this.getWebSocket().request<string>("imageList");
+            })
+            .then((data) => {
+                this.preloadImages(data);
                 return true;
             })
             .catch((error) => {
@@ -842,20 +846,16 @@ class PiPedalModelImpl implements PiPedalModel {
 
     }
 
-    exitBackgroundState()
-    {
-        if (this.state.get() === State.Background)
-        {
+    exitBackgroundState() {
+        if (this.state.get() === State.Background) {
             console.log("Exiting background state.");
             this.visibilityState.set(VisibilityState.Visible);
             this.webSocket?.exitBackgroundState();
         }
 
     }
-    enterBackgroundState()
-    {
-        if (this.state.get() !== State.Background)
-        {
+    enterBackgroundState() {
+        if (this.state.get() !== State.Background) {
             console.log("Entering background state.");
             this.visibilityState.set(VisibilityState.Hidden);
             this.setState(State.Background);
@@ -864,12 +864,10 @@ class PiPedalModelImpl implements PiPedalModel {
     }
 
 
-    onVisibilityChanged(doc: Document, event: Event) : any
-    {
+    onVisibilityChanged(doc: Document, event: Event): any {
         if (document.visibilityState) {
-            
-            switch (document.visibilityState)
-            {
+
+            switch (document.visibilityState) {
                 case "visible":
                     this.visibilityState.set(VisibilityState.Visible);
                     this.exitBackgroundState();
@@ -898,8 +896,8 @@ class PiPedalModelImpl implements PiPedalModel {
             });
         let t = this.onVisibilityChanged;
 
-        (document as any).addEventListener("visibilitychange",(doc: Document,event: Event) => {
-            return t(doc,event);
+        (document as any).addEventListener("visibilitychange", (doc: Document, event: Event) => {
+            return t(doc, event);
         });
     }
 
@@ -958,22 +956,18 @@ class PiPedalModelImpl implements PiPedalModel {
         }
     }
 
-    
+
     _controlValueChangeItems: ControlValueChangeItem[] = [];
 
-    addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle
-    {
+    addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle {
         let handle = ++this.nextListenHandle;
-        this._controlValueChangeItems.push({ handle: handle, instanceId: instanceId,onValueChanged: onValueChanged});
-        return { _ControlValueChangedHandle: handle};
+        this._controlValueChangeItems.push({ handle: handle, instanceId: instanceId, onValueChanged: onValueChanged });
+        return { _ControlValueChangedHandle: handle };
     }
-    removeControlValueChangeListener(handle: ControlValueChangedHandle)
-    {
-        for (let i = 0; i < this._controlValueChangeItems.length; ++i)
-        {
-            if (this._controlValueChangeItems[i].handle === handle._ControlValueChangedHandle)
-            {
-                this._controlValueChangeItems.splice(i,1);
+    removeControlValueChangeListener(handle: ControlValueChangedHandle) {
+        for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
+            if (this._controlValueChangeItems[i].handle === handle._ControlValueChangedHandle) {
+                this._controlValueChangeItems.splice(i, 1);
                 return;
             }
         }
@@ -992,12 +986,10 @@ class PiPedalModelImpl implements PiPedalModel {
             if (notifyServer) {
                 this._setServerControl("setControl", instanceId, key, value);
             }
-            for (let i = 0; i < this._controlValueChangeItems.length; ++i)
-            {
+            for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
                 let item = this._controlValueChangeItems[i];
-                if (instanceId === item.instanceId)
-                {
-                    item.onValueChanged(key,value);
+                if (instanceId === item.instanceId) {
+                    item.onValueChanged(key, value);
                 }
             }
         }
@@ -1557,7 +1549,7 @@ class PiPedalModelImpl implements PiPedalModel {
     listenForAtomOutput(instanceId: number, onComplete: (instanceId: number, atomOutput: any) => void): ListenHandle {
         let handle = this.nextListenHandle++;
 
-        this.atomOutputListeners.push(new AtomOutputListener(handle,instanceId, onComplete));
+        this.atomOutputListeners.push(new AtomOutputListener(handle, instanceId, onComplete));
 
         this.webSocket?.send("listenForAtomOutput", { instanceId: instanceId, handle: handle });
         return {
@@ -1570,7 +1562,7 @@ class PiPedalModelImpl implements PiPedalModel {
         for (let i = 0; i < this.atomOutputListeners.length; ++i) {
             let listener = this.atomOutputListeners[i];
             if (listener.handle === clientHandle && listener.instanceId === instanceId) {
-                listener.callback(instanceId,jsonObject);
+                listener.callback(instanceId, jsonObject);
             }
         }
     }
@@ -1760,8 +1752,7 @@ class PiPedalModelImpl implements PiPedalModel {
         return result;
     }
 
-    getAlsaDevices() : Promise<AlsaDeviceInfo[]>
-    {
+    getAlsaDevices(): Promise<AlsaDeviceInfo[]> {
         let result = new Promise<AlsaDeviceInfo[]>((resolve, reject) => {
             if (!this.webSocket) {
                 reject("Connection closed.");
@@ -1776,15 +1767,22 @@ class PiPedalModelImpl implements PiPedalModel {
         return result;
 
     }
-    zoomUiControl(sourceElement: HTMLElement,instanceId: number,uiControl: UiControl): void
-    {
-        this.zoomedUiControl.set({source: sourceElement,instanceId: instanceId,uiControl: uiControl});
+    zoomUiControl(sourceElement: HTMLElement, instanceId: number, uiControl: UiControl): void {
+        this.zoomedUiControl.set({ source: sourceElement, instanceId: instanceId, uiControl: uiControl });
     }
-    clearZoomedControl(): void
-    {
+    clearZoomedControl(): void {
         this.zoomedUiControl.set(undefined);
     }
 
+    preloadImages(imageList: string): void {
+        let imageNames = imageList.split(';');
+        for (let i = 0; i < imageNames.length; ++i)
+        {
+            let imageName = imageNames[i];
+            let img = new Image();
+            img.src = "/img/" + imageName;
+        }
+    }
 
 };
 

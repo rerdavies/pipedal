@@ -55,6 +55,9 @@ const NARROW_DISPLAY_THRESHOLD = 600;
 const FILTER_STORAGE_KEY = "com.twoplay.pipedal.load_dlg.filter";
 
 
+let lastClickTime: number = 0;
+
+
 const pluginGridStyles = (theme: Theme) => createStyles({
     frame: {
 
@@ -338,8 +341,26 @@ export const LoadPluginDialog =
                 }
             }
 
+
             onClick(e: SyntheticEvent, uri: string): void {
+                e.preventDefault();
+
+                let currentTime = Date.now();
+                let dt = currentTime-lastClickTime;
+                let DOUBLE_CLICK_TIME = 500;
+                let isDoubleClick = dt < DOUBLE_CLICK_TIME;
+                lastClickTime = currentTime;
+
+
                 this.setState({ selected_uri: uri });
+
+                // we have to synthesize double clicks because 
+                // DOM rewrites interfere with natural double click.
+                if (isDoubleClick)
+                {
+                    this.props.onOk(uri);
+                }
+
             }
             handleMouseEnter(e: SyntheticEvent, uri: string): void {
                // this.setHoverUri(uri);
@@ -373,7 +394,7 @@ export const LoadPluginDialog =
                 for (let i = 0; i < classNode.children.length; ++i) {
                     let child = classNode.children[i];
                     let name = "\u00A0".repeat(level * 3 + 1) + child.display_name;
-                    result.push((<MenuItem value={child.plugin_type}>{name}</MenuItem>));
+                    result.push((<MenuItem key={child.plugin_type} value={child.plugin_type}>{name}</MenuItem>));
                     if (child.children.length !== 0) {
                         this.createFilterChildren(result, child, level + 1);
                     }
@@ -383,7 +404,7 @@ export const LoadPluginDialog =
                 let classes = this.model.plugin_classes.get();
                 let result: ReactNode[] = [];
 
-                result.push((<MenuItem value={PluginType.Plugin}>&nbsp;All</MenuItem>));
+                result.push((<MenuItem key={PluginType.Plugin} value={PluginType.Plugin}>&nbsp;All</MenuItem>));
                 this.createFilterChildren(result, classes, 1);
                 return result;
 

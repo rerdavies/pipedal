@@ -42,6 +42,7 @@ export class  Port implements Deserializable<Port> {
         this.is_atom_port = input.is_atom_port;
         this.is_valid = input.is_valid;
         this.supports_midi = input.supports_midi;
+        this.supports_time_position = input.supports_time_position;
         this.port_group = input.port_group;
         return this;
     }
@@ -70,6 +71,7 @@ export class  Port implements Deserializable<Port> {
     is_atom_port:    boolean = false;
     is_valid:        boolean = false;
     supports_midi:   boolean = false;
+    supports_time_position: boolean = false;
     port_group:      string = "";
 }
 

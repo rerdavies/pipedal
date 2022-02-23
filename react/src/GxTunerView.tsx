@@ -25,81 +25,69 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
-import { PiPedalModelFactory, PiPedalModel,ControlValueChangedHandle } from "./PiPedalModel";
+import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalBoardItem } from './PedalBoard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
-import ToobFrequencyResponseView from './ToobFrequencyResponseView';
+import GxTunerControl from './GxTunerControl';
+
+const GXTUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner";
+const TOOBTUNER_URI = "http://two-play.com/plugins/toob-tuner";
 
 
 
 const styles = (theme: Theme) => createStyles({
 });
 
-interface ToobToneStackProps extends WithStyles<typeof styles> {
+interface GxTunerProps extends WithStyles<typeof styles> {
     instanceId: number;
     item: PedalBoardItem;
 
 }
-interface ToobToneStackState {
-    isBaxandall: boolean;
+interface GxTunerState {
+
 }
 
-const ToobToneStackView =
+const GxTunerView =
     withStyles(styles, { withTheme: true })(
-        class extends React.Component<ToobToneStackProps, ToobToneStackState> 
+        class extends React.Component<GxTunerProps, GxTunerState> 
         implements ControlViewCustomization
         {
             model: PiPedalModel;
 
             customizationId: number = 1; 
 
-            constructor(props: ToobToneStackProps) {
+            constructor(props: GxTunerProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
-                    isBaxandall: this.IsBaxandall()
                 }
             }
-            IsBaxandall() : boolean {
-                return this.props.item.getControl("ampmodel").value === 2.0;
-            }
 
 
-            controlValueChangedHandle?: ControlValueChangedHandle;
-            componentDidMount()
-            {
-                this.controlValueChangedHandle = this.model.addControlValueChangeListener(
-                    this.props.instanceId,
-                    (key,value) => {
-                        if (key === "ampmodel")
-                        {
-                            this.setState({isBaxandall: value === 2.0});
-                        }
-                    }
-                );
-            }
-            componentWillUnmount() {
-                if (this.controlValueChangedHandle)
+            getControlIndex(key: string): number {
+                let item = this.props.item;
+                for (let i = 0; i < item.controlValues.length; ++i)
                 {
-                    this.model.removeControlValueChangeListener(this.controlValueChangedHandle);
-                    this.controlValueChangedHandle = undefined;
+                    if (item.controlValues[i].key === key)
+                    {
+                        return i;
+                    }
                 }
+                throw new Error("GxTuner: Control '" + key + "' not found.");
             }
-
             ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
-                if (this.state.isBaxandall)
-                {
-                    controls.splice(0,0,
-                        ( <ToobFrequencyResponseView instanceId={this.props.instanceId} 
-                            minDb={-20} maxDb={20} />)
-                        );
-                } else {
-                    controls.splice(0,0,
-                        ( <ToobFrequencyResponseView instanceId={this.props.instanceId}  />)
-                        );
-                }
-                return controls;
+                let refFreqIndex = this.getControlIndex("REFFREQ");
+                let thresholdIndex = this.getControlIndex("THRESHOLD");
+
+                let result: (React.ReactNode | ControlGroup)[] = [];
+
+                let tunerControl = (<GxTunerControl instanceId={this.props.instanceId} />);
+                result.push(tunerControl);
+
+                result.push(controls[refFreqIndex]);
+                result.push(controls[thresholdIndex]);
+                return result;
             }
             render() {
                 return (<PluginControlView
@@ -114,13 +102,26 @@ const ToobToneStackView =
 
 
 
-class ToobToneStackViewFactory implements IControlViewFactory {
-    uri: string = "http://two-play.com/plugins/toob-tone-stack";
+class GxTunerViewFactory implements IControlViewFactory {
+    uri: string = GXTUNER_URI;
 
     Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<ToobToneStackView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+        return (<GxTunerView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
     }
 
 
 }
-export default ToobToneStackViewFactory;
+
+// ToobTuner uses the same controls and control semantics.
+class ToobTunerViewFactory implements IControlViewFactory {
+    uri: string = TOOBTUNER_URI;
+
+    Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
+        return (<GxTunerView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+    }
+
+
+}
+
+export ToobTunerViewFactory;
+export GxTunerViewFactory;

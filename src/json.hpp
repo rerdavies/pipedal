@@ -27,6 +27,7 @@
 #include <sstream>
 #include "HtmlHelper.hpp"
 #include <cctype>
+#include <cmath>
 #include "PiPedalException.hpp"
 
 
@@ -243,6 +244,7 @@ class json_writer {
 public:
     const char*CRLF;
 private:
+    bool allowNaN_ = true;
     std::ostream &os;
     int indent_level;
     bool compressed;
@@ -276,13 +278,17 @@ public:
         os << text;
     }
     using string_view = boost::string_view;
-    json_writer(std::ostream &os, bool compressed = false)
+    json_writer(std::ostream &os, bool compressed = false, bool allowNaN = true)
     : os(os)
     , compressed(compressed)
+    , allowNaN_(allowNaN)
     , indent_level(0)
     {
         this->CRLF = compressed? "" : "\r\n";
     }
+    bool allowNaN() const { return allowNaN_; }
+    void allowNaN(bool allow) { allowNaN_ = allow; }
+
     void write(long long value)
     {
         os << value;
@@ -342,11 +348,21 @@ public:
     }
     void write(float f)
     {
-        os <<  std::setprecision(std::numeric_limits<float>::max_digits10) << f;  // round-trip format
+        if (allowNaN_ && (std::isnan(f) || std::isinf(f)))
+        {
+            os << "NaN";
+        } else {
+            os <<  std::setprecision(std::numeric_limits<float>::max_digits10) << f;  // round-trip format
+        }
     }
     void write(double f)
     {
-        os <<  std::setprecision(std::numeric_limits<double>::max_digits10) << f;  // round-trip format
+        if (allowNaN_ && (std::isnan(f) || std::isinf(f))) 
+        {
+            os << "NaN";
+        }  else {
+            os <<  std::setprecision(std::numeric_limits<double>::max_digits10) << f;  // round-trip format
+        }
     }
 
     template <typename T> void write(const std::vector<T> &value)
@@ -526,19 +542,25 @@ public:
 
 
 class json_reader {
+private:
     std::istream &is_;
 
     const uint16_t UTF16_SURROGATE_1_BASE = 0xD800U;
     const uint16_t UTF16_SURROGATE_2_BASE = 0xDC00U;
     const uint16_t UTF16_SURROGATE_MASK = 0x3FFU;
+    bool allowNaN_ = true;
+
 
 
 public:
-    json_reader(std::istream &input)
+    json_reader(std::istream &input, bool allowNaN = true)
     : is_(input)
     {
-
+        this->allowNaN_ = allowNaN;
     }
+
+    bool allowNaN() const { return allowNaN_;}
+    void allowNaN(bool allow) { allowNaN_ = allow; }
 
 private:
     void throw_format_error(const char*error);
@@ -719,11 +741,32 @@ public:
 
     void read(float*value) {
         skip_whitespace();
+        if (allowNaN_)
+        {
+            if (peek() == 'N')
+            {
+                consumeToken("NaN","Expecting a number.");
+                *value = std::nanf("");
+                return;
+            }
+        }
         is_ >> *value;
         if (is_.fail()) throw PiPedalException("Invalid format.");
     }
     void read(double*value) {
         skip_whitespace();
+        if (allowNaN_)
+        {
+            if (peek() == 'N')
+            {
+                consumeToken("NaN","Expecting a number.");
+
+                *value = std::nan("");
+                return;
+            }
+        }
+
+
         is_ >> *value;
         if (is_.fail()) throw PiPedalException("Invalid format.");
     }

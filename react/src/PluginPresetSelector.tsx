@@ -279,7 +279,8 @@ const PluginPresetSelector =
                             <Typography variant="caption" color="textSecondary" style={{marginLeft: 16,marginTop:4,marginBottom: 4}}>Plugin presets</Typography>
                             {
                                 this.state.presets.map((preset) => {
-                                    return (<MenuItem onClick={(e) => this.handleLoadPluginPreset(preset.presetUri)}>{preset.name}</MenuItem>);
+                                    return (<MenuItem key={preset.presetUri}
+                                        onClick={(e) => this.handleLoadPluginPreset(preset.presetUri)}>{preset.name}</MenuItem>);
                                 })
                             }
                             {/*

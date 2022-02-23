@@ -138,7 +138,7 @@ function makeControls(controls: UiControl[]) {
         <Grid container direction="row" justifyContent="flex-start" alignItems="flex-start" spacing={1} style={{ paddingLeft: "24px" }}>
             {
                 controls.map((control) => (
-                    <Grid item spacing={2} xs={6} sm={4} key={control.symbol} >
+                    <Grid xs={6} sm={4} key={control.symbol} >
                         <Typography variant="body2">
                             {control.name}
                         </Typography>

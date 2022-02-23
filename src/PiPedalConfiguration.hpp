@@ -36,6 +36,7 @@ class PiPedalConfiguration
 private:
     std::string lv2_path_ = "/usr/lib/lv2:/usr/local/lib/lv2";
     std::filesystem::path docRoot_;
+    std::filesystem::path webRoot_;
     std::string local_storage_path_;
     bool mlock_ = true;
     std::vector<std::string> reactServerAddresses_ = {"*:5000"};
@@ -52,7 +53,10 @@ public:
     std::filesystem::path GetConfigFilePath() const {
         return docRoot_ / "config.jason";
     }
-    void Load(std::filesystem::path path) {
+    const std::filesystem::path& GetWebRoot() const {
+        return webRoot_;
+    }
+    void Load(const std::filesystem::path& path, const std::filesystem::path&webRoot) {
         std::filesystem::path configPath =  path / "config.json";
         if (!std::filesystem::exists(configPath))
         {
@@ -68,6 +72,8 @@ public:
         json_reader reader(f);
         reader.read(this);
         docRoot_ = path;
+
+        webRoot_ = webRoot;
         
     }
     const std::filesystem::path &GetDocRoot() const { return docRoot_; }

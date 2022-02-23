@@ -113,7 +113,7 @@ void PiPedalModel::LoadLv2PluginInfo(const PiPedalConfiguration&configuration)
 
 void PiPedalModel::Load(const PiPedalConfiguration &configuration)
 {
-
+    this->webRoot = configuration.GetWebRoot();
     this->jackServerSettings.ReadJackConfiguration();
 
 
@@ -1164,4 +1164,9 @@ void PiPedalModel::cancelListenForAtomOutputs(int64_t clientId, int64_t clientHa
 std::vector<AlsaDeviceInfo> PiPedalModel::GetAlsaDevices()
 {
     return this->alsaDevices.GetAlsaDevices();
+}
+
+const std::filesystem::path& PiPedalModel::GetWebRoot() const
+{
+    return webRoot;
 }

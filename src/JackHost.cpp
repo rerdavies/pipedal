@@ -754,7 +754,7 @@ public:
 #else
         xxx; // TODO!
 #endif
-
+        int underrunMessagesGiven = 0;
         try
         {
 
@@ -787,8 +787,12 @@ public:
                     uint64_t underruns = this->underruns;
                     if (underruns != lastUnderrunCount)
                     {
-                        Lv2Log::info("Jack - Underrun count: %lu", (unsigned long)underruns);
-                        lastUnderrunCount = underruns;
+                        if (underrunMessagesGiven < 60) // limit how much log file clutter we generate.
+                        {
+                            Lv2Log::info("Jack - Underrun count: %lu", (unsigned long)underruns);
+                            lastUnderrunCount = underruns;
+                            ++underrunMessagesGiven;
+                        }
                     }
                     clock_gettime(CLOCK_REALTIME, &ts);
                     ts.tv_sec += pollRateS;

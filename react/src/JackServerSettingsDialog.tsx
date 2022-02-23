@@ -332,7 +332,7 @@ const JackServerSettingsDialog = withStyles(styles)(
                                     >
                                         {bufferSizes.map((buffSize) =>
                                         (
-                                            <MenuItem value={buffSize}>{buffSize}</MenuItem>
+                                            <MenuItem key={"b"+buffSize} value={buffSize}>{buffSize}</MenuItem>
 
                                         )
                                         )}

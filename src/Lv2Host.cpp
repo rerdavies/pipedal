@@ -33,6 +33,7 @@
 #include "lv2/urid.lv2/urid.h"
 #include "lv2.h"
 #include "lv2/atom.lv2/atom.h"
+#include "lv2/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
@@ -40,7 +41,9 @@
 #include "lv2/lv2plug.in/ns/ext/port-groups/port-groups.h"
 #include <fstream>
 #include "PiPedalException.hpp"
+
 #include "Locale.hpp"
+
 
 using namespace pipedal;
 
@@ -115,6 +118,12 @@ void Lv2Host::LilvUris::Initialize(LilvWorld*pWorld)
     symbolUri = lilv_new_uri(pWorld, LV2_CORE__symbol);
     nameUri = lilv_new_uri(pWorld, LV2_CORE__name);
 
+    time_Position = lilv_new_uri(pWorld, LV2_TIME__Position);
+    time_barBeat = lilv_new_uri(pWorld, LV2_TIME__barBeat);
+    time_beatsPerMinute = lilv_new_uri(pWorld, LV2_TIME__beatsPerMinute);
+    time_speed = lilv_new_uri(pWorld, LV2_TIME__speed);
+
+
 }
 
 void Lv2Host::LilvUris::Free()
@@ -136,6 +145,11 @@ void Lv2Host::LilvUris::Free()
     rdfs_label.Free();
     symbolUri.Free();
     nameUri.Free();
+
+    time_Position.Free();
+    time_barBeat.Free();
+    time_beatsPerMinute.Free();
+    time_speed.Free();
 
 }
 
@@ -398,10 +412,12 @@ void Lv2Host::Load(const char *lv2Path)
         {
             Lv2Log::debug("Plugin %s (%s) skipped. (Has CV ports).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
         }
+#if !SUPPORT_MIDI
         else if (pluginInfo->plugin_class() == LV2_MIDI_PLUGIN)
         {
             Lv2Log::debug("Plugin %s (%s) skipped. (MIDI Plugin).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
         }
+#endif
         else if (!pluginInfo->is_valid())
         {
             auto &ports = pluginInfo->ports();
@@ -439,6 +455,16 @@ void Lv2Host::Load(const char *lv2Path)
         Lv2PluginUiInfo info(this, plugin.get());
         if (plugin->is_valid())
         {
+#if SUPPORT_MIDI
+            if (info.audio_inputs() == 0 && !info.has_midi_input())
+            {
+                Lv2Log::debug("Plugin %s (%s) skipped. No inputs.", plugin->name().c_str(), plugin->uri().c_str());
+            }
+            else if (info.audio_outputs() == 0 && !info.has_midi_output())
+            {
+                Lv2Log::debug("Plugin %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
+            }
+#else
             if (info.audio_inputs() == 0)
             {
                 Lv2Log::debug("Plugin %s (%s) skipped. No audio inputs.", plugin->name().c_str(), plugin->uri().c_str());
@@ -447,6 +473,7 @@ void Lv2Host::Load(const char *lv2Path)
             {
                 Lv2Log::debug("Plugin %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
             }
+#endif
             else
             {
                 ui_plugins_.push_back(std::move(info));
@@ -718,6 +745,7 @@ Lv2PortInfo::Lv2PortInfo(Lv2Host *host, const LilvPlugin *plugin, const LilvPort
     is_cv_port_ = is_a(host, LV2_CORE__CVPort);
 
     supports_midi_ = lilv_port_supports_event(plugin, pPort, host->lilvUris.midiEventNode);
+    supports_time_position_ = lilv_port_supports_event(plugin, pPort, host->lilvUris.time_Position);
 
     NodeAutoFree designationValue = lilv_port_get(plugin, pPort, host->lilvUris.designationNode);
     designation_ = nodeAsString(designationValue);
@@ -1096,6 +1124,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{{
     json_map::reference("is_valid", &Lv2PortInfo::is_valid_),
 
     json_map::reference("supports_midi", &Lv2PortInfo::supports_midi_),
+    json_map::reference("supports_time_position", &Lv2PortInfo::supports_time_position_),
     json_map::reference("port_group", &Lv2PortInfo::port_group_),
     json_map::reference("is_logarithmic", &Lv2PortInfo::is_logarithmic_),
 
