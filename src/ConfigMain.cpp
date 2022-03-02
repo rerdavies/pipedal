@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Robin Davies
+// Copyright (c) 2022 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -565,7 +565,7 @@ int main(int argc, char **argv)
             cout << endl;
 
         cout << "pipedalconfig - Post-install configuration for pipdeal" << endl
-             << "Copyright (c) 2021 Robin Davies. All rights reserved." << endl
+             << "Copyright (c) 2022 Robin Davies. All rights reserved." << endl
              << endl
              << "Syntax:" << endl
              << "    pipedalconfig [Options...]" << endl
