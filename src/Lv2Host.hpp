@@ -33,7 +33,7 @@
 
 #include "lv2.h"
 #include "Units.hpp"
-
+#include "PluginPreset.hpp"
 
 
 namespace pipedal {
@@ -58,23 +58,6 @@ class JackChannelSelection;
 
 
 
-
-
-class Lv2PluginPreset {
-public:
-    Lv2PluginPreset(const std::string &presetUri, const std::string&name)
-    :   presetUri_(presetUri),
-        name_(name)
-    {
-        
-    }
-    Lv2PluginPreset() { }
-
-    std::string presetUri_;
-    std::string name_;
-
-    DECLARE_JSON_MAP(Lv2PluginPreset);
-};
 
 
 class Lv2PluginClass {
@@ -321,6 +304,7 @@ public:
     Lv2PluginInfo(Lv2Host*lv2Host,const LilvPlugin*);
     Lv2PluginInfo() { }
 private:
+    bool HasFactoryPresets(Lv2Host*lv2Host, const LilvPlugin*plugin);
     std::string uri_;
     std::string name_;
     std::string plugin_class_;
@@ -328,6 +312,7 @@ private:
     std::vector<std::string> required_features_;
     std::vector<std::string> optional_features_;
     std::vector<std::string> extensions_;
+    bool has_factory_presets_ = false;
 
     std::string author_name_;
     std::string author_homepage_;
@@ -353,6 +338,7 @@ public:
     LV2_PROPERTY_GETSET(ports)
     LV2_PROPERTY_GETSET(is_valid)
     LV2_PROPERTY_GETSET(port_groups)
+    LV2_PROPERTY_GETSET(has_factory_presets)
 
     const Lv2PortInfo& getPort(const std::string&symbol)
     {
@@ -623,6 +609,9 @@ private:
         LilvNodePtr time_beatsPerMinute;
         LilvNodePtr time_speed;
 
+        LilvNodePtr appliesTo;
+        LilvNodePtr isA;
+
 
     };
     LilvUris lilvUris;
@@ -682,6 +671,7 @@ private:
     virtual LV2_URID_Map* GetLv2UridMap()  {
         return this->mapFeature.GetMap();
     }
+    static void PortValueCallback(const char*symbol,void*user_data,const void* value,uint32_t size, uint32_t type);
 
     virtual Lv2Effect*CreateEffect(const PedalBoardItem &pedalBoardItem);
     void LoadPluginClassesFromLilv();
@@ -733,9 +723,9 @@ public:
         return this->mapFeature.UridToString(urid);
     }
 
-    std::vector<Lv2PluginPreset> GetPluginPresets(const std::string &pluginUri);
-    std::vector<ControlValue>  LoadPluginPreset(PedalBoardItem*pedalBoardItem, const std::string&presetUri);
-
+    PluginPresets GetFactoryPluginPresets(const std::string &pluginUri);
+    std::vector<ControlValue>  LoadFactoryPluginPreset(PedalBoardItem*pedalBoardItem,
+        const std::string&presetUri);
 
 
 };

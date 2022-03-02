@@ -108,14 +108,14 @@ JSON_MAP_END()
 
 class LoadPluginPresetBody {
 public: 
-    int64_t instanceId_;
-    std::string presetName_;
+    uint64_t pluginInstanceId_;
+    uint64_t presetInstanceId_;
     DECLARE_JSON_MAP(LoadPluginPresetBody);
 };
 
 JSON_MAP_BEGIN(LoadPluginPresetBody)
-JSON_MAP_REFERENCE(LoadPluginPresetBody, instanceId)
-JSON_MAP_REFERENCE(LoadPluginPresetBody, presetName)
+JSON_MAP_REFERENCE(LoadPluginPresetBody, pluginInstanceId)
+JSON_MAP_REFERENCE(LoadPluginPresetBody, presetInstanceId)
 JSON_MAP_END()
 
 class FromToBody
@@ -189,6 +189,19 @@ JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, name)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, saveAfterInstanceId)
 JSON_MAP_END()
 
+class SavePluginPresetAsBody
+{
+public:
+    int64_t instanceId_ = -1;
+    std::string name_;
+
+    DECLARE_JSON_MAP(SavePluginPresetAsBody);
+};
+JSON_MAP_BEGIN(SavePluginPresetAsBody)
+JSON_MAP_REFERENCE(SavePluginPresetAsBody, instanceId)
+JSON_MAP_REFERENCE(SavePluginPresetAsBody, name)
+JSON_MAP_END()
+
 class RenameBankBody {
 public:
     int64_t bankId_;
@@ -229,6 +242,19 @@ JSON_MAP_BEGIN(CopyPresetBody)
 JSON_MAP_REFERENCE(CopyPresetBody, clientId)
 JSON_MAP_REFERENCE(CopyPresetBody, fromId)
 JSON_MAP_REFERENCE(CopyPresetBody, toId)
+JSON_MAP_END()
+
+class CopyPluginPresetBody
+{
+public:
+    std::string pluginUri_;
+    uint64_t instanceId_;
+
+    DECLARE_JSON_MAP(CopyPluginPresetBody);
+};
+JSON_MAP_BEGIN(CopyPluginPresetBody)
+JSON_MAP_REFERENCE(CopyPluginPresetBody, pluginUri)
+JSON_MAP_REFERENCE(CopyPluginPresetBody, instanceId)
 JSON_MAP_END()
 
 class PedalBoardItemEnabledBody
@@ -374,11 +400,11 @@ public:
     {
         for (int i = 0; i < this->activePortMonitors.size(); ++i)
         {
-            model.unmonitorPort(activePortMonitors[i].subscriptionHandle);
+            model.UnmonitorPort(activePortMonitors[i].subscriptionHandle);
         }
         for (int i = 0; i < this->activeVuSubscriptions.size(); ++i)
         {
-            model.removeVuSubscription(activeVuSubscriptions[i].subscriptionHandle);
+            model.RemoveVuSubscription(activeVuSubscriptions[i].subscriptionHandle);
         }
 
         model.RemoveNotificationSubsription(this);
@@ -708,42 +734,42 @@ public:
         {
             ControlChangedBody message;
             pReader->read(&message);
-            this->model.previewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+            this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
         }
         else if (message == "setControl")
         {
             ControlChangedBody message;
             pReader->read(&message);
-            this->model.setControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+            this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
         }
         else if (message == "listenForMidiEvent")
         {
             ListenForMidiEventBody body;
             pReader->read(&body);
-            this->model.listenForMidiEvent(this->clientId,body.handle_, body.listenForControlsOnly_);
+            this->model.ListenForMidiEvent(this->clientId,body.handle_, body.listenForControlsOnly_);
         }
         else if (message == "cancelListenForMidiEvent")
         {
             uint64_t handle;
             pReader->read(&handle);
-            this->model.cancelListenForMidiEvent(this->clientId,handle);
+            this->model.CancelListenForMidiEvent(this->clientId,handle);
         }
         else if (message == "listenForAtomOutput")
         {
             ListenForAtomOutputBody body;
             pReader->read(&body);
-            this->model.listenForAtomOutputs(this->clientId,body.handle_, body.instanceId_);
+            this->model.ListenForAtomOutputs(this->clientId,body.handle_, body.instanceId_);
         }
         else if (message == "cancelListenForAtomOutput")
         {
             int64_t handle;
             pReader->read(&handle);
-            this->model.cancelListenForMidiEvent(this->clientId,handle);
+            this->model.CancelListenForMidiEvent(this->clientId,handle);
         }
 
         else if (message == "getJackStatus")
         {
-            JackHostStatus status = model.getJackStatus();
+            JackHostStatus status = model.GetJackStatus();
             this->Reply(replyTo,"getJackStatus",status);
         } else if (message == "getAlsaDevices")
         {
@@ -762,13 +788,13 @@ public:
         {
             std::string uri;
             pReader->read(&uri);
-            this->Reply(replyTo,"getPluginPresets",this->model.GetPluginPresets(uri));
+            this->Reply(replyTo,"getPluginPresets",this->model.GetPluginUiPresets(uri));
         }
         else if (message == "loadPluginPreset")
         {
             LoadPluginPresetBody body;
             pReader->read(&body);
-            this->model.LoadPluginPreset(body.instanceId_,body.presetName_);
+            this->model.LoadPluginPreset(body.pluginInstanceId_,body.presetInstanceId_);
 
         }
         else if (message == "setJackServerSettings") {
@@ -792,11 +818,11 @@ public:
             }
 
 
-            this->model.setWifiConfigSettings(wifiConfigSettings);
+            this->model.SetWifiConfigSettings(wifiConfigSettings);
             this->Reply(replyTo,"setWifiConfigSettings");
         }
         else if (message == "getWifiConfigSettings") {
-            this->Reply(replyTo, "getWifiConfigSettings", model.getWifiConfigSettings());
+            this->Reply(replyTo, "getWifiConfigSettings", model.GetWifiConfigSettings());
 
         }
 
@@ -805,42 +831,49 @@ public:
 
         }
         else if (message == "getBankIndex") {
-            BankIndex bankIndex = model.getBankIndex();
+            BankIndex bankIndex = model.GetBankIndex();
             this->Reply(replyTo, "getBankIndex", bankIndex);
 
         }
         else if (message == "getJackConfiguration")
         {
-            JackConfiguration configuration = this->model.getJackConfiguration();
+            JackConfiguration configuration = this->model.GetJackConfiguration();
             this->Reply(replyTo, "getJackConfiguration", configuration);
         }
         else if (message == "getJackSettings")
         {
-            JackChannelSelection selection = this->model.getJackChannelSelection();
+            JackChannelSelection selection = this->model.GetJackChannelSelection();
             this->Reply(replyTo, "getJackSettings", selection);
         }
         else if (message == "saveCurrentPreset")
         {
-            this->model.saveCurrentPreset(this->clientId);
+            this->model.SaveCurrentPreset(this->clientId);
         }
         else if (message == "saveCurrentPresetAs")
         {
             SaveCurrentPresetAsBody body;
             pReader->read(&body);
-            int64_t result = this->model.saveCurrentPresetAs(this->clientId, body.name_, body.saveAfterInstanceId_);
+            int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.name_, body.saveAfterInstanceId_);
+            Reply(replyTo, "saveCurrentPresetsAs", result);
+        }
+        else if (message == "savePluginPresetAs")
+        {
+            SavePluginPresetAsBody body;
+            pReader->read(&body);
+            int64_t result = this->model.SavePluginPresetAs(body.instanceId_, body.name_);
             Reply(replyTo, "saveCurrentPresetsAs", result);
         }
         else if (message == "getPresets")
         {
             PresetIndex presets;
-            this->model.getPresets(&presets);
+            this->model.GetPresets(&presets);
             Reply(replyTo, "getPresets", presets);
         }
         else if (message == "setPedalBoardItemEnable")
         {
             PedalBoardItemEnabledBody body;
             pReader->read(&body);
-            model.setPedalBoardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
+            model.SetPedalBoardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
         }
         else if (message == "setCurrentPedalBoard")
         {
@@ -848,22 +881,22 @@ public:
                 SetCurrentPedalBoardBody body;
 
                 pReader->read(&body);
-                this->model.setPedalBoard(body.clientId_, body.pedalBoard_);
+                this->model.SetPedalBoard(body.clientId_, body.pedalBoard_);
             }
         }
         else if (message == "currentPedalBoard")
         {
-            auto pedalBoard = model.getCurrentPedalBoardCopy();
+            auto pedalBoard = model.GetCurrentPedalBoardCopy();
             Reply(replyTo, "currentPedalBoard", pedalBoard);
         }
         else if (message == "plugins")
         {
-            auto ui_plugins = model.getPlugins().GetUiPlugins();
+            auto ui_plugins = model.GetLv2Host().GetUiPlugins();
             Reply(replyTo, "plugins", ui_plugins);
         }
         else if (message == "pluginClasses")
         {
-            auto classes = model.getPlugins().GetLv2PluginClass();
+            auto classes = model.GetLv2Host().GetLv2PluginClass();
             Reply(replyTo, "pluginClasses", classes);
         }
         else if (message == "hello")
@@ -875,7 +908,7 @@ public:
         {
             JackChannelSelection jackSettings;
             pReader->read(&jackSettings);
-            this->model.setJackChannelSelection(this->clientId, jackSettings);
+            this->model.SetJackChannelSelection(this->clientId, jackSettings);
         }
         else if (message == "version")
         {
@@ -887,20 +920,27 @@ public:
         {
             int64_t instanceId = 0;
             pReader->read(&instanceId);
-            model.loadPreset(this->clientId, instanceId);
+            model.LoadPreset(this->clientId, instanceId);
         }
         else if (message == "updatePresets")
         {
             PresetIndex newIndex;
             pReader->read(&newIndex);
-            bool result = model.updatePresets(this->clientId, newIndex);
+            bool result = model.UpdatePresets(this->clientId, newIndex);
             this->Reply(replyTo, "updatePresets", result);
+        }
+        else if (message == "updatePluginPresets")
+        {
+            PluginUiPresets pluginPresets;
+            pReader->read(&pluginPresets);
+            model.UpdatePluginPresets(pluginPresets);
+            this->Reply(replyTo, "updatePluginPresets", true);
         }
         else if (message == "moveBank")
         {
             FromToBody body;
             pReader->read(&body);
-            model.moveBank(this->clientId, body.from_, body.to_);
+            model.MoveBank(this->clientId, body.from_, body.to_);
             this->Reply(replyTo, "moveBank");
         }
         else if (message == "shutdown")
@@ -920,14 +960,14 @@ public:
         {
             int64_t instanceId = 0;
             pReader->read(&instanceId);
-            int64_t result = model.deletePreset(this->clientId, instanceId);
+            int64_t result = model.DeletePreset(this->clientId, instanceId);
             this->Reply(replyTo, "deletePresetItem", result);
         }
         else if (message == "deleteBankItem")
         {
             int64_t instanceId = 0;
             pReader->read(&instanceId);
-            uint64_t result = model.deleteBank(this->clientId, instanceId);
+            uint64_t result = model.DeleteBank(this->clientId, instanceId);
             this->Reply(replyTo, "deleteBankItem", result);
         }
         else if (message == "renameBank")
@@ -948,7 +988,7 @@ public:
 
 
             try {
-                model.renameBank(this->clientId,body.bankId_, body.newName_);
+                model.RenameBank(this->clientId,body.bankId_, body.newName_);
                         this->Reply(replyTo, "renameBank");
             } catch (const std::exception &e)
             {
@@ -960,7 +1000,7 @@ public:
             int64_t bankId = -1;
             pReader->read(&bankId);
             try {
-                model.openBank(this->clientId,bankId);;
+                model.OpenBank(this->clientId,bankId);;
                 this->Reply(replyTo, "openBank");
             } catch (const std::exception &e)
             {
@@ -972,7 +1012,7 @@ public:
             RenameBankBody body;
             pReader->read(&body);
             try {
-                int64_t newId = model.saveBankAs(this->clientId,body.bankId_, body.newName_);
+                int64_t newId = model.SaveBankAs(this->clientId,body.bankId_, body.newName_);
                 this->Reply(replyTo, "saveBankAs",newId);
             } catch (const std::exception &e)
             {
@@ -984,22 +1024,29 @@ public:
             RenamePresetBody body;
             pReader->read(&body);
 
-            bool result = model.renamePreset(body.clientId_, body.instanceId_, body.name_);
+            bool result = model.RenamePreset(body.clientId_, body.instanceId_, body.name_);
             this->Reply(replyTo, "renamePresetItem", result);
         }
         else if (message == "copyPreset")
         {
             CopyPresetBody body;
             pReader->read(&body);
-            int64_t result = model.copyPreset(body.clientId_, body.fromId_, body.toId_);
+            int64_t result = model.CopyPreset(body.clientId_, body.fromId_, body.toId_);
             this->Reply(replyTo, "copyPreset", result);
+        } 
+        else if (message == "copyPluginPreset")
+        {
+            CopyPluginPresetBody body;
+            pReader->read(&body);
+            uint64_t result = model.CopyPluginPreset(body.pluginUri_,body.instanceId_);
+            this->Reply(replyTo, "copyPluginPreset", result);
         } 
         else if (message =="getLv2Parameter")
         {
             GetLv2ParameterBody body;
             pReader->read(&body);
             
-            model.getLv2Parameter(
+            model.GetLv2Parameter(
                 this->clientId,
                 body.instanceId_,
                 body.uri_,
@@ -1018,7 +1065,7 @@ public:
             MonitorPortBody body;
             pReader->read(&body);
 
-            int64_t subscriptionHandle = model.monitorPort(
+            int64_t subscriptionHandle = model.MonitorPort(
                 body.instanceId_,
                 body.key_,
                 body.updateRate_,
@@ -1067,7 +1114,7 @@ public:
                         }
                     }
                 }
-                model.unmonitorPort(subscriptionHandle);
+                model.UnmonitorPort(subscriptionHandle);
             }
         }
         else if (message == "addVuSubscription")
@@ -1076,7 +1123,7 @@ public:
 
             pReader->read(&instanceId);
 
-            int64_t subscriptionHandle = model.addVuSubscription(instanceId);
+            int64_t subscriptionHandle = model.AddVuSubscription(instanceId);
 
             {
                 std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
@@ -1100,7 +1147,7 @@ public:
                     }
                 }
             }
-            model.removeVuSubscription(subscriptionHandle);
+            model.RemoveVuSubscription(subscriptionHandle);
         }
         else if (message == "imageList")
         {
@@ -1193,6 +1240,10 @@ public:
         body.clientId_ = clientId;
         body.presets_ = const_cast<PresetIndex *>(&presets);
         Send("onPresetsChanged", body);
+    }
+    virtual void OnPluginPresetsChanged(const std::string&pluginUri)
+    {
+        Send("onPluginPresetsChanged", pluginUri);
     }
     virtual void OnJackConfigurationChanged(const JackConfiguration &jackConfiguration)
     {

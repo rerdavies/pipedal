@@ -801,7 +801,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     <div className={classes.errorContentMask} />
                     <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
                     <div className={classes.errorMessageBox} style={{ position: "relative" }} >
-                        <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 0, color: "#A00" }}>
+                        <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 3, color: "#A00" }}>
                             <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
                         </div>
                         <div style={{ marginLeft: 40, marginTop: 3 }}>

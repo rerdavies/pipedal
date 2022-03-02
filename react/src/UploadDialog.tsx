@@ -29,14 +29,18 @@ import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import Typography from '@mui/material/Typography';
 
 
-const PRESET_EXTENSION = ".piPreset";
-const BANK_EXTENSION = ".piBank";
+// const PRESET_EXTENSION = ".piPreset";
+// const BANK_EXTENSION = ".piBank";
+// const PLUGIN_PRESETS_EXTENSION = ".piPluginPresets";
 
 export interface UploadDialogProps {
     open: boolean,
     onClose: () => void,
     uploadAfter: number,
-    onUploaded: (instanceId: number) => void
+    onUploaded: (instanceId: number) => void,
+    title: string,
+    extension: string,
+    uploadPage: string
 
 };
 
@@ -94,11 +98,11 @@ export default class UploadDialog extends ResizeResponsiveComponent<UploadDialog
             let uploadAfter = this.props.uploadAfter;
             for (let i = 0; i < fileList.length; ++i)
             {
-                uploadAfter = await this.model.uploadPreset(fileList[i],uploadAfter);
+                uploadAfter = await this.model.uploadPreset(this.props.uploadPage,fileList[i],uploadAfter);
             }
             this.props.onUploaded(uploadAfter);
         } catch(error) {
-            this.model.showAlert(error);
+            this.model.showAlert(error +"");
         };
         this.props.onClose();
     }
@@ -132,7 +136,7 @@ export default class UploadDialog extends ResizeResponsiveComponent<UploadDialog
         for (let i = 0; i < fileList.files.length; ++i) {
             let file = fileList.files[i];
             let extension = this.getFileExtension(file.name);
-            if (extension !== PRESET_EXTENSION && extension !== BANK_EXTENSION) return false;
+            if (extension !== this.props.extension) return false;
         }
         return true;
     }
@@ -157,7 +161,7 @@ export default class UploadDialog extends ResizeResponsiveComponent<UploadDialog
                 fullScreen={this.state.fullScreen}
                 style={{userSelect: "none"}}
             >
-                <DialogTitle>Upload preset</DialogTitle>
+                <DialogTitle>{this.props.title}</DialogTitle>
                 <DialogContent>
                     <div style={{
                         width: "100%", height: 100, marginBottom: 0,
@@ -188,7 +192,7 @@ export default class UploadDialog extends ResizeResponsiveComponent<UploadDialog
                         <input
                             type="file"
                             hidden
-                            accept=".piPreset"
+                            accept={this.props.extension}
                             multiple
                             onChange={(e)=> this.handleButtonSelect(e)}
                         />

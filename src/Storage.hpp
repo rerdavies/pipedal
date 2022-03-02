@@ -22,6 +22,7 @@
 #include <iostream>
 #include "PedalBoard.hpp"
 #include "Presets.hpp"
+#include "PluginPreset.hpp"
 #include "Banks.hpp"
 #include "JackConfiguration.hpp"
 #include "WifiConfigSettings.hpp"
@@ -45,16 +46,17 @@ private:
     std::filesystem::path dataRoot;
     BankIndex bankIndex;
     BankFile currentBank;
+    PluginPresetIndex pluginPresetIndex;
     
 private:
     static std::string SafeEncodeName(const std::string& name);
     static std::string SafeDecodeName(const std::string& name);
     std::filesystem::path GetPresetsDirectory() const;
+    std::filesystem::path GetPluginPresetsDirectory() const;
     std::filesystem::path GetIndexFileName() const;
     std::filesystem::path GetBankFileName(const std::string & name) const;
     std::filesystem::path GetChannelSelectionFileName();
     std::filesystem::path GetCurrentPresetPath() const;
-
 
     void LoadBankIndex();
     void SaveBankIndex();
@@ -85,7 +87,7 @@ public:
     void LoadWifiConfigSettings();
     void LoadBank(int64_t instanceId);
     const PedalBoard& GetCurrentPreset();
-    void saveCurrentPreset(const PedalBoard&pedalBoard);
+    void SaveCurrentPreset(const PedalBoard&pedalBoard);
     int64_t saveCurrentPresetAs(const PedalBoard&pedalBoard, const std::string&namne,int64_t saveAfterInstanceId = -1);
 
     void GetPresetIndex(PresetIndex*pResult);
@@ -117,7 +119,20 @@ public:
     void SaveCurrentPreset(const CurrentPreset &currentPreset);
     bool RestoreCurrentPreset(CurrentPreset*pResult);
 
-
+private:
+    bool pluginPresetIndexChanged = false;
+    void LoadPluginPresetIndex();
+    void SavePluginPresetIndex();
+    std::filesystem::path GetPluginPresetPath(const std::string &pluginUri) const;
+public:
+    bool HasPluginPresets(const std::string&pluginUri) const;
+    void SavePluginPresets(const std::string&pluginUri, const PluginPresets&presets);
+    PluginPresets GetPluginPresets(const std::string&pluginUri) const;
+    PluginUiPresets GetPluginUiPresets(const std::string&pluginUri) const;
+    std::vector<ControlValue> GetPluginPresetValues(const std::string&pluginUri, uint64_t instanceId);
+    uint64_t SavePluginPreset(const std::string&pluginUri, const std::string&name, const std::map<std::string,float> & values);
+    void UpdatePluginPresets(const PluginUiPresets &pluginPresets);
+    uint64_t CopyPluginPreset(const std::string&pluginUri,uint64_t presetId);
 
 };
 

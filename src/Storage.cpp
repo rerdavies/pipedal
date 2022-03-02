@@ -165,11 +165,13 @@ void Storage::Initialize()
     try
     {
         std::filesystem::create_directories(this->GetPresetsDirectory());
+        std::filesystem::create_directories(this->GetPluginPresetsDirectory());
     }
     catch (const std::exception &e)
     {
         throw PiPedalStateException("Can't create presets directory. (" + (std::string)this->GetPresetsDirectory() + ") (" + e.what() + ")");
     }
+    LoadPluginPresetIndex();
     LoadBankIndex();
     LoadCurrentBank();
     try
@@ -204,6 +206,10 @@ void Storage::LoadCurrentBank()
 std::filesystem::path Storage::GetPresetsDirectory() const
 {
     return this->dataRoot / "presets";
+}
+std::filesystem::path Storage::GetPluginPresetsDirectory() const
+{
+    return this->dataRoot / "plugin_presets";
 }
 std::filesystem::path Storage::GetCurrentPresetPath() const
 {
@@ -255,6 +261,43 @@ void Storage::LoadBankIndex()
         SaveBankIndex();
     }
 }
+
+void Storage::LoadPluginPresetIndex()
+{
+    try
+    {
+        auto path = GetPluginPresetsDirectory() / "index.json";
+        std::ifstream s;
+        if (std::filesystem::exists(path))
+        {
+            s.open(path);
+            json_reader reader(s);
+            reader.read(&pluginPresetIndex);
+        }
+    }
+    catch (const std::exception &)
+    {
+    }
+}
+
+void Storage::SavePluginPresetIndex()
+{
+    if (pluginPresetIndexChanged)
+    {
+        pluginPresetIndexChanged = false;
+        std::ofstream os;
+        auto path = GetPluginPresetsDirectory() / "index.json";
+        os.open(path, std::ios_base::trunc);
+        if (os.fail())
+        {
+            throw PiPedalException(SS("Can't write to " << path));
+        }
+
+        json_writer writer(os);
+        writer.write(this->pluginPresetIndex);
+    }
+}
+
 void Storage::SaveBankIndex()
 {
     std::ofstream os;
@@ -374,7 +417,7 @@ bool Storage::LoadPreset(int64_t instanceId)
     }
     return true;
 }
-void Storage::saveCurrentPreset(const PedalBoard &pedalBoard)
+void Storage::SaveCurrentPreset(const PedalBoard &pedalBoard)
 {
     auto &item = currentBank.getItem(currentBank.selectedPreset());
     item.preset(pedalBoard);
@@ -859,6 +902,238 @@ bool Storage::RestoreCurrentPreset(CurrentPreset*pResult)
     } else {
         return false;
     }
+
+}
+bool Storage::HasPluginPresets(const std::string &pluginUri) const
+{
+    for (const auto &entry: this->pluginPresetIndex.entries_)
+    {
+        if (entry.pluginUri_ == pluginUri)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::filesystem::path Storage::GetPluginPresetPath(const std::string &pluginUri) const
+{
+    for (const auto &entry: this->pluginPresetIndex.entries_)
+    {
+        if (entry.pluginUri_ == pluginUri)
+        {
+            return this->GetPluginPresetsDirectory() / entry.fileName_;
+        }
+    }
+    throw PiPedalArgumentException("Plugin preset file not found.");
+
+}
+void Storage::SavePluginPresets(const std::string&pluginUri, const PluginPresets&presets)
+{
+    std::string name;
+    std::filesystem::path path;
+    bool presetAdded = false;
+    if (!HasPluginPresets(pluginUri))
+    {
+        name = SS(pluginPresetIndex.nextInstanceId_ << ".json");
+        path = GetPluginPresetsDirectory() / name;
+        presetAdded = true;
+    } else {
+        path = GetPluginPresetPath(pluginUri);
+    }
+    auto tempPath = path.string()+".$$$";
+    {
+        std::ofstream os;
+        os.open(tempPath, std::ios_base::trunc);
+        if (os.fail())
+        {
+            throw PiPedalException(SS("Can't write to " << path));
+        }
+        json_writer writer(os);
+        writer.write(presets);
+    }
+    if (std::filesystem::exists(path))
+    {
+        std::filesystem::remove(path);
+    }
+    std::filesystem::rename(tempPath,path);
+
+    if (presetAdded)
+    {
+        pluginPresetIndex.entries_.push_back(
+            PluginPresetIndexEntry(
+                pluginUri,name
+            )
+        );
+        pluginPresetIndex.nextInstanceId_++;
+        this->pluginPresetIndexChanged = true;
+        SavePluginPresetIndex();
+    }
+}
+
+PluginPresets Storage::GetPluginPresets(const std::string&pluginUri) const
+{
+    PluginPresets result;
+    if (!HasPluginPresets(pluginUri))
+    {
+        result.pluginUri_ = pluginUri;
+        return result;
+    }
+    std::filesystem::path path = GetPluginPresetPath(pluginUri);
+    std::ifstream s;
+    s.open(path);
+    if (s.fail())
+    {
+        return result;
+    }
+    json_reader reader(s);
+    reader.read(&result);
+    return result;
+}
+PluginUiPresets Storage::GetPluginUiPresets(const std::string&pluginUri) const
+{
+    PluginPresets presets = GetPluginPresets(pluginUri);
+    PluginUiPresets result;
+    result.pluginUri_ = presets.pluginUri_;
+    for (size_t i = 0; i < presets.presets_.size(); ++i)
+    {
+        const auto& preset = presets.presets_[i];
+        result.presets_.push_back(
+            PluginUiPreset 
+            {
+                preset.label_,
+                preset.instanceId_
+            }
+        );
+    }
+    return result;
+}
+
+std::vector<ControlValue> Storage::GetPluginPresetValues(const std::string&pluginUri, uint64_t instanceId)
+{
+    auto presets = GetPluginPresets(pluginUri);
+    for (const auto & preset: presets.presets_)
+    {
+        if (preset.instanceId_ == instanceId)
+        {
+            std::vector<ControlValue> result;
+            for (const auto &valuePair: preset.controlValues_)
+            {
+                result.push_back(ControlValue(valuePair.first.c_str(),valuePair.second));
+            }
+            return result;
+        }
+    }
+    throw PiPedalException("Plugin preset not found.");
+}
+
+uint64_t Storage::SavePluginPreset(
+    const std::string&pluginUri, 
+    const std::string&name, 
+    const std::map<std::string,float> & values)
+{
+    auto presets = GetPluginPresets(pluginUri);
+    uint64_t result = -1;
+    bool existing = false;
+    for (size_t i = 0; i < presets.presets_.size(); ++i)
+    {
+        auto & preset = presets.presets_[i];
+        if (preset.label_ == name)
+        {
+            preset.controlValues_ = values;
+            existing = true;
+            result = preset.instanceId_;
+            break;
+        }
+    }
+    if (!existing)
+    {
+        result = presets.nextInstanceId_++;
+        presets.presets_.push_back(
+            PluginPreset(
+                result,
+                name,
+                values
+            ));
+    }
+    this->SavePluginPresets(pluginUri,presets);
+    return result;
+}
+
+void Storage::UpdatePluginPresets(const PluginUiPresets &pluginPresets)
+{
+    // handles deletions, renaming, and reordering only.
+    // If you need to add a preset, you neet to call SavePluginPreset or DulicatePluginPreset instead.
+    
+    PluginPresets presets = this->GetPluginPresets(pluginPresets.pluginUri_);
+    PluginPresets newPresets;
+    newPresets.pluginUri_ = pluginPresets.pluginUri_;
+    newPresets.nextInstanceId_ = presets.nextInstanceId_;
+
+    for (const auto&preset: pluginPresets.presets_)
+    {
+        PluginPreset newPreset = presets.GetPreset(preset.instanceId_);
+        newPreset.label_ = preset.label_;
+        newPresets.presets_.push_back(std::move(newPreset));
+    }
+    SavePluginPresets(newPresets.pluginUri_,newPresets);
+
+
+}
+
+static std::string stripCopySuffix(const std::string &s)
+{
+    int pos = s.length()-1;
+    if (pos >= 0 && s[pos] == ')')
+    {
+        --pos;
+        while (pos >= 0 && s[pos] >= '0' && s[pos] <= '9')
+        {
+            --pos;
+        }
+        if  (pos >= 0 && s[pos] == '(')
+        {
+            --pos;
+        }
+        while (pos >= 0 && s[pos] == ' ')
+        {
+            --pos;
+        }
+        return s.substr(0,pos+1);
+    }
+    return s;
+}
+uint64_t Storage::CopyPluginPreset(const std::string&pluginUri,uint64_t presetId)
+{
+    PluginPresets presets = this->GetPluginPresets(pluginUri);
+    size_t pos = presets.Find(presetId);
+    if (pos == -1)
+    {
+        throw PiPedalException("Perset not found.");
+    }
+    PluginPreset t = presets.presets_[pos];
+    t.instanceId_ = presets.nextInstanceId_++;
+    std::string baseName = stripCopySuffix(t.label_);
+    std::string name = baseName;
+    if (presets.Find(name) != -1)
+    {
+        int nCopy = 1;
+        while (true)
+        {
+            name = SS(baseName << " (" << nCopy << ")");
+            if (presets.Find(name) == -1)
+            {
+                break;
+            }
+            ++nCopy;
+        }
+    }
+    t.label_ = name;
+    presets.presets_.insert(presets.presets_.begin()+pos+1,t);
+    SavePluginPresets(presets.pluginUri_,presets);
+    return t.instanceId_;
+
+
 
 }
 

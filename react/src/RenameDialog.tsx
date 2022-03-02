@@ -85,6 +85,8 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
 
         const handleOk = () => {
             let text = nullCast(this.refText.current).value;
+            text = text.trim();
+            if (text.length === 0) return;
             onOk(text);
         }
         const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {

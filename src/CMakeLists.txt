@@ -101,6 +101,7 @@ add_custom_command(
  
 
 set (PIPEDAL_SOURCES
+    PluginPreset.cpp PluginPreset.hpp 
     SysExec.cpp SysExec.hpp
     BeastServer.cpp BeastServer.hpp HtmlHelper.cpp HtmlHelper.hpp pch.h Uri.cpp Uri.hpp
     WifiConfigSettings.hpp WifiConfigSettings.cpp

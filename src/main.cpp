@@ -43,6 +43,7 @@ using namespace pipedal;
 
 #define PRESET_EXTENSION ".piPreset"
 #define BANK_EXTENSION ".piBank"
+#define PLUGIN_PRESETS_EXTENSION ".piPluginPresets"
 
 sem_t signalSemaphore;
 
@@ -91,23 +92,32 @@ public:
         {
             return false;
         }
-        if (request_uri.segment(1) == "downloadPreset")
-        {
-            std::string strInstanceId = request_uri.query("id");
-            if (strInstanceId != "")
-                return true;
-        }
-        else if (request_uri.segment(1) == "uploadPreset")
+        std::string segment = request_uri.segment(1);
+        if (segment == "uploadPluginPresets")
         {
             return true;
         }
-        if (request_uri.segment(1) == "downloadBank")
+        if (segment == "downloadPluginPresets")
+        {
+            return true;
+        }
+        if (segment == "downloadPreset")
         {
             std::string strInstanceId = request_uri.query("id");
             if (strInstanceId != "")
                 return true;
         }
-        else if (request_uri.segment(1) == "uploadBank")
+        else if (segment == "uploadPreset")
+        {
+            return true;
+        }
+        if (segment == "downloadBank")
+        {
+            std::string strInstanceId = request_uri.query("id");
+            if (strInstanceId != "")
+                return true;
+        }
+        else if (segment == "uploadBank")
         {
             return true;
         }
@@ -124,11 +134,24 @@ public:
         return result;
     }
 
+    void GetPluginPresets(const uri &request_uri, std::string*pName,std::string *pContent)
+    {
+        std::string pluginUri = request_uri.query("id");
+        auto plugin = model->GetLv2Host().GetPluginInfo(pluginUri);
+        *pName = plugin->name();
+
+        PluginPresets pluginPresets = model->GetPluginPresets(pluginUri);
+
+        std::stringstream s;
+        json_writer writer(s);
+        writer.write(pluginPresets);
+        *pContent = s.str();
+    }
     void GetPreset(const uri &request_uri, std::string *pName, std::string *pContent)
     {
         std::string strInstanceId = request_uri.query("id");
         int64_t instanceId = std::stol(strInstanceId);
-        auto pedalBoard = model->getPreset(instanceId);
+        auto pedalBoard = model->GetPreset(instanceId);
 
         // a certain elegance to using same file format for banks and presets.
         BankFile file;
@@ -147,7 +170,7 @@ public:
         std::string strInstanceId = request_uri.query("id");
         int64_t instanceId = std::stol(strInstanceId);
         BankFile bank;
-        model->getBank(instanceId, &bank);
+        model->GetBank(instanceId, &bank);
 
         std::stringstream s;
         json_writer writer(s, true); // do what we can to reduce the file size.
@@ -164,7 +187,19 @@ public:
     {
         try
         {
-            if (request_uri.segment(1) == "downloadPreset")
+            std::string segment = request_uri.segment(1);
+            if (segment == "downloadPluginPresets")
+            {
+                std::string name;
+                std::string content;
+                GetPluginPresets(request_uri,&name,&content);
+                res.set(HttpField::content_type, "application/octet-stream");
+                res.set(HttpField::cache_control, "no-cache");
+                res.setContentLength(content.length());
+                res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PLUGIN_PRESETS_EXTENSION));
+                return;
+            }
+            if (segment == "downloadPreset")
             {
                 std::string name;
                 std::string content;
@@ -176,7 +211,7 @@ public:
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
                 return;
             }
-            if (request_uri.segment(1) == "downloadBank")
+            if (segment == "downloadBank")
             {
                 std::string name;
                 std::string content;
@@ -211,7 +246,19 @@ public:
     {
         try
         {
-            if (request_uri.segment(1) == "downloadPreset")
+            std::string segment = request_uri.segment(1);
+
+            if (segment == "downloadPluginPresets")
+            {
+                std::string name;
+                std::string content;
+                GetPluginPresets(request_uri,&name,&content);
+                res.set(HttpField::content_type, "application/octet-stream");
+                res.set(HttpField::cache_control, "no-cache");
+                res.setContentLength(content.length());
+                res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PLUGIN_PRESETS_EXTENSION));
+                res.setBody(content);
+            } else if (segment == "downloadPreset")
             {
                 std::string name;
                 std::string content;
@@ -223,7 +270,7 @@ public:
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
                 res.setBody(content);
             }
-            else if (request_uri.segment(1) == "downloadBank")
+            else if (segment == "downloadBank")
             {
                 std::string name;
                 std::string content;
@@ -260,7 +307,26 @@ public:
     {
         try
         {
-            if (request_uri.segment(1) == "uploadPreset")
+            std::string segment = request_uri.segment(1);
+
+            if (segment == "uploadPluginPresets")
+            {
+                const std::string& presetBody = req.body();
+                std::stringstream s(presetBody);
+                json_reader reader(s);
+                PluginPresets presets;
+                reader.read(&presets);
+                model->UploadPluginPresets(presets);
+
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+                std::stringstream sResult;
+                sResult << -1;
+                std::string result = sResult.str();
+                res.setContentLength(result.length());
+
+                res.setBody(result);
+            } else if (segment == "uploadPreset")
             {
                 const std::string& presetBody = req.body();
                 std::stringstream s(presetBody);
@@ -276,7 +342,7 @@ public:
                 BankFile bankFile;
                 reader.read(&bankFile);
 
-                uint64_t instanceId = model->uploadPreset(bankFile, uploadAfter);
+                uint64_t instanceId = model->UploadPreset(bankFile, uploadAfter);
 
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
@@ -287,7 +353,7 @@ public:
 
                 res.setBody(result);
             }
-            else if (request_uri.segment(1) == "uploadBank")
+            else if (segment == "uploadBank")
             {
                 const std::string& presetBody = req.body();
                 std::istringstream s(presetBody);
@@ -303,7 +369,7 @@ public:
                 BankFile bankFile;
                 reader.read(&bankFile);
 
-                uint64_t instanceId = model->uploadBank(bankFile, uploadAfter);
+                uint64_t instanceId = model->UploadBank(bankFile, uploadAfter);
 
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
@@ -430,7 +496,7 @@ int main(int argc, char *argv[])
         if (help || parser.Arguments().size() == 0)
         {
             std::cout << "pipedald - Pipedal web socket server.\n"
-                         "Copyright (c) 2021 Robin Davies.\n"
+                         "Copyright (c) 2022 Robin Davies.\n"
                          "\n";
         }
     }

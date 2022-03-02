@@ -278,7 +278,7 @@ public:
         os << text;
     }
     using string_view = boost::string_view;
-    json_writer(std::ostream &os, bool compressed = false, bool allowNaN = true)
+    json_writer(std::ostream &os, bool compressed = true, bool allowNaN = true)
     : os(os)
     , compressed(compressed)
     , allowNaN_(allowNaN)
@@ -534,6 +534,26 @@ public:
 
         end_object();
     }
+    template <typename U> 
+    void write(const std::map<std::string,U> &map)
+    {
+        start_object();
+
+        bool firstTime = true;
+        for (const auto&v : map)
+        {
+            if (!firstTime)
+            {
+                write_raw(",");
+                write_raw(CRLF);
+            }
+            indent();
+            firstTime = false;
+            write_member(v.first.c_str(),v.second);
+        }
+        end_object();        
+    }
+
 
 
 
@@ -663,6 +683,38 @@ public:
         *pObject = new T();
         read(*pObject);
     }
+
+    template <typename U>
+    void read(std::map<std::string,U> *pMap)
+    {
+        char c;
+        consume('{');
+        
+        while (true)
+        {
+            c = peek();
+            if (c == '}')
+            {
+                c = get();
+                break;
+            }
+            std::string key = read_string();
+
+            consume(':');
+            skip_whitespace();
+
+            U u;
+            this->read(&u);
+            (*pMap)[key] = u;
+            skip_whitespace();
+
+            if (peek() == ',')
+            {
+                c = get();
+            }
+        }
+    }
+
 
     template<typename T>
     void read(std::unique_ptr<T> *pUniquePtr)

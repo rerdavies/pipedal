@@ -41,6 +41,7 @@ const styles = (theme: Theme) => createStyles({
 interface GxTunerProps extends WithStyles<typeof styles> {
     instanceId: number;
     item: PedalBoardItem;
+    isToobTuner: boolean;
 
 }
 interface GxTunerState {
@@ -79,6 +80,11 @@ const GxTunerView =
             {
                 let refFreqIndex = this.getControlIndex("REFFREQ");
                 let thresholdIndex = this.getControlIndex("THRESHOLD");
+                let muteIndex = -1;
+                if (this.props.isToobTuner)
+                {
+                    muteIndex = this.getControlIndex("MUTE")
+                }
 
                 let result: (React.ReactNode | ControlGroup)[] = [];
 
@@ -87,6 +93,10 @@ const GxTunerView =
 
                 result.push(controls[refFreqIndex]);
                 result.push(controls[thresholdIndex]);
+                if (muteIndex !== -1)
+                {
+                    result.push(controls[muteIndex]);
+                }
                 return result;
             }
             render() {
@@ -102,26 +112,24 @@ const GxTunerView =
 
 
 
-class GxTunerViewFactory implements IControlViewFactory {
+export class GxTunerViewFactory implements IControlViewFactory {
     uri: string = GXTUNER_URI;
 
     Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<GxTunerView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+        return (<GxTunerView  isToobTuner={false} instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
     }
 
 
 }
 
 // ToobTuner uses the same controls and control semantics.
-class ToobTunerViewFactory implements IControlViewFactory {
+export class ToobTunerViewFactory implements IControlViewFactory {
     uri: string = TOOBTUNER_URI;
 
     Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<GxTunerView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+        return (<GxTunerView isToobTuner={true} instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
     }
 
 
 }
 
-export ToobTunerViewFactory;
-export GxTunerViewFactory;

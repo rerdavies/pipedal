@@ -31,7 +31,7 @@ import { BankIndex } from './Banks';
 import JackHostStatus from './JackHostStatus';
 import JackServerSettings from './JackServerSettings';
 import MidiBinding from './MidiBinding';
-import PluginPreset from './PluginPreset';
+import {PluginUiPresets} from './PluginPreset';
 import WifiConfigSettings from './WifiConfigSettings';
 import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
@@ -46,6 +46,16 @@ export enum State {
 };
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
+
+
+export type PluginPresetsChangedHandler = (pluginUri: string) => void;
+
+export interface PluginPresetsChangedHandle {
+    _id: number;
+    _handler: PluginPresetsChangedHandler;
+
+};
+
 
 export interface ZoomedControlInfo {
     source: HTMLElement;
@@ -72,7 +82,6 @@ export interface ControlValueChangedHandle {
     _ControlValueChangedHandle: number;
 
 };
-
 interface ControlValueChangeItem {
     handle: number;
     instanceId: number;
@@ -341,6 +350,8 @@ export interface PiPedalModel {
     saveCurrentPreset(): void;
     saveCurrentPresetAs(newName: string): void;
 
+    saveCurrentPluginPresetAs(pluginInstanceId: number,newName: string): void;
+
     loadPreset(instanceId: number): void;
     updatePresets(presets: PresetIndex): Promise<void>;
     deletePresetItem(instanceId: number): Promise<number>;
@@ -372,8 +383,10 @@ export interface PiPedalModel {
 
     getJackStatus(): Promise<JackHostStatus>;
 
-    getPluginPresets(uri: string): Promise<PluginPreset[]>;
-    loadPluginPreset(instanceId: number, presetName: string): void;
+    getPluginPresets(uri: string): Promise<PluginUiPresets>;
+    loadPluginPreset(pluginInstanceId: number, presetInstanceId: number): void;
+    updatePluginPresets(uri: string, presets: PluginUiPresets): Promise<void>;
+    duplicatePluginPreset(uri: string, instanceId: number): Promise<number>;
 
     shutdown(): Promise<void>;
     restart(): Promise<void>;
@@ -384,14 +397,17 @@ export interface PiPedalModel {
     addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle
     removeControlValueChangeListener(handle: ControlValueChangedHandle): void;
 
+    addPluginPresetsChangedListener(onPluginPresetsChanged: PluginPresetsChangedHandler) : PluginPresetsChangedHandle;
+    removePluginPresetsChangedListener(handle: PluginPresetsChangedHandle): void;
+
     listenForAtomOutput(instanceId: number, onComplete: (instanceId: number, atomOutput: any) => void): ListenHandle;
     cancelListenForAtomOutput(listenHandle: ListenHandle): void;
 
 
 
-    download(targetType: string, isntanceId: number): void;
+    download(targetType: string, isntanceId: number|string): void;
 
-    uploadPreset(file: File, uploadAfter: number): Promise<number>;
+    uploadPreset(uploadPage: string,file: File, uploadAfter: number): Promise<number>;
     uploadBank(file: File, uploadAfter: number): Promise<number>;
 
     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void>;
@@ -500,6 +516,9 @@ class PiPedalModelImpl implements PiPedalModel {
             let presetsChangedBody = body as PresetsChangedBody;
             let presets = new PresetIndex().deserialize(presetsChangedBody.presets);
             this.presets.set(presets);
+        } else if (message === "onPluginPresetsChanged") {
+            let pluginUri = body as string;
+            this.handlePluginPresetsChanged(pluginUri);
         } else if (message === "onJackConfigurationChanged") {
             this.jackConfiguration.set(new JackConfiguration().deserialize(body));
         } else if (message === "onLoadPluginPreset") {
@@ -973,6 +992,41 @@ class PiPedalModelImpl implements PiPedalModel {
         }
     }
 
+    _pluginPresetsChangedHandles: PluginPresetsChangedHandle[] = [];
+
+    addPluginPresetsChangedListener(onPluginPresetsChanged: PluginPresetsChangedHandler) : PluginPresetsChangedHandle {
+        let handle = ++this.nextListenHandle;
+        let t: PluginPresetsChangedHandle = {
+            _id: handle,
+            _handler: onPluginPresetsChanged
+        };
+        this._pluginPresetsChangedHandles.push(t);
+        return t;
+    }
+    removePluginPresetsChangedListener(handle: PluginPresetsChangedHandle): void
+    {
+        let pos = -1;
+        for (let i = 0; i < this._pluginPresetsChangedHandles.length; ++i)
+        {
+            if (this._pluginPresetsChangedHandles[i]._id === handle._id)
+            {
+                pos = i;
+                break;
+            }
+        }
+        if (pos !== -1)
+        {
+            this._pluginPresetsChangedHandles.splice(pos,1);
+        }
+    }
+    firePluginPresetsChanged(pluginUri: string): void {
+        for (let i = 0; i < this._pluginPresetsChangedHandles.length; ++i)
+        {
+            this._pluginPresetsChangedHandles[i]._handler(pluginUri);
+        }
+        
+    }
+
 
     _setPedalBoardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
         let pedalBoard = this.pedalBoard.get();
@@ -1244,6 +1298,18 @@ class PiPedalModelImpl implements PiPedalModel {
                 return data;
             });
     }
+    saveCurrentPluginPresetAs(pluginInstanceId: number,newName: string): Promise<number> {
+        // default behaviour is to save after the currently selected preset.
+        let request: any = {
+            instanceId: pluginInstanceId,
+            name: newName,
+        };
+        return nullCast(this.webSocket)
+            .request<number>("savePluginPresetAs", request)
+            .then((data) => {
+                return data;
+            });
+    }
 
 
     loadPreset(instanceId: number): void {
@@ -1473,18 +1539,22 @@ class PiPedalModelImpl implements PiPedalModel {
         return result;
     }
 
-    presetCache: { [uri: string]: PluginPreset[]; } = {};
+    presetCache: { [uri: string]: PluginUiPresets } = {};
 
 
-    getPluginPresets(uri: string): Promise<PluginPreset[]> {
-        return new Promise<PluginPreset[]>((resolve, reject) => {
+    uncachePluginPreset(pluginUri: string): void {
+        delete this.presetCache[pluginUri];
+    }
+    getPluginPresets(uri: string): Promise<PluginUiPresets> {
+        return new Promise<PluginUiPresets>((resolve, reject) => {
             if (this.presetCache[uri] !== undefined) {
                 resolve(this.presetCache[uri]);
             } else {
                 this.webSocket!.request<any>("getPluginPresets", uri)
                     .then((result) => {
-                        this.presetCache[uri] = PluginPreset.deserialize_array(result);
-                        resolve(result);
+                        let presets = new PluginUiPresets().deserialize(result);
+                        this.presetCache[uri] = presets;
+                        resolve(presets);
                     })
                     .catch((error) => {
                         reject(error);
@@ -1493,9 +1563,29 @@ class PiPedalModelImpl implements PiPedalModel {
         });
     }
 
-    loadPluginPreset(instanceId: number, presetName: string): void {
-        this.webSocket?.send("loadPluginPreset", { instanceId: instanceId, presetName: presetName });
+    loadPluginPreset(pluginInstanceId: number, presetInstanceId: number): void {
+        this.webSocket?.send("loadPluginPreset", { pluginInstanceId: pluginInstanceId, presetInstanceId: presetInstanceId });
     }
+
+    handlePluginPresetsChanged(pluginUri: string):void {
+        this.uncachePluginPreset(pluginUri);
+        this.firePluginPresetsChanged(pluginUri);
+    }
+
+
+    updatePluginPresets(pluginUri: string, presets: PluginUiPresets): Promise<void>
+    {
+        this.presetCache[pluginUri] = presets;
+        this.firePluginPresetsChanged(pluginUri);
+        return nullCast(this.webSocket).request<void>("updatePluginPresets", presets);
+    }
+    duplicatePluginPreset(pluginUri: string, instanceId: number): Promise<number>
+    {
+        return nullCast(this.webSocket).request<number>("copyPluginPreset", { 
+            pluginUri: pluginUri, instanceId: instanceId });
+
+    }
+
 
     shutdown(): Promise<void> {
         return this.webSocket!.request<void>("shutdown");
@@ -1596,19 +1686,19 @@ class PiPedalModelImpl implements PiPedalModel {
         this.webSocket?.send("cancelListenForAtomOutput", listenHandle._handle);
     }
 
-    download(targetType: string, instanceId: number): void {
+    download(targetType: string, instanceId: number | string): void {
         if (instanceId === -1) return;
         let url = this.varServerUrl + targetType + "?id=" + instanceId;
         window.open(url, "_blank");
     }
 
-    uploadPreset(file: File, uploadAfter: number): Promise<number> {
+    uploadPreset(uploadPage: string,file: File, uploadAfter: number): Promise<number> {
         let result = new Promise<number>((resolve, reject) => {
             try {
                 if (file.size > this.maxUploadSize) {
                     reject("File is too large.");
                 }
-                let url = this.varServerUrl + "uploadPreset";
+                let url = this.varServerUrl + uploadPage;
                 if (uploadAfter && uploadAfter !== -1) {
                     url += "?uploadAfter=" + uploadAfter;
                 }

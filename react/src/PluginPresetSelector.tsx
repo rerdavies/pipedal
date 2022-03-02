@@ -19,30 +19,31 @@
 
 import { SyntheticEvent, Component } from 'react';
 import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, PluginPresetsChangedHandle } from './PiPedalModel';
 import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import createStyles from '@mui/styles/createStyles';
-import PresetDialog from './PresetDialog';
+import PluginPresetsDialog from './PluginPresetsDialog';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Fade from '@mui/material/Fade';
 import RenameDialog from './RenameDialog'
-import PluginPreset from './PluginPreset';
+import {PluginUiPresets} from './PluginPreset';
+
+import Divider from "@mui/material/Divider";
 
 
 interface PluginPresetSelectorProps extends WithStyles<typeof styles> {
     pluginUri?: string;
-
-    onSelectPreset: (presetName: string) => void;
+    instanceId: number;
 }
 
 
 interface PluginPresetSelectorState {
-    presets: PluginPreset[] | null;
+    presets : PluginUiPresets;
     enabled: boolean;
+    presetChanged: boolean;
     showPresetsDialog: boolean;
     showEditPresetsDialog: boolean;
     presetsMenuAnchorRef: HTMLElement | null;
@@ -52,10 +53,15 @@ interface PluginPresetSelectorState {
     renameDialogActionName: string;
     renameDialogOnOk?: (name: string) => void;
 
+    saveAsName: string;
 }
 
 
 const styles = (theme: Theme) => createStyles({
+    itemIcon: {
+        width: 24, height: 24, marginRight: "4px", opacity: 0.6
+    }
+
 });
 
 
@@ -69,25 +75,27 @@ const PluginPresetSelector =
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
-                    presets: null,
+                    presets: new PluginUiPresets(),
                     enabled: false,
+                    presetChanged: false,
                     showPresetsDialog: false,
                     showEditPresetsDialog: false,
                     presetsMenuAnchorRef: null,
                     renameDialogOpen: false,
                     renameDialogDefaultName: "",
                     renameDialogActionName: "",
-                    renameDialogOnOk: undefined
+                    renameDialogOnOk: undefined,
+                    saveAsName: ""
 
                 };
                 this.handleDialogClose = this.handleDialogClose.bind(this);
                 this.handlePresetsMenuClose = this.handlePresetsMenuClose.bind(this);
             }
 
-            handleLoadPluginPreset(presetName: string)
+            handleLoadPluginPreset(instanceId: number)
             {
                 this.handlePresetsMenuClose();
-                this.props.onSelectPreset(presetName);
+                this.model.loadPluginPreset(this.props.instanceId,instanceId);
             }
 
             handlePresetMenuClick(e: SyntheticEvent): void {
@@ -97,47 +105,19 @@ const PluginPresetSelector =
                 this.setState({ presetsMenuAnchorRef: null });
             }
 
-            handlePresetsMenuSave(e: SyntheticEvent): void {
+            handlePluginPresetsMenuSaveAs(e: SyntheticEvent): void {
                 this.handlePresetsMenuClose();
                 e.stopPropagation();
 
-                this.model.saveCurrentPreset();
-            }
-            handlePresetsMenuSaveAs(e: SyntheticEvent): void {
-                this.handlePresetsMenuClose();
-                e.stopPropagation();
-
-                let currentPresets = this.model.presets.get();
-                let item = currentPresets.getItem(currentPresets.selectedInstanceId);
-                if (item == null) return;
-                let name = item.name;
+                let name = this.state.saveAsName;
 
                 this.renameDialogOpen(name, "Save As")
                     .then((newName) => {
-                        return this.model.saveCurrentPresetAs(newName);
+                        this.setState({saveAsName: newName});
+                        return this.model.saveCurrentPluginPresetAs(this.props.instanceId,newName);
                     })
                     .then((newInstanceId) => {
                         // s'fine. dealt with by updates, but we do need error handling.
-                    })
-                    .catch((error) => {
-                        this.showError(error);
-                    })
-                    ;
-            }
-
-            handlePresetsMenuRename(e: SyntheticEvent): void {
-                this.handlePresetsMenuClose();
-                e.stopPropagation();
-
-                let currentPresets = this.model.presets.get();
-                let item = currentPresets.getItem(currentPresets.selectedInstanceId);
-                if (item == null) return;
-                let name = item.name;
-
-                this.renameDialogOpen(name, "Rename")
-                    .then((newName) => {
-                        if (newName === name) return;
-                        return this.model.renamePresetItem(this.model.presets.get().selectedInstanceId, newName);
                     })
                     .catch((error) => {
                         this.showError(error);
@@ -168,6 +148,49 @@ const PluginPresetSelector =
                 return result;
             }
 
+            loadPresets():void {
+                if (!this.currentUri) return;
+                let captureUri: string = this.currentUri;
+                this.model.getPluginPresets(captureUri)
+                .then((presets: PluginUiPresets) => {
+                    if (captureUri === this.currentUri)
+                    {
+                        this.setState({presets: presets});
+                    }
+                })
+                .catch(error => { 
+                    if (captureUri === this.currentUri)
+                    {
+                        this.setState({presets: new PluginUiPresets()});
+                    }
+                });
+            }
+            onPluginPresetsChanged(pluginUri: string): void {
+                if (pluginUri === this.props.pluginUri)
+                {
+                    this.loadPresets();
+
+                }
+            }
+            _pluginPresetsChangedHandle?: PluginPresetsChangedHandle;
+
+            componentDidMount()
+            {
+                this._pluginPresetsChangedHandle = this.model.addPluginPresetsChangedListener(
+                    (pluginUri: string) => {
+                        this.onPluginPresetsChanged(pluginUri);
+                    }
+                );
+            }
+            componentWillUnmount()
+            {
+                if (this._pluginPresetsChangedHandle)
+                {
+                    this.model.removePluginPresetsChangedListener(this._pluginPresetsChangedHandle);
+                    this._pluginPresetsChangedHandle = undefined;
+                }
+            }
+
             currentUri?: string = "";
             componentDidUpdate()
             {
@@ -176,23 +199,9 @@ const PluginPresetSelector =
                     this.currentUri = this.props.pluginUri;
                     if (!this.props.pluginUri)
                     {
-                        this.setState({presets: null});
+                        this.setState({presets: new PluginUiPresets()});
                     } else {
-                        this.setState({presets: null});
-                        let captureUri = this.currentUri;
-                        this.model.getPluginPresets(this.props.pluginUri)
-                        .then((presets: PluginPreset[]) => {
-                            if (captureUri === this.currentUri)
-                            {
-                                this.setState({presets: presets});
-                            }
-                        })
-                        .catch(error => { 
-                            if (captureUri === this.currentUri)
-                            {
-                                this.setState({presets: null});
-                            }
-                        });
+                        this.loadPresets();
                     }
                 }
             }
@@ -214,9 +223,9 @@ const PluginPresetSelector =
             }
 
 
-            handleMenuEditPresets(): void {
+            handleMenuEditPluginPresets(): void {
                 this.handlePresetsMenuClose();
-                this.showEditPresetsDialog(true);
+                this.showEditPluginPresetsDialog(true);
             }
 
             handleSave() {
@@ -229,7 +238,7 @@ const PluginPresetSelector =
                     showEditPresetsDialog: false
                 });
             }
-            showEditPresetsDialog(show: boolean) {
+            showEditPluginPresetsDialog(show: boolean) {
                 this.setState({
                     showPresetsDialog: show,
                     showEditPresetsDialog: true
@@ -252,9 +261,11 @@ const PluginPresetSelector =
             }
 
             render() {
+                let classes = this.props.classes;
+
                 //let classes = this.props.classes;
                 //let classes = this.props.classes;
-                if ((!this.props.pluginUri) || (!this.state.presets) ||this.state.presets.length === 0)
+                if ((!this.props.pluginUri))
                 {
                     return (<div/>);
                 }
@@ -276,23 +287,27 @@ const PluginPresetSelector =
                             }
                             
                         >
-                            <Typography variant="caption" color="textSecondary" style={{marginLeft: 16,marginTop:4,marginBottom: 4}}>Plugin presets</Typography>
+                            <MenuItem onClick={(e) => this.handlePluginPresetsMenuSaveAs(e)}>Save plugin preset...</MenuItem>
+                            <MenuItem onClick={(e) => this.handleMenuEditPluginPresets()}>Manage plugin presets...</MenuItem>
+
+                            { this.state.presets.presets.length !== 0 && 
+                                (<Divider/>)
+                            }
                             {
-                                this.state.presets.map((preset) => {
-                                    return (<MenuItem key={preset.presetUri}
-                                        onClick={(e) => this.handleLoadPluginPreset(preset.presetUri)}>{preset.name}</MenuItem>);
+                                this.state.presets.presets.map((preset) => {
+                                    return (<MenuItem key={preset.instanceId}
+                                        onClick={(e) => this.handleLoadPluginPreset(preset.instanceId)}
+                                        ><img src="img/ic_pluginpreset2.svg" className={classes.itemIcon} alt="" />
+                                        {preset.label}</MenuItem>);
                                 })
                             }
-                            {/*
-                            <Divider />
-                            <MenuItem onClick={(e) => this.handlePresetsMenuSave(e)}>Save plugin preset</MenuItem>
-                            <MenuItem onClick={(e) => this.handlePresetsMenuSaveAs(e)}>Save plugin preset as...</MenuItem>
-                            <MenuItem onClick={(e) => this.handlePresetsMenuRename(e)}>Rename...</MenuItem>
-                            <MenuItem onClick={(e) => this.handleMenuEditPresets()}>Manage presets...</MenuItem>
-                        */}
-
                         </Menu>
-                        <PresetDialog show={this.state.showPresetsDialog} isEditDialog={this.state.showEditPresetsDialog} onDialogClose={() => this.handleDialogClose()} />
+                        <PluginPresetsDialog 
+                            instanceId={this.props.instanceId}
+                            presets={this.state.presets}
+                            show={this.state.showPresetsDialog}
+                            isEditDialog={this.state.showEditPresetsDialog} 
+                            onDialogClose={() => this.handleDialogClose()} />
                         <RenameDialog open={this.state.renameDialogOpen}
                             defaultName={this.state.renameDialogDefaultName}
                             acceptActionName={this.state.renameDialogActionName}

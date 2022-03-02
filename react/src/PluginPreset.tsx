@@ -19,21 +19,69 @@
 
 
 
-export default class PluginPreset {
-    deserialize(input: any): PluginPreset {
-        this.presetUri = input.presetUri;
-        this.name = input.name;
+export class PluginUiPreset {
+    deserialize(input: any): PluginUiPreset {
+        this.instanceId = input.instanceId;
+        this.label = input.label;
         return this;
     }
-    static deserialize_array(input: any) : PluginPreset[] {
-        let result: PluginPreset[] = [];
+    static deserialize_array(input: any) : PluginUiPreset[] {
+        let result: PluginUiPreset[] = [];
         for (let i = 0; i < input.length; ++i)
         {
-            result.push(new PluginPreset().deserialize(input[i]));
+            result.push(new PluginUiPreset().deserialize(input[i]));
         }
         return result;
     }
 
-    presetUri: string = "";
-    name: string = "";
+    instanceId: number = -1;
+    label: string = "";
+
+    static equals(left: PluginUiPreset, right: PluginUiPreset): boolean
+    {
+        return left.instanceId === right.instanceId && left.label === right.label;
+    }
+}
+
+export class PluginUiPresets {
+    deserialize(input: any): PluginUiPresets {
+        this.pluginUri = input.pluginUri;
+        this.presets = PluginUiPreset.deserialize_array(input.presets);
+        return this;
+    }
+
+    clone(): PluginUiPresets {
+        return new PluginUiPresets().deserialize(this);
+    }
+    movePreset(from: number, to: number): void
+    {
+        let t = this.presets[from];
+        this.presets.splice(from,1);
+        this.presets.splice(to,0,t);
+    }
+    getItem(instanceId: number): PluginUiPreset | undefined {
+        for (let i = 0; i < this.presets.length; ++i)
+        {
+            if (this.presets[i].instanceId === instanceId)
+            {
+                return this.presets[i];
+            }
+        }
+        return undefined;
+    }
+    static equals(left: PluginUiPresets,right: PluginUiPresets): boolean
+    {
+        if (left.pluginUri !== right.pluginUri) return false;
+        if (left.presets.length !== right.presets.length) return false;
+        for (let i = 0; i < left.presets.length; ++i)
+        {
+            if (!PluginUiPreset.equals(left.presets[i],right.presets[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    pluginUri: string = "";
+    presets: PluginUiPreset[] = [];
 }

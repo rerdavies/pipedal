@@ -55,8 +55,6 @@ const NARROW_DISPLAY_THRESHOLD = 600;
 const FILTER_STORAGE_KEY = "com.twoplay.pipedal.load_dlg.filter";
 
 
-let lastClickTime: number = 0;
-
 
 const pluginGridStyles = (theme: Theme) => createStyles({
     frame: {
@@ -327,7 +325,8 @@ export const LoadPluginDialog =
             }
 
             onDoubleClick(e: SyntheticEvent, uri: string): void {
-                this.props.onOk(uri);
+                // handled with onClick e.detail which provides better behaviour on Chrome.
+                // this.props.onOk(uri);
             }
 
 
@@ -342,18 +341,15 @@ export const LoadPluginDialog =
             }
 
 
-            onClick(e: SyntheticEvent, uri: string): void {
+            onClick(e: React.MouseEvent<HTMLDivElement>, uri: string): void {
                 e.preventDefault();
-
-                let currentTime = Date.now();
-                let dt = currentTime-lastClickTime;
-                let DOUBLE_CLICK_TIME = 500;
-                let isDoubleClick = dt < DOUBLE_CLICK_TIME;
-                lastClickTime = currentTime;
 
 
                 this.setState({ selected_uri: uri });
 
+                // a better doubleclick: tracks how many recent clicks in the same area.
+                // regardless of whether we re-rendered in the interrim. 
+                let isDoubleClick = e.detail === 2;
                 // we have to synthesize double clicks because 
                 // DOM rewrites interfere with natural double click.
                 if (isDoubleClick)

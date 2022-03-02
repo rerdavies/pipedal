@@ -614,7 +614,6 @@ void json_reader::throw_format_error(const char*error)
     } else {
         for (int i = 0; i < 40; ++i)
         {
-            if (is_.peek()) break;
             int c = get();
             if (c == -1) break;
             if (c == '\r') {
@@ -623,11 +622,12 @@ void json_reader::throw_format_error(const char*error)
             {
                 s << "\\n";
             } else {
-                s << c;
+                s << (char)c;
             }
         }
     }
     s << "'.";
-    throw PiPedalException(s.str());
+    std::string message = s.str();
+    throw PiPedalException(message);
 
 }

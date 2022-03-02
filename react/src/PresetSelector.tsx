@@ -369,7 +369,11 @@ const PresetSelector =
                             acceptActionName={this.state.renameDialogActionName}
                             onClose={() => this.handleRenameDialogClose()}
                             onOk={(name: string) => this.handleRenameDialogOk(name)} />
-                        <UploadDialog onUploaded={(instanceId) => { this.model.loadPreset(instanceId); }}
+                        <UploadDialog 
+                            title='Upload preset'
+                            extension='.piPreset'
+                            uploadPage='uploadPreset'
+                            onUploaded={(instanceId) => { this.model.loadPreset(instanceId); }}
                             open={this.state.openUploadDialog}
                             uploadAfter={-1}
                             onClose={() => { this.setState({ openUploadDialog: false }) }} />

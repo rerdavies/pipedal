@@ -184,8 +184,8 @@ export const MainPage =
 
                 }
             }
-            handleSelectPluginPreset(instanceId: number, presetName: string) {
-                this.model.loadPluginPreset(instanceId, presetName);
+            handleSelectPluginPreset(instanceId: number, presetInstanceId: number) {
+                this.model.loadPluginPreset(instanceId, presetInstanceId);
             }
             onPedalBoardChanged(value: PedalBoard) {
                 this.setState({ pedalBoard: value });
@@ -325,12 +325,11 @@ export const MainPage =
                                 <span className={classes.author}>{author}</span>
                             </span>
                         </div>
-                        <div style={{ flex: "0 0 auto" }}>
+                        <div style={{ flex: "0 0 auto", verticalAlign: "center"  }}>
                             <PluginInfoDialog plugin_uri={pluginUri} />
                         </div>
                         <div style={{ flex: "0 0 auto" }}>
-                            <PluginPresetSelector pluginUri={presetsUri}
-                                onSelectPreset={(presetName) => this.handleSelectPluginPreset(pedalBoardItem!.instanceId, presetName)}
+                            <PluginPresetSelector pluginUri={presetsUri} instanceId={pedalBoardItem?.instanceId ?? 0}
                             />
                         </div>
                     </div>

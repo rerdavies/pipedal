@@ -58,7 +58,8 @@ public:
     constexpr static const char* content_disposition = "Content-Disposition";
     constexpr static const char* access_control_allow_origin = "Access-Control-Allow-Origin";
     constexpr static const char* access_control_allow_methods= "Access-Control-Allow-Methods";
-    constexpr static const char* access_control_allow_headers = "Acess-Control-Allow-Headers";
+    constexpr static const char* access_control_allow_headers = "Access-Control-Allow-Headers";
+    constexpr static const char* access_control_request_headers = "Access-Control-Request-Headers";
     constexpr static const char* origin = "Origin";
     constexpr static const char* date = "Date";
 };

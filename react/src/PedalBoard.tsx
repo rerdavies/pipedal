@@ -133,7 +133,7 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
                 return true;
             }
         }
-        throw new PiPedalArgumentError("Control not found.");
+        return false;
     }
     setMidiBinding(midiBinding: MidiBinding): boolean {
         if (this.midiBindings)
