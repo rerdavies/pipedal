@@ -1,21 +1,21 @@
 
-![Tjtle](docs/Pi-Logo.png)
-# PiPedal v0.1.0-alpha.1
+![Title](docs/PiPedal-logo.png)
+v0.1.0-alpha.1
+
+
+Use your Raspberry Pi as a guitar effects pedal. PiPedal allows you to control and configure your guitar effects via a web interface, using your phone, tablet, or computer. 
+
+PiPedal running on a Raspberry Pi 4 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
+
+PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via desktop browser. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
+
+PiPedal provides a simple configuration tool that allows you to easily set up a WiFi hotspot on your Raspberry Pi which can then be used to connect wirelessly.
+
+PiPedal provides a pre-installed selection of plugins from the ToobAmp collection of plugins. But it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal.  
+
+If your USB audio adapter has midi connectors, you can use midi devices (keyboards or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you want bind PiPedal controls to midi messages. 
 
 ![Screenshot](artifacts/PiPedalSshots.png)
-
-PiPedal is a multi-effect guitar pedal for Raspberry Pi devices, running Raspbian, or Ubuntu. It is controlled via a web interface that has been designed to work well with small-form-factor devices like phones and tablets.
-
-You will need a suitable audio input/output device to use PiPedal, which can be either an external USB audio device, or a Raspberry Pi ADC/DAC hat, providing at least one input and one output audio channel.
-
-PiPedal is controlled via a web app that's been designed to support small-form-factor devices, like phones and tablets, although it works gloriously with desktop browers as well. You should not have to carry around a laptop to control your PiPedal when you're out gigging; and the web interface for PiPedal has been designed with that scenario specifically in mind. Just connect your phone to the PiPedal Wi-Fi hotspot and you have complete control over your PiPedal.
-
-PiPedal uses LV2 audio plugin effects. You will need to install LV2 plugins before you can get started. See the LV2 Plugins section, below, for a list of good plugin collections to get started with.
-
-You can add as many plugins to your patch as your CPU will support (well over a dozen on a Raspberry Pi 4+). Signal chains
-can have an arbitrary number of split chains, which may be A/B-selected or mixed if you wish.
-
-Bind MIDI controls and notes to LV2 plugin controls using the Midi Bindings dialog. USB micro controllers such as the Korg nano series of MIDI controllers, or the AKAI pad controllers are perfectly suited for selecting and tweaking patches while performing; or you can connect regular MIDI controllers and pedalboards via the MIDI ports on your USB Audio device, if it has them.
 
 ## System Requirements
 
@@ -24,34 +24,35 @@ Bind MIDI controls and notes to LV2 plugin controls using the Midi Bindings dial
 
 PiPedal has been tested on the following Operating Systems:
 
-* Raspbian 32-bit
-* Ubuntu Gnome3 21.04 32-bit or 64-bit (Ubuntu KDE will not work)
+* Ubuntu 21.04 or later, 64-bit (recommended)
+* Ubunto 21.04 or later, 32-bit.
+* Raspbian 64-bit or 32-bit
 
-But it should work on most Debian-derived Linux variants.
+64-bit operating systems are preferred, as they delivery significantly higher performance than 32-bit platforms.
 
-If you are using Rasbian, make sure to upgrade to the latest version, because versions of the Linux kernel later than 5.10 provide dramatically improved support for external USB audio devices.
+If you are using Rasbian, make sure to upgrade to the latest version, because versions of the Linux kernel later than 5.10 provide important bug fixes for USB audio devices.
 
-An RT_PREEMPT kernel does provide better latency; but modern PREEMPT kernels provide enough real-time support to run PiPedal without problems.
+An RT_PREEMPT kernel does provide slightly better latency; but modern PREEMPT kernels provide enough real-time support to run PiPedal without problems.
+
+You will also need either an external USB audio adapter, or an internal Raspberry Pi audio hat that provides both audio input and output. Note that the qualitty of the audio adapter dramatically affects the quality of the guitar effects, since amp models are particularly sensitive noise. For best results, you should choose a 24-bit audio adapter that provides at leat 100db (A-weighted) signal-to-noise ratio. I personally use and recommend the Motu M2 USB audio adapter, and do not recommend several cheaper USB audio adapters that sell for less than US$70.
 
 ## Latency
 
 Note that Pipedal is not intended for use when logged in to Raspbian. Screen updates and heavy filesystem activity will cause audio dropouts. For best results, access PiPedal using the web interface remotely, through the Wi-Fi hotspot. Accessing the web interface via Wi-Fi has little or no effect on audio latency or dropouts.
 
-With a good USB audio device, PiPedal should be able to provide stable audio with 4ms (good), or 2ms (excellent) latency on a Raspberry Pi 4 when running on a Realtime kernel. Your actual results may vary.
+With a good USB audio device, PiPedal should be able to provide stable audio with 4ms (good), or 2ms (excellent) latency on a Raspberry Pi 4 when running on a stock PREEMPT kernel. Your actual results may vary.
 
-The current Linux kernel provides best latency on USB audio devices when they are configured with a sampling rate of 48kHZ, and 3 buffers. Cheap USB audio devices (e.g. M-Audio  M-Track Solo, available for less than $60) should be able to run without dropouts at 48kHz with 3x64 sample buffers. Most devices in this class use the same Burr-Brown chipset. Premium USB Audio devices should run stably at 48kHZ 3x32 sample buffers (about 4ms latency). I personally use the MOTU M2 USB audio adapter, which I highly recommmend -- stable, quiet, low-latency, great controls, and built like a tank).
+The current Linux kernel provides best latency on USB audio devices when they are configured with a sampling rate of 48kHz, and 3 buffers. Cheap USB audio devices (e.g. M-Audio  M-Track Solo, available for less than $60) should be able to run without dropouts at 48kHz with 3x64 sample buffers. Most devices in this class use the same Burr-Brown chipset. Premium USB Audio devices should run stably at 48kHZ 3x32 sample buffers (about 2ms latency). I personally use the MOTU M2 USB audio adapter, which I highly recommmend -- stable, quiet, low-latency, great controls, and built like a tank).
 
-Make sure your system is fully updated, and that you are running with a kernel version of 5.10 or later, since version 5.10 of the Linux kernel incorporates significantly improved support for class-compliant USB audio devices. The MOTU M2 will not run on versions of the kernel prior to 5.10.
+Make sure your system is fully updated, and that you are running with a kernel version of 5.10 or later, since version 5.10 of the Linux kernel provides improved support for class-compliant USB audio. The MOTU M2 (and many other USB audio adapters) will not work on versions of the kernel prior to 5.10.
 
-RT_PREEMPT realtime kernels are recommended but not required. PiPedal provides better (but not dramatically better) latency when running on a Raspbian Realtime kernel. Stock Raspbian provides PREEMPT real-time scheduling, but does not currently have all of the realtime patches, so interrupt latency is slightly more variable on stock Rasbian than on custom builds of Raspbian with RT_PREEMPT patches applied. If you want to install a realtime kernel on Raspian, please visit
+Prefer 64-bit operating systems to 32-bit operating systems. ARM processors execute 64-bit code about 40% faster than 32-bit code providing the same functionality.
 
-    https://github.com/kdoren/linux/releases/tag/5.10.35-rt39
-    
-As of September 2021, this site provides a working Realtime kernel for Raspbian 5.10 on Raspberry Pi 3, 3+ and 4, with support for other versions in progress. This kernel may allow you to run with 4ms latency instead of 8ms.
+RT_PREEMPT realtime kernels (when available) are preferred but not required. (As if Februrary 2022, there aren't any good sources for latest versions of Ubuntu or Rasbian). PiPedal provides better (but not dramatically better) latency when running on a Raspbian Realtime kernel. Stock Raspbian provides PREEMPT real-time scheduling, but does not currently have all of the realtime patches, so interrupt latency is slightly more variable on stock Rasbian than on custom builds of Raspbian with RT_PREEMPT patches applied.
 
 The Ubuntu Studio installer will install a realtime kernel if there is one avialable. But -- at least for Ubuntu 21.04 -- there is no stock RT_PREEMPT kernel for ARM aarch64.
 
-On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SDCARD access are performed over separate buses (which is not true for previous versions of Raspberry Pi). It's therefore a good idea to ensure that your USB audio device is either the only device connected to the USB 2.0 ports, or the only device connected to the UBS 3.0 ports. There's no significant advantage to using USB 3.0 over USB 2.0 for USB audio. TCP/IP network traffic does not seem to adversely affect USB audio operation. Filesystem activity does affect USB audio operation on Rasbian, even with an RT_PREEMPT kernel; but interestingly, filesystem activity has much less effect on UBS audio on Ubuntu 21.04, even on a plain PREEMPT kernel. 
+On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SDCARD access are performed over separate buses (which is not true for previous versions of Raspberry Pi). It's therefore a good idea to ensure that your USB audio device is either the only device connected to the USB 2.0 ports, or the only device connected to the UBS 3.0 ports. There's no significant advantage to using USB 3.0 over USB 2.0 for USB audio. Network traffic does not seem to adversely affect USB audio operations on Raspberry Pi 4 (which isn't true on previous versions of Raspberry Pi). Filesystem activity does affect USB audio operation on Rasbian, even with an RT_PREEMPT kernel; but interestingly, filesystem activity has much less effect on UBS audio on Ubuntu 21.04, even on a plain PREEMPT kernel. 
 
 There is some reason to beleive that there are outstanding issues with the Broadcom 2711 PCI Express bus drivers on Rasbian realtime kernels, but as of September 2021, this is still a research issue. If you are brave, there is strong annecdotal evidence that these issues arise when the Pi 4 PCI-express bus goes into and out of power-saving mode, which can be prevented by building a realtime kernel with all power-saving options disabled. But this is currently unconfirmed speculation. And building realtime kernels is well outside the scope of this document. (source: a youtube video on horrendously difficult bugs encountered while supporting RT_PREEMPT, by one of the RT_PREEMPT team members).
 
@@ -87,24 +88,6 @@ There are a number of other useful settings in the hamburger menu/Settings dialo
 input onto the right channel of the USB audio inputs. So you probably want to configure PiPedal to use only the right USB audio input channel. 
 You can choose how to bind USB audio input and output channels (stereo, left only, right only) in the settings dialog. If you are using a Audio 
 device that has more than two channels, you will be offered a list of channels to choose from instead.
-
-## Running on Ubuntu
-
-When running on stock Ubuntu, you should install Ubuntu Studio addons and enable the low-latency settings and performance tweaks options.
-
-    sudo apt install ubuntustudio-installer
-    
-You probably want to install the Audio Plugins options as well. 
-
-To get PiPedal to work properly on Ubuntu while not logged on, you must remove PulseAudio
-
-    sudo apt remove pulseaudio
-    
-If you choose not to do that, it is possible to use PiPedal with pulseaudio installed, but you will have to start and stop the jack audio service installed by PiPedal manually 
-    
-    sudo pipedalconfig --restart
-
-which will kill the Pulse Audio daemon as part of the restart process.
 
 ## Command Line Configuration of PiPedal
 
