@@ -25,7 +25,9 @@ If your USB audio adapter has midi connectors, you can use midi devices (keyboar
 ### [Command-Line Configuration of PiPedal](docs/CommandLine.md)
 ### [Changing the Web Server Port](docs/ChangingTheWebServerPort.md)
 ### [Using LV2 Audio Plugins](docs/UsingLv2Plugins.md)
-### [Which LV2 Plugins does PiPedal support?](docs/WhicLv2PluginsAreSupported.md)
+### [Which LV2 Plugins does PiPedal support?](docs/WhichLv2PluginsAreSupported.md)
+
+ 
 
 ### [Building PiPedal from Source](docs/BuildingPiPedal.md)
 ### [Build Prerequisites](docs/BuildPrerequisites.md)
