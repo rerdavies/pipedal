@@ -17,19 +17,19 @@ If your USB audio adapter has midi connectors, you can use midi devices (keyboar
 
 ![Screenshot](artifacts/PiPedalSshots.png)
 
-### ![System Requirements](docs/SystemRequirements.md)
-### ![Choosing a USB Audio Adapter](docs/SystemRequirements.md)
-### ![Configuring PiPedal After Installation](docs/SystemRequirements.md)
-### ![Audio Latency](docs/SystemRequirements.md)
-### ![Command-Line Configuration of PiPedal](docs/SystemRequirements.md)
-### ![Changing the web server port](docs/SystemRequirements.md)
-### ![Using LV2 Audio Plugins](docs/SystemRequirements.md)
-### ![Which LV2 Plugins does PiPedal support?](docs/SystemRequirements.md)
+### [System Requirements](docs/SystemRequirements.md)
+### [Choosing a USB Audio Adapter](docs/SystemRequirements.md)
+### [Configuring PiPedal After Installation](docs/SystemRequirements.md)
+### [Audio Latency](docs/SystemRequirements.md)
+### [Command-Line Configuration of PiPedal](docs/SystemRequirements.md)
+### [Changing the web server port](docs/SystemRequirements.md)
+### [Using LV2 Audio Plugins](docs/SystemRequirements.md)
+### [Which LV2 Plugins does PiPedal support?](docs/SystemRequirements.md)
 
-### ![Building PiPedal from Source](docs/SystemRequirements.md)
-### ![Build Prerequisites](docs/SystemRequirements.md)
-### ![The Build Systems](docs/SystemRequirements.md)
-### ![How to Debug PiPedal](docs/SystemRequirements.md)
+### [Building PiPedal from Source](docs/SystemRequirements.md)
+### [Build Prerequisites](docs/SystemRequirements.md)
+### [The Build Systems](docs/SystemRequirements.md)
+### [How to Debug PiPedal](docs/SystemRequirements.md)
 
 
 
