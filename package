@@ -1,1 +1,2 @@
-cpack -G DEB -C Release -config build/CPackConfig.cmake pipedal
+cd build
+cpack -G DEB -C Release -config CPackConfig.cmake 

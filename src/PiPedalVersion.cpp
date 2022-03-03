@@ -42,7 +42,7 @@ PiPedalVersion::PiPedalVersion()
 {
     server_ = "PiPedal Server";
     // defined on build command line.
-    serverVersion_ = PROJECT_VER;
+    serverVersion_ = PROJECT_DISPLAY_VERSION;
 #ifdef _WIN32 
    OSVERSIONINFOEXA info;
     ZeroMemory(&info, sizeof(OSVERSIONINFOEA));

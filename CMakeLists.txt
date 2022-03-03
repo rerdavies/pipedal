@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.16.0)
-project(pipedal VERSION 0.1.0)
+project(pipedal 
+    VERSION 0.1.0
+    DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
+    HOMEPAGE_URL "https://github.com/rerdavies/pipedal"
+)
+set (DISPLAY_VERSION "v0.1.0.alpha.1")
 
 include(CTest)
 enable_testing()
@@ -60,9 +65,11 @@ set(CPACK_DEBIAN_PACKAGE_SECTION non-free/sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_PREDEPENDS hostapd authbind )
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
+#set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr/local)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst")
 
