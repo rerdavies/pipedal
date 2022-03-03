@@ -29,7 +29,7 @@ If your USB audio adapter has midi connectors, you can use midi devices (keyboar
 
  
 
-### [Building PiPedal from Source](docs/BuildingPiPedal.md)
+### [Building PiPedal from Source](docs/BuildingPiPedalFromSource.md)
 ### [Build Prerequisites](docs/BuildPrerequisites.md)
 ### [The Build Systems](docs/TheBuildSystem.md)
 ### [How to Debug PiPedal](docs/Debugging.md)
