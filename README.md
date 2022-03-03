@@ -1,4 +1,6 @@
-# PiPedal v0.0.1 (Alpha)
+
+![Tjtle](docs/Pi-Logo.png)
+# PiPedal v0.1.0-alpha.1
 
 ![Screenshot](artifacts/PiPedalSshots.png)
 
