@@ -19,7 +19,8 @@ If your USB audio adapter has midi connectors, you can use midi devices (keyboar
 
 ## System Requirements
 
-* A Raspberry PI 4B or 400, with at least 2GB of RAM to run, and at least 4GB of RAM to build.
+* A Raspberry PI 4B or 400, with at least 2GB of RAM to run (4GB recommended).
+* To build PiPedal, at least 4GB (8GB recommended).
 * An external USB Audio Adapter, or a Pi audio hat with at least one audio input, and one audio output.
 
 PiPedal has been tested on the following Operating Systems:
@@ -32,9 +33,15 @@ PiPedal has been tested on the following Operating Systems:
 
 If you are using Rasbian, make sure to upgrade to the latest version, because versions of the Linux kernel later than 5.10 provide important bug fixes for USB audio devices.
 
-An RT_PREEMPT kernel does provide slightly better latency; but modern PREEMPT kernels provide enough real-time support to run PiPedal without problems.
+## Choosing a USB Audio Adapter
 
-You will also need either an external USB audio adapter, or an internal Raspberry Pi audio hat that provides both audio input and output. Note that the qualitty of the audio adapter dramatically affects the quality of the guitar effects, since amp models are particularly sensitive noise. For best results, you should choose a 24-bit audio adapter that provides at leat 100db (A-weighted) signal-to-noise ratio. I personally use and recommend the Motu M2 USB audio adapter, and do not recommend several cheaper USB audio adapters that sell for less than US$70.
+The qualitty of the audio adapter dramatically affects the quality of the guitar effects. Amp models are particularly sensitive to poor signal-to-noise ratios, because overdrive effects boost the level of noise more than the level of the actual signal. For best results, you should choose a 24-bit audio adapter that provides at leat 105db (A-weighted) signal-to-noise ratio. I personally use and recommend the Motu M2 USB audio adapter, although there are plenty of other pro-quality audio adapters that will work as well. I would urge you to avoid cheaper USB audio adapters that sell for less than US$70, which will almost certainly not provide input signals of sufficient quality.
+
+Ideally, you want a USB adatper that provides an input volume knob. For best results, you want the input signal to be as high as possible without clipping. (Clipped input signals sound horrible). USB audio adapters withouth volume knobs usually do provide internal input volume controls, which have to be set using custom software. PiPedal does not currently allow you to set the internal trim levels of USB audio adapters. By default, these adapters will expect line level-signals. But instrument levels are about 40db quieter than line-level signals; so you will not get good results if you don't adjust the input signal trim levels of your audio adapter. 
+
+Pay close attention to the input VU meter of the first effect in your guitar effect chain. That will indicate the signal level coming into the USB adapter. Ideally, you want the value peaking solidly in the yellow range of the VU meter, and NEVER going red.
+
+Again, the MOTU M2 excels in this regard. It provides large, volume knobs for input and output, along with very readable VU meters which indicate both input and output signal levels. 
 
 ## Latency
 
@@ -57,6 +64,8 @@ On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SDCARD access are perfor
 There is some reason to beleive that there are outstanding issues with the Broadcom 2711 PCI Express bus drivers on Rasbian realtime kernels, but as of September 2021, this is still a research issue. If you are brave, there is strong annecdotal evidence that these issues arise when the Pi 4 PCI-express bus goes into and out of power-saving mode, which can be prevented by building a realtime kernel with all power-saving options disabled. But this is currently unconfirmed speculation. And building realtime kernels is well outside the scope of this document. (source: a youtube video on horrendously difficult bugs encountered while supporting RT_PREEMPT, by one of the RT_PREEMPT team members).
 
 For the meantime, for best results, log off from your Raspberry Pi, and use the web interface only.
+
+You may also want to watch out for temperature throttling of the CPUs. PiPedal displays the current CPU temperature in the bottom-right corner of the display. The system will reduce CPU speed in order prevent damage to the system if the CPU temperature goes above 70C (perhaps above 60C). The Pi 400 already has good heat sinks, so you shouldn't run into problems when running on a Pi 400. If you run into throttling problems on a Raspberry Pi 4, you may want to buy and install a heat sink (ridiculously cheap), or install a cooling fan. As a temporary work-around, you can orient the Raspberry Pi 4 board vertically, which can provide a real and meaningful reduction in CPU temperature.
 
 ## Configuring PiPedal After Installation
 
