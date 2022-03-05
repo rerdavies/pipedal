@@ -1,0 +1,344 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix plug: <http://two-play.com/plugins/toob-tone-stack#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix toobml: <http://two-play.com/plugins/toob-ml#> .
+
+toobml:filterGroup
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "EQ" ;
+    lv2:symbol "filter" .
+
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <http://two-play.com/> .
+
+<http://two-play.com/plugins/toob-ml>
+        a lv2:Plugin ,
+                lv2:SimulatorPlugin ;
+                doap:name "TooB ML Amplifier" ,
+                "TooB ML Amplifier"@en-gb 
+                ;
+        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+         lv2:minorVersion 0 ;
+        lv2:microVersion 13 ;
+        rdfs:comment """
+The TooB ML Amplifier plugin provides emulation of a variety of amplifiers and overdrive pedals that are implemented 
+using artifical intelligence/machine learning modelling of real amplifiers.
+
+A few models are trained to emulate the effects of the gain control on the amps that they model, but most are not.
+
+For convenience, tone controls are provided for rough shaping of tone before the input signal is fed to the neural net models. The tone 
+section can be completely bypassed by setting all tone controls to exactly 0.5.
+
+The TooB ML Amplifier is based heavily on code from the RTNeural project (https://github.com/jatinchowdhury18/RTNeural), by Jatin Chowdhury,
+and uses model files from from the GuitarML Neural Pi project (https://github.com/GuitarML/NeuralPi).
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "ML Amplifier";
+        lv2:requiredFeature urid:map, work:schedule ;
+        lv2:optionalFeature lv2:hardRTCapable;
+        lv2:extensionData state:interface, work:interface;
+
+        patch:readable 
+                <http://two-play.com/plugins/toob#frequencyResponseVector>
+                ;
+
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  0;
+                lv2:symbol "trim" ;
+                lv2:name "Trim";
+                lv2:default 0.0 ;
+                lv2:minimum -30.0 ;
+                lv2:maximum 30.0 ;    
+                units:unit units:db ;
+                rdf:comment "Input volume trim (pre-model)";
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 1 ;
+                lv2:symbol "bass" ;
+                lv2:name "Bass";
+
+                pg:group toobml:filterGroup ;
+
+                lv2:default 0.5 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+
+                rdf:comment "Bass eq (pre-model)";
+        ], [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                lv2:symbol "mid" ;
+                lv2:name "Mid";
+
+                pg:group toobml:filterGroup ;
+
+                lv2:default 0.5 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+
+
+                rdf:comment "Mid eq (pre-model)";
+
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 3 ;
+                lv2:symbol "treble" ;
+                lv2:name "Treble";
+
+                pg:group toobml:filterGroup ;
+
+                lv2:default 0.5 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+
+
+                rdf:comment "Treble eq (pre-model)";
+        ],  
+        [
+                a lv2:InputPort, lv2:ControlPort ;
+                lv2:index 4 ;
+                lv2:symbol "model" ;
+                lv2:name "Model" ;
+                lv2:default 0.0 ; 
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+                lv2:portProperty lv2:enumeration ;
+                lv2:scalePoint 
+                [
+                rdfs:label "BluesJR";
+                rdf:value 0.0
+                ],
+                [
+                rdfs:label "BluesJR FullD";
+                rdf:value 1.0
+                ],
+                [
+                rdfs:label "BossDistortionDs1 highGain";
+                rdf:value 2.0
+                ],
+                [
+                rdfs:label "BossMetalZoneMt2 highGain";
+                rdf:value 3.0
+                ],
+                [
+                rdfs:label "DumbleClone clean";
+                rdf:value 4.0
+                ],
+                [
+                rdfs:label "DumbleClone highGain";
+                rdf:value 5.0
+                ],
+                [
+                rdfs:label "DumbleClone medGain";
+                rdf:value 6.0
+                ],
+                [
+                rdfs:label "EH CockFight highDrive";
+                rdf:value 7.0
+                ],
+                [
+                rdfs:label "FenderPrinceton clean";
+                rdf:value 8.0
+                ],
+                [
+                rdfs:label "FenderPrinceton highLevel";
+                rdf:value 9.0
+                ],
+                [
+                rdfs:label "Goat DistortionGen highDist";
+                rdf:value 10.0
+                ],
+                [
+                rdfs:label "Goat DistortionGen lowDist";
+                rdf:value 11.0
+                ],
+                [
+                rdfs:label "HT40 Overdrive";
+                rdf:value 12.0
+                ],
+                [
+                rdfs:label "LittleBigMuff";
+                rdf:value 13.0
+                ],
+                [
+                rdfs:label "MIAudio Crunchbox highGain";
+                rdf:value 14.0
+                ],
+                [
+                rdfs:label "MIAudio Crunchbox midGain";
+                rdf:value 15.0
+                ],
+                [
+                rdfs:label "MesaBoogieMk2b Clean";
+                rdf:value 16.0
+                ],
+                [
+                rdfs:label "MesaBoogieMk2b Crunch";
+                rdf:value 17.0
+                ],
+                [
+                rdfs:label "MesaBoogieMk2b highGain";
+                rdf:value 18.0
+                ],
+                [
+                rdfs:label "MesaBoogie Studio22 Clean";
+                rdf:value 19.0
+                ],
+                [
+                rdfs:label "MesaBoogie Studio22 highGain";
+                rdf:value 20.0
+                ],
+                [
+                rdfs:label "PAiA AxeGrinder highDist";
+                rdf:value 21.0
+                ],
+                [
+                rdfs:label "ProCoRat";
+                rdf:value 22.0
+                ],
+                [
+                rdfs:label "RockmanXPR Clean";
+                rdf:value 23.0
+                ],
+                [
+                rdfs:label "RockmanXPR Distortion";
+                rdf:value 24.0
+                ],
+                [
+                rdfs:label "Rockman Acoustic";
+                rdf:value 25.0
+                ],
+                [
+                rdfs:label "Rockman Ultimatum highGain";
+                rdf:value 26.0
+                ],
+                [
+                rdfs:label "Soldano crunch";
+                rdf:value 27.0
+                ],
+                [
+                rdfs:label "Soldano highGain";
+                rdf:value 28.0
+                ],
+                [
+                rdfs:label "TS9";
+                rdf:value 29.0
+                ],
+                [
+                rdfs:label "TS9 FullD";
+                rdf:value 30.0
+                ],
+                [
+                rdfs:label "WamplerTumnus highGain";
+                rdf:value 31.0
+                ],
+                [
+                rdfs:label "XoticCompSP";
+                rdf:value 32.0
+                ];
+        ] ,
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 5  ;
+                lv2:symbol "gain" ;
+                lv2:name "Gain";
+                lv2:default 3.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 10.0 ;
+                rdf:comment "Model gain (used by some but not all models)"
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 6 ;
+                lv2:symbol "master" ;
+                lv2:name "Master";
+                lv2:default 0.0 ;
+                lv2:minimum -30.0 ;
+                lv2:maximum 30.0 ;    
+                units:unit units:db ;
+                rdf:comment "Output volume trim (pot-model)";
+        ],  
+
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 7 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ], [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 8 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ]
+        ,
+        [
+                a atom:AtomPort ,
+                  lv2:InputPort;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 9 ;
+                lv2:symbol "control" ;
+                lv2:name "Control" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ] , [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 10 ;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ]        
+        .
+
+

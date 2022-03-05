@@ -16,7 +16,14 @@ add_subdirectory("react")
 
 add_subdirectory("src")
  
+# select LV2 source directory for the current build architecture
 
+message(STATUS "CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
+set(LV2_SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/lv2/${CMAKE_SYSTEM_PROCESSOR})
+
+if (NOT EXISTS ${LV2_SOURCE_DIRECTORY})
+     message(FATAL_ERROR "Lv2 Binaries for architecture '${CMAKE_SYSTEM_PROCESSOR}' have not been provisioned. See lv2/Readme.md")
+endif()
 # add_subdirectory("test")
 
 # add_test(NAME Test COMMAND piddletest)
@@ -42,6 +49,9 @@ install (FILES  ${PROJECT_SOURCE_DIR}/src/template.service
                 ${PROJECT_SOURCE_DIR}/src/templateJack.service 
         DESTINATION /etc/pipedal )
 
+install (DIRECTORY ${LV2_SOURCE_DIRECTORY} 
+       DESTINATION /usr/lib/liv2
+)
 install(CODE 
 [[
   file(GET_RUNTIME_DEPENDENCIES
@@ -71,7 +81,7 @@ set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 
-set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst")
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm")
 
 
 include(CPack)

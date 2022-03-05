@@ -1,0 +1,166 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix plug: <http://two-play.com/plugins/toob-tone-stack#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+
+<http://two-play.com/plugins/toob#frequencyResponseVector>
+        a lv2:Parameter ;
+        rdfs:label "frequencyResponseVector" ;
+        rdfs:range atom:Vector .
+
+<http://two-play.com/plugins/toob-tone-stack#uiState>
+        a lv2:Parameter ;
+        rdfs:label "uiState" ;
+        rdfs:range atom:Vector .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <http://two-play.com/> .
+
+<http://two-play.com/plugins/toob-tone-stack>
+        a lv2:Plugin ,
+                lv2:SimulatorPlugin ;
+                doap:name "TooB Tone Stack" ,
+                "TooB Tone Stack"@en-gb 
+                ;
+        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+         lv2:minorVersion 0 ;
+        lv2:microVersion 13 ;
+        rdfs:comment """
+The TooB Tone Stack emulates the tone controls of either a 59' Bassman or a JCM8000 guitar amplifier.
+
+The TooB Input Stage is part of the TooB Amp Emulation Toolkit. Typically, you would 
+use the following plugins in the following order. 
+
+- TooB Input Stage
+
+- TooB Tone Stack
+
+- Toob Power Stage
+
+- Toob Cabinet Simulator
+""" ;
+
+        mod:brand "TooB";
+        mod:label "Tone Stack";
+        lv2:requiredFeature urid:map ;
+        lv2:optionalFeature lv2:hardRTCapable;
+        lv2:extensionData state:interface;
+        patch:readable 
+                <http://two-play.com/plugins/toob#frequencyResponseVector>
+                ;
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 0 ;
+                lv2:symbol "bass" ;
+                lv2:name "Bass";
+                lv2:default 0.5 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;    
+        ], [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 1 ;
+                lv2:symbol "mid" ;
+                lv2:name "Mid";
+                lv2:default 0.5 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;    
+
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                lv2:symbol "treble" ;
+                lv2:name "Treble";
+                lv2:default 0.5 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 3 ;
+                lv2:symbol "ampmodel" ;
+                lv2:name "Model";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 2.0; 
+                lv2:portProperty lv2:enumeration ;
+
+                 lv2:scalePoint [
+                        rdfs:label "Bassman" ;
+                        rdf:value 0.0
+                ] , [
+                        rdfs:label "JCM8000" ;
+                        rdf:value 1.0
+                ], [
+                        rdfs:label "Baxandall" ;
+                        rdf:value 2.0
+                ];   
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 4 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ], [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 5 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ],[
+                a atom:AtomPort ,
+                  lv2:InputPort;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 6 ;
+                lv2:symbol "control" ;
+                lv2:name "Control" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ] , [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 7 ;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ]
+        .
+
+

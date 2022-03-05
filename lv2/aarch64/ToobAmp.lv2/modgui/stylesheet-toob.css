@@ -1,0 +1,542 @@
+/* SKINS */
+.mod-rack-reaktor{{{cns}}} {
+    background-image:url(/resources/racks/reaktor/reaktor.png{{{ns}}});
+    background-position:center center;
+    background-repeat:no-repeat;
+    font-family:Helvetica,Arial,Sans-serif;
+    height:255px;
+    position:relative;
+    width:458px;
+}
+.mod-rack-power-stage{{{cns}}} {
+    background-image:url(/resources/racks/reaktor/PowerStage.png{{{ns}}});
+   width:701px;
+}
+.mod-rack-cab-sim{{{cns}}} {
+    background-image:url(/resources/racks/reaktor/CabSimulator.png{{{ns}}});
+    width:458px;
+}
+.mod-rack-tone-stack{{{cns}}} {
+    background-image:url(/resources/racks/reaktor/ToneStack.png{{{ns}}});
+    width:341px;
+}
+
+/* THE AUTHOR */
+.mod-rack-reaktor{{{cns}}} .mod-plugin-brand h1 {
+    color:#fff;
+    font-size:14px;
+    left:70px;
+    line-height:1;
+    margin:0;
+    position:absolute;
+    top:20px;
+}
+
+/* PLUGIN'S NAME */
+.mod-rack-reaktor{{{cns}}} .mod-plugin-name h1 {
+    color:#fff;
+    font-size:18px;
+    left:75px;
+    top:26px;
+    opacity: 0.6;
+
+    line-height:1;
+    margin:0;
+    position:absolute;
+}
+
+/* INPUT/OUTPUT */
+.mod-rack-reaktor{{{cns}}} .mod-pedal-input {
+    top:25px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-pedal-output {
+    top:25px;
+}
+
+/* CONTROLS */
+.mod-rack-reaktor{{{cns}}} .mod-control-group {
+    bottom:15px;
+    color:#fff;
+    font-size:10px;
+    height:210px;
+    bottom: 15px;
+    left:32px;
+    position:absolute;
+    right:32px;
+    z-index: 30;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-control-group > div {
+    margin-right:4px;
+}
+
+/* SWITCH ON/OFF GENERAL */
+.mod-rack-reaktor{{{cns}}} .mod-switch {
+    cursor:pointer;
+    float:left;
+    height:73px;
+    position:relative;
+    width:73px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-switch-image {
+    background-image:url(/resources/switches/switch-001.png{{{ns}}});
+    background-position:-9px 0px;
+    background-repeat:no-repeat;
+    background-size:auto 73px;
+    height:73px;
+    width:73px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-switch-image.on {
+    background-position:-82px 0px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-switch-image.off {
+    background-position:-9px 0px;
+}
+
+/* SMALL CONTROL */
+.mod-rack-reaktor{{{cns}}} .mod-bakelite-small {
+    float:left;
+    height:52px;
+    overflow:hidden;
+    position:relative;
+    text-align:center;
+    width:46px;
+}
+.mod-rack-reaktor{{{cns}}} .mod-bakelite-small .mod-bakelite-image {
+    background-image:url(/resources/knobs/bakelite/_strip.png{{{ns}}});
+    background-position:left 0px;
+    background-repeat:no-repeat;
+    background-size:auto 36px;
+    height:36px;
+    margin-top:0px;
+    position:relative;
+    width:36px;
+    margin-left: 5px;
+    margin-right: 5px;
+    z-index:2;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-bakelite-small .mod-bakelite-title {
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    opacity: 0.5;
+    font-size:9px;
+    font-weight:bold;
+    height:16px;
+    left:0;
+    overflow:hidden;
+    position:absolute;
+    right:0;
+    text-transform:uppercase;
+    top:37px;
+    z-index:1;
+}
+
+/* MEDIUM CONTROL */
+.mod-rack-reaktor{{{cns}}} .mod-bakelite {
+    float:left;
+    height:70px;
+    overflow:hidden;
+    position:relative;
+    text-align:center;
+    width:60px;
+}
+.mod-rack-reaktor{{{cns}}} .mod-bakelite .mod-bakelite-image {
+    background-image:url(/resources/knobs/bakelite/_strip.png{{{ns}}});
+    background-position:left 0px;
+    background-repeat:no-repeat;
+    background-size:auto 50px;
+    height:50px;
+    margin-top:0px;
+    position:relative;
+    width:50px;
+    margin-left: 5px;
+    margin-right: 5px;
+    z-index:2;
+}
+
+
+.mod-rack-reaktor{{{cns}}} .mod-bakelite .mod-bakelite-title {
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    opacity: 0.5;
+    font-size:10px;
+    font-weight:bold;
+    height:16px;
+    left:0;
+    overflow:hidden;
+    position:absolute;
+    right:0;
+    text-transform:uppercase;
+    top:49px;
+    z-index:1;
+}
+
+/* ENUMERATED LIST */
+.mod-rack-reaktor{{{cns}}} .mod-enumerated {
+    display:inline-block;
+    overflow:hidden;
+    position:absolute;
+    top:-42px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-enumerated.mod-enumerated-1 {
+    left:135px;
+    width:326px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-enumerated.mod-enumerated-2 {
+    left:476px;
+    width:326px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-enumerated.mod-enumerated-3 {
+    left:820px;
+    width:98px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-enumerated .mod-enumerated-selected {
+    background-color:rgba(255,255,255,.2);
+    background-image:url(/resources/utils/dropdown-arrow-white.png{{{ns}}});
+    background-position:right center;
+    background-repeat:no-repeat;
+    border-radius:4px;
+    box-shadow:inset 1px 1px 5px #000;
+    color:#fff;
+    font-size:14px;
+    height:34px;
+    line-height:2.5;
+    margin-right:8px;
+    overflow:hidden;
+    padding:0 9px;
+}
+
+/* WHEN IS HOVER */
+.mod-rack-reaktor{{{cns}}} .mod-enumerated:hover .mod-enumerated-selected {
+    border-radius:4px 4px 0 0;
+}
+
+/* THE LIST OF OPTIONS */
+.mod-rack-reaktor{{{cns}}} .mod-enumerated .mod-enumerated-list {
+    display:none;
+    background:rgba(0,0,0,.9);
+    height:85px;
+    overflow:auto;
+    position:relative;
+    z-index:3;
+    font-weight:bold;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-enumerated .mod-enumerated-list > div {
+    padding:3px 9px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-enumerated .mod-enumerated-list > div:hover {
+    background:rgba(255,255,255,.2);
+    cursor:pointer;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-enumerated.mod-enumerated-1:hover .mod-enumerated-list,
+.mod-rack-reaktor{{{cns}}} .mod-enumerated.mod-enumerated-2:hover .mod-enumerated-list {
+    width:318px;
+}
+
+.mod-rack-reaktor{{{cns}}} .mod-enumerated.mod-enumerated-3:hover .mod-enumerated-list {
+    width:90px;
+}
+
+/* SEPARATOR */
+.mod-rack-reaktor{{{cns}}} .mod-separator {
+    background:#bbb;
+    border-color:#000;
+    border-style:solid;
+    border-width:0 1px 0 0;
+    display:inline-block;
+    float:left;
+    height:69px;
+    margin-top:2px;
+    width:1px;
+}
+
+.toob_logo_head {
+    background-image:url(/resources/img/toob_logo.png{{{ns}}});
+    background-position:left 0px;
+    background-repeat:no-repeat;
+    background-size:auto 32px;
+    height:32px;
+    width: 20px;
+    margin-bottom: 0px;
+    z-index:2;
+
+    left:50px;
+    top: 20px;
+
+    margin:0;
+    position:absolute;
+
+}
+
+.toob_column {
+    display: flex;
+    flex-shrink: 0;
+    flex-grow: 0;
+    align-self: flex-end;
+
+}
+
+.toob_column_grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content:  flex-start;
+    align-items: flex-end;
+     
+}
+
+.toob_column_row {
+    display: flex;
+    flex: 1;
+    align-self: center;
+
+}
+
+.toob_row_grid {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content:  center;
+    align-items: center;
+     
+}
+.mod-rack-reaktor{{{cns}}} .toob_frequency_response {
+    position: relative;
+    width: 180px;
+    height: 60px;
+    background: #001414;
+    margin-bottom: 2px;
+    border-top: 1px solid Black;
+    border-bottom: 1px solid #666;
+    border-left: 1px solid #222;
+    border-right: 1px solid #333;
+    overflow: hidden;
+
+}
+
+
+
+
+.mod-rack-reaktor{{{cns}}} .toob_frequency_response .hasSVG {
+    overflow: hidden;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 178px;
+    height: 58px;
+}
+
+
+
+.mod-rack-reaktor{{{cns}}} .toob_frequency_response svg {
+    overflow: hidden;
+    position: relative;
+    top: 0px;
+    left: 0px;
+    width: 178px;
+    height: 58px;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_cabsim_fresp {
+    position: relative;
+    width: 240px;
+    height: 60px;
+    margin-bottom: 2px;
+    margin-top: 8px;
+
+ }
+
+ .mod-rack-reaktor{{{cns}}} .toob_frequency_response.toob_tonestack_fresp {
+    margin-bottom: 10px;
+    height: 90px;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_cabsim_fresp .hasSVG {
+    width: 238px; height: 56px;
+}
+.mod-rack-reaktor{{{cns}}} .toob_cabsim_fresp svg {
+    width: 238px; height: 56px;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_tonestack_fresp .hasSVG {
+    width: 176px; height: 86px;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_tonestack_fresp svg {
+    width: 176px; height: 86px;
+}
+
+
+.mod-rack-reaktor{{{cns}}} .toob_scope_background {
+    stroke: #011;
+    stroke-width: 0.5;
+    fill: none;
+}
+.mod-rack-reaktor{{{cns}}} .toob_scope_line {
+    stroke: #AA0;
+    stroke-width: 0.5;
+    fill: none;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_yaxis_major {
+    stroke: #066;
+    stroke-width: 0.5;
+    fill: none;
+}
+.mod-rack-reaktor{{{cns}}} .toob_yaxis_major {
+    stroke: #066;
+    stroke-width: 0.25;
+    fill: none;
+}
+
+.mod-rack-reaktor{{{cns}}}  .toob_vu {
+    width: 48px;
+    height: 130px;
+    margin-bottom: 4px;
+    background: transparent;
+    text-align: center;
+    position: relative;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_vu  .hasSVG {
+    overflow: hidden;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 48px;
+    height: 130px;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_vu  svg {
+    overflow: hidden;
+    position: relative;
+    top: 0px;
+    left: 0px;
+    width: 48px;
+    height: 130px;
+}
+
+.mod-rack-reaktor{{{cns}}}  .toob_micro_vu {
+    width: 20px; height:66px; 
+    margin-right: 40px;
+    margin-bottom: 4px;
+    background: transparent;
+    text-align: center;
+    position: relative;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_micro_vu  .hasSVG {
+    overflow: hidden;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 20px; height:66px; 
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_micro_vu  svg {
+    overflow: hidden;
+    position: relative;
+    top: 0px;
+    left: 0px;
+    width: 20px; height:66px; 
+}
+
+.mod-rack-reaktor{{{cns}}}  .toob_large_vu {
+    width: 48px; height:206px; 
+    margin-bottom: 4px;
+    background: transparent;
+    text-align: center;
+    position: relative;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_large_vu  .hasSVG {
+    overflow: hidden;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 48px; height:206px; 
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_large_vu  svg {
+    overflow: hidden;
+    position: relative;
+    top: 0px;
+    left: 0px;
+    width: 48px; height:206px; 
+}
+
+
+.mod-rack-reaktor{{{cns}}}  .toob_gain {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 4px;
+    background: transparent;
+    text-align: center;
+    position: relative;
+    border-top: 1px solid Black;
+    border-bottom: 1px solid #666;
+    border-left: 1px solid #222;
+    border-right: 1px solid #333;
+    background: #001414;
+}
+
+.mod-rack-reaktor{{{cns}}}  .toob_gain_power-stage {
+    margin-top: 16px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+.mod-rack-reaktor{{{cns}}} .toob_gain  .hasSVG {
+    overflow: hidden;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 48px;
+    height: 48px;
+}
+
+.mod-rack-reaktor{{{cns}}} .toob_gain  svg {
+    overflow: hidden;
+    position: relative;
+    top: 0px;
+    left: 0px;
+    width: 48px;
+    height: 48px;
+}
+
+.mod-rack-reaktor{{{cns}}}  .toob-amp-model{
+    width: 97px; height: 32px;
+    margin-bottom: 4px;
+}
+
+
+.mod-rack-reaktor{{{cns}}}  .toob-amp-model-image {
+    background-image:url(/resources/switches/AmpModel.png{{{ns}}}) !important;
+    width: 97px; height: 32px;
+    background-repeat:no-repeat;
+    background-size: 97px 64px;
+
+}
+.mod-rack-reaktor{{{cns}}}  .toob-amp-model-image.on {
+    background-position-y: -32px;
+}
+
+.mod-rack-reaktor{{{cns}}}  .toob-sag-meter {
+    width: 4px; height: 46px; margin-top: 4px; margin-bottom: 22px; padding: 1px; background: #000; 
+}
+
+.mod-rack-reaktor{{{cns}}}  .toob-sag-meter.hasSVG {
+}
+
+.mod-rack-reaktor{{{cns}}}  .toob-sag-meter svg {
+    width: 2px; height: 44px;
+}

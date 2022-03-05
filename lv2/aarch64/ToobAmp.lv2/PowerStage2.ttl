@@ -1,0 +1,587 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix plug: <http://two-play.com/plugins/toob-power-stage-2#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix modgui: <http://moddevices.com/ns/modgui#> .
+@prefix pstage: <http://two-play.com/plugins/toob-power-stage-2#> .
+
+
+pstage:stage1
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Stage 1" ;
+    lv2:symbol "stage1" .
+
+pstage:stage2
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Stage 2" ;
+    lv2:symbol "stage2" .
+
+
+pstage:stage3
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Stage 3" ;
+    lv2:symbol "stage3" .
+
+
+<http://two-play.com/plugins/toob-power-stage-2#uiState>
+        a lv2:Parameter ;
+        rdfs:label "uiState" ;
+        rdfs:range atom:Vector .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <http://two-play.com/> .
+
+<http://two-play.com/plugins/toob-power-stage-2>
+        a lv2:Plugin ,
+                lv2:SimulatorPlugin ;
+
+        doap:name "TooB2 Power Stage";
+
+        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+         lv2:minorVersion 0 ;
+        lv2:microVersion 1 ;
+
+        mod:brand "TooB";
+        mod:label "Power Stage 2.0";
+        lv2:requiredFeature urid:map ;
+        lv2:optionalFeature lv2:hardRTCapable;
+        lv2:extensionData state:interface;
+        patch:readable 
+                <http://two-play.com/plugins/toob-power-stage-2#uiState>;
+
+rdfs:comment """
+The TooB Power Stage provides flexible and nuanced emulations of guitar amp power stages. 
+The goal of TooB Power Stage is not to inflexibly emulate existing tube power stages, but instead,
+to be better. 
+
+TooB Power Stage provides 3 consecutive gain stages, each of which can be overdriven to varying
+degrees. Power transformer sag is emulated using the SAG and SAGD controls, which emulate the 
+volume and distortion effects introduced when power transformer voltage sags. 
+
+Each gain section expects an input level that is nominally in the range of 12db to 0db. 
+It's ok if the levels are slightly over 0db, but they should not be massively over. Use the 
+Trim control to adjust input signal levels.
+
+The Gain controls use oversampled atan wave shaping to emulate the effect of overdriving
+gain stages. Atan wave shaping provides rich even-order harmonics similar to those produced by a tube
+amp power stage. A modest amount of gain will produce the characteristically "warm" sound of a tube
+gain stage. More extreme settings produce harder overdrive.
+
+Judicious use of the LO CUT and HI CUT controls have interesting and subtle effects on the overall sound. 
+You are encouraged to play with these controls to see what happens. Tightening up low and high frequencies, 
+in early gain sections can allow you to drive the signal much harder in later gain sections without totally
+breaking up. Real amps will usually cut low frequency response at somewhere between 80Hz (Fender) 
+and 140Hz (Marshall).
+
+General experience seems to suggest that gradually increasing the gain in each section allows you to drive
+the signal harder without introducing undesirable effects in the output. However, there definitely interesting
+and subtle differences in tone that can be acheived by not adhering to that rule of thumb. 
+
+The SAG and SAGD controls are important controls. You need to undertand how they work. SAG controls how much
+the overall volume of the output decreases as the transform sags. It provides the subtle "compression" that 
+tube amps provide, which is quite different from the compression provided by compressors. SAGD controls 
+the amount of additional distortion that occurs as the gain stages receive reduced voltage. It provides 
+the "forgiveness" of a good tube amp. Specifically, because SAGD operates in a feedback loop that runs through
+all three gain stages. Increasing the distortion in the gain stages increases the power use of the gain stages; 
+increasing the power use of the gain stages increases the effect of SAG and SAGD which has an opposing effect 
+on power use. The net result is that using SAG and SAGD causes signals to break up more gradually 
+(hence the perceived "forgiveness"). The effects are non-linear, so not easy to describe completely. You
+are strongly urged to experiment with SAG and SAGD settings in order to get best tone results. 
+
+The TooB Power Stage design is based on an experimental design, that unexpectedly produced extraordinarily 
+good amp tones. To be perfectly honest, we have not completely explored the sonic possibilities of the 
+TooB Power Stage. What's known so far: it produces exceptionally pretty clean tones; it can be driven really 
+hard, and seems to preserve an unusual amount of detail in the signal even when being driven hard; and it 
+can definitely produce signals that have many of the most prized features of tube amplifiers: warmth, detail, 
+subtle "compression" without coloration, and forgiving break up. 
+
+Explore!
+
+The TooB Input Stage is part of the TooB Amp Emulation Toolkit. Typically, you would 
+use the following plugins in the following order. 
+
+- TooB Input Stage
+
+- TooB Tone Stack
+
+- Toob Power Stage
+
+- Toob Cabinet Simulator
+""";
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 0 ;
+                pg:group pstage:stage1 ;
+                lv2:symbol "trim1" ;
+                lv2:name "Trim";
+                lv2:default 0.0 ;
+                lv2:minimum -20.0 ;
+                lv2:maximum 20.0 ;    
+                units:unit units:db ;
+                rdfs:comment "Trim input level (stage 1)" ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  1 ;
+                pg:group pstage:stage1 ;
+                lv2:symbol "locut1" ;
+                lv2:name "Lo Cut";
+                lv2:default 30.0 ;
+                lv2:minimum 30.0 ;
+                lv2:maximum 300.0 ;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 30.0
+                ];
+                rdfs:comment "Low frequency cutoff (stage 1). Set to minimum to disable." ;
+
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                pg:group pstage:stage1 ;
+                lv2:symbol "hicut1" ;
+                lv2:name "Hi Cut";
+                lv2:default 19000.0 ;
+                lv2:minimum 1000.0 ;
+                lv2:maximum 19000.0;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 19000.0
+                ];
+                rdfs:comment "High cutoff frequency (stage 1). Set to maximum to disable." ;
+
+        ],          
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+                pg:group pstage:stage1 ;
+
+                lv2:index 3 ;
+                lv2:symbol "shape1" ;
+                lv2:name "Shape1";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;
+                lv2:rangeStep 2;
+                
+                lv2:portProperty lv2:enumeration ;
+                rdfs:comment "Wave Shape" ;
+                lv2:scalePoint [
+                        rdfs:label "atan" ;
+                        rdf:value 0.0
+                ],
+                 [
+                        rdfs:label "triode" ;
+                        rdf:value 1.0
+                ];
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 4 ;
+                pg:group pstage:stage1 ;
+                lv2:symbol "gain1" ;
+                lv2:name "Gain";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;    
+                rdfs:comment "Gain (stage 1)" 
+        ], 
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+                pg:group pstage:stage1 ;
+
+                lv2:index 5 ;
+                lv2:symbol "bias1" ;
+                lv2:name "Bias1";
+                lv2:default 0.0 ;
+                lv2:minimum -2.0 ;
+                lv2:maximum 2.0;
+        ],  
+
+        
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 6 ;
+                pg:group pstage:stage2 ;
+                lv2:symbol "trim2" ;
+                lv2:name "Trim";
+                lv2:default 0.0 ;
+                lv2:minimum -20.0 ;
+                lv2:maximum 20.0 ;    
+                units:unit units:db ;
+                rdfs:comment "Trim input (stage 2)" ;
+        ],  
+        
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 7 ;
+                pg:group pstage:stage2 ;
+                lv2:symbol "locut2" ;
+                lv2:name "Lo Cut";
+                lv2:default 30.0 ;
+                lv2:minimum 30.0 ;
+                lv2:maximum 300.0 ;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 30.0
+                ]
+                 ;
+                rdfs:comment "Low frequency cutoff (stage 2). Set to minimum to disable." ;
+
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 8 ;
+                pg:group pstage:stage2 ;
+                lv2:symbol "hicut2" ;
+                lv2:name "Hi Cut";
+                lv2:default 19000.0 ;
+                lv2:minimum 1000.0 ;
+                lv2:maximum 19000.0;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 19000.0
+                ];
+                rdfs:comment "High cutoff frequency (stage 2). Set to maximum to disable." ;
+
+        ],  
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+                pg:group pstage:stage2 ;
+
+                lv2:index 9 ;
+                lv2:symbol "shape2" ;
+                lv2:name "Shape2";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;
+                lv2:rangeStep 2;
+                
+                lv2:portProperty lv2:enumeration ;
+                rdfs:comment "Wave Shape" ;
+                lv2:scalePoint [
+                        rdfs:label "atan" ;
+                        rdf:value 0.0
+                ],
+                 [
+                        rdfs:label "triode" ;
+                        rdf:value 1.0
+                ]
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 10 ;
+                pg:group pstage:stage2 ;
+                lv2:symbol "gain2" ;
+                lv2:name "Gain";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;    
+                rdfs:comment "Gain (stage 2)" 
+        ],  
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+                pg:group pstage:stage2 ;
+
+                lv2:index 11 ;
+                lv2:symbol "bias2" ;
+                lv2:name "Bias2";
+                lv2:default 0.0 ;
+                lv2:minimum -2.0 ;
+                lv2:maximum 2.0;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 12 ;
+                pg:group pstage:stage2 ;
+                lv2:symbol "gain2_enable" ;
+                lv2:name "Enable2";
+                lv2:default 1 ;
+                lv2:minimum 0 ;
+                lv2:maximum 1;    
+                lv2:portProperty lv2:toggled ;
+                rdfs:comment "Enable gain stage 2" ;
+        ],          
+        
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 13 ;
+                pg:group pstage:stage3 ;
+                lv2:symbol "trim3" ;
+                lv2:name "Trim";
+                lv2:default 0.0 ;
+                lv2:minimum -20.0 ;
+                lv2:maximum 20.0 ;    
+                units:unit units:db ;
+                rdfs:comment "Trim input level (stage 3)." ;
+        ],  
+                [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 14 ;
+                pg:group pstage:stage3 ;
+                lv2:symbol "locut3" ;
+                lv2:name "Lo Cut";
+                lv2:default 30.0 ;
+                lv2:minimum 30.0 ;
+                lv2:maximum 300.0 ;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 30.0
+                ];
+                rdfs:comment "Low frequency cutoff (stage 3). Set to minimum to disable." ;
+
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 15 ;
+                pg:group pstage:stage3 ;
+                lv2:symbol "hicut3" ;
+                lv2:name "Hi Cut";
+                lv2:default 19000.0 ;
+                lv2:minimum 1000.0 ;
+                lv2:maximum 19000.0;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 19000
+                ];
+                rdfs:comment "High cutoff frequency (stage 3). Set to minimum to disable." ;
+
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+                pg:group pstage:stage3 ;
+
+                lv2:index 16 ;
+                lv2:symbol "shape3" ;
+                lv2:name "Shape3";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;
+                lv2:rangeStep 2;
+                
+                lv2:portProperty lv2:enumeration ;
+                rdfs:comment "Wave Shape" ;
+                lv2:scalePoint [
+                        rdfs:label "atan" ;
+                        rdf:value 0.0
+                ],
+                 [
+                        rdfs:label "triode" ;
+                        rdf:value 1.0
+                ]
+        ],  
+
+        
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 17 ;
+                pg:group pstage:stage3 ;
+                lv2:symbol "gain3" ;
+                lv2:name "Gain";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;    
+                rdfs:comment "Gain (stage 3)." 
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+                pg:group pstage:stage3 ;
+
+                lv2:index 18 ;
+                lv2:symbol "bias3" ;
+                lv2:name "Bias3";
+                lv2:default 0.0 ;
+                lv2:minimum -2.0 ;
+                lv2:maximum 2.0;
+        ],  
+
+        
+        
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 19 ;
+                pg:group pstage:stage3 ;
+                lv2:symbol "gain3_enable" ;
+                lv2:name "Enable3";
+                lv2:default 1 ;
+                lv2:minimum 0 ;
+                lv2:maximum 1;    
+                lv2:portProperty lv2:toggled ;
+                rdfs:comment "Enable gain stage 3" ;
+        ],          
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 20 ;
+                lv2:symbol "sag" ;
+                lv2:name "Sag Vol";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+                rdfs:comment "Transformer sag (volume)." ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 21 ;
+                lv2:symbol "sagd" ;
+                lv2:name "Sag Dist";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+                rdfs:comment "Transformer sag (distortion)." ;
+        ], 
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 22 ;
+                lv2:symbol "master" ;
+                lv2:name "Master";
+                lv2:default -0.0 ;
+                lv2:minimum -60.0 ;
+                lv2:maximum 30.0;    
+                units:unit units:db;
+                lv2:scalePoint [
+                        rdfs:label "-60db" ;
+                        rdf:value -60.0
+                ] ,  [
+                        rdfs:label "0db" ;
+                        rdf:value 0.0
+                ], [
+                        rdfs:label "30db" ;
+                        rdf:value -30.0
+                ];
+                rdfs:comment "Master volume." ;
+
+        ], 
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 23 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ] , [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 24 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ],[
+                a atom:AtomPort ,
+                  lv2:InputPort;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 25 ;
+                lv2:symbol "control" ;
+                lv2:name "Control" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ] , [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 26 ;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 27 ;
+                lv2:symbol "sagf" ;
+                lv2:name "SagF";
+                lv2:default 13.0 ;
+                lv2:minimum 5.0 ;
+                lv2:maximum 25.0;    
+                rdfs:comment "Sag filter Fc." ;
+        ]
+        .
+
+

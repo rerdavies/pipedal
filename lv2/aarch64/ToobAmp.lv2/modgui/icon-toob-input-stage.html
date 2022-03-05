@@ -1,0 +1,166 @@
+<div class="mod-pedal mod-rack-reaktor{{{cns}}}">
+    <script id="ToobFrequencyScript" src="/resources/js/ToobFrequencyPlot.js{{{ns}}}" type="application/javascript"  />
+    <script id="ToobVuScript" src="/resources/js/ToobVu.js{{{ns}}}" type="application/javascript"  />
+    <script id="ToobGainScript" src="/resources/js/ToobGain.js{{{ns}}}" type="application/javascript"  />
+        <div mod-role="drag-handle" class="mod-drag-handle" style="height:100%; width: 100%"></div>
+        <div class="mod-control-group">
+            
+            <div class="toob_column_grid" style="height: 100%">
+                <div class="toob_column">
+                    <div class="mod-switch clearfix" mod-role="bypass">
+                        <div class="mod-switch-image" mod-role="bypass-light"></div>
+                    </div>
+                </div>
+                <div class="toob_column" >
+                    <div class="toob_row_grid">
+                        <div id="toob_vu" class="toob_vu toob_row" />
+                        {{#controls.0}}
+                        <div class="mod-bakelite toob_row" title="{{comment}}">
+                            <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                            <span class="mod-bakelite-title">{{name}}</span>
+                        </div>
+                    {{/controls.0}}
+                    </div>
+                </div>
+                <div class="toob_column clearfix">
+                    <div class="toob_row_grid">
+                        <div class="toob_row">
+                            <div class="toob_frequency_response" mode-role="frequency-display">
+                            </div>
+                        </div>
+                        <div class="toob_column_grid toob_row">
+                            {{#controls.1}}
+                            <div class="mod-bakelite toob_column" title="{{comment}}">
+                                <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                                <span class="mod-bakelite-title">{{name}}</span>
+                            </div>
+                            {{/controls.1}}
+                            {{#controls.2}}
+                            <div class="mod-bakelite toob_column" title="{{comment}}">
+                                <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                                <span class="mod-bakelite-title">{{name}}</span>
+                            </div>
+                            {{/controls.2}}
+                            {{#controls.4}}
+                            <div class="mod-bakelite toob_column" title="{{comment}}">
+                                <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                                <span class="mod-bakelite-title">{{name}}</span>
+                            </div>
+                            {{/controls.4}}
+        
+                        </div>
+                        <div class="toob_row">
+                            {{#controls.3}}
+                            <div class="mod-bakelite" title="{{comment}}">
+                                <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                                <span class="mod-bakelite-title">{{name}}</span>
+                            </div>
+                            {{/controls.3}}
+                        </div>
+                    </div>
+                </div>
+                <div class="toob_column clearfix">
+                    <div class="toob_row_grid">
+                        {{#controls.5}}
+                        <div class="mod-bakelite toob_row" title="{{comment}}">
+                            <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                            <span class="mod-bakelite-title">{{name}}</span>
+                        </div>
+                        {{/controls.5}}
+                        <div class="toob_row">
+                            <div class="toob_gain" />
+                        </div>
+
+                        {{#controls.6}}
+                        <div class="mod-bakelite toob_row" title="{{comment}}">
+                            <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                            <span class="mod-bakelite-title">{{name}}</span>
+                        </div>
+                        {{/controls.6}}
+                    </div>
+                </div>
+                <div class="toob_column">
+                    {{#controls.7}}
+                    <div class="mod-bakelite" title="{{comment}}">
+                        <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                        <span class="mod-bakelite-title">{{name}}</span>
+                    </div>
+                    {{/controls.7}}
+                    <div class="toob_row_grid">
+                        {{#controls.8}}
+                        <div class="mod-bakelite toob_row" title="{{comment}}">
+                            <div class="mod-bakelite-image" mod-role="input-control-port" mod-port-symbol="{{symbol}}"></div>
+                            <span class="mod-bakelite-title">{{name}}</span>
+                        </div>
+                        {{/controls.8}}
+                        {{#controls.9}}
+                        <div class="mod-enumerated mod-enumerated-1" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="custom-select">
+                        <div mod-role="input-control-value" mod-port-symbol="{{symbol}}" class="mod-enumerated-selected"></div>
+                        <div class="mod-enumerated-list">
+                            {{#scalePoints}}
+                            <div mod-role="enumeration-option" mod-port-value="{{value}}">{{label}}</div>
+                            {{/scalePoints}}
+                        </div>
+                        </div>
+                        {{/controls.9}}
+                    </div>
+                    {{#controls.10}}
+                    <div class="mod-enumerated mod-enumerated-2" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="custom-select">
+                    <div mod-role="input-control-value" mod-port-symbol="{{symbol}}" class="mod-enumerated-selected"></div>
+                    <div class="mod-enumerated-list">
+                        {{#scalePoints}}
+                        <div mod-role="enumeration-option" mod-port-value="{{value}}">{{label}}</div>
+                        {{/scalePoints}}
+                    </div>
+                    </div>
+                    {{/controls.10}}
+                    {{#controls.11}}
+                    <div class="mod-enumerated mod-enumerated-3" mod-role="input-control-port" mod-port-symbol="{{symbol}}" mod-widget="custom-select">
+                    <div mod-role="input-control-value" mod-port-symbol="{{symbol}}" class="mod-enumerated-selected"></div>
+                    <div class="mod-enumerated-list">
+                        {{#scalePoints}}
+                        <div mod-role="enumeration-option" mod-port-value="{{value}}">{{label}}</div>
+                        {{/scalePoints}}
+                    </div>
+                    </div>
+                    {{/controls.11}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mod-pedal-input">
+        {{#effect.ports.audio.input}}
+        <div class="mod-input mod-input-disconnected" title="{{name}}" mod-role="input-audio-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-input-image"></div>
+        </div>
+        {{/effect.ports.audio.input}}
+        {{#effect.ports.midi.input}}
+        <div class="mod-input mod-input-disconnected" title="{{name}}" mod-role="input-midi-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-input-image"></div>
+        </div>
+        {{/effect.ports.midi.input}}
+        {{#effect.ports.cv.input}}
+        <div class="mod-input mod-input-disconnected" title="{{name}}" mod-role="input-cv-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-input-image"></div>
+        </div>
+        {{/effect.ports.cv.input}}
+    </div>
+
+    <div class="mod-pedal-output">
+        {{#effect.ports.audio.output}}
+        <div class="mod-output mod-output-disconnected" title="{{name}}" mod-role="output-audio-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-output-image"></div>
+        </div>
+        {{/effect.ports.audio.output}}
+        {{#effect.ports.midi.output}}
+        <div class="mod-output mod-output-disconnected" title="{{name}}" mod-role="output-midi-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-output-image"></div>
+        </div>
+        {{/effect.ports.midi.output}}
+        {{#effect.ports.cv.output}}
+        <div class="mod-output mod-output-disconnected" title="{{name}}" mod-role="output-cv-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-output-image"></div>
+        </div>
+        {{/effect.ports.cv.output}}
+    </div>
+</div>

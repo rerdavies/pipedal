@@ -33,7 +33,7 @@ set(LIBNL3_LIBRARIES nl-3 nl-genl-3)
 
 pkg_check_modules(SYSTEMD "systemd")
 if(!SYSTEMD_FOUND)
-  message(ERROR "libsystemd-dev package not installed.")
+  message(STATUS "libsystemd-dev package not installed.")
 endif()
 
 

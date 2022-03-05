@@ -126,17 +126,6 @@ void StopService(bool excludeShutdownService = false)
     }
 }
 
-void Uninstall()
-{
-    StopService();
-    DisableService();
-    silentSysExec(SYSTEMCTL_BIN " stop jack");
-    silentSysExec(SYSTEMCTL_BIN " disable jack");
-    std::filesystem::remove("/usr/bin/systemd/system/" SHUTDOWN_SERVICE ".service");
-    std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
-    std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
-}
-
 void StartService(bool excludeShutdownService = false)
 {
 
@@ -196,9 +185,63 @@ static bool userExists(const char *userName)
     return true;
 }
 
+static void RemoveLine(const std::string&path, const std::string lineToRemove)
+{
+    std::string newLine = PAM_LINE;
+    std::vector<std::string> lines;
+    try
+    {
+        if (std::filesystem::exists(path))
+        {
+            {
+                ifstream f(path);
+                if (!f.is_open())
+                {
+                    throw PiPedalException((std::stringstream() << "Can't open " << path).str());
+                }
+                while (true)
+                {
+                    std::string line;
+                    if (f.eof())
+                        break;
+                    std::getline(f, line);
+                    if (line != lineToRemove)
+                    {
+                        lines.push_back(line);
+                    }
+                }
+            }
+
+            {
+                std::ofstream f(path);
+                if (!f.is_open())
+                {
+                    throw PiPedalException("Can't write to file.");
+                }
+                for (auto&line: lines)
+                {
+                    f << line << endl;
+                }
+            }
+        }
+    }
+    catch (const std::exception &e)
+    {
+        cout  << "Failed to update " << path << ". " << e.what();
+    }
+}
+
+const std::string PAM_LINE = "JACK_PROMISCUOUS_SERVER      DEFAULT=" JACK_SERVICE_GROUP_NAME;
+void UninstallPamEnv()
+{
+    RemoveLine(
+        "/etc/security/pam_env.conf",
+        PAM_LINE
+    );
+}
 void InstallPamEnv()
 {
-    std::string newLine = "JACK_PROMISCUOUS_SERVER      DEFAULT=" JACK_SERVICE_GROUP_NAME;
+    std::string newLine = PAM_LINE;
     std::vector<std::string> lines;
     std::filesystem::path path = "/etc/security/pam_env.conf";
     try
@@ -209,7 +252,7 @@ void InstallPamEnv()
                 ifstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException("Can't open pam_env.conf");
+                    throw PiPedalException((std::stringstream() << "Can't open " << path).str());
                 }
                 while (true)
                 {
@@ -256,7 +299,7 @@ void InstallLimits()
         throw PiPedalException("Failed to create audio service group.");
     }
 
-    std::filesystem::path limitsConfig = "/usr/security/audio.conf";
+    std::filesystem::path limitsConfig = "/usr/security/pipedal.conf";
 
     if (!std::filesystem::exists(limitsConfig))
     {
@@ -264,6 +307,16 @@ void InstallLimits()
         output << "# Realtime priority group used by pipedal/jack daemon" << endl;
         output << "@audio   -  rtprio     95" << endl;
         output << "@audio   -  memlock    unlimited" << endl;
+    }
+}
+
+void UninstallLimits()
+{
+    std::filesystem::path limitsConfig = "/usr/security/pipedal.conf";
+
+    if (std::filesystem::exists(limitsConfig))
+    {
+        std::filesystem::remove(limitsConfig);
     }
 }
 
@@ -314,6 +367,41 @@ void InstallJackService()
 
     MaybeStartJackService();
 }
+
+
+int SudoExec(char **argv)
+{
+    int pbPid;
+    int returnValue = 0;
+
+    if ((pbPid = fork()) == 0)
+    {
+        execv(argv[0], argv);
+        exit(-1);
+    }
+    else
+    {
+        waitpid(pbPid, &returnValue, 0);
+        int exitStatus = WEXITSTATUS(returnValue);
+        return exitStatus;
+    }
+}
+
+void Uninstall()
+{
+    StopService();
+    DisableService();
+    silentSysExec(SYSTEMCTL_BIN " stop jack");
+    silentSysExec(SYSTEMCTL_BIN " disable jack");
+    std::filesystem::remove("/usr/bin/systemd/system/" SHUTDOWN_SERVICE ".service");
+    std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
+    std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
+    UninstallPamEnv();
+    UninstallLimits();
+    sysExec(SYSTEMCTL_BIN " daemon-reload");
+
+}
+
 
 void Install(const std::filesystem::path &programPrefix, const std::string endpointAddress)
 {
@@ -473,23 +561,6 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     cout << "Complete" << endl;
 }
 
-int SudoExec(char **argv)
-{
-    int pbPid;
-    int returnValue = 0;
-
-    if ((pbPid = fork()) == 0)
-    {
-        execv(argv[0], argv);
-        exit(-1);
-    }
-    else
-    {
-        waitpid(pbPid, &returnValue, 0);
-        int exitStatus = WEXITSTATUS(returnValue);
-        return exitStatus;
-    }
-}
 
 int main(int argc, char **argv)
 {

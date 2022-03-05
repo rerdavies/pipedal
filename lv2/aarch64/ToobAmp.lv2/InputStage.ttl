@@ -1,0 +1,267 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix plug: <http://two-play.com/plugins/toob-input_stage#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix inputStage: <http://two-play.com/plugins/toob-input_stage#> .
+
+
+<http://two-play.com/plugins/toob#frequencyResponseVector>
+        a lv2:Parameter ;
+        rdfs:label "frequencyResponseVector" ;
+        rdfs:range atom:Vector .
+
+<http://two-play.com/plugins/toob-input_stage#uiState>
+        a lv2:Parameter ;
+        rdfs:label "uiState" ;
+        rdfs:range atom:Vector .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <http://two-play.com/> .
+
+inputStage:filterGroup
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "EQ" ;
+    lv2:symbol "filter" .
+
+
+<http://two-play.com/plugins/toob-input_stage>
+        a lv2:Plugin ,
+                lv2:SimulatorPlugin ;
+        doap:name "TooB Input Stage" ,
+                "TooB Input Stage"@en-gb 
+                ;
+        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+         lv2:minorVersion 0 ;
+        lv2:microVersion 13 ;
+
+        mod:brand "TooB";
+        mod:label "Input Stage";
+        lv2:requiredFeature urid:map ;
+        lv2:optionalFeature lv2:hardRTCapable;
+        lv2:extensionData state:interface;
+        patch:readable 
+                <http://two-play.com/plugins/toob#frequencyResponseVector>, 
+                <http://two-play.com/plugins/toob-input_stage#uiState>;
+rdfs:comment """
+TooB Input Stage provides basic tools for trimming and shaping guitar input signals
+before feeding them through amp emulations.
+
+Components in the TooB Amp Emulation Toolkit expect guitar signal levels to be nominally close 
+to zero db. Use the Trim control to get your input signal into a reasonable range (ideally, into
+the yellow range on the VU, but not going above zero dB).
+
+In some cases, you can reduce noise in your guitar signal by filtering out low and high frequencies.
+Use the Low and Hi Cut controls to remove unnecessary frequencies. Set the Lo Cut to minimum value
+to disable the Low Cut filter. Se the Hi Cut control to maximum value to disable the Hi Cut filter.
+
+Bright EQ settings allow boosting of high frequencies to simulate the bright input jack
+found on many guitar amps. 
+
+The GateT control provides a noise gate. Set to minimum value to disable.
+
+The Boost control allows simulation of overdriven input stages. Use judiciously. Heavy overdrive 
+effects are better implemented in the TooB Power Stage. 
+
+The TooB Input Stage is part of the TooB Amp Emulation Toolkit. Typically, you would 
+use the following plugins in the following order. 
+
+- TooB Input Stage
+
+- TooB Tone Stack
+
+- Toob Power Stage
+
+- Toob Cabinet Simulator
+""";
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 0 ;
+                lv2:symbol "trim" ;
+                lv2:name "Trim";
+                lv2:default 0.0 ;
+                lv2:minimum -60.0 ;
+                lv2:maximum 30.0 ;    
+                units:unit units:db ;
+                lv2:scalePoint [
+                        rdfs:label "+30dB" ;
+                        rdf:value 20.0
+                ] , [
+                        rdfs:label "-INF" ;
+                        rdf:value -60.0
+                ] 
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 1 ;
+                pg:group inputStage:filterGroup ;
+
+                lv2:symbol "locut" ;
+                lv2:name "Lo Cut";
+                lv2:default 120.0 ;
+                lv2:minimum 30.0 ;
+                lv2:maximum 300.0 ;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 30.0
+                ];
+                rdfs:comment "Low cutoff frequency" 
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                pg:group inputStage:filterGroup ;
+                lv2:symbol "bright" ;
+                lv2:name "Bright";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 25.0 ;    
+                units:unit units:db;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 0.0
+                ];
+                rdfs:comment "Boost high frequencies." ;
+
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 3 ;
+                pg:group inputStage:filterGroup ;
+                lv2:symbol "brightf" ;
+                lv2:name "Bright F";
+                lv2:default 1300.0 ;
+                lv2:minimum 1000.0 ;
+                lv2:maximum 5000.0;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 0.0
+                ];
+                rdfs:comment "Bright frequency." ;
+
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 4 ;
+                pg:group inputStage:filterGroup ;
+                lv2:symbol "hicut" ;
+                lv2:name "Hi Cut";
+                lv2:default 6000.0 ;
+                lv2:minimum 2000.0 ;
+                lv2:maximum 13000.0;    
+                units:unit units:hz;
+                lv2:portProperty epp:logarithmic;
+                lv2:designation param:cutoffFrequency ;
+                lv2:scalePoint[
+                        rdfs:label "OFF" ;
+                        rdf:value 13000.0
+                ];
+                rdfs:comment "Hi cutoff frequency." ;
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 5 ;
+                lv2:symbol "gate_t" ;
+                lv2:name "Gate T";
+                lv2:default -80.0 ;
+                lv2:minimum -80.0 ;
+                lv2:maximum -20.0;    
+                units:unit units:db;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value -80.0
+                ];
+                rdfs:comment "Noise gate threshold. Zero to disable." ;
+
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 6 ;
+                lv2:symbol "boost" ;
+                lv2:name "Boost";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+                units:unit units:db;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 0.0
+                ];
+                rdfs:comment "Simulate overdriving the input buffer." ;
+
+        ], 
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 7 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ] , [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 8 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ],[
+                a atom:AtomPort ,
+                  lv2:InputPort;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 9 ;
+                lv2:symbol "control" ;
+                lv2:name "Control" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ] , [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 10 ;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ]
+        .
+
+
