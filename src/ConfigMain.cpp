@@ -32,6 +32,8 @@
 #include <pwd.h>
 #include "JackServerSettings.hpp"
 
+#define SS(x) ( ((std::stringstream&)(std::stringstream() << x )).str())
+
 using namespace std;
 using namespace pipedal;
 
@@ -196,7 +198,7 @@ static void RemoveLine(const std::string&path, const std::string lineToRemove)
                 ifstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException((std::stringstream() << "Can't open " << path).str());
+                    throw PiPedalException(SS("Can't open " << path));
                 }
                 while (true)
                 {
@@ -215,7 +217,7 @@ static void RemoveLine(const std::string&path, const std::string lineToRemove)
                 std::ofstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException("Can't write to file.");
+                    throw PiPedalException(SS("Can't write to " << path));
                 }
                 for (auto&line: lines)
                 {
@@ -251,7 +253,7 @@ void InstallPamEnv()
                 ifstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException((std::stringstream() << "Can't open " << path).str());
+                    throw PiPedalException(SS("Can't open " << path));
                 }
                 while (true)
                 {
@@ -276,7 +278,7 @@ void InstallPamEnv()
                 std::ofstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException("Can't write to file.");
+                    throw PiPedalException(SS("Can't write to " << path));
                 }
                 for (auto&line: lines)
                 {
