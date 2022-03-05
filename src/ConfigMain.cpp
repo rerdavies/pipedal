@@ -187,7 +187,6 @@ static bool userExists(const char *userName)
 
 static void RemoveLine(const std::string&path, const std::string lineToRemove)
 {
-    std::string newLine = PAM_LINE;
     std::vector<std::string> lines;
     try
     {
