@@ -3,6 +3,3 @@ Pri Description
 -----------------
 5 Re-use plugin instances when rebuilding pedalboard.
 3 OpenSound support.
-2 MIDI Routing.
-2 Bypass view?
-1 Handle LV2 12TET/19TET/24TET Controls
