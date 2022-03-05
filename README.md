@@ -11,7 +11,7 @@ PiPedal's user interface has been specifically designed to work well on small fo
 
 PiPedal provides a simple configuration tool that allows you to easily set up a WiFi hotspot on your Raspberry Pi which can then be used to connect wirelessly.
 
-PiPedal provides a pre-installed selection of plugins from the ToobAmp and Guitarix collection of plugins. But it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal.  
+PiPedal provides a pre-installed selection of LV2 plugins from the ToobAmp collection of plugins. But it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal.  
 
 If your USB audio adapter has midi connectors, you can use midi devices (keyboards or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you want bind PiPedal controls to midi messages. 
 
