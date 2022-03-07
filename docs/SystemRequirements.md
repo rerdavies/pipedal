@@ -6,10 +6,9 @@
 
 PiPedal has been tested on the following Operating Systems:
 
-* Ubuntu 21.04 or later, 64-bit (recommended)
-* Ubuntu 21.04 or later, 32-bit.
-* Raspbian 64-bit or 32-bit
+* Ubuntu 21.04 or later, 64-bit
+* Raspberry Pi OS 64-bit
 
 64-bit operating systems are preferred, as they delivery significantly higher performance than 32-bit platforms.
 
-If you are using Rasbian, make sure to upgrade to the latest version, because versions of the Linux kernel later than 5.10 provide important bug fixes for USB audio devices.
+If you are using Raspberry Pi OS, make sure to upgrade to the latest version, because versions of the Linux kernel later than 5.10 provide important bug fixes for USB audio devices.

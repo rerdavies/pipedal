@@ -1,11 +1,11 @@
 ### How to Debug PiPedal.
 
-PipPedal consists of the following subprojects:
+PipPedal consists of the following components:
 
 *    A web application build in React, found in the react subdirectory.
 
 *    `pipedald`: a Web server, written in C++, serving a web socket, and pre-built HTML components from the React app.
-     All audio services are provided by the pipedal process.
+     All audio services are provided by the pipedald process.
 
 *   `pipedalshutdownd`: A service to execute operations that require root credentials on behalf of pipedald. (e.g. shutdown, reboot,
     and pushing configuration changes).
@@ -15,7 +15,7 @@ PipPedal consists of the following subprojects:
 *   `pipedaltest`: Test cases for pipedald, built using the Catch2 framework.
 
 
-You must stop the pipdeal service before launching a debug instance of pipedald:
+You must stop the pipedald service before launching a debug instance of pipedald:
 
     sudo systemctl stop pipedald
 
@@ -24,7 +24,7 @@ or
     pipedalconfig -stop  #Stops the Jack service as well.
 
 But there's no harm in running a debug react server that's configured to connect to the web 
-socket of a production instance of pipedal on port 80, if you aren't planning to debug C++ code.
+socket of a production instance of pipedald on port 80, if you aren't planning to debug C++ code.
 
 In production, the pipedald web server serves the PiPedal web socket, as well as static HTML from the  built 
 react components. But while debugging, it is much more convenient to use the React debug server for 
@@ -43,12 +43,12 @@ files:
 
 followed by `sudo sysctl -p`. Note that VS Code and the React framework both need this change.
 
-By default, the React app will attempt to contact the pipedal server on ws:*:8080 -- the address on which
-the debug version of systemctld listens on. This can be reconfigured
+By default, the React app will attempt to contact the pipedald server on ws:*:8080 -- the address on which
+the debug version of pipedald listens on. This can be reconfigured
 in the file react/src/public/var/config.json if desired. If you connect to the the pipedald server port, pipedald intercepts requests for this file and 
 points the react app at itself, so the file has no effect when running in production. 
 
-The React app will display the message "Error: Failed to connect to the server", until you start the pipedal websocket server in the VSCode debugger. It's quite reasonable to point the react debug app at a production instance of the pipedal server instead.
+The React app will display the message "Error: Failed to connect to the server", until you start the pipedald websocket server in the VSCode debugger. It's quite reasonable to point the react debug app at a production instance of the pipedald server instead.
 
     react/public/var/config.json: 
     {
@@ -70,8 +70,8 @@ Once CMake has configured itself, build and debug commands are available on the 
 bottom of the Visual Studio Code window. Set the build variant to debug. Set the debug target to "pipedald". 
 Click on the Build button to build the app. Click on the Debug button to launch a debugger.
 
-To get the debugger to launch and run correctly, you will need to set commandline parameters for pipedald. 
-Commandline arguments can be set in the file .vscode/settings.json: 
+To get the debugger to launch and run correctly, you will need to set command-line parameters for pipedald. 
+Command-line arguments can be set in the file .vscode/settings.json: 
 
     {
         ...

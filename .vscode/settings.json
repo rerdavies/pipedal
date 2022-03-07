@@ -93,5 +93,13 @@
 
 
 
-    }
+    },
+    "cSpell.words": [
+        "Guitarix",
+        "hostapd",
+        "pipedalconfig",
+        "pipedald",
+        "pipedalshutdownd",
+        "pipedaltest"
+    ]
 }

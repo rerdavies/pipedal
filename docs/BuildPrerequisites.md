@@ -14,7 +14,7 @@ of `node.js` installed already. Otherwise run the following commands as root to 
 If your distribution doesn't provide a suitable version of nodejs, you can install the current LTS version of nodejs
 with
 
-    # install NodeJS lastest LTS release.
+    # install NodeJS latest LTS release.
     curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
     sudo apt-get install -y nodejs
 
