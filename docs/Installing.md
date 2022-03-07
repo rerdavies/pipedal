@@ -9,5 +9,6 @@ Download the most recent Debian (.deb) package for your platform:
 Install the package by running 
 
 ```
-  sudo dpkg install pipedal_0.1.1_arm64.deb
+  sudo apt update
+  sudo apt-get install ./pipedal_0.1.1_arm64.deb
 ```
