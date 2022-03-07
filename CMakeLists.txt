@@ -15,6 +15,7 @@ enable_testing()
 add_subdirectory("react")
 
 add_subdirectory("src")
+
  
 # select LV2 source directory for the current build architecture
 
