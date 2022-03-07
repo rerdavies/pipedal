@@ -1,6 +1,6 @@
 
 ![Title](docs/PiPedal-logo.png)
-v0.1.1-alpha.1
+v0.1.3-alpha.2
 
 
 Use your Raspberry Pi as a guitar effects pedal. PiPedal allows you to control and configure your guitar effects via a web interface, using your phone, tablet, or computer. 
