@@ -10,5 +10,6 @@ Install the package by running
 
 ```
   sudo apt update
+  cd ~/Downloads  
   sudo apt-get install ./pipedal_0.1.1_arm64.deb
 ```
