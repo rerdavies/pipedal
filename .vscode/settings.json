@@ -97,9 +97,12 @@
     "cSpell.words": [
         "Guitarix",
         "hostapd",
+        "pipedal",
+        "pipedal_0",
         "pipedalconfig",
         "pipedald",
         "pipedalshutdownd",
-        "pipedaltest"
+        "pipedaltest",
+        "ToobAmp"
     ]
 }

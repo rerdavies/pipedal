@@ -1,1 +1,1 @@
-cmake --install build --prefix /usr/local --config Release -v
+cmake --install build --prefix /usr --config Release -v

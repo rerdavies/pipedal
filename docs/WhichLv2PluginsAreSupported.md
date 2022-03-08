@@ -13,5 +13,5 @@ If you install new LV2 plugins, you will have to restart the PiPedal web service
 
    sudo pipedalconfig --restart
 
-Although most LV2 plugins provide GUI interfaces, when running on a LINUX desktop, the LV2 plugin standard is specifically designed to allow remote control 
+Although most LV2 plugins provide GUI interfaces, when running on a Linux desktop, the LV2 plugin standard is specifically designed to allow remote control 
 without using the provided desktop GUI interface. And all but a tiny minority of LV2 plugins (most of them analyzers, unfortunately) support this.

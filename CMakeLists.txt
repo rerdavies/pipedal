@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 0.1.3
+    VERSION 0.1.4
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://github.com/rerdavies/pipedal"
 )
-set (DISPLAY_VERSION "v0.1.3-alpha.2")
+set (DISPLAY_VERSION "v0.1.4-alpha.3")
+
+set (CMAKE_INSTALL_PREFIX "/usr/")
 
 include(CTest)
 enable_testing()
@@ -20,7 +22,7 @@ add_subdirectory("src")
 # select LV2 source directory for the current build architecture
 
 message(STATUS "CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
-set(LV2_SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/lv2/${CMAKE_SYSTEM_PROCESSOR})
+set(LV2_SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/lv2/${CMAKE_SYSTEM_PROCESSOR}/ToobAmp.lv2)
 
 if (NOT EXISTS ${LV2_SOURCE_DIRECTORY})
      message(FATAL_ERROR "Lv2 Binaries for architecture '${CMAKE_SYSTEM_PROCESSOR}' have not been provisioned. See lv2/Readme.md")
@@ -37,7 +39,7 @@ install(
     DIRECTORY config/ DESTINATION /etc/pipedal/config
 )
 install(   
-     FILES ${PROJECT_SOURCE_DIR}/debian/copyright DESTINATION /usr/share/doc/pipedal/copyright
+     FILES ${PROJECT_SOURCE_DIR}/debian/copyright DESTINATION /usr/share/doc/pipedal
 )
 install (
     DIRECTORY ${REACT_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
@@ -51,7 +53,7 @@ install (FILES  ${PROJECT_SOURCE_DIR}/src/template.service
         DESTINATION /etc/pipedal )
 
 install (DIRECTORY ${LV2_SOURCE_DIRECTORY} 
-       DESTINATION /usr/lib/liv2
+       DESTINATION /usr/lib/lv2
 )
 install(CODE 
 [[
@@ -75,8 +77,9 @@ set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_PREDEPENDS hostapd authbind )
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6 (>= 9)")
 #set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
-set(CPACK_PACKAGING_INSTALL_PREFIX /usr/local)
+set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
