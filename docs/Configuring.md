@@ -30,3 +30,6 @@ There are a number of other useful settings in the hamburger menu/Settings dialo
 input onto the right channel of the USB audio inputs. So you probably want to configure PiPedal to use only the right USB audio input channel. 
 You can choose how to bind USB audio input and output channels (stereo, left only, right only) in the settings dialog. If you are using a Audio 
 device that has more than two channels, you will be offered a list of channels to choose from instead.
+
+--------
+[<< Installing PiPedal](Installing.md) | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)

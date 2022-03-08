@@ -8,4 +8,7 @@ Pay close attention to the input VU meter of the first effect in your guitar eff
 
 Again, the MOTU M2 excels in this regard. It provides large, volume knobs for input and output, along with very readable VU meters which indicate both input and output signal levels. 
 
+--------
+[<< Configuring PiPedal After Installation](Configuring.md) | [Optimizing Audio Latency >>](AudioLatency.md)
+
 

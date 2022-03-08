@@ -15,4 +15,7 @@ Things you can do with pipedalconfig:
      - enable or disable the Wi-Fi hotspot.
      
 Run `pipedalconfig --help` for available options.
+
+--------
+[<< Optimizing Audio Latency](AudioLatency.md) | [Changin the Web Server Port >>](ChangingTheWebServerPort.md)
      

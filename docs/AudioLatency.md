@@ -21,3 +21,6 @@ There is some reason to believe that there are outstanding issues with the Broad
 For the meantime, for best results, log off from your Raspberry Pi, and use the web interface only.
 
 You may also want to watch out for temperature throttling of the CPUs. PiPedal displays the current CPU temperature in the bottom-right corner of the display. The system will reduce CPU speed in order prevent damage to the system if the CPU temperature goes above 70C (perhaps above 60C). The Pi 400 already has good heat sinks, so you shouldn't run into problems when running on a Pi 400. If you run into throttling problems on a Raspberry Pi 4, you may want to buy and install a heat sink (ridiculously cheap), or install a cooling fan. As a temporary work-around, you can orient the Raspberry Pi 4 board vertically, which can provide a real and meaningful reduction in CPU temperature.
+
+--------
+[<< System Requirements](ChoosingAUsbAudioAdapter.md) | [Command-Line Configuration of PiPedal >>](CommandLine.md)

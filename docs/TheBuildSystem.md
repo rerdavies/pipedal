@@ -21,3 +21,6 @@ the following shell scripts have been provided in the root of the project.
     
 If you are using a development environment other than Visual Studio Code, it should be fairly straightforward to figure out how
 to incorporate the PiPedal build procedure into your IDE workflow by using the contents of the build shell scripts as a model.
+
+-----
+[<< Build Prerequisites](BuildPrerequisites.md) | [How to Debug PiPedal >>](Debugging.md)

@@ -13,3 +13,6 @@ Install the package by running
   cd ~/Downloads  
   sudo apt-get install ./pipedal_0.1.4_arm64.deb
 ```
+
+--------
+[<< System Requirements](SystemRequirements.md) | [Configuring PiPedal after Installation >>](Configuring.md)

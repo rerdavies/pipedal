@@ -15,3 +15,6 @@ If you install new LV2 plugins, you will have to restart the PiPedal web service
 
 Although most LV2 plugins provide GUI interfaces, when running on a Linux desktop, the LV2 plugin standard is specifically designed to allow remote control 
 without using the provided desktop GUI interface. And all but a tiny minority of LV2 plugins (most of them analyzers, unfortunately) support this.
+
+--------
+[<< Using LV2 Audio Plugins](UsingLv2Plugins.md) | [BuildingPiPedal from Source >>](BuildingPiPedalFromSource.md)

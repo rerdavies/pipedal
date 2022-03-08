@@ -25,3 +25,6 @@ packages on Raspbian, the effort is well worthwhile. The GxPlugins collection pr
 as well as emulations of famous distortion effect pedals that are not part of the main Guitarix distribution.
 
 - https://github.com/brummer10/GxPlugins.lv2
+
+--------
+[<< Changing the Web Server Port](ChangingTheWebServerPort.md) | [Which LV2 Plugins Does PiPedal Support? >>](WhichLv2PluginsAreSupported.md)
