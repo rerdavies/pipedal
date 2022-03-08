@@ -1,16 +1,38 @@
 ## Configuring PiPedal After Installation
 
-After PiPedal is installed, you can connect to the web interface as follows: via the mDNS address "http://pipedal.local" (on Windows, Mac, or iPhone web 
-browsers), at http://127.0.0.1 if you are interactively logged into your Raspberry Pi device, or at port 80 of the current network address of your 
-Raspberry Pi, if you are connected from an Android device (which does not currently support mDNS). 
+Before using PiPedal, you will need to configure settings for the audio device that PiPedal will use.
 
-Android devices do not support mDNS. If you are connecting to PiPedal with an Android device, via the Host Access Point, PiPedal, the PiPedal user interface can be reached at http://172.22.1.1 If you are connecting via the Raspberry Pi's Ethernet port, connect to http://*address of your Pi*:80
+Optionally, you may want to configure PiPedal 
+to provide a Wi-Fi hotspot that you can connect to using your phone. It's fine to use your home Wi-Fi network to connect to PiPedal when your at home;
+but don't forget that when you take PiPedal out to a gig, you will need to configure a Wi-Fi hotspot before you do so.
+
+### First Connection
+
+After PiPedal is installed, you can connect to the web interface as follows: via the following url:
+
+-    "http://pipedal.local" (on Windows, Mac, or iPhone web browsers)
+
+-    http://127.0.0.1 if you are interactively logged into your Raspberry Pi device
+
+-    at port 80 of the current network address of your Raspberry Pi, if you are connecteing from an Android device (which does not currently support mDNS). 
 
 To complete the initial configuration, you must either connect an Ethernet cable to your Raspberry pi so you can connect to the Web App (after which you should be able to connect to http://pipedal.local); or you must launch a web browser on your Raspberry pi device while logged in interactively. 
      
-If you already have another web server on port 80, see the section "Changing the Web Server Port", below.
+If you already have another web server on port 80, see [*How to Change the Web Server Port*](ChangingTheWebServerPort.md).
+
+### Configuring Audio
 
 Once connected, select the Settings menu item on the Hamburger menu at the top left corner of the display. Click on Audio Device Settings to select and configure the audio device you want to use. 
+
+-    IMPORTANT NOTE: If you are using a USB audio device, you *MUST* set the number of buffers to 3, and you *MUST* set the sample rate to 48,000
+     in order to acheive reasonable latency. For other devices, you probably want to use 2 buffers.
+
+You may also need to choose which audio input and output channels you will use for guitar signals, once you have selected and configured 
+an audio device. Must external USB audio devices provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If 
+your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from..
+
+
+### Activating the Wi-Fi Hotspot
 
 You can also activate PiPedal's Wi-Fi hotspot connection from the Settings dialog. Click on the Wifi Hotspot menu item in the Settings dialog.
 
@@ -26,10 +48,11 @@ the Raspberry Pi. Note that the PiPedal hotspot is NOT configured to forward int
 generally, the Raspberry Pi will not be able to access the internet via devices connected to the Wi-Fi hotspot. Consult documentation for hostapd 
 if you want to do this.
 
-There are a number of other useful settings in the hamburger menu/Settings dialog. For example, most USB audio devices route instrument
-input onto the right channel of the USB audio inputs. So you probably want to configure PiPedal to use only the right USB audio input channel. 
-You can choose how to bind USB audio input and output channels (stereo, left only, right only) in the settings dialog. If you are using a Audio 
-device that has more than two channels, you will be offered a list of channels to choose from instead.
+If you are connecting to PiPedal with an Android device, via the Host Access Point, PiPedal, the PiPedal user interface can be reached at http://172.22.1.1 (you'll have to memorize the address or add it to a browser Favorites entry). On other devices, the http://pipedal.local url should work over the Hotspot address as well.
+
+(We're working on providing Wi-Fi P2P services in an imminent release, so this will improve soon). 
+
+
 
 --------
 [<< Installing PiPedal](Installing.md) | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)
