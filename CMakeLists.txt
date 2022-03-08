@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 0.1.4
+    VERSION 0.1.5
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://github.com/rerdavies/pipedal"
 )
-set (DISPLAY_VERSION "v0.1.4-alpha.3")
+set (DISPLAY_VERSION "v0.1.5-beta")
 
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
@@ -75,7 +75,6 @@ set(CPACK_PACKAGE_DESCRIPTION "IoT guitar effect pedal for Raspberry Pi, with ph
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IoT guitar effect for Raspberry Pi")
 set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_PREDEPENDS hostapd authbind )
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "jackd2")
 #set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
