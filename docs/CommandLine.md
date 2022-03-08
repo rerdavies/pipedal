@@ -17,5 +17,5 @@ Things you can do with pipedalconfig:
 Run `pipedalconfig --help` for available options.
 
 --------
-[<< Optimizing Audio Latency](AudioLatency.md) | [Changin the Web Server Port >>](ChangingTheWebServerPort.md)
+[<< Optimizing Audio Latency](AudioLatency.md) | [Changing the Web Server Port >>](ChangingTheWebServerPort.md)
      
