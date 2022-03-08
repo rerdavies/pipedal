@@ -27,7 +27,20 @@ Run the following commands to install dependent libraries required by the PiPeda
     sudo apt install libwebsocketpp-dev authbind
     sudo apt install libsdbusc++-dev libsdbusc++-bin
 
+### Installing Sources
+
+If you are using Visual Studio Code, install the C/C++ Extension Pack (Microsoft).
+
+Clone the rerdavies/pipdal package from github. Use the source control tools from Visual Studio Code, or 
+   
+   cd ~/src    # or whereever you keep your source repositories.
+   git clone https://github.com/rerdavies/pipedal.git 
+   
 Run the following command to install and configure React dependencies.
 
-   ./react-config   # Configure React dependencies.
-  
+    cd ~/src/pipedal
+    ./react-config   # Configure React NPM dependencies.
+   
+--------------------------   
+[<< Building PiPedal from Source](BuildingPiPedalFromSource.md) | [The Build System >>](TheBuildSystem.md)
+ 
