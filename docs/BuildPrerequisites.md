@@ -39,5 +39,8 @@ Clone the rerdavies/pipdal package from github. Use the source control tools fro
 Run the following command to install and configure React dependencies.
 
     cd ~/src/pipedal
-   ./react-config   # Configure React NPM dependencies.
+    ./react-config   # Configure React NPM dependencies.
+   
+--------------------------   
+[<< Building PiPedal from Source](BuildingPiPedalFromSource.md) | [The Build System >>](TheBuildSystem.md)
  
