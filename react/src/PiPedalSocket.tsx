@@ -178,6 +178,9 @@ class PiPedalSocket {
             throw new PiPedalStateError("Server connection lost.");
         }
     }
+
+    canReconnect: boolean = false;
+
     handleClose(_event: any): any {
         if (this.retrying) {
             // treat this as a fatal error.
@@ -189,7 +192,10 @@ class PiPedalSocket {
             return;
 
         }
-        this._reconnect();
+        if (this.canReconnect)
+        {
+            this._reconnect();
+        }
     }
     _reconnect() {
         this._discardReplyReservations();

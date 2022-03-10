@@ -385,10 +385,17 @@ namespace pipedal
             }
             std::shared_ptr<websocketpp::uri> connectionUri = con->get_uri();
 
-            uri requestUri(con->get_uri()->str().c_str());
-
             HttpRequestImpl req(con->get_request());
             HttpResponseImpl res((*con));
+
+            uri requestUri;
+            try {
+                requestUri.set(con->get_uri()->str().c_str());
+            } catch (const std::exception &e)
+            {
+                ServerError(*con, SS("Unexpected error. " <<  e.what()));
+                return;
+            }
 
             if (req.method() == HttpVerb::options)
             {
