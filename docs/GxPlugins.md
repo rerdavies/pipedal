@@ -8,9 +8,10 @@ To install GxPlugins.lv2 on Raspberry Pi OS, Ubuntu or Debian (arm64), download 
 
 Run the following command:
 
+```
    cd ~/Downloads
    sudo apt-get install ./gxplugins_0.9_arm64.deb
-
+```
 ----
 
 gxplugins_0.9_arm64.deb is provided under the terms of the [GNU General Public License v3.0](GPLv3.md).
@@ -18,5 +19,5 @@ gxplugins_0.9_arm64.deb is provided under the terms of the [GNU General Public L
 © 2017 Hermann Meyer <brummer@web.de>  
 © 2019 Olivier Humbert <trebmuh@tuxfamily.org>
 
-Compiled from source from https://github.com/brummer10/GxPlugins.lv2
+Compiled from source at https://github.com/brummer10/GxPlugins.lv2
 
