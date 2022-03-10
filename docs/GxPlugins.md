@@ -4,7 +4,7 @@ GxPlugins.lv2 is a set of extra standalone lv2 plugins designed to compliment th
 
 To install GxPlugins.lv2 on Raspberry Pi OS, Ubuntu or Debian (arm64), download the following file:
 
-*  [GxPlugins.lv2 v0.9 (arm64)](gxplugins_0.9_arm64.deb)
+*  [GxPlugins.lv2 v0.9 (arm64)](https://github.com/rerdavies/pipedal/releases/download/gxplugins_0.9_arm64.deb/gxplugins_0.9_arm64.deb)
 
 Run the following command:
 
