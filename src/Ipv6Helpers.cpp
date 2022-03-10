@@ -85,6 +85,67 @@ static bool IsIpv4OnLocalSubnet(uint32_t ipv4Addres)
     return result;
 }
 
+bool pipedal::ParseHttpAddress(const std::string address,
+        std::string *pUser,
+        std::string *pServer, 
+        int *pPort, 
+        int defaultPort)
+{
+    // strip user.
+    auto start = address.find_first_of('@');
+    if (start != std::string::npos)
+    {
+        if (pUser)
+        {
+            *pUser = address.substr(0,start);
+        }
+        start = start+1;
+    } else {
+        start = 0;
+        if (pUser)
+        {
+            *pUser = "";
+        }
+    }
+    // find the port address.
+    int port = address.length();
+    while (port > 0 && address[port-1] != ':')
+    {
+        if (address[port-1] != ']')
+        {
+            port = address.length();
+            break;
+        }
+        --port;
+    }
+    int portNumber = defaultPort;
+    if (port < address.length() && address[port] == ':')
+    {
+        const char*p = address.c_str()+port+1;
+        if (*p)
+        {
+            portNumber = 0;
+            while (*p)
+            {
+                if (*p >= '0' && *p <= '9')
+                {
+                    portNumber = portNumber*10 + *p -'0';
+                } else {
+                    return false;
+                }
+            }
+        }
+    }
+    if (pPort)
+    {
+        *pPort = portNumber;
+    }
+    if (pServer)
+    {
+        *pServer = address.substr(start,port-start);
+    }
+    return true;
+}
 static std::string StripPortNumber(const std::string &fromAddress)
 {
     std::string address = fromAddress;

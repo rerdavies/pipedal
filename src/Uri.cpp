@@ -140,6 +140,9 @@ void uri::set_()
             {
                 authority_end = p;
                 port_start = p+1;
+            } else if (c == ']') // ignore colon inside ipv6 address.
+            {
+                port_start = nullptr;
             }
             if (c == '/' || c == '?' || c == '#')
             {
