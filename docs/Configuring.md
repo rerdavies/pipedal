@@ -40,7 +40,7 @@ PiPedal uses LV2 audio plugins. There are literally thousands of freely availabl
 Here is a brief list of particularly recommend plugin collections.
 
 | Collection                      | To Install                            | Description      |
-|---------------------------------|:--------------------------------------|------------------|
+|---------------------------------|---------------------------------------|------------------|
 |[Guitarix](https://guitarix.org) | sudo apt install guitarix-lv2         | A large collection guitar amplifiers and effects. |
 | [GxPlugins](https://github.com/brummer10/GxPlugins.lv2)    | [(manual build)](https://github.com/brummer10/GxPlugins.lv2) | Additional effects from the Guitarix collection |
 | Invadio Studio Plugins          | sudo apt install invada-studio-plugins-lv2 | Guitar effects        |
