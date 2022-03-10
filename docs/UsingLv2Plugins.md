@@ -15,7 +15,7 @@ Here is a brief list of particularly recommend plugin collections.
 |[Zam Plugins](https://zamaudio.com) ★★★☆☆ | sudo apt install zam-plugins   | Filtering, EQ, and mastering effects. |
 | [Calf Studio Gear](https:://calf-studio-gear.org) ★★★☆☆ | sudo apt install calf-plugins | Flanger, filters, reverb, rotary speaker &c |
 
-The GxPlugins pack requires a manual build; but it's worth the effort. Just follow the instructions.
+The GxPlugins pack requires a manual build; but it's worth the effort. It contains some extraordinarily beautiful amp and effect emulations, many of which are superior to plugins in the main Guitarix package.
 
 For a more complete (but still incomplete) list of LV2 audio plugins, see [here](https://lv2plug.in/pages/projects.html).
 
