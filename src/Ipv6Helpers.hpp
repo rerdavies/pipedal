@@ -27,5 +27,11 @@ namespace pipedal {
 
     bool IsOnLocalSubnet(const std::string&fromAddress);
 
+    bool ParseHttpAddress(const std::string address,
+        std::string *pUser,
+        std::string *pServer, 
+        int *pPort, 
+        int defaultPort);
+
 
 }

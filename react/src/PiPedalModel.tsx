@@ -836,7 +836,11 @@ class PiPedalModelImpl implements PiPedalModel {
                     })
                     .then((data) => {
                         this.banks.set(new BankIndex().deserialize(data));
-
+                        if (this.webSocket)
+                        {
+                            // MUST not allow reconnect until at least one complete load has finished.
+                            this.webSocket.canReconnect = true;
+                        }
                         return true;
                     })
                     .catch((error) => {
@@ -848,23 +852,6 @@ class PiPedalModelImpl implements PiPedalModel {
             ;
     }
 
-    // requestPlugins(): Promise<boolean> {
-    //     const myRequest = new Request(this.varRequest('uiplugins.json'));
-    //     return fetch(myRequest)
-    //         .then(
-    //             response => response.json()
-    //         )
-    //         .then(data => {
-    //             let plugins = UiPlugin.deserialize_array(data);
-    //             this.ui_plugins.set(plugins);
-    //             return true;
-    //         })
-    //         .catch((error) => {
-    //             this.setError("Can't contact server.\n\n" + error);
-    //             return false;
-    //         });
-
-    // }
     requestCurrentPedalBoard(): Promise<void> {
         const myRequest = new Request(this.varRequest('current_pedalboard.json'));
         return fetch(myRequest)

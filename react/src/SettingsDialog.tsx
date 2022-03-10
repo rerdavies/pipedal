@@ -561,6 +561,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     </div>
                                 </ButtonBase>
+                                
+                                
                                 <ButtonBase className={classes.setting} disabled={!isConfigValid || disableShutdown}
                                     onClick={() => this.handleRestart()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
