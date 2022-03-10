@@ -344,7 +344,7 @@ void InstallJackService()
     }
     if (!userExists(JACK_SERVICE_ACCOUNT_NAME))
     {
-        if (sysExec(USERADD_BIN " " JACK_SERVICE_ACCOUNT_NAME " -g " JACK_SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
+        if (sysExec(USERADD_BIN " " JACK_SERVICE_ACCOUNT_NAME " -g " JACK_SERVICE_GROUP_NAME " -m -N -r") != EXIT_SUCCESS)
         {
             //  throw PiPedalException("Failed to create service account.");
         }
@@ -449,7 +449,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
     if (!userExists(SERVICE_ACCOUNT_NAME))
     {
-        if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -M -N -r") != EXIT_SUCCESS)
+        if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -m --home /var/pipedal/home -N -r") != EXIT_SUCCESS)
         {
             //  throw PiPedalException("Failed to create service account.");
         }
