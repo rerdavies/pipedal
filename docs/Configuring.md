@@ -33,9 +33,9 @@ your USB audio adapter has more than two input or output channels, you will be o
 
 ### Installing LV2 Plugins
 
-By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
-
 PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
+
+By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
 
 Here is a brief list of particularly recommend plugin collections.
 
