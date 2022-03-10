@@ -547,7 +547,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     </div>
                                 </ButtonBase>
-                                <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                <ButtonBase
+                                    style={{display: "none"}}
+                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
                                     onClick={() => this.handleShowGovernorSettingsDialogDialog()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
