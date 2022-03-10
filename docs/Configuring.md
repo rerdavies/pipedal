@@ -31,6 +31,23 @@ You may also need to choose which audio input and output channels you will use f
 an audio device. Must external USB audio devices provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If 
 your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from..
 
+### Installing LV2 Plugins
+
+By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
+
+PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
+
+Here is a brief list of particularly recommend plugin collections.
+
+| Collection                      | To Install                            | Description      |
+|---------------------------------|:--------------------------------------|------------------|
+|[Guitarix](https://guitarix.org) | sudo apt install guitarix-lv2         | A large collection guitar amplifiers and effects. |
+| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2)    | [(manual build)](https://github.com/brummer10/GxPlugins.lv2) | Additional effects from the Guitarix collection |
+| Invadio Studio Plugins          | sudo apt install invada-studio-plugins-lv2 | Guitar effects        |
+|[Zam Plugins](https://zamaudio.com) | sudo apt install zam-plugins   | Filtering, EQ, and mastering effects. |
+| [Calf Studio Gear](https:://calf-studio-gear.org) | sudo apt install calf-plugins | Large collection of effects plugins |
+
+The GxPlugins pack requires a manual build; but it's worth the effort. Just follow the instructions.
 
 ### Activating the Wi-Fi Hotspot
 
