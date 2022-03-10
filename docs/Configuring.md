@@ -41,13 +41,15 @@ Here is a brief list of particularly recommend plugin collections.
 
 | Collection                      | To Install                            | Description      |
 |---------------------------------|---------------------------------------|------------------|
-|[Guitarix](https://guitarix.org) | sudo apt install guitarix-lv2         | A large collection guitar amplifiers and effects. |
-| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2)    | [(manual build)](https://github.com/brummer10/GxPlugins.lv2) | Additional effects from the Guitarix collection |
-| Invadio Studio Plugins          | sudo apt install invada-studio-plugins-lv2 | Guitar effects        |
-|[Zam Plugins](https://zamaudio.com) | sudo apt install zam-plugins   | Filtering, EQ, and mastering effects. |
-| [Calf Studio Gear](https:://calf-studio-gear.org) | sudo apt install calf-plugins | Large collection of effects plugins |
+|[Guitarix](https://guitarix.org) ★★★★☆ | sudo apt install guitarix-lv2         | A large collection guitar amplifiers and effects. |
+| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | [(manual build)](https://github.com/brummer10/GxPlugins.lv2) | Additional effects from the Guitarix collection |
+| Invadio Studio Plugins ★★★☆☆         | sudo apt install invada-studio-plugins-lv2 | Delays, distortion, filters, phaser, reverb |
+|[Zam Plugins](https://zamaudio.com) ★★★☆☆ | sudo apt install zam-plugins   | Filtering, EQ, and mastering effects. |
+| [Calf Studio Gear](https:://calf-studio-gear.org) ★★★☆☆ | sudo apt install calf-plugins | Flanger, filters, reverb, rotary speaker &c |
 
 The GxPlugins pack requires a manual build; but it's worth the effort. Just follow the instructions.
+
+For a more complete (but still incomplete) list of LV2 audio plugins, see [here](https://lv2plug.in/pages/projects.html).
 
 ### Activating the Wi-Fi Hotspot
 
