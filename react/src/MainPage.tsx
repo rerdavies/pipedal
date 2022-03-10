@@ -114,11 +114,17 @@ export const MainPage =
             constructor(props: MainProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
+                let pedalboard = this.model.pedalBoard.get();
+                let selectedPedal = -1;
+                if (pedalboard.items.length !== 0)
+                {
+                    selectedPedal = pedalboard.items[0].instanceId;
+                }
 
                 this.state = {
-                    selectedPedal: -1,
+                    selectedPedal: selectedPedal,
                     loadDialogOpen: false,
-                    pedalBoard: this.model.pedalBoard.get(),
+                    pedalBoard: pedalboard,
                     addMenuAnchorEl: null,
                     splitControlBar: this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD,
                     horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
@@ -188,7 +194,15 @@ export const MainPage =
                 this.model.loadPluginPreset(instanceId, presetInstanceId);
             }
             onPedalBoardChanged(value: PedalBoard) {
-                this.setState({ pedalBoard: value });
+                let selectedItem = -1;
+                if (value.items.length !== 0)
+                {
+                    selectedItem = value.items[0].instanceId;
+                }
+                this.setState({ 
+                    pedalBoard: value,
+                    selectedPedal: selectedItem
+                 });
             }
             onDeletePedal(instanceId: number): void {
                 let result = this.model.deletePedalBoardPedal(instanceId);
