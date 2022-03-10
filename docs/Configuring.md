@@ -31,6 +31,14 @@ You may also need to choose which audio input and output channels you will use f
 an audio device. Must external USB audio devices provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If 
 your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from..
 
+### Installing LV2 Plugins
+
+PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
+
+By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
+
+See [_Using LV2 Plugins_](UsingLv2Plugins.md) for more details, and for some concrete recommendataions.
+
 
 ### Activating the Wi-Fi Hotspot
 

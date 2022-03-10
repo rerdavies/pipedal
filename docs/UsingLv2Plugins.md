@@ -1,30 +1,24 @@
 ## Using LV2 PLugins
 
-PiPedal uses standard LV2 audio plugins for effects. There's a huge variety of LV2 guitar effect plugins, and plugins collections, many 
-of which are specifically intended for use as guitar effect plugins. Ubuntu Studio comes with an enormous collection of LV2 plugins preinstalled. On Rasbian, you will have to manually select and install the plugins you want to use.
+PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
 
-The following LV2 Plugin collections (all recommended) are available on both Rasbian and Ubuntu.
+By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
 
-  sudo apt install guitarix-lv2     # https://guitarix.org/
-  
-  sudo apt install zam-plugins    # http://www.zamaudio.com/
-  
-  sudo apt install mda-lv2  # http://drobilla.net/software/mda-lv2/
-  
-  sudo apt install calf-plugins  # http://calf-studio-gear.org/
-  
-  sudo apt install fomp  # http://drobilla.net/software/fomp/
+Here is a brief list of particularly recommend plugin collections.
 
-But there are many more.
+| Collection                      | To Install                            | Description      |
+|---------------------------------|---------------------------------------|------------------|
+|[Guitarix](https://guitarix.org) ★★★★☆ | sudo apt install guitarix-lv2         | A large collection of guitar amplifiers and effects. |
+| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | [(manual build)](https://github.com/brummer10/GxPlugins.lv2) | Additional effects from the Guitarix collection |
+| [MDA Plugins](http://drobilla.net/software/mda-lv2.html) ★★★★☆ | sudo apt install mda-lv2 | 36 high-quality plugs |
+| Invadio Studio Plugins ★★★☆☆         | sudo apt install invada-studio-plugins-lv2 | Delays, distortion, filters, phaser, reverb |
+|[Zam Plugins](https://zamaudio.com) ★★★☆☆ | sudo apt install zam-plugins   | Filtering, EQ, and mastering effects. |
+| [Calf Studio Gear](https:://calf-studio-gear.org) ★★★☆☆ | sudo apt install calf-plugins | Flanger, filters, reverb, rotary speaker &c |
 
-Visit https://lv2plug.in/pages/projects.html for more suggestions.
+The GxPlugins pack requires a manual build; but it's worth the effort. It contains some extraordinarily beautiful amp and effect emulations, many of which are superior to plugins in the main Guitarix package.
 
-There is also a set of supplementary Gx effect plugins which did not make it into the main Guitarix distribution. You will
-have to compile these plugins yourself, as they are not currently available via apt. But if you are comfortable building
-packages on Raspbian, the effort is well worthwhile. The GxPlugins collection provides a number of excellent boutique amp emulations,
-as well as emulations of famous distortion effect pedals that are not part of the main Guitarix distribution.
+For a more complete (but still incomplete) list of LV2 audio plugins, see [here](https://lv2plug.in/pages/projects.html).
 
-- https://github.com/brummer10/GxPlugins.lv2
 
 --------
 [<< Changing the Web Server Port](ChangingTheWebServerPort.md) | [Which LV2 Plugins Does PiPedal Support? >>](WhichLv2PluginsAreSupported.md)
