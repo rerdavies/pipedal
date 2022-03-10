@@ -9,7 +9,7 @@ Here is a brief list of particularly recommend plugin collections.
 | Collection                      | To Install                            | Description      |
 |---------------------------------|---------------------------------------|------------------|
 |[Guitarix](https://guitarix.org) ★★★★☆ | sudo apt install guitarix-lv2         | A large collection of guitar amplifiers and effects. |
-| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | [(manual build)](https://github.com/brummer10/GxPlugins.lv2) | Additional effects from the Guitarix collection |
+| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | [Install GxPlugsin.lv2](GxPlugins.md) | Additional effects from the Guitarix collection |
 | [MDA Plugins](http://drobilla.net/software/mda-lv2.html) ★★★★☆ | sudo apt install mda-lv2 | 36 high-quality plugs |
 | Invadio Studio Plugins ★★★☆☆         | sudo apt install invada-studio-plugins-lv2 | Delays, distortion, filters, phaser, reverb |
 |[Zam Plugins](https://zamaudio.com) ★★★☆☆ | sudo apt install zam-plugins   | Filtering, EQ, and mastering effects. |
