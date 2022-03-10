@@ -47,7 +47,9 @@
                 "/etc/pipedal/config",
                 "/etc/pipedal/react",
                 "-port",
-                "0.0.0.0:8080"
+                "0.0.0.0:8080",
+                "-shutdownPort",
+                "3147"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -26,6 +26,7 @@
 #include "PiPedalConfiguration.hpp"
 #include "ShutdownClient.hpp"
 #include "SplitEffect.hpp"
+#include "CpuGovernor.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -76,14 +77,31 @@ void PiPedalModel::Close()
 
 PiPedalModel::~PiPedalModel()
 {
-    CurrentPreset currentPreset;
-    currentPreset.modified_ = this->hasPresetChanged;
-    currentPreset.preset_ = this->pedalBoard;
-    storage.SaveCurrentPreset(currentPreset);
-    
-    if (jackHost)
+    try {
+        ShutdownClient::UnmonitorGovernor();
+    } catch (...) // noexcept here!
     {
-        jackHost->Close();
+
+    }
+
+    try {
+        CurrentPreset currentPreset;
+        currentPreset.modified_ = this->hasPresetChanged;
+        currentPreset.preset_ = this->pedalBoard;
+        storage.SaveCurrentPreset(currentPreset);
+    } catch (...)
+    {
+        
+    }
+    
+    try {
+        if (jackHost)
+        {
+            jackHost->Close();
+        }
+    } catch (...)
+    {
+
     }
 }
 
@@ -134,7 +152,7 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
     this->webRoot = configuration.GetWebRoot();
     this->jackServerSettings.ReadJackConfiguration();
 
-
+    ShutdownClient::MonitorGovernor(storage.GetGovernorSettings());
 
     // lv2Host.Load(configuration.GetLv2Path().c_str());
 
@@ -594,6 +612,39 @@ bool PiPedalModel::RenamePreset(int64_t clientId, int64_t instanceId, const std:
     }
 }
 
+GovernorSettings PiPedalModel::GetGovernorSettings()
+{
+    {
+        std::lock_guard<std::recursive_mutex> guard(mutex);
+        GovernorSettings result;
+        result.governor_ = storage.GetGovernorSettings();
+        result.governors_ = pipedal::GetAvailableGovernors();
+        return result;
+    }
+}
+void PiPedalModel::SetGovernorSettings(const std::string& governor)
+{
+    std::lock_guard<std::recursive_mutex> guard(mutex);
+    ShutdownClient::SetGovernorSettings(governor);
+
+    this->storage.SetGovernorSettings(governor);
+    
+    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+    {
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+        for (size_t i = 0; i < n; ++i)
+        {
+            t[i]->OnGovernorSettingsChanged(governor);
+        }
+        delete[] t;
+    }
+
+}
+    
 void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings)
 {
     std::lock_guard<std::recursive_mutex> guard(mutex);

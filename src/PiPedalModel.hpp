@@ -20,6 +20,7 @@
 #pragma once
 #include <mutex>
 #include "Lv2Host.hpp"
+#include "GovernorSettings.hpp"
 #include "PedalBoard.hpp"
 #include "Storage.hpp"
 #include "Banks.hpp"
@@ -57,6 +58,7 @@ public:
     virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) = 0;
     virtual void OnNotifyAtomOutput(int64_t clientModel,uint64_t instanceId,const std::string&atomType, const std::string&atomJson) = 0;
     virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings&wifiConfigSettings) = 0;
+    virtual void OnGovernorSettingsChanged(const std::string &governor) = 0;
     virtual void Close() = 0;
 };
 
@@ -193,6 +195,9 @@ public:
 
     void SetWifiConfigSettings(const WifiConfigSettings&wifiConfigSettings);
     WifiConfigSettings GetWifiConfigSettings();
+    
+    void SetGovernorSettings(const std::string& governor);
+    GovernorSettings GetGovernorSettings();
 
 
 

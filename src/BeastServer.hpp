@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/network_v6.hpp>
 #include <cstring>
 
 
@@ -164,11 +164,33 @@ public:
         HttpResponse &res,
         std::error_code &ec) = 0;
 
+    virtual void head_response(
+        const std::string&fromAddress,
+        const uri&request_uri,
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec) {
+        head_response(request_uri,req,res,ec);
+    }
+
+
+
     virtual void get_response(
         const uri&request_uri,
         const HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec) = 0;
+
+    virtual void get_response(
+        const std::string&fromAddress,
+        const uri&request_uri,
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec)
+        {
+            get_response(request_uri,req,res,ec);
+        } 
+
 
     virtual void post_response(
         const uri&request_uri,
@@ -178,6 +200,17 @@ public:
     {
         get_response(request_uri,req,res,ec);    
     }
+    virtual void post_response(
+        const std::string&fromAddress,
+        const uri&request_uri,
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec) 
+    {
+        post_response(
+            request_uri,req,res,ec);
+    }
+
 };
 
 class BeastServer {

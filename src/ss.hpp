@@ -19,23 +19,8 @@
 
 #pragma once
 
-#include <string>
-#include "JackServerSettings.hpp"
-#include "WifiConfigSettings.hpp"
+#include <sstream>
+#include <iostream>
 
-namespace pipedal {
-
-
-class ShutdownClient {
-    static bool WriteMessage(const char*message);
-public:
-    static bool CanUseShutdownClient();
-    static bool RequestShutdown(bool restart);
-    static bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
-    static void SetWifiConfig(const WifiConfigSettings & settings);
-    static void SetGovernorSettings(const std::string & governor);
-    static void MonitorGovernor(const std::string &governor);
-    static void UnmonitorGovernor();
-};
-
-} // namespace
+// usage:   SS("xyz" << 123 << 45.6) returning a std::string rvalue.
+#define SS(x) ( ((std::stringstream&)(std::stringstream() << x )).str())

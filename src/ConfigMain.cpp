@@ -650,7 +650,7 @@ int main(int argc, char **argv)
              << "                  (only valid with the -install option). Usually determined " << endl
              << "                  automatically." << endl
              << endl
-             << "    --uninstall   Remove installed services and service accounts." << endl
+             << "    --uninstall   Remove installed services." << endl
              << endl
              << "    --enable      Start the pipedal service at boot time." << endl
              << endl
@@ -668,10 +668,11 @@ int main(int argc, char **argv)
              << "                  web server will listen on 0.0.0.0 (any)." << endl
              << endl
              << "   --enable_ap <country_code> <ssid> <wep_password> <channel>" << endl
-             << "                  Enable the Wi-Fi access point. <country_code> is the 2-letter " << endl
-             << "                  ISO-3166 country code for the country in which you are currently" << endl
-             << "                  located. The country code determines which channels may be legally" << endl
-             << "                  used in (and which features need to be enabled) in order to use a " << endl
+             << "                  Enable the Wi-Fi access point. <country_code> is the " << endl
+             << "                  2-letter ISO-3166 country code for the country in " << endl
+             << "                  which you are currently located. The country code " << endl
+             << "                  determines which channels may be legally used in (and " << endl
+             << "                  which features need to be enabled) in order to use a " << endl
              << "                  Wi-Fi channel in your legislative regime." << endl
              << endl
              << "   --disable_ap    Disabled the Wi-Fi access point." << endl

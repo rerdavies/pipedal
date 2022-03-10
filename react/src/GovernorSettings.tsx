@@ -17,25 +17,19 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
-
-#include <string>
-#include "JackServerSettings.hpp"
-#include "WifiConfigSettings.hpp"
-
-namespace pipedal {
 
 
-class ShutdownClient {
-    static bool WriteMessage(const char*message);
-public:
-    static bool CanUseShutdownClient();
-    static bool RequestShutdown(bool restart);
-    static bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
-    static void SetWifiConfig(const WifiConfigSettings & settings);
-    static void SetGovernorSettings(const std::string & governor);
-    static void MonitorGovernor(const std::string &governor);
-    static void UnmonitorGovernor();
-};
+export default class GovernorSettings {
+    deserialize(input: any) : GovernorSettings{
+        this.governors = input.governors;
+        this.governor = input.governor;
+        return this;
+    }
+    clone(): GovernorSettings
+    {
+        return new GovernorSettings().deserialize(this);
+    }
+    governors: string[] = ["ondemand","performance"];
+    governor: string = "performance";
 
-} // namespace
+}

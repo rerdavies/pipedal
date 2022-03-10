@@ -53,5 +53,4 @@ template <typename T> class TypeDisplay;
 #include "lv2/parameters.lv2/parameters.h"
 #include "lv2/units.lv2/units.h"
 */
-
-#define SS(x) ( ((std::stringstream&)(std::stringstream() << x )).str())
+#include "ss.hpp"

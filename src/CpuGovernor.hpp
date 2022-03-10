@@ -17,25 +17,15 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
 
+#pragma once 
 #include <string>
-#include "JackServerSettings.hpp"
-#include "WifiConfigSettings.hpp"
+#include <vector>
 
 namespace pipedal {
+    std::string GetCpuGovernor();
 
+    void SetCpuGovernor(const std::string &governor);
 
-class ShutdownClient {
-    static bool WriteMessage(const char*message);
-public:
-    static bool CanUseShutdownClient();
-    static bool RequestShutdown(bool restart);
-    static bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
-    static void SetWifiConfig(const WifiConfigSettings & settings);
-    static void SetGovernorSettings(const std::string & governor);
-    static void MonitorGovernor(const std::string &governor);
-    static void UnmonitorGovernor();
+    std::vector<std::string> GetAvailableGovernors();
 };
-
-} // namespace

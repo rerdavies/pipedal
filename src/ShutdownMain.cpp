@@ -23,6 +23,7 @@
 
 #include "pch.h"
 #include "CommandLineParser.hpp"
+#include "CpuGovernor.hpp"
 #include <iostream>
 #include <cstdint>
 #include <boost/asio.hpp>
@@ -40,7 +41,10 @@
 #include "SetWifiConfig.hpp"
 #include "SysExec.hpp"
 #include <filesystem>
-
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
 using namespace std;
 using namespace pipedal;
@@ -50,15 +54,122 @@ using ip::tcp;
 
 const size_t MAX_LENGTH = 128;
 
-
-
-static bool startsWith(const std::string&s, const char*text)
+class GovernorMonitorThread
 {
-    if (s.length() < strlen(text)) return false;
-    const char*sp = s.c_str();
+public:
+    ~GovernorMonitorThread()
+    {
+        Stop();
+    }
+    void Start(std::string governor)
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        if (!pThread)
+        {
+            this->governor = governor;
+            cancelled = false;
+            wake = false;
+            pThread = std::make_unique<std::thread>([this]()
+                                                    { this->ServiceProc(); });
+        } else {
+            this->governor = governor;
+            wake = true;
+            
+            lock.unlock();
+            cv.notify_one();
+        }
+    }
+    void Stop()
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        if (pThread)
+        {
+            wake = true;
+            cancelled = true;
+            lock.unlock();
+
+            cv.notify_one();
+            pThread->join();
+            pThread.reset();
+        }
+    }
+    void SetGovernor(const std::string &governor)
+    {
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            wake = true;
+            this->governor = governor;
+        }
+        cv.notify_one();
+    }
+
+private:
+    bool wake = false;
+    bool cancelled = false;
+    std::string savedGovernor;
+    void ServiceProc()
+    {
+        savedGovernor = pipedal::GetCpuGovernor();
+        pipedal::SetCpuGovernor(this->governor);
+        while (true)
+        {
+            bool cancelled;
+            std::string governor;
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                auto timeToWaitFor = std::chrono::system_clock::now() + 5000ms;
+                cv.wait_until(
+                    lock,
+                    timeToWaitFor,
+                    [this]()
+                    { return wake; });
+                wake = false;
+                governor = this->governor;
+                cancelled = this->cancelled;
+            }
+            if (cancelled) {
+                break;
+            }
+            std::string activeGovernor = pipedal::GetCpuGovernor();
+            if (activeGovernor != governor)
+            {
+                // somebody set it so they must have wanted it.
+                // save the value so that we can restore it when done.
+                savedGovernor = activeGovernor;
+
+                // but insist on using ours!!
+                pipedal::SetCpuGovernor(governor);
+            }
+        }
+        pipedal::SetCpuGovernor(savedGovernor);
+    }
+    std::unique_ptr<std::thread> pThread;
+    std::string governor;
+    std::mutex mutex;
+    bool canceled;
+    std::condition_variable cv;
+};
+
+GovernorMonitorThread governorMonitorThread;
+
+void StopGovernorMonitorThread()
+{
+    governorMonitorThread.Stop();
+}
+void StartGovernorMonitorThread(const std::string&governor)
+{
+    governorMonitorThread.Start(governor);
+}
+
+static bool startsWith(const std::string &s, const char *text)
+{
+    if (s.length() < strlen(text))
+        return false;
+    const char *sp = s.c_str();
     while (*text)
     {
-        if (*text++ != *sp++) return false;
+        if (*text++ != *sp++)
+            return false;
     }
     return true;
 }
@@ -67,7 +178,7 @@ static std::vector<std::string> tokenize(std::string value)
     std::vector<std::string> result;
     std::stringstream s(value);
     std::string item;
-    while (std::getline(s,item,' '))
+    while (std::getline(s, item, ' '))
     {
         if (item.length() != 0)
             result.push_back(item);
@@ -75,26 +186,17 @@ static std::vector<std::string> tokenize(std::string value)
     return result;
 }
 
-static void CaptureAccessPoint(const std::string gatewayAddress)
-{
-    
-}
-static void ReleaseAccessPoint(const std::string gatewayAddress)
-{
-}
-
-void delayedRestartProc()
+static void delayedRestartProc()
 {
     sleep(1); // give a chance for websocket messages to propagate.
     Lv2Log::error("Delayed Restart");
     std::string pipedalConfigPath = std::filesystem::path(getSelfExePath()).parent_path() / "pipedalconfig";
 
     std::stringstream s;
-     s << pipedalConfigPath.c_str() << " --restart --excludeShutdownService";
-    if (::system(s.str().c_str())!= EXIT_SUCCESS)
+    s << pipedalConfigPath.c_str() << " --restart --excludeShutdownService";
+    if (::system(s.str().c_str()) != EXIT_SUCCESS)
     {
         Lv2Log::error("Delayed Restart failed.");
-
     }
 }
 
@@ -110,8 +212,6 @@ bool setJackConfiguration(JackServerSettings serverSettings)
     std::thread delayedRestartThread(delayedRestartProc);
     delayedRestartThread.detach();
     return true;
-
-
 }
 
 class Reader : public std::enable_shared_from_this<Reader>
@@ -162,7 +262,7 @@ private:
             return;
         }
         socket.async_write_some(
-            boost::asio::buffer(response.c_str()+ writePosition, response.length()-writePosition),
+            boost::asio::buffer(response.c_str() + writePosition, response.length() - writePosition),
             boost::bind(&Reader::HandleWrite,
                         shared_from_this(),
                         boost::asio::placeholders::error,
@@ -185,7 +285,7 @@ private:
                 if (c == '\n')
                 {
                     std::string command = message.str();
-                    cout << "Received command: " << command << endl;
+                    cout << command << endl;
                     HandleCommand(command);
                     socket.close();
                     return;
@@ -202,59 +302,88 @@ private:
             socket.close();
         }
     }
-    void HandleCommand(const std::string &s)
+    void HandleCommand(const std::string &text)
     {
         int result = -1;
-        try {
-            if (startsWith(s,"WifiConfigSettings "))
+        std::string command;
+        std::string args;
+        auto pos = text.find_first_of(' ');
+        if (pos == std::string::npos)
+        {
+            command = text;
+        }
+        else
+        {
+            command = text.substr(0, pos);
+            args = text.substr(pos + 1);
+        }
+        try
+        {
+            if (command == "UnmonitorGovernor")
             {
-                std::string json = s.substr(strlen("WifiConfigSettings "));
-                std::stringstream ss(json);
+                StopGovernorMonitorThread();
+                result = 0;
+            }
+            else if (command == "MonitorGovernor")
+            {
+                std::stringstream ss(args);
+                std::string governor;
+                try
+                {
+                    json_reader reader(ss);
+                    reader.read(&governor);
+                }
+                catch (const std::exception &e)
+                {
+                    throw PiPedalArgumentException("Invalid arguments.");
+                }
+                StartGovernorMonitorThread(governor);
+                result = 0;
+            }
+            else if (command == "GovernorSettings")
+            {
+                std::stringstream ss(args);
+                std::string governor;
+                try
+                {
+                    json_reader reader(ss);
+                    reader.read(&governor);
+                }
+                catch (const std::exception &e)
+                {
+                    throw PiPedalArgumentException("Invalid arguments.");
+                }
+                governorMonitorThread.SetGovernor(governor);
+                result = 0;
+            }
+            else if (command == "WifiConfigSettings ")
+            {
+                std::stringstream ss(args);
                 WifiConfigSettings settings;
-                try {
+                try
+                {
                     json_reader reader(ss);
                     reader.read(&settings);
-                } catch (const std::exception &e)
+                }
+                catch (const std::exception &e)
                 {
                     throw PiPedalArgumentException("Invalid arguments.");
                 }
                 pipedal::SetWifiConfig(settings);
                 result = 0;
-
-            } else if (startsWith(s,"release_ap "))
-            {
-                std::vector<std::string> argv = tokenize(s);
-                if (argv.size() == 2) {
-                    ReleaseAccessPoint(argv[1]);
-                    result = 0;
-                } else {
-                    throw PiPedalArgumentException("Invalid arguments.");
-                }
-
-            } else if (startsWith(s,"capture_ap "))
-            {
-                std::vector<std::string> argv = tokenize(s);
-                if (argv.size() == 2) {
-                    CaptureAccessPoint(argv[1]);
-                    result = 0;
-                } else {
-                    throw PiPedalArgumentException("Invalid arguments.");
-                }
-                
-
-            } else if (s == "shutdown")
+            }
+            else if (command == "shutdown")
             {
                 result = sysExec("/usr/sbin/shutdown -P now");
             }
-            else if (s == "restart")
+            else if (command == "restart")
             {
                 result = sysExec("/usr/sbin/shutdown -r now");
-            } else if (startsWith(s,"setJackConfiguration "))
+            }
+            else if (command == "setJackConfiguration")
             {
-                auto remainder = s.substr(strlen("setJackConfiguration "));
-                
 
-                std::stringstream input(remainder);
+                std::stringstream input(args);
                 JackServerSettings serverSettings;
                 json_reader reader(input);
 
@@ -263,12 +392,18 @@ private:
                 if (input.fail())
                 {
                     result = -1;
-                } else {
-                    result = setJackConfiguration(serverSettings) ? 0: -1;
                 }
-
+                else
+                {
+                    result = setJackConfiguration(serverSettings) ? 0 : -1;
+                }
             }
-        } catch (const std::exception &e)
+            else
+            {
+                throw std::invalid_argument(SS("Unknown command:" << command));
+            }
+        }
+        catch (const std::exception &e)
         {
             std::stringstream t;
             t << "-2 " << e.what() << "\n";
@@ -284,7 +419,6 @@ private:
         this->writePosition = 0;
         WriteSome();
     }
-
 };
 
 class Server
@@ -314,16 +448,16 @@ private:
     }
 
 public:
-    //constructor for accepting connection from client
+    // constructor for accepting connection from client
     Server(boost::asio::io_service &io_service, const tcp::endpoint &endpoint)
         : acceptor_(io_service, endpoint),
-            io_service(io_service)
+          io_service(io_service)
 
     {
         StartAccept();
     }
-    ~Server() {
-
+    ~Server()
+    {
     }
 };
 
@@ -332,16 +466,17 @@ void runServer(uint16_t port)
     asio::ip::tcp::endpoint endpoint(ip::make_address_v4("127.0.0.1"), port);
     asio::io_service ios;
 
-    try {
-        Server server(ios,endpoint);
+    try
+    {
+        Server server(ios, endpoint);
         ios.run();
         cout << "Processing terminated." << endl;
-    } catch (const std::exception & e)
+    }
+    catch (const std::exception &e)
     {
         cout << "Error: " << e.what() << endl;
     }
 }
-
 
 int main(int argc, char **argv)
 {
@@ -349,12 +484,8 @@ int main(int argc, char **argv)
     CommandLineParser parser;
 
     uint16_t port = 0;
-    std::string captureAccessPoint;
-    std::string releaseAccessPoint;
 
     parser.AddOption("-port", &port);
-    parser.AddOption("-captureAP",&captureAccessPoint);
-    parser.AddOption("-releaseAP",&releaseAccessPoint);
 
     try
     {
@@ -369,34 +500,12 @@ int main(int argc, char **argv)
         cout << "Error: " << e.what() << endl;
         return EXIT_FAILURE;
     }
-    if (captureAccessPoint.length() != 0)
+    if (port == 0)
     {
-        try{
-            CaptureAccessPoint(captureAccessPoint);
-
-        } catch (const std::exception &e)
-        {
-            std::cerr  << "Error: " << e.what() << std::endl;
-            return EXIT_FAILURE;
-        }
-        std::cout << "Access point captured." << std::endl;
-    } else if (releaseAccessPoint.length() != 0)
-    {
-        try{
-            ReleaseAccessPoint(releaseAccessPoint);
-        } catch (const std::exception &e)
-        {
-            std::cerr  << "Error: " << e.what() << std::endl;
-            return EXIT_FAILURE;
-        }
-        std::cout << "Access point released." << std::endl;
-
-    } else {
-        if (port == 0) {
-            std::cerr << "Error: port not specified." << std::endl;
-            return EXIT_FAILURE;
-        }
-        runServer(port);
+        std::cerr << "Error: port not specified." << std::endl;
+        return EXIT_FAILURE;
     }
+    runServer(port);
+    governorMonitorThread.Stop();
     return EXIT_SUCCESS;
 }

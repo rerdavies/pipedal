@@ -1,6 +1,6 @@
 {
    "socket_server_port": 8080,
-   "socket_server_address": "*",
+   "socket_server_address": "[fe80::df30:41b9:1ede:c23c]",
 
     "max_upload_size": 1048576,
 

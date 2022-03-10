@@ -102,7 +102,10 @@ add_custom_command(
  
 
 set (PIPEDAL_SOURCES
-    PluginPreset.cpp PluginPreset.hpp 
+    Ipv6Helpers.cpp Ipv6Helpers.hpp
+    PluginPreset.cpp PluginPreset.hpp
+    CpuGovernor.cpp CpuGovernor.hpp
+    GovernorSettings.cpp GovernorSettings.hpp
     SysExec.cpp SysExec.hpp
     BeastServer.cpp BeastServer.hpp HtmlHelper.cpp HtmlHelper.hpp pch.h Uri.cpp Uri.hpp
     WifiConfigSettings.hpp WifiConfigSettings.cpp
@@ -233,6 +236,7 @@ add_executable(pipedalshutdownd ShutdownMain.cpp CommandLineParser.hpp
     SetWifiConfig.hpp SetWifiConfig.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp    
     SysExec.hpp SysExec.cpp
+    CpuGovernor.cpp CpuGovernor.hpp
     asan_options.cpp
     )
 target_link_libraries(pipedalshutdownd PRIVATE pthread atomic stdc++fs systemd)

@@ -32,6 +32,7 @@ const char *BANK_EXTENSION = ".bank";
 const char *BANKS_FILENAME = "index.banks";
 
 #define WIFI_CONFIG_SETTINGS_FILENAME "wifiConfigSettings.json";
+#define GOVERNOR_SETTINGS_FILENAME "governorSettings.json";
 
 Storage::Storage()
 {
@@ -182,6 +183,7 @@ void Storage::Initialize()
     {
     }
     LoadWifiConfigSettings();
+    LoadGovernorSettings();
 }
 
 
@@ -802,6 +804,25 @@ int64_t  Storage::UploadBank(BankFile&bankFile,int64_t uploadAfter)
     return lastBank;
 }
 
+void Storage::SetGovernorSettings(const std::string & governor)
+{
+        std::filesystem::path path = this->dataRoot / GOVERNOR_SETTINGS_FILENAME;
+    {
+        std::ofstream f(path);
+        if (!f.is_open())
+        {
+            throw PiPedalException("Unable to write to " + ((std::string)path));
+        }
+        json_writer writer(f);
+        writer.write(governor);
+        this->governorSettings = governor;
+    }
+}
+std::string Storage::GetGovernorSettings() const
+{
+    return this->governorSettings;
+}
+
 
 void Storage::SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings)
 {
@@ -839,7 +860,30 @@ void Storage::SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSetting
     }
     this->wifiConfigSettings = copyToStore;
 }
+void Storage::LoadGovernorSettings()
+{
+    std::filesystem::path path = this->dataRoot / GOVERNOR_SETTINGS_FILENAME;
 
+    try {
+        if (std::filesystem::is_regular_file(path))
+        {
+            std::ifstream f(path);
+            if (!f.is_open())
+            {
+                throw PiPedalException("Unable to write to " + ((std::string)path));
+            }
+            json_reader reader(f);
+            std::string governorSettings;
+            reader.read(&governorSettings);
+            this->governorSettings = governorSettings;
+        }
+    } catch (const std::exception&)
+    {
+        this->governorSettings = "performance";
+    }
+    this->wifiConfigSettings.valid_ = true;
+
+}
 void Storage::LoadWifiConfigSettings()
 {
     std::filesystem::path path = this->dataRoot / WIFI_CONFIG_SETTINGS_FILENAME;
@@ -1136,6 +1180,7 @@ uint64_t Storage::CopyPluginPreset(const std::string&pluginUri,uint64_t presetId
 
 
 }
+
 
 JSON_MAP_BEGIN(CurrentPreset)
     JSON_MAP_REFERENCE(CurrentPreset,modified)

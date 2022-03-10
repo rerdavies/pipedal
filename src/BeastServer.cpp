@@ -49,6 +49,40 @@ pipedal::last_modified(const std::filesystem::path &path)
     }
 }
 
+static std::string getHostName()
+{
+    char buff[512];
+    if (gethostname(buff,sizeof(buff)) == 0)
+    {
+        buff[511] = '\0';
+        return buff;
+    }
+    return "";
+}
+
+static std::string getIpv4Address(const std::string interface)
+{
+    int fd = -1;
+    struct ifreq ifr;
+    memset(&ifr,0,sizeof(ifr));
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    /* I want to get an IPv4 IP address */
+    ifr.ifr_addr.sa_family = AF_INET;
+
+    /* I want an IP address attached to "eth0" */
+    strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ-1);
+
+    int result = ioctl(fd, SIOCGIFADDR, &ifr);
+    if (result == -1) return "";
+
+
+    close(fd);
+    char *name = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
+    if (name == nullptr) return "";
+    return name;
+}
 static std::map<std::string, std::string> extensionsToMimeType = {
     {".htm", "text/html; charset=UTF-8"},
     {".html", "text/html; charset=UTF-8"},
@@ -192,7 +226,8 @@ namespace pipedal
                   webSocket(webSocket)
             {
                 uri requestUri(webSocket->get_uri()->str().c_str());
-                fromAddress = requestUri.authority();
+                fromAddress = SS(webSocket->get_socket().remote_endpoint());
+
 
                 auto pFactory = pServer->GetSocketFactory(requestUri);
                 if (!pFactory)
@@ -364,11 +399,14 @@ namespace pipedal
                 con->set_status(websocketpp::http::status_code::ok);
                 return;
             }
+
             for (auto requestHandler : this->request_handlers)
             {
 
                 if (requestHandler->wants(req.method(), requestUri))
                 {
+                    std::string fromAddress = SS(con->get_remote_endpoint());
+
                     try
                     {
                         if (req.method() == HttpVerb::head)
@@ -377,7 +415,7 @@ namespace pipedal
                             res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));
                             res.set(HttpField::access_control_allow_origin, origin);
 
-                            requestHandler->head_response(requestUri, req, res, ec);
+                            requestHandler->head_response(fromAddress,requestUri, req, res, ec);
                             res.keepAlive(req.keepAlive());
                             if (ec == std::errc::no_such_file_or_directory)
                             {
@@ -401,7 +439,7 @@ namespace pipedal
 
                             res.set(HttpField::cache_control, "max-age: 31104000"); // cache for a year.
 
-                            requestHandler->get_response(requestUri, req, res, ec);
+                            requestHandler->get_response(fromAddress,requestUri, req, res, ec);
                             res.keepAlive(req.keepAlive());
 
                             if (ec == std::errc::no_such_file_or_directory)
@@ -425,7 +463,7 @@ namespace pipedal
                             res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));
                             res.set(HttpField::access_control_allow_origin, origin);
 
-                            requestHandler->post_response(requestUri, req, res, ec);
+                            requestHandler->post_response(fromAddress,requestUri, req, res, ec);
 
                             if (ec == std::errc::no_such_file_or_directory)
                             {
@@ -547,15 +585,28 @@ namespace pipedal
                 m_endpoint.set_close_handler(bind(&BeastServerImpl::on_close, this, _1));
                 m_endpoint.set_http_handler(bind(&BeastServerImpl::on_http, this, _1));
 
+                std::string hostName = getHostName();
+                if (hostName.length() != 0)
                 {
                     std::stringstream ss;
-                    ss << "Listening on " << this->address << ":" << this->port;
+                    ss << "Listening on " << hostName << ".local:" << this->port;
                     Lv2Log::info(ss.str());
+                }
+                std::string ipv4Address = getIpv4Address("eth0");
+                if (ipv4Address.length() != 0)
+                {
+                    Lv2Log::info(SS("Listening on " << ipv4Address << ":" << this->port));
+                }
+                std::string wifiAddress = getIpv4Address("wlan0");
+                if (wifiAddress.length() != 0)
+                {
+                    Lv2Log::info(SS("Listening on Wi-Fi address " << wifiAddress << ":" << this->port));
                 }
 
                 std::stringstream ss;
                 ss << port;
-                m_endpoint.listen(this->address, ss.str());
+                // m_endpoint.listen(this->address, ss.str());
+                m_endpoint.listen(tcp::v6(),(uint16_t)port);
                 m_endpoint.start_accept();
 
                 // Start IOC service threads.

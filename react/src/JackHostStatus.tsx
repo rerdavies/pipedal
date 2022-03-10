@@ -93,10 +93,10 @@ export default class JackHostStatus {
                 {
                     (status.cpuFreqMax === status.cpuFreqMin)?
                     (
-                        <span> {fmtCpuFreq(status.cpuFreqMax)} {status.governor} </span>
+                        <span> {status.governor} {fmtCpuFreq(status.cpuFreqMax)}  </span>
                     )
                     :(
-                        <span> {fmtCpuFreq(status.cpuFreqMax)}-{fmtCpuFreq(status.cpuFreqMax)} {status.governor} </span>
+                        <span> {status.governor} {fmtCpuFreq(status.cpuFreqMax)}-{fmtCpuFreq(status.cpuFreqMax)}  </span>
 
                     )
                 }

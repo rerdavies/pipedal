@@ -33,6 +33,7 @@ using namespace pipedal;
 #include <thread>
 #include <semaphore.h>
 #include "VuUpdate.hpp"
+#include "CpuGovernor.hpp"
 
 #include "RingBuffer.hpp"
 #include "RingBufferReader.hpp"
@@ -99,15 +100,7 @@ static void GetCpuFrequency(uint64_t*freqMin,uint64_t*freqMax)
 }
 static std::string GetGovernor()
 {
-    std::string result;
-    try {
-        std::ifstream f("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
-        f >> result;
-    } catch (const std::exception &)
-    {
-
-    }
-    return result;
+    return pipedal::GetCpuGovernor();
 }
 
 

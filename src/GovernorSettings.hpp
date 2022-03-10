@@ -19,23 +19,18 @@
 
 #pragma once
 
+#include "json.hpp"
 #include <string>
-#include "JackServerSettings.hpp"
-#include "WifiConfigSettings.hpp"
+#include <vector>
 
 namespace pipedal {
 
+    class GovernorSettings {
+    public:
+        std::string governor_;
+        std::vector<std::string> governors_;
 
-class ShutdownClient {
-    static bool WriteMessage(const char*message);
-public:
-    static bool CanUseShutdownClient();
-    static bool RequestShutdown(bool restart);
-    static bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
-    static void SetWifiConfig(const WifiConfigSettings & settings);
-    static void SetGovernorSettings(const std::string & governor);
-    static void MonitorGovernor(const std::string &governor);
-    static void UnmonitorGovernor();
-};
+        DECLARE_JSON_MAP(GovernorSettings);
+    };
 
-} // namespace
+}

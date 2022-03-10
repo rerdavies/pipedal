@@ -28,6 +28,7 @@
 #include "JackConfiguration.hpp"
 #include <future>
 #include <atomic>
+#include "Ipv6Helpers.hpp"
 
 #include "ShutdownClient.hpp"
 #include "WifiConfigSettings.hpp"
@@ -804,6 +805,17 @@ public:
             this->Reply(replyTo,"setJackserverSettings");
 
         }
+        else if (message == "setGovernorSettings") {
+            std::string  governor;
+            pReader->read(&governor);
+            std::string fromAddress = this->getFromAddress();
+            if (!IsOnLocalSubnet(fromAddress))
+            {
+                throw PiPedalException("Permission denied. Not on local subnet.");
+            }
+            this->model.SetGovernorSettings(governor);
+            this->Reply(replyTo,"setGovernorSettings");
+        }
         else if (message == "setWifiConfigSettings") {
             WifiConfigSettings wifiConfigSettings;
             pReader->read(&wifiConfigSettings);
@@ -812,7 +824,7 @@ public:
                 throw PiPedalException("Can't change server settings when running interactively.");
             }
             std::string fromAddress = this->getFromAddress();
-            if (!ShutdownClient::IsOnLocalSubnet(fromAddress))
+            if (!IsOnLocalSubnet(fromAddress))
             {
                 throw PiPedalException("Permission denied. Not on local subnet.");
             }
@@ -823,6 +835,10 @@ public:
         }
         else if (message == "getWifiConfigSettings") {
             this->Reply(replyTo, "getWifiConfigSettings", model.GetWifiConfigSettings());
+
+        }
+        else if (message == "getGovernorSettings") {
+            this->Reply(replyTo, "getGovernorSettings", model.GetGovernorSettings());
 
         }
 
@@ -1460,6 +1476,9 @@ public:
 
     virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings&wifiConfigSettings) {
         Send("onWifiConfigSettingsChanged",wifiConfigSettings);
+    }
+    virtual void OnGovernorSettingsChanged(const std::string& governor) {
+        Send("onGovernorSettingsChanged",governor);
     }
 
     virtual void OnPedalBoardChanged(int64_t clientId, const PedalBoard &pedalBoard)

@@ -19,23 +19,13 @@
 
 #pragma once
 
-#include <string>
-#include "JackServerSettings.hpp"
-#include "WifiConfigSettings.hpp"
 
 namespace pipedal {
 
 
-class ShutdownClient {
-    static bool WriteMessage(const char*message);
-public:
-    static bool CanUseShutdownClient();
-    static bool RequestShutdown(bool restart);
-    static bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
-    static void SetWifiConfig(const WifiConfigSettings & settings);
-    static void SetGovernorSettings(const std::string & governor);
-    static void MonitorGovernor(const std::string &governor);
-    static void UnmonitorGovernor();
-};
+    std::string GetLinkLocalAddress(const std::string fromAddress);
 
-} // namespace
+    bool IsOnLocalSubnet(const std::string&fromAddress);
+
+
+}

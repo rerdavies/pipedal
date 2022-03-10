@@ -72,6 +72,7 @@ private:
     bool isJackChannelSelectionValid = false;
     JackChannelSelection jackChannelSelection;
     WifiConfigSettings wifiConfigSettings;
+    std::string governorSettings = "performance";
 public:
     Storage();
     void Initialize();
@@ -85,6 +86,7 @@ public:
 
 
     void LoadWifiConfigSettings();
+    void LoadGovernorSettings();
     void LoadBank(int64_t instanceId);
     const PedalBoard& GetCurrentPreset();
     void SaveCurrentPreset(const PedalBoard&pedalBoard);
@@ -115,6 +117,10 @@ public:
 
     void SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings);
     WifiConfigSettings GetWifiConfigSettings();
+
+    void SetGovernorSettings(const std::string & governor);
+    std::string GetGovernorSettings() const;
+
 
     void SaveCurrentPreset(const CurrentPreset &currentPreset);
     bool RestoreCurrentPreset(CurrentPreset*pResult);

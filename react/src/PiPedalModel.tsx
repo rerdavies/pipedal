@@ -31,8 +31,9 @@ import { BankIndex } from './Banks';
 import JackHostStatus from './JackHostStatus';
 import JackServerSettings from './JackServerSettings';
 import MidiBinding from './MidiBinding';
-import {PluginUiPresets} from './PluginPreset';
+import { PluginUiPresets } from './PluginPreset';
 import WifiConfigSettings from './WifiConfigSettings';
+import GovernorSettings from './GovernorSettings';
 import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 
@@ -316,6 +317,7 @@ export interface PiPedalModel {
     banks: ObservableProperty<BankIndex>;
     jackServerSettings: ObservableProperty<JackServerSettings>;
     wifiConfigSettings: ObservableProperty<WifiConfigSettings>;
+    governorSettings: ObservableProperty<GovernorSettings>;
 
     presets: ObservableProperty<PresetIndex>;
 
@@ -350,7 +352,7 @@ export interface PiPedalModel {
     saveCurrentPreset(): void;
     saveCurrentPresetAs(newName: string): void;
 
-    saveCurrentPluginPresetAs(pluginInstanceId: number,newName: string): void;
+    saveCurrentPluginPresetAs(pluginInstanceId: number, newName: string): void;
 
     loadPreset(instanceId: number): void;
     updatePresets(presets: PresetIndex): Promise<void>;
@@ -397,7 +399,7 @@ export interface PiPedalModel {
     addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle
     removeControlValueChangeListener(handle: ControlValueChangedHandle): void;
 
-    addPluginPresetsChangedListener(onPluginPresetsChanged: PluginPresetsChangedHandler) : PluginPresetsChangedHandle;
+    addPluginPresetsChangedListener(onPluginPresetsChanged: PluginPresetsChangedHandler): PluginPresetsChangedHandle;
     removePluginPresetsChangedListener(handle: PluginPresetsChangedHandle): void;
 
     listenForAtomOutput(instanceId: number, onComplete: (instanceId: number, atomOutput: any) => void): ListenHandle;
@@ -405,12 +407,13 @@ export interface PiPedalModel {
 
 
 
-    download(targetType: string, isntanceId: number|string): void;
+    download(targetType: string, isntanceId: number | string): void;
 
-    uploadPreset(uploadPage: string,file: File, uploadAfter: number): Promise<number>;
+    uploadPreset(uploadPage: string, file: File, uploadAfter: number): Promise<number>;
     uploadBank(file: File, uploadAfter: number): Promise<number>;
 
     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void>;
+    setGovernorSettings(governor: string): Promise<void>;
 
     getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>;
 
@@ -447,6 +450,7 @@ class PiPedalModelImpl implements PiPedalModel {
         = new ObservableProperty<JackServerSettings>(new JackServerSettings());
 
     wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
+    governorSettings: ObservableProperty<GovernorSettings> = new ObservableProperty<GovernorSettings>(new GovernorSettings());
 
 
     presets: ObservableProperty<PresetIndex> = new ObservableProperty<PresetIndex>
@@ -575,6 +579,12 @@ class PiPedalModelImpl implements PiPedalModel {
         } else if (message === "onWifiConfigSettingsChanged") {
             let wifiConfigSettings = new WifiConfigSettings().deserialize(body);
             this.wifiConfigSettings.set(wifiConfigSettings);
+        }
+        else if (message === "onGovernorSettingsChanged") {
+            let governor = body as string;
+            let newSettings = this.governorSettings.get().clone();
+            newSettings.governor = governor;
+            this.governorSettings.set(newSettings);
         } else if (message === "onBanksChanged") {
             let banks = new BankIndex().deserialize(body);
             this.banks.set(banks);
@@ -659,6 +669,12 @@ class PiPedalModelImpl implements PiPedalModel {
             })
             .then(data => {
                 this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
+
+                    return this.getWebSocket().request<any>("getGovernorSettings");
+                })
+                .then(data => {
+                    this.governorSettings.set(new GovernorSettings().deserialize(data));
+
 
                 return this.getWebSocket().request<any>("getJackServerSettings");
             })
@@ -791,6 +807,11 @@ class PiPedalModelImpl implements PiPedalModel {
                     })
                     .then(data => {
                         this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
+
+                            return this.getWebSocket().request<any>("getGovernorSettings");
+                        })
+                        .then(data => {
+                            this.governorSettings.set(new GovernorSettings().deserialize(data));
 
 
                         return this.getWebSocket().request<any>("getJackServerSettings");
@@ -994,7 +1015,7 @@ class PiPedalModelImpl implements PiPedalModel {
 
     _pluginPresetsChangedHandles: PluginPresetsChangedHandle[] = [];
 
-    addPluginPresetsChangedListener(onPluginPresetsChanged: PluginPresetsChangedHandler) : PluginPresetsChangedHandle {
+    addPluginPresetsChangedListener(onPluginPresetsChanged: PluginPresetsChangedHandler): PluginPresetsChangedHandle {
         let handle = ++this.nextListenHandle;
         let t: PluginPresetsChangedHandle = {
             _id: handle,
@@ -1003,28 +1024,23 @@ class PiPedalModelImpl implements PiPedalModel {
         this._pluginPresetsChangedHandles.push(t);
         return t;
     }
-    removePluginPresetsChangedListener(handle: PluginPresetsChangedHandle): void
-    {
+    removePluginPresetsChangedListener(handle: PluginPresetsChangedHandle): void {
         let pos = -1;
-        for (let i = 0; i < this._pluginPresetsChangedHandles.length; ++i)
-        {
-            if (this._pluginPresetsChangedHandles[i]._id === handle._id)
-            {
+        for (let i = 0; i < this._pluginPresetsChangedHandles.length; ++i) {
+            if (this._pluginPresetsChangedHandles[i]._id === handle._id) {
                 pos = i;
                 break;
             }
         }
-        if (pos !== -1)
-        {
-            this._pluginPresetsChangedHandles.splice(pos,1);
+        if (pos !== -1) {
+            this._pluginPresetsChangedHandles.splice(pos, 1);
         }
     }
     firePluginPresetsChanged(pluginUri: string): void {
-        for (let i = 0; i < this._pluginPresetsChangedHandles.length; ++i)
-        {
+        for (let i = 0; i < this._pluginPresetsChangedHandles.length; ++i) {
             this._pluginPresetsChangedHandles[i]._handler(pluginUri);
         }
-        
+
     }
 
 
@@ -1298,7 +1314,7 @@ class PiPedalModelImpl implements PiPedalModel {
                 return data;
             });
     }
-    saveCurrentPluginPresetAs(pluginInstanceId: number,newName: string): Promise<number> {
+    saveCurrentPluginPresetAs(pluginInstanceId: number, newName: string): Promise<number> {
         // default behaviour is to save after the currently selected preset.
         let request: any = {
             instanceId: pluginInstanceId,
@@ -1567,22 +1583,21 @@ class PiPedalModelImpl implements PiPedalModel {
         this.webSocket?.send("loadPluginPreset", { pluginInstanceId: pluginInstanceId, presetInstanceId: presetInstanceId });
     }
 
-    handlePluginPresetsChanged(pluginUri: string):void {
+    handlePluginPresetsChanged(pluginUri: string): void {
         this.uncachePluginPreset(pluginUri);
         this.firePluginPresetsChanged(pluginUri);
     }
 
 
-    updatePluginPresets(pluginUri: string, presets: PluginUiPresets): Promise<void>
-    {
+    updatePluginPresets(pluginUri: string, presets: PluginUiPresets): Promise<void> {
         this.presetCache[pluginUri] = presets;
         this.firePluginPresetsChanged(pluginUri);
         return nullCast(this.webSocket).request<void>("updatePluginPresets", presets);
     }
-    duplicatePluginPreset(pluginUri: string, instanceId: number): Promise<number>
-    {
-        return nullCast(this.webSocket).request<number>("copyPluginPreset", { 
-            pluginUri: pluginUri, instanceId: instanceId });
+    duplicatePluginPreset(pluginUri: string, instanceId: number): Promise<number> {
+        return nullCast(this.webSocket).request<number>("copyPluginPreset", {
+            pluginUri: pluginUri, instanceId: instanceId
+        });
 
     }
 
@@ -1692,7 +1707,7 @@ class PiPedalModelImpl implements PiPedalModel {
         window.open(url, "_blank");
     }
 
-    uploadPreset(uploadPage: string,file: File, uploadAfter: number): Promise<number> {
+    uploadPreset(uploadPage: string, file: File, uploadAfter: number): Promise<number> {
         let result = new Promise<number>((resolve, reject) => {
             try {
                 if (file.size > this.maxUploadSize) {
@@ -1774,6 +1789,27 @@ class PiPedalModelImpl implements PiPedalModel {
             }
         });
         return result;
+    }
+    setGovernorSettings(governor: string): Promise<void> {
+        let newSettings = this.governorSettings.get().clone();
+        newSettings.governor = governor;
+        this.governorSettings.set(newSettings);
+
+        return new Promise<void>((resolve, reject) => {
+
+            let ws = this.webSocket;
+            if (!ws) return;
+            ws.request<void>(
+                "setGovernorSettings",
+                governor
+            )
+                .then(() => {
+                    resolve();
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
     }
     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void> {
         let result = new Promise<void>((resolve, reject) => {
@@ -1866,8 +1902,7 @@ class PiPedalModelImpl implements PiPedalModel {
 
     preloadImages(imageList: string): void {
         let imageNames = imageList.split(';');
-        for (let i = 0; i < imageNames.length; ++i)
-        {
+        for (let i = 0; i < imageNames.length; ++i) {
             let imageName = imageNames[i];
             let img = new Image();
             img.src = "/img/" + imageName;

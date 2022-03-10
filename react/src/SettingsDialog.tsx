@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { SyntheticEvent, Component } from 'react';
+import ListSelectDialog from './ListSelectDialog';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
@@ -36,6 +37,7 @@ import JackHostStatus from './JackHostStatus';
 import WifiConfigSettings from './WifiConfigSettings';
 import WifiConfigDialog from './WifiConfigDialog';
 import DialogEx from './DialogEx'
+import GovernorSettings from './GovernorSettings';
 
 import Slide, {SlideProps} from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
@@ -55,10 +57,12 @@ interface SettingsDialogState {
     jackSettings: JackChannelSelection;
     jackServerSettings: JackServerSettings;
     jackStatus?: JackHostStatus;
+    governorSettings: GovernorSettings;
 
     wifiConfigSettings: WifiConfigSettings;
 
     showWifiConfigDialog: boolean;
+    showGovernorSettingsDialog: boolean;
     showInputSelectDialog: boolean;
     showOutputSelectDialog: boolean;
     showMidiSelectDialog: boolean;
@@ -146,7 +150,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 jackStatus: undefined,
                 jackSettings: this.model.jackSettings.get(),
                 wifiConfigSettings: this.model.wifiConfigSettings.get(),
+                governorSettings:  this.model.governorSettings.get(),
                 showWifiConfigDialog: false,
+                showGovernorSettingsDialog: false,
                 showInputSelectDialog: false,
                 showOutputSelectDialog: false,
                 showMidiSelectDialog: false,
@@ -160,6 +166,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.handleJackSettingsChanged = this.handleJackSettingsChanged.bind(this);
             this.handleJackServerSettingsChanged = this.handleJackServerSettingsChanged.bind(this);
             this.handleWifiConfigSettingsChanged = this.handleWifiConfigSettingsChanged.bind(this);
+            this.handleGovernorSettingsChanged = this.handleGovernorSettingsChanged.bind(this);
             this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
 
         }
@@ -182,6 +189,15 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.showAlert(err);
                 });
         }
+        handleApplyGovernorSettings(governor: string): void {
+            this.model.setGovernorSettings(governor)
+                .then(() => {
+
+                })
+                .catch((err) => {
+                    this.model.showAlert(err);
+                });
+        }
 
         handleWifiConfigSettingsChanged(): void {
             this.setState(
@@ -190,6 +206,14 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 }
             )
         }
+        handleGovernorSettingsChanged(): void {
+            this.setState(
+                {
+                    governorSettings: this.model.governorSettings.get()
+                }
+            )
+        }
+
         handleJackSettingsChanged(): void {
             this.setState({
                 jackSettings: this.model.jackSettings.get()
@@ -233,6 +257,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.jackConfiguration.addOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.jackServerSettings.addOnChangedHandler(this.handleJackServerSettingsChanged);
                     this.model.wifiConfigSettings.addOnChangedHandler(this.handleWifiConfigSettingsChanged);
+                    this.model.governorSettings.addOnChangedHandler(this.handleGovernorSettingsChanged);
                     this.model.getJackStatus()
                         .then((jackStatus) =>
                             this.setState(
@@ -261,6 +286,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.jackSettings.removeOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackServerSettings.removeOnChangedHandler(this.handleJackServerSettingsChanged);
                     this.model.wifiConfigSettings.removeOnChangedHandler(this.handleWifiConfigSettingsChanged);
+                    this.model.wifiConfigSettings.removeOnChangedHandler(this.handleGovernorSettingsChanged);
 
                 }
             }
@@ -314,6 +340,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 let newSelection = this.state.jackSettings.clone();
                 newSelection.inputMidiPorts = channels;
                 this.model.setJackSettings(newSelection);
+                
             }
             this.setState({
                 showMidiSelectDialog: false,
@@ -356,6 +383,11 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
         handleShowWifiConfigDialog() {
             this.setState({
                 showWifiConfigDialog: true
+            });
+        }
+        handleShowGovernorSettingsDialogDialog() {
+            this.setState({
+                showGovernorSettingsDialog: true
             });
         }
         handleRestart() {
@@ -417,19 +449,19 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         >
                             <div >
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
-                                    AUDIO
+                                    STATUS
                                 </Typography>
                                 {(!isConfigValid) ?
                                     (
                                         <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
                                             <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
-                                            <Typography display="block" variant="caption" color="textSecondary">CPU: </Typography>
+                                            <Typography display="block" variant="caption" color="textSecondary">Governor: </Typography>
                                         </div>
                                     ) :
                                     (
                                         <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                            {JackHostStatus.getDisplayView("Status:\u00A0", this.state.jackStatus)}
-                                            {JackHostStatus.getCpuInfo("CPU:\u00A0", this.state.jackStatus)}
+                                            {JackHostStatus.getDisplayView("", this.state.jackStatus)}
+                                            { JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
                                         </div>
                                     )
                                 }
@@ -442,6 +474,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     )
                                 }
+                                <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
+                                    AUDIO
+                                </Typography>
                                 <ButtonBase className={classes.setting} onClick={() => this.handleJackServerSettings()}
                                 >
                                     <SelectHoverBackground selected={false} showHover={true} />
@@ -512,6 +547,18 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     </div>
                                 </ButtonBase>
+                                <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                    onClick={() => this.handleShowGovernorSettingsDialogDialog()}  >
+                                    <SelectHoverBackground selected={false} showHover={true} />
+                                    <div style={{ width: "100%" }}>
+                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                            CPU Governor</Typography>
+                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
+                                            {this.state.governorSettings.governor }
+                                        </Typography>
+
+                                    </div>
+                                </ButtonBase>
                                 <ButtonBase className={classes.setting} disabled={!isConfigValid || disableShutdown}
                                     onClick={() => this.handleRestart()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
@@ -555,6 +602,32 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                             />
 
                         )
+                    }
+                    {
+                        (this.state.showGovernorSettingsDialog) &&
+                        (
+                            <ListSelectDialog 
+                                width={220}
+                                open={this.state.showGovernorSettingsDialog}
+                                items={this.state.governorSettings.governors}
+                                selectedItem={this.state.governorSettings.governor}
+                                title="Governor"
+                                onClose={()=> this.setState({showGovernorSettingsDialog: false})}
+                                onOk={(selectedValue) => {
+                                    this.model.setGovernorSettings(selectedValue)
+                                    .then(()=>{
+
+                                    })
+                                    .catch(error => {
+                                        this.model.showAlert(error);
+                                    });
+                    
+                                    this.setState({showGovernorSettingsDialog: false})                                    
+                                }}
+                                >
+                            </ListSelectDialog>
+                        )
+
                     }
                     {
                         (this.state.showMidiSelectDialog) &&

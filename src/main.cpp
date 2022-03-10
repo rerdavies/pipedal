@@ -27,12 +27,13 @@
 #include <boost/system/error_code.hpp>
 #include <filesystem>
 #include "PiPedalConfiguration.hpp"
-#include "Shutdown.hpp"
+#include "ShutdownClient.hpp"
 #include "CommandLineParser.hpp"
 #include "Lv2SystemdLogger.hpp"
 #include <sys/stat.h>
 #include <boost/asio.hpp>
 #include "HtmlHelper.hpp"
+#include "Ipv6Helpers.hpp"
 
 #include <signal.h>
 #include <semaphore.h>
@@ -406,19 +407,26 @@ public:
 class InterceptConfig : public RequestHandler
 {
 private:
-    std::string response;
     uint64_t maxUploadSize;
+    int portNumber;
 
 public:
     InterceptConfig(int portNumber, uint64_t maxUploadSize)
         : RequestHandler("/var/config.json"),
-          maxUploadSize(maxUploadSize)
+          maxUploadSize(maxUploadSize),
+          portNumber(portNumber)
     {
+    }
+    std::string GetConfig(const std::string&fromAddress)
+    {
+        std::string linkLocalAddress = GetLinkLocalAddress(fromAddress);
+
         std::stringstream s;
 
         s << "{ \"socket_server_port\": " << portNumber
-          << ", \"socket_server_address\": \"*\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize << " }";
-        response = s.str();
+          << ", \"socket_server_address\": \""  << linkLocalAddress << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize << " }";
+
+        return s.str();
     }
     virtual ~InterceptConfig() {}
 
@@ -428,6 +436,17 @@ public:
         HttpResponse &res,
         std::error_code &ec) 
     {
+        // intercepted. See the other overload.
+    }
+
+   virtual void head_response(
+       const std::string &fromAddress,
+        const uri&request_uri,
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec) 
+    {
+        std::string response = GetConfig(fromAddress);
         res.set(HttpField::content_type, "application/json");
         res.set(HttpField::cache_control, "no-cache");
         res.setContentLength(response.length());
@@ -439,7 +458,18 @@ public:
         const HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec)
+        {
+            // intercepted. see the other overload.
+        }
+
+    virtual void get_response(
+        const std::string&fromAddress,
+        const uri &request_uri,
+        const HttpRequest &req,
+        HttpResponse &res,
+        std::error_code &ec)
     {
+        std::string response = GetConfig(fromAddress);
         res.set(HttpField::content_type, "application/json");
         res.set(HttpField::cache_control, "no-cache");
         res.setContentLength(response.length());

@@ -27,6 +27,7 @@
 #include <sstream>
 #include <sys/types.h>
 #include <ifaddrs.h>
+#include "Ipv6Helpers.hpp"
 
 
 using namespace pipedal;
@@ -165,57 +166,12 @@ bool ShutdownClient::SetJackServerConfiguration(const JackServerSettings & jackS
     return WriteMessage(s.str().c_str());
 }
 
-bool ShutdownClient::IsOnLocalSubnet(const std::string&fromAddress)
-{
-    std::string address = fromAddress;
-    if (address.size() == 0) return false;
-    char lastChar = address[address.size()-1];
-    if (address[0] != '[' || lastChar != ']') // i.e. not an ipv6 address;
-    {
-        size_t pos = address.find_last_of(':');
-        if (pos != std::string::npos)
-        {
-            address = address.substr(0,pos);
-        }
-    }
-    if (address[0] == '[') return false;
-
-    char buf[512];
-
-    struct in_addr inetAddr;
-
-    memset(&inetAddr,0,sizeof(inetAddr));
-
-    if (inet_pton(AF_INET,address.c_str(),&inetAddr) == 0) {
-        return false;
-    }
-    uint32_t remoteAddress = htonl(inetAddr.s_addr);
-
-    struct ifaddrs *ifap = nullptr;
-    if (getifaddrs(&ifap) != 0) return false;
-
-    bool result = false;
-    for (ifaddrs*p = ifap; p != nullptr; p = p->ifa_next) {
-        if (p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr) {  // TODO: Add support for AF_INET6
-            uint32_t netmask = htonl(((sockaddr_in*)(p->ifa_netmask))->sin_addr.s_addr);
-            uint32_t ifAddr = htonl(((sockaddr_in*)(p->ifa_addr))->sin_addr.s_addr);
-
-            if ((netmask & ifAddr) == (netmask & remoteAddress))
-            {
-                result = true;
-                break;
-            }
-        }
-    }
-    freeifaddrs(ifap);
-    return result;
-}
 
 void ShutdownClient::SetWifiConfig(const WifiConfigSettings & settings)
 {
     if (!CanUseShutdownClient())
     {
-        throw PiPedalException("Can't use ShutdownClient when running interactively.");
+        throw PiPedalException("Can't perform this operation when debugging.");
     }
     std::stringstream cmd;
     cmd << "WifiConfigSettings ";
@@ -226,4 +182,54 @@ void ShutdownClient::SetWifiConfig(const WifiConfigSettings & settings)
     if (!result) { // unexpected. Should throw exception on failure.
         throw PiPedalException("Operation failed.");
     }
+}
+
+void ShutdownClient::SetGovernorSettings(const std::string & settings)
+{
+    if (!CanUseShutdownClient())
+    {
+        throw PiPedalException("Can't use ShutdownClient when running interactively.");
+    }
+    std::stringstream cmd;
+    cmd << "GovernorSettings ";
+    json_writer writer(cmd,true);
+    writer.write(settings);
+    cmd << '\n';
+    bool result = WriteMessage(cmd.str().c_str());
+    if (!result) { // unexpected. Should throw exception on failure.
+        throw PiPedalException("Operation failed.");
+    }
+}
+
+void ShutdownClient::MonitorGovernor(const std::string &governor)
+{
+    if (!CanUseShutdownClient())
+    {
+        return;
+    }
+    std::stringstream cmd;
+    cmd << "MonitorGovernor ";
+    json_writer writer(cmd,true);
+    writer.write(governor);
+    cmd << '\n';
+    bool result = WriteMessage(cmd.str().c_str());
+    if (!result) { // unexpected. Should throw exception on failure.
+        throw PiPedalException("Operation failed.");
+    }
+
+}
+void ShutdownClient::UnmonitorGovernor()
+{
+    if (!CanUseShutdownClient())
+    {
+        return;
+    }
+    std::stringstream cmd;
+    cmd << "UnmonitorGovernor";
+    cmd << '\n';
+    bool result = WriteMessage(cmd.str().c_str());
+    if (!result) { // unexpected. Should throw exception on failure.
+        throw PiPedalException("Operation failed.");
+    }
+
 }
