@@ -43,6 +43,7 @@ Here is a brief list of particularly recommend plugin collections.
 |---------------------------------|---------------------------------------|------------------|
 |[Guitarix](https://guitarix.org) ★★★★☆ | sudo apt install guitarix-lv2         | A large collection guitar amplifiers and effects. |
 | [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | [(manual build)](https://github.com/brummer10/GxPlugins.lv2) | Additional effects from the Guitarix collection |
+| [MDA Plugins](http://drobilla.net/software/mda-lv2.html) ★★★★☆ | sudo apt install mda-lv2 | 36 high-quality plugs |
 | Invadio Studio Plugins ★★★☆☆         | sudo apt install invada-studio-plugins-lv2 | Delays, distortion, filters, phaser, reverb |
 |[Zam Plugins](https://zamaudio.com) ★★★☆☆ | sudo apt install zam-plugins   | Filtering, EQ, and mastering effects. |
 | [Calf Studio Gear](https:://calf-studio-gear.org) ★★★☆☆ | sudo apt install calf-plugins | Flanger, filters, reverb, rotary speaker &c |
