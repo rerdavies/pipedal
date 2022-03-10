@@ -350,8 +350,7 @@ void InstallJackService()
         }
         // lock account for login.
         silentSysExec("passwd -l " JACK_SERVICE_ACCOUNT_NAME);
-    }
-
+    } 
     // Add to audio groups.
     // sysExec(USERMOD_BIN " -a -G " JACK_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
     sysExec(USERMOD_BIN " -a -G" AUDIO_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
@@ -449,13 +448,13 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
     if (!userExists(SERVICE_ACCOUNT_NAME))
     {
-        if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -m -N -r") != EXIT_SUCCESS)
+        if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -m --home /var/pipedal/home -N -r") != EXIT_SUCCESS)
         {
             //  throw PiPedalException("Failed to create service account.");
         }
         // lock account for login.
         silentSysExec("passwd -l " SERVICE_ACCOUNT_NAME);
-    }
+    } 
 
     // Add to audio groups.
     sysExec(USERMOD_BIN " -a -G  " AUDIO_SERVICE_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
