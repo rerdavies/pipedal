@@ -37,20 +37,8 @@ PiPedal uses LV2 audio plugins. There are literally thousands of freely availabl
 
 By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
 
-Here is a brief list of particularly recommend plugin collections.
+See [_Using LV2 Plugins_](UsingLv2Plugins.md) for more details, and for some concrete recommendataions.
 
-| Collection                      | To Install                            | Description      |
-|---------------------------------|---------------------------------------|------------------|
-|[Guitarix](https://guitarix.org) ★★★★☆ | sudo apt install guitarix-lv2         | A large collection guitar amplifiers and effects. |
-| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | [(manual build)](https://github.com/brummer10/GxPlugins.lv2) | Additional effects from the Guitarix collection |
-| [MDA Plugins](http://drobilla.net/software/mda-lv2.html) ★★★★☆ | sudo apt install mda-lv2 | 36 high-quality plugs |
-| Invadio Studio Plugins ★★★☆☆         | sudo apt install invada-studio-plugins-lv2 | Delays, distortion, filters, phaser, reverb |
-|[Zam Plugins](https://zamaudio.com) ★★★☆☆ | sudo apt install zam-plugins   | Filtering, EQ, and mastering effects. |
-| [Calf Studio Gear](https:://calf-studio-gear.org) ★★★☆☆ | sudo apt install calf-plugins | Flanger, filters, reverb, rotary speaker &c |
-
-The GxPlugins pack requires a manual build; but it's worth the effort. Just follow the instructions.
-
-For a more complete (but still incomplete) list of LV2 audio plugins, see [here](https://lv2plug.in/pages/projects.html).
 
 ### Activating the Wi-Fi Hotspot
 
