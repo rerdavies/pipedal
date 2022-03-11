@@ -497,7 +497,7 @@ int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, const std::string &n
 
     auto pedalboard = this->pedalBoard;
     pedalboard.name(name);
-    int64_t result = storage.saveCurrentPresetAs(pedalboard, name, saveAfterInstanceId);
+    int64_t result = storage.SaveCurrentPresetAs(pedalboard, name, saveAfterInstanceId);
     FirePresetsChanged(clientId);
     return result;
 }
@@ -594,10 +594,16 @@ int64_t PiPedalModel::DeleteBank(int64_t clientId, int64_t instanceId)
 int64_t PiPedalModel::DeletePreset(int64_t clientId, int64_t instanceId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
-
+    int64_t oldSelection = storage.GetCurrentPresetId();
     int64_t newSelection = storage.DeletePreset(instanceId);
     this->FirePresetsChanged(clientId); // fire now.
-    return newSelection;
+    if (oldSelection != newSelection)
+    {
+        this->LoadPreset(
+            -1, // can't use cached version.
+            newSelection);
+    }
+    return newSelection;    
 }
 bool PiPedalModel::RenamePreset(int64_t clientId, int64_t instanceId, const std::string &name)
 {

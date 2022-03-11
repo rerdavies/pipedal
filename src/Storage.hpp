@@ -90,8 +90,8 @@ public:
     void LoadBank(int64_t instanceId);
     const PedalBoard& GetCurrentPreset();
     void SaveCurrentPreset(const PedalBoard&pedalBoard);
-    int64_t saveCurrentPresetAs(const PedalBoard&pedalBoard, const std::string&namne,int64_t saveAfterInstanceId = -1);
-
+    int64_t SaveCurrentPresetAs(const PedalBoard&pedalBoard, const std::string&namne,int64_t saveAfterInstanceId = -1);
+    int64_t GetCurrentPresetId() const;
     void GetPresetIndex(PresetIndex*pResult);
     void SetPresetIndex(const PresetIndex &presetIndex);
     PedalBoard GetPreset(int64_t instanceId) const;

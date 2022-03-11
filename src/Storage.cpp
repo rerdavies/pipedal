@@ -425,7 +425,7 @@ void Storage::SaveCurrentPreset(const PedalBoard &pedalBoard)
     item.preset(pedalBoard);
     SaveCurrentBank();
 }
-int64_t Storage::saveCurrentPresetAs(const PedalBoard &pedalBoard, const std::string &name, int64_t saveAfterInstanceId)
+int64_t Storage::SaveCurrentPresetAs(const PedalBoard &pedalBoard, const std::string &name, int64_t saveAfterInstanceId)
 {
     PedalBoard newPedalBoard = pedalBoard;
     newPedalBoard.name(name);
@@ -739,6 +739,11 @@ int64_t Storage::DeleteBank(int64_t bankId)
         }
     }
     throw PiPedalStateException("Bank not found.");
+}
+
+int64_t Storage::GetCurrentPresetId() const
+{
+    return this->currentBank.selectedPreset();
 }
 
 int64_t  Storage::UploadPreset(const BankFile&bankFile,int64_t uploadAfter)
