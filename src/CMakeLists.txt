@@ -228,7 +228,7 @@ add_executable(pipedalconfig json.cpp json.hpp
 target_link_libraries(pipedalconfig PRIVATE pthread atomic stdc++fs
     )
 
-add_executable(pipedalshutdownd ShutdownMain.cpp CommandLineParser.hpp
+add_executable(pipedaladmind ShutdownMain.cpp CommandLineParser.hpp
     JackServerSettings.hpp JackServerSettings.cpp
     json.hpp json.cpp HtmlHelper.hpp HtmlHelper.cpp Lv2Log.hpp Lv2Log.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
@@ -239,7 +239,7 @@ add_executable(pipedalshutdownd ShutdownMain.cpp CommandLineParser.hpp
     CpuGovernor.cpp CpuGovernor.hpp
     asan_options.cpp
     )
-target_link_libraries(pipedalshutdownd PRIVATE pthread atomic stdc++fs systemd)
+target_link_libraries(pipedaladmind PRIVATE pthread atomic stdc++fs systemd)
 
 
 add_executable(processcopyrights copyrightMain.cpp
@@ -283,7 +283,7 @@ add_custom_target (
 )
 
 
-install (TARGETS pipedalconfig pipedald pipedalshutdownd DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+install (TARGETS pipedalconfig pipedald pipedaladmind DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
    EXPORT pipedalTargets)
 
 

@@ -53,8 +53,11 @@ using namespace pipedal;
 
 #define SERVICE_PATH "/usr/lib/systemd/system"
 #define NATIVE_SERVICE "pipedald"
-#define SHUTDOWN_SERVICE "pipedalshutdownd"
+#define ADMIN_SERVICE "pipedaladmind"
 #define JACK_SERVICE "jack"
+
+#define REMOVE_OLD_SERVICE 1 // Grandfathering: whether to remove the old shutdown service (now pipedaladmind)
+#define OLD_SHUTDOWN_SERVICE "pipedalshutdownd"
 
 std::filesystem::path GetServiceFileName(const std::string &serviceName)
 {
@@ -92,9 +95,9 @@ void EnableService()
     {
         cout << "Error: Failed to enable the " NATIVE_SERVICE " service.";
     }
-    if (sysExec(SYSTEMCTL_BIN " enable " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " enable " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to enable the " SHUTDOWN_SERVICE " service.";
+        cout << "Error: Failed to enable the " ADMIN_SERVICE " service.";
     }
 }
 void DisableService()
@@ -103,10 +106,16 @@ void DisableService()
     {
         cout << "Error: Failed to disable the " NATIVE_SERVICE " service.";
     }
-    if (sysExec(SYSTEMCTL_BIN " disable " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " disable " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to disable the " SHUTDOWN_SERVICE " service.";
+        cout << "Error: Failed to disable the " ADMIN_SERVICE " service.";
     }
+    #if REMOVE_OLD_SERVICE
+    if (sysExec(SYSTEMCTL_BIN " disable " OLD_SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+    {
+        cout << "Error: Failed to disable the " OLD_SHUTDOWN_SERVICE " service.";
+    }
+    #endif
 }
 
 void StopService(bool excludeShutdownService = false)
@@ -117,10 +126,16 @@ void StopService(bool excludeShutdownService = false)
     }
     if (!excludeShutdownService)
     {
-        if (sysExec(SYSTEMCTL_BIN " stop " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+        if (sysExec(SYSTEMCTL_BIN " stop " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
         {
-            cout << "Error: Failed to stop the " SHUTDOWN_SERVICE " service.";
+            cout << "Error: Failed to stop the " ADMIN_SERVICE " service.";
         }
+        #if REMOVE_OLD_SERVICE
+        if (sysExec(SYSTEMCTL_BIN " stop " OLD_SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+        {
+            cout << "Error: Failed to stop the " OLD_SHUTDOWN_SERVICE " service.";
+        }
+        #endif
     }
     if (sysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
@@ -134,9 +149,9 @@ void StartService(bool excludeShutdownService = false)
     silentSysExec("/usr/bin/pulseaudio --kill"); // interferes with Jack audio service startup.
     if (!excludeShutdownService)
     {
-        if (sysExec(SYSTEMCTL_BIN " start " SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
+        if (sysExec(SYSTEMCTL_BIN " start " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
         {
-            throw PiPedalException("Failed to start the " SHUTDOWN_SERVICE " service.");
+            throw PiPedalException("Failed to start the " ADMIN_SERVICE " service.");
         }
     }
     if (sysExec(SYSTEMCTL_BIN " start " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
@@ -393,7 +408,8 @@ void Uninstall()
     DisableService();
     silentSysExec(SYSTEMCTL_BIN " stop jack");
     silentSysExec(SYSTEMCTL_BIN " disable jack");
-    std::filesystem::remove("/usr/bin/systemd/system/" SHUTDOWN_SERVICE ".service");
+    std::filesystem::remove("/usr/bin/systemd/system/" OLD_SHUTDOWN_SERVICE ".service");
+    std::filesystem::remove("/usr/bin/systemd/system/" ADMIN_SERVICE ".service");
     std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
     std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
     UninstallPamEnv();
@@ -533,7 +549,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
             s << findOnPath("authbind").string() << " --deep ";
         }
         s
-            << (programPrefix / "bin/pipedald").string()
+            << (programPrefix / "bin" / NATIVE_SERVICE).string()
             << " /etc/pipedal/config /etc/pipedal/react -port " << endpointAddress << " -systemd -shutdownPort " << shutdownPort;
 
         map["COMMAND"] = s.str();
@@ -545,12 +561,12 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         std::stringstream s;
 
         s
-            << (programPrefix / "bin/pipedalshutdownd").string()
+            << (programPrefix / "bin" / ADMIN_SERVICE).string()
             << " -port " << shutdownPort;
 
         map["COMMAND"] = s.str();
     }
-    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/templateShutdown.service"), GetServiceFileName(SHUTDOWN_SERVICE));
+    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/templateShutdown.service"), GetServiceFileName(ADMIN_SERVICE));
 
     sysExec(SYSTEMCTL_BIN " daemon-reload");
 

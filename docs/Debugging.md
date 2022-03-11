@@ -4,15 +4,23 @@ PipPedal consists of the following components:
 
 *    A web application build in React, found in the react subdirectory.
 
-*    `pipedald`: a Web server, written in C++, serving a web socket, and pre-built HTML components from the React app.
-     All audio services are provided by the pipedald process.
+*   `pipedald`
 
-*   `pipedalshutdownd`: A service to execute operations that require root credentials on behalf of pipedald. (e.g. shutdown, reboot,
+    A web server, written in C++, serving a web socket, and pre-built HTML components from the React app.
+    All audio services are provided by the pipedald process.
+
+*   `pipedaladmind`: 
+
+    A service to execute operations that require root credentials on behalf of pipedald. (e.g. shutdown, reboot,
     and pushing configuration changes).
 
-*   `pipedalconfig`: A CLI utility for managing and configuring the pipedald services.
+*   `pipedalconfig`: 
+
+    A CLI utility for managing and configuring the pipedald services.
      
-*   `pipedaltest`: Test cases for pipedald, built using the Catch2 framework.
+*   `pipedaltest`: 
+
+    Test cases for pipedald, built using the Catch2 framework.
 
 
 You must stop the pipedald service before launching a debug instance of pipedald:
@@ -25,6 +33,9 @@ or
 
 But there's no harm in running a debug react server that's configured to connect to the web 
 socket of a production instance of pipedald on port 80, if you aren't planning to debug C++ code.
+
+The pipedald service will run with or without the pipedaladmind service, but some operations (shutdown, reboot,
+audio and Wi-Fi configuration changes) may fail if the pipedaladmind service is not running.
 
 In production, the pipedald web server serves the PiPedal web socket, as well as static HTML from the  built 
 react components. But while debugging, it is much more convenient to use the React debug server for 
