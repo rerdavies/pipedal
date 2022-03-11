@@ -197,14 +197,14 @@ export const MainPage =
                 let selectedItem = -1;
                 for (let i = 0; i < value.items.length; ++i)
                 {
-                    if (this.state.selectedPedal == value.items[i].instanceId)
+                    if (this.state.selectedPedal === value.items[i].instanceId)
                     {
                         selectedItem = this.state.selectedPedal;
                         break;
                     }
                 }
                 // if no selection the current pedalboard, reset to the first item.
-                if (selectedItem == -1)
+                if (selectedItem === -1)
                 {
                     selectedItem = value.items[0].instanceId;
                 }

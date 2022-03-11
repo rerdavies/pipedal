@@ -14,7 +14,7 @@ ExecStart=/etc/jackdrc
 User=jack
 Group=audio
 Restart=always
-RestartSec=15
+RestartSec=30
 
 Environment=JACK_PROMISCUOUS_SERVER=audio
 Environment=JACK_NO_AUDIO_RESERVATION=1
