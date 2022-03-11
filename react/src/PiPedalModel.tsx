@@ -1297,8 +1297,9 @@ class PiPedalModelImpl implements PiPedalModel {
 
         return nullCast(this.webSocket)
             .request<number>("saveCurrentPresetAs", request)
-            .then((data) => {
-                return data;
+            .then((newPresetId) => {
+                this.loadPreset(newPresetId);
+                return newPresetId;
             });
     }
     saveCurrentPluginPresetAs(pluginInstanceId: number, newName: string): Promise<number> {

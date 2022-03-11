@@ -151,7 +151,7 @@ const PresetSelector =
                         return this.model.saveCurrentPresetAs(newName);
                     })
                     .then((newInstanceId) => {
-                        // s'fine. dealt with by updates, but we do need error handling.
+                        
                     })
                     .catch((error) => {
                         this.showError(error);
