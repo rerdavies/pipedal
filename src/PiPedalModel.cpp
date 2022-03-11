@@ -495,8 +495,9 @@ int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, const std::string &n
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
-    int64_t result = storage.saveCurrentPresetAs(this->pedalBoard, name, saveAfterInstanceId);
-    this->hasPresetChanged = false;
+    auto pedalboard = this->pedalBoard;
+    pedalboard.name(name);
+    int64_t result = storage.saveCurrentPresetAs(pedalboard, name, saveAfterInstanceId);
     FirePresetsChanged(clientId);
     return result;
 }
