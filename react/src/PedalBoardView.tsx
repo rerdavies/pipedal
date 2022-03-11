@@ -59,6 +59,7 @@ const SVG_STEREO_STROKE_WIDTH = "6";
 
 
 const EMPTY_ICON_URL = "img/fx_empty.svg";
+const ERROR_ICON_URL = "img/fx_error.svg";
 const TERMINAL_ICON_URL = "img/fx_terminal.svg";
 
 
@@ -288,8 +289,8 @@ class PedalLayout {
             } else {
                 // default to empty plugin.
                 this.pluginType = PluginType.UtilityPlugin;
-                this.name = "#Missing";
-                this.iconUrl = EMPTY_ICON_URL;
+                this.name = pedalItem.pluginName??"#error";
+                this.iconUrl = ERROR_ICON_URL;
                 this.inputs = 2;
                 this.outputs = 2;
             }

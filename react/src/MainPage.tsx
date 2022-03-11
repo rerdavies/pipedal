@@ -30,6 +30,7 @@ import Button from '@mui/material/Button';
 import InputIcon from '@mui/icons-material/Input';
 import LoadPluginDialog from './LoadPluginDialog';
 import Switch from '@mui/material/Switch';
+import Typography from '@mui/material/Typography';
 
 import PedalBoardView from './PedalBoardView';
 import { PiPedalStateError } from './PiPedalError';
@@ -314,6 +315,7 @@ export const MainPage =
                 let author = "";
                 let pluginUri = "";
                 let presetsUri = "";
+                let missing = false;
                 if (pedalBoardItem) {
                     if (pedalBoardItem.isEmpty()) {
                         title = "";
@@ -321,8 +323,9 @@ export const MainPage =
                         title = "Split";
                     } else {
                         let uiPlugin = this.model.getUiPlugin(pedalBoardItem.uri);
-                        if (uiPlugin == null) {
-                            title = "Missing Plugin";
+                        if (!uiPlugin) {
+                            missing = true;
+                            title = pedalBoardItem?.pluginName ?? "Missing plugin";
                         } else {
                             title = uiPlugin.name;
                             author = uiPlugin.author_name;
@@ -334,6 +337,23 @@ export const MainPage =
                     }
                 }
                 let classes = this.props.classes;
+                if (missing)
+                {
+                    return (
+                    <div style={{
+                        flex: "1 0 auto", overflow: "hidden", marginRight: 8,
+                        display: "flex", flexDirection: "row", flexWrap: "nowrap",
+                        alignItems: "center"
+                    }}>
+                        <div style={{ flex: "0 1 auto" }}>
+                            <span style={{ whiteSpace: "nowrap", color: "#800000" }}>
+                                <span className={classes.title}>{title}</span>
+                            </span>
+                        </div>
+                    </div>
+                    );
+                
+                } else {
                 return (
                     <div style={{
                         flex: "1 0 auto", overflow: "hidden", marginRight: 8,
@@ -357,6 +377,7 @@ export const MainPage =
                         </div>
                     </div>
                 );
+                }
             }
 
 
@@ -370,6 +391,8 @@ export const MainPage =
                 let canDelete = false;
                 let canAdd = false;
                 let instanceId = -1;
+                let missing = false;
+                let pluginUri = "#error";
 
                 if (pedalBoardItem) {
                     canDelete = pedalBoard.canDeleteItem(pedalBoardItem.instanceId);
@@ -379,11 +402,14 @@ export const MainPage =
                     } else if (pedalBoardItem.isSplit()) {
                         canAdd = true;
                     } else {
-                        uiPlugin = this.model.getUiPlugin(pedalBoardItem.uri);
+                        pluginUri = pedalBoardItem.uri;
+                        uiPlugin = this.model.getUiPlugin(pluginUri);
                         canAdd = true;
                         if (uiPlugin) {
                             bypassVisible = true;
                             bypassChecked = pedalBoardItem.isEnabled;
+                        } else {
+                            missing = true;
                         }
                     }
                 }
@@ -393,7 +419,7 @@ export const MainPage =
                     <div className={classes.frame}>
                         <div id="pedalBoardScroll" className={horizontalScrollLayout ? classes.pedalBoardScrollSmall : classes.pedalBoardScroll}
                             style={{ maxHeight: horizontalScrollLayout ? undefined : this.state.screenHeight / 2 }}>
-                            <PedalBoardView key={uiPlugin?.uri ?? "#error"} selectedId={this.state.selectedPedal}
+                            <PedalBoardView key={pluginUri} selectedId={this.state.selectedPedal}
                                 onSelectionChanged={this.onSelectionChanged}
                                 onDoubleClick={this.onPedalDoubleClick}
                                 hasTinyToolBar={this.props.hasTinyToolBar}
@@ -475,7 +501,16 @@ export const MainPage =
                         }
                         <div className={horizontalScrollLayout ? classes.controlContentSmall : classes.controlContent}>
                             {
-                                GetControlView(pedalBoardItem)
+                                missing ? (
+                                    <div style={{marginLeft: 100,marginTop: 20}}>
+                                        <Typography variant="body1" paragraph={true}>Error: Plugin is not installed.</Typography>
+                                        <Typography variant="body2"  paragraph={true}>{pluginUri}</Typography>
+                                    </div>
+
+                                ): 
+                                (
+                                      GetControlView(pedalBoardItem)
+                                )
                             }
 
                         </div>

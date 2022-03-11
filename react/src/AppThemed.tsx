@@ -476,7 +476,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             // no pull-down refresh on android devices once we're ready (unless we're debug)
             let preventOverscroll =
                 this.model_.state.get() === State.Ready
-                && !this.model_.serverVersion.debug;
+                && !this.model_.debug;
 
             let overscrollBehavior = preventOverscroll ? "none" : "auto";
             document.body.style.overscrollBehavior = overscrollBehavior;
@@ -589,7 +589,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 overscrollBehavior: this.state.isDebug ? "auto" : "none"
             }}
                 onContextMenu={(e) => {
-                    if (!this.model_.serverVersion?.debug ?? false) {
+                    if (!this.model_.debug) {
                         e.preventDefault(); e.stopPropagation();
                     }
                 }}

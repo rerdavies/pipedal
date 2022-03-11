@@ -303,6 +303,7 @@ interface ControlChangedBody {
 export interface PiPedalModel {
     clientId: number;
     countryCodes: Object;
+    debug: boolean;
     serverVersion?: PiPedalVersion;
     errorMessage: ObservableProperty<string>;
     alertMessage: ObservableProperty<string>;
@@ -721,6 +722,7 @@ class PiPedalModelImpl implements PiPedalModel {
     }
 
     maxUploadSize: number = 512 * 1024;
+    debug: boolean = false;
 
     requestConfig(): Promise<boolean> {
         const myRequest = new Request(this.varRequest('config.json'));
@@ -734,6 +736,7 @@ class PiPedalModelImpl implements PiPedalModel {
                 if (data.max_upload_size) {
                     this.maxUploadSize = data.max_upload_size;
                 }
+                this.debug = !!data.debug;
                 let { socket_server_port, socket_server_address } = data;
                 if ((!socket_server_address) || socket_server_address === "*") {
                     socket_server_address = window.location.hostname;
