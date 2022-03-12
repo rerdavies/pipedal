@@ -207,9 +207,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
             } else {
                 wifiConfigSettings.wifiWarningGiven = true;
                 this.preventPasswordPrompt();
+                // let preventPasswordPrompt changes settle (it's HARD to prevent a password prompt)
                 setTimeout(()=> {
                     this.props.onOk(wifiConfigSettings);
-                });
+                },100);
             }
         }
     
@@ -219,9 +220,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
         let passwordInput = this.refPassword.current;
         if (passwordInput)
         {
-            passwordInput.value = "";
             passwordInput.type = "text";
+            passwordInput.value = "";
         }
+        this.setState({newPassword: ""});
     }
     handleChannelChange(e: any)
     {
@@ -247,9 +249,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
 
         const handleClose = () => {
             this.preventPasswordPrompt();
+            // let preventPasswordPrompt changes settle (it's HARD to prevent a password prompt)
             setTimeout(()=> {
                 onClose();
-            });
+            },100);
         };
 
         return (

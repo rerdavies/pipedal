@@ -90,6 +90,7 @@ class NoChangePassword extends React.Component<NoChangePasswordProps, NoChangePa
         {
             e.target.value = "(Unchanged)";
         }
+        e.currentTarget.setAttribute("readonly","true");
     }
 
     render() {
