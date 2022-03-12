@@ -21,4 +21,4 @@ For a more complete (but still incomplete) list of LV2 audio plugins, see [here]
 
 
 --------
-[<< Changing the Web Server Port](ChangingTheWebServerPort.md) | [Which LV2 Plugins Does PiPedal Support? >>](WhichLv2PluginsAreSupported.md)
+[<< Changing the Web Server Port](ChangingTheWebServerPort.md)  | [Up](Documentation.md) | [Which LV2 Plugins Does PiPedal Support? >>](WhichLv2PluginsAreSupported.md)

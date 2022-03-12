@@ -13,4 +13,4 @@ To configure PiPedal to only accept connections on the Wi-Fi host access point:
      sudo pipedalconfig --install --port 172.22.1.1:80
 
 --------
-[<< Command-Line Configuration of PiPedal](CommandLine.md) | [Using LV2 Audio Plugins >>](UsingLv2Plugins.md)
+[<< Command-Line Configuration of PiPedal](CommandLine.md)  | [Up](Documentation.md) | [Using LV2 Audio Plugins >>](UsingLv2Plugins.md)

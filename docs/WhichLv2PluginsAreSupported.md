@@ -17,4 +17,4 @@ Although most LV2 plugins provide GUI interfaces, when running on a Linux deskto
 without using the provided desktop GUI interface. And all but a tiny minority of LV2 plugins (most of them analyzers, unfortunately) support this.
 
 --------
-[<< Using LV2 Audio Plugins](UsingLv2Plugins.md) | [BuildingPiPedal from Source >>](BuildingPiPedalFromSource.md)
+[<< Using LV2 Audio Plugins](UsingLv2Plugins.md)  | [Up](Documentation.md) | [BuildingPiPedal from Source >>](BuildingPiPedalFromSource.md)

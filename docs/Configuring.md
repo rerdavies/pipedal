@@ -63,4 +63,4 @@ If you are connecting to PiPedal with an Android device, via the Host Access Poi
 
 
 --------
-[<< Installing PiPedal](Installing.md) | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)
+[<< Installing PiPedal](Installing.md)  | [Up](Documentation.md) | | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)

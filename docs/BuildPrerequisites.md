@@ -42,5 +42,5 @@ Run the following command to install and configure React dependencies.
     ./react-config   # Configure React NPM dependencies.
    
 --------------------------   
-[<< Building PiPedal from Source](BuildingPiPedalFromSource.md) | [The Build System >>](TheBuildSystem.md)
+[<< Building PiPedal from Source](BuildingPiPedalFromSource.md) | [Up](Documentation.md) | [The Build System >>](TheBuildSystem.md)
  

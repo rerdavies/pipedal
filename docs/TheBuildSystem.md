@@ -23,4 +23,4 @@ If you are using a development environment other than Visual Studio Code, it sho
 to incorporate the PiPedal build procedure into your IDE workflow by using the contents of the build shell scripts as a model.
 
 -----
-[<< Build Prerequisites](BuildPrerequisites.md) | [How to Debug PiPedal >>](Debugging.md)
+[<< Build Prerequisites](BuildPrerequisites.md) | [Up](Documentation.md) | [How to Debug PiPedal >>](Debugging.md)

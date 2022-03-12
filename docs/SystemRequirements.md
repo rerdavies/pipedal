@@ -14,4 +14,4 @@ PiPedal has been tested on the following Operating Systems:
 If you are using Raspberry Pi OS, make sure to upgrade to the latest version, because versions of the Linux kernel later than 5.10 provide important bug fixes for USB audio devices.
 
 --------
-[Installing PiPedal >>](Installing.md)
+[Up](Documentation.md) | [Installing PiPedal >>](Installing.md)

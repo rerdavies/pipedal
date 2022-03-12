@@ -15,4 +15,4 @@ Install the package by running
 ```
 
 --------
-[<< System Requirements](SystemRequirements.md) | [Configuring PiPedal after Installation >>](Configuring.md)
+[<< System Requirements](SystemRequirements.md) | [Up](Documentation.md) | [Configuring PiPedal after Installation >>](Configuring.md)

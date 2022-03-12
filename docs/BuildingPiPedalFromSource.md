@@ -10,4 +10,4 @@ and cross-platform debugging, all of which should work with the PiPedal CMake bu
 more-or-less work, although you may have to scramble a bit to install some of the build dependencies.
 
 --------
-[<< Which LV2 Plugins Does PiPedal Support?](WhichLv2PluginsAreSupported.md) | [Build Prerequisites >>](BuildPrerequisites.md)
+[<< Which LV2 Plugins Does PiPedal Support?](WhichLv2PluginsAreSupported.md) | [Up](Documentation.md) | [Build Prerequisites >>](BuildPrerequisites.md)
