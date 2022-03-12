@@ -11,5 +11,7 @@ Install the package by running
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_0.1.4_arm64.deb
+  sudo apt-get install ./pipedal_0.1.5_arm64.deb
 ```
+
+Follow the instructions in [_Configuring PiPedal After Installation_](https://rerdavies.github.io/pipedal/Configuring.html) to complete the installation.
