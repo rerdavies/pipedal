@@ -33,7 +33,7 @@ export default class WifiConfigSettings {
         return this;
     }
     clone() : WifiConfigSettings {
-        return this.deserialize(this);
+        return new WifiConfigSettings().deserialize(this);
     }
     valid: boolean =  true;
     wifiWarningGiven: boolean = false;

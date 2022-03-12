@@ -356,7 +356,7 @@ private:
                 governorMonitorThread.SetGovernor(governor);
                 result = 0;
             }
-            else if (command == "WifiConfigSettings ")
+            else if (command == "WifiConfigSettings")
             {
                 std::stringstream ss(args);
                 WifiConfigSettings settings;

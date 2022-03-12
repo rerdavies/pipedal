@@ -194,6 +194,9 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
 
             wifiConfigSettings.enable = this.state.enabled;
             wifiConfigSettings.hotspotName = this.state.name;
+            wifiConfigSettings.countryCode = this.state.countryCode;
+            wifiConfigSettings.channel = this.state.channel;
+            
             if (this.state.newPassword.length === 0 || !this.state.enabled)
             {
                 wifiConfigSettings.hasPassword = false;
