@@ -1,4 +1,32 @@
-<footer class="site-footer h-card">
+<style>
+  .sticky-footer {
+    display: block;
+  }
+
+  .footer-offset {
+    display: none;
+  }
+  @media only screen and (min-height: 600px) {
+    .sticky-footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      
+      background: white;
+      height: 24px;
+      
+      
+    }
+    .footer-offset {
+      display: block;
+      height: 24px;
+    }
+</style>
+
+<div class="footer-offset">
+  &nbsp;
+</div>
+<footer class="site-footer h-card sticky-footer" style="padding-top: 10px; padding-bottom: 10px">
     <data class="u-url" href="{{ "/" | relative_url }}"></data>
   
     <div class="wrapper">

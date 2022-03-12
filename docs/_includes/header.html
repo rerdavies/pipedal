@@ -1,10 +1,35 @@
-<header class="site-header">
+<style>
+  .sticky-header {
+    display: block;
+  }
 
-    <div class="wrapper">
+  .header-offset {
+    display: none;
+  }
+  @media only screen and (min-height: 500px) {
+    .sticky-header {
+      z-index: 9;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      
+      background: white;
+      height: 54px;
+      
+      
+    }
+    .header-offset {
+      display: block;
+      height: 54px;
+    }
+</style>
+<header class="site-header sticky-header">
+
+    <div class="wrapper ">
       {%- assign default_paths = site.pages | map: "path" -%}
       {%- assign page_paths = site.header_pages | default: default_paths -%}
       {%- assign titles_size = site.pages | map: 'title' | join: '' | size -%}
-      <a class="site-title" rel="author" href="{{ "/" | relative_url }}">
+      <a class="site-title" rel="author" href="{{ "/" | relative_url }}" style="vertical-align: center">
         <img src="PiPedal-logo.png" style="height: 32px;border: 0px;margin-top: 8px;margin-bottom: 8px;" />
       </a>
   
@@ -26,7 +51,7 @@
               <a class="page-link" href="{{ my_page.url | relative_url }}">{{ my_page.title | escape }}</a>
               {%- endif -%}
             {%- endfor -%}
-            <a class="page-link" href="https://github.com/sponsors/rerdavies">
+            <a class="page-link" href="https://github.com/sponsors/rerdavies" style="vertical-align: center">
                 Sponsor
                 <span style="vertical-align: center">
                     <svg aria-hidden="true" height="12" viewBox="0 0 16 16" version="1.1" width="12" 
@@ -40,3 +65,6 @@
       {%- endif -%}
     </div>
   </header>
+  <div class="header-offset">
+    &nbsp;
+  </div>

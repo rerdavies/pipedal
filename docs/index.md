@@ -19,7 +19,7 @@ If your USB audio adapter has midi connectors, you can use midi devices (keyboar
 
 &nbsp;
 
-To read the PiPedal document click [here](Documentation.md).
+To read the PiPedal documentation, click [here](Documentation.md).
 
 To download PiPedal, click [here](download.md).
 

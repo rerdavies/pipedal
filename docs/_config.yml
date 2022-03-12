@@ -28,6 +28,7 @@ github_username:  rerdavies
 github_repository: rerdavies/pipedal
 
 header_pages:
+  - Documentation.md 
   - download.md
 
 # Build settings
