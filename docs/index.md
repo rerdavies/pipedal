@@ -1,6 +1,6 @@
 
 
-<i>v0.1.5-beta</i>
+<i>v0.1.6-beta.2</i>
 
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.

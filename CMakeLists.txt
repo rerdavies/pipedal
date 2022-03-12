@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 0.1.5
+    VERSION 0.1.6
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
-    HOMEPAGE_URL "https://github.com/rerdavies/pipedal"
+    HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
-set (DISPLAY_VERSION "v0.1.5-beta")
+set (DISPLAY_VERSION "v0.1.6-beta.2")
 
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
@@ -69,7 +69,7 @@ install(
 
 
 set(CPACK_GENERATOR "DEB")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Robin Davies<rerdavies@gmail.com") # required
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Robin Davies<rerdavies@gmail.com>") # required
 set(CPACK_PACKAGE_VENDOR "Robin Davies")
 set(CPACK_PACKAGE_DESCRIPTION "IoT guitar effect pedal for Raspberry Pi, with phone-friendly web interface.")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IoT guitar effect for Raspberry Pi")
@@ -82,6 +82,8 @@ set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+set (CPACK_STRIP_FILES ON)
+
 
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm")
 
