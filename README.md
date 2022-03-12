@@ -3,8 +3,7 @@
 [v0.1.5-beta](docs/download.md)
 
 
-Use your Raspberry Pi as a guitar effects pedal. PiPedal allows you to control and configure your guitar effects via a web interface, using your phone, tablet, or computer. 
-
+Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
 PiPedal running on a Raspberry Pi 4 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
 
 PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
@@ -15,7 +14,11 @@ PiPedal provides a pre-installed selection of LV2 plugins from the ToobAmp colle
 
 If your USB audio adapter has midi connectors, you can use midi devices (keyboards or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
 
-![Screenshot](docs/PiPedalScreenshots.png)
+{% include gallery.html %}
+<!-- ![Screenshot](docs/gallery/jazz.png) -->
+
+----
+%nbsp;
 
 ### [System Requirements](docs/SystemRequirements.md)
 ### [Installing PiPedal](docs/Installing.md)

@@ -1,0 +1,223 @@
+<script>
+
+    {
+        let images = [
+            "jazz.png",
+            "thunder.png",
+            "midi-bindings.png",
+            "hotspot.png"
+        ];
+        let captions = [
+            "PiPedal web interface.",
+            "Flexible effect routing.",
+            "Bind controls to midi messages.",
+            "Easy Wi-Fi hotspot configuration."
+        ];
+
+        let maxWidth = 680;
+        let aspectX = 952;
+        let aspectY = 648;
+        let borderWidth = 0;
+        let galleryPath = "gallery/";
+
+        let width ;
+        let height;
+        let frameWidth ;
+        let frameHeight;
+
+
+        let galleryFrame = 0;
+
+        let calculateWidth = function () {
+            width = Math.min(maxWidth, window.innerWidth * 0.8);
+            height = width * aspectY / aspectX;
+            frameWidth = width + borderWidth * 2;
+            frameHeight = height + borderWidth * 2;
+        }
+
+        calculateWidth();
+
+        let galleryX = 0;
+
+        let galleryLastAnimationCallback = 0;
+        let galleryAnimationStart;
+        let galleryAnimationStep;
+        let galleryAnimationData;
+
+
+        let gallerySlideAnimation = (fromFrame, toFrame) => {
+            if (galleryLastAnimationCallback !== 0) {
+                window.cancelAnimationFrame(galleryLastAnimationCallback);
+                galleryLastAnimationCallback = 0;
+            }
+            let targetX = (-toFrame * frameWidth);
+            galleryAnimationData = {
+                x0: galleryX,
+                x1: targetX,
+                element: document.getElementById('gallery_slideFrame')
+            };
+            galleryAnimationStart = undefined;
+
+            galleryAnimationStep = function (timeStamp) {
+                if (!galleryAnimationStart) {
+                    galleryAnimationStart = timeStamp;
+                }
+                let ms = timeStamp - galleryAnimationStart;
+                const MS_LEN = 300;
+                if (ms > MS_LEN) {
+                    ms = MS_LEN;
+                }
+                let x = (galleryAnimationData.x1 - galleryAnimationData.x0) * ms / MS_LEN + galleryAnimationData.x0;
+                galleryAnimationData.element.style.left = x + "px";
+                if (ms < MS_LEN) {
+                    galleryLastAnimationCallback = window.requestAnimationFrame(galleryAnimationStep);
+                    galleryX = x;
+                } else {
+                    galleryX = galleryAnimationData.x1;
+                    galleryAnimationData = undefined;
+                    galleryLastAnimationCallback = 0;
+                    galleryAnimationStep = undefined;
+
+                    let captionElement = document.getElementById("gallery_caption");
+                    captionElement.innerText = captions[galleryFrame];
+                }
+            }
+            galleryLastAnimationCallback = window.requestAnimationFrame(galleryAnimationStep);
+
+        }
+        let galleryScrollLeft = () => {
+            let startFrame = galleryFrame;
+            galleryFrame = galleryFrame - 1;
+            if (galleryFrame < 0) {
+                galleryFrame = images.length - 1;
+            }
+            gallerySlideAnimation(startFrame, galleryFrame);
+
+        }
+        let galleryScrollRight = () => {
+            let startFrame = galleryFrame;
+            galleryFrame = galleryFrame + 1;
+            if (galleryFrame >= images.length) {
+                galleryFrame = 0;
+            }
+            gallerySlideAnimation(startFrame, galleryFrame);
+
+        }
+
+        let galleryFrameElement;
+
+        let galleryOnClick = (e) => {
+            let rcClient = galleryFrameElement.getBoundingClientRect();
+            let x = e.clientX - rcClient.x;
+            if (x < 80) {
+                galleryScrollLeft();
+            } else if (x > frameWidth - 80) {
+                galleryScrollRight();
+            }
+        }
+        let galleryMouseEnter = (e) => {
+            let galleryArrows = document.getElementById('galleryArrows');
+            galleryArrows.style.opacity = 1.0;
+        }
+
+        let galleryMouseLeave = (e) => {
+            let galleryArrows = document.getElementById('galleryArrows');
+            galleryArrows.style.opacity = 0;
+        }
+
+        let galleryWindowResize = function (e) {
+            calculateWidth();
+
+            let frameWidthPx = frameWidth + "px";
+            let frameHeightPx = frameHeight + "px";
+            let widthPx = width + "px";
+            let heightPx = height + "px";
+
+            galleryFrameElement.style.width = frameWidthPx;
+            galleryFrameElement.style.height = frameHeightPx;
+
+            let slideFrame = galleryFrameElement.children[0];
+            slideFrame.style.width = (frameWidth * images.length) + "px";
+            slideFrame.style.height = frameHeightPx;
+
+            let galleryArrows = galleryFrameElement.children[1];
+            galleryArrows.style.width = frameWidthPx;
+            galleryArrows.style.height = frameHeightPx;
+
+            let imagesElements = slideFrame.children;
+            for (let i = 0; i < imagesElements.length; ++i) {
+                let child = imagesElements[i];
+                child.style.width = widthPx;
+                child.style.height = heightPx;
+                child.style.left = (frameWidth * i) + "px";
+            }
+            galleryX = -galleryFrame*frameWidth;
+            slideFrame.style.left = galleryX + "px";
+
+            document.getElementById('gallery_caption_frame').style.width = frameWidthPx;
+
+        }
+
+
+
+
+        // gallery frame.
+        document.writeln("<div id='galleryFrame' style='margin-left: 20px; width: "
+            + frameWidth
+            + "px; height: "
+            + frameHeight
+            + "px; overflow: hidden; position: relative;' >");
+        {
+            // carrier for sliding images.
+            document.writeln("<div id='gallery_slideFrame' style='position: absolute; width: "
+                + (frameWidth * images.length)
+                + "px; height: "
+                + (frameHeight)
+                + "px; background: #0; left: 0px' >"
+            );
+            {
+                // the images.
+                for (let i = 0; i < images.length; ++i) {
+                    document.writeln("<img src='"
+                        + (galleryPath + images[i])
+                        + "' style='border: black " + borderWidth + "px solid; width: "
+                        + (width)
+                        + "px;height: "
+                        + height
+                        + "px; object-fit: contain; position: absolute; top: 0px; left: "
+                        + (i * frameWidth)
+                        + "px' />");
+                }
+            }
+            document.writeln("</div>");
+            document.writeln("<div id='galleryArrows' style='position: absolute; width: "
+                + frameWidth + "px; height: " + frameHeight
+                + "px; left: 0px; top: 0px; opacity: 0.0;"
+                + " display: flex; flex-flow: row none; justify-content: space-between;align-items: end; padding:20'>");
+            {
+                document.writeln("<div><span style='font-size: 52px;color: #444;'>◄</span></div>");
+                document.writeln("<div><span style='font-size: 52px;color: #444;'>►</span></div>");
+            }
+
+            document.writeln("</div>");
+        }
+        document.writeln("</div>");
+        document.writeln("<div id='gallery_caption_frame' style='margin-left: 20px; width: " + frameWidth + "px; display: flex; flex-flow: row nowrap; justify-content: center; background: #666;'>");
+        document.writeln("<div> <span id='gallery_caption' style='font-size: 0.9em; font-style: italic; color: #FFF;'> "                    
+            + captions[0] + "</span></div></div>");
+
+
+        let galleryOnLoaded = () => {
+            galleryFrameElement = document.getElementById('galleryFrame');
+            galleryFrameElement.addEventListener('click', galleryOnClick, true);
+            galleryFrameElement.addEventListener('mouseenter', galleryMouseEnter);
+            galleryFrameElement.addEventListener('mouseleave', galleryMouseLeave);
+
+        }
+        window.addEventListener('load', function (e) {
+            galleryOnLoaded(e);
+        }, false);
+
+        window.addEventListener('resize', galleryWindowResize);
+    }
+</script>
