@@ -18,7 +18,7 @@ If your USB audio adapter has midi connectors, you can use midi devices (keyboar
 ![Screenshot](docs/gallery/jazz.png)
 
 ----
-%nbsp;
+&nbsp;
 
 ### [System Requirements](docs/SystemRequirements.md)
 ### [Installing PiPedal](docs/Installing.md)
