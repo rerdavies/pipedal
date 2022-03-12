@@ -272,6 +272,33 @@ export class PedalBoard implements Deserializable<PedalBoard> {
             yield v.value;
         }
     }
+
+    hasItem(instanceId: number): boolean
+    {
+        let it = this.itemsGenerator();
+        while (true)
+        {
+            let v = it.next();
+            if (v.done) break;
+            if (v.value.instanceId === instanceId)
+            {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    getFirstSelectableItem(): number
+    {
+        if (this.items.length !== 0)
+        {
+            return this.items[0].instanceId;
+        }
+        return -1;
+
+    }
+
     maybeGetItem(instanceId: number): PedalBoardItem | null{
         let it = this.itemsGenerator();
         while (true)

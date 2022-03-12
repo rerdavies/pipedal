@@ -116,11 +116,7 @@ export const MainPage =
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
                 let pedalboard = this.model.pedalBoard.get();
-                let selectedPedal = -1;
-                if (pedalboard.items.length !== 0)
-                {
-                    selectedPedal = pedalboard.items[0].instanceId;
-                }
+                let selectedPedal = pedalboard.getFirstSelectableItem();
 
                 this.state = {
                     selectedPedal: selectedPedal,
@@ -196,18 +192,11 @@ export const MainPage =
             }
             onPedalBoardChanged(value: PedalBoard) {
                 let selectedItem = -1;
-                for (let i = 0; i < value.items.length; ++i)
+                if (value.hasItem(this.state.selectedPedal))
                 {
-                    if (this.state.selectedPedal === value.items[i].instanceId)
-                    {
-                        selectedItem = this.state.selectedPedal;
-                        break;
-                    }
-                }
-                // if no selection the current pedalboard, reset to the first item.
-                if (selectedItem === -1)
-                {
-                    selectedItem = value.items[0].instanceId;
+                    selectedItem = this.state.selectedPedal;
+                } else {
+                    selectedItem = value.getFirstSelectableItem();
                 }
                 this.setState({ 
                     pedalBoard: value,

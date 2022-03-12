@@ -62,7 +62,7 @@ pstage:stage3
         a lv2:Plugin ,
                 lv2:SimulatorPlugin ;
 
-        doap:name "TooB2 Power Stage";
+        doap:name "TooB Power Stage";
 
         doap:license <https://two-play.com/TooB/licenses/isc> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
@@ -70,7 +70,7 @@ pstage:stage3
         lv2:microVersion 1 ;
 
         mod:brand "TooB";
-        mod:label "Power Stage 2.0";
+        mod:label "Power Stage";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
         lv2:extensionData state:interface;

@@ -32,7 +32,7 @@
 
 <http://two-play.com/plugins/toob-freeverb>
         a lv2:Plugin ,
-                lv2:SimulatorPlugin ;
+                lv2:ReverbPlugin ;
                 doap:name "TooB Freeverb" ,
                 "TooB Freeverb"@en-gb 
                 ;

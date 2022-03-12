@@ -12,13 +12,6 @@
      rdfs:seeAlso <ToobML.ttl> .
 
 
-
-
-
-<http://two-play.com/plugins/toob-power-stage> a lv2:Plugin ;
-     lv2:binary <ToobAmp.so> ;
-     rdfs:seeAlso <PowerStage.ttl> .
-
 <http://two-play.com/plugins/toob-power-stage-2> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <PowerStage2.ttl> .
