@@ -1,6 +1,7 @@
 <script>
 
     {
+        let galleryPath = "gallery/";
         let images = [
             "rig.jpg",
             "jazz.png",
@@ -20,7 +21,6 @@
         let aspectX = 952;
         let aspectY = 648;
         let borderWidth = 0;
-        let galleryPath = "gallery/";
 
         let width ;
         let height;
@@ -115,6 +115,9 @@
                 galleryScrollLeft();
             } else if (x > frameWidth - 80) {
                 galleryScrollRight();
+            } else {
+                let url = (galleryPath + images[galleryFrame]);
+                window.open(url,"_blank");
             }
         }
         let galleryMouseEnter = (e) => {
@@ -175,7 +178,7 @@
                 + (frameWidth * images.length)
                 + "px; height: "
                 + (frameHeight)
-                + "px; background: #0; left: 0px' >"
+                + "px; background: #FFF; left: 0px' >"
             );
             {
                 // the images.
