@@ -10,7 +10,7 @@
             "hotspot.png"
         ];
         let captions = [
-            "\u00A0",
+            "PiPedal Guitar Effects Pedal running on a Raspberry Pi 4",
             "PiPedal web interface.",
             "Flexible effect routing.",
             "Bind controls to midi messages.",
@@ -22,6 +22,7 @@
         let aspectY = 648;
         let borderWidth = 0;
 
+        let galleryIndent = "";
         let width ;
         let height;
         let frameWidth ;
@@ -81,7 +82,7 @@
                     galleryAnimationStep = undefined;
 
                     let captionElement = document.getElementById("gallery_caption");
-                    captionElement.innerText = captions[galleryFrame];
+                    captionElement.innerText = galleryIndent +captions[galleryFrame];
                 }
             }
             galleryLastAnimationCallback = window.requestAnimationFrame(galleryAnimationStep);
@@ -198,7 +199,7 @@
             document.writeln("<div id='galleryArrows' style='position: absolute; width: "
                 + frameWidth + "px; height: " + frameHeight
                 + "px; left: 0px; top: 0px; opacity: 0.0;"
-                + " display: flex; flex-flow: row none; justify-content: space-between;align-items: end; padding:20'>");
+                + " display: flex; flex-flow: row none; justify-content: space-between;align-items: end; padding:20; opacity: 0.8;'>");
             {
                 document.writeln("<div><span style='font-size: 52px;color: #444;'>◄</span></div>");
                 document.writeln("<div><span style='font-size: 52px;color: #444;'>►</span></div>");
@@ -207,9 +208,9 @@
             document.writeln("</div>");
         }
         document.writeln("</div>");
-        document.writeln("<div id='gallery_caption_frame' style='margin-left: 20px; width: " + frameWidth + "px; display: flex; flex-flow: row nowrap; justify-content: center; background: #666;'>");
-        document.writeln("<div> <span id='gallery_caption' style='font-size: 0.9em; font-style: italic; color: #FFF;'> "                    
-            + captions[0] + "</span></div></div>");
+        document.writeln("<div id='gallery_caption_frame' style='margin-left: 20px; width: " + frameWidth + "px; display: flex; flex-flow: row nowrap; margin-top: 8px; padding-left: 60px'>");
+        document.writeln("<div> <span id='gallery_caption' style='font-size: 0.9em; font-style: italic; color: #888;'> "                    
+            + galleryIndent +captions[0] + "</span></div></div>");
 
 
         let galleryOnLoaded = () => {
