@@ -314,7 +314,7 @@ static std::string GetLinkLocalAddressForInterface(const std::string &name)
     struct ifaddrs *ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return "";
-    std::string result;
+    std::string result = "notlinklocal.error";
     for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
@@ -322,7 +322,7 @@ static std::string GetLinkLocalAddressForInterface(const std::string &name)
             struct sockaddr_in6 *pAddr = (struct sockaddr_in6 *)(p->ifa_addr);
             if (IN6_IS_ADDR_LINKLOCAL(&(pAddr->sin6_addr)))
             {
-                if (name.length() == 0 || name == p->ifa_name)
+                if (name == p->ifa_name)
                 {
                     const int BUFSIZE = 128;
                     char host[BUFSIZE];
@@ -349,6 +349,36 @@ static std::string GetLinkLocalAddressForInterface(const std::string &name)
     freeifaddrs(ifap);
     return result;
 }
+static std::string GetLinkLocalAddressForIp4Interface(const std::string&name)
+{
+    struct ifaddrs *ifap = nullptr;
+    if (getifaddrs(&ifap) != 0)
+        return "";
+    std::string result = "notlocalsubnet.error";
+    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
+        { // TODO: Add support for AF_INET6
+            struct sockaddr_in *pAddr = (struct sockaddr_in *)(p->ifa_addr);
+            {
+                if (name == p->ifa_name)
+                {
+                    const int BUFSIZE = 128;
+                    char host[BUFSIZE];
+                    if (getnameinfo(p->ifa_addr, sizeof(struct sockaddr_in), host, BUFSIZE, NULL, 0, NI_NUMERICHOST) == 0)
+                    {
+                        host[BUFSIZE - 1] = '\0';
+
+                        result = host;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    freeifaddrs(ifap);
+    return result;
+}
 
 std::string pipedal::GetLinkLocalAddress(const std::string fromAddress)
 {
@@ -365,7 +395,7 @@ std::string pipedal::GetLinkLocalAddress(const std::string fromAddress)
         {
             uint32_t remoteAddress = htonl(inetAddr.s_addr);
             std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
-            result = GetLinkLocalAddressForInterface(interfaceName);
+            result = GetLinkLocalAddressForIp4Interface(interfaceName);
         }
     }
     else
@@ -391,26 +421,26 @@ std::string pipedal::GetLinkLocalAddress(const std::string fromAddress)
             //   [FE80:: ]   link local.
             //   [FEC0:: ]   site local.
             //   others?
-            if (IN6_IS_ADDR_LINKLOCAL(&inetAddr6))
+            if (IN6_IS_ADDR_V4MAPPED(&inetAddr6))
             {
-                return address;
-            }
-            if (IN6_IS_ADDR_SITELOCAL(&inetAddr6))
-            {
-                return address;
-            }
+                int8_t*pAddr = (int8_t*)&inetAddr6;
+                uint32_t remoteAddress = htonl(*(int32_t*)(pAddr+12));
+                std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
+                result = GetLinkLocalAddressForIp4Interface(interfaceName);
+            } else {
 
-            std::string interfaceName;
-            if (IsIpv4MappedAddress(inetAddr6))
-            {
-                uint32_t remoteAddress = GetIpv4MappedAddress(inetAddr6);
-                interfaceName = GetInterfaceForIp4Address(remoteAddress);
+                std::string interfaceName;
+                if (IsIpv4MappedAddress(inetAddr6))
+                {
+                    uint32_t remoteAddress = GetIpv4MappedAddress(inetAddr6);
+                    interfaceName = GetInterfaceForIp4Address(remoteAddress);
+                }
+                else
+                {
+                    interfaceName = GetInterfaceForIp6Address(inetAddr6);
+                }
+                result = GetLinkLocalAddressForInterface(interfaceName);
             }
-            else
-            {
-                interfaceName = GetInterfaceForIp6Address(inetAddr6);
-            }
-            result = GetLinkLocalAddressForInterface(interfaceName);
         }
     }
     if (result == "")

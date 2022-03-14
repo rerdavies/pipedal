@@ -563,7 +563,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                 </ButtonBase>
                                 
                                 
-                                <ButtonBase className={classes.setting} disabled={!isConfigValid || disableShutdown}
+                                <ButtonBase className={classes.setting} disabled={disableShutdown}
                                     onClick={() => this.handleRestart()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
@@ -577,7 +577,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     </div>
                                 </ButtonBase>
 
-                                <ButtonBase className={classes.setting} disabled={!isConfigValid || disableShutdown}
+                                <ButtonBase className={classes.setting} disabled={disableShutdown}
                                     onClick={() => this.handleShutdown()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
