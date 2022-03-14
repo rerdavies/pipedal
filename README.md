@@ -14,7 +14,7 @@ PiPedal provides a pre-installed selection of LV2 plugins from the ToobAmp colle
 
 If your USB audio adapter has midi connectors, you can use midi devices (keyboards or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
 
-<img src="docs/gallery/rig.jpg" width="92%">  
+<img src="docs/gallery/rig.jpg" width="92%"></img>  
 
 <!-- {% include gallery.html %} -->
 <img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
