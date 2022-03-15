@@ -1,3 +1,20 @@
+<!-- Minima style overrides -->
+<style>
+  h1 {
+    line-height: 4.0em
+  }
+
+  p {
+    line-height: 1.7em
+  }
+
+  .post-title {
+    font-size: 24px;
+    letter-spacing: 0px;
+    line-height: 1.5em;
+  }
+</style>
+
 <style>
   .sticky-header {
     display: block;
@@ -6,65 +23,69 @@
   .header-offset {
     display: none;
   }
+
   @media only screen and (min-height: 500px) {
     .sticky-header {
       z-index: 9;
       position: fixed;
       top: 0;
       width: 100%;
-      
+
       background: white;
       height: 54px;
-      
-      
+
+
     }
+
     .header-offset {
       display: block;
       height: 54px;
     }
 </style>
-<header class="site-header sticky-header" >
+<header class="site-header sticky-header">
 
-    <div class="wrapper ">
-      {%- assign default_paths = site.pages | map: "path" -%}
-      {%- assign page_paths = site.header_pages | default: default_paths -%}
-      {%- assign titles_size = site.pages | map: 'title' | join: '' | size -%}
-      <a class="site-title" rel="author" href="{{ "/" | relative_url }}" style="vertical-align: center">
-        <img src="PiPedal-logo.png" style="height: 32px;border: 0px;margin-top: 8px;margin-bottom: 8px;" />
-      </a>
-  
-      {%- if titles_size > 0 -%}
-        <nav class="site-nav">
-          <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-          <label for="nav-trigger">
-            <span class="menu-icon">
-              <svg viewBox="0 0 18 15" width="18px" height="15px">
-                <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-              </svg>
-            </span>
-          </label>
-  
-          <div class="trigger">
-            {%- for path in page_paths -%}
-              {%- assign my_page = site.pages | where: "path", path | first -%}
-              {%- if my_page.title -%}
-              <a class="page-link" href="{{ my_page.url | relative_url }}">{{ my_page.title | escape }}</a>
-              {%- endif -%}
-            {%- endfor -%}
-            <a class="page-link" href="https://github.com/sponsors/rerdavies" style="vertical-align: center">
-                Sponsor
-                <span style="vertical-align: center">
-                    <svg aria-hidden="true" height="12" viewBox="0 0 16 16" version="1.1" width="12" 
-                          >
-                      <path fill="red" fill-rule="evenodd" d="M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 008 13.393a20.561 20.561 0 003.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 01-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5zM8 14.25l-.345.666-.002-.001-.006-.003-.018-.01a7.643 7.643 0 01-.31-.17 22.075 22.075 0 01-3.434-2.414C2.045 10.731 0 8.35 0 5.5 0 2.836 2.086 1 4.25 1 5.797 1 7.153 1.802 8 3.02 8.847 1.802 10.203 1 11.75 1 13.914 1 16 2.836 16 5.5c0 2.85-2.045 5.231-3.885 6.818a22.08 22.08 0 01-3.744 2.584l-.018.01-.006.003h-.002L8 14.25zm0 0l.345.666a.752.752 0 01-.69 0L8 14.25z"></path>
-                  </svg>
-                </span>
-            </a>
-          </div>
-        </nav>
-      {%- endif -%}
-    </div>
-  </header>
-  <div class="header-offset">
-    &nbsp;
+  <div class="wrapper ">
+    {%- assign default_paths = site.pages | map: "path" -%}
+    {%- assign page_paths = site.header_pages | default: default_paths -%}
+    {%- assign titles_size = site.pages | map: 'title' | join: '' | size -%}
+    <a class="site-title" rel="author" href="{{ " /" | relative_url }}" style="vertical-align: center">
+      <img src="/pipedal/PiPedal-logo.png" style="height: 32px;border: 0px;margin-top: 8px;margin-bottom: 8px;" />
+    </a>
+
+    {%- if titles_size > 0 -%}
+    <nav class="site-nav">
+      <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+      <label for="nav-trigger">
+        <span class="menu-icon">
+          <svg viewBox="0 0 18 15" width="18px" height="15px">
+            <path
+              d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z" />
+          </svg>
+        </span>
+      </label>
+
+      <div class="trigger">
+        {%- for path in page_paths -%}
+        {%- assign my_page = site.pages | where: "path", path | first -%}
+        {%- if my_page.title -%}
+        <a class="page-link" href="{{ my_page.url | relative_url }}">{{ my_page.title | escape }}</a>
+        {%- endif -%}
+        {%- endfor -%}
+        <a class="page-link" href="https://github.com/sponsors/rerdavies" style="vertical-align: center">
+          Sponsor
+          <span style="vertical-align: center">
+            <svg aria-hidden="true" height="12" viewBox="0 0 16 16" version="1.1" width="12">
+              <path fill="red" fill-rule="evenodd"
+                d="M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 008 13.393a20.561 20.561 0 003.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 01-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5zM8 14.25l-.345.666-.002-.001-.006-.003-.018-.01a7.643 7.643 0 01-.31-.17 22.075 22.075 0 01-3.434-2.414C2.045 10.731 0 8.35 0 5.5 0 2.836 2.086 1 4.25 1 5.797 1 7.153 1.802 8 3.02 8.847 1.802 10.203 1 11.75 1 13.914 1 16 2.836 16 5.5c0 2.85-2.045 5.231-3.885 6.818a22.08 22.08 0 01-3.744 2.584l-.018.01-.006.003h-.002L8 14.25zm0 0l.345.666a.752.752 0 01-.69 0L8 14.25z">
+              </path>
+            </svg>
+          </span>
+        </a>
+      </div>
+    </nav>
+    {%- endif -%}
   </div>
+</header>
+<div class="header-offset">
+  &nbsp;
+</div>

@@ -30,6 +30,7 @@ github_repository: rerdavies/pipedal
 header_pages:
   - Documentation.md 
   - download.md
+  - News.md
 
 # Build settings
 theme: minima
