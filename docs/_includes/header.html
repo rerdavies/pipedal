@@ -48,7 +48,7 @@
     {%- assign default_paths = site.pages | map: "path" -%}
     {%- assign page_paths = site.header_pages | default: default_paths -%}
     {%- assign titles_size = site.pages | map: 'title' | join: '' | size -%}
-    <a class="site-title" rel="author" href="{{ " /" | relative_url }}" style="vertical-align: center">
+    <a class="site-title" rel="author" href="{{ "/" | relative_url }}" style="vertical-align: center">
       <img src="/pipedal/PiPedal-logo.png" style="height: 32px;border: 0px;margin-top: 8px;margin-bottom: 8px;" />
     </a>
 
