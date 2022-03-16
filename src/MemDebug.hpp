@@ -17,40 +17,17 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "pch.h"
-#include "catch.hpp"
-#include <sstream>
-#include <cstdint>
-#include <string>
 
+#include <stddef.h>
 
-#include "Lv2Host.hpp"
-#include "MemDebug.hpp"
+#pragma once
 
-using namespace pipedal;
+namespace pipedal {
+struct MemStats {
+    size_t allocated = 0;
+    size_t allocations = 0;
+};
 
+const MemStats &GetMemStats();
 
-TEST_CASE( "Lv2Host memory leak", "[lv2host_leak][Build][Dev]" ) {
-
-    MemStats initialMemory = GetMemStats();
-    {
-        Lv2Host host;
-
-        host.Load("/usr/lib/lv2:/usr/local/lib/lv2:/usr/modep/lv2");
-    }
-    MemStats finalMemory = GetMemStats();
-
-    // Something lilv leaks a Dublin Core url.
-    // Acceptable.
-    const int ACCEPTABLE_ALLOCATION_LEAKS = 4;
-    const int ACCEPTABLE_MEMORY_LEAK = 400;
-
-    if (finalMemory.allocations > initialMemory.allocations + ACCEPTABLE_ALLOCATION_LEAKS
-        || finalMemory.allocated > initialMemory.allocated + ACCEPTABLE_MEMORY_LEAK) 
-    {
-        std::cout << "Leaked Allocations: " << (finalMemory.allocations- initialMemory.allocations) << std::endl;
-        std::cout << "Leaked Memory: " << (finalMemory.allocated - initialMemory.allocated) << " bytes" << std::endl;
-
-        REQUIRE(finalMemory.allocations == initialMemory.allocations);
-    }
 }

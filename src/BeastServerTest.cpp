@@ -19,25 +19,38 @@
 #include "pch.h"
 #include "catch.hpp"
 
-
 #include "BeastServer.hpp"
+#include "MemDebug.hpp"
+#include <iostream>
 
 using namespace pipedal;
 
-TEST_CASE( "BeastServer shutdown", "[beastServerShutdown]" ) {
+TEST_CASE("BeastServer shutdown", "[beastServerShutdown][Build][Dev]")
+{
+    MemStats initialMemory = GetMemStats();
+    {
+        auto const address = boost::asio::ip::make_address("0.0.0.0");
+        auto const port = 8081;
+        std::string doc_root = ".";
+        auto const threads = 3;
 
-    auto const address = boost::asio::ip::make_address("0.0.0.0");
-    auto const port = 8081;
-    std::string doc_root = ".";
-    auto const threads = 3;
+        auto server = createBeastServer(
+            address, port, doc_root.c_str(), threads);
+        server->RunInBackground();
+        sleep(5);
+        server->ShutDown(1000);
+        sleep(1);
+        server->Join();
+    }
+    MemStats finalMemory = GetMemStats();
 
-    auto server = createBeastServer(
-        address,port,doc_root.c_str(),threads);
-    server->RunInBackground();
-    sleep(30000);
-    server->ShutDown(1000);
-    sleep(1);
-    server->Join();
+    // currently leaking one allocation of 8 bytes. Acceptable.
+    if (finalMemory.allocations > initialMemory.allocations+1) 
+    {
+        std::cout << "Leaked Allocations: " << (finalMemory.allocations- initialMemory.allocations) << std::endl;
+        std::cout << "Leaked Memory: " << (finalMemory.allocated - initialMemory.allocated) << " bytes" << std::endl;
+
+        REQUIRE(finalMemory.allocations == initialMemory.allocations);
+    }
 
 }
-

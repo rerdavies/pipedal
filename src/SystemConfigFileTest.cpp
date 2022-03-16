@@ -25,30 +25,94 @@
 #include "PiPedalException.hpp"
 #include <iostream>
 
-
 #include "SystemConfigFile.hpp"
-
 
 using namespace pipedal;
 
+static std::string GetTestFile()
+{
+    std::stringstream s;
+    s
+        << "interface=wlan0" << std::endl
+        << "driver=nl80211" << std::endl
+        << "country_code=CA" << std::endl
+        << "" << std::endl
+        << "# Wi-Fi features" << std::endl
+        << "ieee80211n=1" << std::endl
+        << "ieee80211d=1" << std::endl
+        << "ieee80211ac=1" << std::endl
+        << "ht_capab=[HT40][SHORT-GI-20][DSSS_CCK-40]" << std::endl
+        << "" << std::endl
+        << "# Authentication options" << std::endl
+        << "wmm_enabled=1" << std::endl
+        << "auth_algs=1" << std::endl
+        << "wpa=2" << std::endl
+        << "wpa_pairwise=TKIP CCMP" << std::endl
+        << "wpa_ptk_rekey=600" << std::endl
+        << "rsn_pairwise=CCMP" << std::endl
+        << "" << std::endl
+        << "# Access point configuration" << std::endl
+        << "ssid=pipedal" << std::endl
+        << "hw_mode=g" << std::endl
+        << "channel=8" << std::endl
+        << "wpa_passphrase=PASSWORD" << std::endl;
 
-TEST_CASE( "SystemConfigFile Test", "[system_config_file_test]" ) {
-    std::filesystem::path path("/etc/hostapd/hostapd.conf");
+    return s.str();
+}
+static std::string GetExpectedFile()
+{
+    std::stringstream s;
+    s
+        << "interface=wlan0" << std::endl
+        << "driver=nl80211" << std::endl
+        << "country_code=FR" << std::endl
+        << "" << std::endl
+        << "# Wi-Fi features" << std::endl
+        << "ieee80211n=1" << std::endl
+        << "ieee80211d=1" << std::endl
+        << "ieee80211ac=1" << std::endl
+        << "ht_capab=[HT40][SHORT-GI-20][DSSS_CCK-40]" << std::endl
+        << "" << std::endl
+        << "# Authentication options" << std::endl
+        << "wmm_enabled=1" << std::endl
+        << "auth_algs=1" << std::endl
+        << "wpa=2" << std::endl
+        << "wpa_pairwise=TKIP CCMP" << std::endl
+        << "wpa_ptk_rekey=600" << std::endl
+        << "rsn_pairwise=CCMP" << std::endl
+        << "" << std::endl
+        << "# Access point configuration" << std::endl
+        << "ssid=newSsid" << std::endl
+        << "hw_mode=g" << std::endl
+        << "channel=8" << std::endl
+        << "wpa_passphrase=PASSWORD" << std::endl
+        << "" << std::endl
+        << "# A new feature." << std::endl
+        << "xx=new_feature" << std::endl;
+    return s.str();
+}
 
-    SystemConfigFile file(path);
-    std::string driverName;
+TEST_CASE("SystemConfigFile Test", "[system_config_file_test]")
+{
+
+    std::stringstream testFile(GetTestFile());
+
+    SystemConfigFile file;
+    file.Load(testFile);
 
     REQUIRE(file.Get("driver") == "nl80211");
 
-    file.Set("ssid","ssid","Name of the access point");
-    file.Set("xx","new_feature","A new feature.");
-    file.Set("ssid","newSsid");
-    file.Set("country_code","FR");
-    
+    file.Set("ssid", "ssid", "Name of the access point");
+    file.Set("xx", "new_feature", "A new feature.");
+    file.Set("ssid", "newSsid");
+    file.Set("country_code", "FR");
 
-    file.Save(std::cout);
+    std::stringstream outputFile;
+    file.Save(outputFile);
 
+    std::string stringOutput = outputFile.str();
+    std::cout << stringOutput;
 
-
+    std::string expected = GetExpectedFile();
+    REQUIRE(stringOutput == expected);
 }
-

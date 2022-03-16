@@ -162,8 +162,15 @@ private:
     std::vector<json_member_reference_base<CLASS>* > members_;
     json_map_impl(const json_map_impl&) { } // disable copy constructor.
 public:
-    json_map_impl(std::vector<json_member_reference_base<CLASS>*> members)
+    using members_t = std::vector<json_member_reference_base<CLASS>*>;
+
+    json_map_impl(const members_t &members)
     : members_(members)
+    {
+
+    }
+    json_map_impl(members_t &&members)
+    : members_(std::forward<members_t>(members))
     {
 
     }
@@ -185,10 +192,18 @@ public:
 
 class json_map {
 public:
+    
     template <typename CLASS> class storage_type : public json_map_impl<CLASS> {
     public:
-        storage_type(std::vector<json_member_reference_base<CLASS>*> members)
+
+        using members_t = std::vector<json_member_reference_base<CLASS>*>;
+
+        storage_type(const members_t &members)
             : json_map_impl<CLASS>(members)
+        {
+        }
+        storage_type(members_t &&members)
+            : json_map_impl<CLASS>(std::forward<members_t>(members))
         {
         }
     };

@@ -44,7 +44,6 @@ static std::string makeLine(const std::string &key, const std::string &value)
 
 void SystemConfigFile::Load(const std::filesystem::path &path)
 {
-    this->lines.clear();
 
     ifstream f(path);
     if (!f.is_open())
@@ -53,6 +52,12 @@ void SystemConfigFile::Load(const std::filesystem::path &path)
         s << "File not found: " << path;
         throw PiPedalException(s.str());
     }
+    Load(f);
+    this->currentPath = path;
+}
+void SystemConfigFile::Load(std::istream&f) {
+    this->lines.clear();
+
 
     while (true)
     {
@@ -64,7 +69,6 @@ void SystemConfigFile::Load(const std::filesystem::path &path)
         }
         lines.push_back(line);
     }
-    this->currentPath = path;
 }
 
 int64_t SystemConfigFile::GetLine(const std::string &key) const

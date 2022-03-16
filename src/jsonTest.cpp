@@ -149,7 +149,7 @@ TEST_CASE( "json read", "[json_read_test]" ) {
 
 }
 
-TEST_CASE( "json smart ptrs", "[json_smart_ptrs]" ) {
+TEST_CASE( "json smart ptrs", "[json_smart_ptrs][Build][Dev]" ) {
     std::string json =get_json();
 
 

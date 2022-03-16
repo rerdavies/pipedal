@@ -36,6 +36,7 @@ public:
         Load(path);
     }
 
+    void Load(std::istream &input);
     void Load(const std::filesystem::path&path);
 
     void Save(std::ostream &os);

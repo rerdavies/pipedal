@@ -189,6 +189,7 @@ add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
     SystemConfigFileTest.cpp
     BeastServerTest.cpp
     MemDebug.cpp
+    MemDebug.hpp
     )
 
 configure_file(config.hpp.in config.hpp)
@@ -206,6 +207,13 @@ target_include_directories(pipedaltest PRIVATE
 target_link_libraries(pipedaltest PRIVATE pthread atomic stdc++fs asound
     ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd SDBusCpp::sdbus-c++
     )
+
+
+# Build machine tests. Run tests that are not dependent on hardware.
+add_test(NAME BuildTest COMMAND pipedaltest "[Build]")
+
+# Developer tests. Run tests that only succeed on a Raspberry Pi with attached UBS Audio.
+add_test(NAME DevTest COMMAND pipedaltest "[Dev]")
 
 #################################
 
