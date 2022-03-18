@@ -76,8 +76,8 @@ const ToobMLView =
             addGainEnabledSubscription(instanceId: number)
             {
                 this.removeGainEnabledSubscription();
-
-                this.monitorPortHandle = this.model.monitorPort(instanceId,"gainEnabled",0.1,
+                this.subscribedId = instanceId;
+                this.monitorPortHandle = this.model.monitorPort(instanceId,"gainEnable",0.1,
                     (value: number) => {
                         if (this.gainRef.current)
                         {
@@ -112,10 +112,10 @@ const ToobMLView =
                     ( <ToobFrequencyResponseView instanceId={this.props.instanceId} minDb={-20} maxDb={20} />)
                     );
 
-                let gainControl: React.ReactElement = controls[3] as React.ReactElement;
+                let gainControl: React.ReactElement = controls[2] as React.ReactElement;
                 if (gainControl)
                 {
-                    controls[3] = (<div ref={this.gainRef}> { gainControl} </div>);
+                    controls[2] = (<div ref={this.gainRef}> { gainControl} </div>);
                 }
                 return controls;
             }

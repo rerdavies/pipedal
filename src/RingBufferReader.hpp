@@ -64,6 +64,7 @@ namespace pipedal
         int sampleRate = 0;
         int samplesToNextCallback = 0;
         bool waitingForAck = false;
+        float lastValue = -1E30;
     };
 
     class RealtimeMonitorPortSubscriptions

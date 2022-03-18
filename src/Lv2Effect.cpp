@@ -93,7 +93,15 @@ Lv2Effect::Lv2Effect(
 
     LV2_Feature **myFeatures = &this->features[0];
 
-    LilvInstance *pInstance = lilv_plugin_instantiate(pPlugin, pHost->GetSampleRate(), myFeatures);
+    LilvInstance *pInstance = nullptr;
+    try {
+        pInstance = lilv_plugin_instantiate(pPlugin, pHost->GetSampleRate(), myFeatures);
+    } catch (const std::exception &e)
+    {
+        this->pInstance = nullptr;
+        throw PiPedalException(SS("Plugin threw an exception: " << e.what()));
+
+    }
     this->pInstance = pInstance;
     if (this->pInstance == nullptr)
     {

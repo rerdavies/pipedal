@@ -340,15 +340,18 @@ private:
                 portSubscription.samplesToNextCallback += portSubscription.sampleRate;
                 if (!portSubscription.waitingForAck)
                 {
-                    portSubscription.waitingForAck = true;
                     float value = realtimeActivePedalBoard->GetControlOutputValue(
                         portSubscription.instanceIndex,
                         portSubscription.portIndex);
-
-                    this->realtimeWriter.SendMonitorPortUpdate(
-                        portSubscription.callbackPtr,
-                        portSubscription.subscriptionHandle,
-                        value);
+                    if (value != portSubscription.lastValue)
+                    {
+                        portSubscription.waitingForAck = true;
+                        portSubscription.lastValue = value;
+                        this->realtimeWriter.SendMonitorPortUpdate(
+                            portSubscription.callbackPtr,
+                            portSubscription.subscriptionHandle,
+                            value);
+                    }
                 }
             }
         }
