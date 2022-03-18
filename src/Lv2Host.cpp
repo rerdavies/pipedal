@@ -37,26 +37,26 @@
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
 #include "lv2/lv2plug.in/ns/ext/presets/presets.h"
 #include "lv2/lv2plug.in/ns/ext/port-props/port-props.h"
-#include  "lv2/lv2plug.in/ns/extensions/units/units.h"
+#include "lv2/lv2plug.in/ns/extensions/units/units.h"
 #include "lv2/lv2plug.in/ns/ext/port-groups/port-groups.h"
 #include <fstream>
 #include "PiPedalException.hpp"
+#include "StdOutCapture.hpp"
 
 #include "Locale.hpp"
-
 
 using namespace pipedal;
 
 #define MAP_CHECK()                                                           \
     {                                                                         \
         if (GetPluginClass("http://lv2plug.in/ns/lv2core#Plugin") == nullptr) \
-            throw PiPedalStateException("Map is broken");                      \
+            throw PiPedalStateException("Map is broken");                     \
     }
 
 #define PLUGIN_MAP_CHECK()                                                           \
     {                                                                                \
         if (pHost->GetPluginClass("http://lv2plug.in/ns/lv2core#Plugin") == nullptr) \
-            throw PiPedalStateException("Map is broken");                             \
+            throw PiPedalStateException("Map is broken");                            \
     }
 
 #define P_LV2_CORE_URI "http://lv2plug.in/ns/lv2core#"
@@ -85,20 +85,18 @@ namespace pipedal
     static const char *LV2_MIDI_EVENT = "http://lv2plug.in/ns/ext/midi#MidiEvent";
     static const char *LV2_DESIGNATION = "http://lv2plug.in/ns/lv2core#Designation";
 
-
-    class Lv2Host::Urids {
+    class Lv2Host::Urids
+    {
     public:
         Urids(MapFeature &mapFeature)
         {
-            atom_Float           = mapFeature.GetUrid(LV2_ATOM__Float);
+            atom_Float = mapFeature.GetUrid(LV2_ATOM__Float);
         }
         LV2_URID atom_Float;
     };
 }
 
-
-
-void Lv2Host::LilvUris::Initialize(LilvWorld*pWorld)
+void Lv2Host::LilvUris::Initialize(LilvWorld *pWorld)
 {
     rdfsComment = lilv_new_uri(pWorld, Lv2Host::RDFS_COMMENT_URI);
     logarithic_uri = lilv_new_uri(pWorld, LV2_PORT_LOGARITHMIC);
@@ -123,10 +121,7 @@ void Lv2Host::LilvUris::Initialize(LilvWorld*pWorld)
     time_beatsPerMinute = lilv_new_uri(pWorld, LV2_TIME__beatsPerMinute);
     time_speed = lilv_new_uri(pWorld, LV2_TIME__speed);
 
-    appliesTo = lilv_new_uri(pWorld,LV2_CORE__appliesTo);
-
-
-
+    appliesTo = lilv_new_uri(pWorld, LV2_CORE__appliesTo);
 }
 
 void Lv2Host::LilvUris::Free()
@@ -199,9 +194,9 @@ static float nodeAsFloat(const LilvNode *node, float default_ = 0)
     return default_;
 }
 
-class NodeAutoFree: public LilvNodePtr
+class NodeAutoFree : public LilvNodePtr
 {
-    
+
     // const LilvNode* returns must not be freed, by convention.
 private:
     NodeAutoFree(const LilvNode *node)
@@ -213,7 +208,7 @@ public:
     {
     }
     NodeAutoFree(LilvNode *node)
-    :LilvNodePtr(node)
+        : LilvNodePtr(node)
     {
     }
 
@@ -336,7 +331,7 @@ std::shared_ptr<Lv2PluginClass> Lv2Host::GetPluginClass(const LilvPluginClass *p
 std::shared_ptr<Lv2PluginClass> Lv2Host::MakePluginClass(const LilvPluginClass *pClass)
 {
     std::string uri = nodeAsString(lilv_plugin_class_get_uri(pClass));
-    auto  t = this->classesMap.find(uri);
+    auto t = this->classesMap.find(uri);
     if (t != classesMap.end())
     {
         return t->second;
@@ -385,6 +380,7 @@ void Lv2Host::LoadPluginClassesFromLilv()
 
 void Lv2Host::Load(const char *lv2Path)
 {
+
     this->plugins_.clear();
     this->ui_plugins_.clear();
     if (!classesLoaded)
@@ -395,15 +391,19 @@ void Lv2Host::Load(const char *lv2Path)
     free_world();
 
     setenv("LV2_PATH", lv2Path, true);
+    StdOutCapture stdoutCapture;  // captures lilv messages written to STDOUT.
     pWorld = lilv_world_new();
-    lilv_world_load_all(pWorld);
+    {
+
+        lilv_world_load_all(pWorld);
+
+    }
 
     lilvUris.Initialize(pWorld);
 
     const LilvPlugins *plugins = lilv_world_get_all_plugins(pWorld);
 
     LoadPluginClassesFromLilv();
-
 
     LILV_FOREACH(plugins, iPlugin, plugins)
     {
@@ -441,8 +441,14 @@ void Lv2Host::Load(const char *lv2Path)
             this->plugins_.push_back(pluginInfo);
         }
     }
+    auto messages = stdoutCapture.GetOutputLines();
 
-    const auto &collation = std::use_facet<std::collate<char> >(std::locale());
+    for (const std::string & s: messages)
+    {
+        Lv2Log::info("lilv: " + s);
+    }
+
+    const auto &collation = std::use_facet<std::collate<char>>(std::locale());
     auto compare = [&collation](
                        const std::shared_ptr<Lv2PluginInfo> &left,
                        const std::shared_ptr<Lv2PluginInfo> &right)
@@ -485,7 +491,8 @@ void Lv2Host::Load(const char *lv2Path)
             }
         }
     }
-};
+}
+;
 
 class NodesAutoFree
 {
@@ -526,7 +533,7 @@ static std::vector<std::string> nodeAsStringArray(const LilvNodes *nodes)
 }
 
 const char *Lv2Host::RDFS_COMMENT_URI = "http://www.w3.org/2000/01/rdf-schema#"
-                                      "comment";
+                                        "comment";
 
 LilvNode *Lv2Host::get_comment(const std::string &uri)
 {
@@ -540,9 +547,9 @@ static bool ports_sort_compare(std::shared_ptr<Lv2PortInfo> &p1, const std::shar
     return p1->index() < p2->index();
 }
 
-bool Lv2PluginInfo::HasFactoryPresets(Lv2Host*lv2Host, const LilvPlugin*plugin)
+bool Lv2PluginInfo::HasFactoryPresets(Lv2Host *lv2Host, const LilvPlugin *plugin)
 {
-    NodesAutoFree nodes = lilv_plugin_get_related(plugin,lv2Host->lilvUris.pset_Preset);
+    NodesAutoFree nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris.pset_Preset);
     bool result = false;
     LILV_FOREACH(nodes, iNode, nodes)
     {
@@ -554,9 +561,9 @@ bool Lv2PluginInfo::HasFactoryPresets(Lv2Host*lv2Host, const LilvPlugin*plugin)
 
 Lv2PluginInfo::Lv2PluginInfo(Lv2Host *lv2Host, const LilvPlugin *pPlugin)
 {
-    const LilvNode* pluginUri = lilv_plugin_get_uri(pPlugin);
-    
-    this->has_factory_presets_ = HasFactoryPresets(lv2Host,pPlugin);
+    const LilvNode *pluginUri = lilv_plugin_get_uri(pPlugin);
+
+    this->has_factory_presets_ = HasFactoryPresets(lv2Host, pPlugin);
 
     this->uri_ = nodeAsString(lilv_plugin_get_uri(pPlugin));
 
@@ -628,9 +635,7 @@ Lv2PluginInfo::Lv2PluginInfo(Lv2Host *lv2Host, const LilvPlugin *pPlugin)
 
     std::sort(ports_.begin(), ports_.end(), ports_sort_compare);
 
-
     this->is_valid_ = isValid;
-
 }
 
 std::vector<std::string> supportedFeatures = {
@@ -780,7 +785,6 @@ Lv2PortInfo::Lv2PortInfo(Lv2Host *host, const LilvPlugin *plugin, const LilvPort
     NodeAutoFree unitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris.unitsUri);
     this->units_ = UriToUnits(nodeAsString(unitsValueUri));
 
-
     NodeAutoFree bufferType = lilv_port_get(plugin, pPort, host->lilvUris.bufferType_uri);
 
     this->buffer_type_ = "";
@@ -929,7 +933,6 @@ std::shared_ptr<Lv2PluginInfo> Lv2Host::GetPluginInfo(const std::string &uri) co
     return nullptr;
 }
 
-
 Lv2PedalBoard *Lv2Host::CreateLv2PedalBoard(const PedalBoard &pedalBoard)
 {
     Lv2PedalBoard *pPedalBoard = new Lv2PedalBoard();
@@ -945,19 +948,19 @@ Lv2PedalBoard *Lv2Host::CreateLv2PedalBoard(const PedalBoard &pedalBoard)
     }
 }
 
-
-struct StateCallbackData {
-    Lv2Host*pHost;
+struct StateCallbackData
+{
+    Lv2Host *pHost;
     std::vector<ControlValue> *pResult;
 };
 
-void Lv2Host::fn_LilvSetPortValueFunc(const char* port_symbol,
-                                     void*       user_data,
-                                     const void* value,
-                                     uint32_t    size,
-                                     uint32_t    type)
+void Lv2Host::fn_LilvSetPortValueFunc(const char *port_symbol,
+                                      void *user_data,
+                                      const void *value,
+                                      uint32_t size,
+                                      uint32_t type)
 {
-    StateCallbackData *pData = (StateCallbackData*)user_data;
+    StateCallbackData *pData = (StateCallbackData *)user_data;
     Lv2Host *pHost = pData->pHost;
     std::vector<ControlValue> *pResult = pData->pResult;
     LV2_URID valueType = (LV2_URID)type;
@@ -965,35 +968,32 @@ void Lv2Host::fn_LilvSetPortValueFunc(const char* port_symbol,
     {
         throw PiPedalStateException("Preset format not supported.");
     }
-    pResult->push_back(ControlValue(port_symbol,*(float*)value));
-
+    pResult->push_back(ControlValue(port_symbol, *(float *)value));
 }
 
-
-
 std::vector<ControlValue> Lv2Host::LoadFactoryPluginPreset(
-    PedalBoardItem*pedalBoardItem, const std::string&presetUri)
+    PedalBoardItem *pedalBoardItem, const std::string &presetUri)
 {
 
     std::vector<ControlValue> result;
 
-    const LilvPlugins*plugins = lilv_world_get_all_plugins(this->pWorld);
+    const LilvPlugins *plugins = lilv_world_get_all_plugins(this->pWorld);
 
     NodeAutoFree uriNode = lilv_new_uri(pWorld, pedalBoardItem->uri().c_str());
 
     lilv_world_load_resource(pWorld, uriNode);
 
-    const LilvPlugin * plugin = lilv_plugins_get_by_uri (plugins, uriNode);
+    const LilvPlugin *plugin = lilv_plugins_get_by_uri(plugins, uriNode);
     if (plugin == nullptr)
     {
         throw PiPedalStateException("No such plugin.");
     }
 
-
-    LilvNodes* presets = lilv_plugin_get_related(plugin, lilvUris.pset_Preset);
-	LILV_FOREACH(nodes, i, presets) {
-		const LilvNode* preset = lilv_nodes_get(presets, i);
-		lilv_world_load_resource(pWorld, preset);
+    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris.pset_Preset);
+    LILV_FOREACH(nodes, i, presets)
+    {
+        const LilvNode *preset = lilv_nodes_get(presets, i);
+        lilv_world_load_resource(pWorld, preset);
 
         std::string thisPresetUri = nodeAsString(preset);
         if (presetUri == thisPresetUri)
@@ -1001,62 +1001,62 @@ std::vector<ControlValue> Lv2Host::LoadFactoryPluginPreset(
 
             /*********************************/
 
+            // NodeAutoFree uriNode = lilv_new_uri(pWorld, presetUri.c_str());
 
-                // NodeAutoFree uriNode = lilv_new_uri(pWorld, presetUri.c_str());
+            auto lilvState = lilv_state_new_from_world(pWorld, GetLv2UridMap(), preset);
 
-                auto lilvState = lilv_state_new_from_world(pWorld, GetLv2UridMap(), preset);
+            if (lilvState == nullptr)
+            {
+                throw PiPedalStateException("Preset not found.");
+            }
 
-                if (lilvState == nullptr)
-                {
-                    throw PiPedalStateException("Preset not found.");
-                }
+            StateCallbackData cbData;
+            cbData.pHost = this;
+            cbData.pResult = &result;
+            auto n = lilv_state_get_num_properties(lilvState);
+            lilv_state_emit_port_values(lilvState, fn_LilvSetPortValueFunc, &cbData);
 
-
-                StateCallbackData cbData;
-                cbData.pHost = this;
-                cbData.pResult = &result;
-                auto n = lilv_state_get_num_properties(lilvState);
-                lilv_state_emit_port_values (lilvState, fn_LilvSetPortValueFunc,&cbData);
-
-                lilv_state_free(lilvState);
-                break;
+            lilv_state_free(lilvState);
+            break;
 
             /*********************************/
         }
-
-	}
-	lilv_nodes_free(presets);
+    }
+    lilv_nodes_free(presets);
 
     return result;
 }
 
-struct PresetCallbackState {
+struct PresetCallbackState
+{
     Lv2Host *pHost;
-    std::map<std::string,float> *values;
+    std::map<std::string, float> *values;
     bool failed = false;
 };
 
-void Lv2Host::PortValueCallback(const char*symbol,void*user_data,const void* value,uint32_t size, uint32_t type)
+void Lv2Host::PortValueCallback(const char *symbol, void *user_data, const void *value, uint32_t size, uint32_t type)
 {
-    PresetCallbackState *pState = static_cast<PresetCallbackState*>(user_data);
-    Lv2Host*pHost = pState->pHost;
+    PresetCallbackState *pState = static_cast<PresetCallbackState *>(user_data);
+    Lv2Host *pHost = pState->pHost;
 
     if (type == pHost->urids->atom_Float)
     {
-        (*pState->values)[symbol] = *static_cast<const float*>(value);
-    } else {
+        (*pState->values)[symbol] = *static_cast<const float *>(value);
+    }
+    else
+    {
         pState->failed = true;
     }
 }
 PluginPresets Lv2Host::GetFactoryPluginPresets(const std::string &pluginUri)
 {
-    const LilvPlugins*plugins = lilv_world_get_all_plugins(this->pWorld);
+    const LilvPlugins *plugins = lilv_world_get_all_plugins(this->pWorld);
 
     NodeAutoFree uriNode = lilv_new_uri(pWorld, pluginUri.c_str());
 
     lilv_world_load_resource(pWorld, uriNode);
 
-    const LilvPlugin * plugin = lilv_plugins_get_by_uri (plugins, uriNode);
+    const LilvPlugin *plugin = lilv_plugins_get_by_uri(plugins, uriNode);
     if (plugin == nullptr)
     {
         throw PiPedalStateException("No such plugin.");
@@ -1065,37 +1065,37 @@ PluginPresets Lv2Host::GetFactoryPluginPresets(const std::string &pluginUri)
     PluginPresets result;
     result.pluginUri_ = pluginUri;
 
-    LilvNodes* presets = lilv_plugin_get_related(plugin, lilvUris.pset_Preset);
-	LILV_FOREACH(nodes, i, presets) {
-		const LilvNode* preset = lilv_nodes_get(presets, i);
-		lilv_world_load_resource(pWorld, preset);
+    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris.pset_Preset);
+    LILV_FOREACH(nodes, i, presets)
+    {
+        const LilvNode *preset = lilv_nodes_get(presets, i);
+        lilv_world_load_resource(pWorld, preset);
 
-        LilvState *state = lilv_state_new_from_world(pWorld,this->mapFeature.GetMap(),preset);
+        LilvState *state = lilv_state_new_from_world(pWorld, this->mapFeature.GetMap(), preset);
         if (state != nullptr)
         {
             std::string label = lilv_state_get_label(state);
-            std::map<std::string,float> controlValues;
-            PresetCallbackState cbData { this, &controlValues,false};
-            lilv_state_emit_port_values(state,PortValueCallback,(void*)&cbData);
+            std::map<std::string, float> controlValues;
+            PresetCallbackState cbData{this, &controlValues, false};
+            lilv_state_emit_port_values(state, PortValueCallback, (void *)&cbData);
             lilv_state_free(state);
 
             if (!cbData.failed)
             {
-                result.presets_.push_back(PluginPreset(result.nextInstanceId_++,std::move(label),std::move(controlValues)));
+                result.presets_.push_back(PluginPreset(result.nextInstanceId_++, std::move(label), std::move(controlValues)));
             }
         }
-	}
-	lilv_nodes_free(presets);
+    }
+    lilv_nodes_free(presets);
     return result;
-
 }
-
 
 Lv2Effect *Lv2Host::CreateEffect(const PedalBoardItem &pedalBoardItem)
 {
 
     auto info = this->GetPluginInfo(pedalBoardItem.uri());
-    if (!info) return nullptr;
+    if (!info)
+        return nullptr;
 
     return new Lv2Effect(this, info, pedalBoardItem);
 }
@@ -1112,8 +1112,6 @@ Lv2PortGroup::Lv2PortGroup(Lv2Host *lv2Host, const std::string &groupUri)
     name_ = nodeAsString(nameNode);
 }
 
-
-
 #define MAP_REF(class, name) \
     json_map::reference(#name, &class ::name##_)
 
@@ -1121,7 +1119,7 @@ Lv2PortGroup::Lv2PortGroup(Lv2Host *lv2Host, const std::string &groupUri)
     json_map::conditional_reference(#name, &class ::name##_, condition)
 
 json_map::storage_type<Lv2PluginClasses> Lv2PluginClasses::jmap{{
-    //json_map::reference("char_", &JsonTestTarget::char_),
+    // json_map::reference("char_", &JsonTestTarget::char_),
     json_map::reference("classes", &Lv2PluginClasses::classes_),
 }};
 
@@ -1246,4 +1244,3 @@ json_map::storage_type<Lv2PluginUiPortGroup> Lv2PluginUiPortGroup::jmap{{
     MAP_REF(Lv2PluginUiPortGroup, symbol),
     MAP_REF(Lv2PluginUiPortGroup, name),
 }};
-

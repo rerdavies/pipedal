@@ -25,7 +25,7 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
-import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
+import { PiPedalModelFactory, PiPedalModel,MonitorPortHandle } from "./PiPedalModel";
 import { PedalBoardItem } from './PedalBoard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
@@ -41,7 +41,7 @@ interface ToobMLProps extends WithStyles<typeof styles> {
 
 }
 interface ToobMLState {
-
+    gainEnabled: boolean;
 }
 
 const ToobMLView =
@@ -50,22 +50,73 @@ const ToobMLView =
         implements ControlViewCustomization
         {
             model: PiPedalModel;
+            gainRef: React.RefObject<HTMLDivElement>;
 
             customizationId: number = 1; 
 
             constructor(props: ToobMLProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
+                this.gainRef = React.createRef();
                 this.state = {
+                    gainEnabled: true
                 }
+            }
+
+            subscribedId?: number = undefined;
+            monitorPortHandle?: MonitorPortHandle = undefined;
+            removeGainEnabledSubscription()
+            {
+                if (this.monitorPortHandle)
+                {
+                    this.model.unmonitorPort(this.monitorPortHandle);
+                    this.monitorPortHandle = undefined;
+                }
+            }
+            addGainEnabledSubscription(instanceId: number)
+            {
+                this.removeGainEnabledSubscription();
+
+                this.monitorPortHandle = this.model.monitorPort(instanceId,"gainEnabled",0.1,
+                    (value: number) => {
+                        if (this.gainRef.current)
+                        {
+                            this.gainRef.current.style.opacity = value !== 0.0? "1.0": "0.4";
+                        }
+                        this.setState({gainEnabled: value !== 0.0 });
+                    });
+            }
+
+            componentDidUpdate()
+            {
+                if (this.props.instanceId !== this.subscribedId)
+                {
+                    this.removeGainEnabledSubscription();
+                    this.addGainEnabledSubscription(this.props.instanceId);
+
+                }
+            }
+            componentDidMount()
+            {
+                this.addGainEnabledSubscription(this.props.instanceId);
+            }
+            componentWillUnmount()
+            {
+                this.removeGainEnabledSubscription();
             }
 
             ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
-                let group = controls[1] as ControlGroup;
+                let group = controls[4] as ControlGroup;
                 group.controls.splice(0,0,
                     ( <ToobFrequencyResponseView instanceId={this.props.instanceId} minDb={-20} maxDb={20} />)
                     );
+
+                let gainControl: React.ReactElement = controls[3] as React.ReactElement;
+                if (gainControl)
+                {
+                    controls[3] = (<div ref={this.gainRef}> { gainControl} </div>);
+                }
                 return controls;
             }
             render() {
