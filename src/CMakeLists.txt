@@ -102,7 +102,7 @@ add_custom_command(
  
 
 set (PIPEDAL_SOURCES
-    StdOutCapture.hpp StdOutCapture.cpp
+    StdErrorCapture.hpp StdErrorCapture.cpp
     Ipv6Helpers.cpp Ipv6Helpers.hpp
     PluginPreset.cpp PluginPreset.hpp
     CpuGovernor.cpp CpuGovernor.hpp

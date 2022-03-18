@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-#include "StdOutCapture.hpp"
+#include "StdErrorCapture.hpp"
 #include <cstdio>
 #include <unistd.h>
 #include <fcntl.h>
@@ -38,18 +38,19 @@
 using namespace pipedal;
 
 constexpr int STDOUT_HANDLE = 2;
-StdOutCapture::StdOutCapture()
+StdErrorCapture::StdErrorCapture()
 {
-    this->tempFileName = std::tmpnam(nullptr);
+    char filename[] = "/tmp/pipedal.XXXXXX";
+    int redirectHandle = mkstemp(filename);
+    this->tempFileName = filename;
 
-    int redirectHandle = open(tempFileName.c_str(),O_CREAT | O_WRONLY | O_TRUNC);
     this->oldStdout = dup(STDOUT_HANDLE);
     dup2(redirectHandle,STDOUT_HANDLE);
     close(redirectHandle);
 
 
 }
-StdOutCapture::~StdOutCapture()
+StdErrorCapture::~StdErrorCapture()
 {
     EndCapture();
     if (tempFileName.length() != 0)
@@ -58,7 +59,7 @@ StdOutCapture::~StdOutCapture()
     }
 }
 
-void StdOutCapture::EndCapture()
+void StdErrorCapture::EndCapture()
 {
 
     if (this->oldStdout != -1)
@@ -70,7 +71,7 @@ void StdOutCapture::EndCapture()
     }
 }
 
-std::vector<std::string> StdOutCapture::GetOutputLines() {
+std::vector<std::string> StdErrorCapture::GetOutputLines() {
     EndCapture();
 
     std::vector<std::string> result;

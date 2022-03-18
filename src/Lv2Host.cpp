@@ -41,7 +41,7 @@
 #include "lv2/lv2plug.in/ns/ext/port-groups/port-groups.h"
 #include <fstream>
 #include "PiPedalException.hpp"
-#include "StdOutCapture.hpp"
+#include "StdErrorCapture.hpp"
 
 #include "Locale.hpp"
 
@@ -391,7 +391,7 @@ void Lv2Host::Load(const char *lv2Path)
     free_world();
 
     setenv("LV2_PATH", lv2Path, true);
-    StdOutCapture stdoutCapture;  // captures lilv messages written to STDOUT.
+    StdErrorCapture stdoutCapture;  // captures lilv messages written to STDOUT.
     pWorld = lilv_world_new();
     {
 

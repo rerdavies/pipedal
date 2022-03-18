@@ -20,13 +20,14 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace pipedal {
     
-class StdOutCapture {
+class StdErrorCapture {
 public:
-    StdOutCapture();
-    ~StdOutCapture();
+    StdErrorCapture();
+    ~StdErrorCapture();
 
     void EndCapture();
 
