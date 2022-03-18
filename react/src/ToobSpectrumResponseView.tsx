@@ -28,7 +28,7 @@ import withStyles from '@mui/styles/withStyles';
 import { PiPedalModelFactory, PiPedalModel, State,ListenHandle } from "./PiPedalModel";
 import { StandardItemSize } from './PluginControlView';
 import Utility from './Utility';
-import { setInterval,clearInterval } from 'timers';
+// import { setInterval,clearInterval } from 'timers'; // no longer requires polyfill (webpack >= 5)
 
 
 const SPECTRUM_RESPONSE_VECTOR_URI = "http://two-play.com/plugins/toob#spectrumResponse";
