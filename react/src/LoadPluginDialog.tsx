@@ -19,7 +19,7 @@
 
 import React, { ReactNode, SyntheticEvent, CSSProperties } from 'react';
 
-import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, FavoritesList } from './PiPedalModel';
 import { UiPlugin, PluginType } from './Lv2Plugin';
 import ButtonBase from '@mui/material/ButtonBase';
 import Button from '@mui/material/Button';
@@ -42,10 +42,10 @@ import SearchControl from './SearchControl';
 import SearchFilter from './SearchFilter';
 import { FixedSizeGrid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-
-import Slide, {SlideProps} from '@mui/material/Slide';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
-import { WithStyles, withStyles} from '@mui/styles';
+import { WithStyles, withStyles } from '@mui/styles';
 
 
 export type CloseEventHandler = () => void;
@@ -119,6 +119,9 @@ const pluginGridStyles = (theme: Theme) => createStyles({
         paddingLeft: 16, whiteSpace: "nowrap"
 
     },
+    favoriteDecoration: {
+        flex: "0 0 auto"
+    },
     table: {
         borderCollapse: "collapse",
     },
@@ -167,6 +170,7 @@ type PluginGridState = {
     grid_cell_width: number,
     grid_cell_columns: number,
     minimumItemWidth: number,
+    favoritesList: FavoritesList
 
 }
 
@@ -203,7 +207,8 @@ export const LoadPluginDialog =
                     client_height: window.innerHeight,
                     grid_cell_width: this.getCellWidth(window.innerWidth),
                     grid_cell_columns: this.getCellColumns(window.innerWidth),
-                    minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220
+                    minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220,
+                    favoritesList: this.model.favorites.get()
                 };
 
                 this.updateWindowSize = this.updateWindowSize.bind(this);
@@ -211,6 +216,7 @@ export const LoadPluginDialog =
                 this.handleOk = this.handleOk.bind(this);
                 this.handleSearchStringReady = this.handleSearchStringReady.bind(this);
                 this.handleKeyPress = this.handleKeyPress.bind(this);
+                this.handleFavoritesChanged = this.handleFavoritesChanged.bind(this);
             }
 
             nominal_column_width: number = 250;
@@ -264,12 +270,23 @@ export const LoadPluginDialog =
                     grid_cell_columns: this.getCellColumns(window.innerWidth)
                 });
             }
+
+            handleFavoritesChanged() {
+                this.setState(
+                    {
+                        favoritesList: this.model.favorites.get()
+                    });
+            }
             componentDidMount() {
                 super.componentDidMount();
                 this.updateWindowSize();
                 window.addEventListener('resize', this.updateWindowSize);
+                this.model.favorites.addOnChangedHandler(this.handleFavoritesChanged);
+                this.setState({ favoritesList: this.model.favorites.get() });
+
             }
             componentWillUnmount() {
+                this.model.favorites.removeOnChangedHandler(this.handleFavoritesChanged);
                 super.componentWillUnmount();
                 window.removeEventListener('resize', this.updateWindowSize);
             }
@@ -352,18 +369,17 @@ export const LoadPluginDialog =
                 let isDoubleClick = e.detail === 2;
                 // we have to synthesize double clicks because 
                 // DOM rewrites interfere with natural double click.
-                if (isDoubleClick)
-                {
+                if (isDoubleClick) {
                     this.props.onOk(uri);
                 }
 
             }
             handleMouseEnter(e: SyntheticEvent, uri: string): void {
-               // this.setHoverUri(uri);
+                // this.setHoverUri(uri);
 
             }
             handleMouseLeave(e: SyntheticEvent, uri: string): void {
-              //  this.setHoverUri("");
+                //  this.setHoverUri("");
 
             }
             onInfoClicked(): void {
@@ -421,6 +437,9 @@ export const LoadPluginDialog =
                         let score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
 
                         if (score !== 0) {
+                            if (this.state.favoritesList[plugin.uri]) {
+                                score += 32768;
+                            }
                             results.push({ score: score, plugin: plugin });
                         }
                     }
@@ -469,6 +488,7 @@ export const LoadPluginDialog =
                 let value = this.gridItems[item];
 
                 let classes = this.props.classes;
+                let isFavorite: boolean = this.state.favoritesList[value.uri] ?? false;
                 return (
                     <div key={value.uri}
                         onDoubleClick={(e) => { this.onDoubleClick(e, value.uri) }}
@@ -491,11 +511,18 @@ export const LoadPluginDialog =
 
                                     </Typography>
                                 </div>
+                                <div className={classes.favoriteDecoration}>
+                                    <StarBorderIcon sx={{ color: "#C80", opacity: isFavorite ? 1 : 0 }} />
+                                </div>
                             </div>
                         </ButtonBase>
                     </div>
                 );
 
+            }
+            setFavorite(pluginUri: string | undefined, isFavorite: boolean): void {
+                if (!pluginUri) return;
+                this.model.setFavorite(pluginUri, isFavorite);
             }
             gridItems: UiPlugin[] = [];
             gridColumnCount: number = 1;
@@ -516,6 +543,7 @@ export const LoadPluginDialog =
                 this.gridItems = this.getFilteredPlugins();
                 let gridColumnCount = this.state.grid_cell_columns;
                 this.gridColumnCount = gridColumnCount;
+                let isFavorite = this.state.favoritesList[this.state.selected_uri ?? ""];
                 return (
                     <React.Fragment>
                         <Dialog
@@ -530,7 +558,7 @@ export const LoadPluginDialog =
                             aria-labelledby="select-plugin-dialog-title">
                             <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", height: "100%" }}>
                                 <DialogTitle id="select-plugin-dialog-title" style={{ flex: "0 0 auto", padding: "0px", height: 54 }}>
-                                    <div style={{ display: "flex",flexDirection: "row", paddingTop: 3, paddingBottom: 3, flexWrap: "nowrap", width: "100%", alignItems: "center" }}>
+                                    <div style={{ display: "flex", flexDirection: "row", paddingTop: 3, paddingBottom: 3, flexWrap: "nowrap", width: "100%", alignItems: "center" }}>
                                         <IconButton onClick={() => { this.cancel(); }} style={{ flex: "0 0 auto" }} >
                                             <ArrowBackIcon />
                                         </IconButton>
@@ -567,7 +595,7 @@ export const LoadPluginDialog =
                                             key={this.state.filterType}
                                             onChange={(e) => { this.onFilterChange(e); }}
                                             style={{ flex: "0 0 160px" }}
-                                            >
+                                        >
                                             {this.createFilterOptions()}
                                         </Select>
                                         <div style={{ flex: "0 0 auto", marginRight: 24, visibility: this.state.filterType === PluginType.Plugin ? "hidden" : "visible" }} >
@@ -625,6 +653,16 @@ export const LoadPluginDialog =
                                                 <Typography display='block' variant='body2' color="textPrimary" noWrap >
                                                     {this.info_string(selectedPlugin)}
                                                 </Typography>
+                                                <div style={{
+                                                    color: isFavorite ? "#F80" : "#CCC", display: (this.state.selected_uri !== "" ? "block" : "none"),
+                                                    position: "relative", top: -2
+                                                }}>
+                                                    <IconButton color="inherit" aria-label="Set as favorite"
+                                                        onClick={() => { this.setFavorite(this.state.selected_uri, !isFavorite); }}
+                                                    >
+                                                        <StarBorderIcon />
+                                                    </IconButton>
+                                                </div>
                                             </div>
                                             <div style={{ position: "relative", float: "right", flex: "0 1 200px", width: 200, display: "flex", alignItems: "center" }}>
                                                 <Button onClick={this.handleCancel} style={{ width: 120 }} >Cancel</Button>
@@ -640,6 +678,16 @@ export const LoadPluginDialog =
                                             <Typography display='block' variant='body2' color="textPrimary" noWrap >
                                                 {this.info_string(selectedPlugin)}
                                             </Typography>
+                                            <div style={{
+                                                color: isFavorite ? "#F80" : "#CCC", display: (this.state.selected_uri ? "block" : "block"),
+                                                position: "relative", top: -5
+                                            }}>
+                                                <IconButton color="inherit" aria-label="Set as favorite"
+                                                    onClick={() => { this.setFavorite(this.state.selected_uri, !isFavorite); }}
+                                                >
+                                                    <StarBorderIcon />
+                                                </IconButton>
+                                            </div>
                                         </div>
                                         <div className={classes.bottom}>
                                             <div style={{ flex: "1 1 1px" }} />

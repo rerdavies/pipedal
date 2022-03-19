@@ -59,6 +59,7 @@ public:
     virtual void OnNotifyAtomOutput(int64_t clientModel,uint64_t instanceId,const std::string&atomType, const std::string&atomJson) = 0;
     virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings&wifiConfigSettings) = 0;
     virtual void OnGovernorSettingsChanged(const std::string &governor) = 0;
+    virtual void OnFavoritesChanged(const std::map<std::string,bool> &favorites) = 0;
     virtual void Close() = 0;
 };
 
@@ -235,6 +236,9 @@ public:
 
     std::vector<AlsaDeviceInfo> GetAlsaDevices();
     const std::filesystem::path& GetWebRoot() const;
+
+    std::map<std::string,bool> GetFavorites() const;
+    void SetFavorites(const std::map<std::string,bool> &favorites);
 };
 
 } // namespace pipedal.

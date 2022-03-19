@@ -36,6 +36,7 @@ const char *BANKS_FILENAME = "index.banks";
 
 Storage::Storage()
 {
+    SetConfigRoot("~/var/Config");
     SetDataRoot("~/var/PiPedal");
 }
 
@@ -127,7 +128,7 @@ std::string Storage::SafeEncodeName(const std::string &name)
     return s.str();
 }
 
-std::filesystem::path ResolveHomePath(std::filesystem::path path)
+std::filesystem::path ResolveHomePath(const std::filesystem::path& path)
 {
     if (path.begin() == path.end())
         return path;
@@ -156,7 +157,12 @@ std::filesystem::path ResolveHomePath(std::filesystem::path path)
     }
     return result;
 }
-void Storage::SetDataRoot(const char *path)
+
+void Storage::SetConfigRoot(const std::filesystem::path& path)
+{
+    this->configRoot = ResolveHomePath(path);
+}
+void Storage::SetDataRoot(const std::filesystem::path& path)
 {
     this->dataRoot = ResolveHomePath(path);
 }
@@ -1184,6 +1190,37 @@ uint64_t Storage::CopyPluginPreset(const std::string&pluginUri,uint64_t presetId
 
 
 
+}
+
+std::map<std::string,bool> Storage::GetFavorites() const
+{
+    std::map<std::string,bool> result;
+
+    std::filesystem::path fileName = this->dataRoot / "favorites.json";
+    if (!std::filesystem::exists(fileName))
+    {
+        fileName = this->configRoot / "defaultFavorites.json";
+    }
+    std::ifstream f;
+    f.open(fileName);
+    if (f.is_open())
+    {
+        json_reader reader(f);
+        reader.read(&result);
+    }
+    return result;
+
+
+}
+void Storage::SetFavorites(const std::map<std::string,bool>&favorites) {
+    std::filesystem::path fileName = this->dataRoot / "favorites.json";
+    std::ofstream f;
+    f.open(fileName);
+    if (f.is_open())
+    {
+        json_writer writer(f);
+        writer.write(favorites);
+    }
 }
 
 
