@@ -1098,7 +1098,7 @@ public:
                             [this, subscriptionHandle_](const bool &result)
                             {
                                 this->portMonitorAck(subscriptionHandle_); // please can we have some more.
-                                                                           // (....complexity not worth the effort. :-( )
+                                                                           
                             },
                             [](const std::exception &e)
                             {
@@ -1169,6 +1169,16 @@ public:
         {
   
             this->Reply(replyTo, "imageList", imageList);
+        } else if (message == "getFavorites")
+        {
+            std::map<std::string,bool> favorites = this->model.GetFavorites();
+            this->Reply(replyTo,"getFavorites",favorites);
+
+        } else if (message == "setFavorites")
+        {
+            std::map<std::string,bool> favorites;
+            pReader->read(&favorites);
+            this->model.SetFavorites(favorites);
         }
         else
         {
@@ -1243,6 +1253,10 @@ protected:
     }
 
 public:
+    virtual void OnFavoritesChanged(const std::map<std::string,bool> &favorites)
+    {
+        Send("onFavoritesChanged",favorites);
+    }
     virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection)
     {
         ChannelSelectionChangedBody body;

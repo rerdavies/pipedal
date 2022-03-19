@@ -1,0 +1,12 @@
+{
+    "http://two-play.com/plugins/toob-cab-sim": true,
+    "http://two-play.com/plugins/toob-chorus": true,
+    "http://two-play.com/plugins/toob-delay": true,
+    "http://two-play.com/plugins/toob-freeverb": true,
+    "http://two-play.com/plugins/toob-input_stage": true,
+    "http://two-play.com/plugins/toob-ml": true,
+    "http://two-play.com/plugins/toob-power-stage-2": true,
+    "http://two-play.com/plugins/toob-spectrum": true,
+    "http://two-play.com/plugins/toob-tone-stack": true,
+    "http://two-play.com/plugins/toob-tuner": true
+}

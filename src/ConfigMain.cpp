@@ -378,7 +378,7 @@ void InstallJackService()
     // deploy the systemd service file
     std::map<std::string, std::string> map; // nothing to customize.
 
-    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/templateJack.service"), GetServiceFileName(JACK_SERVICE));
+    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/templateJack.service"), GetServiceFileName(JACK_SERVICE));
 
     MaybeStartJackService();
 }
@@ -554,7 +554,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
         map["COMMAND"] = s.str();
     }
-    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/template.service"), GetServiceFileName(NATIVE_SERVICE));
+    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/template.service"), GetServiceFileName(NATIVE_SERVICE));
 
     map["DESCRIPTION"] = "PiPedal Shutdown Service";
     {
@@ -566,7 +566,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
         map["COMMAND"] = s.str();
     }
-    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/templateShutdown.service"), GetServiceFileName(ADMIN_SERVICE));
+    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/templateAdmin.service"), GetServiceFileName(ADMIN_SERVICE));
 
     sysExec(SYSTEMCTL_BIN " daemon-reload");
 

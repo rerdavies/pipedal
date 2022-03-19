@@ -26,6 +26,7 @@
 #include "Banks.hpp"
 #include "JackConfiguration.hpp"
 #include "WifiConfigSettings.hpp"
+#include <map>
 
 
 namespace pipedal {
@@ -44,6 +45,7 @@ public:
 class Storage {
 private:
     std::filesystem::path dataRoot;
+    std::filesystem::path configRoot;
     BankIndex bankIndex;
     BankFile currentBank;
     PluginPresetIndex pluginPresetIndex;
@@ -78,7 +80,8 @@ public:
     void Initialize();
     void CreateBank(const std::string & name);
 
-    void SetDataRoot(const char*path);
+    void SetDataRoot(const std::filesystem::path& path);
+    void SetConfigRoot(const std::filesystem::path& path);
 
     std::vector<std::string> GetPedalBoards();
 
@@ -139,6 +142,9 @@ public:
     uint64_t SavePluginPreset(const std::string&pluginUri, const std::string&name, const std::map<std::string,float> & values);
     void UpdatePluginPresets(const PluginUiPresets &pluginPresets);
     uint64_t CopyPluginPreset(const std::string&pluginUri,uint64_t presetId);
+
+    std::map<std::string,bool> GetFavorites() const;
+    void SetFavorites(const std::map<std::string,bool>&favorites);
 
 };
 

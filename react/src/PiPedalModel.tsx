@@ -299,6 +299,9 @@ interface ControlChangedBody {
     value: number;
 };
 
+export interface FavoritesList {
+    [url: string]: boolean;
+}
 
 export interface PiPedalModel {
     clientId: number;
@@ -319,6 +322,7 @@ export interface PiPedalModel {
     jackServerSettings: ObservableProperty<JackServerSettings>;
     wifiConfigSettings: ObservableProperty<WifiConfigSettings>;
     governorSettings: ObservableProperty<GovernorSettings>;
+    favorites: ObservableProperty<FavoritesList>;
 
     presets: ObservableProperty<PresetIndex>;
 
@@ -422,6 +426,8 @@ export interface PiPedalModel {
 
     zoomUiControl(sourceElement: HTMLElement, instanceId: number, uiControl: UiControl): void;
     clearZoomedControl(): void;
+
+    setFavorite(pluginUrl: string, isFavorite: boolean): void;
 };
 
 class PiPedalModelImpl implements PiPedalModel {
@@ -452,6 +458,8 @@ class PiPedalModelImpl implements PiPedalModel {
 
     wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
     governorSettings: ObservableProperty<GovernorSettings> = new ObservableProperty<GovernorSettings>(new GovernorSettings());
+
+    favorites: ObservableProperty<FavoritesList> = new ObservableProperty<FavoritesList>({});
 
 
     presets: ObservableProperty<PresetIndex> = new ObservableProperty<PresetIndex>
@@ -496,6 +504,25 @@ class PiPedalModelImpl implements PiPedalModel {
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
         this.onError(errorMessage);
     }
+
+    compareFavorites(left: FavoritesList, right: FavoritesList): boolean
+    {
+        for (let key of Object.keys(left))
+        {
+            if (!right[key]) {
+                return false;
+            }
+        }
+
+        for (let key of Object.keys(right))
+        {
+            if (!left[key]) {
+                return false;
+            }
+        }
+        return true;
+            
+    }
     onSocketMessage(header: PiPedalMessageHeader, body?: any) {
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
 
@@ -512,7 +539,13 @@ class PiPedalModelImpl implements PiPedalModel {
             if (header.replyTo) {
                 this.webSocket?.reply(header.replyTo, "onMonitorPortOutput", true);
             }
-
+        } else if (message === "onFavoritesChanged")
+        {
+            let favorites = body as FavoritesList;
+            if (!this.compareFavorites(favorites,this.favorites.get()))
+            {
+                this.favorites.set(favorites);
+            }
         } else if (message === "onChannelSelectionChanged") {
             let channelSelectionBody = body as ChannelSelectionChangedBody;
             let channelSelection = new JackChannelSelection().deserialize(channelSelectionBody.jackChannelSelection);
@@ -705,6 +738,10 @@ class PiPedalModelImpl implements PiPedalModel {
             .then((data) => {
                 this.banks.set(new BankIndex().deserialize(data));
 
+                return this.getWebSocket().request<FavoritesList>("getFavorites");
+            })
+            .then((data)=> {
+                this.favorites.set(data);
 
                 this.setState(State.Ready);
             })
@@ -839,6 +876,17 @@ class PiPedalModelImpl implements PiPedalModel {
                     })
                     .then((data) => {
                         this.banks.set(new BankIndex().deserialize(data));
+                        if (this.webSocket)
+                        {
+                            // MUST not allow reconnect until at least one complete load has finished.
+                            this.webSocket.canReconnect = true;
+                        }
+
+                        return this.getWebSocket().request<FavoritesList>("getFavorites");
+                    })
+                    .then((data)=> {
+                        this.favorites.set(data);
+
                         if (this.webSocket)
                         {
                             // MUST not allow reconnect until at least one complete load has finished.
@@ -1890,6 +1938,29 @@ class PiPedalModelImpl implements PiPedalModel {
     clearZoomedControl(): void {
         this.zoomedUiControl.set(undefined);
     }
+
+    setFavorite(pluginUrl: string, isFavorite: boolean): void
+    {
+        let favorites = this.favorites.get();
+        let newFavorites: FavoritesList = {};
+        Object.assign(newFavorites,favorites);
+        if (isFavorite)
+        {
+            newFavorites[pluginUrl] = true;
+        } else {
+            if (newFavorites[pluginUrl])
+            {
+                delete newFavorites[pluginUrl];
+            }
+        }
+        this.favorites.set(newFavorites);
+        if (this.webSocket)
+        {
+            this.webSocket.send("setFavorites",newFavorites);
+        }
+        // stub: update server.
+    }
+
 
     preloadImages(imageList: string): void {
         let imageNames = imageList.split(';');

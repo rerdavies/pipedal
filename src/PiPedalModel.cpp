@@ -111,7 +111,8 @@ PiPedalModel::~PiPedalModel()
 void PiPedalModel::LoadLv2PluginInfo(const PiPedalConfiguration&configuration)
 {
 
-    storage.SetDataRoot(configuration.GetLocalStoragePath().c_str());
+    storage.SetConfigRoot(configuration.GetDocRoot());
+    storage.SetDataRoot(configuration.GetLocalStoragePath());
     storage.Initialize();
 
     // Not all Lv2 directories have the lv2 base declarations. Load a full set of plugin classes generated on a default /usr/local/lib/lv2 directory.
@@ -1315,4 +1316,29 @@ std::vector<AlsaDeviceInfo> PiPedalModel::GetAlsaDevices()
 const std::filesystem::path& PiPedalModel::GetWebRoot() const
 {
     return webRoot;
+}
+
+std::map<std::string,bool> PiPedalModel::GetFavorites() const
+{
+    std::lock_guard<std::recursive_mutex> guard(const_cast<std::recursive_mutex&>(mutex));
+    
+    return storage.GetFavorites();
+}
+void PiPedalModel::SetFavorites(const std::map<std::string,bool> &favorites)
+{
+    std::lock_guard<std::recursive_mutex> guard(mutex);
+    storage.SetFavorites(favorites);
+
+    // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+    std::vector<IPiPedalModelSubscriber*> t;
+    t.reserve(this->subscribers.size());
+
+    for (size_t i = 0; i < subscribers.size(); ++i)
+    {
+        t.push_back(this->subscribers[i]);
+    }
+    for (size_t i = 0; i < t.size(); ++i)
+    {
+        t[i]->OnFavoritesChanged(favorites);
+    }
 }

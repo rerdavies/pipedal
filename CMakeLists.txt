@@ -48,9 +48,10 @@ install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
     DESTINATION /etc/pipedal/react/var/)
 
 install (FILES  ${PROJECT_SOURCE_DIR}/src/template.service 
-                ${PROJECT_SOURCE_DIR}/src/templateShutdown.service 
+                ${PROJECT_SOURCE_DIR}/src/templateAdmin.service 
                 ${PROJECT_SOURCE_DIR}/src/templateJack.service 
-        DESTINATION /etc/pipedal )
+                ${PROJECT_SOURCE_DIR}/src/defaultFavorites.json
+        DESTINATION /etc/pipedal/config )
 
 install (DIRECTORY ${LV2_SOURCE_DIRECTORY} 
        DESTINATION /usr/lib/lv2
