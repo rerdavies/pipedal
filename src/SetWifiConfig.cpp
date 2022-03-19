@@ -40,6 +40,10 @@ void pipedal::SetWifiConfig(const WifiConfigSettings&settings)
         sysExec(SYSTEMCTL_BIN " stop hostapd");
         sysExec(SYSTEMCTL_BIN " disable hostapd");
 
+        sysExec(SYSTEMCTL_BIN " stop dnsmasq");
+        sysExec(SYSTEMCTL_BIN " disable dnsmasq");
+
+        sysExec(SYSTEMCTL_BIN " unmask wpa_supplicant");
         sysExec(SYSTEMCTL_BIN " enable wpa_supplicant");
         sysExec(SYSTEMCTL_BIN " start wpa_supplicant");
     } else {
