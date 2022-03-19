@@ -503,16 +503,24 @@ export const LoadPluginDialog =
                                     <PluginIcon pluginType={value.plugin_type} pluginUri={value.uri} size={24} />
                                 </div>
                                 <div className={classes.content2}>
-                                    <Typography color="textPrimary" noWrap className={classes.label} >
+                                    <div className={classes.label} >
+                                    <Typography color="textPrimary" noWrap sx={{display: "inline"}} >
                                         {value.name}
+                                        {
+                                        isFavorite && (
+                                            <StarBorderIcon sx={{ color: "#C80", fontSize:16 }} />
+
+                                        )
+                                    }
                                     </Typography>
+                                    </div>
                                     <Typography color="textSecondary" noWrap>
                                         {value.plugin_display_type} {this.stereo_indicator(value)}
 
                                     </Typography>
                                 </div>
                                 <div className={classes.favoriteDecoration}>
-                                    <StarBorderIcon sx={{ color: "#C80", opacity: isFavorite ? 1 : 0 }} />
+
                                 </div>
                             </div>
                         </ButtonBase>
