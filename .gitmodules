@@ -1,0 +1,3 @@
+[submodule "submodules/pipedal_p2pd"]
+	path = submodules/pipedal_p2pd
+	url = https://github.com/rerdavies/pipedal_p2pd
