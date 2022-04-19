@@ -102,6 +102,7 @@ add_custom_command(
  
 
 set (PIPEDAL_SOURCES
+    P2pConfigFiles.hpp
     StdErrorCapture.hpp StdErrorCapture.cpp
     Ipv6Helpers.cpp Ipv6Helpers.hpp
     PluginPreset.cpp PluginPreset.hpp
@@ -110,6 +111,7 @@ set (PIPEDAL_SOURCES
     SysExec.cpp SysExec.hpp
     BeastServer.cpp BeastServer.hpp HtmlHelper.cpp HtmlHelper.hpp pch.h Uri.cpp Uri.hpp
     WifiConfigSettings.hpp WifiConfigSettings.cpp
+    WifiDirectConfigSettings.hpp WifiDirectConfigSettings.cpp
     RequestHandler.hpp json.cpp json.hpp Scratch.cpp Lv2Host.hpp Lv2Host.cpp
     PluginType.hpp PluginType.cpp
     Lv2Log.hpp Lv2Log.cpp
@@ -219,19 +221,24 @@ add_test(NAME DevTest COMMAND pipedaltest "[Dev]")
 #################################
 
 
-add_executable(pipedalconfig json.cpp json.hpp 
+add_executable(pipedalconfig 
+    PrettyPrinter.hpp
+    json.cpp json.hpp 
     HtmlHelper.cpp HtmlHelper.hpp
     CommandLineParser.hpp
     WriteTemplateFile.hpp WriteTemplateFile.cpp
     PiPedalException.hpp 
     ConfigMain.cpp
     WifiConfigSettings.cpp WifiConfigSettings.hpp 
+    WifiDirectConfigSettings.cpp WifiDirectConfigSettings.hpp 
     JackServerSettings.hpp JackServerSettings.cpp
     SetWifiConfig.hpp SetWifiConfig.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     SysExec.hpp SysExec.cpp
     asan_options.cpp
     Lv2Log.cpp Lv2Log.hpp
+    P2pConfigFiles.hpp
+
     )
 
 target_link_libraries(pipedalconfig PRIVATE pthread atomic stdc++fs
@@ -242,11 +249,14 @@ add_executable(pipedaladmind ShutdownMain.cpp CommandLineParser.hpp
     json.hpp json.cpp HtmlHelper.hpp HtmlHelper.cpp Lv2Log.hpp Lv2Log.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
     WifiConfigSettings.cpp WifiConfigSettings.hpp 
+    WifiDirectConfigSettings.cpp WifiDirectConfigSettings.hpp 
     SetWifiConfig.hpp SetWifiConfig.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp    
     SysExec.hpp SysExec.cpp
     CpuGovernor.cpp CpuGovernor.hpp
     asan_options.cpp
+    P2pConfigFiles.hpp
+
     )
 target_link_libraries(pipedaladmind PRIVATE pthread atomic stdc++fs systemd)
 

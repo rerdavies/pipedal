@@ -14,10 +14,14 @@ enable_testing()
 # Frameworks
 # catch
 
+add_subdirectory("submodules/pipedal_p2pd")
+
 add_subdirectory("react")
 
 add_subdirectory("src")
 
+install (TARGETS pipedal_p2pd DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+   )
  
 # select LV2 source directory for the current build architecture
 
@@ -51,6 +55,9 @@ install (FILES  ${PROJECT_SOURCE_DIR}/src/template.service
                 ${PROJECT_SOURCE_DIR}/src/templateAdmin.service 
                 ${PROJECT_SOURCE_DIR}/src/templateJack.service 
                 ${PROJECT_SOURCE_DIR}/src/defaultFavorites.json
+                ${PROJECT_SOURCE_DIR}/src/templateP2pd.service
+                ${PROEJCT_SOURCE_DIR}/src/template_p2pd.conf
+
         DESTINATION /etc/pipedal/config )
 
 install (DIRECTORY ${LV2_SOURCE_DIRECTORY} 

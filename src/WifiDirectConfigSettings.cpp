@@ -1,0 +1,101 @@
+// Copyright (c) 2022 Robin Davies
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+#include "pch.h"
+#include "WifiDirectConfigSettings.hpp"
+#include "WifiConfigSettings.hpp"
+#include <stdexcept>
+#include <random>
+
+using namespace pipedal;
+using namespace std;
+
+JSON_MAP_BEGIN(WifiDirectConfigSettings)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,valid)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,rebootRequired)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,enable)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,hotspotName)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,hasPin)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,pin)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,countryCode)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,channel)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,mdnsName)
+JSON_MAP_END()
+
+static std::string MakePin()
+{
+    std::random_device rand_dev;
+
+    std::mt19937 gen(rand_dev());
+    std::uniform_int_distribution<int> dist { 0,9};
+
+    std::stringstream s;
+    for (size_t i = 0; i < 8; ++i)
+    {
+        int r = dist(gen);
+        s << (char)('0' + r);
+    }
+    return s.str();
+}
+static void ValidatePin(const std::string&pin)
+{
+    for (char c : pin)
+    {
+        if (c < '0' || c > '9')
+        {
+            throw invalid_argument("Pin must consist of digits only.");
+        }
+    }
+    if (pin.length() != 8)
+    {
+        throw invalid_argument("Pin must have exctly 8 digits.");
+    }
+}
+
+void WifiDirectConfigSettings::ParseArguments(const std::vector<std::string> &arguments)
+{
+    this->valid_ = false;
+    if (arguments.size() < 2 || arguments.size() > 4)
+    {
+        throw invalid_argument("Incorrect number of arguments supplied");
+    }
+
+    this->enable_ = true;
+
+    this->countryCode_ = arguments[0];
+    this->hotspotName_ = arguments[1];
+    this->pin_ = arguments.size() >= 3 ? arguments[2] : "";
+    this->channel_ = arguments.size() >= 4? arguments[3]: "";
+    size_t maxLength = 32-string("DIRECT-XX-").length();
+    if (hotspotName_.size() >= maxLength) { throw invalid_argument("Device name is too long."); }
+    if (hotspotName_.size() < 1) { throw invalid_argument("Device name is too short."); }
+    if (!WifiConfigSettings::ValidateCountryCode(countryCode_))
+    {
+        throw invalid_argument("Invalid country code.");
+    }
+    if (pin_.size() == 0)
+    {
+        pin_ = MakePin();
+    }
+    ValidatePin(pin_); // throws.
+    if (!WifiConfigSettings::ValidateChannel(channel_))
+    {
+        throw invalid_argument("Invalid channel.");
+    }
+}

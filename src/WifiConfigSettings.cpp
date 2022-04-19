@@ -19,8 +19,10 @@
 
 #include "pch.h"
 #include "WifiConfigSettings.hpp"
+#include <stdexcept>
 
 using namespace pipedal;
+using namespace std;
 
 JSON_MAP_BEGIN(WifiConfigSettings)
     JSON_MAP_REFERENCE(WifiConfigSettings,valid)
@@ -35,3 +37,48 @@ JSON_MAP_BEGIN(WifiConfigSettings)
     JSON_MAP_REFERENCE(WifiConfigSettings,channel)
 JSON_MAP_END()
 
+bool WifiConfigSettings::ValidateCountryCode(const std::string&value)
+{
+    if (value.size() < 2 || value.size() > 3) return false;
+    return true;
+}
+
+
+bool WifiConfigSettings::ValidateChannel(const std::string&arguments)
+{
+    // 1) frequency in khz.
+    // 2) unadorned channel number 1, 2,3 &c.
+    // 3) With band annotated: g1, a51.
+    // come back to this.
+    return true;
+}
+
+ void WifiConfigSettings::ParseArguments(const std::vector<std::string> &argv)
+ {
+    this->valid_ = false;
+    if (argv.size() != 4) {
+        throw invalid_argument("Invalid number of arguments.");
+    }
+    this->enable_ = true;
+    this->countryCode_ = argv[0];
+    this->hotspotName_ = argv[1];
+    this->mdnsName_ = this->hotspotName_;
+    this->password_ = argv[2];
+    this->channel_ = argv[3];
+    this->hasPassword_ = this->password_.length() != 0;
+
+    if (!ValidateCountryCode(this->countryCode_))
+    {
+        throw invalid_argument("Invalid country code.");
+    }
+    if (this->hotspotName_.length() > 31) throw invalid_argument("Hotspot name is too long.");
+    if (this->hotspotName_.length() < 1) throw invalid_argument("Hotspot name is too short.");
+    if (this->password_.size() != 0 && this->password_.size() < 8) throw invalid_argument("Passphrase must be at least 8 characters long.");
+
+    if (!ValidateChannel(this->channel_))
+    {
+        throw invalid_argument("Channel is not valid.");
+    }
+    this->valid_ = true;
+
+ }

@@ -31,8 +31,10 @@
 #include <sys/wait.h>
 #include <pwd.h>
 #include "JackServerSettings.hpp"
+#include "P2pConfigFiles.hpp"
+#include "PrettyPrinter.hpp"
 
-#define SS(x) ( ((std::stringstream&)(std::stringstream() << x )).str())
+#define SS(x) (((std::stringstream &)(std::stringstream() << x)).str())
 
 using namespace std;
 using namespace pipedal;
@@ -54,6 +56,7 @@ using namespace pipedal;
 #define SERVICE_PATH "/usr/lib/systemd/system"
 #define NATIVE_SERVICE "pipedald"
 #define ADMIN_SERVICE "pipedaladmind"
+#define PIPEDAL_P2PD_SERVICE "pipedal_p2pd"
 #define JACK_SERVICE "jack"
 
 #define REMOVE_OLD_SERVICE 1 // Grandfathering: whether to remove the old shutdown service (now pipedaladmind)
@@ -110,12 +113,12 @@ void DisableService()
     {
         cout << "Error: Failed to disable the " ADMIN_SERVICE " service.";
     }
-    #if REMOVE_OLD_SERVICE
+#if REMOVE_OLD_SERVICE
     if (sysExec(SYSTEMCTL_BIN " disable " OLD_SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to disable the " OLD_SHUTDOWN_SERVICE " service.";
     }
-    #endif
+#endif
 }
 
 void StopService(bool excludeShutdownService = false)
@@ -130,12 +133,12 @@ void StopService(bool excludeShutdownService = false)
         {
             cout << "Error: Failed to stop the " ADMIN_SERVICE " service.";
         }
-        #if REMOVE_OLD_SERVICE
+#if REMOVE_OLD_SERVICE
         if (sysExec(SYSTEMCTL_BIN " stop " OLD_SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
         {
             cout << "Error: Failed to stop the " OLD_SHUTDOWN_SERVICE " service.";
         }
-        #endif
+#endif
     }
     if (sysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
@@ -202,7 +205,7 @@ static bool userExists(const char *userName)
     return true;
 }
 
-static void RemoveLine(const std::string&path, const std::string lineToRemove)
+static void RemoveLine(const std::string &path, const std::string lineToRemove)
 {
     std::vector<std::string> lines;
     try
@@ -234,16 +237,16 @@ static void RemoveLine(const std::string&path, const std::string lineToRemove)
                 {
                     throw PiPedalException(SS("Can't write to " << path));
                 }
-                for (auto&line: lines)
+                for (auto &line : lines)
                 {
-                    f << line << endl;
+                    f << line << "\n";
                 }
             }
         }
     }
     catch (const std::exception &e)
     {
-        cout  << "Failed to update " << path << ". " << e.what();
+        cout << "Failed to update " << path << ". " << e.what();
     }
 }
 
@@ -252,8 +255,7 @@ void UninstallPamEnv()
 {
     RemoveLine(
         "/etc/security/pam_env.conf",
-        PAM_LINE
-    );
+        PAM_LINE);
 }
 void InstallPamEnv()
 {
@@ -295,16 +297,16 @@ void InstallPamEnv()
                 {
                     throw PiPedalException(SS("Can't write to " << path));
                 }
-                for (auto&line: lines)
+                for (auto &line : lines)
                 {
-                    f << line << endl;
+                    f << line << "\n";
                 }
             }
         }
     }
     catch (const std::exception &e)
     {
-        cout  << "Failed to update " << path << ". " << e.what();
+        cout << "Failed to update " << path << ". " << e.what();
     }
 }
 
@@ -320,9 +322,9 @@ void InstallLimits()
     if (!std::filesystem::exists(limitsConfig))
     {
         ofstream output(limitsConfig);
-        output << "# Realtime priority group used by pipedal/jack daemon" << endl;
-        output << "@audio   -  rtprio     95" << endl;
-        output << "@audio   -  memlock    unlimited" << endl;
+        output << "# Realtime priority group used by pipedal/jack daemon" << "\n";
+        output << "@audio   -  rtprio     95" << "\n";
+        output << "@audio   -  memlock    unlimited" << "\n";
     }
 }
 
@@ -365,15 +367,15 @@ void InstallJackService()
         }
         // lock account for login.
         silentSysExec("passwd -l " JACK_SERVICE_ACCOUNT_NAME);
-    } 
+    }
     // Add to audio groups.
     // sysExec(USERMOD_BIN " -a -G " JACK_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
     sysExec(USERMOD_BIN " -a -G" AUDIO_SERVICE_GROUP_NAME " " JACK_SERVICE_ACCOUNT_NAME);
 
-    // If ONBOARDING, add to bluetooth group.
-    #ifdef ONBOARDING
-        sysExec(USERMOD_BIN " -a -G bluetooth " JACK_SERVICE_ACCOUNT_NAME);
-    #endif
+// If ONBOARDING, add to bluetooth group.
+#ifdef ONBOARDING
+    sysExec(USERMOD_BIN " -a -G bluetooth " JACK_SERVICE_ACCOUNT_NAME);
+#endif
 
     // deploy the systemd service file
     std::map<std::string, std::string> map; // nothing to customize.
@@ -382,7 +384,6 @@ void InstallJackService()
 
     MaybeStartJackService();
 }
-
 
 int SudoExec(char **argv)
 {
@@ -404,20 +405,24 @@ int SudoExec(char **argv)
 
 void Uninstall()
 {
+
+    OnWifiUninstall();
+
     StopService();
     DisableService();
     silentSysExec(SYSTEMCTL_BIN " stop jack");
     silentSysExec(SYSTEMCTL_BIN " disable jack");
+    OnWifiUninstall();
+
     std::filesystem::remove("/usr/bin/systemd/system/" OLD_SHUTDOWN_SERVICE ".service");
     std::filesystem::remove("/usr/bin/systemd/system/" ADMIN_SERVICE ".service");
+    std::filesystem::remove("/usr/bin/systemd/system/" PIPEDAL_P2PD_SERVICE ".service");
     std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
     std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
     UninstallPamEnv();
     UninstallLimits();
     sysExec(SYSTEMCTL_BIN " daemon-reload");
-
 }
-
 
 void Install(const std::filesystem::path &programPrefix, const std::string endpointAddress)
 {
@@ -470,7 +475,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         }
         // lock account for login.
         silentSysExec("passwd -l " SERVICE_ACCOUNT_NAME);
-    } 
+    }
 
     // Add to audio groups.
     sysExec(USERMOD_BIN " -a -G  " AUDIO_SERVICE_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
@@ -512,7 +517,8 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         {
             // create it.
             std::ofstream f(portAuthFile);
-            if (!f.is_open()) {
+            if (!f.is_open())
+            {
                 throw PiPedalException("Failed to create " + portAuthFile.string());
             }
         }
@@ -535,7 +541,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         }
     }
 
-    cout << "Creating Systemd file." << endl;
+    cout << "Creating Systemd file." << "\n";
 
     std::map<string, string> map;
 
@@ -568,15 +574,147 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     }
     WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/templateAdmin.service"), GetServiceFileName(ADMIN_SERVICE));
 
+    // /usr/bin/pipedal_p2pd --config-file /etc/pipedal/config/template_p2pd.conf
+
+    std::string pipedal_p2pd_cmd = SS(
+        (programPrefix / "bin" / "pipedal_p2pd").string()
+        << " --config-file " << PIPEDAL_P2PD_CONF_PATH);
+    map["COMMAND"] = pipedal_p2pd_cmd;
+
+    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/templateP2pd.service"), GetServiceFileName(PIPEDAL_P2PD_SERVICE));
+
     sysExec(SYSTEMCTL_BIN " daemon-reload");
 
-    cout << "Starting services" << endl;
+    cout << "Starting services" << "\n";
     RestartService(false);
     EnableService();
 
-    cout << "Complete" << endl;
+
+    cout << "Complete" << "\n";
 }
 
+static void PrintHelp()
+{
+    PrettyPrinter pp;
+    pp << "pipedalconfig - Command-line post-install configuration for PiPedal" << "\n"
+         << "Copyright (c) 2022 Robin Davies. All rights reserved." << "\n"
+         << "\n"
+         << "See https://rerdavies.github.io/pipedal/Documentation.html for " 
+         << "online documentation." << "\n"
+         << "\n"
+         << "Syntax:" << "\n";
+    pp << Indent(4) 
+         << "pipedalconfig [Options...]" << "\n"
+         << "\n";
+    pp.Indent(0)
+         << "Options: " << "\n\n";
+    pp.Indent(20);
+    
+    pp 
+        << HangingIndent() << "    -h --help\t"
+        << "Display this message." << "\n" 
+        << "\n"
+
+        << HangingIndent() << "    --install [--port <port#>]\t"
+        << "Install or re-install services and service accounts." << "\n" 
+        << "\n"
+        << "The --port option controls which port the web server uses." 
+        << "\n\n"
+
+        << HangingIndent() << "    --uninstall\t"
+        << "Remove installed services." << "\n"
+         << "\n"
+
+         << HangingIndent() << "    --enable\t"
+         << "Start the pipedal service at boot time." << "\n"
+         << "\n"
+
+         << HangingIndent() << "    --disable\tDo not start the pipedal service at boot time." << "\n"
+         << "\n"
+         << HangingIndent() << "    --start\tStart the pipedal services." << "\n"
+         << "\n"
+         << HangingIndent() << "    --stop\tStop the pipedal services." << "\n"
+         << "\n"
+         << HangingIndent() << "    --restart\tRestart the pipedal services." << "\n"
+         << "\n"
+
+         << HangingIndent() << "    --enable-p2p <country_code> <ssid> [[<pin>] <channel>]\t"
+         << "Enable the P2P (Wi-Fi Direct) hotspot." << "\n\n"
+         << "<country_code> is the 2-letter ISO-3166 country code for "
+            "the country you are in. see below for further notes." 
+         << "\n\n"
+         << "<ssid> is the name you see when connecting. " 
+         << "\n\n"
+         << "<pin> is an exactly-eight-digit pin number that you must  " 
+         << "enter when connecting to the hotspot. If you don't  " 
+         << "provide a pin, pipedalconfig will generate and " 
+         << "display a random pin for you. The pin is a " 
+         << "so-called \"label\" pin, which is the same every " 
+         << "time you are asked to enter it (unlike a keypad pin " 
+         << "which changes every time you need to enter it."
+         << "\n\n"
+         << "Consider attaching a label to the bottom of your device " 
+         << "so you can can remember the pin if you wan't to connect a new "
+         << "device to PiPedal. (It's also available on the Settings page of PiPedal, if you have access to PiPedal UI on another device.)" 
+         << "\n\n"
+         << "For best performance, the channel number should be 1, 6, or 11 (the Wifi Direct \"social\" channels). " 
+         << "If you don't supply a channel number, PiPedal will select the least-busy of channels 1, 6 and 11." 
+         << "\n\n"
+
+         << HangingIndent() << "   --disable-p2p\tDisabled Wi-Fi Direct access." 
+         << "\n\n"
+
+        << HangingIndent() << "    --enable-legacy-ap\t <country_code> <ssid> <wep_password> <channel>\tEnable a legacy Wi-Fi access point."
+        << "\n\n" 
+         << "Enable a legacy Wi-Fi access point. \n\n"
+         << "country_code is the 2-letter ISO-3166 country code for "
+         << "the country you are in. see below for further notes."
+         << "\n\n"
+        << "See below for an explanation of when you might want to use a legacy Wi-Fi access point instead of Wifi-Direct access."
+        << "an explanation of when you might want to use a legacy Access Point instead of " 
+        << "a P2P (Wi-Fi Direct) connection. Generally, you should prefer a P2p connection "
+        << "to an ordinary Hotspot connection."
+        << "\n\n"
+
+         << HangingIndent() << "    --disable-legacy-ap\tDisabled the legacy Wi-Fi access point." 
+         << "\n\n"
+
+
+         << Indent(0) << "Country codes:"
+         << "\n\n"
+         << Indent(4)
+         << "Country codes are used to determine Wi-Fi-regulatory regime - the "
+         << "channels you are legally allowed to use, and the features which must "
+         << "be enabled or disabled on the channels you can use. "
+         << "\n\n"
+         << "Without a country code, Wi-Fi must be restricted to channels 1 through 11 "
+         << "with reduced amplitude and feature sets."
+         << "\n\n"
+         << "For the most part, Wi-Fi country codes are taken from the list of ISO 3661 "
+         << "2-letter country codes; although there are a handful of exceptions for  small "
+         << "countries and islands. See the Alpha-2 code column of "
+         << "\n\n"
+         << Indent(8) << "https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes." 
+         << "\n\n"
+
+         << Indent(0) << "Legacy Wi-Fi Access Points:"
+         << "\n\n"
+         << Indent(4)
+         << "Some older devices may not be able to connect to PiPedal using Wi-Fi Direct connections. "
+            "Old Apple devices, for example, do not support Wi-Fi Direct. In theory, Wi-Fi Direct should "
+            "allow legacy Wi-Fi devices to connect to a Wi-Fi Direct access points as if it were an "
+            "ordinary Access Point. If this turns out "
+            "not to be the case, you can configure PiPedal to provide a legacy Wi-Fi access point instead. "
+            "\n\n"
+            "Unlike Wi-Fi Direct connections, legacy Access Points will prevent both the connecting device "
+            "and the PiPedal host machine from connecting to the Internet over a simultanous Wi-Fi connection Access "
+            "Point. On a connecting Android device, you won't be able to use the data connection either when a legacy "
+            "Wi-Fi connection is active."
+            "\n\n"
+            "Wi-Fi Direct connections are "
+            "therefore preferrable under almost all circumstances.\n\n"
+            ;
+}
 
 int main(int argc, char **argv)
 {
@@ -588,6 +726,7 @@ int main(int argc, char **argv)
     bool stop = false, start = false;
     bool enable = false, disable = false, restart = false;
     bool enable_ap = false, disable_ap = false;
+    bool enable_p2p = false, disable_p2p = false;
     bool nopkexec = false;
     bool excludeShutdownService = false;
     std::string prefixOption;
@@ -605,14 +744,17 @@ int main(int argc, char **argv)
     parser.AddOption("--help", &help);
     parser.AddOption("--prefix", &prefixOption);
     parser.AddOption("--port", &portOption);
-    parser.AddOption("--enable_ap", &enable_ap);
-    parser.AddOption("--disable_ap", &disable_ap);
+    parser.AddOption("--enable-ap", &enable_ap);
+    parser.AddOption("--disable-ap", &disable_ap);
+    parser.AddOption("--enable-p2p", &enable_p2p);
+    parser.AddOption("--disable-p2p", &disable_p2p);
+
     parser.AddOption("--excludeShutdownService", &excludeShutdownService); // private (unstable) option used by shutdown service.
     try
     {
         parser.Parse(argc, (const char **)argv);
 
-        int actionCount = install + uninstall + stop + start + enable + disable + enable_ap + disable_ap + restart;
+        int actionCount = install + uninstall + stop + start + enable + disable + enable_ap + disable_ap + restart + enable_p2p + disable_p2p;
         if (actionCount > 1)
         {
             throw PiPedalException("Please provide only one action.");
@@ -621,20 +763,11 @@ int main(int argc, char **argv)
         {
             help = true;
         }
-        if (enable_ap)
-        {
-            if (parser.Arguments().size() != 4)
-            {
-                cout << "Error: "
-                     << "Incorrect number of arguments supplied for --enable_ap option." << endl;
-                helpError = true;
-            }
-        }
-        else
+        if ((!enable_p2p) && (!enable_ap))
         {
             if (parser.Arguments().size() != 0)
             {
-                cout << "Error: Unexpected argument : " << parser.Arguments()[0] << endl;
+                cout << "Error: Unexpected argument : " << parser.Arguments()[0] << "\n";
                 helpError = true;
             }
         }
@@ -642,64 +775,23 @@ int main(int argc, char **argv)
     catch (const std::exception &e)
     {
         std::string s = e.what();
-        cout << "Error: " << s << endl;
+        cout << "Error: " << s << "\n";
         helpError = true;
     }
-
-    if (help || helpError)
+    if (helpError)
     {
-        if (helpError)
-            cout << endl;
+        cout << "\n";
+        return EXIT_FAILURE; // don't scroll the error off the screen.
+    }
 
-        cout << "pipedalconfig - Post-install configuration for pipdeal" << endl
-             << "Copyright (c) 2022 Robin Davies. All rights reserved." << endl
-             << endl
-             << "Syntax:" << endl
-             << "    pipedalconfig [Options...]" << endl
-             << "Options: " << endl
-             << "    -h --help     Display this message." << endl
-             << endl
-             << "    --install     Install services and service accounts." << endl
-             << endl
-             << "    --prefix      Either /usr/local or /usr as appropriate for the install" << endl
-             << "                  (only valid with the -install option). Usually determined " << endl
-             << "                  automatically." << endl
-             << endl
-             << "    --uninstall   Remove installed services." << endl
-             << endl
-             << "    --enable      Start the pipedal service at boot time." << endl
-             << endl
-             << "    --disable     Do not start the pipedal service at boot time." << endl
-             << endl
-             << "    --stop        Stop the pipedal services." << endl
-             << endl
-             << "    --start       Start the pipedal services." << endl
-             << endl
-             << "    --restart     Restart the pipedal services." << endl
-             << endl
-             << "    --port        Port for the web server (only with -install option)." << endl
-             << "                  Either a port (e.g. '81'), or a full endpoint (e.g.: " << endl
-             << "                 '127.0.0.1:8080'). If no address is specified, the " << endl
-             << "                  web server will listen on 0.0.0.0 (any)." << endl
-             << endl
-             << "   --enable_ap <country_code> <ssid> <wep_password> <channel>" << endl
-             << "                  Enable the Wi-Fi access point. <country_code> is the " << endl
-             << "                  2-letter ISO-3166 country code for the country in " << endl
-             << "                  which you are currently located. The country code " << endl
-             << "                  determines which channels may be legally used in (and " << endl
-             << "                  which features need to be enabled) in order to use a " << endl
-             << "                  Wi-Fi channel in your legislative regime." << endl
-             << endl
-             << "   --disable_ap    Disabled the Wi-Fi access point." << endl
-             << endl
-             << "Description:" << endl
-             << "    pipedalconfig performs post-install configuration of pipedal." << endl
-             << endl;
-        exit(helpError ? EXIT_FAILURE : EXIT_SUCCESS);
+    if (help)
+    {
+        PrintHelp();
+        return EXIT_SUCCESS;
     }
     if (portOption.size() != 0 && !install)
     {
-        cout << "Error: -port option can only be specified with the -install option." << endl;
+        cout << "Error: -port option can only be specified with the -install option." << "\n";
         exit(EXIT_FAILURE);
     }
 
@@ -780,17 +872,27 @@ int main(int argc, char **argv)
         {
             DisableService();
         }
+        else if (enable_p2p)
+        {
+            auto argv = parser.Arguments();
+            WifiDirectConfigSettings settings;
+            settings.ParseArguments(argv);
+            settings.valid_ = true;
+            settings.enable_ = false;
+            SetWifiDirectConfig(settings);
+        }
+        else if (disable_p2p)
+        {
+            WifiDirectConfigSettings settings;
+            settings.valid_ = true;
+            settings.enable_ = false;
+            SetWifiDirectConfig(settings);
+        }
         else if (enable_ap)
         {
             auto argv = parser.Arguments();
             WifiConfigSettings settings;
-            settings.valid_ = true;
-            settings.enable_ = true;
-            settings.countryCode_ = argv[0];
-            settings.hotspotName_ = argv[1];
-            settings.password_ = argv[2];
-            settings.channel_ = argv[3];
-            settings.hasPassword_ = settings.password_.length() != 0;
+            settings.ParseArguments(argv);
 
             SetWifiConfig(settings);
         }
@@ -804,7 +906,7 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        cout << "Error: " << e.what() << endl;
+        cout << "Error: " << e.what() << "\n";
         exit(EXIT_FAILURE);
     }
 }

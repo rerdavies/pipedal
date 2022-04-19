@@ -35,6 +35,10 @@ namespace pipedal {
         bool hasPassword_ = false;
         std::string password_;
         std::string channel_ = "g6";
+
+        void ParseArguments(const std::vector<std::string> &arguments);
+        static bool ValidateChannel(const std::string&value);
+        static bool ValidateCountryCode(const std::string&value);
     public:
         DECLARE_JSON_MAP(WifiConfigSettings);
     };
