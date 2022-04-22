@@ -24,8 +24,11 @@
 
 #pragma once
 
+#include <string>
 
-#define DEVICE_GUID_FILE "/etc/pipedal/config/device_uuid"
-
-#define PIPEDAL_P2PD_CONF_PATH "/etc/pipedal/config/pipedal_p2pd.conf"
-
+namespace pipedal {
+    class ConfigUtil {
+    public:
+        static bool GetConfigLine(const std::string & filePath,const std::string & key, std::string *pValue);
+    };
+}

@@ -30,7 +30,7 @@
 #include <atomic>
 #include "Ipv6Helpers.hpp"
 
-#include "ShutdownClient.hpp"
+#include "AdminClient.hpp"
 #include "WifiConfigSettings.hpp"
 #include "WifiChannels.hpp"
 #include "SysExec.hpp"
@@ -334,41 +334,16 @@ JSON_MAP_END()
 
 
 
-static void requestShutdown(bool restart)
-{
-    if (ShutdownClient::CanUseShutdownClient())
-    {
-        ShutdownClient::RequestShutdown(restart);
-    }
-    else {
-        // ONLY works when interactively logged in.
-        std::stringstream s;
-        s << "/usr/sbin/shutdown ";
-        if (restart)
-        {
-            s << "-r";
-        } else 
-        {
-            s << "-P";
-        }
-        s << " now";
-
-        if (sysExec(s.str().c_str()) != EXIT_SUCCESS)
-        {
-            Lv2Log::error("shutdown failed.");
-            if (restart) {
-                throw new PiPedalStateException("Restart request failed.");
-            } else {
-                throw new PiPedalStateException("Shutdown request failed.");
-            }
-        }
-    }
-}
 
 
 class PiPedalSocketHandler : public SocketHandler, public IPiPedalModelSubscriber
 {
 private:
+    AdminClient& GetAdminClient() const {
+        return model.GetAdminClient();
+    }
+    void RequestShutdown(bool restart);
+
     std::recursive_mutex writeMutex;
     PiPedalModel &model;
     static std::atomic<uint64_t> nextClientId;
@@ -819,7 +794,7 @@ public:
         else if (message == "setWifiConfigSettings") {
             WifiConfigSettings wifiConfigSettings;
             pReader->read(&wifiConfigSettings);
-            if (!ShutdownClient::CanUseShutdownClient())
+            if (!GetAdminClient().CanUseShutdownClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");
             }
@@ -963,13 +938,13 @@ public:
         {
             PresetIndex newIndex;
             
-            requestShutdown(false);
+            RequestShutdown(false);
             this->Reply(replyTo,"shutdown");
         }
         else if (message == "restart")
         {
             PresetIndex newIndex;
-            requestShutdown(true);
+            RequestShutdown(true);
             this->Reply(replyTo,"restart");
         }
         else if (message == "deletePresetItem")
@@ -1548,3 +1523,34 @@ std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &
     return std::make_shared<PiPedalSocketFactory>(model);
 }
 
+
+void PiPedalSocketHandler::RequestShutdown(bool restart)
+{
+    if (GetAdminClient().CanUseShutdownClient())
+    {
+        GetAdminClient().RequestShutdown(restart);
+    }
+    else {
+        // ONLY works when interactively logged in.
+        std::stringstream s;
+        s << "/usr/sbin/shutdown ";
+        if (restart)
+        {
+            s << "-r";
+        } else 
+        {
+            s << "-P";
+        }
+        s << " now";
+
+        if (sysExec(s.str().c_str()) != EXIT_SUCCESS)
+        {
+            Lv2Log::error("shutdown failed.");
+            if (restart) {
+                throw new PiPedalStateException("Restart request failed.");
+            } else {
+                throw new PiPedalStateException("Shutdown request failed.");
+            }
+        }
+    }
+}

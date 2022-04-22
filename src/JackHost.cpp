@@ -55,7 +55,7 @@ using namespace pipedal;
 
 #define JACK_SESSION_CALLBACKS 0
 
-#include "ShutdownClient.hpp"
+#include "AdminClient.hpp"
 
 const double VU_UPDATE_RATE_S = 1.0 / 30;
 const double OVERRUN_GRACE_PERIOD_S = 15; 
@@ -1363,7 +1363,9 @@ private:
             this_->restarting = true;
             // this_->Close(); (JackServerConfiguration now does a service restart.)
             try {
-                ShutdownClient::SetJackServerConfiguration(jackServerSettings);
+                AdminClient client;
+
+                client.SetJackServerConfiguration(jackServerSettings);
                 //this_->Open(this_->channelSelection);
                 this_->restarting = false;
                 onComplete(true, "");

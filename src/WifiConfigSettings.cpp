@@ -44,11 +44,71 @@ bool WifiConfigSettings::ValidateCountryCode(const std::string&value)
 }
 
 
-bool WifiConfigSettings::ValidateChannel(const std::string&arguments)
+uint32_t pipedal::ChannelToWifiFrequency(const std::string &channel)
+{
+    std::string t = channel;
+    // remove dprecated band specs.
+    if (t.size() > 1 && t[0] == 'a' || t[0] == 'g')
+    {
+        t = t.substr(1);
+    }
+    size_t size = t.length();
+
+    unsigned long long lChannel = std::stoull(t,&size);
+    if (size != t.length())
+    {
+        throw invalid_argument("Expecting a number: '" + t + "'.");
+    }
+    return ChannelToWifiFrequency((uint32_t)lChannel);
+}
+
+uint32_t pipedal::ChannelToWifiFrequency(uint32_t channel)
+{
+    if (channel > 1000) // must be a frequency.
+    {
+        return channel;
+    }
+    // 2.4GHz.
+    if (channel >= 1 && channel <= 13)
+    {
+        return 2412 + 5*(channel-1);
+    }
+    if (channel == 14)
+    {
+        return 2484;
+    }
+    // 802.11y
+    if (channel >= 131 && channel < 137)
+    {
+        return 3660 + (channel-131)*5;
+    }
+    if (channel >= 32 && channel <= 68 && (channel & 1) == 0)
+    {
+        return 5160 + (channel-32)/2*10;
+    }
+    if (channel == 96) return 5480;
+
+    if (channel >= 100 && channel <= 196)
+    {
+        return 5500 + (channel-100)/5;
+    }
+    throw invalid_argument(SS("Invalid channel: " << channel));
+
+}
+
+
+bool WifiConfigSettings::ValidateChannel(const std::string&value)
 {
     // 1) frequency in khz.
     // 2) unadorned channel number 1, 2,3 &c.
     // 3) With band annotated: g1, a51.
+    try {
+        ChannelToWifiFrequency(value);
+        return true;
+    } catch (const std::string&/**/)
+    {
+        return false;
+    }
     // come back to this.
     return true;
 }

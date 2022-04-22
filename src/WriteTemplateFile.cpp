@@ -17,48 +17,69 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pch.h"
+
 #include "WriteTemplateFile.hpp"
 #include <fstream>
 #include "PiPedalException.hpp"
 
 using namespace pipedal;
 
+void pipedal::WriteTemplateFile(
+    const std::map<std::string, std::string> &map,
+    const std::filesystem::path &outputFile)
+{
+    std::string inputFile = "/etc/pipedal/config/templates/" + outputFile.filename().string() + ".template";
+    WriteTemplateFile(map, inputFile,outputFile);
+}
 
 void pipedal::WriteTemplateFile(
-    const std::map<std::string,std::string> &map,
-    std::filesystem::path inputFile,
-    std::filesystem::path outputFile)
+    const std::map<std::string, std::string> &map,
+    const std::filesystem::path &inputFile,
+    const std::filesystem::path &outputFile)
 {
     std::ofstream out(outputFile);
     std::ifstream in(inputFile);
+
+    if (!in.is_open())
+    {
+        throw PiPedalArgumentException("File not found: " + inputFile.string());
+    }
 
     while (in.peek() != -1)
     {
         char c = in.get();
         if (c == '$')
         {
-            if (in.peek() == '{') {
+            if (in.peek() == '{')
+            {
                 in.get();
 
                 std::stringstream sName;
-                try {
+                try
+                {
                     while ((c = in.get()) != '}')
                     {
                         sName.put(c);
                     }
-                } catch (const std::exception&)
+                }
+                catch (const std::exception &)
                 {
                     throw PiPedalException("Unexpected end of file. Expecting '}'.");
                 }
                 std::string s = map.at(sName.str());
                 out << s;
-            } else if (in.peek() == '$')
+            }
+            else if (in.peek() == '$')
             {
                 out.put(in.get());
-            } else {
+            }
+            else
+            {
                 out.put(c);
             }
-        } else {
+        }
+        else
+        {
             out.put(c);
         }
     }

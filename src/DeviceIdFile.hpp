@@ -22,17 +22,20 @@
  * SOFTWARE.
  */
 
-[Unit]
-Description=PiPedal P2P Session Manager
-After=network.target
+#pragma once
 
-[Service]
-ExecStart=${COMMAND}
-Type=notify
-Restart=always
-RestartSec=60
-WorkingDirectory=/var/pipedal
+#include <string>
+
+namespace pipedal {
+    class DeviceIdFile {
+    public:
+        static const char DEVICEID_FILE_NAME[];
+
+        void Load();
+        void Save();
 
 
-[Install]
-WantedBy=multi-user.target
+        std::string uuid;
+        std::string deviceName;
+    };
+}

@@ -24,7 +24,7 @@
 #include "Lv2Log.hpp"
 #include <set>
 #include "PiPedalConfiguration.hpp"
-#include "ShutdownClient.hpp"
+#include "AdminClient.hpp"
 #include "SplitEffect.hpp"
 #include "CpuGovernor.hpp"
 
@@ -78,7 +78,7 @@ void PiPedalModel::Close()
 PiPedalModel::~PiPedalModel()
 {
     try {
-        ShutdownClient::UnmonitorGovernor();
+        adminClient.UnmonitorGovernor();
     } catch (...) // noexcept here!
     {
 
@@ -153,7 +153,7 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
     this->webRoot = configuration.GetWebRoot();
     this->jackServerSettings.ReadJackConfiguration();
 
-    ShutdownClient::MonitorGovernor(storage.GetGovernorSettings());
+    adminClient.MonitorGovernor(storage.GetGovernorSettings());
 
     // lv2Host.Load(configuration.GetLv2Path().c_str());
 
@@ -633,7 +633,7 @@ GovernorSettings PiPedalModel::GetGovernorSettings()
 void PiPedalModel::SetGovernorSettings(const std::string& governor)
 {
     std::lock_guard<std::recursive_mutex> guard(mutex);
-    ShutdownClient::SetGovernorSettings(governor);
+    adminClient.SetGovernorSettings(governor);
 
     this->storage.SetGovernorSettings(governor);
     
@@ -657,7 +657,7 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
 {
     std::lock_guard<std::recursive_mutex> guard(mutex);
 
-    ShutdownClient::SetWifiConfig(wifiConfigSettings);
+    adminClient.SetWifiConfig(wifiConfigSettings);
 
     this->storage.SetWifiConfigSettings(wifiConfigSettings);
 
@@ -1022,7 +1022,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 {
     std::lock_guard<std::recursive_mutex> guard(mutex);
 
-    if (!ShutdownClient::CanUseShutdownClient())
+    if (!adminClient.CanUseShutdownClient())
     {
         throw PiPedalException("Can't change server settings when running a debug server.");
     }
@@ -1043,7 +1043,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     }
     delete[] t;
 
-    if (ShutdownClient::CanUseShutdownClient())
+    if (adminClient.CanUseShutdownClient())
     {
 
         // save the current (edited) preset now in case the service shutdown isn't clean.

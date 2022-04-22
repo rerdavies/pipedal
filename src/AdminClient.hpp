@@ -22,20 +22,29 @@
 #include <string>
 #include "JackServerSettings.hpp"
 #include "WifiConfigSettings.hpp"
+#include "WifiDirectConfigSettings.hpp"
+#include "UnixSocket.hpp"
+#include <mutex>
 
 namespace pipedal {
 
 
-class ShutdownClient {
-    static bool WriteMessage(const char*message);
+class AdminClient {
+    bool WriteMessage(const char*message);
 public:
-    static bool CanUseShutdownClient();
-    static bool RequestShutdown(bool restart);
-    static bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
-    static void SetWifiConfig(const WifiConfigSettings & settings);
-    static void SetGovernorSettings(const std::string & governor);
-    static void MonitorGovernor(const std::string &governor);
-    static void UnmonitorGovernor();
+    AdminClient();
+    ~AdminClient();
+    bool CanUseShutdownClient();
+    bool RequestShutdown(bool restart);
+    bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
+    void SetWifiConfig(const WifiConfigSettings & settings);
+    void SetWifiDirectConfig(const WifiDirectConfigSettings & settings);
+    void SetGovernorSettings(const std::string & governor);
+    void MonitorGovernor(const std::string &governor);
+    void UnmonitorGovernor();
+private:
+    std::mutex mutex;
+    UnixSocket socket;
 };
 
 } // namespace

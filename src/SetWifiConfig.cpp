@@ -21,6 +21,7 @@
 #include "ss.hpp"
 
 #include "P2pConfigFiles.hpp"
+#include "DeviceIdFile.hpp"
 #include "SetWifiConfig.hpp"
 #include "PiPedalException.hpp"
 #include "SystemConfigFile.hpp"
@@ -43,7 +44,10 @@ using namespace std;
 
 
 static char DNSMASQ_APD_PATH[] = "/etc/dnsmasq.d/30-pipedal-apd.conf";
-static char DNSMASQ_P2P_PATH[] = "/etc/dnsmasqdnsmaqsq.d/30-pipedal-p2p.conf";
+
+static char DNSMASQ_P2P_SOURCE_PATH[] = "/etc/pipedal/config/templates/30-pipedal-p2p.conf";
+
+static char DNSMASQ_P2P_PATH[] = "/etc/dnsmasq.d/30-pipedal-p2p.conf";
 
 
 static bool IsApdInstalled() {
@@ -54,53 +58,6 @@ static bool IsP2pInstalled() {
 }
 
 
-uint32_t pipedal::ChannelToWifiFrequency(const std::string &channel)
-{
-    std::string t = channel;
-    // remove dprecated band specs.
-    if (t.size() > 1 && t[0] == 'a' || t[0] == 'g')
-    {
-        t = t.substr(1);
-    }
-    size_t size = t.length();
-
-    unsigned long long lChannel = std::stoull(t,&size);
-    if (size != t.length())
-    {
-        throw invalid_argument("Expecting a number: '" + t + "'.");
-    }
-    return ChannelToWifiFrequency((uint32_t)lChannel);
-}
-
-uint32_t pipedal::ChannelToWifiFrequency(uint32_t channel)
-{
-    // 2.4GHz.
-    if (channel >= 1 && channel <= 13)
-    {
-        return 2412 + 5*(channel-1);
-    }
-    if (channel == 14)
-    {
-        return 2484;
-    }
-    // 802.11y
-    if (channel >= 131 && channel < 137)
-    {
-        return 3660 + (channel-131)*5;
-    }
-    if (channel >= 32 && channel <= 68 && (channel & 1) == 0)
-    {
-        return 5160 + (channel-32)/2*10;
-    }
-    if (channel == 96) return 5480;
-
-    if (channel >= 100 && channel <= 196)
-    {
-        return 5500 + (channel-100)/5;
-    }
-    throw invalid_argument(SS("Invalid channel: " << channel));
-
-}
 
 static void restoreApdDhcpdConfFile()
 {
@@ -140,10 +97,56 @@ static void restoreApdDhcpdConfFile()
     }
 }
 
+static void restoreP2pDhcpdConfFile()
+{
+    // remove the interface wlan0 section.
+    std::filesystem::path dhcpcdConfig("/etc/dhcpcd.conf");
+    if (std::filesystem::exists(dhcpcdConfig))
+    {
+        SystemConfigFile dhcpcd(dhcpcdConfig);
+
+        int line = dhcpcd.GetLineThatStartsWith("hostname");
+        std::string hostNameLine;
+        hostNameLine = "hostname"; // the default value.
+
+        if (line != -1)
+        {
+            dhcpcd.SetLineValue(line, hostNameLine);
+        }
+
+        line = dhcpcd.GetLineNumber("interface p2p-wlan0-0");
+        if (line != -1)
+        {
+            dhcpcd.EraseLine(line);
+            while (line < dhcpcd.GetLineCount())
+            {
+                const std::string &lineValue = dhcpcd.GetLineValue(line);
+                if (lineValue.length() > 0 && (lineValue[0] == ' ' || lineValue[0] == '\t'))
+                {
+                    dhcpcd.EraseLine(line);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        dhcpcd.Save(dhcpcdConfig);
+    }
+}
+
 
 static void restoreApdDnsmasqConfFile()
 {
     std::filesystem::path path(DNSMASQ_APD_PATH);
+    if (std::filesystem::exists(path))
+    {
+        std::filesystem::remove(path);
+    }
+}
+static void restoreP2pDnsmasqConfFile()
+{
+    std::filesystem::path path(DNSMASQ_P2P_PATH);
     if (std::filesystem::exists(path))
     {
         std::filesystem::remove(path);
@@ -324,7 +327,7 @@ void pipedal::SetWifiConfig(const WifiConfigSettings &settings)
         sysExec("rfkill unblock wlan");
         sysExec(SYSTEMCTL_BIN " daemon-reload");
 
-        sysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
+//        sysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
         sysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
 
         sysExec(SYSTEMCTL_BIN " unmask hostapd");
@@ -339,7 +342,7 @@ void pipedal::SetWifiConfig(const WifiConfigSettings &settings)
         sysExec(SYSTEMCTL_BIN " enable hostapd");
 
         sysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
-        sysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
+//        sysExec(SYSTEMCTL_BIN " mask wpa_supplicant");
 
         sysExec(SYSTEMCTL_BIN " restart dnsmasq");
         sysExec(SYSTEMCTL_BIN " enable dnsmasq");
@@ -355,9 +358,9 @@ p2p configuration:
 dnsmaqsq.d/30-pipedal-p2p.conf:
 
 interface=p2p-wlan0-0
-    dhcp-range=p2p-wlan0,172.24.0.3,172.24.0.127,1h
+    dhcp-range=p2p-wlan0,173.24.0.3,172.23.0.127,1h
     domain=local                        
-    address=/pipedal.local/172.24.0.1   # do this through DNS-SD?
+    address=/pipedal.local/172.23.0.2   
     
 except-interface=eth0
 except-interface=wlan0
@@ -368,7 +371,7 @@ dhcpcd.conf:
 ======
 interface p2p-wlan0-0
      static ip_address=172.24.0.1/16
-     domain_name_server=172.24.0.1
+     domain_name_servers=172.24.0.1
 
 Watch resolv.conf to make sure we don't lose DNS servers.
 ************************************************************************************/
@@ -378,14 +381,14 @@ void UninstallP2p()
 {
     if (IsP2pInstalled())
     {
-        sysExec(SYSTEMCTL_BIN " stop pipidal_p2pd");
-        sysExec(SYSTEMCTL_BIN " disable pipidal_p2pd");
+        sysExec(SYSTEMCTL_BIN " stop pipedal_p2pd");
+        sysExec(SYSTEMCTL_BIN " disable pipedal_p2pd");
 
         sysExec(SYSTEMCTL_BIN " stop dnsmasq");
         sysExec(SYSTEMCTL_BIN " disable dnsmasq");
 
-        restoreApdDhcpdConfFile();
-        restoreApdDnsmasqConfFile();
+        restoreP2pDhcpdConfFile();
+        restoreP2pDnsmasqConfFile();
 
         sysExec(SYSTEMCTL_BIN " enable wpa_supplicant");
         sysExec(SYSTEMCTL_BIN " start wpa_supplicant");
@@ -395,9 +398,11 @@ void UninstallP2p()
 
 void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
 {
+
     char band;
     if (!settings.enable_)
     {
+        cout << "Disabling P2P" << endl;
         UninstallP2p();
     }
     else
@@ -419,11 +424,21 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
             map["INSTANCE_ID_FILE"] = DEVICE_GUID_FILE;
 
 
-            WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/template_p2pd.conf"), PIPEDAL_P2PD_CONF_PATH);
+            WriteTemplateFile(map, PIPEDAL_P2PD_CONF_PATH);
             
         }
+        // ******************* device_uuid
+
+        DeviceIdFile deviceIdFile;
+        deviceIdFile.Load();
+        deviceIdFile.deviceName = settings.hotspotName_;
+        deviceIdFile.Save();
 
         // ******************** dsnmasq ******
+
+        std::filesystem::copy_file(DNSMASQ_P2P_SOURCE_PATH, DNSMASQ_P2P_PATH);
+        
+#if JUNK // copy into place instaead.
         std::filesystem::path dnsMasqPath(DNSMASQ_P2P_PATH);
         SystemConfigFile dnsMasq;
 
@@ -447,15 +462,24 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
 
 
         dnsMasq.Set("interface", "p2p-wlan0-0", "Name of the Wi-Fi interface");
-        dnsMasq.Set("listen-address", APD_IP_ADDRESS);
+        dnsMasq.Set("listen-address", P2P_IP_ADDRESS);
 
         dnsMasq.SetDefault("dhcp-range", P2P_IP_PREFIX ".3," P2P_IP_PREFIX ".127,1h", "dhcp configuration");
         dnsMasq.SetDefault("domain", "local");
         std::string strAddress = SS("/" << settings.mdnsName_ << ".local/" P2P_IP_PREFIX << ".2");
         dnsMasq.Set("address", strAddress);
+
+        dnsMasq.EraseLine("except-interface=eth0");
+        dnsMasq.EraseLine("except-interface=wlan0");
+        dnsMasq.EraseLine("except-interface=lo");
+
         dnsMasq.AppendLine("except-interface=eth0");
         dnsMasq.AppendLine("except-interface=wlan0");
+        dnsMasq.AppendLine("except-interface=lo");
 
+        dnsMasq.Save(dnsMasqPath);
+
+#endif
 
         // ****** dhcpd.conf ***/
         std::filesystem::path dhcpcdConfig("/etc/dhcpcd.conf");
@@ -518,34 +542,36 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
 
             dhcpcd.InsertLine(line++, "interface p2p-wlan0-0");
             dhcpcd.InsertLine(line++, "   static ip_address=" P2P_INTERFACE_ADDR);
-            dhcpcd.InsertLine(line++, "   domain_name_servier=" P2P_IP_ADDRESS);
+            dhcpcd.InsertLine(line++, "   domain_name_servers=" P2P_IP_ADDRESS);
             dhcpcd.Save(dhcpcdConfig);
         }
 
-        // ***** save the config files ***
-
-        dnsMasq.Save(dnsMasqPath);
 
         // **************** start services ************
+
+        cout << "Starting services." << endl;
         sysExec("rfkill unblock wlan");
+
         sysExec(SYSTEMCTL_BIN " daemon-reload");
 
-        sysExec(SYSTEMCTL_BIN " restart wpa_supplicant");
+
+        sysExec(SYSTEMCTL_BIN " restart dnsmasq");
+        sysExec(SYSTEMCTL_BIN " enable dnsmasq");
+
+        sysExec(SYSTEMCTL_BIN " restart dhcpcd");
+
 
         sysExec(SYSTEMCTL_BIN " unmask pipedal_p2pd");
+        cout << "."; cout.flush();
         if (sysExec(SYSTEMCTL_BIN " restart pipedal_p2pd") != 0)
         {
             throw PiPedalException("Unable to start the pipedal_p2pd.");
         }
-        if (sysExec("systemctl is-active --quiet pipedal_p2pd") != 0)
-        {
-            throw PiPedalException("Unable to start the access point.");
-        }
+
         sysExec(SYSTEMCTL_BIN " enable pipedal_p2pd");
 
-        sysExec(SYSTEMCTL_BIN " restart dnsmasq");
-        sysExec(SYSTEMCTL_BIN " enable dnsmasq");
     }
+    cout << "Ready." << endl;
 }
 
 void pipedal::OnWifiUninstall()

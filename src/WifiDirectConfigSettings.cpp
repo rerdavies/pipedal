@@ -22,6 +22,9 @@
 #include "WifiConfigSettings.hpp"
 #include <stdexcept>
 #include <random>
+#include "ConfigUtil.hpp"
+#include "DeviceIdFile.hpp"
+
 
 using namespace pipedal;
 using namespace std;
@@ -71,17 +74,48 @@ static void ValidatePin(const std::string&pin)
 void WifiDirectConfigSettings::ParseArguments(const std::vector<std::string> &arguments)
 {
     this->valid_ = false;
-    if (arguments.size() < 2 || arguments.size() > 4)
-    {
-        throw invalid_argument("Incorrect number of arguments supplied");
-    }
 
     this->enable_ = true;
 
-    this->countryCode_ = arguments[0];
-    this->hotspotName_ = arguments[1];
-    this->pin_ = arguments.size() >= 3 ? arguments[2] : "";
-    this->channel_ = arguments.size() >= 4? arguments[3]: "";
+    if (arguments.size() == 0)
+    {
+        if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","country_code",&this->countryCode_))
+        {
+            throw invalid_argument("Default value for country code not found.");
+        }
+        if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","p2p_pin",&this->pin_))
+        {
+            throw invalid_argument("Default value for pin not found.");
+        }
+        if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","wifiGroupFrequency",&this->channel_))
+        {
+            throw invalid_argument("Default value for pin not found.");
+        }
+        try {
+            DeviceIdFile deviceIdFile;
+            deviceIdFile.Load();
+            if (deviceIdFile.deviceName == "")
+            {
+                throw std::invalid_argument("");
+            }
+            this->hotspotName_ = deviceIdFile.deviceName;
+        } catch (const std::exception &e)
+        {
+            throw std::invalid_argument("Default value for device name not found.");
+        }
+    } else {
+        if (arguments.size() < 2 || arguments.size() > 4)
+        {
+            throw invalid_argument("Incorrect number of arguments supplied");
+        }
+        this->countryCode_ = arguments[0];
+        this->hotspotName_ = arguments[1];
+        this->pin_ = arguments.size() >= 3 ? arguments[2] : "";
+        this->channel_ = arguments.size() >= 4? arguments[3]: "";
+    }
+    if (this->channel_ == "") {
+        this->channel_ = "1";
+    }
     size_t maxLength = 32-string("DIRECT-XX-").length();
     if (hotspotName_.size() >= maxLength) { throw invalid_argument("Device name is too long."); }
     if (hotspotName_.size() < 1) { throw invalid_argument("Device name is too short."); }

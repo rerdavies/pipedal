@@ -22,10 +22,26 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include "catch.hpp"
+#include "AvahiService.hpp"
+#include "ss.hpp"
+#include <unistd.h>
+#include <cassert>
 
+using namespace pipedal;
 
-#define DEVICE_GUID_FILE "/etc/pipedal/config/device_uuid"
+TEST_CASE("Avahi Service Test", "[avahi_service][dev]")
+{
 
-#define PIPEDAL_P2PD_CONF_PATH "/etc/pipedal/config/pipedal_p2pd.conf"
+    {
+        AvahiService service;
 
+        service.Announce(81, "Test Announcement", "0a6045b0-1753-4104-b3e4-b9713b9cc358","pipedal");
+
+        sleep(10);
+
+        service.Unannounce();
+        service.Announce(81, "Test Announcement 2", "0a6045b0-1753-4104-b3e4-b9713b9cc358","pipedal");
+        sleep(10000);
+    }
+}

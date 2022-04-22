@@ -51,14 +51,10 @@ install (
 install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
     DESTINATION /etc/pipedal/react/var/)
 
-install (FILES  ${PROJECT_SOURCE_DIR}/src/template.service 
-                ${PROJECT_SOURCE_DIR}/src/templateAdmin.service 
-                ${PROJECT_SOURCE_DIR}/src/templateJack.service 
-                ${PROJECT_SOURCE_DIR}/src/defaultFavorites.json
-                ${PROJECT_SOURCE_DIR}/src/templateP2pd.service
-                ${PROEJCT_SOURCE_DIR}/src/template_p2pd.conf
-
-        DESTINATION /etc/pipedal/config )
+install (
+    DIRECTORY ${PROJECT_SOURCE_DIR}/src/templates 
+    DESTINATION /etc/pipedal/config/
+)
 
 install (DIRECTORY ${LV2_SOURCE_DIRECTORY} 
        DESTINATION /usr/lib/lv2

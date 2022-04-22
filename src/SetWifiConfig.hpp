@@ -23,8 +23,6 @@
 
 namespace pipedal {
 
-    uint32_t ChannelToWifiFrequency(const std::string &channel);
-    uint32_t ChannelToWifiFrequency(uint32_t channel);
     void SetWifiConfig(const WifiConfigSettings&settings);
     void SetWifiDirectConfig(const WifiDirectConfigSettings&settings);
 

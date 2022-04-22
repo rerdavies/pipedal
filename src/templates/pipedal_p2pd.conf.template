@@ -1,8 +1,3 @@
-${COUNTRY_CODE}
-${PIN}
-${DEVICE_NAME}
-${WIFI_GROUP_FREQUENCY}
-${INSTANCE_ID_FILE} /var/pipedal/instance_id
 # WiFi regdomain 2-letter country code.
 # see: http://www.davros.org/misc/iso3166.txt
 country_code=${COUNTRY_CODE}
@@ -37,9 +32,8 @@ p2p_go_he=0
 # Ipv4 address for the P2P group interface
 p2p_ip_address=172.24.0.2/16
 
-# File containing the a globally-unique id identifying the service on this machine.
-# Syntax: 0a6045b0-1753-4104-b3e4-b9713b9cc356
-# 
+# File containing the globally-unique id that identifies the service on this machine
+# in this format: 0a6045b0-1753-4104-b3e4-b9713b9cc356
 service_guid_file=${INSTANCE_ID_FILE}
 
 

@@ -106,6 +106,7 @@ public:
         }
         return socketServerAddress_.substr(0,pos);
     }
+    
     uint16_t GetSocketServerPort() const {
         try {
             size_t pos = this->socketServerAddress_.find_last_of(':');

@@ -33,6 +33,10 @@
 #include "PiPedalConfiguration.hpp"
 #include "JackServerSettings.hpp"
 #include "WifiConfigSettings.hpp"
+#include "AdminClient.hpp"
+
+
+
 
 
 namespace pipedal {
@@ -67,6 +71,8 @@ class PiPedalModel: private IJackHostCallbacks {
 private:
     PiPedalAlsaDevices alsaDevices;
     std::recursive_mutex mutex;
+
+    AdminClient adminClient;
 
 
     class MidiListener {
@@ -142,6 +148,10 @@ public:
     virtual ~PiPedalModel();
 
     void Close();
+
+    AdminClient&GetAdminClient() { return adminClient; }
+
+
     void LoadLv2PluginInfo(const PiPedalConfiguration&configuration);
     void Load(const PiPedalConfiguration&configuration);
 

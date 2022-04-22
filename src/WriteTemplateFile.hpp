@@ -25,6 +25,21 @@
 namespace pipedal {
     void WriteTemplateFile(
         const std::map<std::string,std::string> &map,
-        std::filesystem::path inputFile,
-        std::filesystem::path outputFile);
+        const std::filesystem::path& inputFile,
+        const std::filesystem::path& outputFile);
+
+        /**
+         * @brief Write template file.
+         * 
+         * The input file is 
+         * 
+         *     /etc/pipedal/config/template/<filename>.template
+         * 
+         * @param map Dictionary of values to substitute.
+         * @param outputFile The full path of the output file.
+         */
+    void WriteTemplateFile(
+        const std::map<std::string,std::string> &map,
+        const std::filesystem::path &outputFile);
+
 }

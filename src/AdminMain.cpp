@@ -22,14 +22,14 @@
 // non-interactive services are not allowed to execute)
 
 #include "pch.h"
+#include <sys/stat.h>
+#include <grp.h>
+#include "ss.hpp"
 #include "CommandLineParser.hpp"
 #include "CpuGovernor.hpp"
 #include <iostream>
 #include <cstdint>
-#include <boost/asio.hpp>
-#include <boost/asio/ip/address_v4.hpp>
 #include <iostream>
-#include <boost/bind.hpp>
 #include <memory>
 #include <thread>
 #include <stdlib.h>
@@ -45,14 +45,13 @@
 #include <mutex>
 #include <condition_variable>
 #include <chrono>
+#include "UnixSocket.hpp"
+#include <signal.h>
 
 using namespace std;
 using namespace pipedal;
-using namespace boost;
-using namespace boost::asio;
-using ip::tcp;
 
-const size_t MAX_LENGTH = 128;
+const char ADMIN_SOCKET_NAME[] = "/run/pipedal/pipedal_admin";
 
 class GovernorMonitorThread
 {
@@ -69,12 +68,13 @@ public:
             this->governor = governor;
             cancelled = false;
             wake = false;
-            pThread = std::make_unique<std::thread>([this]()
-                                                    { this->ServiceProc(); });
-        } else {
+            pThread = std::make_unique<std::thread>([this]() { this->ServiceProc(); });
+        }
+        else
+        {
             this->governor = governor;
             wake = true;
-            
+
             lock.unlock();
             cv.notify_one();
         }
@@ -121,13 +121,13 @@ private:
                 cv.wait_until(
                     lock,
                     timeToWaitFor,
-                    [this]()
-                    { return wake; });
+                    [this]() { return wake; });
                 wake = false;
                 governor = this->governor;
                 cancelled = this->cancelled;
             }
-            if (cancelled) {
+            if (cancelled)
+            {
                 break;
             }
             std::string activeGovernor = pipedal::GetCpuGovernor();
@@ -156,7 +156,7 @@ void StopGovernorMonitorThread()
 {
     governorMonitorThread.Stop();
 }
-void StartGovernorMonitorThread(const std::string&governor)
+void StartGovernorMonitorThread(const std::string &governor)
 {
     governorMonitorThread.Start(governor);
 }
@@ -214,96 +214,26 @@ bool setJackConfiguration(JackServerSettings serverSettings)
     return true;
 }
 
-class Reader : public std::enable_shared_from_this<Reader>
+class AdminServer
 {
 private:
-    tcp::socket socket;
-    int readAvailable = MAX_LENGTH;
-    char data[MAX_LENGTH];
-    char *writePointer;
-    ssize_t writeLength;
     std::stringstream message;
 
     size_t writePosition = 0;
     std::string response;
 
-public:
-    Reader(asio::io_service &ios)
-        : socket(ios)
-    {
-    }
-    static std::shared_ptr<Reader> Create(asio::io_service &ios)
-    {
-        return std::make_shared<Reader>(ios);
-    }
-
-    tcp::socket &Socket() { return socket; }
-
-    void Start()
-    {
-        ReadSome();
-    }
+    char buffer[4096];
 
 private:
-    void ReadSome()
+    bool HandleCommand()
     {
-        socket.async_read_some(
-            boost::asio::buffer(data, readAvailable),
-            boost::bind(&Reader::HandleRead,
-                        shared_from_this(),
-                        boost::asio::placeholders::error,
-                        boost::asio::placeholders::bytes_transferred));
-    }
-    void WriteSome()
-    {
-        if (writePosition == response.size())
-        {
-            socket.close();
-            return;
-        }
-        socket.async_write_some(
-            boost::asio::buffer(response.c_str() + writePosition, response.length() - writePosition),
-            boost::bind(&Reader::HandleWrite,
-                        shared_from_this(),
-                        boost::asio::placeholders::error,
-                        boost::asio::placeholders::bytes_transferred));
-    }
+        std::string sender;
+        size_t length = socket.ReceiveFrom(buffer, sizeof(buffer), &sender);
+        if (length > 0 && buffer[length - 1] == '\n')
+            --length;
+        buffer[length] = 0;
 
-private:
-    void HandleWrite(const boost::system::error_code &err, size_t bytes_transferred)
-    {
-        writePosition += bytes_transferred;
-        WriteSome();
-    }
-    void HandleRead(const boost::system::error_code &err, size_t bytes_transferred)
-    {
-        if (!err)
-        {
-            for (size_t i = 0; i < bytes_transferred; ++i)
-            {
-                char c = data[i];
-                if (c == '\n')
-                {
-                    std::string command = message.str();
-                    cout << command << endl;
-                    HandleCommand(command);
-                    socket.close();
-                    return;
-                }
-                else
-                {
-                    message.put(data[i]);
-                }
-            }
-            ReadSome();
-        }
-        else
-        {
-            socket.close();
-        }
-    }
-    void HandleCommand(const std::string &text)
-    {
+        std::string text{buffer};
         int result = -1;
         std::string command;
         std::string args;
@@ -316,6 +246,10 @@ private:
         {
             command = text.substr(0, pos);
             args = text.substr(pos + 1);
+        }
+        if (command == "__quit")
+        {
+            return false;
         }
         try
         {
@@ -372,6 +306,22 @@ private:
                 pipedal::SetWifiConfig(settings);
                 result = 0;
             }
+            else if (command == "WifiDirectConfigSettings")
+            {
+                std::stringstream ss(args);
+                WifiDirectConfigSettings settings;
+                try
+                {
+                    json_reader reader(ss);
+                    reader.read(&settings);
+                }
+                catch (const std::exception &e)
+                {
+                    throw PiPedalArgumentException("Invalid arguments.");
+                }
+                pipedal::SetWifiDirectConfig(settings);
+                result = 0;
+            }
             else if (command == "shutdown")
             {
                 result = sysExec("/usr/sbin/shutdown -P now");
@@ -405,77 +355,104 @@ private:
         }
         catch (const std::exception &e)
         {
-            std::stringstream t;
-            t << "-2 " << e.what() << "\n";
-            this->response = t.str();
-            this->writePosition = 0;
-            WriteSome();
-            return;
+
+            std::string reply = SS("-2 " << e.what() << "\n");
+
+            try
+            {
+                socket.SendTo(reply.c_str(), reply.length(), sender);
+            }
+            catch (const std::exception /*ignored*/)
+            {
+            }
+            return true;
         }
 
-        std::stringstream t;
-        t << result << "\n";
-        this->response = t.str();
-        this->writePosition = 0;
-        WriteSome();
-    }
-};
-
-class Server
-{
-private:
-    tcp::acceptor acceptor_;
-    boost::asio::io_service &io_service;
-
-    void HandleAccept(std::shared_ptr<Reader> connection, const boost::system::error_code &err)
-    {
-        if (!err)
+        std::string reply;
+        reply = SS(result << "\n");
+        try
         {
-            connection->Start();
+            socket.SendTo(reply.c_str(), reply.length(), sender);
         }
-        StartAccept();
+        catch (const std::exception /*ignored*/)
+        {
+        }
+
+        return true;
     }
 
-    void StartAccept()
-    {
-        // socket
-        std::shared_ptr<Reader> reader = Reader::Create(io_service);
+private:
+    UnixSocket socket;
+    UnixSocket cancelSocket;
 
-        // asynchronous accept operation and wait for a new connection.
-        acceptor_.async_accept(reader->Socket(),
-                               boost::bind(&Server::HandleAccept, this, reader,
-                                           boost::asio::placeholders::error));
+    std::unique_ptr<std::thread> serviceThread;
+    void ServiceProc()
+    {
+        try
+        {
+            while (true)
+            {
+                if (!HandleCommand())
+                {
+                    break;
+                }
+            }
+        }
+        catch (const std::exception &)
+        {
+        }
     }
 
 public:
-    // constructor for accepting connection from client
-    Server(boost::asio::io_service &io_service, const tcp::endpoint &endpoint)
-        : acceptor_(io_service, endpoint),
-          io_service(io_service)
+    void Start()
+    {
+        socket.Bind(ADMIN_SOCKET_NAME, "pipedal_d");
+        cancelSocket.Connect(ADMIN_SOCKET_NAME, "pipedal_d");
 
-    {
-        StartAccept();
+        serviceThread = std::make_unique<std::thread>([this] {
+            this->ServiceProc();
+        });
     }
-    ~Server()
+
+    void Stop()
     {
+
+        if (serviceThread)
+        {
+            std::string msg{"__quit\n"};
+            try
+            {
+                cancelSocket.Send(msg.c_str(), msg.length());
+            }
+            catch (const std::exception &ignored)
+            {
+            };
+
+            serviceThread->join();
+            serviceThread = nullptr;
+        }
     }
 };
 
-void runServer(uint16_t port)
-{
-    asio::ip::tcp::endpoint endpoint(ip::make_address_v4("127.0.0.1"), port);
-    asio::io_service ios;
+static bool signaled = false;
 
-    try
-    {
-        Server server(ios, endpoint);
-        ios.run();
-        cout << "Processing terminated." << endl;
-    }
-    catch (const std::exception &e)
-    {
-        cout << "Error: " << e.what() << endl;
-    }
+static void sigHandler(int signal)
+{
+    signaled = true;
+}
+
+struct sigaction saInt, oldActionInt;
+struct sigaction saTerm, oldActionTerm;
+
+static void setSignalHandlers()
+{
+    memset(&saInt, 0, sizeof(saInt));
+    saInt.sa_handler = sigHandler;
+    sigaction(SIGINT, &saInt, &oldActionInt);
+
+    memset(&saTerm, 0, sizeof(saTerm));
+    saTerm.sa_handler = sigHandler;
+    sigaction(SIGTERM, &saTerm, &oldActionTerm);
 }
 
 int main(int argc, char **argv)
@@ -485,7 +462,7 @@ int main(int argc, char **argv)
 
     uint16_t port = 0;
 
-    parser.AddOption("-port", &port);
+    parser.AddOption("-port", &port); // ignored legacy option.
 
     try
     {
@@ -500,12 +477,29 @@ int main(int argc, char **argv)
         cout << "Error: " << e.what() << endl;
         return EXIT_FAILURE;
     }
-    if (port == 0)
+
+    mkdir("/run/pipedal", S_IRWXU | S_IRWXG);
+
+    struct group *group_;
+    group_ = getgrnam("pipedal_d");
+    if (group_ == nullptr)
     {
-        std::cerr << "Error: port not specified." << std::endl;
-        return EXIT_FAILURE;
+        throw UnixSocketException("Group not found.");
     }
-    runServer(port);
+
+    chown("/run/pipedal", -1, group_->gr_gid);
+
+    setSignalHandlers();
+
+    AdminServer server;
+    server.Start();
+
+    while (!signaled)
+    {
+        usleep(300000);
+    }
+    server.Stop();
+
     governorMonitorThread.Stop();
     return EXIT_SUCCESS;
 }

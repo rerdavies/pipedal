@@ -33,8 +33,13 @@
 #include "JackServerSettings.hpp"
 #include "P2pConfigFiles.hpp"
 #include "PrettyPrinter.hpp"
+#include "DeviceIdFile.hpp"
+#include <uuid/uuid.h>
+#include <random>
 
 #define SS(x) (((std::stringstream &)(std::stringstream() << x)).str())
+
+#define TEMPLATE_PATH(filename) ("/etc/pipedal/config/templates/" filename ".service")
 
 using namespace std;
 using namespace pipedal;
@@ -380,7 +385,7 @@ void InstallJackService()
     // deploy the systemd service file
     std::map<std::string, std::string> map; // nothing to customize.
 
-    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/templateJack.service"), GetServiceFileName(JACK_SERVICE));
+    WriteTemplateFile(map, GetServiceFileName(JACK_SERVICE));
 
     MaybeStartJackService();
 }
@@ -424,13 +429,65 @@ void Uninstall()
     sysExec(SYSTEMCTL_BIN " daemon-reload");
 }
 
+std::random_device randdev;
+
+
+std::string MakeUuid()
+{
+    uuid_t uuid;
+    uuid_generate(uuid);
+    char strUid[36 + 1];
+    uuid_unparse(uuid, strUid);
+    return strUid;
+}
+
+static std::string RandomChars(int nchars)
+{
+    std::stringstream s;
+
+    std::uniform_int_distribution distr(0,26+26+10-1);
+
+    for (int i = 0; i < nchars; ++i)
+    {
+        int v = distr(randdev);
+        char c;
+        if (v < 10)
+        {
+            c = (char)('0' + v);
+        } else {
+            v -= 10;
+            if (v < 26) {
+                c = (char)('a'+v);
+            } else {
+                v -= 26;
+                c = (char)('A'+v);
+            }
+        }
+        s << c;
+    }
+    return s.str();
+}
+
+static void PrepareDeviceidFile()
+{
+    if (!std::filesystem::exists(DeviceIdFile::DEVICEID_FILE_NAME))
+    {
+        DeviceIdFile deviceIdFile;
+
+        deviceIdFile.deviceName = "PiPedal-" + RandomChars(2);
+        deviceIdFile.uuid = MakeUuid();
+        deviceIdFile.Save();
+    }
+}
+
 void Install(const std::filesystem::path &programPrefix, const std::string endpointAddress)
 {
     if (sysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to create audio service group.");
     }
-
+    
+    PrepareDeviceidFile();
     InstallJackService();
     auto endpos = endpointAddress.find_last_of(':');
     if (endpos == string::npos)
@@ -556,13 +613,13 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         }
         s
             << (programPrefix / "bin" / NATIVE_SERVICE).string()
-            << " /etc/pipedal/config /etc/pipedal/react -port " << endpointAddress << " -systemd -shutdownPort " << shutdownPort;
+            << " /etc/pipedal/config /etc/pipedal/react -port " << endpointAddress << " -systemd";
 
         map["COMMAND"] = s.str();
     }
-    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/template.service"), GetServiceFileName(NATIVE_SERVICE));
+    WriteTemplateFile(map, GetServiceFileName(NATIVE_SERVICE));
 
-    map["DESCRIPTION"] = "PiPedal Shutdown Service";
+    map["DESCRIPTION"] = "PiPedal Admin Service";
     {
         std::stringstream s;
 
@@ -572,7 +629,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
         map["COMMAND"] = s.str();
     }
-    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/templateAdmin.service"), GetServiceFileName(ADMIN_SERVICE));
+    WriteTemplateFile(map, GetServiceFileName(ADMIN_SERVICE));
 
     // /usr/bin/pipedal_p2pd --config-file /etc/pipedal/config/template_p2pd.conf
 
@@ -581,7 +638,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         << " --config-file " << PIPEDAL_P2PD_CONF_PATH);
     map["COMMAND"] = pipedal_p2pd_cmd;
 
-    WriteTemplateFile(map, std::filesystem::path("/etc/pipedal/config/templateP2pd.service"), GetServiceFileName(PIPEDAL_P2PD_SERVICE));
+    WriteTemplateFile(map, GetServiceFileName(PIPEDAL_P2PD_SERVICE));
 
     sysExec(SYSTEMCTL_BIN " daemon-reload");
 
@@ -638,8 +695,10 @@ static void PrintHelp()
          << HangingIndent() << "    --restart\tRestart the pipedal services." << "\n"
          << "\n"
 
-         << HangingIndent() << "    --enable-p2p <country_code> <ssid> [[<pin>] <channel>]\t"
+         << HangingIndent() << "    --enable-p2p [<country_code> <ssid> [[<pin>] <channel>] ]\t"
          << "Enable the P2P (Wi-Fi Direct) hotspot." << "\n\n"
+         << "With no additional arguments, the P2P channel is enabled with most-recent settings."
+         << "\n\n"
          << "<country_code> is the 2-letter ISO-3166 country code for "
             "the country you are in. see below for further notes." 
          << "\n\n"
@@ -658,7 +717,7 @@ static void PrintHelp()
          << "device to PiPedal. (It's also available on the Settings page of PiPedal, if you have access to PiPedal UI on another device.)" 
          << "\n\n"
          << "For best performance, the channel number should be 1, 6, or 11 (the Wifi Direct \"social\" channels). " 
-         << "If you don't supply a channel number, PiPedal will select the least-busy of channels 1, 6 and 11." 
+         << "Channel number defaults to 1." 
          << "\n\n"
 
          << HangingIndent() << "   --disable-p2p\tDisabled Wi-Fi Direct access." 
@@ -878,8 +937,10 @@ int main(int argc, char **argv)
             WifiDirectConfigSettings settings;
             settings.ParseArguments(argv);
             settings.valid_ = true;
-            settings.enable_ = false;
+            settings.enable_ = true;
             SetWifiDirectConfig(settings);
+            RestartService(true); // also have to retart web service so that it gets the correct device name.
+
         }
         else if (disable_p2p)
         {

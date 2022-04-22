@@ -14,6 +14,7 @@ find_package(sdbus-c++ REQUIRED)
 
 
 
+
 # Can't get the pkg_check to work.
 # pkg_check_modules(LIBNL3 "nl-genl-3")
 # if(!LIBNL3_FOUND)
@@ -88,21 +89,13 @@ message (STATUS "Cxx flags: ${CMAKE_CXX_FLAGS}"  )
 
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_BIND_GLOBAL_PLACEHOLDERS -DONBOARDING)
 
-# build Bluez dbus proxies
-# requires apt install libsdbus-c++-bin
-add_custom_command(
-    OUTPUT ${PROJECT_SOURCE_DIR}/src/dbus/bluez_proxy.h  ${PROJECT_SOURCE_DIR}/src/dbus/bluez_adaptor.h
-    DEPENDS ${PROJECT_SOURCE_DIR}/src/dbus/bluez.xml
-    COMMAND sdbus-c++-xml2cpp ${PROJECT_SOURCE_DIR}/src/dbus/bluez.xml 
-        --proxy=${PROJECT_SOURCE_DIR}/src/dbus/bluez_proxy.h 
-        --adaptor=${PROJECT_SOURCE_DIR}/src/dbus/bluez_adaptor.h 
-    
-    COMMENT "Generating D-Bus bindings for bluez"
-)
  
 
 set (PIPEDAL_SOURCES
     P2pConfigFiles.hpp
+    AvahiService.cpp AvahiService.hpp
+    DeviceIdFile.cpp DeviceIdFile.hpp
+
     StdErrorCapture.hpp StdErrorCapture.cpp
     Ipv6Helpers.cpp Ipv6Helpers.hpp
     PluginPreset.cpp PluginPreset.hpp
@@ -112,6 +105,8 @@ set (PIPEDAL_SOURCES
     BeastServer.cpp BeastServer.hpp HtmlHelper.cpp HtmlHelper.hpp pch.h Uri.cpp Uri.hpp
     WifiConfigSettings.hpp WifiConfigSettings.cpp
     WifiDirectConfigSettings.hpp WifiDirectConfigSettings.cpp
+    ConfigUtil.hpp ConfigUtil.cpp
+
     RequestHandler.hpp json.cpp json.hpp Scratch.cpp Lv2Host.hpp Lv2Host.cpp
     PluginType.hpp PluginType.cpp
     Lv2Log.hpp Lv2Log.cpp
@@ -142,7 +137,7 @@ set (PIPEDAL_SOURCES
     CommandLineParser.hpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
     JackServerSettings.hpp JackServerSettings.cpp
-    ShutdownClient.hpp ShutdownClient.cpp
+    AdminClient.hpp AdminClient.cpp
     MidiBinding.hpp MidiBinding.cpp
     PiPedalMath.hpp
     Locale.hpp Locale.cpp
@@ -153,6 +148,8 @@ set (PIPEDAL_SOURCES
     RegDb.cpp RegDb.hpp
     PiPedalAlsa.hpp PiPedalAlsa.cpp
     InheritPriorityMutex.hpp InheritPriorityMutex.cpp
+    UnixSocket.cpp UnixSocket.hpp
+
 )
 
 configure_file(config.hpp.in config.hpp)
@@ -173,17 +170,17 @@ target_include_directories(pipedald PRIVATE
    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS} ${LVDEV_INCLUDE_DIRS}
     )
 
-target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs asound
+target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs asound avahi-common avahi-client
     ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd SDBusCpp::sdbus-c++
     )
 
 #################################
 add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
-    dbus/bluez_proxy.h dbus/bluez_adaptor.h
-    dbus/bluez_test.cpp
     jsonTest.cpp
+    AvahiServiceTest.cpp
     WifiChannelsTest.cpp
     PiPedalAlsaTest.cpp
+    UnixSocketTest.cpp
 
     Lv2HostLeakTest.cpp
 
@@ -207,7 +204,7 @@ target_include_directories(pipedaltest PRIVATE
    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS}
     )
 
-target_link_libraries(pipedaltest PRIVATE pthread atomic stdc++fs asound
+target_link_libraries(pipedaltest PRIVATE pthread atomic stdc++fs asound  avahi-common avahi-client
     ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd SDBusCpp::sdbus-c++
     )
 
@@ -223,6 +220,7 @@ add_test(NAME DevTest COMMAND pipedaltest "[Dev]")
 
 add_executable(pipedalconfig 
     PrettyPrinter.hpp
+    DeviceIdFile.cpp DeviceIdFile.hpp
     json.cpp json.hpp 
     HtmlHelper.cpp HtmlHelper.hpp
     CommandLineParser.hpp
@@ -231,9 +229,11 @@ add_executable(pipedalconfig
     ConfigMain.cpp
     WifiConfigSettings.cpp WifiConfigSettings.hpp 
     WifiDirectConfigSettings.cpp WifiDirectConfigSettings.hpp 
+    ConfigUtil.hpp ConfigUtil.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     SetWifiConfig.hpp SetWifiConfig.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
+    WriteTemplateFile.hpp WriteTemplateFile.cpp
     SysExec.hpp SysExec.cpp
     asan_options.cpp
     Lv2Log.cpp Lv2Log.hpp
@@ -241,15 +241,21 @@ add_executable(pipedalconfig
 
     )
 
-target_link_libraries(pipedalconfig PRIVATE pthread atomic stdc++fs
+target_link_libraries(pipedalconfig PRIVATE pthread atomic uuid stdc++fs
     )
 
-add_executable(pipedaladmind ShutdownMain.cpp CommandLineParser.hpp
+add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
+    UnixSocket.cpp UnixSocket.hpp
+    DeviceIdFile.cpp DeviceIdFile.hpp
+
     JackServerSettings.hpp JackServerSettings.cpp
     json.hpp json.cpp HtmlHelper.hpp HtmlHelper.cpp Lv2Log.hpp Lv2Log.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
     WifiConfigSettings.cpp WifiConfigSettings.hpp 
+    WriteTemplateFile.cpp WriteTemplateFile.hpp
     WifiDirectConfigSettings.cpp WifiDirectConfigSettings.hpp 
+    ConfigUtil.hpp ConfigUtil.cpp
+
     SetWifiConfig.hpp SetWifiConfig.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp    
     SysExec.hpp SysExec.cpp

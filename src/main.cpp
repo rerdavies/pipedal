@@ -21,13 +21,15 @@
 #include "BeastServer.hpp"
 #include <iostream>
 #include "Lv2Log.hpp"
+#include "DeviceIdFile.hpp"
+#include "AvahiService.hpp"
 
 #include "PiPedalSocket.hpp"
 #include "Lv2Host.hpp"
 #include <boost/system/error_code.hpp>
 #include <filesystem>
 #include "PiPedalConfiguration.hpp"
-#include "ShutdownClient.hpp"
+#include "AdminClient.hpp"
 #include "CommandLineParser.hpp"
 #include "Lv2SystemdLogger.hpp"
 #include <sys/stat.h>
@@ -87,7 +89,7 @@ public:
     {
     }
 
-    virtual bool wants(const std::string& method, const uri &request_uri) const
+    virtual bool wants(const std::string &method, const uri &request_uri) const
     {
         if (request_uri.segment_count() != 2 || request_uri.segment(0) != "var")
         {
@@ -135,7 +137,7 @@ public:
         return result;
     }
 
-    void GetPluginPresets(const uri &request_uri, std::string*pName,std::string *pContent)
+    void GetPluginPresets(const uri &request_uri, std::string *pName, std::string *pContent)
     {
         std::string pluginUri = request_uri.query("id");
         auto plugin = model->GetLv2Host().GetPluginInfo(pluginUri);
@@ -193,7 +195,7 @@ public:
             {
                 std::string name;
                 std::string content;
-                GetPluginPresets(request_uri,&name,&content);
+                GetPluginPresets(request_uri, &name, &content);
                 res.set(HttpField::content_type, "application/octet-stream");
                 res.set(HttpField::cache_control, "no-cache");
                 res.setContentLength(content.length());
@@ -253,13 +255,14 @@ public:
             {
                 std::string name;
                 std::string content;
-                GetPluginPresets(request_uri,&name,&content);
+                GetPluginPresets(request_uri, &name, &content);
                 res.set(HttpField::content_type, "application/octet-stream");
                 res.set(HttpField::cache_control, "no-cache");
                 res.setContentLength(content.length());
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PLUGIN_PRESETS_EXTENSION));
                 res.setBody(content);
-            } else if (segment == "downloadPreset")
+            }
+            else if (segment == "downloadPreset")
             {
                 std::string name;
                 std::string content;
@@ -312,7 +315,7 @@ public:
 
             if (segment == "uploadPluginPresets")
             {
-                const std::string& presetBody = req.body();
+                const std::string &presetBody = req.body();
                 std::stringstream s(presetBody);
                 json_reader reader(s);
                 PluginPresets presets;
@@ -327,9 +330,10 @@ public:
                 res.setContentLength(result.length());
 
                 res.setBody(result);
-            } else if (segment == "uploadPreset")
+            }
+            else if (segment == "uploadPreset")
             {
-                const std::string& presetBody = req.body();
+                const std::string &presetBody = req.body();
                 std::stringstream s(presetBody);
                 json_reader reader(s);
 
@@ -356,7 +360,7 @@ public:
             }
             else if (segment == "uploadBank")
             {
-                const std::string& presetBody = req.body();
+                const std::string &presetBody = req.body();
                 std::istringstream s(presetBody);
                 json_reader reader(s);
 
@@ -417,34 +421,34 @@ public:
           portNumber(portNumber)
     {
     }
-    std::string GetConfig(const std::string&fromAddress)
+    std::string GetConfig(const std::string &fromAddress)
     {
         std::string linkLocalAddress = GetLinkLocalAddress(fromAddress);
 
         std::stringstream s;
 
         s << "{ \"socket_server_port\": " << portNumber
-          << ", \"socket_server_address\": \""  << linkLocalAddress << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize << " }";
+          << ", \"socket_server_address\": \"" << linkLocalAddress << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize << " }";
 
         return s.str();
     }
     virtual ~InterceptConfig() {}
 
-   virtual void head_response(
-        const uri&request_uri,
+    virtual void head_response(
+        const uri &request_uri,
         const HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec) 
+        std::error_code &ec)
     {
         // intercepted. See the other overload.
     }
 
-   virtual void head_response(
-       const std::string &fromAddress,
-        const uri&request_uri,
+    virtual void head_response(
+        const std::string &fromAddress,
+        const uri &request_uri,
         const HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec) 
+        std::error_code &ec)
     {
         std::string response = GetConfig(fromAddress);
         res.set(HttpField::content_type, "application/json");
@@ -458,12 +462,12 @@ public:
         const HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec)
-        {
-            // intercepted. see the other overload.
-        }
+    {
+        // intercepted. see the other overload.
+    }
 
     virtual void get_response(
-        const std::string&fromAddress,
+        const std::string &fromAddress,
         const uri &request_uri,
         const HttpRequest &req,
         HttpResponse &res,
@@ -477,7 +481,6 @@ public:
     }
 };
 
-
 static bool isJackServiceRunning()
 {
     // look for the jack shmem .
@@ -485,7 +488,6 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
-uint16_t g_ShutdownPort = 0;
 
 int main(int argc, char *argv[])
 {
@@ -502,7 +504,6 @@ int main(int argc, char *argv[])
     bool help = false;
     bool error = false;
     bool systemd = false;
-    uint16_t shutdownPort = 0;
     std::string portOption;
 
     CommandLineParser parser;
@@ -510,7 +511,6 @@ int main(int argc, char *argv[])
     parser.AddOption("--help", &help);
     parser.AddOption("-systemd", &systemd);
     parser.AddOption("-port", &portOption);
-    parser.AddOption("-shutdownPort", &shutdownPort);
 
     try
     {
@@ -543,7 +543,6 @@ int main(int argc, char *argv[])
                   << "Options:\n"
                   << "   -systemd: Log to systemd journals, wait for jack service.\n"
                   << "   -port: Port to listen on e.g. 0.0.0.0:80\n"
-                  << "   -shutdownPort: Port for the shutdown service.\n"
                   << "Example:\n"
                   << "    pipedal /etc/pipedal/config /etc/pipedal/react -port 0.0.0.0:80 \n"
                      "\n"
@@ -558,7 +557,6 @@ int main(int argc, char *argv[])
         return error ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
-    g_ShutdownPort = shutdownPort;
     if (systemd)
     {
         Lv2Log::set_logger(MakeLv2SystemdLogger());
@@ -576,7 +574,7 @@ int main(int argc, char *argv[])
     PiPedalConfiguration configuration;
     try
     {
-        configuration.Load(doc_root,web_root);
+        configuration.Load(doc_root, web_root);
     }
     catch (const std::exception &e)
     {
@@ -608,7 +606,6 @@ int main(int argc, char *argv[])
         Lv2Log::info("Document root: %s Threads: %d", doc_root.c_str(), (int)threads);
 
         server->SetLogHttpRequests(configuration.LogHttpRequests());
-
     }
     catch (const std::exception &e)
     {
@@ -648,7 +645,7 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-        
+
             // pre-cache device info before we let audio services run.
             model.GetAlsaDevices();
         }
@@ -659,8 +656,8 @@ int main(int argc, char *argv[])
         {
             // Tell systemd we're done.
             sd_notifyf(0, "READY=1\n"
-                    "MAINPID=%lu",
-                    (unsigned long) getpid());
+                          "MAINPID=%lu",
+                       (unsigned long)getpid());
         }
 
         if (!isJackServiceRunning())
@@ -684,7 +681,9 @@ int main(int argc, char *argv[])
         {
             Lv2Log::info("Found  Jack service.");
             sleep(3); // jack needs a little time to get up to speed.
-        } else {
+        }
+        else
+        {
             Lv2Log::info("Jack service not started.");
         }
 
@@ -700,13 +699,24 @@ int main(int argc, char *argv[])
         std::shared_ptr<DownloadIntercept> downloadIntercept = std::make_shared<DownloadIntercept>(&model);
         server->AddRequestHandler(downloadIntercept);
 
-        server->RunInBackground(SIGUSR1);
-
-        sem_wait(&signalSemaphore);
-
-        if (systemd)
         {
-            sd_notify(0, "STOPPING=1");
+            // Publish DNS Service.
+            DeviceIdFile deviceIdFile;
+            deviceIdFile.Load();
+            AvahiService service;
+            service.Announce(
+                configuration.GetSocketServerPort(),deviceIdFile.deviceName,deviceIdFile.uuid,"pipedal");
+            
+
+
+            server->RunInBackground(SIGUSR1);
+
+            sem_wait(&signalSemaphore);
+
+            if (systemd)
+            {
+                sd_notify(0, "STOPPING=1");
+            }
         }
 
         Lv2Log::info("Shutting down gracefully.");

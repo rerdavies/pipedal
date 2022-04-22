@@ -23,6 +23,10 @@
 
 namespace pipedal {
 
+
+    uint32_t ChannelToWifiFrequency(const std::string &channel);
+    uint32_t ChannelToWifiFrequency(uint32_t channel);
+    
     class WifiConfigSettings {
     public:
         bool valid_ = false;

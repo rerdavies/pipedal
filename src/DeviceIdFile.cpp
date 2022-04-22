@@ -22,10 +22,55 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include "DeviceIdFile.hpp"
+#include <fstream>
+#include <stdexcept>
+#include <grp.h>
+#include <unistd.h>
+#include <sys/stat.h>
+
+using namespace pipedal;
+
+using namespace std;
 
 
-#define DEVICE_GUID_FILE "/etc/pipedal/config/device_uuid"
+const char DeviceIdFile::DEVICEID_FILE_NAME[] = "/etc/pipedal/config/device_uuid";
 
-#define PIPEDAL_P2PD_CONF_PATH "/etc/pipedal/config/pipedal_p2pd.conf"
+void DeviceIdFile::Load()
+{
+    ifstream f;
 
+    f.open(DEVICEID_FILE_NAME);
+    if (!f.is_open())
+    {
+        throw invalid_argument("Can't open file " + std::string(DEVICEID_FILE_NAME));
+    }
+
+    std::getline(f, uuid);
+    std::getline(f, deviceName);
+}
+void DeviceIdFile::Save()
+{
+    {
+        std::string path = DEVICEID_FILE_NAME;
+        ofstream f;
+        f.open(path, ios_base::trunc);
+        if (!f.is_open())
+        {
+            throw invalid_argument("Can't write to file " + path);
+        }
+
+        struct group *group_;
+        group_ = getgrnam("pipedal_d");
+        if (group_ == nullptr)
+        {
+            throw logic_error("Group not found: pipedal_d");
+        }
+        chown(path.c_str(),-1,group_->gr_gid);
+        chmod(path.c_str(), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+
+
+        f << uuid << endl;
+        f << deviceName << endl;
+    }
+}

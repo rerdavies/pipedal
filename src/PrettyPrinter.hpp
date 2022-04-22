@@ -50,7 +50,7 @@ namespace pipedal
         PrettyPrinter()
             : s(std::cout)
         {
-            lineBuffer.resize(lineWidth * 2);
+            lineBuffer.reserve(120);
         }
         std::ostream&Stream() const { return s;}
 
