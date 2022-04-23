@@ -39,8 +39,8 @@ const drawerStyles = (theme: Theme) => {
     },
 
     drawer_header: {
-        color: 'white',
-        background: theme.palette.primary.main,
+        color: theme.palette.primary.main,
+        background: 'white',
 
     }
 })};

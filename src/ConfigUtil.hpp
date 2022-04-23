@@ -30,5 +30,8 @@ namespace pipedal {
     class ConfigUtil {
     public:
         static bool GetConfigLine(const std::string & filePath,const std::string & key, std::string *pValue);
+
+        static std::string QuoteString(const std::string &value);
+
     };
 }

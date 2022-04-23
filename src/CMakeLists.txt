@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.16.0)
 
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
+set (USE_PCH 1)
+
 include(FindPkgConfig)
 
 
@@ -95,6 +97,7 @@ set (PIPEDAL_SOURCES
     P2pConfigFiles.hpp
     AvahiService.cpp AvahiService.hpp
     DeviceIdFile.cpp DeviceIdFile.hpp
+    WriteTemplateFile.cpp WriteTemplateFile.hpp
 
     StdErrorCapture.hpp StdErrorCapture.cpp
     Ipv6Helpers.cpp Ipv6Helpers.hpp
@@ -152,30 +155,45 @@ set (PIPEDAL_SOURCES
 
 )
 
+
 configure_file(config.hpp.in config.hpp)
+include_directories( ${pipedald_SOURCE_DIR}/. ../build/src) 
+
+set (PIPEDAL_INCLUDES     
+    ${LV2DEV_INCLUDE_DIRS}
+    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS} ${LVDEV_INCLUDE_DIRS}
+)
+
+set(PIPEDAL_LIBS libpipedald pthread atomic stdc++fs asound avahi-common avahi-client systemd
+     ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES}  )
+
+
+##########################
+
+add_library(libpipedald STATIC ${PIPEDAL_SOURCES})
+
+target_include_directories(libpipedald PRIVATE ${PIPEDAL_INCLUDES}
+    ) 
+
+if(${USE_PCH})
+  target_precompile_headers(libpipedald PRIVATE pch.h)
+endif()
+
 
 #################################
-add_executable(pipedald ${PIPEDAL_SOURCES}     
+add_executable(pipedald 
     asan_options.cpp  # disable leak checking for sanitize=address.
     main.cpp 
     )
+target_include_directories(pipedald PRIVATE ${PIPEDAL_INCLUDES})
 
-include_directories( ${pipedald_SOURCE_DIR}/. ../build/src) 
-
-target_precompile_headers(pipedald PRIVATE pch.h)
-
-
-target_include_directories(pipedald PRIVATE
-    ${LV2DEV_INCLUDE_DIRS}
-   ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS} ${LVDEV_INCLUDE_DIRS}
-    )
-
-target_link_libraries(pipedald PRIVATE pthread atomic stdc++fs asound avahi-common avahi-client
-    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd SDBusCpp::sdbus-c++
+target_link_libraries(pipedald PRIVATE 
+   
+    ${PIPEDAL_LIBS}
     )
 
 #################################
-add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
+add_executable(pipedaltest testMain.cpp
     jsonTest.cpp
     AvahiServiceTest.cpp
     WifiChannelsTest.cpp
@@ -192,20 +210,17 @@ add_executable(pipedaltest ${PIPEDAL_SOURCES} testMain.cpp
     MemDebug.hpp
     )
 
-configure_file(config.hpp.in config.hpp)
 include_directories( ${pipedald_SOURCE_DIR}/. ../build/src) 
 
+if(${USE_PCH})
 target_precompile_headers(pipedaltest PRIVATE pch.h)
+endif()
 
 
-target_include_directories(pipedaltest PRIVATE
-    .
-   ${LV2DEV_INCLUDE_DIRS}
-   ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS}
+target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
     )
 
-target_link_libraries(pipedaltest PRIVATE pthread atomic stdc++fs asound  avahi-common avahi-client
-    ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES} systemd SDBusCpp::sdbus-c++
+target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} 
     )
 
 

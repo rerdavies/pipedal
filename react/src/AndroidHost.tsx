@@ -22,28 +22,27 @@
  * SOFTWARE.
  */
 
-#pragma once
+export interface  AndroidHostInterface {
+    isAndroidHosted(): boolean;
+    getHostVersion() : string;
+    chooseNewDevice() : void;
+    onLostConnection(): void;
 
-#include "json.hpp"
+};
 
-namespace pipedal {
+export class FakeAndroidHost implements AndroidHostInterface
+{
+    isAndroidHosted(): boolean {
+        return true;
+    }
+    getHostVersion(): string {
+        return "Fake Android 1.0";
+    }
+    chooseNewDevice(): void {
+        
+    }
+    onLostConnection(): void {
+        
+    }
 
-    class WifiDirectConfigSettings {
-    public:
-        bool valid_ = false;
-        bool rebootRequired_ = false;
-        bool enable_ = false;
-        std::string countryCode_ = "US"; // iso 3661
-        std::string hotspotName_ = "pipedal";
-        bool pinChanged_ = false;
-        std::string pin_;
-        std::string channel_ = "6";
-
-        void ParseArguments(const std::vector<std::string> &arguments);
-        void Save() const;
-        void Load();
-
-    public:
-        DECLARE_JSON_MAP(WifiDirectConfigSettings);
-    };
 }

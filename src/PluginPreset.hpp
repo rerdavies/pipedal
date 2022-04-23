@@ -22,6 +22,7 @@
 #include "json.hpp"
 #include "PiPedalException.hpp"
 #include <utility>
+#include <map>
 
 namespace pipedal {
 

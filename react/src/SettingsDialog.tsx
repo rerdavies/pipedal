@@ -35,13 +35,15 @@ import JackServerSettings from './JackServerSettings';
 import JackServerSettingsDialog from './JackServerSettingsDialog';
 import JackHostStatus from './JackHostStatus';
 import WifiConfigSettings from './WifiConfigSettings';
+import WifiDirectConfigSettings from './WifiDirectConfigSettings';
 import WifiConfigDialog from './WifiConfigDialog';
+import WifiDirectConfigDialog from './WifiDirectConfigDialog';
 import DialogEx from './DialogEx'
 import GovernorSettings from './GovernorSettings';
 
-import Slide, {SlideProps} from '@mui/material/Slide';
+import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
-import { WithStyles, withStyles} from '@mui/styles';
+import { WithStyles, withStyles } from '@mui/styles';
 
 
 
@@ -60,8 +62,10 @@ interface SettingsDialogState {
     governorSettings: GovernorSettings;
 
     wifiConfigSettings: WifiConfigSettings;
+    wifiDirectConfigSettings: WifiDirectConfigSettings;
 
     showWifiConfigDialog: boolean;
+    showWifiDirectConfigDialog: boolean;
     showGovernorSettingsDialog: boolean;
     showInputSelectDialog: boolean;
     showOutputSelectDialog: boolean;
@@ -69,6 +73,7 @@ interface SettingsDialogState {
     showJackServerSettingsDialog: boolean;
     shuttingDown: boolean;
     restarting: boolean;
+    isAndroidHosted: boolean;
 };
 
 
@@ -150,15 +155,19 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 jackStatus: undefined,
                 jackSettings: this.model.jackSettings.get(),
                 wifiConfigSettings: this.model.wifiConfigSettings.get(),
-                governorSettings:  this.model.governorSettings.get(),
+                wifiDirectConfigSettings: this.model.wifiDirectConfigSettings.get(),
+                governorSettings: this.model.governorSettings.get(),
                 showWifiConfigDialog: false,
+                showWifiDirectConfigDialog: false,
                 showGovernorSettingsDialog: false,
                 showInputSelectDialog: false,
                 showOutputSelectDialog: false,
                 showMidiSelectDialog: false,
                 showJackServerSettingsDialog: false,
                 shuttingDown: false,
-                restarting: false
+                restarting: false,
+                isAndroidHosted: this.model.isAndroidHosted()
+
 
 
             };
@@ -166,6 +175,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.handleJackSettingsChanged = this.handleJackSettingsChanged.bind(this);
             this.handleJackServerSettingsChanged = this.handleJackServerSettingsChanged.bind(this);
             this.handleWifiConfigSettingsChanged = this.handleWifiConfigSettingsChanged.bind(this);
+            this.handleWifiDirectConfigSettingsChanged = this.handleWifiDirectConfigSettingsChanged.bind(this);
             this.handleGovernorSettingsChanged = this.handleGovernorSettingsChanged.bind(this);
             this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
 
@@ -173,6 +183,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
         handleConnectionStateChanged(): void {
             if (this.model.state.get() === State.Ready) {
+                this.setState({ isAndroidHosted: this.model.isAndroidHosted() });
                 if (this.state.shuttingDown || this.state.restarting) {
                     this.setState({ shuttingDown: false, restarting: false });
                 }
@@ -189,6 +200,18 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.showAlert(err);
                 });
         }
+
+        handleApplyWifiDirectConfig(wifiDirectConfigSettings: WifiDirectConfigSettings): void {
+            this.setState({ showWifiDirectConfigDialog: false });
+            this.model.setWifiDirectConfigSettings(wifiDirectConfigSettings)
+                .then(() => {
+
+                })
+                .catch((err) => {
+                    this.model.showAlert(err);
+                });
+        }
+
         handleApplyGovernorSettings(governor: string): void {
             this.model.setGovernorSettings(governor)
                 .then(() => {
@@ -206,6 +229,14 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 }
             )
         }
+        handleWifiDirectConfigSettingsChanged(): void {
+            this.setState(
+                {
+                    wifiDirectConfigSettings: this.model.wifiDirectConfigSettings.get()
+                }
+            )
+        }
+
         handleGovernorSettingsChanged(): void {
             this.setState(
                 {
@@ -257,6 +288,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.jackConfiguration.addOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.jackServerSettings.addOnChangedHandler(this.handleJackServerSettingsChanged);
                     this.model.wifiConfigSettings.addOnChangedHandler(this.handleWifiConfigSettingsChanged);
+                    this.model.wifiDirectConfigSettings.addOnChangedHandler(this.handleWifiDirectConfigSettingsChanged);
                     this.model.governorSettings.addOnChangedHandler(this.handleGovernorSettingsChanged);
                     this.model.getJackStatus()
                         .then((jackStatus) =>
@@ -276,6 +308,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.handleJackSettingsChanged();
                     this.handleJackServerSettingsChanged();
                     this.handleWifiConfigSettingsChanged();
+                    this.handleWifiDirectConfigSettingsChanged();
                     this.timerHandle = setInterval(() => this.tick(), 1000);
                 } else {
                     if (this.timerHandle) {
@@ -286,7 +319,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.jackSettings.removeOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackServerSettings.removeOnChangedHandler(this.handleJackServerSettingsChanged);
                     this.model.wifiConfigSettings.removeOnChangedHandler(this.handleWifiConfigSettingsChanged);
-                    this.model.wifiConfigSettings.removeOnChangedHandler(this.handleGovernorSettingsChanged);
+                    this.model.wifiDirectConfigSettings.removeOnChangedHandler(this.handleWifiDirectConfigSettingsChanged);
+                    this.model.governorSettings.removeOnChangedHandler(this.handleGovernorSettingsChanged);
 
                 }
             }
@@ -340,7 +374,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 let newSelection = this.state.jackSettings.clone();
                 newSelection.inputMidiPorts = channels;
                 this.model.setJackSettings(newSelection);
-                
+
             }
             this.setState({
                 showMidiSelectDialog: false,
@@ -383,6 +417,11 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
         handleShowWifiConfigDialog() {
             this.setState({
                 showWifiConfigDialog: true
+            });
+        }
+        handleShowWifiDirectConfigDialog() {
+            this.setState({
+                showWifiDirectConfigDialog: true
             });
         }
         handleShowGovernorSettingsDialogDialog() {
@@ -461,7 +500,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     (
                                         <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
                                             {JackHostStatus.getDisplayView("", this.state.jackStatus)}
-                                            { JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
+                                            {JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
                                         </div>
                                     )
                                 }
@@ -534,8 +573,42 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                             </div>
                             <Divider />
                             <div >
-                                <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">SYSTEM</Typography>
+                                <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">CONNECTION</Typography>
+
+                                {
+                                    this.state.isAndroidHosted &&
+                                    (
+                                        <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                            onClick={() => this.model.chooseNewDevice() }  >
+                                            <SelectHoverBackground selected={false} showHover={true} />
+                                            <div style={{ width: "100%" }}>
+                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                    Connect to a difference device</Typography>
+                                                <Typography display="block" variant="caption" noWrap color="textSecondary">
+
+                                                </Typography>
+
+                                            </div>
+                                        </ButtonBase>
+                                    )
+                                }
+
+                                <ButtonBase 
+                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                    onClick={() => this.handleShowWifiDirectConfigDialog()}  >
+                                    <SelectHoverBackground selected={false} showHover={true} />
+                                    <div style={{ width: "100%" }}>
+                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                            Configure Wi-Fi Direct hotspot</Typography>
+                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
+                                            {this.state.wifiDirectConfigSettings.getSummaryText()}
+                                        </Typography>
+
+                                    </div>
+                                </ButtonBase>
+
                                 <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                    style={{ display: "none" }}
                                     onClick={() => this.handleShowWifiConfigDialog()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
@@ -547,8 +620,13 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     </div>
                                 </ButtonBase>
+                            </div>
+                            <Divider />
+                            <div >
+                                <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">SYSTEM</Typography>
+
                                 <ButtonBase
-                                    style={{display: "none"}}
+                                    style={{ display: "none" }}
                                     className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
                                     onClick={() => this.handleShowGovernorSettingsDialogDialog()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
@@ -556,13 +634,26 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
                                             CPU Governor</Typography>
                                         <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            {this.state.governorSettings.governor }
+                                            {this.state.governorSettings.governor}
                                         </Typography>
 
                                     </div>
                                 </ButtonBase>
-                                
-                                
+
+                                <ButtonBase
+                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                    onClick={() => this.handleShowGovernorSettingsDialogDialog()}  >
+                                    <SelectHoverBackground selected={false} showHover={true} />
+                                    <div style={{ width: "100%" }}>
+                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                            Show status monitor on main screen.</Typography>
+                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
+                                            Enabled
+                                        </Typography>
+
+                                    </div>
+                                </ButtonBase>
+
                                 <ButtonBase className={classes.setting} disabled={disableShutdown}
                                     onClick={() => this.handleRestart()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
@@ -571,7 +662,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             this.state.restarting ? (
                                                 <Typography className={classes.primaryItem} display="block" variant="body2" color="textSecondary" noWrap>Rebooting...</Typography>
                                             ) : (
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Reboot</Typography>
+                                                <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Reboot PiPedal</Typography>
                                             )
                                         }
                                     </div>
@@ -610,25 +701,25 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     {
                         (this.state.showGovernorSettingsDialog) &&
                         (
-                            <ListSelectDialog 
+                            <ListSelectDialog
                                 width={220}
                                 open={this.state.showGovernorSettingsDialog}
                                 items={this.state.governorSettings.governors}
                                 selectedItem={this.state.governorSettings.governor}
                                 title="Governor"
-                                onClose={()=> this.setState({showGovernorSettingsDialog: false})}
+                                onClose={() => this.setState({ showGovernorSettingsDialog: false })}
                                 onOk={(selectedValue) => {
                                     this.model.setGovernorSettings(selectedValue)
-                                    .then(()=>{
+                                        .then(() => {
 
-                                    })
-                                    .catch(error => {
-                                        this.model.showAlert(error);
-                                    });
-                    
-                                    this.setState({showGovernorSettingsDialog: false})                                    
+                                        })
+                                        .catch(error => {
+                                            this.model.showAlert(error);
+                                        });
+
+                                    this.setState({ showGovernorSettingsDialog: false })
                                 }}
-                                >
+                            >
                             </ListSelectDialog>
                         )
 
@@ -647,6 +738,10 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     <WifiConfigDialog wifiConfigSettings={this.state.wifiConfigSettings} open={this.state.showWifiConfigDialog}
                         onClose={() => this.setState({ showWifiConfigDialog: false })}
                         onOk={(wifiConfigSettings) => this.handleApplyWifiConfig(wifiConfigSettings)}
+                    />
+                    <WifiDirectConfigDialog wifiDirectConfigSettings={this.state.wifiDirectConfigSettings} open={this.state.showWifiDirectConfigDialog}
+                        onClose={() => this.setState({ showWifiDirectConfigDialog: false })}
+                        onOk={(wifiDirectConfigSettings: WifiDirectConfigSettings) => this.handleApplyWifiDirectConfig(wifiDirectConfigSettings)}
                     />
 
                 </DialogEx >

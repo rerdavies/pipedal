@@ -678,10 +678,41 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
         delete[] t;
     }
 }
+void PiPedalModel::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiDirectConfigSettings)
+{
+    std::lock_guard<std::recursive_mutex> guard(mutex);
+
+    adminClient.SetWifiDirectConfig(wifiDirectConfigSettings);
+
+    this->storage.SetWifiDirectConfigSettings(wifiDirectConfigSettings);
+
+    {
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+
+        WifiDirectConfigSettings tWifiDirectConfigSettings = storage.GetWifiDirectConfigSettings(); // (the passwordless version)
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            t[i]->OnWifiDirectConfigSettingsChanged(tWifiDirectConfigSettings);
+        }
+        delete[] t;
+    }
+}
+
 WifiConfigSettings PiPedalModel::GetWifiConfigSettings()
 {
     std::lock_guard<std::recursive_mutex> guard(mutex);
     return this->storage.GetWifiConfigSettings();
+}
+WifiDirectConfigSettings PiPedalModel::GetWifiDirectConfigSettings()
+{
+    std::lock_guard<std::recursive_mutex> guard(mutex);
+    return this->storage.GetWifiDirectConfigSettings();
 }
 
 JackConfiguration PiPedalModel::GetJackConfiguration()

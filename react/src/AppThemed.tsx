@@ -292,7 +292,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             isDrawerOpen: false,
             errorMessage: this.model_.errorMessage.get(),
             displayState: this.model_.state.get(),
-            canFullScreen: supportsFullScreen(),
+            canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted(),
             isFullScreen: !!document.fullscreenElement,
             tinyToolBar: false,
             alertDialogOpen: false,
@@ -537,7 +537,10 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     setDisplayState(newState: State): void {
         this.updateOverscroll();
 
-        this.setState({ displayState: newState });
+        this.setState({ 
+            displayState: newState,
+            canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted()
+        });
     }
 
     showDrawer() {

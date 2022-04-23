@@ -156,7 +156,7 @@ void AvahiService::create_group(AvahiClient *c)
         if ((ret = avahi_entry_group_add_service(
                  group,
                  AVAHI_IF_UNSPEC,
-                 AVAHI_PROTO_UNSPEC,
+                 AVAHI_PROTO_INET, // IPv4 for now, until we figure out why dnsqmasq borks IPv6 routing.)
                  (AvahiPublishFlags)0,
                  name,
                  PIPEDAL_SERVICE_TYPE,

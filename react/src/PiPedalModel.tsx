@@ -33,9 +33,11 @@ import JackServerSettings from './JackServerSettings';
 import MidiBinding from './MidiBinding';
 import { PluginUiPresets } from './PluginPreset';
 import WifiConfigSettings from './WifiConfigSettings';
+import WifiDirectConfigSettings from './WifiDirectConfigSettings';
 import GovernorSettings from './GovernorSettings';
 import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
+import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
 
 
 export enum State {
@@ -321,6 +323,7 @@ export interface PiPedalModel {
     banks: ObservableProperty<BankIndex>;
     jackServerSettings: ObservableProperty<JackServerSettings>;
     wifiConfigSettings: ObservableProperty<WifiConfigSettings>;
+    wifiDirectConfigSettings: ObservableProperty<WifiDirectConfigSettings>;
     governorSettings: ObservableProperty<GovernorSettings>;
     favorites: ObservableProperty<FavoritesList>;
 
@@ -418,6 +421,7 @@ export interface PiPedalModel {
     uploadBank(file: File, uploadAfter: number): Promise<number>;
 
     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void>;
+    setWifiDirectConfigSettings(wifiDirectConfigSettings: WifiDirectConfigSettings): Promise<void>;
     setGovernorSettings(governor: string): Promise<void>;
 
     getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>;
@@ -428,6 +432,10 @@ export interface PiPedalModel {
     clearZoomedControl(): void;
 
     setFavorite(pluginUrl: string, isFavorite: boolean): void;
+
+    isAndroidHosted(): boolean;
+    getAndroidHostVersion(): string;
+    chooseNewDevice(): void;
 };
 
 class PiPedalModelImpl implements PiPedalModel {
@@ -457,6 +465,7 @@ class PiPedalModelImpl implements PiPedalModel {
         = new ObservableProperty<JackServerSettings>(new JackServerSettings());
 
     wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
+    wifiDirectConfigSettings: ObservableProperty<WifiDirectConfigSettings> = new ObservableProperty<WifiDirectConfigSettings>(new WifiDirectConfigSettings());
     governorSettings: ObservableProperty<GovernorSettings> = new ObservableProperty<GovernorSettings>(new GovernorSettings());
 
     favorites: ObservableProperty<FavoritesList> = new ObservableProperty<FavoritesList>({});
@@ -484,8 +493,11 @@ class PiPedalModelImpl implements PiPedalModel {
         return null;
     }
 
+    androidHost?: AndroidHostInterface;
 
     constructor() {
+        this.androidHost = (window as any).AndroidHost as AndroidHostInterface;
+
         this.onSocketError = this.onSocketError.bind(this);
         this.onSocketMessage = this.onSocketMessage.bind(this);
         this.onSocketReconnecting = this.onSocketReconnecting.bind(this);
@@ -505,23 +517,20 @@ class PiPedalModelImpl implements PiPedalModel {
         this.onError(errorMessage);
     }
 
-    compareFavorites(left: FavoritesList, right: FavoritesList): boolean
-    {
-        for (let key of Object.keys(left))
-        {
+    compareFavorites(left: FavoritesList, right: FavoritesList): boolean {
+        for (let key of Object.keys(left)) {
             if (!right[key]) {
                 return false;
             }
         }
 
-        for (let key of Object.keys(right))
-        {
+        for (let key of Object.keys(right)) {
             if (!left[key]) {
                 return false;
             }
         }
         return true;
-            
+
     }
     onSocketMessage(header: PiPedalMessageHeader, body?: any) {
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
@@ -539,11 +548,9 @@ class PiPedalModelImpl implements PiPedalModel {
             if (header.replyTo) {
                 this.webSocket?.reply(header.replyTo, "onMonitorPortOutput", true);
             }
-        } else if (message === "onFavoritesChanged")
-        {
+        } else if (message === "onFavoritesChanged") {
             let favorites = body as FavoritesList;
-            if (!this.compareFavorites(favorites,this.favorites.get()))
-            {
+            if (!this.compareFavorites(favorites, this.favorites.get())) {
                 this.favorites.set(favorites);
             }
         } else if (message === "onChannelSelectionChanged") {
@@ -613,6 +620,9 @@ class PiPedalModelImpl implements PiPedalModel {
         } else if (message === "onWifiConfigSettingsChanged") {
             let wifiConfigSettings = new WifiConfigSettings().deserialize(body);
             this.wifiConfigSettings.set(wifiConfigSettings);
+        } else if (message === "onWifiDirectConfigSettingsChanged") {
+            let wifiDirectConfigSettings = new WifiDirectConfigSettings().deserialize(body);
+            this.wifiDirectConfigSettings.set(wifiDirectConfigSettings);
         }
         else if (message === "onGovernorSettingsChanged") {
             let governor = body as string;
@@ -704,10 +714,17 @@ class PiPedalModelImpl implements PiPedalModel {
             .then(data => {
                 this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
 
-                    return this.getWebSocket().request<any>("getGovernorSettings");
-                })
-                .then(data => {
-                    this.governorSettings.set(new GovernorSettings().deserialize(data));
+
+                return this.getWebSocket().request<any>("getWifiDirectConfigSettings");
+            })
+            .then(data => {
+                this.wifiDirectConfigSettings.set(new WifiDirectConfigSettings().deserialize(data));
+
+
+                return this.getWebSocket().request<any>("getGovernorSettings");
+            })
+            .then(data => {
+                this.governorSettings.set(new GovernorSettings().deserialize(data));
 
 
                 return this.getWebSocket().request<any>("getJackServerSettings");
@@ -740,7 +757,7 @@ class PiPedalModelImpl implements PiPedalModel {
 
                 return this.getWebSocket().request<FavoritesList>("getFavorites");
             })
-            .then((data)=> {
+            .then((data) => {
                 this.favorites.set(data);
 
                 this.setState(State.Ready);
@@ -772,6 +789,9 @@ class PiPedalModelImpl implements PiPedalModel {
             .then(data => {
                 if (data.max_upload_size) {
                     this.maxUploadSize = data.max_upload_size;
+                }
+                if (data.fakeAndroid) {
+                    this.androidHost = new FakeAndroidHost();
                 }
                 this.debug = !!data.debug;
                 let { socket_server_port, socket_server_address } = data;
@@ -843,15 +863,21 @@ class PiPedalModelImpl implements PiPedalModel {
                     })
                     .then((data) => {
                         this.presets.set(new PresetIndex().deserialize(data));
+
                         return this.getWebSocket().request<any>("getWifiConfigSettings");
                     })
                     .then(data => {
                         this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
 
-                            return this.getWebSocket().request<any>("getGovernorSettings");
-                        })
-                        .then(data => {
-                            this.governorSettings.set(new GovernorSettings().deserialize(data));
+                        return this.getWebSocket().request<any>("getWifiDirectConfigSettings");
+                    })
+                    .then(data => {
+                        this.wifiDirectConfigSettings.set(new WifiDirectConfigSettings().deserialize(data));
+
+                        return this.getWebSocket().request<any>("getGovernorSettings");
+                    })
+                    .then(data => {
+                        this.governorSettings.set(new GovernorSettings().deserialize(data));
 
 
                         return this.getWebSocket().request<any>("getJackServerSettings");
@@ -876,19 +902,17 @@ class PiPedalModelImpl implements PiPedalModel {
                     })
                     .then((data) => {
                         this.banks.set(new BankIndex().deserialize(data));
-                        if (this.webSocket)
-                        {
+                        if (this.webSocket) {
                             // MUST not allow reconnect until at least one complete load has finished.
                             this.webSocket.canReconnect = true;
                         }
 
                         return this.getWebSocket().request<FavoritesList>("getFavorites");
                     })
-                    .then((data)=> {
+                    .then((data) => {
                         this.favorites.set(data);
 
-                        if (this.webSocket)
-                        {
+                        if (this.webSocket) {
                             // MUST not allow reconnect until at least one complete load has finished.
                             this.webSocket.canReconnect = true;
                         }
@@ -1901,6 +1925,57 @@ class PiPedalModelImpl implements PiPedalModel {
         });
         return result;
     }
+    setWifiDirectConfigSettings(wifiDirectConfigSettings: WifiDirectConfigSettings): Promise<void> {
+        let result = new Promise<void>((resolve, reject) => {
+            let oldSettings = this.wifiDirectConfigSettings.get();
+            wifiDirectConfigSettings = wifiDirectConfigSettings.clone();
+
+            if ((!oldSettings.enable) && (!wifiDirectConfigSettings.enable)) {
+                // no effective change.
+                resolve();
+                return;
+            }
+            if (!wifiDirectConfigSettings.enable) {
+                wifiDirectConfigSettings = oldSettings.clone();
+                wifiDirectConfigSettings.enable = false;
+            } else {
+                if (wifiDirectConfigSettings.countryCode === oldSettings.countryCode
+                    && wifiDirectConfigSettings.channel === oldSettings.channel
+                    && wifiDirectConfigSettings.hotspotName === oldSettings.hotspotName
+                    && wifiDirectConfigSettings.enable == oldSettings.enable) {
+                    if (wifiDirectConfigSettings.pin === oldSettings.pin) {
+                        // no effective change.
+                        resolve();
+                        return;
+                    }
+                }
+            }
+            // save a  version for the server (potentially carrying a password)
+            let serverConfigSettings = wifiDirectConfigSettings.clone();
+            this.wifiDirectConfigSettings.set(wifiDirectConfigSettings);
+
+
+
+            // notify the server.
+            let ws = this.webSocket;
+            if (!ws) {
+                reject("Not connected.");
+                return;
+            }
+            ws.request<void>(
+                "setWifiDirectConfigSettings",
+                serverConfigSettings
+            )
+                .then(() => {
+                    resolve();
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+
+        });
+        return result;
+    }
 
     getWifiChannels(countryIso3661: string): Promise<WifiChannel[]> {
         let result = new Promise<WifiChannel[]>((resolve, reject) => {
@@ -1939,24 +2014,20 @@ class PiPedalModelImpl implements PiPedalModel {
         this.zoomedUiControl.set(undefined);
     }
 
-    setFavorite(pluginUrl: string, isFavorite: boolean): void
-    {
+    setFavorite(pluginUrl: string, isFavorite: boolean): void {
         let favorites = this.favorites.get();
         let newFavorites: FavoritesList = {};
-        Object.assign(newFavorites,favorites);
-        if (isFavorite)
-        {
+        Object.assign(newFavorites, favorites);
+        if (isFavorite) {
             newFavorites[pluginUrl] = true;
         } else {
-            if (newFavorites[pluginUrl])
-            {
+            if (newFavorites[pluginUrl]) {
                 delete newFavorites[pluginUrl];
             }
         }
         this.favorites.set(newFavorites);
-        if (this.webSocket)
-        {
-            this.webSocket.send("setFavorites",newFavorites);
+        if (this.webSocket) {
+            this.webSocket.send("setFavorites", newFavorites);
         }
         // stub: update server.
     }
@@ -1969,6 +2040,21 @@ class PiPedalModelImpl implements PiPedalModel {
             let img = new Image();
             img.src = "/img/" + imageName;
         }
+    }
+
+    isAndroidHosted(): boolean { return this.androidHost !== undefined; }
+
+    getAndroidHostVersion(): string {
+        if (this.androidHost) {
+            return this.androidHost.getHostVersion();
+        }
+        return "";
+    }
+    chooseNewDevice(): void {
+        if (this.androidHost) {
+            return this.androidHost.chooseNewDevice();
+        }
+
     }
 
 };

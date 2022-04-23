@@ -17,13 +17,17 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "pch.h"
+// #include "pch.h"
 #include "WifiDirectConfigSettings.hpp"
+#include "P2pConfigFiles.hpp"
+
 #include "WifiConfigSettings.hpp"
 #include <stdexcept>
 #include <random>
 #include "ConfigUtil.hpp"
 #include "DeviceIdFile.hpp"
+#include "WriteTemplateFile.hpp"
+#include "ss.hpp"
 
 
 using namespace pipedal;
@@ -34,13 +38,12 @@ JSON_MAP_BEGIN(WifiDirectConfigSettings)
     JSON_MAP_REFERENCE(WifiDirectConfigSettings,rebootRequired)
     JSON_MAP_REFERENCE(WifiDirectConfigSettings,enable)
     JSON_MAP_REFERENCE(WifiDirectConfigSettings,hotspotName)
-    JSON_MAP_REFERENCE(WifiDirectConfigSettings,hasPin)
+    JSON_MAP_REFERENCE(WifiDirectConfigSettings,pinChanged)
     JSON_MAP_REFERENCE(WifiDirectConfigSettings,pin)
     JSON_MAP_REFERENCE(WifiDirectConfigSettings,countryCode)
     JSON_MAP_REFERENCE(WifiDirectConfigSettings,channel)
-    JSON_MAP_REFERENCE(WifiDirectConfigSettings,mdnsName)
 JSON_MAP_END()
-
+ 
 static std::string MakePin()
 {
     std::random_device rand_dev;
@@ -79,30 +82,8 @@ void WifiDirectConfigSettings::ParseArguments(const std::vector<std::string> &ar
 
     if (arguments.size() == 0)
     {
-        if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","country_code",&this->countryCode_))
-        {
-            throw invalid_argument("Default value for country code not found.");
-        }
-        if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","p2p_pin",&this->pin_))
-        {
-            throw invalid_argument("Default value for pin not found.");
-        }
-        if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","wifiGroupFrequency",&this->channel_))
-        {
-            throw invalid_argument("Default value for pin not found.");
-        }
-        try {
-            DeviceIdFile deviceIdFile;
-            deviceIdFile.Load();
-            if (deviceIdFile.deviceName == "")
-            {
-                throw std::invalid_argument("");
-            }
-            this->hotspotName_ = deviceIdFile.deviceName;
-        } catch (const std::exception &e)
-        {
-            throw std::invalid_argument("Default value for device name not found.");
-        }
+        Load();
+        this->enable_ = true;
     } else {
         if (arguments.size() < 2 || arguments.size() > 4)
         {
@@ -132,4 +113,64 @@ void WifiDirectConfigSettings::ParseArguments(const std::vector<std::string> &ar
     {
         throw invalid_argument("Invalid channel.");
     }
+}
+
+
+void WifiDirectConfigSettings::Save() const
+{
+        // ******************* pipedal_p2pd ******
+        {
+            // ${COUNTRY_CODE}
+            //${PIN}
+            // ${DEVICE_NAME}
+            // ${WIFI_GROUP_FREQUENCY}
+            // ${INSTANCE_ID_FILE} /var/pipedal/instance_id
+
+            std::map<string, string> map;
+            map["COUNTRY_CODE"] = this->countryCode_;
+            map["PIN"] = this->pin_;
+            map["DEVICE_NAME"] = ConfigUtil::QuoteString(this->hotspotName_);
+            map["WIFI_CHANNEL"] = SS(this->channel_);
+            map["ENABLED"] = this->enable_ ? "true": "false";
+            map["WIFI_GROUP_FREQUENCY"] = SS(ChannelToWifiFrequency(this->channel_));
+            map["INSTANCE_ID_FILE"] = DEVICE_GUID_FILE;
+
+
+            WriteTemplateFile(map, PIPEDAL_P2PD_CONF_PATH);
+            
+        }
+
+}
+void WifiDirectConfigSettings::Load()
+{
+    if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","p2p_device_name",&this->hotspotName_))
+    {
+        this->hotspotName_ = "PiPedal";
+    }
+
+    if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","country_code",&this->countryCode_))
+    {
+        this->countryCode_ = "US";
+    }
+    if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","p2p_pin",&this->pin_))
+    {
+        this->pin_ = "12345678";
+    }
+    if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","wifiChannel",&this->channel_))
+    {
+        this->channel_ = "6";
+    }
+    try {
+        DeviceIdFile deviceIdFile;
+        deviceIdFile.Load();
+        if (deviceIdFile.deviceName == "")
+        {
+            
+        }
+        this->hotspotName_ = deviceIdFile.deviceName;
+    } catch (const std::exception &e)
+    {
+    }
+    this->valid_ = true;
+
 }

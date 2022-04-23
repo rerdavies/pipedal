@@ -26,6 +26,7 @@
 #include "Banks.hpp"
 #include "JackConfiguration.hpp"
 #include "WifiConfigSettings.hpp"
+#include "WifiDirectConfigSettings.hpp"
 #include <map>
 
 
@@ -51,6 +52,7 @@ private:
     PluginPresetIndex pluginPresetIndex;
     
 private:
+    void MaybeCopyDefaultPresets();
     static std::string SafeEncodeName(const std::string& name);
     static std::string SafeDecodeName(const std::string& name);
     std::filesystem::path GetPresetsDirectory() const;
@@ -74,6 +76,7 @@ private:
     bool isJackChannelSelectionValid = false;
     JackChannelSelection jackChannelSelection;
     WifiConfigSettings wifiConfigSettings;
+    WifiDirectConfigSettings wifiDirectConfigSettings;
     std::string governorSettings = "performance";
 public:
     Storage();
@@ -89,6 +92,7 @@ public:
 
 
     void LoadWifiConfigSettings();
+    void LoadWifiDirectConfigSettings();
     void LoadGovernorSettings();
     void LoadBank(int64_t instanceId);
     const PedalBoard& GetCurrentPreset();
@@ -120,6 +124,10 @@ public:
 
     void SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings);
     WifiConfigSettings GetWifiConfigSettings();
+
+    void SetWifiDirectConfigSettings(const WifiDirectConfigSettings & wifiDirectConfigSettings);
+    WifiDirectConfigSettings GetWifiDirectConfigSettings();
+
 
     void SetGovernorSettings(const std::string & governor);
     std::string GetGovernorSettings() const;

@@ -15,6 +15,11 @@ p2p_ssid_postfix=${DEVICE_NAME}
 # Should almost always be  2412 (ch1),2437 (ch6), or 2462 (ch11).
 wifiGroupFrequency=${WIFI_GROUP_FREQUENCY}
 
+# UI use only. wifiGroupFrequency is authoritative
+wifiChannel=${WIFI_CHANNEL}
+
+# UI use only. service state is authoritative.
+enabled=${ENABLED}
 # P2P Device info
 p2p_model_name=PiPedal
 p2p_model_number=1
@@ -28,9 +33,6 @@ p2pInterface=p2p-dev-wlan0
 p2p_go_ht40=0
 p2p_go_vht=0
 p2p_go_he=0
-
-# Ipv4 address for the P2P group interface
-p2p_ip_address=172.24.0.2/16
 
 # File containing the globally-unique id that identifies the service on this machine
 # in this format: 0a6045b0-1753-4104-b3e4-b9713b9cc356

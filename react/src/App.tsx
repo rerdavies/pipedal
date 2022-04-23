@@ -36,7 +36,7 @@ declare module '@mui/styles/defaultTheme' {
 const theme = createTheme({
     palette: {
         primary: {
-            main: "#324c6c"
+            main: "#6750A4"
         },
         secondary: {
             main: "#FF6060"

@@ -83,7 +83,7 @@ const styles = ({ palette }: Theme) => createStyles({
     controlContentSmall: {
         flex: "0 0 162px", width: "100%", height: 162, overflowY: "hidden",
     },
-    title: { fontSize: "1.3em", fontWeight: 700, marginRight: 8 },
+    title: { fontSize: "1.1em", fontWeight: 700, marginRight: 8 },
     author: { fontWeight: 500, marginRight: 8 }
 });
 
@@ -103,6 +103,7 @@ interface MainState {
     horizontalScrollLayout: boolean;
     showMidiBindingsDialog: boolean;
     screenHeight: number;
+    
 }
 
 
@@ -126,7 +127,7 @@ export const MainPage =
                     splitControlBar: this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD,
                     horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
                     showMidiBindingsDialog: false,
-                    screenHeight: this.windowSize.height,
+                    screenHeight: this.windowSize.height
                     
                 };
                 this.onSelectionChanged = this.onSelectionChanged.bind(this);
@@ -465,6 +466,7 @@ export const MainPage =
                                         onClick={this.onLoadClick}
                                         disabled={this.state.selectedPedal === -1 || (this.getSelectedPedalBoardItem()?.isSplit() ?? true)}
                                         startIcon={<InputIcon />}
+                                        style={{ borderRadius: 24, paddingLeft: 18, paddingRight: 18, textTransform: "none"}}
                                     >
                                         Load
                                     </Button>

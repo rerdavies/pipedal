@@ -48,7 +48,7 @@ static std::string trim(const std::string &value)
     size_t start = 0;
     size_t end = value.length();
 
-    while (start < end && ( value[start] == ' ' || value[start] == '\t'))
+    while (start < end && (value[start] == ' ' || value[start] == '\t'))
         ++start;
 
     while (end > start && (value[end - 1] == ' ' || value[end - 1] == '\t'))
@@ -96,11 +96,36 @@ static std::string unquote(const std::string &value)
             }
             return ss.str();
         }
-        
     }
     return value;
 }
-bool ConfigUtil::GetConfigLine(const std::string & filePath,const std::string & key, std::string *pValue)
+
+std::string ConfigUtil::QuoteString(const std::string &value)
+{
+    std::stringstream s;
+
+    s << '"';
+    for (char c : value)
+    {
+        switch (c)
+        {
+        case '\n':
+            break;
+        case '"':
+            s << "\\\"";
+            break;
+        case '\\':
+            s << "\\\\";
+            break;
+        default:
+            s << c;
+            break;
+        }
+    }
+    s << '"';
+    return s.str();
+}
+bool ConfigUtil::GetConfigLine(const std::string &filePath, const std::string &key, std::string *pValue)
 {
 
     ifstream f;

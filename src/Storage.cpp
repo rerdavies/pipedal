@@ -25,6 +25,7 @@
 #include <fstream>
 #include "Lv2Log.hpp"
 #include <map>
+#include <sys/stat.h>
 
 using namespace pipedal;
 
@@ -167,12 +168,49 @@ void Storage::SetDataRoot(const std::filesystem::path& path)
     this->dataRoot = ResolveHomePath(path);
 }
 
+static void CopyDirectory(const std::filesystem::path &source, const std::filesystem::path &destination)
+{
+    for (auto &directoryEntry: std::filesystem::directory_iterator(source))
+    {
+        if (directoryEntry.is_regular_file())
+        {
+            std::filesystem::path sourceFile = directoryEntry.path();
+            std::filesystem::path destFile = destination / sourceFile.filename();
+
+            std::filesystem::copy_file(sourceFile,destFile);
+            chmod(destFile.c_str(),S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+            
+        }   
+    }
+}
+void Storage::MaybeCopyDefaultPresets()
+{
+    auto presetsDirectory = this->GetPresetsDirectory();
+
+    if (!std::filesystem::exists(presetsDirectory / "index.banks"))
+    {
+        CopyDirectory(this->configRoot / "default_presets" / "presets",
+            presetsDirectory
+        );
+    }
+
+    auto pluginDirectory = this->GetPluginPresetsDirectory();
+    if (!std::filesystem::exists(pluginDirectory / "index.json"))
+    {
+        CopyDirectory(this->configRoot / "default_presets" / "plugin_presets",
+            pluginDirectory
+        );
+    }
+
+}
 void Storage::Initialize()
 {
     try
     {
         std::filesystem::create_directories(this->GetPresetsDirectory());
         std::filesystem::create_directories(this->GetPluginPresetsDirectory());
+
+        MaybeCopyDefaultPresets();
     }
     catch (const std::exception &e)
     {
@@ -189,6 +227,7 @@ void Storage::Initialize()
     {
     }
     LoadWifiConfigSettings();
+    LoadWifiDirectConfigSettings();
     LoadGovernorSettings();
 }
 
@@ -871,6 +910,21 @@ void Storage::SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSetting
     }
     this->wifiConfigSettings = copyToStore;
 }
+
+void Storage::SetWifiDirectConfigSettings(const WifiDirectConfigSettings & wifiDirectConfigSettings)
+{
+    WifiDirectConfigSettings copyToSave = wifiDirectConfigSettings;
+    copyToSave.rebootRequired_ = false;
+    if (!copyToSave.enable_)
+    {
+        copyToSave.pinChanged_ = false;
+    }
+
+    WifiDirectConfigSettings copyToStore = wifiDirectConfigSettings;
+    copyToStore.pinChanged_ = false;
+    this->wifiDirectConfigSettings = copyToStore;
+}
+
 void Storage::LoadGovernorSettings()
 {
     std::filesystem::path path = this->dataRoot / GOVERNOR_SETTINGS_FILENAME;
@@ -918,11 +972,26 @@ void Storage::LoadWifiConfigSettings()
     }
     this->wifiConfigSettings.valid_ = true;
 }
+void Storage::LoadWifiDirectConfigSettings()
+{
+
+    WifiDirectConfigSettings settings;
+    settings.enable_ = false;
+    settings.Load();
+    settings.pinChanged_ = false;
+    settings.valid_ = true;
+    this->wifiDirectConfigSettings = settings;
+}
+
 
 
 WifiConfigSettings Storage::GetWifiConfigSettings()
 {
     return this->wifiConfigSettings;
+}
+WifiDirectConfigSettings Storage::GetWifiDirectConfigSettings()
+{
+    return this->wifiDirectConfigSettings;
 }
 
 

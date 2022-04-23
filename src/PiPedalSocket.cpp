@@ -32,6 +32,7 @@
 
 #include "AdminClient.hpp"
 #include "WifiConfigSettings.hpp"
+#include "WifiDirectConfigSettings.hpp"
 #include "WifiChannels.hpp"
 #include "SysExec.hpp"
 #include "PiPedalAlsa.hpp"
@@ -812,6 +813,28 @@ public:
             this->Reply(replyTo, "getWifiConfigSettings", model.GetWifiConfigSettings());
 
         }
+        else if (message == "setWifiDirectConfigSettings") {
+            WifiDirectConfigSettings wifiDirectConfigSettings;
+            pReader->read(&wifiDirectConfigSettings);
+            if (!GetAdminClient().CanUseShutdownClient())
+            {
+                throw PiPedalException("Can't change server settings when running interactively.");
+            }
+            std::string fromAddress = this->getFromAddress();
+            if (!IsOnLocalSubnet(fromAddress))
+            {
+                throw PiPedalException("Permission denied. Not on local subnet.");
+            }
+
+
+            this->model.SetWifiDirectConfigSettings(wifiDirectConfigSettings);
+            this->Reply(replyTo,"setWifiDirectConfigSettings");
+        }
+        else if (message == "getWifiDirectConfigSettings") {
+            this->Reply(replyTo, "getWifiDirectConfigSettings", model.GetWifiDirectConfigSettings());
+
+        }
+
         else if (message == "getGovernorSettings") {
             this->Reply(replyTo, "getGovernorSettings", model.GetGovernorSettings());
 
@@ -1462,9 +1485,12 @@ public:
     {
         Send("onJackServerSettingsChanged",jackServerSettings);
     }
-
     virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings&wifiConfigSettings) {
         Send("onWifiConfigSettingsChanged",wifiConfigSettings);
+    }
+
+    virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings&wifiConfigSettings) {
+        Send("onWifiDirectConfigSettingsChanged",wifiConfigSettings);
     }
     virtual void OnGovernorSettingsChanged(const std::string& governor) {
         Send("onGovernorSettingsChanged",governor);

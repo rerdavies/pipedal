@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <string>
 
 namespace pipedal {
 

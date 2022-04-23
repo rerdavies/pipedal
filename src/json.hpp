@@ -29,6 +29,7 @@
 #include <cctype>
 #include <cmath>
 #include "PiPedalException.hpp"
+#include <map>
 
 
 

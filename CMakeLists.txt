@@ -56,6 +56,11 @@ install (
     DESTINATION /etc/pipedal/config/
 )
 
+install (
+    DIRECTORY ${PROJECT_SOURCE_DIR}/default_presets 
+    DESTINATION /etc/pipedal/config
+)
+
 install (DIRECTORY ${LV2_SOURCE_DIRECTORY} 
        DESTINATION /usr/lib/lv2
 )
