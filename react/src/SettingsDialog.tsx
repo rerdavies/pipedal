@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { SyntheticEvent, Component } from 'react';
+import OkCancelDialog from './OkCancelDialog';
 import ListSelectDialog from './ListSelectDialog';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -74,6 +75,8 @@ interface SettingsDialogState {
     shuttingDown: boolean;
     restarting: boolean;
     isAndroidHosted: boolean;
+    showRestartOkDialog: boolean;
+    showShutdownOkDialog: boolean;
 };
 
 
@@ -166,6 +169,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 showJackServerSettingsDialog: false,
                 shuttingDown: false,
                 restarting: false,
+                showShutdownOkDialog: false,
+                showRestartOkDialog: false,
                 isAndroidHosted: this.model.isAndroidHosted()
 
 
@@ -178,6 +183,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.handleWifiDirectConfigSettingsChanged = this.handleWifiDirectConfigSettingsChanged.bind(this);
             this.handleGovernorSettingsChanged = this.handleGovernorSettingsChanged.bind(this);
             this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
+            
 
         }
 
@@ -430,6 +436,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             });
         }
         handleRestart() {
+            this.setState({showRestartOkDialog: true});
+        }
+        handleRestartOk() {
             this.setState({ restarting: true });
             this.model.restart()
                 .then(() => {
@@ -443,6 +452,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
         }
 
         handleShutdown() {
+            this.setState({ showShutdownOkDialog: true});
+        }
+        handleShutdownOk() {
             this.setState({ shuttingDown: true });
             this.model.shutdown()
                 .then(() => {
@@ -513,6 +525,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     )
                                 }
+                                <Divider/>
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
                                     AUDIO
                                 </Typography>
@@ -642,7 +655,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                 <ButtonBase
                                     className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    onClick={() => this.handleShowGovernorSettingsDialogDialog()}  >
+                                    onClick={() => { } }  >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
                                         <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
@@ -743,7 +756,16 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         onClose={() => this.setState({ showWifiDirectConfigDialog: false })}
                         onOk={(wifiDirectConfigSettings: WifiDirectConfigSettings) => this.handleApplyWifiDirectConfig(wifiDirectConfigSettings)}
                     />
-
+                    <OkCancelDialog text="Are you sure you want to reboot?" okButtonText='Reboot' 
+                        open={this.state.showRestartOkDialog}
+                        onOk={()=> { this.setState({showRestartOkDialog: false}); this.handleRestartOk();}}
+                        onClose={()=> { this.setState({showRestartOkDialog: false}); } }
+                    />
+                    <OkCancelDialog text="Are you sure you want to shut down?" okButtonText='Shut down' 
+                        open={this.state.showShutdownOkDialog}
+                        onOk={()=> { this.setState({showShutdownOkDialog: false}); this.handleShutdownOk();}}
+                        onClose={()=> { this.setState({showShutdownOkDialog: false}); } }
+                    />
                 </DialogEx >
 
             );

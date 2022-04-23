@@ -1942,7 +1942,7 @@ class PiPedalModelImpl implements PiPedalModel {
                 if (wifiDirectConfigSettings.countryCode === oldSettings.countryCode
                     && wifiDirectConfigSettings.channel === oldSettings.channel
                     && wifiDirectConfigSettings.hotspotName === oldSettings.hotspotName
-                    && wifiDirectConfigSettings.enable == oldSettings.enable) {
+                    && wifiDirectConfigSettings.enable === oldSettings.enable) {
                     if (wifiDirectConfigSettings.pin === oldSettings.pin) {
                         // no effective change.
                         resolve();
