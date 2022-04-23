@@ -178,7 +178,7 @@ static void CopyDirectory(const std::filesystem::path &source, const std::filesy
             std::filesystem::path destFile = destination / sourceFile.filename();
 
             std::filesystem::copy_file(sourceFile,destFile);
-            chmod(destFile.c_str(),S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+            std::ignore = chmod(destFile.c_str(),S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
             
         }   
     }

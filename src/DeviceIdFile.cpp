@@ -66,8 +66,8 @@ void DeviceIdFile::Save()
         {
             throw logic_error("Group not found: pipedal_d");
         }
-        chown(path.c_str(),-1,group_->gr_gid);
-        chmod(path.c_str(), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+        std::ignore = chown(path.c_str(),-1,group_->gr_gid);
+        std::ignore = chmod(path.c_str(), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 
 
         f << uuid << endl;

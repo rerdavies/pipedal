@@ -124,8 +124,8 @@ void UnixSocket::Bind(const std::string &socketName, const std::string &permissi
         }
         gid = group_->gr_gid;
 
-        chown(data->localAddress.sun_path, -1, gid);
-        chmod(data->localAddress.sun_path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+        std::ignore = chown(data->localAddress.sun_path, -1, gid);
+        std::ignore = chmod(data->localAddress.sun_path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     }
 
     data->socket = s;
@@ -186,8 +186,8 @@ void UnixSocket::Connect(const std::string &remoteSocketName, const std::string 
         }
         gid_t gid = g->gr_gid;
 
-        chown(data->localAddress.sun_path, -1, gid);
-        chmod(data->localAddress.sun_path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+        std::ignore = chown(data->localAddress.sun_path, -1, gid);
+        std::ignore = chmod(data->localAddress.sun_path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     }
 
     strcpy(data->remoteAddress.sun_path, remoteSocketName.c_str());

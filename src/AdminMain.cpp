@@ -487,7 +487,7 @@ int main(int argc, char **argv)
         throw UnixSocketException("Group not found.");
     }
 
-    chown("/run/pipedal", -1, group_->gr_gid);
+    std::ignore = chown("/run/pipedal", -1, group_->gr_gid);
 
     setSignalHandlers();
 

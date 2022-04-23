@@ -67,7 +67,7 @@ void StdErrorCapture::EndCapture()
         dup2(this->oldStdout,STDOUT_HANDLE);
         close(this->oldStdout);
         this->oldStdout = -1;
-        chmod(this->tempFileName.c_str(),0644);
+        std::ignore = chmod(this->tempFileName.c_str(),0644);
     }
 }
 
