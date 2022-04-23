@@ -61,14 +61,6 @@ export default class OkCancelDialog extends React.Component<OkCancelDialogProps,
         const handleOk = () => {
             onOk();
         }
-        const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
-            // 'keypress' event misbehaves on mobile so we track 'Enter' key via 'keydown' event
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                event.stopPropagation();
-                handleOk();
-            }
-        };
         return (
             <DialogEx tag="OkCancelDialog" open={open} onClose={handleClose} 
                 style={{userSelect: "none"}}
