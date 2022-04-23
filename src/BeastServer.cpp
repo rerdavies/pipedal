@@ -16,6 +16,7 @@
 #include "Lv2Log.hpp"
 #include <set>
 #include <strings.h>
+#include "Ipv6Helpers.hpp"
 
 #include "BeastServer.hpp"
 
@@ -275,6 +276,7 @@ namespace pipedal
             m_sessions.erase(session);
             m_connections.erase(hConnection);
         }
+
         void NotFound(server::connection_type &connection, const std::string &filename)
         {
             // 404 error
@@ -368,6 +370,7 @@ namespace pipedal
             }
             return result.str();
         }
+
         void on_http(connection_hdl hdl)
         {
             // Upgrade our connection handle to a full connection_ptr
@@ -397,6 +400,9 @@ namespace pipedal
                 return;
             }
 
+            std::string fromAddress = SS(con->get_remote_endpoint());
+
+
             if (req.method() == HttpVerb::options)
             {
                 res.set(HttpField::access_control_allow_origin, origin);
@@ -412,10 +418,13 @@ namespace pipedal
 
                 if (requestHandler->wants(req.method(), requestUri))
                 {
-                    std::string fromAddress = SS(con->get_remote_endpoint());
+
+
 
                     try
                     {
+
+
                         if (req.method() == HttpVerb::head)
                         {
                             std::error_code ec;
