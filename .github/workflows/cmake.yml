@@ -23,6 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
+        sudo apt install gcc-11 g++-11
         sudo apt-get install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
         sudo apt install libasound2-dev
         sudo apt install libwebsocketpp-dev authbind
@@ -38,7 +39,9 @@ jobs:
     - name: Build
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
+      env:
+         CC:   gcc-11
+         CXX:  g++-11
     - name: Test
       working-directory: ${{github.workspace}}/build
       # Execute CMake BuiltTest test
