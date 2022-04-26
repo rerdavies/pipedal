@@ -21,6 +21,8 @@
 #include "json.hpp"
 
 namespace  pipedal {
+
+class PiPedalModel;
     
 class PiPedalVersion {
 private:
@@ -28,10 +30,11 @@ private:
     std::string serverVersion_;
     std::string operatingSystem_;
     std::string osVersion_;
+    std::vector<std::string> webAddresses_;
     bool debug_;
 
 public:
-    PiPedalVersion();
+    PiPedalVersion(PiPedalModel&model);
     ~PiPedalVersion() = default;
 
 

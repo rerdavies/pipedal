@@ -5,15 +5,16 @@ import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
+import Divider from '@mui/material/Divider';
 import ArrowBackIcon from '@mui/icons-material//ArrowBack';
 
 import JackHostStatus from './JackHostStatus';
-import {PiPedalError} from './PiPedalError';
+import { PiPedalError } from './PiPedalError';
 import DialogEx from './DialogEx';
 
 import { Theme, createStyles } from '@mui/material/styles';
-import { withStyles, WithStyles} from '@mui/styles';
-import Slide, {SlideProps} from '@mui/material/Slide';
+import { withStyles, WithStyles } from '@mui/styles';
+import Slide, { SlideProps } from '@mui/material/Slide';
 
 
 interface AboutDialogProps extends WithStyles<typeof styles> {
@@ -115,7 +116,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
             if (this.model.state.get() === State.Ready) {
                 this.model.getJackStatus()
                     .then(jackStatus => {
-                        this.setState({jackStatus: jackStatus});
+                        this.setState({ jackStatus: jackStatus });
                     })
                     .catch(error => { /* ignore*/ });
             }
@@ -138,30 +139,25 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
             }
         }
 
-        startFossRequest()
-        {
-            if (this.state.openSourceNotices === "")
-            {
+        startFossRequest() {
+            if (this.state.openSourceNotices === "") {
                 fetch("var/notices.txt")
-                .then((request)=>
-                {
-                    if (!request.ok)
-                    {
-                        throw new PiPedalError("notices request failed.");
-                    }
-                    return request.text();
-                })
-                .then((text) => {
-                    if (this.mounted)
-                    {
-                        this.setState({ openSourceNotices: text});
-                    }
-            
-                })
-                .catch((err) => {
-                    // ok in debug builds. File doesn't get placed until install time.
-                    console.log("Failed to fetch open-source notices. " + err);
-                });
+                    .then((request) => {
+                        if (!request.ok) {
+                            throw new PiPedalError("notices request failed.");
+                        }
+                        return request.text();
+                    })
+                    .then((text) => {
+                        if (this.mounted) {
+                            this.setState({ openSourceNotices: text });
+                        }
+
+                    })
+                    .catch((err) => {
+                        // ok in debug builds. File doesn't get placed until install time.
+                        console.log("Failed to fetch open-source notices. " + err);
+                    });
             }
         }
 
@@ -189,8 +185,8 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
             return (
                 <DialogEx tag="AboutDlg" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
-                    style={{userSelect: "none"}}
-                    >
+                    style={{ userSelect: "none" }}
+                >
 
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
@@ -208,28 +204,52 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                         </div>
                         <div style={{
                             flex: "1 1 auto", position: "relative", overflow: "hidden",
-                            overflowX: "hidden", overflowY: "auto" , userSelect: "text"
+                            overflowX: "hidden", overflowY: "auto", userSelect: "text"
                         }}
                         >
-                            <div style={{margin: 24}}>
+                            <div style={{ margin: 24 }}>
                                 <Typography display="block" variant="h6" color="textPrimary">
-                                    PiPedal <span style={{fontSize: "0.7em"}}>
-                                        {(this.model.serverVersion? this.model.serverVersion.serverVersion : "")
-                                        + (this.model.serverVersion?.debug ? " (Debug)": "")}
-                                         </span>
+                                    PiPedal <span style={{ fontSize: "0.7em" }}>
+                                        {(this.model.serverVersion ? this.model.serverVersion.serverVersion : "")
+                                            + (this.model.serverVersion?.debug ? " (Debug)" : "")}
+                                    </span>
                                 </Typography>
-                                <Typography display="block" variant="body2" style={{marginBottom: 12}}  >
-                                    Copyright &#169; 2022 Robin Davies. 
+                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}  >
+                                    Copyright &#169; 2022 Robin Davies.
                                 </Typography>
-                                <Typography display="block" variant="body2" style={{marginBottom: 12}}  >
-                                    {this.model.getAndroidHostVersion() }
-                                </Typography>
+                                {this.model.isAndroidHosted() && (
+                                    <Typography display="block" variant="body2" style={{ marginBottom: 0 }}  >
+                                        {this.model.getAndroidHostVersion()}
+                                    </Typography>
+                                )}
 
-                                
+                                {this.model.isAndroidHosted() && (
+                                    <Typography display="block" variant="body2" style={{ marginBottom: 12 }}  >
+                                        Copyright &#169; 2022 Robin Davies.
+                                    </Typography>
+                                )}
+                                <Divider />
+                                <Typography display="block" variant="caption"  >
+                                    ADDRESSES
+                                </Typography>
+                                <div style={{marginBottom: 16}}>
+                                {
+                                    this.model.serverVersion?.webAddresses.map((address) =>
+                                    (
+                                        <Typography display="block" variant="body2" style={{ marginBottom: 0, marginLeft: 24 }}  >
+                                            {address}
+                                        </Typography>
+                                    ))
+
+                                }
+                                </div>
+
+
+                                <Divider />
                                 <Typography display="block" variant="caption"  >
                                     LEGAL NOTICES
                                 </Typography>
-                                <div  dangerouslySetInnerHTML={{__html: this.state.openSourceNotices}} style={{fontSize: "0.8em" }}>
+                                <div dangerouslySetInnerHTML={{ __html: this.state.openSourceNotices }} style={{ fontSize: "0.8em",maxWidth: 400 }}>
                                 </div>
 
                             </div>

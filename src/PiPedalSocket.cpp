@@ -926,7 +926,7 @@ public:
         }
         else if (message == "version")
         {
-            PiPedalVersion version;
+            PiPedalVersion version(this->model);
 
             Reply(replyTo, "version", version);
         }

@@ -24,6 +24,9 @@
 namespace pipedal {
 
 
+    std::string GetInterfaceIpv4Address(const std::string& interfaceName);
+
+
     std::string GetLinkLocalAddress(const std::string fromAddress);
 
     bool IsOnLocalSubnet(const std::string&fromAddress);

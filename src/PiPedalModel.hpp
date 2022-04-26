@@ -154,7 +154,7 @@ public:
     PiPedalModel();
     virtual ~PiPedalModel();
 
-
+    uint16_t GetWebPort() const { return webPort; }
     void Close();
 
     void UpdateDnsSd();

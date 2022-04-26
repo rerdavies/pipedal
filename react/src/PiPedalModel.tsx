@@ -159,6 +159,7 @@ export type PiPedalVersion = {
     operatingSystem: string;
     osVersion: string;
     debug: boolean;
+    webAddresses: string[];
 };
 
 export class PresetIndexEntry {

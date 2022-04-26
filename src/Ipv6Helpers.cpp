@@ -86,10 +86,10 @@ static bool IsIpv4OnLocalSubnet(uint32_t ipv4Addres)
 }
 
 bool pipedal::ParseHttpAddress(const std::string address,
-        std::string *pUser,
-        std::string *pServer, 
-        int *pPort, 
-        int defaultPort)
+                               std::string *pUser,
+                               std::string *pServer,
+                               int *pPort,
+                               int defaultPort)
 {
     // strip user.
     auto start = address.find_first_of('@');
@@ -97,10 +97,12 @@ bool pipedal::ParseHttpAddress(const std::string address,
     {
         if (pUser)
         {
-            *pUser = address.substr(0,start);
+            *pUser = address.substr(0, start);
         }
-        start = start+1;
-    } else {
+        start = start + 1;
+    }
+    else
+    {
         start = 0;
         if (pUser)
         {
@@ -109,9 +111,9 @@ bool pipedal::ParseHttpAddress(const std::string address,
     }
     // find the port address.
     int port = address.length();
-    while (port > 0 && address[port-1] != ':')
+    while (port > 0 && address[port - 1] != ':')
     {
-        if (address[port-1] != ']')
+        if (address[port - 1] != ']')
         {
             port = address.length();
             break;
@@ -121,7 +123,7 @@ bool pipedal::ParseHttpAddress(const std::string address,
     int portNumber = defaultPort;
     if (port < address.length() && address[port] == ':')
     {
-        const char*p = address.c_str()+port+1;
+        const char *p = address.c_str() + port + 1;
         if (*p)
         {
             portNumber = 0;
@@ -129,8 +131,10 @@ bool pipedal::ParseHttpAddress(const std::string address,
             {
                 if (*p >= '0' && *p <= '9')
                 {
-                    portNumber = portNumber*10 + *p -'0';
-                } else {
+                    portNumber = portNumber * 10 + *p - '0';
+                }
+                else
+                {
                     return false;
                 }
             }
@@ -142,7 +146,7 @@ bool pipedal::ParseHttpAddress(const std::string address,
     }
     if (pServer)
     {
-        *pServer = address.substr(start,port-start);
+        *pServer = address.substr(start, port - start);
     }
     return true;
 }
@@ -349,12 +353,12 @@ static std::string GetLinkLocalAddressForInterface(const std::string &name)
     freeifaddrs(ifap);
     return result;
 }
-static std::string GetLinkLocalAddressForIp4Interface(const std::string&name)
+static std::string GetLinkLocalAddressForIp4Interface(const std::string &name)
 {
     struct ifaddrs *ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return "";
-    std::string result = "notlocalsubnet.error";
+    std::string result = "";
     for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
@@ -423,11 +427,13 @@ std::string pipedal::GetLinkLocalAddress(const std::string fromAddress)
             //   others?
             if (IN6_IS_ADDR_V4MAPPED(&inetAddr6))
             {
-                int8_t*pAddr = (int8_t*)&inetAddr6;
-                uint32_t remoteAddress = htonl(*(int32_t*)(pAddr+12));
+                int8_t *pAddr = (int8_t *)&inetAddr6;
+                uint32_t remoteAddress = htonl(*(int32_t *)(pAddr + 12));
                 std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
                 result = GetLinkLocalAddressForIp4Interface(interfaceName);
-            } else {
+            }
+            else
+            {
 
                 std::string interfaceName;
                 if (IsIpv4MappedAddress(inetAddr6))
@@ -448,4 +454,9 @@ std::string pipedal::GetLinkLocalAddress(const std::string fromAddress)
         result = GetLinkLocalAddressForInterface("");
     }
     return result;
+}
+
+std::string pipedal::GetInterfaceIpv4Address(const std::string& interfaceName)
+{
+    return GetLinkLocalAddressForIp4Interface(interfaceName);
 }

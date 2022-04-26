@@ -537,7 +537,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     setDisplayState(newState: State): void {
         this.updateOverscroll();
 
-        this.setState({ 
+        this.setState({
             displayState: newState,
             canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted()
         });
@@ -575,6 +575,13 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             }
         }
         return result;
+    }
+    handleReload() {
+        if (this.model_.isAndroidHosted()) {
+            this.model_.chooseNewDevice();
+        } else {    
+            window.location.reload();
+        }
     }
     render() {
 
@@ -785,9 +792,10 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     </DialogActions>
                 </Dialog>
                 <JackStatusView />
-                <div className={classes.errorContent} style={{ 
+                <div className={classes.errorContent} style={{
                     display: (this.state.displayState === State.Reconnecting || this.state.displayState === State.ApplyingChanges)
-                        ? "block" : "none" }}
+                        ? "block" : "none"
+                }}
                 >
                     <div className={classes.errorContentMask} />
 
@@ -796,7 +804,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                             <CircularProgress color="inherit" className={classes.loadingBoxItem} />
                         </div>
                         <Typography variant="body2" className={classes.progressText}>
-                            { this.state.displayState === State.ApplyingChanges ? "Applying\u00A0changes..." : "Reconnecting..."}
+                            {this.state.displayState === State.ApplyingChanges ? "Applying\u00A0changes..." : "Reconnecting..."}
                         </Typography>
                     </div>
                 </div>
@@ -816,7 +824,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                         </div>
                         <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
                             <Button variant='contained' color="primary" component='button'
-                                onClick={() => window.location.reload()} >
+                                onClick={() => this.handleReload()} >
                                 Reload
                             </Button>
 

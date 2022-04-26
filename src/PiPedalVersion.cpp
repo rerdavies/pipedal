@@ -18,8 +18,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
+#include "PiPedalModel.hpp"
 #include "config.hpp"
 #include "PiPedalVersion.hpp"
+#include "Ipv6Helpers.hpp"
 
 #ifdef _WIN32
 #include "windows.h"
@@ -36,9 +38,21 @@ JSON_MAP_BEGIN(PiPedalVersion)
     JSON_MAP_REFERENCE(PiPedalVersion,operatingSystem)
     JSON_MAP_REFERENCE(PiPedalVersion,osVersion)
     JSON_MAP_REFERENCE(PiPedalVersion,debug)
+    JSON_MAP_REFERENCE(PiPedalVersion,webAddresses)
 JSON_MAP_END()
 
-PiPedalVersion::PiPedalVersion()
+
+static std::string MakeWebAddress(const std::string &address, uint16_t port)
+{
+    if (port == 80)
+    {
+        return SS("http://" << address  << '/');
+    } else {
+        return SS("http://" << address  << ':' << port << '/');
+    }
+}
+
+PiPedalVersion::PiPedalVersion(PiPedalModel&model)
 {
     server_ = "PiPedal Server";
     // defined on build command line.
@@ -71,4 +85,31 @@ PiPedalVersion::PiPedalVersion()
 #else
     debug_ = false;
 #endif
+
+    uint16_t port = model.GetWebPort();
+
+    char hostName[512];
+    gethostname(hostName,sizeof(hostName));
+
+    this->webAddresses_.push_back(MakeWebAddress(SS(hostName << ".local"),port));
+
+    std::string ethAddr = GetInterfaceIpv4Address("eth0");
+    if (ethAddr.length() != 0) 
+    {
+        this->webAddresses_.push_back(MakeWebAddress(ethAddr,port));
+    }
+    std::string wlanAddr = GetInterfaceIpv4Address("wlan0");
+    if (wlanAddr.length() != 0)
+    {
+        this->webAddresses_.push_back(MakeWebAddress(wlanAddr,port));
+
+    }
+    std::string p2pAddr = GetInterfaceIpv4Address("p2p-wlan0-0");
+    if (p2pAddr.length() != 0)
+    {
+        this->webAddresses_.push_back(MakeWebAddress(p2pAddr,port));
+
+    }
+
+
 }
