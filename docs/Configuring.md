@@ -10,13 +10,15 @@ but don't forget that when you take PiPedal out to a gig, you will need to confi
 
 After PiPedal is installed, you can connect to the web interface as follows: via the following url:
 
--    "http://pipedal.local" (on Windows, Mac, or iPhone web browsers)
+-    "http://<machine-name>.local" (on Windows, Mac, or iPhone web browsers)
 
 -    http://127.0.0.1 if you are interactively logged into your Raspberry Pi device
 
 -    at port 80 of the current network address of your Raspberry Pi, if you are connecting from an Android device (which does not currently support mDNS). 
 
-To complete the initial configuration, you must either connect an Ethernet cable to your Raspberry pi so you can connect to the Web App (after which you should be able to connect to http://pipedal.local); or you must launch a web browser on your Raspberry pi device while logged in interactively. 
+See the ADDRESSES section of the About dialog for a list of addresses that can be used to connect to PiPedal.
+     
+To complete the initial configuration, you must either connect an Ethernet cable to your Raspberry pi so you can connect to the Web App (after which you should be able to connect to http://pipedal.local); or you must launch a web browser locally on your Raspberry pi device while logged in interactively. 
      
 If you already have another web server on port 80, see [*How to Change the Web Server Port*](ChangingTheWebServerPort.md).
 
@@ -28,8 +30,7 @@ Once connected, select the Settings menu item on the Hamburger menu at the top l
      in order to acheive reasonable latency. For other devices, you probably want to use 2 buffers.
 
 You may also need to choose which audio input and output channels you will use for guitar signals, once you have selected and configured 
-an audio device. Must external USB audio devices provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If 
-your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from..
+an audio device. Most external USB audio devices that have two inputs provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from.
 
 ### Installing LV2 Plugins
 
@@ -40,27 +41,48 @@ By default, PiPedal comes with a few plugins from the ToobAmp plugin collection.
 See [_Using LV2 Plugins_](UsingLv2Plugins.md) for more details, and for some concrete recommendataions.
 
 
-### Activating the Wi-Fi Hotspot
+### Activating the P2P (Wi-Fi Direct) Hotspot
 
-You can also activate PiPedal's Wi-Fi hotspot connection from the Settings dialog. Click on the Wifi Hotspot menu item in the Settings dialog.
+The preferred way to connect to a PiPedal host device is via Wi-Fi Direct connections. Doing so allows you to use your PiPedal device when you are away from home.
+     
+Enable PiPedal's Wi-Fi Direct hotspot connection from the Settings dialog (Click on the hamburger icon; click on *Settings*; click on *Wi-Fi Direct Hotspot*). You will need to select a PIN and enable the connection before you can use it. The PiPedal hotspot will be visible to anyone with Wi-Fi distance; so choose your PIN carefully. Do NOT use trivial PINs like 12345678, or 00000000! Note that when connecting via Wi-Fi direct, you only have to enter the PIN once on the device you are connecting from; and it will be remembered automatically for subsequent connections.
 
--    IMPORTANT NOTE:
+Best practice would be to generate a random PIN (using the Generate Random Pin button in the setup dialog), and then tape a label to the bottom of your Raspberry PI 
+(not the top) with the PIN written on it, in case you ever need to connect to PiPedal with a device that hasn't been previously set up. 
+     
+Wi-Fi Direct connections differ in a couple of ways from normal Wi-Fi connections
+     
+- You only have to enter the pin once; the device you connect from will remember the PIN and connect without a PIN after that.
 
-     Activating the WiFi hotspot will DISABLE outbound Wi-Fi connections from the Raspberry Pi.
-     You will be able to access the PiPedal web interface through the hotspot connection, and make ssh and VNC 
-     connections to the Raspberry Pi through the hotspot connection; but your Raspberry Pi will not have 
-     outbound access to the Internet, unless an Ethernet cable is connected to the Raspberry Pi.
+- You can have a simultaneous connection to your Wi-Fi router when using a Wi-Fi Direct connection to your Raspberry Pi. The device you
+  are connecting from will continue use the Internet over your Wi-Fi router, and only use the Wi-Fi Direct connection to communication 
+  with your Raspberry Pi.
 
-If you need access to the internet once the hotspot has been enabled, connect an Ethernet cable to
-the Raspberry Pi. Note that the PiPedal hotspot is NOT configured to forward internet traffic from the Wi-Fi hotspot to the LAN connection, and 
-generally, the Raspberry Pi will not be able to access the internet via devices connected to the Wi-Fi hotspot. Consult documentation for hostapd 
-if you want to do this.
+- You can use a Wi-Fi Direct connection even when you don't have a Wi-Fi router connection. Android phones will continue to communicate 
+  with the Internet over their
+  data connections, even when a Wi-Fi Direct connection is active.
 
-If you are connecting to PiPedal with an Android device, via the Host Access Point, PiPedal, the PiPedal user interface can be reached at http://172.22.1.1 (you'll have to memorize the address or add it to a browser Favorites entry). On other devices, the http://pipedal.local url should work over the Hotspot address as well.
+- More than one device can connect to the Wi-Fi Direct connection on the Raspberry Pi when it is active/
 
-(We're working on providing Wi-Fi P2P services in an imminent release, so this will improve soon). 
+- Your Raspberry Pi can also have simultaneous access to a Wi-Fi router access point when the Wi-Fi Direct connection is enabled.
 
+- Wi-Fi Direct connections are backward compatible with Wi-Fi access points if you are using an older device. Look for the DIRECT-xx-YourDeviceName access point.
+  But if you use a legacy connection, the connecting device cannot have a simultanous Wi-Fi router connection.
 
+If you use the PiPedal Android app (coming VERY soon - being pushed up for distribution now), the Android app will manage discovery and setting up of Wi-Fi direct connections to your Raspberry Pi device automatically.
+     
+PC support for Wi-Fi Direct connections varies dramatically. Modern PCs support Wi-Fi Direct; but you may find it easier to communicate with PiPedal via your Wi-Fi router. Configure PiPedal to use a Wi-Fi connection as well as a Wi-Fi Direct access point (or connect an ethernet cable to your Raspberry Pi). Just remember to configure your phone to use a Wi-Fi Diret connection _before_ you take PiPedal out on a gig, because you won't have a Wi-Fi router then.
+
+PiPedal advertises the address of the Raspberry Pi host  machine via Multi-cast DNS (M-DNS). You should be able to establish web connections to the Raspberry Pi using the address `http://<hostname-of-your-pi>.local/`, no matter how you are connected.
+     
+Older devices may not support Wi-Fi Direct connections; but they will be able to use the Wi-Fi Direct connection as an ordinary Wi-Fi Hotspot. But they won't have access to the Internet over your Wi-Fi router while they have a connection with your Raspberry Pi.
+
+You _must_ select the correct country when setting up your Wi-Fi Direct connection. Regulations for use of Wi-Fi vary greatly from coutry to country, and define both the channels you are allowed to use, and the features and signal strength of Wi-Fi connections on those channels. 
+
+For best results, you should select Wi-Fi channel 1, 6 or 11 (referred to as the "Wi-Fi Direct Social Channels"). Doing so reduces the time it takes for other devices to discover the Raspberry Pi. While it is possible to use 5Ghz channels for Wi-Fi Direct, it may take some time for connecting devices to find your PiPedal device.
+
+Support for Apple/IOS devices: a client for Apple/IoS devices is in long-term development plans; but I don't own any Apple device on which to do development and testing. If you'd like to see an Apple/IOS client, your sponsorship would help. (The client performs discovery and set up of Wi-Fi direct connections, and relies on the Web interface after that. Not difficult. Just expensive.
+     
 
 --------
 [<< Installing PiPedal](Installing.md)  | [Up](Documentation.md) | | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)
