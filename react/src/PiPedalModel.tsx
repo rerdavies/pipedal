@@ -45,7 +45,8 @@ export enum State {
     Ready,
     Error,
     Background,
-    Reconnecting
+    Reconnecting,
+    ApplyingChanges
 };
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
@@ -503,11 +504,18 @@ class PiPedalModelImpl implements PiPedalModel {
         this.onSocketReconnecting = this.onSocketReconnecting.bind(this);
         this.onSocketReconnected = this.onSocketReconnected.bind(this);
         this.onVisibilityChanged = this.onVisibilityChanged.bind(this);
+        this.onSocketConnectionLost = this.onSocketConnectionLost.bind(this);
     }
+
     onSocketReconnecting(retry: number, maxRetries: number): void {
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
         //if (retry !== 0) {
-        this.setState(State.Reconnecting);
+        if  (this.restartExpected)
+        {
+            this.setState(State.ApplyingChanges);
+        } else {
+            this.setState(State.Reconnecting);
+        }
         //}
     }
 
@@ -697,7 +705,20 @@ class PiPedalModelImpl implements PiPedalModel {
         return this.webSocket;
     }
 
+    onSocketConnectionLost() {
+        if (this.isAndroidHosted())
+        {
+            this.androidHost?.setDisconnected(true);
+        }
+    }
     onSocketReconnected() {
+
+        if (this.isAndroidHosted())
+        {
+            this.androidHost?.setDisconnected(false);
+        }
+
+        this.restartExpected = false;
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
 
         // reload state, but not configuration.
@@ -778,6 +799,7 @@ class PiPedalModelImpl implements PiPedalModel {
     maxUploadSize: number = 512 * 1024;
     debug: boolean = false;
 
+
     requestConfig(): Promise<boolean> {
         const myRequest = new Request(this.varRequest('config.json'));
         return fetch(myRequest)
@@ -808,10 +830,14 @@ class PiPedalModelImpl implements PiPedalModel {
 
                 this.webSocket = new PiPedalSocket(
                     this.socketServerUrl,
-                    this.onSocketMessage,
-                    this.onSocketError,
-                    this.onSocketReconnecting,
-                    this.onSocketReconnected);
+                    {
+                        onMessageReceived : this.onSocketMessage,
+                        onError: this.onSocketError,
+                        onConnectionLost: this.onSocketConnectionLost,
+                        onReconnect:  this.onSocketReconnected,
+                        onReconnecting: this.onSocketReconnecting
+                    }
+                    );
                 return this.webSocket.connect();
             })
             .then(() => {
@@ -948,7 +974,15 @@ class PiPedalModelImpl implements PiPedalModel {
 
     }
 
+    backgroundStateTimeout?: NodeJS.Timeout  = undefined;
+
     exitBackgroundState() {
+        if (this.backgroundStateTimeout)
+        {
+            clearTimeout(this.backgroundStateTimeout);
+            this.backgroundStateTimeout = undefined;
+            return;
+        }
         if (this.state.get() === State.Background) {
             console.log("Exiting background state.");
             this.visibilityState.set(VisibilityState.Visible);
@@ -957,6 +991,24 @@ class PiPedalModelImpl implements PiPedalModel {
 
     }
     enterBackgroundState() {
+        // on Android, delay entering background state by 3 seconds,
+        // so that screen-flips don't trigger disconnects.
+
+        if (this.isAndroidHosted())
+        {
+            if (this.backgroundStateTimeout)
+            {
+                clearTimeout(this.backgroundStateTimeout);
+            }
+            this.backgroundStateTimeout = setTimeout(() => {
+                this.backgroundStateTimeout = undefined;
+                this.enterBackgroundState_();
+            }, 3000);
+        } else {
+            this.enterBackgroundState_();
+        }
+    } 
+    enterBackgroundState_() {
         if (this.state.get() !== State.Background) {
             console.log("Entering background state.");
             this.visibilityState.set(VisibilityState.Hidden);
@@ -1438,7 +1490,16 @@ class PiPedalModelImpl implements PiPedalModel {
     showAlert(message: string): void {
         this.alertMessage.set(message);
     }
+
+    restartExpected: boolean = false;
+
+    expectRestart() {
+        this.restartExpected = true;
+        
+
+    }
     setJackSettings(jackSettings: JackChannelSelection): void {
+        this.expectRestart();
         this.webSocket?.send("setJackSettings", jackSettings);
     }
 

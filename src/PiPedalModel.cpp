@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
+#include "DeviceIdFile.hpp"
 #include <sched.h>
 #include "PiPedalModel.hpp"
 #include "JackHost.hpp"
@@ -151,7 +152,9 @@ void PiPedalModel::LoadLv2PluginInfo(const PiPedalConfiguration&configuration)
 void PiPedalModel::Load(const PiPedalConfiguration &configuration)
 {
     this->webRoot = configuration.GetWebRoot();
+    this->webPort = (uint16_t)configuration.GetSocketServerPort();
     this->jackServerSettings.ReadJackConfiguration();
+
 
     adminClient.MonitorGovernor(storage.GetGovernorSettings());
 
@@ -678,6 +681,16 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
         delete[] t;
     }
 }
+
+void PiPedalModel::UpdateDnsSd()
+{
+    avahiService.Unannounce();
+
+    DeviceIdFile deviceIdFile;
+    deviceIdFile.Load();
+    avahiService.Announce(webPort,deviceIdFile.deviceName,deviceIdFile.uuid,"pipedal");
+
+}
 void PiPedalModel::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiDirectConfigSettings)
 {
     std::lock_guard<std::recursive_mutex> guard(mutex);
@@ -701,7 +714,14 @@ void PiPedalModel::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &w
             t[i]->OnWifiDirectConfigSettingsChanged(tWifiDirectConfigSettings);
         }
         delete[] t;
+
+        // update NSD-SD announement.
+        UpdateDnsSd();
+
+            
+
     }
+
 }
 
 WifiConfigSettings PiPedalModel::GetWifiConfigSettings()

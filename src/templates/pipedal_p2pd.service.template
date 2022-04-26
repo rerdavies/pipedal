@@ -1,13 +1,16 @@
 [Unit]
 Description=PiPedal P2P Session Manager
 After=network.target
+After=wpa_supplicant.service
+After=dhcpcd.service
 
 [Service]
 ExecStart=${COMMAND} --systemd --log-level debug
 Type=notify
 WorkingDirectory=/var/pipedal
 TimeoutStopSec=5
-
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

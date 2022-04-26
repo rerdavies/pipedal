@@ -42,13 +42,15 @@ void AvahiService::Announce(
     int portNumber,
     const std::string &name,
     const std::string &instanceId,
-    const std::string &mdnsName)
+    const std::string &mdnsName,
+    bool addTestGroup)
 {
     Unannounce();
 
     this->portNumber = portNumber;
     this->instanceId = instanceId;
     this->mdnsName = mdnsName;
+    this->addTestGroup = addTestGroup;
 
     this->name = avahi_strdup(name.c_str());
 
@@ -63,6 +65,9 @@ void AvahiService::Unannounce()
         avahi_free(name);
         this->name = nullptr;
     }
+    this->group = nullptr;
+    this->client = nullptr;
+    this->threadedPoll = nullptr;
 }
 
 void AvahiService::entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state, void *userData)
@@ -87,7 +92,7 @@ void AvahiService::EntryGroupCallback(AvahiEntryGroup *g, AvahiEntryGroupState s
         n = avahi_alternative_service_name(name);
         avahi_free(name);
         name = n;
-        Lv2Log::debug(SS("Service name collision, renaming service to '" << name << "'\n"));
+        Lv2Log::error(SS("Service name collision, renaming service to '" << name << "'\n"));
         /* And recreate the services */
         create_group(avahi_entry_group_get_client(g));
         break;
@@ -102,31 +107,32 @@ void AvahiService::EntryGroupCallback(AvahiEntryGroup *g, AvahiEntryGroupState s
     }
 }
 
-
-static int toRawDns(char*rawResult,size_t size, const std::string &name)
+static int toRawDns(char *rawResult, size_t size, const std::string &name)
 {
     // from standard name format to <nn>xyz<nn>foo<nn>com<00> format
     size_t len = name.length();
 
     rawResult[0] = 0;
-    if (len+1 >= size-1)  return 0;
+    if (len + 1 >= size - 1)
+        return 0;
 
-    rawResult[len+1] = 0;
+    rawResult[len + 1] = 0;
     int count = 0;
-    for (int i = len-1; i >= 0; --i)
+    for (int i = len - 1; i >= 0; --i)
     {
         if (name[i] == '.')
         {
-            rawResult[i+1] = (char)count;
+            rawResult[i + 1] = (char)count;
             count = 0;
-        } else {
-            rawResult[i+1] = name[i];
+        }
+        else
+        {
+            rawResult[i + 1] = name[i];
             ++count;
         }
     }
     rawResult[0] = count;
-    return len+1;
-
+    return len + 1;
 }
 void AvahiService::create_group(AvahiClient *c)
 {
@@ -149,14 +155,14 @@ void AvahiService::create_group(AvahiClient *c)
     {
         Lv2Log::debug(SS("Adding service '" << name));
 
-        std::string instanceTxtRecord = SS("pipedal_id=" << this->instanceId);
+        std::string instanceTxtRecord = SS("id=" << this->instanceId);
 
 #define PIPEDAL_SERVICE_TYPE "_pipedal._tcp"
 
         if ((ret = avahi_entry_group_add_service(
                  group,
                  AVAHI_IF_UNSPEC,
-                 AVAHI_PROTO_INET, // IPv4 for now, until we figure out why dnsqmasq borks IPv6 routing.)
+                 AVAHI_PROTO_UNSPEC, // IPv4 for now, until we figure out why dnsqmasq borks IPv6 routing.)
                  (AvahiPublishFlags)0,
                  name,
                  PIPEDAL_SERVICE_TYPE,
@@ -174,12 +180,41 @@ void AvahiService::create_group(AvahiClient *c)
             goto fail;
         }
 
+        if (this->addTestGroup)
+        {
+            Lv2Log::info("Added tests DNS/SD service.");
+            std::string instanceTxtRecord = SS("id=" << "0a6045b0-1753-4104-b3e4-b9713b9cc360");
+
+            if ((ret = avahi_entry_group_add_service(
+                     group,
+                     AVAHI_IF_UNSPEC,
+                     AVAHI_PROTO_INET, // IPv4 for now, until we figure out why dnsqmasq borks IPv6 routing.)
+                     (AvahiPublishFlags)0,
+                     "Ed's PiPedal",
+                     PIPEDAL_SERVICE_TYPE,
+                     NULL,
+                     NULL,
+                     portNumber,
+
+                     // txt records.
+                     instanceTxtRecord.c_str(),
+                     NULL)) < 0)
+            {
+                if (ret == AVAHI_ERR_COLLISION)
+                    goto collision;
+                Lv2Log::error(SS("Failed to add _pipedal._tcp service: " << avahi_strerror(ret)));
+                goto fail;
+            }
+        }
+
         /* Tell the server to register the service */
         if ((ret = avahi_entry_group_commit(group)) < 0)
         {
             Lv2Log::error(SS("Failed to commit entry group: " << avahi_strerror(ret)));
             goto fail;
         }
+        Lv2Log::info(SS("DNS/SD service announced."));
+
     }
     return;
 collision:

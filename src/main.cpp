@@ -504,6 +504,7 @@ int main(int argc, char *argv[])
     bool help = false;
     bool error = false;
     bool systemd = false;
+    bool testExtraDevice = false;
     std::string portOption;
 
     CommandLineParser parser;
@@ -511,6 +512,7 @@ int main(int argc, char *argv[])
     parser.AddOption("--help", &help);
     parser.AddOption("-systemd", &systemd);
     parser.AddOption("-port", &portOption);
+    parser.AddOption("-test-extra-device", &testExtraDevice); // advertise two different devices (for testing multi-device connect)
 
     try
     {
@@ -700,16 +702,9 @@ int main(int argc, char *argv[])
         server->AddRequestHandler(downloadIntercept);
 
         {
-            // Publish DNS Service.
-            DeviceIdFile deviceIdFile;
-            deviceIdFile.Load();
-            AvahiService service;
-            service.Announce(
-                configuration.GetSocketServerPort(),deviceIdFile.deviceName,deviceIdFile.uuid,"pipedal");
-            
-
-
             server->RunInBackground(SIGUSR1);
+
+            model.UpdateDnsSd(); // now that the server is running, publish a  DNS-SD announcement.
 
             sem_wait(&signalSemaphore);
 

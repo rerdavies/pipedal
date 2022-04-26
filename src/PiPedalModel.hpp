@@ -35,6 +35,7 @@
 #include "WifiConfigSettings.hpp"
 #include "WifiDirectConfigSettings.hpp"
 #include "AdminClient.hpp"
+#include "AvahiService.hpp"
 
 
 
@@ -71,6 +72,10 @@ public:
 
 class PiPedalModel: private IJackHostCallbacks {
 private:
+
+    AvahiService avahiService;
+    uint16_t webPort;
+
     PiPedalAlsaDevices alsaDevices;
     std::recursive_mutex mutex;
 
@@ -149,7 +154,10 @@ public:
     PiPedalModel();
     virtual ~PiPedalModel();
 
+
     void Close();
+
+    void UpdateDnsSd();
 
     AdminClient&GetAdminClient() { return adminClient; }
 

@@ -70,7 +70,6 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
     const { onClose, selectedChannels, availableChannels, open } = props;
     const [currentSelection, setCurrentSelection] = useState(selectedChannels);
 
-
     let showCheckboxes = availableChannels.length > 2;
     if (showCheckboxes) {
 
@@ -120,24 +119,27 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
 
     } else {
 
-        const handleClose = () => {
-            onClose(selectedChannels);
+        const handleCancel = () => {
+            onClose(null);
+        }
+        const handleOk = (channels: string[]) => {
+            onClose(channels);
         };
 
         const handleListItemClick = (value: string) => {
             switch (value) {
                 case "Stereo":
-                    onClose(availableChannels);
+                    handleOk(availableChannels);
                     break;
                 case "Left":
-                    onClose([availableChannels[0]]);
+                    handleOk([availableChannels[0]]);
                     break;
                 case "Right":
-                    onClose([availableChannels[1]]);
+                    handleOk([availableChannels[1]]);
                     break;
                 case "None":
                 default:
-                    onClose([availableChannels[1]]);
+                    handleOk([]);
             }
         };
         let selectionKey = "None";
@@ -152,7 +154,7 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
         }
 
         return (
-            <Dialog onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
+            <Dialog onClose={handleCancel} aria-labelledby="select-channels-title" open={open}>
                 
                 <List style={{ marginLeft: 0, marginRight: 0}}>
                     <ListItem button onClick={() => handleListItemClick("Stereo")} key={"Stereo"} selected={selectionKey === "Stereo"} >

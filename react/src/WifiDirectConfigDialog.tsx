@@ -23,12 +23,14 @@
  */
 
 import React from 'react';
+import IconButton from '@mui/material/IconButton';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import DialogEx from './DialogEx';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
@@ -37,9 +39,6 @@ import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import createStyles from '@mui/styles/createStyles';
-import Select from '@mui/material/Select';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import WifiChannel from './WifiChannel';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
@@ -72,6 +71,9 @@ export interface WifiDirectConfigState {
     pinErrorMessage: string;
     countryCode: string;
     channel: string;
+    controlWidth: number;
+    landscapeLayout: boolean;
+    controlSize: ("medium" | "small" | undefined);
     wifiChannels: WifiChannel[];
 }
 
@@ -88,7 +90,7 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
             super(props);
             this.model = PiPedalModelFactory.getInstance();
             this.state = {
-                fullScreen: false,
+                fullScreen: this.useFullScreen(),
                 enabled: this.props.wifiDirectConfigSettings.enable,
                 name: this.props.wifiDirectConfigSettings.hotspotName,
                 pin: this.props.wifiDirectConfigSettings.pin,
@@ -98,6 +100,10 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                 pinErrorMessage: NBSP,
                 countryCode: this.props.wifiDirectConfigSettings.countryCode,
                 channel: this.props.wifiDirectConfigSettings.channel,
+                controlWidth: 260,
+                controlSize: this.windowSize.height < 600 ? "small" : "medium",
+                landscapeLayout: this.useLandscapeLayout(),
+
                 wifiChannels: []
             };
             this.model.getWifiChannels(this.props.wifiDirectConfigSettings.countryCode)
@@ -108,6 +114,10 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
             this.refName = React.createRef<HTMLInputElement>();
             this.refPassword = React.createRef<HTMLInputElement>();
         }
+
+        useLandscapeLayout(): boolean {
+            return (this.windowSize.height < 690 && this.windowSize.width > this.windowSize.height && this.windowSize.width > 690);
+        }
         mounted: boolean = false;
 
         handleEnableChanged(e: any) {
@@ -116,7 +126,15 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
 
 
         onWindowSizeChanged(width: number, height: number): void {
-            this.setState({ fullScreen: height < 200 })
+            this.setState({
+                fullScreen: this.useFullScreen(),
+                controlSize: height < 600 ? "small" : "medium",
+                landscapeLayout: this.useLandscapeLayout()
+            })
+        }
+
+        useFullScreen(): boolean {
+            return this.windowSize.height < 390;
         }
 
 
@@ -288,84 +306,94 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
             };
 
             return (
-                <DialogEx tag="WifiDirectConfigDialog" open={open} fullWidth onClose={handleClose} style={{ userSelect: "none" }}
-                    fullScreen={this.state.fullScreen}
+                <DialogEx tag="WifiDirectConfigDialog" open={open} onClose={handleClose} style={{ userSelect: "none", }}
+                    fullScreen={this.state.fullScreen} fullWidth={this.useLandscapeLayout()}
                 >
-                    {this.state.fullScreen && (
-                        <DialogTitle>Wi-fi Hotspot</DialogTitle>
-                    )}
-                    <DialogContent>
-
-                        <FormControlLabel
-                            control={(
-                                <Switch
-                                    checked={this.state.enabled}
-                                    onChange={(e: any) => this.handleEnableChanged(e)}
-                                    color="secondary"
+                    {this.state.landscapeLayout && (
+                        <DialogContent >
+                            <div style={{ display: "flex", gap: 16, alignItems: "left" }}>
+                                <IconButton
+                                    edge="start"
+                                    color="inherit"
+                                    onClick={()=> {this.props.onClose(); }}
+                                    aria-label="back"
+                                    size="large">
+                                    <ArrowBackIcon htmlColor="#888"/>
+                                </IconButton>
+                                <FormControlLabel
+                                    control={(
+                                        <Switch
+                                            checked={this.state.enabled}
+                                            onChange={(e: any) => this.handleEnableChanged(e)}
+                                            color="secondary"
+                                        />
+                                    )}
+                                    label="Wi-Fi Direct Hotspot"
                                 />
-                            )}
-                            label="Enable Wi-Fi Direct Hotspot"
-                        />
-                        <div style={{ marginTop: 16 }}>
-                            <TextField
-                                required
-                                autoComplete="off"
-                                id="name"
-                                spellCheck="false"
-                                label="SSID"
-                                type="text"
-                                fullWidth
-                                error={this.state.nameError}
-                                helperText={this.state.nameErrorMessage}
-                                value={this.state.name}
-                                onChange={(e) => this.setState({ name: e.target.value, nameError: false, nameErrorMessage: NBSP })}
-                                inputRef={this.refName}
-                                disabled={!this.state.enabled}
-                                variant="filled"
-                            />
-                        </div>
-                        <div style={{ marginBottom: 0, verticalAlign: "baseline" }}>
-                            <TextField
-                                inputRef={this.refPassword}
-                                autoComplete="off"
-                                onChange={(e): void => { this.setState({ pin: e.target.value, pinError: false, pinErrorMessage: NBSP }); }}
-                                label="Pin"
-                                error={this.state.pinError}
-                                helperText={this.state.pinErrorMessage}
-                                defaultValue={this.state.pin}
-                                disabled={!this.state.enabled}
-                                variant="filled"
-                            />
-                            <FormControl>
-                                <div style={{ marginLeft: 16, marginTop: 18 }}>
-                                    <Button size="medium" disabled={!this.state.enabled}
+                            </div>
+                            <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <TextField
+                                    required
+
+                                    sx={{ maxWidth: this.state.controlWidth }}
+                                    autoComplete="off"
+                                    id="name"
+                                    spellCheck="false"
+                                    label="SSID"
+                                    type="text"
+                                    size={this.state.controlSize}
+                                    fullWidth
+                                    error={this.state.nameError}
+                                    helperText={this.state.nameErrorMessage}
+                                    value={this.state.name}
+                                    onChange={(e) => this.setState({ name: e.target.value, nameError: false, nameErrorMessage: NBSP })}
+                                    inputRef={this.refName}
+                                    disabled={!this.state.enabled}
+                                    variant="filled"
+                                />
+
+                                <TextField
+                                    inputRef={this.refPassword}
+                                    sx={{ maxWidth: this.state.controlWidth }}
+
+                                    size={this.state.controlSize}
+                                    autoComplete="off"
+                                    onChange={(e): void => { this.setState({ pin: e.target.value, pinError: false, pinErrorMessage: NBSP }); }}
+                                    label="Pin"
+                                    inputProps={{ inputMode: 'numeric' }}
+                                    fullWidth
+                                    error={this.state.pinError}
+                                    helperText={this.state.pinErrorMessage}
+                                    defaultValue={this.state.pin}
+                                    disabled={!this.state.enabled}
+                                    variant="filled"
+                                />
+                            </div>
+                            <div style={{ width: this.state.controlWidth * 2 }}>
+                                <div style={{ marginTop: 0, marginBottom: 16, width: this.state.controlWidth, marginLeft: "auto", marginRight: 0, textAlign: "right" }}>
+                                    <Button size="small" disabled={!this.state.enabled}
                                         onClick={() => this.onGenerateRandomPin()}
                                     >Generate random pin</Button>
                                 </div>
-                            </FormControl>
-                        </div>
-                        <div style={{ marginBottom: 24 }}>
-                            <FormControl variant="filled" sx={{ minWidth: 330 }}>
-                                <InputLabel htmlFor="countryCodeSelect">Country</InputLabel>
-                                <Select id="countryCodeSelect" label="Country" value={this.state.countryCode} disabled={!this.state.enabled}
-                                    onChange={(event) => this.handleCountryChanged(event)} >
+                            </div>
+                            <div style={{ marginTop: 0, display: 'flex', alignItems: 'stretch', gap: 16 }}>
+                                <TextField select label="Country" size={this.state.controlSize} value={this.state.countryCode} variant="filled"
+                                    sx={{ width: this.state.controlWidth }}
+                                    disabled={!this.state.enabled}
+                                    onChange={(event) => { this.handleCountryChanged(event); }}
+                                >
                                     {Object.entries(this.model.countryCodes).map(([key, value]) => {
                                         return (
                                             <MenuItem value={key}>{value}</MenuItem>
                                         );
                                     })}
-                                </Select>
-                            </FormControl>
+                                </TextField>
 
-
-
-                        </div>
-                        <div style={{ marginBottom: 24 }}>
-                            <FormControl variant="filled" sx={{ minWidth: 330 }} >
-                                <InputLabel htmlFor="channelSelect">Channel</InputLabel>
-                                <Select id="channelSelect" label="Channel" value={this.state.channel} disabled={!this.state.enabled} onChange={(e) => {
-                                    this.handleChannelChange(e);
-                                }}>
+                                <TextField select id="channelSelect" size={this.state.controlSize} label="Channel"
+                                    value={this.state.channel} variant="filled" sx={{ width: this.state.controlWidth }}
+                                    disabled={!this.state.enabled}
+                                    onChange={(event) => { this.handleChannelChange(event); }}
+                                >
                                     {this.state.wifiChannels.map((channel) => {
                                         let t = channel.channelId;
                                         if (t.startsWith("a")) t = t.substring(1);
@@ -378,12 +406,104 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                                             <MenuItem value={t}>{name}</MenuItem>
                                         )
                                     })}
-                                </Select>
-                            </FormControl>
+                                </TextField>
 
-                        </div>
+                            </div>
+                        </DialogContent>
+                    )}
+                    {(!this.state.landscapeLayout) && (
+                        <DialogContent sx={{minHeight: 96}} >
+                            <FormControlLabel
+                                control={(
+                                    <Switch
+                                        checked={this.state.enabled}
+                                        onChange={(e: any) => this.handleEnableChanged(e)}
+                                        color="secondary"
+                                    />
+                                )}
+                                label="Wi-Fi Direct Hotspot"
+                            />
+                            <div style={{ marginTop: 16 }}>
+                                <TextField
+                                    required
 
-                    </DialogContent>
+                                    sx={{ maxWidth: this.state.controlWidth }}
+                                    autoComplete="off"
+                                    id="name"
+                                    spellCheck="false"
+                                    label="SSID"
+                                    type="text"
+                                    size={this.state.controlSize}
+                                    fullWidth
+                                    error={this.state.nameError}
+                                    helperText={this.state.nameErrorMessage}
+                                    value={this.state.name}
+                                    onChange={(e) => this.setState({ name: e.target.value, nameError: false, nameErrorMessage: NBSP })}
+                                    inputRef={this.refName}
+                                    disabled={!this.state.enabled}
+                                    variant="filled"
+                                />
+                            </div><div>
+                                <TextField
+                                    inputRef={this.refPassword}
+                                    sx={{ maxWidth: this.state.controlWidth }}
+                                    style={{ maxWidth: this.state.controlWidth }}
+                                    size={this.state.controlSize}
+                                    autoComplete="off"
+                                    onChange={(e): void => { this.setState({ pin: e.target.value, pinError: false, pinErrorMessage: NBSP }); }}
+                                    label="Pin"
+                                    inputProps={{ inputMode: 'numeric' }}
+                                    fullWidth
+                                    error={this.state.pinError}
+                                    helperText={this.state.pinErrorMessage}
+                                    defaultValue={this.state.pin}
+                                    disabled={!this.state.enabled}
+                                    variant="filled"
+                                />
+                            </div>
+                            <div style={{ marginTop: 0, marginBottom: 16, width: this.state.controlWidth, marginLeft: "auto", marginRight: 0, textAlign: "right" }}>
+                                <Button size="small" disabled={!this.state.enabled}
+                                    onClick={() => this.onGenerateRandomPin()}
+                                >Generate random pin</Button>
+                            </div>
+                            <div style={{ marginBottom: 16 }}>
+                                <TextField select label="Country" size={this.state.controlSize} value={this.state.countryCode} variant="filled" sx={{ width: this.state.controlWidth }}
+                                    disabled={!this.state.enabled}
+                                    onChange={(event) => { this.handleCountryChanged(event); }}
+                                >
+                                    {Object.entries(this.model.countryCodes).map(([key, value]) => {
+                                        return (
+                                            <MenuItem value={key}>{value}</MenuItem>
+                                        );
+                                    })}
+                                </TextField>
+
+
+
+                            </div>
+                            <div style={{ marginBottom: 24 }}>
+                                <TextField select id="channelSelect" size={this.state.controlSize} label="Channel" value={this.state.channel} variant="filled" sx={{ width: this.state.controlWidth }}
+                                    disabled={!this.state.enabled}
+                                    onChange={(event) => { this.handleChannelChange(event); }}
+                                >
+                                    {this.state.wifiChannels.map((channel) => {
+                                        let t = channel.channelId;
+                                        if (t.startsWith("a")) t = t.substring(1);
+                                        if (t.startsWith("g")) t = t.substring(1);
+                                        let name = channel.channelName;
+                                        if (name.startsWith("1 ") || name.startsWith("6 ") || name.startsWith("11 ")) {
+                                            name += " *Recommended";
+                                        }
+                                        return (
+                                            <MenuItem value={t}>{name}</MenuItem>
+                                        )
+                                    })}
+                                </TextField>
+
+                            </div>
+                        </DialogContent>
+                    )}
+
                     <DialogActions>
                         <Button onClick={handleClose} color="primary" style={{ width: 120 }}>
                             Cancel

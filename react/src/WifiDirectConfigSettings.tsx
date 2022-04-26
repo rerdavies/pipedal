@@ -55,7 +55,7 @@ export default class WifiDirectConfigSettings {
         } else if (!this.enable) {
             result = "Disabled.";
         } else {
-            result = this.hotspotName;
+            result = "Enabled. (" + this.hotspotName + ")";
         }
         if (this.rebootRequired)
         {

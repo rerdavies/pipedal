@@ -6,7 +6,7 @@ import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material//ArrowBack';
-import Divider from '@mui/material/Divider';
+
 import JackHostStatus from './JackHostStatus';
 import {PiPedalError} from './PiPedalError';
 import DialogEx from './DialogEx';
@@ -219,22 +219,17 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                                          </span>
                                 </Typography>
                                 <Typography display="block" variant="body2" style={{marginBottom: 12}}  >
-                                    Copyright &#169; 2021 Robin Davies. All rights reserved.
+                                    Copyright &#169; 2022 Robin Davies. 
                                 </Typography>
-                                <Divider/>
-                                <Typography display="block" variant="caption"  >
-                                    JACK AUDIO STATUS
+                                <Typography display="block" variant="body2" style={{marginBottom: 12}}  >
+                                    {this.model.getAndroidHostVersion() }
                                 </Typography>
-                                <div style={{paddingTop: 8, paddingBottom: 24}}>
-                                    {
-                                        JackHostStatus.getDisplayView("",this.state.jackStatus)
-                                    }
-                                </div>
-                                <Divider/>
+
+                                
                                 <Typography display="block" variant="caption"  >
                                     LEGAL NOTICES
                                 </Typography>
-                                <div  dangerouslySetInnerHTML={{__html: this.state.openSourceNotices}}>
+                                <div  dangerouslySetInnerHTML={{__html: this.state.openSourceNotices}} style={{fontSize: "0.8em" }}>
                                 </div>
 
                             </div>

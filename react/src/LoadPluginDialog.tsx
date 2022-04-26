@@ -21,6 +21,7 @@ import React, { ReactNode, SyntheticEvent, CSSProperties } from 'react';
 
 import { PiPedalModel, PiPedalModelFactory, FavoritesList } from './PiPedalModel';
 import { UiPlugin, PluginType } from './Lv2Plugin';
+import TextField from '@mui/material/TextField';
 import ButtonBase from '@mui/material/ButtonBase';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
@@ -34,9 +35,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import SelectHoverBackground from './SelectHoverBackground';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
-import Select from '@mui/material/Select';
 import PluginClass from './PluginClass'
-import ClearIcon from '@mui/icons-material/Clear';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import SearchControl from './SearchControl';
 import SearchFilter from './SearchFilter';
@@ -46,6 +45,9 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
 import { WithStyles, withStyles } from '@mui/styles';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import FilterListOffIcon from '@mui/icons-material/FilterListOff';
+
 
 
 export type CloseEventHandler = () => void;
@@ -504,15 +506,15 @@ export const LoadPluginDialog =
                                 </div>
                                 <div className={classes.content2}>
                                     <div className={classes.label} >
-                                    <Typography color="textPrimary" noWrap sx={{display: "inline"}} >
-                                        {value.name}
-                                        {
-                                        isFavorite && (
-                                            <StarBorderIcon sx={{ color: "#C80", fontSize:16 }} />
+                                        <Typography color="textPrimary" noWrap sx={{ display: "inline" }} >
+                                            {value.name}
+                                            {
+                                                isFavorite && (
+                                                    <StarBorderIcon sx={{ color: "#C80", fontSize: 16 }} />
 
-                                        )
-                                    }
-                                    </Typography>
+                                                )
+                                            }
+                                        </Typography>
                                     </div>
                                     <Typography color="textSecondary" noWrap>
                                         {value.plugin_display_type} {this.stereo_indicator(value)}
@@ -598,18 +600,25 @@ export const LoadPluginDialog =
                                                 }}
                                             />
                                         </div>
-                                        <Select variant="standard"
-                                            defaultValue={this.state.filterType}
-                                            key={this.state.filterType}
-                                            onChange={(e) => { this.onFilterChange(e); }}
-                                            style={{ flex: "0 0 160px" }}
-                                        >
-                                            {this.createFilterOptions()}
-                                        </Select>
-                                        <div style={{ flex: "0 0 auto", marginRight: 24, visibility: this.state.filterType === PluginType.Plugin ? "hidden" : "visible" }} >
+                                        <div style={{ flex: "0 0 auto" }} >
                                             <IconButton onClick={() => { this.onClearFilter(); }}>
-                                                <ClearIcon fontSize='small' style={{ opacity: 0.6 }} />
+                                                {this.state.filterType === PluginType.Plugin ? (
+                                                    <FilterListIcon fontSize='small' style={{ opacity: 0.75 }} />
+                                                ) : (
+                                                    <FilterListOffIcon fontSize='small' style={{ opacity: 0.75 }} />
+                                                )}
                                             </IconButton>
+                                        </div>
+                                        <div style={{ flex: "0 0 160px",marginRight: 24 }} >
+
+                                            <TextField select variant="standard"
+                                                defaultValue={this.state.filterType}
+                                                key={this.state.filterType}
+                                                onChange={(e) => { this.onFilterChange(e); }}
+                                                sx={{ minWidth: 160}}
+                                            >
+                                                {this.createFilterOptions()}
+                                            </TextField>
                                         </div>
                                     </div>
                                 </DialogTitle>

@@ -948,6 +948,7 @@ int main(int argc, char **argv)
             settings.valid_ = true;
             settings.enable_ = false;
             SetWifiDirectConfig(settings);
+            RestartService(true); 
         }
         else if (enable_ap)
         {

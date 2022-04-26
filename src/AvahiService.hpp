@@ -39,7 +39,8 @@ namespace pipedal {
     class AvahiService {
     public:
         ~AvahiService() { Unannounce(); }
-        void Announce(int portNumber, const std::string &name, const std::string &instanceId, const std::string&mdnsName);
+        void Announce(
+            int portNumber, const std::string &name, const std::string &instanceId, const std::string&mdnsName,bool addTestGroup = false);
 
         void Unannounce();
 
@@ -62,6 +63,7 @@ namespace pipedal {
         int portNumber = -1;
         std::string instanceId;
         std::string mdnsName;
+        bool addTestGroup = false;
 
         AvahiClient *client = NULL;
         AvahiEntryGroup *group = NULL;

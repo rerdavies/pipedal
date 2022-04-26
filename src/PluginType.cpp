@@ -83,6 +83,11 @@ static std::pair<std::string,PluginType> urisToNames[] {
     URI_TO_TYPE_MAP_ENTRY(UtilityPlugin),
     URI_TO_TYPE_MAP_ENTRY(WaveshaperPlugin),
     URI_TO_TYPE_MAP_ENTRY(MIDIPlugin),
+
+        // Artificial node in filters plugin that serves as parent of AmplifierPlugin and SimulatorPlugin
+    {std::string("http://two_play.com/ns/pluginClass#ampsNode"),PluginType::PiPedalAmpsNode  }
+
+
 };
 
 PluginType pipedal::uri_to_plugin_type(const std::string&uri)
@@ -155,6 +160,8 @@ static std::pair<std::string,PluginType> strings_to_type_map[] {
     STRING_TO_TYPE_MAP_ENTRY(UtilityPlugin),
     STRING_TO_TYPE_MAP_ENTRY(WaveshaperPlugin),
     STRING_TO_TYPE_MAP_ENTRY(MIDIPlugin),
+    STRING_TO_TYPE_MAP_ENTRY(MIDIPlugin),
+    STRING_TO_TYPE_MAP_ENTRY(PiPedalAmpsNode),
 };
 
 PluginType pipedal::string_to_plugin_type(const std::string&uri)

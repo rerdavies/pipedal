@@ -71,6 +71,8 @@ enum class PluginType {
     UtilityPlugin,
     WaveshaperPlugin,
     MIDIPlugin,
+
+    PiPedalAmpsNode, // Pseudo-plugin type used for Amps folder in filter view.
 };
 
 const std::string &plugin_type_to_uri(PluginType type);

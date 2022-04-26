@@ -499,23 +499,24 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
         sysExec("rfkill unblock wlan");
 
         sysExec(SYSTEMCTL_BIN " daemon-reload");
-
-
-        sysExec(SYSTEMCTL_BIN " restart dnsmasq");
-        sysExec(SYSTEMCTL_BIN " enable dnsmasq");
-
+        
+        sysExec(SYSTEMCTL_BIN " stop pipedal_p2pd");
+        sysExec(SYSTEMCTL_BIN " stop dnsmasq");
+        sysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
         sysExec(SYSTEMCTL_BIN " restart dhcpcd");
-        sysExec(SYSTEMCTL_BIN " enable dhcpcd");
-
-
-        sysExec(SYSTEMCTL_BIN " unmask pipedal_p2pd");
-        if (sysExec(SYSTEMCTL_BIN " restart pipedal_p2pd") != 0)
+        sysExec(SYSTEMCTL_BIN " unmask wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " start wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " enable wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " start dnsmasq");
+        sysExec(SYSTEMCTL_BIN " enable dnsmasq");
+        sysExec(SYSTEMCTL_BIN " start pipedal_p2pd");
+        if (sysExec(SYSTEMCTL_BIN " start pipedal_p2pd") != 0)
         {
             throw PiPedalException("Unable to start the Wi-Fi Direct access point.");
         }
 
         sysExec(SYSTEMCTL_BIN " enable pipedal_p2pd");
-
+        sysExec(SYSTEMCTL_BIN " restart pipedald");
     }
 }
 

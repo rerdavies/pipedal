@@ -36,13 +36,18 @@ export type PiPedalMessageHeader = {
 type ReplyHandler = (header: PiPedalMessageHeader, body: any | null) => void;
 
 
-
+export interface PiPedalSocketListener {
+    onMessageReceived : (header: PiPedalMessageHeader, body: any | null) => void;
+    onError: (message: string, exception?: Error) => void;
+    onConnectionLost: () => void;
+    onReconnect:  () => void;
+    onReconnecting: (retry: number, maxRetries: number) => void;
+};
 
 class PiPedalSocket {
-    onMessageReceived: MessageHandler;
-    onError: ErrorHandler;
-    onReconnecting: ReconnectingHandler;
-    onReconnect: ReconnectHandler;
+
+    listener: PiPedalSocketListener;
+
 
     socket?: WebSocket;
     nextResponseCode: number = 0;
@@ -54,15 +59,10 @@ class PiPedalSocket {
 
     constructor(
         url: string,
-        onMessageReceived: MessageHandler,
-        onError: ErrorHandler,
-        onReconnecting: ReconnectingHandler,
-        onReconnect: ReconnectHandler) {
+        listener: PiPedalSocketListener
+        ) {
         this.url = url;
-        this.onMessageReceived = onMessageReceived;
-        this.onError = onError;
-        this.onReconnecting = onReconnecting;
-        this.onReconnect = onReconnect;
+        this.listener = listener;
     }
 
     handleOpen(event: Event): any {
@@ -160,11 +160,11 @@ class PiPedalSocket {
                 if (header.message === "error") {
                     throw new PiPedalStateError("Server error: " + body);
                 }
-                this.onMessageReceived(header, body);
+                this.listener.onMessageReceived(header, body);
             }
         } catch (error) {
-            if (this.onError) {
-                this.onError("Invalid server response. " + error, error as Error);
+            if (this.listener) {
+                this.listener.onError("Invalid server response. " + error, error as Error);
             } else {
                 throw new PiPedalStateError("Invalid server response.");
             }
@@ -172,8 +172,8 @@ class PiPedalSocket {
     }
 
     handleError(_event: Event): any {
-        if (this.onError) {
-            this.onError("Server connection lost.");
+        if (this.listener) {
+            this.listener.onError("Server connection lost.");
         } else {
             throw new PiPedalStateError("Server connection lost.");
         }
@@ -184,8 +184,8 @@ class PiPedalSocket {
     handleClose(_event: any): any {
         if (this.retrying) {
             // treat this as a fatal error.
-            if (this.onError) {
-                this.onError("Server connection lost.");
+            if (this.listener) {
+                this.listener.onError("Server connection lost.");
             } else {
                 throw new PiPedalStateError("Server connection closed.");
             }
@@ -194,6 +194,7 @@ class PiPedalSocket {
         }
         if (this.canReconnect)
         {
+            this.listener.onConnectionLost();
             this._reconnect();
         }
     }
@@ -229,19 +230,19 @@ class PiPedalSocket {
             this.close();
         }
 
-        this.onReconnecting(this.retryCount,MAX_RETRIES);
+        this.listener.onReconnecting(this.retryCount,MAX_RETRIES);
         ++this.retryCount;
 
         this.connectInternal_()
             .then((socket) => {
                 this.socket = socket;
                 this.retrying = false;
-                this.onReconnect();
+                this.listener.onReconnect();
             })
             .catch(error => {
                 if (this.totalRetryDelay === MAX_RETRY_TIME)
                 {
-                    this.onError("Server connection lost.");
+                    this.listener.onError("Server connection lost.");
                     return;
                 } else {
                     this.totalRetryDelay += this.retryDelay;

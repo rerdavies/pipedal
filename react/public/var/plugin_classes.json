@@ -4,273 +4,282 @@
     "parent_uri": "http://lv2plug.in/ns/lv2core#PluginBase",
     "plugin_type": "Plugin",
     "children": [
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#DelayPlugin",
-            "display_name": "Delay",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "DelayPlugin",
-            "children": [
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#ReverbPlugin",
-                    "display_name": "Reverb",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#DelayPlugin",
-                    "plugin_type": "ReverbPlugin",
-                    "children": []
-                }
-            ]
-        },
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#DistortionPlugin",
-            "display_name": "Distortion",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "DistortionPlugin",
-            "children": [
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#WaveshaperPlugin",
-                    "display_name": "Waveshaper",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#DistortionPlugin",
-                    "plugin_type": "WaveshaperPlugin",
-                    "children": []
-                }
-            ]
-        },
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
-            "display_name": "Dynamics",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "DynamicsPlugin",
-            "children": [
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#AmplifierPlugin",
-                    "display_name": "Amplifier",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
-                    "plugin_type": "AmplifierPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#CompressorPlugin",
-                    "display_name": "Compressor",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
-                    "plugin_type": "CompressorPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#EnvelopePlugin",
-                    "display_name": "Envelope",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
-                    "plugin_type": "EnvelopePlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#ExpanderPlugin",
-                    "display_name": "Expander",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
-                    "plugin_type": "ExpanderPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#GatePlugin",
-                    "display_name": "Gate",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
-                    "plugin_type": "GatePlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#LimiterPlugin",
-                    "display_name": "Limiter",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
-                    "plugin_type": "LimiterPlugin",
-                    "children": []
-                }
-            ]
-        },
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
-            "display_name": "Filter",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "FilterPlugin",
-            "children": [
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#AllpassPlugin",
-                    "display_name": "Allpass",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
-                    "plugin_type": "AllpassPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#BandpassPlugin",
-                    "display_name": "Bandpass",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
-                    "plugin_type": "BandpassPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#CombPlugin",
-                    "display_name": "Comb",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
-                    "plugin_type": "CombPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#EQPlugin",
-                    "display_name": "Equaliser",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
-                    "plugin_type": "EQPlugin",
-                    "children": [
-                        {
-                            "uri": "http://lv2plug.in/ns/lv2core#MultiEQPlugin",
-                            "display_name": "Multiband",
-                            "parent_uri": "http://lv2plug.in/ns/lv2core#EQPlugin",
-                            "plugin_type": "MultiEQPlugin",
-                            "children": []
-                        },
-                        {
-                            "uri": "http://lv2plug.in/ns/lv2core#ParaEQPlugin",
-                            "display_name": "Parametric",
-                            "parent_uri": "http://lv2plug.in/ns/lv2core#EQPlugin",
-                            "plugin_type": "ParaEQPlugin",
-                            "children": []
-                        }
-                    ]
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#HighpassPlugin",
-                    "display_name": "Highpass",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
-                    "plugin_type": "HighpassPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#LowpassPlugin",
-                    "display_name": "Lowpass",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
-                    "plugin_type": "LowpassPlugin",
-                    "children": []
-                }
-            ]
-        },
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#GeneratorPlugin",
-            "display_name": "Generator",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "GeneratorPlugin",
-            "children": [
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#ConstantPlugin",
-                    "display_name": "Constant",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#GeneratorPlugin",
-                    "plugin_type": "ConstantPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#InstrumentPlugin",
-                    "display_name": "Instrument",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#GeneratorPlugin",
-                    "plugin_type": "InstrumentPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#OscillatorPlugin",
-                    "display_name": "Oscillator",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#GeneratorPlugin",
-                    "plugin_type": "OscillatorPlugin",
-                    "children": []
-                }
-            ]
-        },
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
-            "display_name": "Modulator",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "ModulatorPlugin",
-            "children": [
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#ChorusPlugin",
-                    "display_name": "Chorus",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
-                    "plugin_type": "ChorusPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#FlangerPlugin",
-                    "display_name": "Flanger",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
-                    "plugin_type": "FlangerPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#PhaserPlugin",
-                    "display_name": "Phaser",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
-                    "plugin_type": "PhaserPlugin",
-                    "children": []
-                }
-            ]
-        },
-        {
+      {
+        "uri": "http://two_play.com/ns/pluginClass#amp",
+        "display_name": "Amps",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "PiPedalAmpsNode",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#AmplifierPlugin",
+            "display_name": "Amplifier",
+            "parent_uri": "http://two_play.com/ns/pluginClass#amp",
+            "plugin_type": "AmplifierPlugin",
+            "children": [ ]
+          },
+          {
             "uri": "http://lv2plug.in/ns/lv2core#SimulatorPlugin",
             "display_name": "Simulator",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+            "parent_uri": "http://two_play.com/ns/pluginClass#amp",
             "plugin_type": "SimulatorPlugin",
-            "children": []
-        },
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#SpatialPlugin",
-            "display_name": "Spatial",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "SpatialPlugin",
-            "children": []
-        },
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#SpectralPlugin",
-            "display_name": "Spectral",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "SpectralPlugin",
+            "children": [ ]
+          }
+    
+        ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#DelayPlugin",
+        "display_name": "Delay",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "DelayPlugin",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#ReverbPlugin",
+            "display_name": "Reverb",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#DelayPlugin",
+            "plugin_type": "ReverbPlugin",
+            "children": [ ]
+          }
+        ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#DistortionPlugin",
+        "display_name": "Distortion",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "DistortionPlugin",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#WaveshaperPlugin",
+            "display_name": "Waveshaper",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#DistortionPlugin",
+            "plugin_type": "WaveshaperPlugin",
+            "children": [ ]
+          }
+        ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
+        "display_name": "Dynamics",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "DynamicsPlugin",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#CompressorPlugin",
+            "display_name": "Compressor",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
+            "plugin_type": "CompressorPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#EnvelopePlugin",
+            "display_name": "Envelope",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
+            "plugin_type": "EnvelopePlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#ExpanderPlugin",
+            "display_name": "Expander",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
+            "plugin_type": "ExpanderPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#GatePlugin",
+            "display_name": "Gate",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
+            "plugin_type": "GatePlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#LimiterPlugin",
+            "display_name": "Limiter",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
+            "plugin_type": "LimiterPlugin",
+            "children": [ ]
+          }
+        ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
+        "display_name": "Filter",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "FilterPlugin",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#AllpassPlugin",
+            "display_name": "Allpass",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
+            "plugin_type": "AllpassPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#BandpassPlugin",
+            "display_name": "Bandpass",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
+            "plugin_type": "BandpassPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#CombPlugin",
+            "display_name": "Comb",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
+            "plugin_type": "CombPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#EQPlugin",
+            "display_name": "Equaliser",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
+            "plugin_type": "EQPlugin",
             "children": [
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#PitchPlugin",
-                    "display_name": "Pitch Shifter",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#SpectralPlugin",
-                    "plugin_type": "PitchPlugin",
-                    "children": []
-                }
+              {
+                "uri": "http://lv2plug.in/ns/lv2core#MultiEQPlugin",
+                "display_name": "Multiband",
+                "parent_uri": "http://lv2plug.in/ns/lv2core#EQPlugin",
+                "plugin_type": "MultiEQPlugin",
+                "children": [ ]
+              },
+              {
+                "uri": "http://lv2plug.in/ns/lv2core#ParaEQPlugin",
+                "display_name": "Parametric",
+                "parent_uri": "http://lv2plug.in/ns/lv2core#EQPlugin",
+                "plugin_type": "ParaEQPlugin",
+                "children": [ ]
+              }
             ]
-        },
-        {
-            "uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
-            "display_name": "Utility",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-            "plugin_type": "UtilityPlugin",
-            "children": [
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#AnalyserPlugin",
-                    "display_name": "Analyser",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
-                    "plugin_type": "AnalyserPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#ConverterPlugin",
-                    "display_name": "Converter",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
-                    "plugin_type": "ConverterPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#FunctionPlugin",
-                    "display_name": "Function",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
-                    "plugin_type": "FunctionPlugin",
-                    "children": []
-                },
-                {
-                    "uri": "http://lv2plug.in/ns/lv2core#MixerPlugin",
-                    "display_name": "Mixer",
-                    "parent_uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
-                    "plugin_type": "MixerPlugin",
-                    "children": []
-                }
-            ]
-        }
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#HighpassPlugin",
+            "display_name": "Highpass",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
+            "plugin_type": "HighpassPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#LowpassPlugin",
+            "display_name": "Lowpass",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#FilterPlugin",
+            "plugin_type": "LowpassPlugin",
+            "children": [ ]
+          }
+        ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#GeneratorPlugin",
+        "display_name": "Generator",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "GeneratorPlugin",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#ConstantPlugin",
+            "display_name": "Constant",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#GeneratorPlugin",
+            "plugin_type": "ConstantPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#InstrumentPlugin",
+            "display_name": "Instrument",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#GeneratorPlugin",
+            "plugin_type": "InstrumentPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#OscillatorPlugin",
+            "display_name": "Oscillator",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#GeneratorPlugin",
+            "plugin_type": "OscillatorPlugin",
+            "children": [ ]
+          }
+        ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
+        "display_name": "Modulator",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "ModulatorPlugin",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#ChorusPlugin",
+            "display_name": "Chorus",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
+            "plugin_type": "ChorusPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#FlangerPlugin",
+            "display_name": "Flanger",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
+            "plugin_type": "FlangerPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#PhaserPlugin",
+            "display_name": "Phaser",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#ModulatorPlugin",
+            "plugin_type": "PhaserPlugin",
+            "children": [ ]
+          }
+        ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#SpatialPlugin",
+        "display_name": "Spatial",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "SpatialPlugin",
+        "children": [ ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#SpectralPlugin",
+        "display_name": "Spectral",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "SpectralPlugin",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#PitchPlugin",
+            "display_name": "Pitch Shifter",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#SpectralPlugin",
+            "plugin_type": "PitchPlugin",
+            "children": [ ]
+          }
+        ]
+      },
+      {
+        "uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
+        "display_name": "Utility",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "UtilityPlugin",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#AnalyserPlugin",
+            "display_name": "Analyser",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
+            "plugin_type": "AnalyserPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#ConverterPlugin",
+            "display_name": "Converter",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
+            "plugin_type": "ConverterPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#FunctionPlugin",
+            "display_name": "Function",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
+            "plugin_type": "FunctionPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#MixerPlugin",
+            "display_name": "Mixer",
+            "parent_uri": "http://lv2plug.in/ns/lv2core#UtilityPlugin",
+            "plugin_type": "MixerPlugin",
+            "children": [ ]
+          }
+        ]
+      }
     ]
-}
+  }

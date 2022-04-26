@@ -114,7 +114,7 @@ const appStyles = (theme: Theme) => createStyles({
         marginTop: 0,
         fontWeight: 500,
         fontSize: "13pt",
-        maxWidth: 250,
+        maxWidth: 350,
         opacity: 1,
         zIndex: 2010,
         paddingTop: 12,
@@ -785,7 +785,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     </DialogActions>
                 </Dialog>
                 <JackStatusView />
-                <div className={classes.errorContent} style={{ display: this.state.displayState === State.Reconnecting ? "block" : "none" }}
+                <div className={classes.errorContent} style={{ 
+                    display: (this.state.displayState === State.Reconnecting || this.state.displayState === State.ApplyingChanges)
+                        ? "block" : "none" }}
                 >
                     <div className={classes.errorContentMask} />
 
@@ -794,7 +796,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                             <CircularProgress color="inherit" className={classes.loadingBoxItem} />
                         </div>
                         <Typography variant="body2" className={classes.progressText}>
-                            Reconnecting...
+                            { this.state.displayState === State.ApplyingChanges ? "Applying\u00A0changes..." : "Reconnecting..."}
                         </Typography>
                     </div>
                 </div>

@@ -189,6 +189,9 @@ export enum PluginType {
     UtilityPlugin = "UtilityPlugin",
     WaveshaperPlugin = "WaveshaperPlugin",
 
+        // psuedo plugin type for the Amps node of the filter dialog.
+    PiPedalAmpsNode = "PiPedalAmpsNode"
+
 }
 
 export enum ControlType {

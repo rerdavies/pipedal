@@ -143,6 +143,14 @@ void WifiDirectConfigSettings::Save() const
 }
 void WifiDirectConfigSettings::Load()
 {
+    this->enable_ = false;
+    std::string strEnable;
+    if (ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","enabled",&strEnable))
+    {
+        this->enable_ = (strEnable == "true" || strEnable == "1");
+    }
+
+
     if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","p2p_device_name",&this->hotspotName_))
     {
         this->hotspotName_ = "PiPedal";

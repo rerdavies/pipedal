@@ -17,6 +17,8 @@ Group=pipedal_d
 Restart=always
 TimeoutStartSec=60
 RestartSec=25
+TimeoutStopSec=15
+
 WorkingDirectory=/var/pipedal
 Environment=JACK_PROMISCUOUS_SERVER=audio
 Environment=JACK_NO_AUDIO_RESERVATION=1

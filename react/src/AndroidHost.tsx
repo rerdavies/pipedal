@@ -26,7 +26,7 @@ export interface  AndroidHostInterface {
     isAndroidHosted(): boolean;
     getHostVersion() : string;
     chooseNewDevice() : void;
-    onLostConnection(): void;
+    setDisconnected(isDisconnected: boolean): void;
 
 };
 
@@ -41,7 +41,7 @@ export class FakeAndroidHost implements AndroidHostInterface
     chooseNewDevice(): void {
         
     }
-    onLostConnection(): void {
+    setDisconnected(isDisconnected: boolean): void {
         
     }
 

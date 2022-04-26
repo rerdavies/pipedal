@@ -5,6 +5,29 @@
     "plugin_type": "Plugin",
     "children": [
       {
+        "uri": "http://two_play.com/ns/pluginClass#ampsNode",
+        "display_name": "Amp",
+        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
+        "plugin_type": "PiPedalAmpsNode",
+        "children": [
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#AmplifierPlugin",
+            "display_name": "Amplifier",
+            "parent_uri": "http://two_play.com/ns/pluginClass#amp",
+            "plugin_type": "AmplifierPlugin",
+            "children": [ ]
+          },
+          {
+            "uri": "http://lv2plug.in/ns/lv2core#SimulatorPlugin",
+            "display_name": "Simulator",
+            "parent_uri": "http://two_play.com/ns/pluginClass#amp",
+            "plugin_type": "SimulatorPlugin",
+            "children": [ ]
+          }
+    
+        ]
+      },
+      {
         "uri": "http://lv2plug.in/ns/lv2core#DelayPlugin",
         "display_name": "Delay",
         "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
@@ -40,13 +63,6 @@
         "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
         "plugin_type": "DynamicsPlugin",
         "children": [
-          {
-            "uri": "http://lv2plug.in/ns/lv2core#AmplifierPlugin",
-            "display_name": "Amplifier",
-            "parent_uri": "http://lv2plug.in/ns/lv2core#DynamicsPlugin",
-            "plugin_type": "AmplifierPlugin",
-            "children": [ ]
-          },
           {
             "uri": "http://lv2plug.in/ns/lv2core#CompressorPlugin",
             "display_name": "Compressor",
@@ -206,13 +222,6 @@
             "children": [ ]
           }
         ]
-      },
-      {
-        "uri": "http://lv2plug.in/ns/lv2core#SimulatorPlugin",
-        "display_name": "Simulator",
-        "parent_uri": "http://lv2plug.in/ns/lv2core#Plugin",
-        "plugin_type": "SimulatorPlugin",
-        "children": [ ]
       },
       {
         "uri": "http://lv2plug.in/ns/lv2core#SpatialPlugin",
