@@ -28,6 +28,7 @@ import Typography from '@mui/material/Typography';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import IconButton from '@mui/material/IconButton';
+import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import MenuButton from '@mui/icons-material/Menu';
 import { TemporaryDrawer } from './TemporaryDrawer';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
@@ -406,9 +407,25 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         });
 
     }
+    handleDrawerDonationClick() {
+        this.setState({
+            isDrawerOpen: false,
+        });
+        if (this.model_.isAndroidHosted())
+        {
+            this.model_.showAndroidDonationActivity();
+        } else {
+            if (window)
+            {
+                window.open("https://github.com/sponsors/rerdavies", '_blank');
+            }
+        }
+
+    }
 
     handleDrawerAboutClick() {
         this.setState({
+            isDrawerOpen: false,
             aboutDialogOpen: true
         });
 
@@ -726,6 +743,12 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                 <img src="img/help_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
                             </ListItemIcon>
                             <ListItemText primary='About' />
+                        </ListItem>
+                        <ListItem button key='Donations' onClick={() => { this.handleDrawerDonationClick() }}>
+                            <ListItemIcon>
+                                <VolunteerActivismIcon />
+                            </ListItemIcon>
+                            <ListItemText primary='Donations' />
                         </ListItem>
                     </List>
 

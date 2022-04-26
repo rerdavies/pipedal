@@ -23,6 +23,7 @@
  */
 
 export interface  AndroidHostInterface {
+    showSponsorship() : void;
     isAndroidHosted(): boolean;
     getHostVersion() : string;
     chooseNewDevice() : void;
@@ -44,5 +45,6 @@ export class FakeAndroidHost implements AndroidHostInterface
     setDisconnected(isDisconnected: boolean): void {
         
     }
+    showSponsorship() : void { }
 
 }

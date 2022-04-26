@@ -436,6 +436,7 @@ export interface PiPedalModel {
     setFavorite(pluginUrl: string, isFavorite: boolean): void;
 
     isAndroidHosted(): boolean;
+    showAndroidDonationActivity(): void;
     getAndroidHostVersion(): string;
     chooseNewDevice(): void;
 };
@@ -2106,6 +2107,12 @@ class PiPedalModelImpl implements PiPedalModel {
 
     isAndroidHosted(): boolean { return this.androidHost !== undefined; }
 
+    showAndroidDonationActivity(): void {
+        if (this.androidHost)
+        {
+            this.androidHost.showSponsorship();
+        }
+    }
     getAndroidHostVersion(): string {
         if (this.androidHost) {
             return this.androidHost.getHostVersion();
