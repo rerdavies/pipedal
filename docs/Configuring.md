@@ -16,6 +16,8 @@ After PiPedal is installed, you can connect to the web interface as follows: via
 
 -    at port 80 of the current network address of your Raspberry Pi, if you are connecting from an Android device (which does not currently support mDNS). 
 
+See the ADDRESSES section of the About dialog for a list of addresses that can be used to connect to PiPedal.
+     
 To complete the initial configuration, you must either connect an Ethernet cable to your Raspberry pi so you can connect to the Web App (after which you should be able to connect to http://pipedal.local); or you must launch a web browser locally on your Raspberry pi device while logged in interactively. 
      
 If you already have another web server on port 80, see [*How to Change the Web Server Port*](ChangingTheWebServerPort.md).
