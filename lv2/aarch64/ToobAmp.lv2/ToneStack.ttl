@@ -42,7 +42,7 @@
 
 <http://two-play.com/plugins/toob-tone-stack>
         a lv2:Plugin ,
-                lv2:SimulatorPlugin ;
+                lv2:AmplifierPlugin ;
                 doap:name "TooB Tone Stack" ,
                 "TooB Tone Stack"@en-gb 
                 ;

@@ -52,7 +52,7 @@ inputStage:filterGroup
 
 <http://two-play.com/plugins/toob-input_stage>
         a lv2:Plugin ,
-                lv2:SimulatorPlugin ;
+                lv2:MixerPlugin ;
         doap:name "TooB Input Stage" ,
                 "TooB Input Stage"@en-gb 
                 ;

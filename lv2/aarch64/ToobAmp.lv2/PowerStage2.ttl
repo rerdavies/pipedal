@@ -60,7 +60,7 @@ pstage:stage3
 
 <http://two-play.com/plugins/toob-power-stage-2>
         a lv2:Plugin ,
-                lv2:SimulatorPlugin ;
+                lv2:AmplifierPlugin ;
 
         doap:name "TooB Power Stage";
 
