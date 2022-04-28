@@ -49,8 +49,8 @@ If you already have another web server on port 80, see [*How to Change the Web S
 Once connected, select the Settings menu item on the Hamburger menu at the top left corner of the display. Click on Audio Device Settings to select and configure the audio device you want to use. 
 
 <table border="1px #c0c0c0"><tr><td>
-     IMPORTANT NOTE: If you are using a USB audio device, you *MUST* set the number of buffers to 3, and you *MUST* set the sample rate to 48,000
-     in order to acheive reasonable latency. For other devices, you probably want to use 2 buffers.
+     IMPORTANT NOTE: If you are using a USB audio device, you <i>MUST</i? set the number of buffers to 3, and you <i>MUST</i> set the sample rate to 48,000
+     in order to acheive reasonable latency on Linux. For other devices, you probably want to use 2 buffers.
     </td></tr></table>
 
 You may also need to choose which audio input and output channels you will use for guitar signals, once you have selected and configured 
