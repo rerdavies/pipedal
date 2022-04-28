@@ -24,5 +24,5 @@ To read the PiPedal documentation, click [here](Documentation.md).
 
 To download PiPedal, click [here](download.md).
 
-To sponsor the PiPedal project, click [here](Sponsor.md).
+To sponsor the PiPedal project, click [here](https://github.com/sponsors/rerdavies).
 
