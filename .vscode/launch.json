@@ -197,7 +197,8 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
-                "--enable-p2p" , "--nopkexec"
+                "--uninstall"
+                //"--enable-p2p" , "--nopkexec"
                 //,"CA", "PiPedalTest","12345678","1"
             ],
             "stopAtEntry": false,

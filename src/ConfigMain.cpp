@@ -419,11 +419,24 @@ void Uninstall()
     silentSysExec(SYSTEMCTL_BIN " disable jack");
     OnWifiUninstall();
 
-    std::filesystem::remove("/usr/bin/systemd/system/" OLD_SHUTDOWN_SERVICE ".service");
-    std::filesystem::remove("/usr/bin/systemd/system/" ADMIN_SERVICE ".service");
-    std::filesystem::remove("/usr/bin/systemd/system/" PIPEDAL_P2PD_SERVICE ".service");
-    std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
-    std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
+    try {
+        std::filesystem::remove("/usr/bin/systemd/system/" OLD_SHUTDOWN_SERVICE ".service");
+    } catch (...) {}
+    
+    try {
+        std::filesystem::remove("/usr/bin/systemd/system/" ADMIN_SERVICE ".service");
+    } catch (...) {}
+    try {
+        std::filesystem::remove("/usr/bin/systemd/system/" PIPEDAL_P2PD_SERVICE ".service");
+    } catch (...) {}
+
+    try {
+        std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
+    } catch (...) {}
+
+    try {
+        std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
+    } catch (...) {}
     UninstallPamEnv();
     UninstallLimits();
     sysExec(SYSTEMCTL_BIN " daemon-reload");
