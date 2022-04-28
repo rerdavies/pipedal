@@ -1,45 +1,60 @@
 ## Configuring PiPedal After Installation
 
+<table border="1px #C0C0C0">
+    <tr>
+        <td>
+            Note: Because PiPedal Remote Android app has just been released on Google Play, you won't be able 
+            to find it in the search listings yet. Use the following URL to directly access and install PiPedal Remote:
+            <br/>
+            <br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<a href="https://play.google.com/store/apps/details?id=com.twoplay.piped">https://play.google.com/store/apps/details?id=com.twoplay.pipedal</a>
+            <br/>
+            <br/>
+        </td>
+    </tr>
+</table>
+
 Before using PiPedal, you will need to configure settings for the audio device that PiPedal will use.
 
-Optionally, you may want to configure PiPedal 
-to provide a Wi-Fi hotspot that you can connect to using your phone. It's fine to use your home Wi-Fi network to connect to PiPedal when your at home;
-but don't forget that when you take PiPedal out to a gig, you will need to configure a Wi-Fi hotspot before you do so.
+You will also want to configure PiPedal  to provide a Wi-Fi Direct access point (hotspot) that you can connect to using your phone. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that the Wi-Fi Direct access point is enabled before you do. 
 
-### First Connection
+PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
 
-After PiPedal is installed, you can connect to the web interface as follows: via the following url:
+By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
 
--    "http://<machine-name>.local" (on Windows, Mac, or iPhone web browsers)
+See [_Using LV2 Plugins_](UsingLv2Plugins.md) for more details, and for some concrete recommendations of LV2 Plugin collections that you might want to use
+with PiPedal.
 
--    http://127.0.0.1 if you are interactively logged into your Raspberry Pi device
+### Installing the PiPedal Remote Android app
 
--    at port 80 of the current network address of your Raspberry Pi, if you are connecting from an Android device (which does not currently support mDNS). 
+Install [PiPedal Remote](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) on your Android device. PiPepedal Remote can connect to
+PiPedal on your Raspberry Pi device  as long as your Android device and Raspberry Pi are connected to the same network via a normal Wi-Fi access point, or via an Ethernet connection. 
 
-See the ADDRESSES section of the About dialog for a list of addresses that can be used to connect to PiPedal.
-     
-To complete the initial configuration, you must either connect an Ethernet cable to your Raspberry pi so you can connect to the Web App (after which you should be able to connect to http://pipedal.local); or you must launch a web browser locally on your Raspberry pi device while logged in interactively. 
-     
+## First Connection
+
+You can complete the initial configuration procedure using any of the following methods:
+
+1. _Log on to the Raspberry Pi device_. Launch a web browser, and connect to http:://127.0.0.1/
+
+2.  _Connect Raspberry Pi to a Wi-Fi or Ethernet network, and connect from your laptop or desktop._ Connect to http://raspberrypi.local/ (substitute the host name of your Raspberry Pi if you have changed it from the default).
+
+3. _From your Android device._ Install PiPedal Remote on your Android device. Connect your Raspberry Pi to your home router using a Wi-Fi or Ethernet connection. Launch PiPedal Remote on your Android device.
+
+4. _From a LINUX command prompt._ As a last resort, you can configure the Wi-Fi Direct access point using the `pipedalconfig` program. Type `pipedalconfig --help` at a command prompt on your Raspberry Pi.
+
 If you already have another web server on port 80, see [*How to Change the Web Server Port*](ChangingTheWebServerPort.md).
 
 ### Configuring Audio
 
 Once connected, select the Settings menu item on the Hamburger menu at the top left corner of the display. Click on Audio Device Settings to select and configure the audio device you want to use. 
 
--    IMPORTANT NOTE: If you are using a USB audio device, you *MUST* set the number of buffers to 3, and you *MUST* set the sample rate to 48,000
-     in order to acheive reasonable latency. For other devices, you probably want to use 2 buffers.
+<table border="1px #c0c0c0"><tr><td>
+     IMPORTANT NOTE: If you are using a USB audio device, you <i>MUST</i? set the number of buffers to 3, and you <i>MUST</i> set the sample rate to 48,000
+     in order to acheive reasonable latency on Linux. For other devices, you probably want to use 2 buffers.
+    </td></tr></table>
 
 You may also need to choose which audio input and output channels you will use for guitar signals, once you have selected and configured 
 an audio device. Most external USB audio devices that have two inputs provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from.
-
-### Installing LV2 Plugins
-
-PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
-
-By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
-
-See [_Using LV2 Plugins_](UsingLv2Plugins.md) for more details, and for some concrete recommendataions.
-
 
 ### Activating the P2P (Wi-Fi Direct) Hotspot
 
@@ -82,7 +97,6 @@ You _must_ select the correct country when setting up your Wi-Fi Direct connecti
 For best results, you should select Wi-Fi channel 1, 6 or 11 (referred to as the "Wi-Fi Direct Social Channels"). Doing so reduces the time it takes for other devices to discover the Raspberry Pi. While it is possible to use 5Ghz channels for Wi-Fi Direct, it may take some time for connecting devices to find your PiPedal device.
 
 Support for Apple/IOS devices: a client for Apple/IoS devices is in long-term development plans; but I don't own any Apple device on which to do development and testing. If you'd like to see an Apple/IOS client, your sponsorship would help. (The client performs discovery and set up of Wi-Fi direct connections, and relies on the Web interface after that. Not difficult. Just expensive.
-     
 
 --------
 [<< Installing PiPedal](Installing.md)  | [Up](Documentation.md) | | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)
