@@ -327,9 +327,12 @@ void InstallLimits()
     if (!std::filesystem::exists(limitsConfig))
     {
         ofstream output(limitsConfig);
-        output << "# Realtime priority group used by pipedal/jack daemon" << "\n";
-        output << "@audio   -  rtprio     95" << "\n";
-        output << "@audio   -  memlock    unlimited" << "\n";
+        output << "# Realtime priority group used by pipedal/jack daemon"
+               << "\n";
+        output << "@audio   -  rtprio     95"
+               << "\n";
+        output << "@audio   -  memlock    unlimited"
+               << "\n";
     }
 }
 
@@ -410,40 +413,72 @@ int SudoExec(char **argv)
 
 void Uninstall()
 {
+    try
+    {
 
-    OnWifiUninstall();
+        OnWifiUninstall();
 
-    StopService();
-    DisableService();
-    silentSysExec(SYSTEMCTL_BIN " stop jack");
-    silentSysExec(SYSTEMCTL_BIN " disable jack");
-    OnWifiUninstall();
+        StopService();
+        DisableService();
+        silentSysExec(SYSTEMCTL_BIN " stop jack");
+        silentSysExec(SYSTEMCTL_BIN " disable jack");
+        OnWifiUninstall();
 
-    try {
-        std::filesystem::remove("/usr/bin/systemd/system/" OLD_SHUTDOWN_SERVICE ".service");
-    } catch (...) {}
-    
-    try {
-        std::filesystem::remove("/usr/bin/systemd/system/" ADMIN_SERVICE ".service");
-    } catch (...) {}
-    try {
-        std::filesystem::remove("/usr/bin/systemd/system/" PIPEDAL_P2PD_SERVICE ".service");
-    } catch (...) {}
+        try
+        {
+            std::filesystem::remove("/usr/bin/systemd/system/" OLD_SHUTDOWN_SERVICE ".service");
+        }
+        catch (...)
+        {
+        }
 
-    try {
-        std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
-    } catch (...) {}
+        try
+        {
+            std::filesystem::remove("/usr/bin/systemd/system/" ADMIN_SERVICE ".service");
+        }
+        catch (...)
+        {
+        }
+        try
+        {
+            std::filesystem::remove("/usr/bin/systemd/system/" PIPEDAL_P2PD_SERVICE ".service");
+        }
+        catch (...)
+        {
+        }
 
-    try {
-        std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
-    } catch (...) {}
-    UninstallPamEnv();
-    UninstallLimits();
-    sysExec(SYSTEMCTL_BIN " daemon-reload");
+        try
+        {
+            std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
+        }
+        catch (...)
+        {
+        }
+
+        try
+        {
+            std::filesystem::remove("/usr/bin/systemd/system/" JACK_SERVICE ".service");
+        }
+        catch (...)
+        {
+        }
+        UninstallPamEnv();
+        UninstallLimits();
+        sysExec(SYSTEMCTL_BIN " daemon-reload");
+    }
+    catch (const std::exception &e)
+    {
+        // We should NEVER get here. But the consequences of failure are high (causes permanent apt installs/uninstall problems), so be safe. 
+        cout << "ERROR: Unexpected error while uninstalling pipedal. (" << e.what() << ")" << endl;
+    }
+    catch (...)
+    {
+        // We should NEVER get here. But the consequences of failure are high (causes permanent apt installs/uninstall problems), so be safe. 
+        cout << "ERROR: Unexpected error while uninstalling pipedal." << endl;
+    }
 }
 
 std::random_device randdev;
-
 
 std::string MakeUuid()
 {
@@ -458,7 +493,7 @@ static std::string RandomChars(int nchars)
 {
     std::stringstream s;
 
-    std::uniform_int_distribution distr(0,26+26+10-1);
+    std::uniform_int_distribution distr(0, 26 + 26 + 10 - 1);
 
     for (int i = 0; i < nchars; ++i)
     {
@@ -467,13 +502,18 @@ static std::string RandomChars(int nchars)
         if (v < 10)
         {
             c = (char)('0' + v);
-        } else {
+        }
+        else
+        {
             v -= 10;
-            if (v < 26) {
-                c = (char)('a'+v);
-            } else {
+            if (v < 26)
+            {
+                c = (char)('a' + v);
+            }
+            else
+            {
                 v -= 26;
-                c = (char)('A'+v);
+                c = (char)('A' + v);
             }
         }
         s << c;
@@ -499,7 +539,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     {
         throw PiPedalException("Failed to create audio service group.");
     }
-    
+
     PrepareDeviceidFile();
     InstallJackService();
     auto endpos = endpointAddress.find_last_of(':');
@@ -611,7 +651,8 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         }
     }
 
-    cout << "Creating Systemd file." << "\n";
+    cout << "Creating Systemd file."
+         << "\n";
 
     std::map<string, string> map;
 
@@ -655,137 +696,151 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
     sysExec(SYSTEMCTL_BIN " daemon-reload");
 
-    cout << "Starting services" << "\n";
+    cout << "Starting services"
+         << "\n";
     RestartService(false);
     EnableService();
 
-
-    cout << "Complete" << "\n";
+    cout << "Complete"
+         << "\n";
 }
 
 static void PrintHelp()
 {
     PrettyPrinter pp;
-    pp << "pipedalconfig - Command-line post-install configuration for PiPedal" << "\n"
-         << "Copyright (c) 2022 Robin Davies. All rights reserved." << "\n"
-         << "\n"
-         << "See https://rerdavies.github.io/pipedal/Documentation.html for " 
-         << "online documentation." << "\n"
-         << "\n"
-         << "Syntax:" << "\n";
-    pp << Indent(4) 
-         << "pipedalconfig [Options...]" << "\n"
-         << "\n";
+    pp << "pipedalconfig - Command-line post-install configuration for PiPedal"
+       << "\n"
+       << "Copyright (c) 2022 Robin Davies. All rights reserved."
+       << "\n"
+       << "\n"
+       << "See https://rerdavies.github.io/pipedal/Documentation.html for "
+       << "online documentation."
+       << "\n"
+       << "\n"
+       << "Syntax:"
+       << "\n";
+    pp << Indent(4)
+       << "pipedalconfig [Options...]"
+       << "\n"
+       << "\n";
     pp.Indent(0)
-         << "Options: " << "\n\n";
+        << "Options: "
+        << "\n\n";
     pp.Indent(20);
-    
-    pp 
+
+    pp
         << HangingIndent() << "    -h --help\t"
-        << "Display this message." << "\n" 
+        << "Display this message."
+        << "\n"
         << "\n"
 
         << HangingIndent() << "    --install [--port <port#>]\t"
-        << "Install or re-install services and service accounts." << "\n" 
+        << "Install or re-install services and service accounts."
         << "\n"
-        << "The --port option controls which port the web server uses." 
+        << "\n"
+        << "The --port option controls which port the web server uses."
         << "\n\n"
 
         << HangingIndent() << "    --uninstall\t"
-        << "Remove installed services." << "\n"
-         << "\n"
+        << "Remove installed services."
+        << "\n"
+        << "\n"
 
-         << HangingIndent() << "    --enable\t"
-         << "Start the pipedal service at boot time." << "\n"
-         << "\n"
+        << HangingIndent() << "    --enable\t"
+        << "Start the pipedal service at boot time."
+        << "\n"
+        << "\n"
 
-         << HangingIndent() << "    --disable\tDo not start the pipedal service at boot time." << "\n"
-         << "\n"
-         << HangingIndent() << "    --start\tStart the pipedal services." << "\n"
-         << "\n"
-         << HangingIndent() << "    --stop\tStop the pipedal services." << "\n"
-         << "\n"
-         << HangingIndent() << "    --restart\tRestart the pipedal services." << "\n"
-         << "\n"
+        << HangingIndent() << "    --disable\tDo not start the pipedal service at boot time."
+        << "\n"
+        << "\n"
+        << HangingIndent() << "    --start\tStart the pipedal services."
+        << "\n"
+        << "\n"
+        << HangingIndent() << "    --stop\tStop the pipedal services."
+        << "\n"
+        << "\n"
+        << HangingIndent() << "    --restart\tRestart the pipedal services."
+        << "\n"
+        << "\n"
 
-         << HangingIndent() << "    --enable-p2p [<country_code> <ssid> [[<pin>] <channel>] ]\t"
-         << "Enable the P2P (Wi-Fi Direct) hotspot." << "\n\n"
-         << "With no additional arguments, the P2P channel is enabled with most-recent settings."
-         << "\n\n"
-         << "<country_code> is the 2-letter ISO-3166 country code for "
-            "the country you are in. see below for further notes." 
-         << "\n\n"
-         << "<ssid> is the name you see when connecting. " 
-         << "\n\n"
-         << "<pin> is an exactly-eight-digit pin number that you must  " 
-         << "enter when connecting to the hotspot. If you don't  " 
-         << "provide a pin, pipedalconfig will generate and " 
-         << "display a random pin for you. The pin is a " 
-         << "so-called \"label\" pin, which is the same every " 
-         << "time you are asked to enter it (unlike a keypad pin " 
-         << "which changes every time you need to enter it."
-         << "\n\n"
-         << "Consider attaching a label to the bottom of your device " 
-         << "so you can can remember the pin if you wan't to connect a new "
-         << "device to PiPedal. (It's also available on the Settings page of PiPedal, if you have access to PiPedal UI on another device.)" 
-         << "\n\n"
-         << "For best performance, the channel number should be 1, 6, or 11 (the Wifi Direct \"social\" channels). " 
-         << "Channel number defaults to 1." 
-         << "\n\n"
+        << HangingIndent() << "    --enable-p2p [<country_code> <ssid> [[<pin>] <channel>] ]\t"
+        << "Enable the P2P (Wi-Fi Direct) hotspot."
+        << "\n\n"
+        << "With no additional arguments, the P2P channel is enabled with most-recent settings."
+        << "\n\n"
+        << "<country_code> is the 2-letter ISO-3166 country code for "
+           "the country you are in. see below for further notes."
+        << "\n\n"
+        << "<ssid> is the name you see when connecting. "
+        << "\n\n"
+        << "<pin> is an exactly-eight-digit pin number that you must  "
+        << "enter when connecting to the hotspot. If you don't  "
+        << "provide a pin, pipedalconfig will generate and "
+        << "display a random pin for you. The pin is a "
+        << "so-called \"label\" pin, which is the same every "
+        << "time you are asked to enter it (unlike a keypad pin "
+        << "which changes every time you need to enter it."
+        << "\n\n"
+        << "Consider attaching a label to the bottom of your device "
+        << "so you can can remember the pin if you wan't to connect a new "
+        << "device to PiPedal. (It's also available on the Settings page of PiPedal, if you have access to PiPedal UI on another device.)"
+        << "\n\n"
+        << "For best performance, the channel number should be 1, 6, or 11 (the Wifi Direct \"social\" channels). "
+        << "Channel number defaults to 1."
+        << "\n\n"
 
-         << HangingIndent() << "   --disable-p2p\tDisabled Wi-Fi Direct access." 
-         << "\n\n"
+        << HangingIndent() << "   --disable-p2p\tDisabled Wi-Fi Direct access."
+        << "\n\n"
 
         << HangingIndent() << "    --enable-legacy-ap\t <country_code> <ssid> <wep_password> <channel>\tEnable a legacy Wi-Fi access point."
-        << "\n\n" 
-         << "Enable a legacy Wi-Fi access point. \n\n"
-         << "country_code is the 2-letter ISO-3166 country code for "
-         << "the country you are in. see below for further notes."
-         << "\n\n"
+        << "\n\n"
+        << "Enable a legacy Wi-Fi access point. \n\n"
+        << "country_code is the 2-letter ISO-3166 country code for "
+        << "the country you are in. see below for further notes."
+        << "\n\n"
         << "See below for an explanation of when you might want to use a legacy Wi-Fi access point instead of Wifi-Direct access."
-        << "an explanation of when you might want to use a legacy Access Point instead of " 
+        << "an explanation of when you might want to use a legacy Access Point instead of "
         << "a P2P (Wi-Fi Direct) connection. Generally, you should prefer a P2p connection "
         << "to an ordinary Hotspot connection."
         << "\n\n"
 
-         << HangingIndent() << "    --disable-legacy-ap\tDisabled the legacy Wi-Fi access point." 
-         << "\n\n"
+        << HangingIndent() << "    --disable-legacy-ap\tDisabled the legacy Wi-Fi access point."
+        << "\n\n"
 
+        << Indent(0) << "Country codes:"
+        << "\n\n"
+        << Indent(4)
+        << "Country codes are used to determine Wi-Fi-regulatory regime - the "
+        << "channels you are legally allowed to use, and the features which must "
+        << "be enabled or disabled on the channels you can use. "
+        << "\n\n"
+        << "Without a country code, Wi-Fi must be restricted to channels 1 through 11 "
+        << "with reduced amplitude and feature sets."
+        << "\n\n"
+        << "For the most part, Wi-Fi country codes are taken from the list of ISO 3661 "
+        << "2-letter country codes; although there are a handful of exceptions for  small "
+        << "countries and islands. See the Alpha-2 code column of "
+        << "\n\n"
+        << Indent(8) << "https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes."
+        << "\n\n"
 
-         << Indent(0) << "Country codes:"
-         << "\n\n"
-         << Indent(4)
-         << "Country codes are used to determine Wi-Fi-regulatory regime - the "
-         << "channels you are legally allowed to use, and the features which must "
-         << "be enabled or disabled on the channels you can use. "
-         << "\n\n"
-         << "Without a country code, Wi-Fi must be restricted to channels 1 through 11 "
-         << "with reduced amplitude and feature sets."
-         << "\n\n"
-         << "For the most part, Wi-Fi country codes are taken from the list of ISO 3661 "
-         << "2-letter country codes; although there are a handful of exceptions for  small "
-         << "countries and islands. See the Alpha-2 code column of "
-         << "\n\n"
-         << Indent(8) << "https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes." 
-         << "\n\n"
-
-         << Indent(0) << "Legacy Wi-Fi Access Points:"
-         << "\n\n"
-         << Indent(4)
-         << "Some older devices may not be able to connect to PiPedal using Wi-Fi Direct connections. "
-            "Old Apple devices, for example, do not support Wi-Fi Direct. In theory, Wi-Fi Direct should "
-            "allow legacy Wi-Fi devices to connect to a Wi-Fi Direct access points as if it were an "
-            "ordinary Access Point. If this turns out "
-            "not to be the case, you can configure PiPedal to provide a legacy Wi-Fi access point instead. "
-            "\n\n"
-            "Unlike Wi-Fi Direct connections, legacy Access Points will prevent both the connecting device "
-            "and the PiPedal host machine from connecting to the Internet over a simultanous Wi-Fi connection Access "
-            "Point. On a connecting Android device, you won't be able to use the data connection either when a legacy "
-            "Wi-Fi connection is active."
-            "\n\n"
-            "Wi-Fi Direct connections are "
-            "therefore preferrable under almost all circumstances.\n\n"
-            ;
+        << Indent(0) << "Legacy Wi-Fi Access Points:"
+        << "\n\n"
+        << Indent(4)
+        << "Some older devices may not be able to connect to PiPedal using Wi-Fi Direct connections. "
+           "Old Apple devices, for example, do not support Wi-Fi Direct. In theory, Wi-Fi Direct should "
+           "allow legacy Wi-Fi devices to connect to a Wi-Fi Direct access points as if it were an "
+           "ordinary Access Point. If this turns out "
+           "not to be the case, you can configure PiPedal to provide a legacy Wi-Fi access point instead. "
+           "\n\n"
+           "Unlike Wi-Fi Direct connections, legacy Access Points will prevent both the connecting device "
+           "and the PiPedal host machine from connecting to the Internet over a simultanous Wi-Fi connection Access "
+           "Point. On a connecting Android device, you won't be able to use the data connection either when a legacy "
+           "Wi-Fi connection is active."
+           "\n\n"
+           "Wi-Fi Direct connections are "
+           "therefore preferrable under almost all circumstances.\n\n";
 }
 
 int main(int argc, char **argv)
@@ -863,7 +918,8 @@ int main(int argc, char **argv)
     }
     if (portOption.size() != 0 && !install)
     {
-        cout << "Error: -port option can only be specified with the -install option." << "\n";
+        cout << "Error: -port option can only be specified with the -install option."
+             << "\n";
         exit(EXIT_FAILURE);
     }
 
@@ -953,7 +1009,6 @@ int main(int argc, char **argv)
             settings.enable_ = true;
             SetWifiDirectConfig(settings);
             RestartService(true); // also have to retart web service so that it gets the correct device name.
-
         }
         else if (disable_p2p)
         {
@@ -961,7 +1016,7 @@ int main(int argc, char **argv)
             settings.valid_ = true;
             settings.enable_ = false;
             SetWifiDirectConfig(settings);
-            RestartService(true); 
+            RestartService(true);
         }
         else if (enable_ap)
         {
