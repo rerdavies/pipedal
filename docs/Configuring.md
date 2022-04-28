@@ -1,12 +1,18 @@
 ## Configuring PiPedal After Installation
 
--   NOTE: Because PiPedal Remote Android app has just been released on Google Play, you won't be able 
-    to find it in the search listings yet. Use the following URL to directly access and install PiPedal Remote:  
-    
-    [https://play.google.com/store/apps/details?id=com.twoplay.piped](https://play.google.com/store/apps/details?id=com.twoplay.pipedal)
-    
-    This is a temporary measure, until PiPedal remote becomes available in the Google Play search database.
-
+<table border="1px #e00000">
+    <tr>
+        <td>
+            Note: Because PiPedal Remote Android app has just been released on Google Play, you won't be able 
+            to find it in the search listings yet. Use the following URL to directly access and install PiPedal Remote:
+            <br/>
+            <br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<a href="https://play.google.com/store/apps/details?id=com.twoplay.piped">https://play.google.com/store/apps/details?id=com.twoplay.pipedal</a>
+            <br/>
+            <br/>
+        </td>
+    </tr>
+</table>
 
 Before using PiPedal, you will need to configure settings for the audio device that PiPedal will use.
 
@@ -19,6 +25,10 @@ By default, PiPedal comes with a few plugins from the ToobAmp plugin collection.
 See [_Using LV2 Plugins_](UsingLv2Plugins.md) for more details, and for some concrete recommendations of LV2 Plugin collections that you might want to use
 with PiPedal.
 
+### Installing the PiPedal Remote Android app
+
+Install [PiPedal Remote](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) on your Android device. PiPepedal Remote can connect to
+PiPedal on your Raspberry Pi device  as long as your Android device and Raspberry Pi are connected to the same network via a normal Wi-Fi access point, or via an Ethernet connection. 
 
 ## First Connection
 
@@ -34,17 +44,14 @@ You can complete the initial configuration procedure using any of the following 
 
 If you already have another web server on port 80, see [*How to Change the Web Server Port*](ChangingTheWebServerPort.md).
 
-### Installing the PiPedal Remote Android app
-
-Install [PiPedal Remote](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) on your Android device. PiPepedal Remote can connect to
-PiPedal on your Raspberry Pi device  as long as your Android device and Raspberry Pi are connected to the same network via a normal Wi-Fi access point, or via an Ethernet connection. 
-
 ### Configuring Audio
 
 Once connected, select the Settings menu item on the Hamburger menu at the top left corner of the display. Click on Audio Device Settings to select and configure the audio device you want to use. 
 
--    IMPORTANT NOTE: If you are using a USB audio device, you *MUST* set the number of buffers to 3, and you *MUST* set the sample rate to 48,000
+<table border="1px #e00000"><tr><td>
+     IMPORTANT NOTE: If you are using a USB audio device, you *MUST* set the number of buffers to 3, and you *MUST* set the sample rate to 48,000
      in order to acheive reasonable latency. For other devices, you probably want to use 2 buffers.
+    </td></tr></table>
 
 You may also need to choose which audio input and output channels you will use for guitar signals, once you have selected and configured 
 an audio device. Most external USB audio devices that have two inputs provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from.
