@@ -14,5 +14,6 @@ Install the package by running
   sudo apt-get install ./pipedal_0.1.8_arm64.deb
 ```
 
+After installing, follow the instructions in [Configuring PiPedal after Installation](Configuring.md).
 --------
 [<< System Requirements](SystemRequirements.md) | [Up](Documentation.md) | [Configuring PiPedal after Installation >>](Configuring.md)
