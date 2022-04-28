@@ -1,7 +1,7 @@
 
 
 <img src="GithubBanner.png" width="100%"/>
-<i>v0.1.8-beta-4</i>
+<a href="Installing.html"><i>v0.1.8-beta-4</i></a>
 
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
