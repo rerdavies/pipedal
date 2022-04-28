@@ -4,7 +4,7 @@
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Ubuntu or Raspberry Pi OS (64-bit)](https://github.com/rerdavies/pipedal/releases/download/v0.1.8-beta-4/pipedal_0.1.8_arm64.deb) v0.1.8-beta-4
+- [Ubuntu or Raspberry Pi OS (64-bit)](https://github.com/rerdavies/pipedal/releases/tag/v0.1.8-beta-4) v0.1.8-beta-4
 
 Install the package by running 
 
