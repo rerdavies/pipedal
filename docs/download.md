@@ -4,14 +4,14 @@
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Ubuntu or Raspberry Pi OS (64-bit)](https://github.com/rerdavies/pipedal/releases/download/v0.1.8-beta-4/pipedal_0.1.8_arm64.deb) v0.1.8-beta-4
+- [Ubuntu or Raspberry Pi OS (64-bit)](https://github.com/rerdavies/pipedal/releases/download/v0.1.9-beta-5/pipedal_0.1.9_arm64.deb) v0.1.9-beta-5
 
 Install the package by running 
 
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_0.1.8_arm64.deb
+  sudo apt-get install ./pipedal_0.1.9_arm64.deb
 ```
 
 Follow the instructions in [_Configuring PiPedal After Installation_](https://rerdavies.github.io/pipedal/Configuring.html) to complete the installation.

@@ -67,6 +67,7 @@ public:
     virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings&wifiDirectConfigSettings) = 0;
     virtual void OnGovernorSettingsChanged(const std::string &governor) = 0;
     virtual void OnFavoritesChanged(const std::map<std::string,bool> &favorites) = 0;
+    virtual void OnShowStatusMonitorChanged(bool show) = 0;
     virtual void Close() = 0;
 };
 
@@ -213,6 +214,9 @@ public:
 
     void SetJackChannelSelection(int64_t clientId,const JackChannelSelection &channelSelection);
     JackChannelSelection GetJackChannelSelection();
+
+    void SetShowStatusMonitor(bool show);
+    bool GetShowStatusMonitor();
 
     void SetWifiConfigSettings(const WifiConfigSettings&wifiConfigSettings);
     WifiConfigSettings GetWifiConfigSettings();

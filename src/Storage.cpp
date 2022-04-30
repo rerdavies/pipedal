@@ -33,7 +33,9 @@ const char *BANK_EXTENSION = ".bank";
 const char *BANKS_FILENAME = "index.banks";
 
 #define WIFI_CONFIG_SETTINGS_FILENAME "wifiConfigSettings.json";
-#define GOVERNOR_SETTINGS_FILENAME "governorSettings.json";
+#define USER_SETTINGS_FILENAME "userSettings.json";
+
+
 
 Storage::Storage()
 {
@@ -228,7 +230,7 @@ void Storage::Initialize()
     }
     LoadWifiConfigSettings();
     LoadWifiDirectConfigSettings();
-    LoadGovernorSettings();
+    LoadUserSettings();
 }
 
 
@@ -854,9 +856,14 @@ int64_t  Storage::UploadBank(BankFile&bankFile,int64_t uploadAfter)
     return lastBank;
 }
 
+
 void Storage::SetGovernorSettings(const std::string & governor)
 {
-        std::filesystem::path path = this->dataRoot / GOVERNOR_SETTINGS_FILENAME;
+    userSettings.governor_ = governor;
+    SaveUserSettings();
+}
+void Storage::SaveUserSettings() {
+    std::filesystem::path path = this->dataRoot / USER_SETTINGS_FILENAME;
     {
         std::ofstream f(path);
         if (!f.is_open())
@@ -864,13 +871,22 @@ void Storage::SetGovernorSettings(const std::string & governor)
             throw PiPedalException("Unable to write to " + ((std::string)path));
         }
         json_writer writer(f);
-        writer.write(governor);
-        this->governorSettings = governor;
+        writer.write(userSettings);
     }
 }
+void Storage::SetShowStatusMonitor(bool show)
+{
+    this->userSettings.showStatusMonitor_ = show;
+    SaveUserSettings();
+}
+bool Storage::GetShowStatusMonitor() const
+{
+    return this->userSettings.showStatusMonitor_;
+}
+
 std::string Storage::GetGovernorSettings() const
 {
-    return this->governorSettings;
+    return this->userSettings.governor_;
 }
 
 
@@ -925,9 +941,9 @@ void Storage::SetWifiDirectConfigSettings(const WifiDirectConfigSettings & wifiD
     this->wifiDirectConfigSettings = copyToStore;
 }
 
-void Storage::LoadGovernorSettings()
+void Storage::LoadUserSettings()
 {
-    std::filesystem::path path = this->dataRoot / GOVERNOR_SETTINGS_FILENAME;
+    std::filesystem::path path = this->dataRoot / USER_SETTINGS_FILENAME;
 
     try {
         if (std::filesystem::is_regular_file(path))
@@ -935,16 +951,13 @@ void Storage::LoadGovernorSettings()
             std::ifstream f(path);
             if (!f.is_open())
             {
-                throw PiPedalException("Unable to write to " + ((std::string)path));
+                throw PiPedalException("Unable to read from " + ((std::string)path));
             }
             json_reader reader(f);
-            std::string governorSettings;
-            reader.read(&governorSettings);
-            this->governorSettings = governorSettings;
+            reader.read(&userSettings);
         }
     } catch (const std::exception&)
     {
-        this->governorSettings = "performance";
     }
     this->wifiConfigSettings.valid_ = true;
 
@@ -1292,6 +1305,12 @@ void Storage::SetFavorites(const std::map<std::string,bool>&favorites) {
     }
 }
 
+
+
+JSON_MAP_BEGIN(UserSettings)
+    JSON_MAP_REFERENCE(UserSettings,governor)
+    JSON_MAP_REFERENCE(UserSettings,showStatusMonitor)
+JSON_MAP_END()
 
 JSON_MAP_BEGIN(CurrentPreset)
     JSON_MAP_REFERENCE(CurrentPreset,modified)

@@ -41,6 +41,15 @@ public:
     DECLARE_JSON_MAP(CurrentPreset);
 };
 
+
+class UserSettings {
+public:
+    std::string governor_ = "performance";
+    bool showStatusMonitor_ = true;
+    DECLARE_JSON_MAP(UserSettings);
+};
+
+
 // controls user-defined storage. Implmentation hidden to allow to later migration to a database (perhaps)
 
 class Storage {
@@ -77,7 +86,8 @@ private:
     JackChannelSelection jackChannelSelection;
     WifiConfigSettings wifiConfigSettings;
     WifiDirectConfigSettings wifiDirectConfigSettings;
-    std::string governorSettings = "performance";
+
+    UserSettings userSettings;
 public:
     Storage();
     void Initialize();
@@ -93,7 +103,8 @@ public:
 
     void LoadWifiConfigSettings();
     void LoadWifiDirectConfigSettings();
-    void LoadGovernorSettings();
+    void LoadUserSettings();
+    void SaveUserSettings();
     void LoadBank(int64_t instanceId);
     const PedalBoard& GetCurrentPreset();
     void SaveCurrentPreset(const PedalBoard&pedalBoard);
@@ -153,6 +164,9 @@ public:
 
     std::map<std::string,bool> GetFavorites() const;
     void SetFavorites(const std::map<std::string,bool>&favorites);
+
+    void SetShowStatusMonitor(bool show);
+    bool GetShowStatusMonitor() const;
 
 };
 

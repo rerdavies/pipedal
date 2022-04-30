@@ -924,6 +924,16 @@ public:
             pReader->read(&jackSettings);
             this->model.SetJackChannelSelection(this->clientId, jackSettings);
         }
+        else if (message == "setShowStatusMonitor")
+        {
+            bool showStatusMonitor;
+            pReader->read(&showStatusMonitor);
+            this->model.SetShowStatusMonitor(showStatusMonitor);
+        }
+        else if (message == "getShowStatusMonitor")
+        {
+            Reply(replyTo,"getShowStatusMonitor",this->model.GetShowStatusMonitor());
+        }
         else if (message == "version")
         {
             PiPedalVersion version(this->model);
@@ -1255,6 +1265,11 @@ public:
     {
         Send("onFavoritesChanged",favorites);
     }
+
+    virtual void OnShowStatusMonitorChanged(bool show) {
+        Send("onShowStatusMonitorChanged",show);
+    }
+
     virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection)
     {
         ChannelSelectionChangedBody body;

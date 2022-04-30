@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { SyntheticEvent, Component } from 'react';
+import Switch from "@mui/material/Switch";
 import OkCancelDialog from './OkCancelDialog';
 import ListSelectDialog from './ListSelectDialog';
 import IconButton from '@mui/material/IconButton';
@@ -56,6 +57,8 @@ interface SettingsDialogProps extends WithStyles<typeof styles> {
 };
 
 interface SettingsDialogState {
+    showStatusMonitor: boolean;
+    showStatusMonitorDialog: boolean;
     jackConfiguration: JackConfiguration;
     jackSettings: JackChannelSelection;
     jackServerSettings: JackServerSettings;
@@ -153,6 +156,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
             this.handleDialogClose = this.handleDialogClose.bind(this);
             this.state = {
+                showStatusMonitor: this.model.showStatusMonitor.get(),
+                showStatusMonitorDialog: false,
+
                 jackServerSettings: this.model.jackServerSettings.get(),
                 jackConfiguration: this.model.jackConfiguration.get(),
                 jackStatus: undefined,
@@ -183,10 +189,15 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.handleWifiDirectConfigSettingsChanged = this.handleWifiDirectConfigSettingsChanged.bind(this);
             this.handleGovernorSettingsChanged = this.handleGovernorSettingsChanged.bind(this);
             this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
-            
+            this.handleShowStatusMonitorChanged = this.handleShowStatusMonitorChanged.bind(this);
+
 
         }
 
+
+        handleShowStatusMonitorChanged(): void {
+            this.setState({ showStatusMonitor: this.model.showStatusMonitor.get() });
+        }
         handleConnectionStateChanged(): void {
             if (this.model.state.get() === State.Ready) {
                 this.setState({ isAndroidHosted: this.model.isAndroidHosted() });
@@ -290,6 +301,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 this.active = active;
                 if (active) {
                     this.model.state.addOnChangedHandler(this.handleConnectionStateChanged);
+                    this.model.showStatusMonitor.addOnChangedHandler(this.handleShowStatusMonitorChanged);
                     this.model.jackSettings.addOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackConfiguration.addOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.jackServerSettings.addOnChangedHandler(this.handleJackServerSettingsChanged);
@@ -312,6 +324,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.handleConnectionStateChanged();
                     this.handleJackConfigurationChanged();
                     this.handleJackSettingsChanged();
+                    this.handleShowStatusMonitorChanged();
                     this.handleJackServerSettingsChanged();
                     this.handleWifiConfigSettingsChanged();
                     this.handleWifiDirectConfigSettingsChanged();
@@ -321,6 +334,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         clearInterval(this.timerHandle);
                     }
                     this.model.state.removeOnChangedHandler(this.handleConnectionStateChanged);
+                    this.model.showStatusMonitor.removeOnChangedHandler(this.handleShowStatusMonitorChanged);
+
                     this.model.jackConfiguration.removeOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.jackSettings.removeOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackServerSettings.removeOnChangedHandler(this.handleJackServerSettingsChanged);
@@ -436,7 +451,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             });
         }
         handleRestart() {
-            this.setState({showRestartOkDialog: true});
+            this.setState({ showRestartOkDialog: true });
         }
         handleRestartOk() {
             this.setState({ restarting: true });
@@ -452,7 +467,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
         }
 
         handleShutdown() {
-            this.setState({ showShutdownOkDialog: true});
+            this.setState({ showShutdownOkDialog: true });
         }
         handleShutdownOk() {
             this.setState({ shuttingDown: true });
@@ -525,7 +540,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     )
                                 }
-                                <Divider/>
+                                <Divider />
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
                                     AUDIO
                                 </Typography>
@@ -592,7 +607,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     this.state.isAndroidHosted &&
                                     (
                                         <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                            onClick={() => this.model.chooseNewDevice() }  >
+                                            onClick={() => this.model.chooseNewDevice()}  >
                                             <SelectHoverBackground selected={false} showHover={true} />
                                             <div style={{ width: "100%" }}>
                                                 <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
@@ -606,7 +621,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     )
                                 }
 
-                                <ButtonBase 
+                                <ButtonBase
                                     className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
                                     onClick={() => this.handleShowWifiDirectConfigDialog()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
@@ -654,16 +669,28 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                 </ButtonBase>
 
                                 <ButtonBase
-                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    onClick={() => { } }  >
+                                    className={classes.setting}
+                                    onClick={() => { this.setState({ showStatusMonitorDialog: true }); }}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
-                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Show status monitor on main screen.</Typography>
-                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            Enabled
-                                        </Typography>
+                                        <div style={{
+                                            width: "100%", display: "flex", flexDirection: "row", flexWrap: "nowrap",
+                                            alignItems: "center", maxWidth: 400
+                                        }}>
+                                            <div style={{ flex: "1 1 auto" }}>
+                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                    Show status monitor on main screen.</Typography>
+                                            </div>
+                                            <div style={{ flex: "0 0 auto" }}>
+                                                <Switch
+                                                    checked={this.state.showStatusMonitor}
+                                                    onChange={
+                                                        (e) => { this.model.setShowStatusMonitor(e.target.checked); }
+                                                    }
+                                                />
+                                            </div>
 
+                                        </div>
                                     </div>
                                 </ButtonBase>
 
@@ -735,7 +762,6 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                             >
                             </ListSelectDialog>
                         )
-
                     }
                     {
                         (this.state.showMidiSelectDialog) &&
@@ -756,15 +782,15 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         onClose={() => this.setState({ showWifiDirectConfigDialog: false })}
                         onOk={(wifiDirectConfigSettings: WifiDirectConfigSettings) => this.handleApplyWifiDirectConfig(wifiDirectConfigSettings)}
                     />
-                    <OkCancelDialog text="Are you sure you want to reboot?" okButtonText='Reboot' 
+                    <OkCancelDialog text="Are you sure you want to reboot?" okButtonText='Reboot'
                         open={this.state.showRestartOkDialog}
-                        onOk={()=> { this.setState({showRestartOkDialog: false}); this.handleRestartOk();}}
-                        onClose={()=> { this.setState({showRestartOkDialog: false}); } }
+                        onOk={() => { this.setState({ showRestartOkDialog: false }); this.handleRestartOk(); }}
+                        onClose={() => { this.setState({ showRestartOkDialog: false }); }}
                     />
-                    <OkCancelDialog text="Are you sure you want to shut down?" okButtonText='Shut down' 
+                    <OkCancelDialog text="Are you sure you want to shut down?" okButtonText='Shut down'
                         open={this.state.showShutdownOkDialog}
-                        onOk={()=> { this.setState({showShutdownOkDialog: false}); this.handleShutdownOk();}}
-                        onClose={()=> { this.setState({showShutdownOkDialog: false}); } }
+                        onOk={() => { this.setState({ showShutdownOkDialog: false }); this.handleShutdownOk(); }}
+                        onClose={() => { this.setState({ showShutdownOkDialog: false }); }}
                     />
                 </DialogEx >
 

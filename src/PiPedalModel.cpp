@@ -735,6 +735,36 @@ WifiDirectConfigSettings PiPedalModel::GetWifiDirectConfigSettings()
     return this->storage.GetWifiDirectConfigSettings();
 }
 
+void PiPedalModel::SetShowStatusMonitor(bool show)
+{
+    IPiPedalModelSubscriber **t;
+    size_t n;
+    {
+        std::lock_guard<std::recursive_mutex> guard(mutex); // copy atomically.
+        t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        n = this->subscribers.size();
+        storage.SetShowStatusMonitor(show);
+
+        // Notify clients.
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        for (size_t i = 0; i < n; ++i)
+        {
+            t[i]->OnShowStatusMonitorChanged(show);
+        }
+        delete[] t;
+    }
+}
+bool PiPedalModel::GetShowStatusMonitor()
+{
+    std::lock_guard<std::recursive_mutex> guard(mutex); // copy atomically.
+    return storage.GetShowStatusMonitor();
+
+}
+
 JackConfiguration PiPedalModel::GetJackConfiguration()
 {
     std::lock_guard<std::recursive_mutex> guard(mutex); // copy atomically.

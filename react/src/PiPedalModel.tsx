@@ -314,7 +314,8 @@ export interface PiPedalModel {
     serverVersion?: PiPedalVersion;
     errorMessage: ObservableProperty<string>;
     alertMessage: ObservableProperty<string>;
-
+    showStatusMonitor: ObservableProperty<boolean>;
+    setShowStatusMonitor(show: boolean): void;
     state: ObservableProperty<State>;
     visibilityState: ObservableProperty<VisibilityState>;
 
@@ -458,6 +459,9 @@ class PiPedalModelImpl implements PiPedalModel {
 
     errorMessage: ObservableProperty<string> = new ObservableProperty<string>("");
     alertMessage: ObservableProperty<string> = new ObservableProperty<string>("");
+
+    showStatusMonitor: ObservableProperty<boolean> = new ObservableProperty<boolean>(true);
+
     pedalBoard: ObservableProperty<PedalBoard> = new ObservableProperty<PedalBoard>(new PedalBoard());
     plugin_classes: ObservableProperty<PluginClass> = new ObservableProperty<PluginClass>(new PluginClass());
     jackConfiguration: ObservableProperty<JackConfiguration> = new ObservableProperty<JackConfiguration>(new JackConfiguration());
@@ -512,8 +516,7 @@ class PiPedalModelImpl implements PiPedalModel {
     onSocketReconnecting(retry: number, maxRetries: number): void {
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
         //if (retry !== 0) {
-        if  (this.restartExpected)
-        {
+        if (this.restartExpected) {
             this.setState(State.ApplyingChanges);
         } else {
             this.setState(State.Reconnecting);
@@ -563,6 +566,9 @@ class PiPedalModelImpl implements PiPedalModel {
             if (!this.compareFavorites(favorites, this.favorites.get())) {
                 this.favorites.set(favorites);
             }
+        } else if (message === "onShowStatusMonitorChanged") {
+            let value = body as boolean;
+            this.showStatusMonitor.set(value);
         } else if (message === "onChannelSelectionChanged") {
             let channelSelectionBody = body as ChannelSelectionChangedBody;
             let channelSelection = new JackChannelSelection().deserialize(channelSelectionBody.jackChannelSelection);
@@ -655,7 +661,7 @@ class PiPedalModelImpl implements PiPedalModel {
             }
 
         } else {
-            throw new PiPedalStateError("Unrecognized message received from server.");
+            throw new PiPedalStateError("Unrecognized message received from server: " + message);
         }
     }
     setError(message: string): void {
@@ -708,15 +714,13 @@ class PiPedalModelImpl implements PiPedalModel {
     }
 
     onSocketConnectionLost() {
-        if (this.isAndroidHosted())
-        {
+        if (this.isAndroidHosted()) {
             this.androidHost?.setDisconnected(true);
         }
     }
     onSocketReconnected() {
 
-        if (this.isAndroidHosted())
-        {
+        if (this.isAndroidHosted()) {
             this.androidHost?.setDisconnected(false);
         }
 
@@ -731,6 +735,11 @@ class PiPedalModelImpl implements PiPedalModel {
             })
             .then(data => {
                 this.pedalBoard.set(new PedalBoard().deserialize(data));
+
+                return this.getWebSocket().request<boolean>("getShowStatusMonitor");
+            })
+            .then(data => {
+                this.showStatusMonitor.set(data);
 
                 return this.getWebSocket().request<any>("getWifiConfigSettings");
             })
@@ -833,13 +842,13 @@ class PiPedalModelImpl implements PiPedalModel {
                 this.webSocket = new PiPedalSocket(
                     this.socketServerUrl,
                     {
-                        onMessageReceived : this.onSocketMessage,
+                        onMessageReceived: this.onSocketMessage,
                         onError: this.onSocketError,
                         onConnectionLost: this.onSocketConnectionLost,
-                        onReconnect:  this.onSocketReconnected,
+                        onReconnect: this.onSocketReconnected,
                         onReconnecting: this.onSocketReconnecting
                     }
-                    );
+                );
                 return this.webSocket.connect();
             })
             .then(() => {
@@ -856,6 +865,7 @@ class PiPedalModelImpl implements PiPedalModel {
             })
             .then((clientId) => {
                 this.clientId = clientId;
+
                 return this.getWebSocket().request<string>("imageList");
             })
             .then((data) => {
@@ -907,7 +917,11 @@ class PiPedalModelImpl implements PiPedalModel {
                     .then(data => {
                         this.governorSettings.set(new GovernorSettings().deserialize(data));
 
-
+                        return this.getWebSocket().request<boolean>("getShowStatusMonitor");
+                    })
+                    .then(data => {
+                        this.showStatusMonitor.set(data);
+        
                         return this.getWebSocket().request<any>("getJackServerSettings");
                     })
                     .then(data => {
@@ -976,11 +990,10 @@ class PiPedalModelImpl implements PiPedalModel {
 
     }
 
-    backgroundStateTimeout?: NodeJS.Timeout  = undefined;
+    backgroundStateTimeout?: NodeJS.Timeout = undefined;
 
     exitBackgroundState() {
-        if (this.backgroundStateTimeout)
-        {
+        if (this.backgroundStateTimeout) {
             clearTimeout(this.backgroundStateTimeout);
             this.backgroundStateTimeout = undefined;
             return;
@@ -996,10 +1009,8 @@ class PiPedalModelImpl implements PiPedalModel {
         // on Android, delay entering background state by 3 seconds,
         // so that screen-flips don't trigger disconnects.
 
-        if (this.isAndroidHosted())
-        {
-            if (this.backgroundStateTimeout)
-            {
+        if (this.isAndroidHosted()) {
+            if (this.backgroundStateTimeout) {
                 clearTimeout(this.backgroundStateTimeout);
             }
             this.backgroundStateTimeout = setTimeout(() => {
@@ -1009,7 +1020,7 @@ class PiPedalModelImpl implements PiPedalModel {
         } else {
             this.enterBackgroundState_();
         }
-    } 
+    }
     enterBackgroundState_() {
         if (this.state.get() !== State.Background) {
             console.log("Entering background state.");
@@ -1181,6 +1192,7 @@ class PiPedalModelImpl implements PiPedalModel {
         }
 
     }
+
     setPedalBoardControlValue(instanceId: number, key: string, value: number): void {
         this._setPedalBoardControlValue(instanceId, key, value, true);
     }
@@ -1217,6 +1229,10 @@ class PiPedalModelImpl implements PiPedalModel {
         };
         this.webSocket?.send("setCurrentPedalBoard", body);
 
+    }
+
+    setShowStatusMonitor(show: boolean): void {
+        this.webSocket?.send("setShowStatusMonitor", show);
     }
 
     loadPedalBoardPlugin(itemId: number, selectedUri: string): number {
@@ -1497,7 +1513,7 @@ class PiPedalModelImpl implements PiPedalModel {
 
     expectRestart() {
         this.restartExpected = true;
-        
+
 
     }
     setJackSettings(jackSettings: JackChannelSelection): void {
@@ -2108,8 +2124,7 @@ class PiPedalModelImpl implements PiPedalModel {
     isAndroidHosted(): boolean { return this.androidHost !== undefined; }
 
     showAndroidDonationActivity(): void {
-        if (this.androidHost)
-        {
+        if (this.androidHost) {
             this.androidHost.showSponsorship();
         }
     }

@@ -264,6 +264,7 @@ type AppState = {
     presetChanged: boolean;
     banks: BankIndex;
     bankDisplayItems: number;
+    showStatusMonitor: boolean;
 };
 interface AppProps extends WithStyles<typeof appStyles> {
 }
@@ -309,7 +310,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             bankDialogOpen: false,
             editBankDialogOpen: false,
             zoomedControlOpen: false,
-            bankDisplayItems: 5
+            bankDisplayItems: 5,
+            showStatusMonitor: this.model_.showStatusMonitor.get()
 
         };
 
@@ -319,6 +321,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         this.alertMessageChangedHandler = this.alertMessageChangedHandler.bind(this);
         this.handleCloseAlert = this.handleCloseAlert.bind(this);
         this.banksChangedHandler = this.banksChangedHandler.bind(this);
+        this.showStatusMonitorHandler = this.showStatusMonitorHandler.bind(this);
 
     }
 
@@ -450,6 +453,11 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     handleCloseAlert(e?: any, reason?: any) {
         this.model_.alertMessage.set("");
     }
+    showStatusMonitorHandler() {
+        this.setState({
+            showStatusMonitor: this.model_.showStatusMonitor.get()
+        });
+    }
     banksChangedHandler() {
         this.setState({
             banks: this.model_.banks.get()
@@ -484,6 +492,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         this.model_.pedalBoard.addOnChangedHandler(this.presetChangedHandler);
         this.model_.alertMessage.addOnChangedHandler(this.alertMessageChangedHandler);
         this.model_.banks.addOnChangedHandler(this.banksChangedHandler);
+        this.model_.showStatusMonitor.addOnChangedHandler(this.showStatusMonitorHandler);
         this.alertMessageChangedHandler();
     }
 
@@ -508,7 +517,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         this.model_.errorMessage.removeOnChangedHandler(this.errorChangeHandler_);
         this.model_.state.removeOnChangedHandler(this.stateChangeHandler_);
         this.model_.pedalBoard.removeOnChangedHandler(this.presetChangedHandler);
-        this.model_.banks.addOnChangedHandler(this.banksChangedHandler);
+        this.model_.banks.removeOnChangedHandler(this.banksChangedHandler);
+        this.model_.banks.removeOnChangedHandler(this.showStatusMonitorHandler);
 
     }
 
@@ -814,7 +824,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                         </Button>
                     </DialogActions>
                 </Dialog>
-                <JackStatusView />
+                { this.state.showStatusMonitor && (<JackStatusView />) }
+
                 <div className={classes.errorContent} style={{
                     display: (this.state.displayState === State.Reconnecting || this.state.displayState === State.ApplyingChanges)
                         ? "block" : "none"

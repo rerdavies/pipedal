@@ -29,6 +29,8 @@
 using namespace pipedal;
 using namespace std;
 
+const bool ENABLE_KEEP_ALIVE = false;
+
 using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
 
 const size_t MAX_READ_SIZE = 1 * 1024 * 204;
@@ -164,8 +166,7 @@ namespace pipedal
             virtual const std::string &get(const std::string &key) const { return m_request.get_header(key); }
             virtual bool keepAlive() const
             {
-                m_request.get_version() != "1.0" || m_request.get_header("Connection") == "keep-alive";
-                return true;
+                return ENABLE_KEEP_ALIVE && (m_request.get_version() != "1.0" || m_request.get_header("Connection") == "keep-alive");
             }
         };
         class HttpResponseImpl : public HttpResponse
@@ -187,7 +188,7 @@ namespace pipedal
             virtual void setBody(const std::string &body) { request.set_body(body); }
             virtual void keepAlive(bool value)
             {
-                if (!value)
+                if ((!value) || (!ENABLE_KEEP_ALIVE))
                 {
                     set("Connection", "close");
                 }
@@ -418,9 +419,6 @@ namespace pipedal
 
                 if (requestHandler->wants(req.method(), requestUri))
                 {
-
-
-
                     try
                     {
 
