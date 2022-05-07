@@ -29,7 +29,7 @@
 using namespace pipedal;
 using namespace std;
 
-const bool ENABLE_KEEP_ALIVE = false;
+const bool ENABLE_KEEP_ALIVE = true;
 
 using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
 

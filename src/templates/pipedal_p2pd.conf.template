@@ -30,7 +30,7 @@ p2p_device_type=1-0050F204-1
 # Wi-Fi configuration
 wlanInterface=wlan0
 p2pInterface=p2p-dev-wlan0
-p2p_go_ht40=0
+p2p_go_ht40=1
 p2p_go_vht=0
 p2p_go_he=0
 

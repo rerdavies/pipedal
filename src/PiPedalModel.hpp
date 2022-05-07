@@ -36,6 +36,7 @@
 #include "WifiDirectConfigSettings.hpp"
 #include "AdminClient.hpp"
 #include "AvahiService.hpp"
+#include <thread>
 
 
 
@@ -73,6 +74,7 @@ public:
 
 class PiPedalModel: private IJackHostCallbacks {
 private:
+    std::unique_ptr<std::jthread> pingThread;
 
     AvahiService avahiService;
     uint16_t webPort;
