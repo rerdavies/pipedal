@@ -221,6 +221,7 @@ namespace pipedal
         public:
             ~WebSocketSession()
             {
+                Lv2Log::info("WebSocketSession closed.");
             }
             using ptr = std::shared_ptr<WebSocketSession>;
             WebSocketSession(BeastServerImpl *pServer, server::connection_ptr &webSocket)
@@ -229,6 +230,8 @@ namespace pipedal
             {
                 uri requestUri(webSocket->get_uri()->str().c_str());
                 fromAddress = SS(webSocket->get_socket().remote_endpoint());
+
+                Lv2Log::info(SS("WebSocketSession opened. (" << fromAddress << ")"));
 
 
                 auto pFactory = pServer->GetSocketFactory(requestUri);
@@ -568,6 +571,7 @@ namespace pipedal
 
         void on_fail(connection_hdl hdl)
         {
+            m_connections.erase(hdl);
         }
         void on_close(connection_hdl hdl)
         {

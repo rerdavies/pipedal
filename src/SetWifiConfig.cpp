@@ -436,7 +436,7 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
             // dhcpcd.conf:
             // ======
             // interface p2p-wlan0-0
-            //      static ip_address=172.24.0.1/16
+            //      static ip_address=172.24.0.1/24
             //      domain_name_server=172.24.0.1
 
 

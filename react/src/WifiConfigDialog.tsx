@@ -349,7 +349,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     <DialogContent>
                         <Typography className={classes.pgraph} variant="body2" color="textPrimary">
                             Enabling the Wi-Fi hotspot will disable regular Wi-Fi network access on the PiPedal device. Once 
-                            enabled, connect to the hotspot and launch http://172.24.1.1 or http://{this.state.name}.local to access the PiPedal web app again.
+                            enabled, connect to the hotspot and launch http://172.23.0.2 or http://{this.state.name}.local to access the PiPedal web app again.
                         </Typography>
                         <Typography className={classes.pgraph} variant="body2" color="textPrimary" gutterBottom>
                             Are you sure you want to proceed?

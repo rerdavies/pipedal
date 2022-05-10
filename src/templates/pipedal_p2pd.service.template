@@ -9,8 +9,6 @@ ExecStart=${COMMAND} --systemd --log-level debug
 Type=notify
 WorkingDirectory=/var/pipedal
 TimeoutStopSec=5
-Restart=always
-RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

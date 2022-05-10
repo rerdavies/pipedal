@@ -611,7 +611,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             <SelectHoverBackground selected={false} showHover={true} />
                                             <div style={{ width: "100%" }}>
                                                 <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                    Connect to a difference device</Typography>
+                                                    Connect to a different device</Typography>
                                                 <Typography display="block" variant="caption" noWrap color="textSecondary">
 
                                                 </Typography>

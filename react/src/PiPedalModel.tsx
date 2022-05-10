@@ -1205,6 +1205,7 @@ class PiPedalModelImpl implements PiPedalModel {
         let newPedalBoard = pedalBoard.clone();
 
         let item = newPedalBoard.getItem(instanceId);
+    
         let changed = value !== item.isEnabled;
         if (changed) {
             item.isEnabled = value;
