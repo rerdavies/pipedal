@@ -36,6 +36,12 @@ Clone the rerdavies/pipdal package from github. Use the source control tools fro
    cd ~/src    # or whereever you keep your source repositories.
    git clone https://github.com/rerdavies/pipedal.git 
    
+In the project root, run the following commands to initialze and update pipedal submodules
+
+   cd ~/src/pipedal
+   git submodule init
+   git submodule update
+   
 Run the following command to install and configure React dependencies.
 
     cd ~/src/pipedal
