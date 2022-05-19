@@ -1,2 +1,2 @@
 #!/usr/bin/bash
-/usr/local/pipedalconfig --uninstall
+/usr/bin/pipedalconfig --uninstall

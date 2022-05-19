@@ -64,7 +64,8 @@ bool AdminClient::WriteMessage(const char *message)
         }
         catch (const std::exception &e)
         {
-            Lv2Log::error(SS("Failed to connect to PiPedal Admin service."));
+            // Socket permissions require membership in pipedal_d group.
+            Lv2Log::error(SS("Failed to connect to PiPedal Admin service. " << e.what()));
             return false;
         }
     }
@@ -168,7 +169,7 @@ void AdminClient::MonitorGovernor(const std::string &governor)
     bool result = WriteMessage(cmd.str().c_str());
     if (!result)
     { // unexpected. Should throw exception on failure.
-        throw PiPedalException("Operation failed.");
+        Lv2Log::warning("Not monitoring CPU governor status.");
     }
 }
 void AdminClient::UnmonitorGovernor()
@@ -180,9 +181,5 @@ void AdminClient::UnmonitorGovernor()
     std::stringstream cmd;
     cmd << "UnmonitorGovernor";
     cmd << '\n';
-    bool result = WriteMessage(cmd.str().c_str());
-    if (!result)
-    { // unexpected. Should throw exception on failure.
-        throw PiPedalException("Operation failed.");
-    }
+    bool ignored = WriteMessage(cmd.str().c_str());
 }

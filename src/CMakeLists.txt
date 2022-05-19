@@ -8,14 +8,6 @@ set (USE_PCH 1)
 include(FindPkgConfig)
 
 
-#  apt install libsdbus-c++-dev
-# apt install libsdbus-c++-bin
-find_package(sdbus-c++ REQUIRED)
-
-
-
-
-
 
 # Can't get the pkg_check to work.
 # pkg_check_modules(LIBNL3 "nl-genl-3")

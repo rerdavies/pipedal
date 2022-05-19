@@ -1,2 +1,2 @@
 #!/usr/bin/bash
-/usr/local/pipedalconfig --install
+/usr/bin/pipedalconfig --install
