@@ -11,8 +11,10 @@ Install the package by running
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_0.9.10_arm64.deb
+  sudo dpkg --install pipedal_0.9.10_arm64.deb
 ```
+On Raspberry Pi OS, if you have a graphical desktop installed, you can also install package by double-clicking on the downloaded package in the File Manager.
+
 
 After installing, follow the instructions in [Configuring PiPedal after Installation](Configuring.md).
 --------
