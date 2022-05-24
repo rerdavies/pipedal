@@ -488,7 +488,8 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
 
             dhcpcd.InsertLine(line++, "interface p2p-wlan0-0");
             dhcpcd.InsertLine(line++, "   static ip_address=" P2P_INTERFACE_ADDR);
-            dhcpcd.InsertLine(line++, "   domain_name_servers=" P2P_IP_ADDRESS);
+            dhcpcd.InsertLine(line++, "   nohook wpa_supplicant");
+            //dhcpcd.InsertLine(line++, "   domain_name_servers=" P2P_IP_ADDRESS);
             dhcpcd.Save(dhcpcdConfig);
         }
 
