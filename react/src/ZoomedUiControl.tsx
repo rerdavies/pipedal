@@ -17,22 +17,42 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import React, {SyntheticEvent} from 'react';
+import React, {ReactNode,  SyntheticEvent } from 'react';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Switch from '@mui/material/Switch';
+import { UiControl, ScalePoint } from './Lv2Plugin';
 import { Theme } from '@mui/material/styles';
-import { WithStyles,withStyles } from '@mui/styles';
+import { WithStyles, withStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import { ZoomedControlInfo } from './PiPedalModel';
 import DialogEx from './DialogEx';
 import Typography from '@mui/material/Typography';
-import { PiPedalModelFactory,PiPedalModel } from './PiPedalModel';
+import { PiPedalModelFactory, PiPedalModel } from './PiPedalModel';
 import ZoomedDial from './ZoomedDial';
+import IconButton from '@mui/material/IconButton';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 
 const styles = (theme: Theme) => createStyles({
+    switchTrack: {
+        height: '100%',
+        width: '100%',
+        borderRadius: 14 / 2,
+        zIndex: -1,
+        transition: theme.transitions.create(['opacity', 'background-color'], {
+            duration: theme.transitions.duration.shortest
+        }),
+        backgroundColor: theme.palette.secondary.main,
+        opacity: theme.palette.mode === 'light' ? 0.38 : 0.3
+    }
+
 });
 
 
 interface ZoomedUiControlProps extends WithStyles<typeof styles> {
+    theme: Theme;
     dialogOpen: boolean;
     onDialogClose: () => void;
     onDialogClosed: () => void;
@@ -59,8 +79,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
 
         model: PiPedalModel;
 
-        constructor(props: ZoomedUiControlProps)
-        {
+        constructor(props: ZoomedUiControlProps) {
             super(props);
             this.model = PiPedalModelFactory.getInstance();
             this.state = {
@@ -69,25 +88,45 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
         }
 
         getCurrentValue(): number {
-            if (!this.props.controlInfo)
-            {
+            if (!this.props.controlInfo) {
                 return 0;
             } else {
                 let uiControl = this.props.controlInfo.uiControl;
                 let instanceId = this.props.controlInfo.instanceId;
                 if (instanceId === -1) return 0;
                 let pedalBoardItem = this.model.pedalBoard.get()?.getItem(instanceId);
-                let value: number = pedalBoardItem?.getControlValue(uiControl.symbol)??0;
+                let value: number = pedalBoardItem?.getControlValue(uiControl.symbol) ?? 0;
                 return value;
             }
         }
-        hasControlChanged(oldProps: ZoomedUiControlProps, newProps: ZoomedUiControlProps)
-        {
-            if (oldProps.controlInfo === null) 
-            {
+
+
+        onSelectChanged(val: string | number) {
+            let v = Number.parseFloat(val.toString());
+            this.setState({ value: v });
+            if (this.props.controlInfo) {
+                this.model.setPedalBoardControlValue(
+                    this.props.controlInfo.instanceId,
+                    this.props.controlInfo.uiControl.symbol,
+                    v);
+            }
+        }
+
+        onCheckChanged(checked: boolean): void {
+            let v = checked ? 1: 0;
+            this.setState({ value: v });
+            if (this.props.controlInfo) {
+                this.model.setPedalBoardControlValue(
+                    this.props.controlInfo.instanceId,
+                    this.props.controlInfo.uiControl.symbol,
+                    v);
+            }
+        }
+
+        hasControlChanged(oldProps: ZoomedUiControlProps, newProps: ZoomedUiControlProps) {
+            if (oldProps.controlInfo === null) {
                 return newProps.controlInfo !== null;
-            } else if (newProps.controlInfo === null)
-            {
+            } else if (newProps.controlInfo === null) {
                 return oldProps.controlInfo !== null;
             } else {
                 if (newProps.controlInfo?.instanceId !== oldProps.controlInfo?.instanceId) return true;
@@ -97,14 +136,11 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
 
         }
 
-        componentDidUpdate(oldProps: ZoomedUiControlProps, oldState: ZoomedUiControlState)
-        {
-            if (this.hasControlChanged(oldProps,this.props))
-            {
+        componentDidUpdate(oldProps: ZoomedUiControlProps, oldState: ZoomedUiControlState) {
+            if (this.hasControlChanged(oldProps, this.props)) {
                 let currentValue = this.getCurrentValue();
-                if (this.state.value !== currentValue)
-                {
-                    this.setState({value: this.getCurrentValue()});
+                if (this.state.value !== currentValue) {
+                    this.setState({ value: this.getCurrentValue() });
                 }
             }
         }
@@ -115,46 +151,129 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
             return false;
         }
 
+        makeSelect(control: UiControl, value: number): ReactNode {
+            if (control.isOnOffSwitch()) {
+                // normal gray unchecked state.
+                return (
+                    <Switch checked={value !== 0} color="secondary"
+                        onChange={(event) => {
+                            this.onCheckChanged(event.target.checked);
+                        }}
+                    />
+                );
+            }
+            if (control.isAbToggle()) {
+                // unchecked color is not gray.
+                return (
+                    <Switch checked={value !== 0} color="secondary"
+                        onChange={(event) => {
+                            this.onCheckChanged(event.target.checked);
+                        }}
+                        classes={{
+                            track: this.props.classes.switchTrack
+                        }}
+                        style={{ color: this.props.theme.palette.secondary.main }}
+                    />
+                );
+            } else {
+                return (
+                    <Select variant="standard"
+                        value={control.clampSelectValue(value)}
+                        onChange={(e)=> this.onSelectChanged(e.target.value)}
+                        inputProps={{
+                            name: control.name,
+                            id: 'id' + control.symbol,
+                            style: { fontSize: "1.0em" }
+                        }}
+                        style={{ marginLeft: 4, marginRight: 4, width: 140 }}
+                    >
+                        {control.scale_points.map((scale_point: ScalePoint) => (
+                            <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>
+
+                        ))}
+                    </Select>
+                );
+            }
+        }
 
         render() {
-            let displayValue = this.props.controlInfo?.uiControl.formatDisplayValue(this.state.value)??"";
+            if (!this.props.controlInfo) {
+                return false;
+            }
+            let uiControl = this.props.controlInfo.uiControl;
+
+            let displayValue = uiControl.formatDisplayValue(this.state.value) ?? "";
+            if (uiControl.isOnOffSwitch())
+            {
+                displayValue = this.state.value !== 0 ? "On": "Off";
+            } else if (uiControl.isSelect())
+            {
+                displayValue = "\u00A0";
+            }
             return (
-                <DialogEx tag="zoomedControlDlg" open={this.props.dialogOpen} 
-                    onClose={()=> { this.props.onDialogClose()}}
-                    onAbort={()=> { this.props.onDialogClose()}}
+                <DialogEx tag="zoomedControlDlg" open={this.props.dialogOpen}
+                    onClose={() => { this.props.onDialogClose() }}
+                    onAbort={() => { this.props.onDialogClose() }}
                 >
-                    <div style={{ width: 300, height: 300, background: "#FFF",
-                        display: "flex", flexFlow: "column", alignItems: "center", alignContent: "center", justifyContent: "center"
-                        
+                    <div style={{
+                        width: 380, height: 300, background: "FFFF",
+                        display: "flex", flexFlow: "row", alignItems: "center", alignContent: " center", justifyContent: "center"
+                    }}>
+                        <IconButton sx={{ height: "100%", width: 48, borderRadius: "0% 50% 50% 0%" }} onClick={
+                            () => {
+                                this.model.onNextZoomedControl();
+                            }
+                        } >
+                            <NavigateBeforeIcon />
+                        </IconButton>
+                        <div style={{
+                            width: 200, flexGrow: 1, height: 300, background: "#FFF",
+                            display: "flex", flexFlow: "column", alignItems: "center", alignContent: "center", justifyContent: "center"
+
                         }}
-                        onDrag={this.onDrag}
+                            onDrag={this.onDrag}
                         >
-                            <Typography 
-                                display="block" variant="h6" color="textPrimary" style={{textAlign: "center"}}
-                                >
-                                {this.props.controlInfo?.uiControl.name??""}
+                            <Typography
+                                display="block" variant="h6" color="textPrimary" style={{ textAlign: "center" }}
+                            >
+                                {this.props.controlInfo.name}
                             </Typography>
-                            <ZoomedDial size={200} controlInfo={this.props.controlInfo}
-                                onPreviewValue={(v)=> { 
-                                    this.setState({value: v});
-                                }}
-                                onSetValue={(v)=> { 
-                                    this.setState({value: v});
-                                    if (this.props.controlInfo)
-                                    {
-                                        this.model.setPedalBoardControlValue(
-                                            this.props.controlInfo.instanceId,
-                                            this.props.controlInfo.uiControl.symbol,
-                                            v);
-                                    }
-                                }}
+                            {uiControl.isDial() ? (
+
+                                <ZoomedDial size={200} controlInfo={this.props.controlInfo}
+                                    onPreviewValue={(v) => {
+                                        this.setState({ value: v });
+                                    }}
+                                    onSetValue={(v) => {
+                                        this.setState({ value: v });
+                                        if (this.props.controlInfo) {
+                                            this.model.setPedalBoardControlValue(
+                                                this.props.controlInfo.instanceId,
+                                                this.props.controlInfo.uiControl.symbol,
+                                                v);
+                                        }
+                                    }}
                                 />
-                            
-                            <Typography 
-                                display="block" variant="h6" color="textPrimary" style={{textAlign: "center"}}
-                                >
+                            ) : 
+                                    <div style={{height: 200, paddingTop: 80}}>
+                                        {this.makeSelect(uiControl,this.state.value)}
+                                    </div>
+                            }
+
+                            <Typography
+                                display="block" variant="h6" color="textPrimary" style={{ textAlign: "center" }}
+                            >
                                 {displayValue}
                             </Typography>
+                        </div>
+                        <IconButton sx={{ height: "100%", width: 48, borderRadius: "50% 0% 0% 50%" }}
+                            onClick={() => {
+                                this.model.onPreviousZoomedControl();
+                            }
+                            }
+                        >
+                            <NavigateNextIcon />
+                        </IconButton>
                     </div>
 
                 </DialogEx>
