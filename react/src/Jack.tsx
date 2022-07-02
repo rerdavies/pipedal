@@ -18,13 +18,14 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import {PiPedalArgumentError} from './PiPedalError';
+import {AlsaMidiDeviceInfo} from './AlsaMidiDeviceInfo';
 
 export class JackChannelSelection {
     deserialize(input: any): JackChannelSelection
     {
         this.inputAudioPorts = input.inputAudioPorts.slice();
         this.outputAudioPorts = input.outputAudioPorts.slice();
-        this.inputMidiPorts = input.inputMidiPorts.slice();
+        this.inputMidiDevices = AlsaMidiDeviceInfo.deserializeArray(input.inputMidiDevices);
         this.sampleRate = input.sampleRate;
         this.bufferSize = input.bufferSize;
         this.numberOfBuffers = input.numberOfBuffers;
@@ -35,7 +36,7 @@ export class JackChannelSelection {
     }
     inputAudioPorts: string[] = [];
     outputAudioPorts: string[] = [];
-    inputMidiPorts: string[] = [];
+    inputMidiDevices: AlsaMidiDeviceInfo[] = [];
 
     sampleRate: number = 48000;
     bufferSize: number = 64;
@@ -45,6 +46,7 @@ export class JackChannelSelection {
         let result = new JackChannelSelection();
         result.inputAudioPorts = jackConfiguration.inputAudioPorts.slice(0,2);
         result.outputAudioPorts = jackConfiguration.inputAudioPorts.slice(0,2);
+        result.inputMidiDevices = [];
         return result;
     }
     getChannelDisplayValue(selectedChannels: string[], availableChannels: string[],isConfigValid: boolean): string
@@ -97,8 +99,7 @@ export class JackConfiguration {
         this.maxAllowedMidiDelta = input.maxAllowedMidiDelta;
         this.inputAudioPorts = input.inputAudioPorts;
         this.outputAudioPorts = input.outputAudioPorts;
-        this.inputMidiPorts = input.inputMidiPorts;
-        this.outputMidiPorts = input.outputMidiPorts;
+        this.inputMidiDevices = AlsaMidiDeviceInfo.deserializeArray(input.inputMidiDevices);
         return this;
     }
     isValid: boolean = false;
@@ -111,8 +112,8 @@ export class JackConfiguration {
 
     inputAudioPorts: string[] = [];
     outputAudioPorts: string[] = [];
-    inputMidiPorts: string[] = [];
-    outputMidiPorts: string[] = [];
+    inputMidiDevices: AlsaMidiDeviceInfo[] = [];
+
 
 };
 

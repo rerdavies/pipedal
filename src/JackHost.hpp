@@ -106,6 +106,7 @@ public:
 class JackHostStatus {
 public:
     bool active_;
+    std::string errorMessage_;
     bool restarting_;
     uint64_t underruns_;
     float cpuUsage_ = 0;
@@ -139,7 +140,7 @@ public:
     virtual void SetListenForAtomOutput(bool listen) = 0;
 
 
-    virtual void Open(const JackChannelSelection & channelSelection) = 0;
+    virtual void Open(const JackServerSettings&jackServerSettings,const JackChannelSelection & channelSelection) = 0;
     virtual void Close() = 0;
 
     virtual uint32_t GetSampleRate() = 0;

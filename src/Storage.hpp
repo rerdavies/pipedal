@@ -25,6 +25,7 @@
 #include "PluginPreset.hpp"
 #include "Banks.hpp"
 #include "JackConfiguration.hpp"
+#include "JackServerSettings.hpp"
 #include "WifiConfigSettings.hpp"
 #include "WifiDirectConfigSettings.hpp"
 #include <map>
@@ -100,6 +101,8 @@ public:
 
     const BankIndex & GetBanks() const { return bankIndex; }
 
+    JackServerSettings GetJackServerSettings();
+    void SetJackServerSettings(const pipedal::JackServerSettings&jackServerSettings);
 
     void LoadWifiConfigSettings();
     void LoadWifiDirectConfigSettings();

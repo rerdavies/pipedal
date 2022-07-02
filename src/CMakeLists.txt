@@ -94,6 +94,7 @@ add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_BIND_GLOBAL_PLACEHOLDERS 
  
 
 set (PIPEDAL_SOURCES
+    CpuUse.hpp CpuUse.cpp 
     P2pConfigFiles.hpp
     AvahiService.cpp AvahiService.hpp
     DeviceIdFile.cpp DeviceIdFile.hpp
@@ -153,6 +154,11 @@ set (PIPEDAL_SOURCES
     InheritPriorityMutex.hpp InheritPriorityMutex.cpp
     UnixSocket.cpp UnixSocket.hpp
 
+    JackDriver.cpp JackDriver.hpp
+    AlsaDriver.cpp AlsaDriver.hpp
+    AudioDriver.hpp
+    AudioConfig.hpp
+
 )
 
 
@@ -165,7 +171,9 @@ set (PIPEDAL_INCLUDES
 )
 
 set(PIPEDAL_LIBS libpipedald pthread atomic stdc++fs asound avahi-common avahi-client systemd
-     ${LILV_0_LIBRARIES} ${JACK_LIBRARIES} ${LIBNL3_LIBRARIES}  )
+     ${LILV_0_LIBRARIES} 
+     # ${JACK_LIBRARIES} 
+     ${LIBNL3_LIBRARIES}  )
 
 
 ##########################
@@ -195,6 +203,7 @@ target_link_libraries(pipedald PRIVATE
 #################################
 add_executable(pipedaltest testMain.cpp
     jsonTest.cpp
+     AlsaDriverTest.cpp
     AvahiServiceTest.cpp
     WifiChannelsTest.cpp
     PiPedalAlsaTest.cpp
@@ -259,6 +268,27 @@ add_executable(pipedalconfig
 target_link_libraries(pipedalconfig PRIVATE pthread atomic uuid stdc++fs
     )
 
+add_executable(pipedal_latency_test
+    PrettyPrinter.hpp
+    CommandLineParser.hpp
+    PiLatencyMain.cpp
+    PiPedalAlsa.hpp PiPedalAlsa.cpp
+    json.hpp json.cpp
+    HtmlHelper.cpp HtmlHelper.hpp
+    asan_options.cpp
+    Lv2Log.cpp Lv2Log.hpp
+    AlsaDriver.cpp AlsaDriver.hpp
+    JackConfiguration.hpp JackConfiguration.cpp
+    JackServerSettings.hpp JackServerSettings.cpp
+    CpuUse.hpp
+    CpuUse.cpp
+
+    
+    )
+
+target_link_libraries(pipedal_latency_test PRIVATE pthread  asound 
+    )
+ 
 add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     UnixSocket.cpp UnixSocket.hpp
     DeviceIdFile.cpp DeviceIdFile.hpp
@@ -280,7 +310,6 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
 
     )
 target_link_libraries(pipedaladmind PRIVATE pthread atomic stdc++fs systemd)
-
 
 add_executable(processcopyrights copyrightMain.cpp
     CommandLineParser.hpp 
@@ -323,7 +352,7 @@ add_custom_target (
 )
 
 
-install (TARGETS pipedalconfig pipedald pipedaladmind DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+install (TARGETS pipedalconfig pipedald pipedaladmind pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
    EXPORT pipedalTargets)
 
 

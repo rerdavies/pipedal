@@ -157,6 +157,7 @@ void JackServerSettings::ReadJackConfiguration()
 
 void JackServerSettings::Write()
 {
+    #if JACK_HOST
     this->valid_ = false;
 
     std::vector<std::string> precedingLines;
@@ -232,6 +233,9 @@ void JackServerSettings::Write()
     catch (const std::exception &e)
     {
     }
+    #else 
+        throw PiPedalStateException("JACK_HOST not enabled at compile time.");
+    #endif
 }
 
 JSON_MAP_BEGIN(JackServerSettings)

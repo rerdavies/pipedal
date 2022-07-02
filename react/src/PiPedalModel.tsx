@@ -1826,11 +1826,17 @@ class PiPedalModelImpl implements PiPedalModel {
         }
     }
     cancelListenForMidiEvent(listenHandle: ListenHandle): void {
+        let found = false;
         for (let i = 0; i < this.midiListeners.length; ++i) {
             if (this.midiListeners[i].handle === listenHandle._handle) {
                 this.midiListeners.splice(i, 1);
+                found = true;
                 break;
             }
+        }
+        if (!found)
+        {
+            console.log('cancelListenForMidiEvent: event not found.');
         }
         this.webSocket?.send("cancelListenForMidiEvent", listenHandle._handle);
     }

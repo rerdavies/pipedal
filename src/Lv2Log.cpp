@@ -31,9 +31,12 @@ using namespace pipedal;
 
 
 static auto timeZero = std::chrono::system_clock::now();
+bool Lv2Log::show_time_ = true;
 
 std::string timeTag()
 {
+    if (!Lv2Log::show_time()) return "";
+
     using namespace std::chrono;
 
     auto t = std::chrono::system_clock::now()- timeZero;
@@ -47,7 +50,7 @@ std::string timeTag()
     std::stringstream s;
 
     using namespace std;
-    s << setfill('0') << setw(2) << hours_ << ':' << setw(2) << minutes_ << ':' << setw(2) << seconds_ << "." << setw(3) << milliseconds_;
+    s << setfill('0') << setw(2) << hours_ << ':' << setw(2) << minutes_ << ':' << setw(2) << seconds_ << "." << setw(3) << milliseconds_ << " ";
     return s.str();
     
 }
@@ -61,23 +64,23 @@ class StdErrLogger : public Lv2Logger
     virtual void onError(const char* message)
     {
         std::lock_guard lock(m);
-        std::cerr << timeTag() << " ERR: " << message << std::endl;
+        std::cerr << timeTag() << "ERR: " << message << std::endl;
     }
     virtual void onWarning(const char* message)
     {
         std::lock_guard lock(m);
-        std::cerr  << timeTag() << " WRN: " << message << std::endl;
+        std::cerr  << timeTag() << "WRN: " << message << std::endl;
     }
 
     virtual void onDebug(const char* message)
     {
         std::lock_guard lock(m);
-        std::cerr  << timeTag() << " DBG: " << message << std::endl;
+        std::cerr  << timeTag() << "DBG: " << message << std::endl;
     }
     virtual void onInfo(const char* message)
     {
         std::lock_guard lock(m);
-        std::cerr  << timeTag()  << " INF: " << message << std::endl;
+        std::cerr  << timeTag()  << "INF: " << message << std::endl;
     }
 };
 

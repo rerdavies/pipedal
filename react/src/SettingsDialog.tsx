@@ -42,6 +42,7 @@ import WifiConfigDialog from './WifiConfigDialog';
 import WifiDirectConfigDialog from './WifiDirectConfigDialog';
 import DialogEx from './DialogEx'
 import GovernorSettings from './GovernorSettings';
+import {AlsaMidiDeviceInfo} from './AlsaMidiDeviceInfo';
 
 import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
@@ -390,10 +391,10 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             });
 
         }
-        handleSelectMidiDialogResult(channels: string[] | null): void {
+        handleSelectMidiDialogResult(channels: AlsaMidiDeviceInfo[] | null): void {
             if (channels) {
-                let newSelection = this.state.jackSettings.clone();
-                newSelection.inputMidiPorts = channels;
+                let newSelection: JackChannelSelection = this.state.jackSettings.clone();
+                newSelection.inputMidiDevices = channels;
                 this.model.setJackSettings(newSelection);
 
             }
@@ -430,9 +431,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
         }
 
         midiSummary(): string {
-            let ports = this.state.jackSettings.inputMidiPorts;
+            let ports = this.state.jackSettings.inputMidiDevices;
             if (ports.length === 0) return "Disabled";
-            if (ports.length === 1) return ports[0];
+            if (ports.length === 1) return ports[0].description;
             return ports.length + " channels";
         }
         handleShowWifiConfigDialog() {
@@ -592,7 +593,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     <ButtonBase className={classes.setting} disabled={!isConfigValid} onClick={() => this.handleMidiSelection()}  >
                                         <SelectHoverBackground selected={false} showHover={true} />
                                         <div style={{ width: "100%" }}>
-                                            <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Select MIDI input channels</Typography>
+                                            <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Select MIDI input</Typography>
 
                                             <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>{this.midiSummary()}</Typography>
                                         </div>
@@ -767,9 +768,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         (this.state.showMidiSelectDialog) &&
                         (
                             <SelectMidiChannelsDialog open={this.state.showMidiSelectDialog}
-                                onClose={(selectedChannels: string[] | null) => this.handleSelectMidiDialogResult(selectedChannels)}
-                                selectedChannels={this.state.jackSettings.inputMidiPorts}
-                                availableChannels={this.state.jackConfiguration.inputMidiPorts}
+                                onClose={(selectedChannels: AlsaMidiDeviceInfo[] | null) => this.handleSelectMidiDialogResult(selectedChannels)}
+                                selectedChannels={this.state.jackSettings.inputMidiDevices}
+                                availableChannels={this.state.jackConfiguration.inputMidiDevices}
                             />
 
                         )

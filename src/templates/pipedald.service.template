@@ -1,6 +1,5 @@
 [Unit]
 Description=${DESCRIPTION}
-Before=jack.service
 After=network.target
 After=sound.target
 After=local-fs.target

@@ -19,50 +19,24 @@
 
 #include "pch.h"
 #include "JackConfiguration.hpp"
+#include "AudioConfig.hpp"
+#include "AlsaDriver.hpp"
 #include "Lv2Log.hpp"
 #include "PiPedalException.hpp"
 
+
+#if JACK_HOST
 #include <jack/jack.h>
 #include <jack/types.h>
 #include <jack/session.h>
+#endif
+
 #include <string.h>
 #include "defer.hpp"
 #include <algorithm>
 
 using namespace pipedal;
 
-std::string JackStatusToString(jack_status_t status)
-{
-    switch (status)
-    {
-    default:
-        return "Unknown Jack Audio error.";
-    case JackStatus::JackFailure:
-        return "Jack Audio operation failed.";
-    case JackStatus::JackInvalidOption:
-        return "Invalid Jack Audio operation.";
-    case JackStatus::JackNameNotUnique:
-        return "Jack Audio name in use.";
-    case JackStatus::JackServerStarted:
-        return "Jack Audio Server started.";
-    case JackStatus::JackServerFailed:
-        return "Jack Audio Server failed.";
-    case JackStatus::JackServerError:
-        return "Can't connect to the Jack Audio Server.";
-    case JackStatus::JackNoSuchClient:
-        return "Jack Audio client not found.";
-    case JackLoadFailure:
-        return "Jack Audio client failed to load.";
-    case JackStatus::JackInitFailure:
-        return "Failed to initialize the Jack Audio client.";
-    case JackStatus::JackShmFailure:
-        return "Jack Audio failed to access shared memory.";
-    case JackStatus::JackVersionError:
-        return "Jack Audio Server version error.";
-    case JackStatus::JackClientZombie:
-        return "JackClientZombie error.";
-    }
-};
 
 JackConfiguration::JackConfiguration()
 {
@@ -73,10 +47,12 @@ JackConfiguration::~JackConfiguration()
 {
 }
 
+#if JACK_HOST
 static void AddPorts(jack_client_t *client, std::vector<std::string> *output, const char *port_name_pattern,
                      const char *type_name_pattern,
                      unsigned long flags)
 {
+    #if JACK_HOST
     const char**ports = jack_get_ports(client, port_name_pattern, type_name_pattern, flags);
     if (ports != nullptr)
     {
@@ -88,9 +64,14 @@ static void AddPorts(jack_client_t *client, std::vector<std::string> *output, co
             jack_free(ports);
 
     }
+    #else 
+        throw PiPedalStateException("JACK_HOST not enabled at compile time.");
+    #endif
 }
+#endif
 
 namespace pipedal {
+#if JACK_HOST
     std::string GetJackErrorMessage(jack_status_t status)
     {
         std::stringstream s;
@@ -122,9 +103,43 @@ namespace pipedal {
         return s.str();
 
     }
+#endif
 }
-void JackConfiguration::Initialize()
+
+void JackConfiguration::AlsaInitialize(
+    const JackServerSettings &jackServerSettings)
 {
+    this->isValid_ = false;
+    this->errorStatus_ = "";
+
+    this->inputMidiDevices_ = GetAlsaMidiInputDevices();
+    if (jackServerSettings.IsValid())
+    {
+        this->blockLength_ = jackServerSettings.GetBufferSize();
+        this->sampleRate_ = jackServerSettings.GetSampleRate();
+
+        try {
+        if (GetAlsaChannels(jackServerSettings, 
+            inputAudioPorts_,outputAudioPorts_))
+        {
+            this->isValid_ = true;
+        }
+        } catch (const std::exception& /*ignore*/)
+        {
+
+        }
+
+    } 
+    if (!this->isValid_)
+    {
+        this->isValid_ = false;
+        this->errorStatus_ = "Not configured.";
+    }
+
+}
+void JackConfiguration::JackInitialize()
+{
+    #if JACK_HOST
     jack_status_t status;
 
     jack_client_t *client = nullptr;
@@ -161,8 +176,6 @@ void JackConfiguration::Initialize()
 
         AddPorts(client, &this->inputAudioPorts_, "system", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput);
         AddPorts(client, &this->outputAudioPorts_, "system", JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput);
-        AddPorts(client, &this->inputMidiPorts_, "system", JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput);
-        AddPorts(client, &this->outputMidiPorts_, "system", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput);
         isValid_ = true;
         this->errorStatus_ = "";
         jack_client_close(client);
@@ -172,6 +185,9 @@ void JackConfiguration::Initialize()
         jack_client_close(client);
         this->errorStatus_ = e.what();
     }
+    #else
+        throw PiPedalStateException("JACK_HOST not enabled at compile time.");
+    #endif
 }
 
 JackChannelSelection JackChannelSelection::MakeDefault(const JackConfiguration&config){
@@ -211,12 +227,59 @@ static std::vector<std::string> makeValid(const std::vector<std::string> & selec
     }
     return result;
 }
+static std::vector<AlsaMidiDeviceInfo> makeValid(const std::vector<AlsaMidiDeviceInfo> & selected, const std::vector<AlsaMidiDeviceInfo> &available)
+{
+    // Matching rule: 
+    // same name AND same description (unchanged)
+    // different name and same description: use the new device name. (i.e. same device plugged into different USB port)
+    // otherwise discard.
+
+    std::vector<AlsaMidiDeviceInfo> sourceDevices = available;
+    std::vector<AlsaMidiDeviceInfo> result;
+    std::vector<AlsaMidiDeviceInfo> partialMatch;
+
+    for (auto & sel : selected)
+    {
+        size_t matchIndex = -1;
+        for (size_t i = 0; i < sourceDevices.size(); ++i)
+        {
+            const AlsaMidiDeviceInfo &candidate = sourceDevices[i];
+            if (candidate.description_ == sel.description_)
+            {
+                if (candidate.name_ == sel.name_)
+                {
+                    result.push_back(candidate);
+                } else {
+                    partialMatch.push_back(candidate);
+                }
+                sourceDevices.erase(sourceDevices.begin()+i);
+                break;
+            }
+        }
+    }
+    for (auto &sel : partialMatch)
+    {
+        for (size_t i = 0; i < sourceDevices.size(); ++i)
+        {
+            const AlsaMidiDeviceInfo &candidate = sourceDevices[i];
+            if (candidate.description_ == sel.description_)
+            {
+                result.push_back(candidate); // same description, usb address has changed. includeit.
+                sourceDevices.erase(sourceDevices.begin()+i);
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+
 JackChannelSelection JackChannelSelection::RemoveInvalidChannels(const JackConfiguration&config) const
 {
     JackChannelSelection result;
     result.inputAudioPorts_ = makeValid(this->inputAudioPorts_,config.GetInputAudioPorts());
     result.outputAudioPorts_ = makeValid(this->outputAudioPorts_,config.GetOutputAudioPorts());
-    result.inputMidiPorts_ = makeValid(this->inputMidiPorts_, config.GetInputMidiPorts());
+    result.inputMidiDevices_ = makeValid(this->inputMidiDevices_, config.GetInputMidiDevices());
     if (!result.isValid())
     {
         return this->MakeDefault(config);
@@ -226,7 +289,7 @@ JackChannelSelection JackChannelSelection::RemoveInvalidChannels(const JackConfi
 JSON_MAP_BEGIN(JackChannelSelection)
     JSON_MAP_REFERENCE(JackChannelSelection,inputAudioPorts)
     JSON_MAP_REFERENCE(JackChannelSelection,outputAudioPorts)
-    JSON_MAP_REFERENCE(JackChannelSelection,inputMidiPorts)
+    JSON_MAP_REFERENCE(JackChannelSelection,inputMidiDevices)
 
 JSON_MAP_END()
 
@@ -240,7 +303,6 @@ JSON_MAP_BEGIN(JackConfiguration)
     JSON_MAP_REFERENCE(JackConfiguration,maxAllowedMidiDelta)
     JSON_MAP_REFERENCE(JackConfiguration,inputAudioPorts)
     JSON_MAP_REFERENCE(JackConfiguration,outputAudioPorts)
-    JSON_MAP_REFERENCE(JackConfiguration,inputMidiPorts)
-    JSON_MAP_REFERENCE(JackConfiguration,outputMidiPorts)
+    JSON_MAP_REFERENCE(JackConfiguration,inputMidiDevices)
 JSON_MAP_END()
 

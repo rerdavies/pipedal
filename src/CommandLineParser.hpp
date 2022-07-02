@@ -157,16 +157,53 @@ namespace pipedal
             }
         }
 
+
+        void AddOption(const std::string &shortOption, const std::string &longOption, bool *pResult)
+        {
+            if (shortOption.length() != 0)
+            {
+                auto option = "-" + longOption;
+                options.push_back(new BooleanOption(option, pResult, true));
+                options.push_back(new BooleanOption(option + "+", pResult, true));
+                options.push_back(new BooleanOption(option + "-", pResult, false));
+            }
+            if (longOption.length() != 0)
+            {
+                auto option = "--" + longOption;
+                options.push_back(new BooleanOption(option, pResult, true));
+                options.push_back(new BooleanOption(option + "+", pResult, true));
+                options.push_back(new BooleanOption(option + "-", pResult, false));
+            }
+        }
+
         void AddOption(const std::string &option, bool *pResult)
         {
             options.push_back(new BooleanOption(option, pResult, true));
             options.push_back(new BooleanOption(option + "+", pResult, true));
             options.push_back(new BooleanOption(option + "-", pResult, false));
         }
+
+        void AddOption(const std::string &shortOption, const std::string &longOption, std::string *pResult)
+        {
+            options.push_back(new StringOption("-" + shortOption, pResult));
+            options.push_back(new StringOption("--" + longOption, pResult));
+        }
+
+
         void AddOption(const std::string &option, std::string *pResult)
         {
             options.push_back(new StringOption(option, pResult));
         }
+
+        template <typename T>
+        void AddOption(const std::string &shortOption, const std::string &longOption, T *pResult)
+        {
+            if (shortOption.length() != 0)
+                options.push_back(new Option<T>("-" + shortOption, pResult));
+            if (longOption.length() != 0)
+                options.push_back(new Option<T>("--" + longOption, pResult));
+        }
+
         template <typename T>
         void AddOption(const std::string &option, T *pResult)
         {

@@ -1,3 +1,14 @@
+JackConfiguration Input midi ports.
+
+JackSettings Input midi ports.
+
+Midi Port selection UI.
+
+CPU Use should be % of AVAILABLE time, not % of total.
+MIDI device selection.
+raw Alsa midi.
+
+
 
 Pri Description
 -----------------

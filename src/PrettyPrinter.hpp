@@ -52,6 +52,10 @@ namespace pipedal
         {
             lineBuffer.reserve(120);
         }
+
+        size_t width() const { return lineWidth; }
+        void width(size_t width) { lineWidth =width; }
+
         std::ostream&Stream() const { return s;}
 
         PrettyPrinter& Indent(size_t indent)
@@ -67,6 +71,21 @@ namespace pipedal
             column = 0;
         }
 
+        PrettyPrinter& Column(int n)
+        {
+            if (column >= n) {
+                lineBuffer.push_back(' ');
+                ++column;
+                return *this;
+            }
+
+            while (column != n)
+            {
+                lineBuffer.push_back(' ');
+                ++column;
+            }
+            return *this;
+        }
         PrettyPrinter& HangingIndent()
         {
             hangingIndent = true;
@@ -231,6 +250,14 @@ namespace pipedal
     {
         return [] (PrettyPrinter&pp)  ->PrettyPrinter&{
             pp.HangingIndent();
+            return pp;
+        };
+    }
+
+    pp_manip Column(int n)
+    {
+        return [n] (PrettyPrinter &pp) -> PrettyPrinter& {
+            pp.Column(n);
             return pp;
         };
     }

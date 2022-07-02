@@ -96,6 +96,7 @@ export const MidiBindingDialog =
             hasHooks: boolean = false;
 
             handleClose() {
+                this.cancelListenForControl();
                 this.props.onClose();
             }
 
@@ -120,7 +121,6 @@ export const MidiBindingDialog =
 
             handleListenSucceeded(instanceId: number, symbol: string, isNote: boolean, noteOrControl: number)
             {
-                this.listenHandle = undefined; // (one-shot event)
                 this.cancelListenForControl();
                 
                 let pedalBoard = this.model.pedalBoard.get();

@@ -36,6 +36,17 @@
 #include "DeviceIdFile.hpp"
 #include <uuid/uuid.h>
 #include <random>
+#include "AudioConfig.hpp"
+
+
+#if JACK_HOST
+#define INSTALL_JACK_SERVICE 1
+#else
+#define INSTALL_JACK_SERVICE 0
+#endif
+
+#define UNINSTALL_JACK_SERVICE 1
+
 
 #define SS(x) (((std::stringstream &)(std::stringstream() << x)).str())
 
@@ -110,6 +121,14 @@ void EnableService()
 }
 void DisableService()
 {
+    #if INSTALL_JACK_SERVICE || UNINSTALL_JACK_SERVICE
+    if (sysExec(SYSTEMCTL_BIN " disable " JACK_SERVICE ".service") != EXIT_SUCCESS)
+    {
+        #if INSTALL_JACK_SERVICE
+        cout << "Error: Failed to disable the " JACK_SERVICE " service.";
+        #endif
+    }
+    #endif
     if (sysExec(SYSTEMCTL_BIN " disable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to disable the " NATIVE_SERVICE " service.";
@@ -145,10 +164,14 @@ void StopService(bool excludeShutdownService = false)
         }
 #endif
     }
+#if INSTALL_JACK_SERVICE || UNINSTALL_JACK_SERVICE
     if (sysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
+        #if INSTALL_JACK_SERVICE
         throw PiPedalException("Failed to stop the " JACK_SERVICE " service.");
+        #endif
     }
+#endif
 }
 
 void StartService(bool excludeShutdownService = false)
@@ -166,6 +189,7 @@ void StartService(bool excludeShutdownService = false)
     {
         throw PiPedalException("Failed to start the " NATIVE_SERVICE " service.");
     }
+#if INSTALL_JACK_SERVICE
     JackServerSettings serverSettings;
     serverSettings.ReadJackConfiguration();
     if (serverSettings.IsValid())
@@ -175,6 +199,7 @@ void StartService(bool excludeShutdownService = false)
             throw PiPedalException("Failed to start the " JACK_SERVICE " service.");
         }
     }
+#endif
 }
 void RestartService(bool excludeShutdownService)
 {
@@ -258,12 +283,15 @@ static void RemoveLine(const std::string &path, const std::string lineToRemove)
 const std::string PAM_LINE = "JACK_PROMISCUOUS_SERVER      DEFAULT=" JACK_SERVICE_GROUP_NAME;
 void UninstallPamEnv()
 {
+#if UNINSTALL_JACK_SERVICE
     RemoveLine(
         "/etc/security/pam_env.conf",
         PAM_LINE);
+#endif
 }
 void InstallPamEnv()
 {
+#if INSTALL_JACK_SERVICE
     std::string newLine = PAM_LINE;
     std::vector<std::string> lines;
     std::filesystem::path path = "/etc/security/pam_env.conf";
@@ -313,6 +341,7 @@ void InstallPamEnv()
     {
         cout << "Failed to update " << path << ". " << e.what();
     }
+#endif
 }
 
 void InstallLimits()
@@ -322,12 +351,12 @@ void InstallLimits()
         throw PiPedalException("Failed to create audio service group.");
     }
 
-    std::filesystem::path limitsConfig = "/usr/security/pipedal.conf";
+    std::filesystem::path limitsConfig = "/etc/security/limits.d/audio.conf";
 
     if (!std::filesystem::exists(limitsConfig))
     {
         ofstream output(limitsConfig);
-        output << "# Realtime priority group used by pipedal/jack daemon"
+        output << "# Realtime priority group used by pipedal audio (and also by jack)"
                << "\n";
         output << "@audio   -  rtprio     95"
                << "\n";
@@ -336,15 +365,6 @@ void InstallLimits()
     }
 }
 
-void UninstallLimits()
-{
-    std::filesystem::path limitsConfig = "/usr/security/pipedal.conf";
-
-    if (std::filesystem::exists(limitsConfig))
-    {
-        std::filesystem::remove(limitsConfig);
-    }
-}
 
 void MaybeStartJackService()
 {
@@ -363,6 +383,8 @@ void InstallJackService()
 {
     InstallLimits();
     InstallPamEnv();
+
+#if INSTALL_JACK_SERVICE
     if (sysExec(GROUPADD_BIN " -f " JACK_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to create jack service group.");
@@ -391,6 +413,8 @@ void InstallJackService()
     WriteTemplateFile(map, GetServiceFileName(JACK_SERVICE));
 
     MaybeStartJackService();
+#endif
+
 }
 
 int SudoExec(char **argv)
@@ -463,7 +487,7 @@ void Uninstall()
         {
         }
         UninstallPamEnv();
-        UninstallLimits();
+        // UninstallLimits();
         sysExec(SYSTEMCTL_BIN " daemon-reload");
     }
     catch (const std::exception &e)

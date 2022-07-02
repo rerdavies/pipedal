@@ -33,6 +33,15 @@ namespace pipedal {
 
     public:
         JackServerSettings();
+        JackServerSettings(const std::string alsaDevice, uint64_t sampleRate, uint32_t bufferSize, uint32_t numberOfBuffers)
+        :   valid_(true),
+            alsaDevice_(alsaDevice),
+            sampleRate_(sampleRate),
+            bufferSize_(bufferSize),
+            numberOfBuffers_(numberOfBuffers)
+        {
+            
+        }
 
         uint64_t GetSampleRate() const { return sampleRate_; }
         uint32_t GetBufferSize() const { return bufferSize_; }

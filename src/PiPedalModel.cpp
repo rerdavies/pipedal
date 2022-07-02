@@ -19,6 +19,7 @@
 
 #include "pch.h"
 #include "DeviceIdFile.hpp"
+#include "AudioConfig.hpp"
 #include <sched.h>
 #include "PiPedalModel.hpp"
 #include "JackHost.hpp"
@@ -49,7 +50,12 @@ std::string AtomToJson(int length, uint8_t *pData)
 PiPedalModel::PiPedalModel()
 {
     this->pedalBoard = PedalBoard::MakeDefault();
+#if JACK_HOST
     this->jackServerSettings.ReadJackConfiguration();
+#else
+    this->jackServerSettings = this->storage.GetJackServerSettings();
+#endif
+
 
 }
 
@@ -108,14 +114,19 @@ PiPedalModel::~PiPedalModel()
 
 #include <fstream>
 
-
-void PiPedalModel::LoadLv2PluginInfo(const PiPedalConfiguration&configuration)
+void PiPedalModel::Init(const PiPedalConfiguration&configuration)
 {
-
+    this->configuration = configuration;
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
     storage.Initialize();
 
+    this->jackServerSettings.ReadJackConfiguration();
+
+}
+
+void PiPedalModel::LoadLv2PluginInfo()
+{
     // Not all Lv2 directories have the lv2 base declarations. Load a full set of plugin classes generated on a default /usr/local/lib/lv2 directory.
     std::filesystem::path pluginClassesPath = configuration.GetDocRoot() / "plugin_classes.json";
     try
@@ -149,11 +160,10 @@ void PiPedalModel::LoadLv2PluginInfo(const PiPedalConfiguration&configuration)
     }
 }
 
-void PiPedalModel::Load(const PiPedalConfiguration &configuration)
+void PiPedalModel::Load()
 {
     this->webRoot = configuration.GetWebRoot();
     this->webPort = (uint16_t)configuration.GetSocketServerPort();
-    this->jackServerSettings.ReadJackConfiguration();
 
 
     adminClient.MonitorGovernor(storage.GetGovernorSettings());
@@ -192,8 +202,12 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
     scheduler_params.sched_priority = 10;
     memset(&scheduler_params,0,sizeof(sched_param));
     sched_setscheduler(0,SCHED_RR,&scheduler_params);
-
-    this->jackConfiguration = jackHost->GetServerConfiguration();
+#if JACK_HOST
+    this->jackConfiguration = this->jackConfiguration.JackInitialize();
+#else
+    this->jackServerSettings = storage.GetJackServerSettings();
+    this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
+#endif
     if (this->jackConfiguration.isValid())
     {
         JackChannelSelection selection = storage.GetJackChannelSelection(jackConfiguration);
@@ -202,7 +216,7 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
         this->lv2Host.OnConfigurationChanged(jackConfiguration, selection);
         try
         {
-            jackHost->Open(selection);
+            jackHost->Open(this->jackServerSettings,selection);
 
             std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
             this->lv2PedalBoard = lv2PedalBoard;
@@ -212,6 +226,8 @@ void PiPedalModel::Load(const PiPedalConfiguration &configuration)
         {
             Lv2Log::error("Failed to load initial plugin. (%s)", e.what());
         }
+    } else {
+        Lv2Log::error("Audio device not configured.");
     }
 }
 
@@ -780,15 +796,27 @@ void PiPedalModel::SetJackChannelSelection(int64_t clientId, const JackChannelSe
     this->lv2Host.OnConfigurationChanged(jackConfiguration, channelSelection);
     if (this->jackHost->IsOpen())
     {
-        // do a complete reload.
 
         this->jackHost->Close();
+#ifdef JUNK
+        // restarting is a bit dodgy. It was impossible with Jack, but 
+        // now very plausible with the ALSA audio stack. 
+        
+        // Still bugs wrt/ restarting the circular buffers for the audio thread.
+
+        // for the meantime, just rely on the fact that the admin service will restart 
+        // the process.
+        //...
+
+        // do a complete reload.
+
         this->jackHost->SetPedalBoard(nullptr);
-        this->jackHost->Open(channelSelection);
+        this->jackHost->Open(this->jackServerSettings,channelSelection);
         std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
         this->lv2PedalBoard = lv2PedalBoard;
         jackHost->SetPedalBoard(lv2PedalBoard);
         this->UpdateRealtimeVuSubscriptions();
+#endif
     }
 }
 
@@ -1126,6 +1154,10 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 
     if (adminClient.CanUseShutdownClient())
     {
+
+        #if ALSA_HOST
+        storage.SetJackServerSettings(jackServerSettings);
+        #endif
 
         // save the current (edited) preset now in case the service shutdown isn't clean.
         CurrentPreset currentPreset;

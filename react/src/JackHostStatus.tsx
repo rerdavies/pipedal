@@ -58,6 +58,7 @@ export default class JackHostStatus {
     deserialize(input: any): JackHostStatus {
         this.active = input.active;
         this.restarting = input.restarting;
+        this.errorMessage = input.errorMessage;
         this.underruns = input.underruns;
         this.cpuUsage = input.cpuUsage;
         this.msSinceLastUnderrun = input.msSinceLastUnderrun;
@@ -71,6 +72,7 @@ export default class JackHostStatus {
         return this.temperaturemC >= -100000;
     }
     active: boolean = false;
+    errorMessage: string = "";
     restarting: boolean = false;
     underruns: number = 0;
     cpuUsage: number = 0;
@@ -136,7 +138,7 @@ export default class JackHostStatus {
                     <Typography variant="caption" color="textSecondary">{label}</Typography>
 
                     <span style={{ color: RED_COLOR }}>
-                        <Typography variant="caption" color="inherit">Stopped&nbsp;&nbsp;</Typography>
+                        <Typography variant="caption" color="inherit">{status.errorMessage === "" ? "Stopped" : status.errorMessage}&nbsp;&nbsp;</Typography>
                     </span>
                     {
                         status.temperaturemC > -100000 &&

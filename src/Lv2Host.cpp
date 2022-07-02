@@ -266,7 +266,7 @@ void Lv2Host::OnConfigurationChanged(const JackConfiguration &configuration, con
     if (configuration.isValid())
     {
         this->numberOfAudioInputChannels = settings.GetInputAudioPorts().size();
-        this->numberOfAudioOutputChannels = settings.getOutputAudioPorts().size();
+        this->numberOfAudioOutputChannels = settings.GetOutputAudioPorts().size();
         this->maxBufferSize = configuration.GetBlockLength();
         optionsFeature.Prepare(this->mapFeature, configuration.GetSampleRate(), configuration.GetBlockLength(), GetAtomBufferSize());
     }

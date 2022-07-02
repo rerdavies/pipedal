@@ -167,8 +167,98 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
         }
     }
     snd_config_update_free_global();
+
+    Lv2Log::debug("GetAlsaDevices --");
+    for (auto& device: result)
+    {
+        Lv2Log::debug(SS("   " << device.name_ << " " << device.longName_ << " " << device.cardId_));
+    }
     return result;
 }
+
+
+static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char*devname, const char*direction)
+{
+    std::vector<AlsaMidiDeviceInfo> result;
+    {
+
+        char **hints;
+        int err;
+        char **n;
+        char *name;
+        char *desc;
+        char *ioid;
+
+        /* Enumerate sound devices */
+        err = snd_device_name_hint(-1, devname, (void ***)&hints);
+        if (err != 0)
+        {
+            return result;
+        }
+
+        n = hints;
+        while (*n != NULL)
+        {
+
+            name = snd_device_name_get_hint(*n, "NAME");
+            desc = snd_device_name_get_hint(*n, "DESC");
+            ioid = snd_device_name_get_hint(*n, "IOID");
+
+            if (desc != nullptr) // skip virtual device
+            {
+                if (ioid == nullptr || strcmp(ioid,direction) == 0)
+                {
+                    result.push_back(AlsaMidiDeviceInfo(name,desc));
+                }
+            }
+            if (name && strcmp("null", name) != 0)
+                free(name);
+            if (desc && strcmp("null", desc) != 0)
+                free(desc);
+            if (ioid && strcmp("null", ioid) != 0)
+                free(ioid);
+            n++;
+        }
+
+        // Free hint buffer too
+        snd_device_name_free_hint((void **)hints);
+    }
+    return result;
+}
+
+
+std::vector<AlsaMidiDeviceInfo> pipedal::GetAlsaMidiInputDevices()
+{
+    return GetAlsaDevices("rawmidi","Input");
+}
+std::vector<AlsaMidiDeviceInfo> pipedal::GetAlsaMidiOutputDevices()
+{
+    return GetAlsaDevices("rawmidi","Output");
+}
+
+AlsaMidiDeviceInfo::AlsaMidiDeviceInfo(const char*name, const char*description)
+:name_(name)
+{
+    // extract just the display name from description.
+    // undocumented but e.g.:   M2, M2\nM2 Raw Midi
+    const char *p = description;
+    const char *pEnd = p;
+    // undocumented but e.g.:   M2, M2\nM2 Raw Midi
+    while (pEnd != nullptr && *pEnd != 0
+     && *pEnd != ','
+     && *pEnd != '\n'
+     )
+    {
+        ++pEnd;
+    }
+    if (p != pEnd)
+    {
+        description_ = std::string(p,pEnd);
+    } else {
+        description = name;
+    }
+}
+
 
 JSON_MAP_BEGIN(AlsaDeviceInfo)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, cardId)
@@ -178,4 +268,9 @@ JSON_MAP_REFERENCE(AlsaDeviceInfo, longName)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, sampleRates)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, minBufferSize)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, maxBufferSize)
+JSON_MAP_END()
+
+JSON_MAP_BEGIN(AlsaMidiDeviceInfo)
+JSON_MAP_REFERENCE(AlsaMidiDeviceInfo, name)
+JSON_MAP_REFERENCE(AlsaMidiDeviceInfo, description)
 JSON_MAP_END()

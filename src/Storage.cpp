@@ -19,6 +19,7 @@
 
 #include "pch.h"
 #include "Storage.hpp"
+#include "AudioConfig.hpp"
 #include "PiPedalException.hpp"
 #include <sstream>
 #include "json.hpp"
@@ -34,8 +35,6 @@ const char *BANKS_FILENAME = "index.banks";
 
 #define WIFI_CONFIG_SETTINGS_FILENAME "wifiConfigSettings.json";
 #define USER_SETTINGS_FILENAME "userSettings.json";
-
-
 
 Storage::Storage()
 {
@@ -131,7 +130,7 @@ std::string Storage::SafeEncodeName(const std::string &name)
     return s.str();
 }
 
-std::filesystem::path ResolveHomePath(const std::filesystem::path& path)
+std::filesystem::path ResolveHomePath(const std::filesystem::path &path)
 {
     if (path.begin() == path.end())
         return path;
@@ -161,28 +160,27 @@ std::filesystem::path ResolveHomePath(const std::filesystem::path& path)
     return result;
 }
 
-void Storage::SetConfigRoot(const std::filesystem::path& path)
+void Storage::SetConfigRoot(const std::filesystem::path &path)
 {
     this->configRoot = ResolveHomePath(path);
 }
-void Storage::SetDataRoot(const std::filesystem::path& path)
+void Storage::SetDataRoot(const std::filesystem::path &path)
 {
     this->dataRoot = ResolveHomePath(path);
 }
 
 static void CopyDirectory(const std::filesystem::path &source, const std::filesystem::path &destination)
 {
-    for (auto &directoryEntry: std::filesystem::directory_iterator(source))
+    for (auto &directoryEntry : std::filesystem::directory_iterator(source))
     {
         if (directoryEntry.is_regular_file())
         {
             std::filesystem::path sourceFile = directoryEntry.path();
             std::filesystem::path destFile = destination / sourceFile.filename();
 
-            std::filesystem::copy_file(sourceFile,destFile);
-            std::ignore = chmod(destFile.c_str(),S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-            
-        }   
+            std::filesystem::copy_file(sourceFile, destFile);
+            std::ignore = chmod(destFile.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+        }
     }
 }
 void Storage::MaybeCopyDefaultPresets()
@@ -192,18 +190,15 @@ void Storage::MaybeCopyDefaultPresets()
     if (!std::filesystem::exists(presetsDirectory / "index.banks"))
     {
         CopyDirectory(this->configRoot / "default_presets" / "presets",
-            presetsDirectory
-        );
+                      presetsDirectory);
     }
 
     auto pluginDirectory = this->GetPluginPresetsDirectory();
     if (!std::filesystem::exists(pluginDirectory / "index.json"))
     {
         CopyDirectory(this->configRoot / "default_presets" / "plugin_presets",
-            pluginDirectory
-        );
+                      pluginDirectory);
     }
-
 }
 void Storage::Initialize()
 {
@@ -232,7 +227,6 @@ void Storage::Initialize()
     LoadWifiDirectConfigSettings();
     LoadUserSettings();
 }
-
 
 void Storage::LoadBank(int64_t instanceId)
 {
@@ -264,7 +258,6 @@ std::filesystem::path Storage::GetCurrentPresetPath() const
 {
     return this->dataRoot / "currentPreset.json";
 }
-
 
 std::filesystem::path Storage::GetChannelSelectionFileName()
 {
@@ -304,7 +297,7 @@ void Storage::LoadBankIndex()
 
             std::string name = "Default Bank";
             SaveBankFile(name, currentBank);
-            int64_t selectedBank = bankIndex.addBank(-1,name);
+            int64_t selectedBank = bankIndex.addBank(-1, name);
             bankIndex.selectedBank(selectedBank);
         }
         SaveBankIndex();
@@ -365,7 +358,7 @@ void Storage::ReIndex()
             if (path.extension() == BANK_EXTENSION)
             {
                 std::string name = SafeDecodeName(path.stem());
-                bankIndex.addBank(-1,name);
+                bankIndex.addBank(-1, name);
             }
         }
     }
@@ -387,11 +380,12 @@ void Storage::CreateBank(const std::string &name)
     int64_t instanceId = bankFile.presets()[0]->instanceId();
     bankFile.selectedPreset(instanceId);
     SaveBankFile(name, bankFile);
-    this->bankIndex.addBank(-1,name);
+    this->bankIndex.addBank(-1, name);
     this->SaveBankIndex();
 }
 
-void Storage::GetBankFile(int64_t instanceId,BankFile *pBank) const {
+void Storage::GetBankFile(int64_t instanceId, BankFile *pBank) const
+{
     auto indexEntry = this->bankIndex.getBankIndexEntry(instanceId);
     auto name = indexEntry.name();
     std::filesystem::path fileName = GetBankFileName(name);
@@ -407,7 +401,6 @@ void Storage::LoadBankFile(const std::string &name, BankFile *pBank)
     std::ifstream is(fileName);
     json_reader reader(is);
     reader.read(pBank);
-    
 }
 
 void Storage::SaveBankFile(const std::string &name, const BankFile &bankFile)
@@ -459,8 +452,9 @@ const PedalBoard &Storage::GetCurrentPreset()
 bool Storage::LoadPreset(int64_t instanceId)
 {
     if (!currentBank.hasItem(instanceId))
-        return false; 
-    if (instanceId != currentBank.selectedPreset()) {
+        return false;
+    if (instanceId != currentBank.selectedPreset())
+    {
         currentBank.selectedPreset(instanceId);
         SaveCurrentBank();
     }
@@ -489,13 +483,13 @@ void Storage::SetPresetIndex(const PresetIndex &presets)
     std::map<int64_t, std::unique_ptr<BankFileEntry> *> entries;
     for (int i = 0; i < this->currentBank.presets().size(); ++i)
     {
-        auto & preset = this->currentBank.presets()[i];
+        auto &preset = this->currentBank.presets()[i];
         entries[preset->instanceId()] = &(this->currentBank.presets()[i]);
     }
-    std::vector<std::unique_ptr<BankFileEntry>*> newPresets;
+    std::vector<std::unique_ptr<BankFileEntry> *> newPresets;
     for (size_t i = 0; i < presets.presets().size(); ++i)
     {
-        std::unique_ptr<BankFileEntry>* p = entries[presets.presets()[i].instanceId()];
+        std::unique_ptr<BankFileEntry> *p = entries[presets.presets()[i].instanceId()];
         if (p == nullptr)
         {
             throw PiPedalStateException("Presets do not match the currently loaded bank.");
@@ -544,7 +538,7 @@ PedalBoard Storage::GetPreset(int64_t instanceId) const
 
 int64_t Storage::DeletePreset(int64_t presetId)
 {
-    int64_t newSelection =  currentBank.deletePreset(presetId);
+    int64_t newSelection = currentBank.deletePreset(presetId);
     SaveCurrentBank();
     return newSelection;
 }
@@ -724,7 +718,7 @@ int64_t Storage::SaveBankAs(int64_t bankId, const std::string &newName)
     std::filesystem::path newPath = this->GetBankFileName(newName);
     try
     {
-        std::filesystem::copy(oldPath,newPath);
+        std::filesystem::copy(oldPath, newPath);
     }
     catch (std::exception &e)
     {
@@ -732,36 +726,40 @@ int64_t Storage::SaveBankAs(int64_t bankId, const std::string &newName)
         s << "Unable to save the bank. (" << e.what() << ")";
         throw PiPedalException(s.str());
     }
-    int64_t newId =  this->bankIndex.addBank(bankId,newName);
+    int64_t newId = this->bankIndex.addBank(bankId, newName);
     SaveBankIndex();
     return newId;
 }
 
 void Storage::MoveBank(int from, int to)
 {
-    this->bankIndex.move(from,to);
+    this->bankIndex.move(from, to);
     this->SaveBankIndex();
 }
 int64_t Storage::DeleteBank(int64_t bankId)
 {
-    auto & entries = this->bankIndex.entries();
+    auto &entries = this->bankIndex.entries();
 
     for (size_t i = 0; i < entries.size(); ++i)
     {
-        auto & entry = entries[i];
+        auto &entry = entries[i];
 
-        if (entry.instanceId() == bankId) {
+        if (entry.instanceId() == bankId)
+        {
             std::filesystem::path fileName = this->GetBankFileName(entry.name());
-            entries.erase(entries.begin()+i);
+            entries.erase(entries.begin() + i);
 
             int64_t newSelection;
             if (i < entries.size())
             {
                 newSelection = entries[i].instanceId();
-            } else if (entries.size() > 0)
+            }
+            else if (entries.size() > 0)
             {
-                newSelection = entries[entries.size()-1].instanceId();
-            } else {
+                newSelection = entries[entries.size() - 1].instanceId();
+            }
+            else
+            {
                 // zero entries?
                 // Create a default empty bank.
                 BankIndexEntry newEntry;
@@ -773,7 +771,7 @@ int64_t Storage::DeleteBank(int64_t bankId)
 
                 std::string name = "Default Bank";
                 SaveBankFile(name, defaultBank);
-                int64_t selectedBank = bankIndex.addBank(-1,name);
+                int64_t selectedBank = bankIndex.addBank(-1, name);
                 newSelection = selectedBank;
             }
             if (this->bankIndex.selectedBank() == bankId)
@@ -793,7 +791,7 @@ int64_t Storage::GetCurrentPresetId() const
     return this->currentBank.selectedPreset();
 }
 
-int64_t  Storage::UploadPreset(const BankFile&bankFile,int64_t uploadAfter)
+int64_t Storage::UploadPreset(const BankFile &bankFile, int64_t uploadAfter)
 {
     int64_t lastPreset = this->currentBank.selectedPreset();
     if (uploadAfter != -1)
@@ -801,7 +799,8 @@ int64_t  Storage::UploadPreset(const BankFile&bankFile,int64_t uploadAfter)
         lastPreset = uploadAfter;
     }
 
-    if (bankFile.presets().size() == 0) {
+    if (bankFile.presets().size() == 0)
+    {
         throw PiPedalException("Invalid preset.");
     }
     for (size_t i = 0; i < bankFile.presets().size(); ++i)
@@ -817,12 +816,12 @@ int64_t  Storage::UploadPreset(const BankFile&bankFile,int64_t uploadAfter)
             preset.name(s.str());
         }
 
-        lastPreset = this->currentBank.addPreset(preset,lastPreset);
+        lastPreset = this->currentBank.addPreset(preset, lastPreset);
     }
     this->SaveCurrentBank();
     return lastPreset;
 }
-int64_t  Storage::UploadBank(BankFile&bankFile,int64_t uploadAfter)
+int64_t Storage::UploadBank(BankFile &bankFile, int64_t uploadAfter)
 {
     int64_t lastBank = this->bankIndex.selectedBank();
     if (uploadAfter != -1)
@@ -830,7 +829,8 @@ int64_t  Storage::UploadBank(BankFile&bankFile,int64_t uploadAfter)
         lastBank = uploadAfter;
     }
 
-    if (bankFile.presets().size() == 0) {
+    if (bankFile.presets().size() == 0)
+    {
         throw PiPedalException("Invalid bank.");
     }
     bankFile.updateNextIndex();
@@ -845,24 +845,25 @@ int64_t  Storage::UploadBank(BankFile&bankFile,int64_t uploadAfter)
     }
     std::filesystem::path path = this->GetBankFileName(bankFile.name());
     std::ofstream f(path);
-    if (!f.is_open()) {
+    if (!f.is_open())
+    {
         throw PiPedalException("Can't write to bank file.");
     }
     json_writer writer(f);
     writer.write(bankFile);
 
-    lastBank = this->bankIndex.addBank(lastBank,bankFile.name());
+    lastBank = this->bankIndex.addBank(lastBank, bankFile.name());
     this->SaveBankIndex();
     return lastBank;
 }
 
-
-void Storage::SetGovernorSettings(const std::string & governor)
+void Storage::SetGovernorSettings(const std::string &governor)
 {
     userSettings.governor_ = governor;
     SaveUserSettings();
 }
-void Storage::SaveUserSettings() {
+void Storage::SaveUserSettings()
+{
     std::filesystem::path path = this->dataRoot / USER_SETTINGS_FILENAME;
     {
         std::ofstream f(path);
@@ -889,8 +890,7 @@ std::string Storage::GetGovernorSettings() const
     return this->userSettings.governor_;
 }
 
-
-void Storage::SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings)
+void Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings)
 {
     WifiConfigSettings copyToSave = wifiConfigSettings;
     copyToSave.rebootRequired_ = false;
@@ -915,19 +915,21 @@ void Storage::SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSetting
     if (copyToStore.enable_)
     {
         copyToStore.hasPassword_ = copyToStore.password_.length() != 0 || this->wifiConfigSettings.hasPassword_;
-    } else {
+    }
+    else
+    {
         copyToStore.hasPassword_ = false;
     }
     copyToStore.password_ = "";
     copyToStore.rebootRequired_ = false;
-    if (copyToStore.enable_ && !copyToStore.hasPassword_) 
+    if (copyToStore.enable_ && !copyToStore.hasPassword_)
     {
         copyToStore.hasPassword_ = this->wifiConfigSettings.hasPassword_;
     }
     this->wifiConfigSettings = copyToStore;
 }
 
-void Storage::SetWifiDirectConfigSettings(const WifiDirectConfigSettings & wifiDirectConfigSettings)
+void Storage::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiDirectConfigSettings)
 {
     WifiDirectConfigSettings copyToSave = wifiDirectConfigSettings;
     copyToSave.rebootRequired_ = false;
@@ -945,7 +947,8 @@ void Storage::LoadUserSettings()
 {
     std::filesystem::path path = this->dataRoot / USER_SETTINGS_FILENAME;
 
-    try {
+    try
+    {
         if (std::filesystem::is_regular_file(path))
         {
             std::ifstream f(path);
@@ -956,17 +959,18 @@ void Storage::LoadUserSettings()
             json_reader reader(f);
             reader.read(&userSettings);
         }
-    } catch (const std::exception&)
+    }
+    catch (const std::exception &)
     {
     }
     this->wifiConfigSettings.valid_ = true;
-
 }
 void Storage::LoadWifiConfigSettings()
 {
     std::filesystem::path path = this->dataRoot / WIFI_CONFIG_SETTINGS_FILENAME;
 
-    try {
+    try
+    {
         if (std::filesystem::is_regular_file(path))
         {
             std::ifstream f(path);
@@ -979,9 +983,9 @@ void Storage::LoadWifiConfigSettings()
             reader.read(&wifiConfigSettings);
             this->wifiConfigSettings = wifiConfigSettings;
         }
-    } catch (const std::exception&)
+    }
+    catch (const std::exception &)
     {
-
     }
     this->wifiConfigSettings.valid_ = true;
 }
@@ -996,8 +1000,6 @@ void Storage::LoadWifiDirectConfigSettings()
     this->wifiDirectConfigSettings = settings;
 }
 
-
-
 WifiConfigSettings Storage::GetWifiConfigSettings()
 {
     return this->wifiConfigSettings;
@@ -1007,43 +1009,47 @@ WifiDirectConfigSettings Storage::GetWifiDirectConfigSettings()
     return this->wifiDirectConfigSettings;
 }
 
-
 void Storage::SaveCurrentPreset(const CurrentPreset &currentPreset)
 {
-    try {
+    try
+    {
         std::filesystem::path path = GetCurrentPresetPath();
 
         std::ofstream f(path);
         json_writer writer(f);
         writer.write(currentPreset);
-    } catch (std::exception&)
+    }
+    catch (std::exception &)
     {
         // called from destructor. Must be nothrow().
     }
-
 }
-bool Storage::RestoreCurrentPreset(CurrentPreset*pResult)
+bool Storage::RestoreCurrentPreset(CurrentPreset *pResult)
 {
     std::filesystem::path path = GetCurrentPresetPath();
-    if (std::filesystem::exists(path)) {
-        try {
+    if (std::filesystem::exists(path))
+    {
+        try
+        {
             std::ifstream f(path);
             json_reader reader(f);
             reader.read(pResult);
             std::filesystem::remove(path); // one-shot only, restore the state from the last *orderly* shutdown.
-        } catch (const std::exception&)
+        }
+        catch (const std::exception &)
         {
             return false;
         }
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
-
 }
 bool Storage::HasPluginPresets(const std::string &pluginUri) const
 {
-    for (const auto &entry: this->pluginPresetIndex.entries_)
+    for (const auto &entry : this->pluginPresetIndex.entries_)
     {
         if (entry.pluginUri_ == pluginUri)
         {
@@ -1055,7 +1061,7 @@ bool Storage::HasPluginPresets(const std::string &pluginUri) const
 
 std::filesystem::path Storage::GetPluginPresetPath(const std::string &pluginUri) const
 {
-    for (const auto &entry: this->pluginPresetIndex.entries_)
+    for (const auto &entry : this->pluginPresetIndex.entries_)
     {
         if (entry.pluginUri_ == pluginUri)
         {
@@ -1063,9 +1069,8 @@ std::filesystem::path Storage::GetPluginPresetPath(const std::string &pluginUri)
         }
     }
     throw PiPedalArgumentException("Plugin preset file not found.");
-
 }
-void Storage::SavePluginPresets(const std::string&pluginUri, const PluginPresets&presets)
+void Storage::SavePluginPresets(const std::string &pluginUri, const PluginPresets &presets)
 {
     std::string name;
     std::filesystem::path path;
@@ -1075,10 +1080,12 @@ void Storage::SavePluginPresets(const std::string&pluginUri, const PluginPresets
         name = SS(pluginPresetIndex.nextInstanceId_ << ".json");
         path = GetPluginPresetsDirectory() / name;
         presetAdded = true;
-    } else {
+    }
+    else
+    {
         path = GetPluginPresetPath(pluginUri);
     }
-    auto tempPath = path.string()+".$$$";
+    auto tempPath = path.string() + ".$$$";
     {
         std::ofstream os;
         os.open(tempPath, std::ios_base::trunc);
@@ -1093,22 +1100,20 @@ void Storage::SavePluginPresets(const std::string&pluginUri, const PluginPresets
     {
         std::filesystem::remove(path);
     }
-    std::filesystem::rename(tempPath,path);
+    std::filesystem::rename(tempPath, path);
 
     if (presetAdded)
     {
         pluginPresetIndex.entries_.push_back(
             PluginPresetIndexEntry(
-                pluginUri,name
-            )
-        );
+                pluginUri, name));
         pluginPresetIndex.nextInstanceId_++;
         this->pluginPresetIndexChanged = true;
         SavePluginPresetIndex();
     }
 }
 
-PluginPresets Storage::GetPluginPresets(const std::string&pluginUri) const
+PluginPresets Storage::GetPluginPresets(const std::string &pluginUri) const
 {
     PluginPresets result;
     if (!HasPluginPresets(pluginUri))
@@ -1127,36 +1132,33 @@ PluginPresets Storage::GetPluginPresets(const std::string&pluginUri) const
     reader.read(&result);
     return result;
 }
-PluginUiPresets Storage::GetPluginUiPresets(const std::string&pluginUri) const
+PluginUiPresets Storage::GetPluginUiPresets(const std::string &pluginUri) const
 {
     PluginPresets presets = GetPluginPresets(pluginUri);
     PluginUiPresets result;
     result.pluginUri_ = presets.pluginUri_;
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
-        const auto& preset = presets.presets_[i];
+        const auto &preset = presets.presets_[i];
         result.presets_.push_back(
-            PluginUiPreset 
-            {
+            PluginUiPreset{
                 preset.label_,
-                preset.instanceId_
-            }
-        );
+                preset.instanceId_});
     }
     return result;
 }
 
-std::vector<ControlValue> Storage::GetPluginPresetValues(const std::string&pluginUri, uint64_t instanceId)
+std::vector<ControlValue> Storage::GetPluginPresetValues(const std::string &pluginUri, uint64_t instanceId)
 {
     auto presets = GetPluginPresets(pluginUri);
-    for (const auto & preset: presets.presets_)
+    for (const auto &preset : presets.presets_)
     {
         if (preset.instanceId_ == instanceId)
         {
             std::vector<ControlValue> result;
-            for (const auto &valuePair: preset.controlValues_)
+            for (const auto &valuePair : preset.controlValues_)
             {
-                result.push_back(ControlValue(valuePair.first.c_str(),valuePair.second));
+                result.push_back(ControlValue(valuePair.first.c_str(), valuePair.second));
             }
             return result;
         }
@@ -1165,16 +1167,16 @@ std::vector<ControlValue> Storage::GetPluginPresetValues(const std::string&plugi
 }
 
 uint64_t Storage::SavePluginPreset(
-    const std::string&pluginUri, 
-    const std::string&name, 
-    const std::map<std::string,float> & values)
+    const std::string &pluginUri,
+    const std::string &name,
+    const std::map<std::string, float> &values)
 {
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
     bool existing = false;
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
-        auto & preset = presets.presets_[i];
+        auto &preset = presets.presets_[i];
         if (preset.label_ == name)
         {
             preset.controlValues_ = values;
@@ -1190,10 +1192,9 @@ uint64_t Storage::SavePluginPreset(
             PluginPreset(
                 result,
                 name,
-                values
-            ));
+                values));
     }
-    this->SavePluginPresets(pluginUri,presets);
+    this->SavePluginPresets(pluginUri, presets);
     return result;
 }
 
@@ -1201,26 +1202,24 @@ void Storage::UpdatePluginPresets(const PluginUiPresets &pluginPresets)
 {
     // handles deletions, renaming, and reordering only.
     // If you need to add a preset, you neet to call SavePluginPreset or DulicatePluginPreset instead.
-    
+
     PluginPresets presets = this->GetPluginPresets(pluginPresets.pluginUri_);
     PluginPresets newPresets;
     newPresets.pluginUri_ = pluginPresets.pluginUri_;
     newPresets.nextInstanceId_ = presets.nextInstanceId_;
 
-    for (const auto&preset: pluginPresets.presets_)
+    for (const auto &preset : pluginPresets.presets_)
     {
         PluginPreset newPreset = presets.GetPreset(preset.instanceId_);
         newPreset.label_ = preset.label_;
         newPresets.presets_.push_back(std::move(newPreset));
     }
-    SavePluginPresets(newPresets.pluginUri_,newPresets);
-
-
+    SavePluginPresets(newPresets.pluginUri_, newPresets);
 }
 
 static std::string stripCopySuffix(const std::string &s)
 {
-    int pos = s.length()-1;
+    int pos = s.length() - 1;
     if (pos >= 0 && s[pos] == ')')
     {
         --pos;
@@ -1228,7 +1227,7 @@ static std::string stripCopySuffix(const std::string &s)
         {
             --pos;
         }
-        if  (pos >= 0 && s[pos] == '(')
+        if (pos >= 0 && s[pos] == '(')
         {
             --pos;
         }
@@ -1236,11 +1235,11 @@ static std::string stripCopySuffix(const std::string &s)
         {
             --pos;
         }
-        return s.substr(0,pos+1);
+        return s.substr(0, pos + 1);
     }
     return s;
 }
-uint64_t Storage::CopyPluginPreset(const std::string&pluginUri,uint64_t presetId)
+uint64_t Storage::CopyPluginPreset(const std::string &pluginUri, uint64_t presetId)
 {
     PluginPresets presets = this->GetPluginPresets(pluginUri);
     size_t pos = presets.Find(presetId);
@@ -1266,17 +1265,14 @@ uint64_t Storage::CopyPluginPreset(const std::string&pluginUri,uint64_t presetId
         }
     }
     t.label_ = name;
-    presets.presets_.insert(presets.presets_.begin()+pos+1,t);
-    SavePluginPresets(presets.pluginUri_,presets);
+    presets.presets_.insert(presets.presets_.begin() + pos + 1, t);
+    SavePluginPresets(presets.pluginUri_, presets);
     return t.instanceId_;
-
-
-
 }
 
-std::map<std::string,bool> Storage::GetFavorites() const
+std::map<std::string, bool> Storage::GetFavorites() const
 {
-    std::map<std::string,bool> result;
+    std::map<std::string, bool> result;
 
     std::filesystem::path fileName = this->dataRoot / "favorites.json";
     if (!std::filesystem::exists(fileName))
@@ -1291,10 +1287,9 @@ std::map<std::string,bool> Storage::GetFavorites() const
         reader.read(&result);
     }
     return result;
-
-
 }
-void Storage::SetFavorites(const std::map<std::string,bool>&favorites) {
+void Storage::SetFavorites(const std::map<std::string, bool> &favorites)
+{
     std::filesystem::path fileName = this->dataRoot / "favorites.json";
     std::ofstream f;
     f.open(fileName);
@@ -1305,15 +1300,45 @@ void Storage::SetFavorites(const std::map<std::string,bool>&favorites) {
     }
 }
 
-
+pipedal::JackServerSettings Storage::GetJackServerSettings()
+{
+    JackServerSettings result;
+#if JACK_HOST
+    result.Initialize();
+#else
+    std::filesystem::path fileName = this->dataRoot / "AudioConfig.json";
+    std::ifstream f;
+    f.open(fileName);
+    if (f.is_open())
+    {
+        json_reader reader(f);
+        reader.read(&result);
+    }
+#endif
+    return result;
+}
+void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfiguration)
+{
+#if JACK_HOST
+#error IMPLEMENT ME
+#else
+    std::filesystem::path fileName = this->dataRoot / "AudioConfig.json";
+    std::ofstream f;
+    f.open(fileName);
+    if (f.is_open())
+    {
+        json_writer writer(f);
+        writer.write(jackConfiguration);
+    }
+#endif
+}
 
 JSON_MAP_BEGIN(UserSettings)
-    JSON_MAP_REFERENCE(UserSettings,governor)
-    JSON_MAP_REFERENCE(UserSettings,showStatusMonitor)
+JSON_MAP_REFERENCE(UserSettings, governor)
+JSON_MAP_REFERENCE(UserSettings, showStatusMonitor)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(CurrentPreset)
-    JSON_MAP_REFERENCE(CurrentPreset,modified)
-    JSON_MAP_REFERENCE(CurrentPreset,preset)
+JSON_MAP_REFERENCE(CurrentPreset, modified)
+JSON_MAP_REFERENCE(CurrentPreset, preset)
 JSON_MAP_END()
-

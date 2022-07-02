@@ -21,12 +21,15 @@
 
 #include "Lv2Log.hpp"
 
+#include "JackDriver.hpp"
+#include "AlsaDriver.hpp"
+
+
 using namespace pipedal;
 
-#include <jack/jack.h>
-#include <jack/types.h>
-#include <jack/session.h>
-#include <jack/midiport.h>
+#include "AudioConfig.hpp"
+
+
 #include <string.h>
 #include <stdio.h>
 #include <mutex>
@@ -63,11 +66,6 @@ using namespace pipedal;
 
 const int MIDI_LV2_BUFFER_SIZE = 16 * 1024;
 
-namespace pipedal
-{
-    // private import from JackConfiguration.cpp
-    std::string GetJackErrorMessage(jack_status_t status);
-}
 
 static void GetCpuFrequency(uint64_t*freqMin,uint64_t*freqMax)
 {
@@ -105,9 +103,10 @@ static std::string GetGovernor()
 
 
 
-class JackHostImpl : public JackHost
+class JackHostImpl : public JackHost, private AudioDriverHost
 {
 private:
+    AudioDriver*audioDriver = nullptr;
 
     inherit_priority_recursive_mutex mutex;
     int64_t overrunGracePeriodSamples = 0;
@@ -133,36 +132,26 @@ private:
 
     JackChannelSelection channelSelection;
     bool active = false;
-    jack_client_t *client = nullptr;
 
     std::shared_ptr<Lv2PedalBoard> currentPedalBoard;
     std::vector<std::shared_ptr<Lv2PedalBoard>> activePedalBoards; // pedalboards that have been sent to the audio queue.
     Lv2PedalBoard *realtimeActivePedalBoard = nullptr;
 
-    std::vector<jack_port_t *> inputPorts;
-    std::vector<jack_port_t *> outputPorts;
-    std::vector<jack_port_t *> midiInputPorts;
-
     std::vector<uint8_t *> midiLv2Buffers;
 
-    uint32_t sampleRate;
+    uint32_t sampleRate = 0;
     uint64_t currentSample = 0;
 
     std::atomic<uint64_t> underruns = 0;
     std::atomic<std::chrono::system_clock::time_point> lastUnderrunTime =
         std::chrono::system_clock::from_time_t(0);
 
-    int XrunCallback()
+    virtual void OnUnderrun()
     {
         ++this->underruns;
         this->lastUnderrunTime = std::chrono::system_clock ::now();
-        return 0;
     }
 
-    static int xrun_callback_fn(void *arg)
-    {
-        return ((JackHostImpl *)arg)->XrunCallback();
-    }
 
     virtual void Close()
     {
@@ -174,84 +163,13 @@ private:
         StopReaderThread();
         if (active)
         {
-            // disconnect ports.
-            for (size_t i = 0; i < this->inputPorts.size(); ++i)
-            {
-                auto port = inputPorts[i];
-                if (port != nullptr)
-                {
-                    jack_disconnect(client, channelSelection.GetInputAudioPorts()[i].c_str(), jack_port_name(port));
-                }
-            }
-            for (size_t i = 0; i < outputPorts.size(); ++i)
-            {
-                auto port = outputPorts[i];
-                if (port != nullptr)
-                {
-                    jack_disconnect(client, jack_port_name(port),channelSelection.getOutputAudioPorts()[i].c_str());
-                }
-            }
-            for (size_t i = 0; i < midiInputPorts.size(); ++i)
-            {
-                auto port = midiInputPorts[i];
-                if (port != nullptr)
-                {
-                    jack_disconnect(client, channelSelection.GetInputMidiPorts()[i].c_str(), jack_port_name(port));
-                }
-            }
-
-            jack_deactivate(client);
-
-            jack_set_process_callback(client, nullptr, nullptr);
-            jack_on_shutdown(client, nullptr, nullptr);
-            #if JACK_SESSION_CALLBACK // (deprecated, and not actually useful)
-                jack_set_session_callback(client, nullptr, nullptr);
-            #endif
-            jack_set_xrun_callback(client, nullptr, nullptr);
+            audioDriver->Deactivate();
 
             active = false;
         }
-        // unregister ports.
-        for (size_t i = 0; i < this->inputPorts.size(); ++i)
-        {
-            auto port = inputPorts[i];
-            if (port)
-            {
-                jack_port_unregister(client, port);
-            }
-        }
-        inputPorts.clear();
 
-        for (size_t i = 0; i < this->outputPorts.size(); ++i)
-        {
-            auto port = outputPorts[i];
-            if (port)
-            {
-                jack_port_unregister(client, port);
-            }
-        }
-        outputPorts.clear();
-        for (size_t i = 0; i < this->midiInputPorts.size(); ++i)
-        {
-            auto port = midiInputPorts[i];
-            if (port)
-            {
-                jack_port_unregister(client, port);
-            }
-        }
-        midiInputPorts.resize(0);
+        audioDriver->Close();
 
-        for (size_t i = 0; i < midiLv2Buffers.size(); ++i)
-        {
-            delete[] midiLv2Buffers[i];
-        }
-        midiLv2Buffers.resize(0);
-
-        if (client)
-        {
-            jack_client_close(client);
-            client = nullptr;
-        }
         // release any pdealboards owned by the process thread.
         this->activePedalBoards.resize(0);
         this->realtimeActivePedalBoard = nullptr;
@@ -268,20 +186,32 @@ private:
             delete realtimeMonitorPortSubscriptions;
             realtimeVuBuffers = nullptr;
         }
+        this->inputRingBuffer.reset();
+        this->outputRingBuffer.reset();
+
+
+        for (size_t i = 0; i < midiLv2Buffers.size(); ++i)
+        {
+            delete[] midiLv2Buffers[i];
+        }
+        midiLv2Buffers.resize(0);
+
     }
 
-    void ZeroBuffer(float *buffer, jack_nframes_t nframes)
+    void ZeroBuffer(float *buffer, size_t nframes)
     {
-        for (jack_nframes_t i = 0; i < nframes; ++i)
+        for (size_t i = 0; i < nframes; ++i)
         {
             buffer[i] = 0;
         }
     }
-    void ZeroOutputBuffers(jack_nframes_t nframes)
+    Lv2EventBufferUrids eventBufferUrids;
+
+    void ZeroOutputBuffers(size_t nframes)
     {
-        for (int i = 0; i < this->outputPorts.size(); ++i)
+        for (size_t i = 0; i < audioDriver->OutputBufferCount(); ++i)
         {
-            float *out = (float *)jack_port_get_buffer(this->outputPorts[i], nframes);
+            float *out = (float *)audioDriver->GetOutputBuffer(i, nframes);
             if (out)
             {
                 ZeroBuffer(out, nframes);
@@ -487,22 +417,26 @@ private:
     {
         Lv2EventBufferWriter eventBufferWriter(this->eventBufferUrids);
 
-        for (int i = 0; i < this->midiInputPorts.size(); ++i)
+        size_t midiInputBufferCount = audioDriver->MidiInputBufferCount(); 
+
+        audioDriver->FillMidiBuffers();
+        
+        for (size_t i = 0; i < midiInputBufferCount; ++i)
         {
-            jack_port_t *port = midiInputPorts[i];
-            void *portBuffer = jack_port_get_buffer(midiInputPorts[i], 0);
+            
+            void *portBuffer = audioDriver->GetMidiInputBuffer(i,0);
             if (portBuffer)
             {
                 uint8_t *lv2Buffer = this->midiLv2Buffers[i];
-                jack_nframes_t n = jack_midi_get_event_count(portBuffer);
+                size_t n = audioDriver->GetMidiInputEventCount(portBuffer);
 
                 eventBufferWriter.Reset(lv2Buffer, MIDI_LV2_BUFFER_SIZE);
                 auto iterator = eventBufferWriter.begin();
 
-                for (jack_nframes_t frame = 0; frame < n; ++frame)
+                for (size_t frame = 0; frame < n; ++frame)
                 {
-                    jack_midi_event_t event;
-                    if (jack_midi_event_get(&event, portBuffer, frame) == 0)
+                    MidiEvent event;
+                    if (audioDriver->GetMidiInputEvent(&event,portBuffer,frame)) 
                     {
                         eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
 
@@ -528,11 +462,26 @@ private:
 
 #define RESET_XRUN_SAMPLES 22050ul // 1/2 a second-ish.
 
-    int OnProcess(jack_nframes_t nframes)
+    std::mutex audioStoppedMutex;
+
+    bool IsAudioActive()
+    {
+        std::lock_guard lock { audioStoppedMutex};
+        return this->active;
+    }
+    virtual void OnAudioStopped()
+    {
+        std::lock_guard lock { audioStoppedMutex};
+        this->active = false;
+        Lv2Log::info("Audio stopped.");
+
+    }
+
+    virtual void OnProcess(size_t nframes)
     {
         try
         {
-            jack_default_audio_sample_t *in, *out;
+            float *in, *out;
 
             pParameterRequests = nullptr;
 
@@ -547,9 +496,9 @@ private:
                 float *inputBuffers[4];
                 float *outputBuffers[4];
                 bool buffersValid = true;
-                for (int i = 0; i < inputPorts.size(); ++i)
+                for (int i = 0; i < audioDriver->InputBufferCount(); ++i)
                 {
-                    float *input = (float *)jack_port_get_buffer(inputPorts[i], nframes);
+                    float *input = (float *)audioDriver->GetInputBuffer(i, nframes);
                     if (input == nullptr)
                     {
                         buffersValid = false;
@@ -557,11 +506,11 @@ private:
                     }
                     inputBuffers[i] = input;
                 }
-                inputBuffers[inputPorts.size()] = nullptr;
+                inputBuffers[audioDriver->InputBufferCount()] = nullptr;
 
-                for (int i = 0; i < outputPorts.size(); ++i)
+                for (int i = 0; i < audioDriver->OutputBufferCount(); ++i)
                 {
-                    float *output = (float *)jack_port_get_buffer(outputPorts[i], nframes);
+                    float *output =  audioDriver->GetOutputBuffer(i,nframes);
                     if (output == nullptr)
                     {
                         buffersValid = false;
@@ -569,7 +518,7 @@ private:
                     }
                     outputBuffers[i] = output;
                 }
-                outputBuffers[outputPorts.size()] = nullptr;
+                outputBuffers[audioDriver->OutputBufferCount()] = nullptr;
 
                 if (buffersValid)
                 {
@@ -626,61 +575,9 @@ private:
             throw;
         }
 
-        return 0;
     }
 
-    static int process_fn(jack_nframes_t nframes, void *arg)
-    {
-        return ((JackHostImpl *)arg)->OnProcess(nframes);
-    }
-    void OnShutdown()
-    {
-        Lv2Log::info("Jack Audio Server has shut down.");
-    }
-
-    static void
-    jack_shutdown_fn(void *arg)
-    {
-        ((JackHostImpl *)arg)->OnShutdown();
-    }
-
-    void OnSessionCallback(jack_session_event_t *event)
-    {
-        #if JACK_SESSION_CALLBACK // deprecated and not actually useful.
-        char retval[100];
-        Lv2Log::info("path %s, uuid %s, type: %s\n", event->session_dir, event->client_uuid, event->type == JackSessionSave ? "save" : "quit");
-
-        snprintf(retval, 100, "jack_simple_session_client %s", event->client_uuid);
-        event->command_line = strdup(retval);
-
-        jack_session_reply(client, event);
-
-        if (event->type == JackSessionSaveAndQuit)
-        {
-            // simple_quit = 1;
-        }
-
-        jack_session_event_free(event);
-        #endif
-    }
-
-    static void jack_error_fn(const char *msg)
-    {
-        Lv2Log::error("Jack - %s", msg);
-    }
-    static void jack_info_fn(const char *msg)
-    {
-        Lv2Log::info("Jack - %s", msg);
-    }
-
-    static void
-    session_callback_fn(jack_session_event_t *event, void *arg)
-    {
-        ((JackHostImpl *)arg)->OnSessionCallback(event);
-    };
-
-    Lv2EventBufferUrids eventBufferUrids;
-
+    
 public:
     JackHostImpl(IHost *pHost)
         : inputRingBuffer(RING_BUFFER_SIZE),
@@ -691,22 +588,29 @@ public:
           hostWriter(&this->inputRingBuffer),
           eventBufferUrids(pHost)
     {
-        jack_set_error_function(jack_error_fn);
-        jack_set_info_function(jack_info_fn);
+
+        #if JACK_HOST 
+        audioDriver = CreateJackDriver(this);
+        #endif
+        #if ALSA_HOST
+        audioDriver = CreateAlsaDriver(this);
+        #endif
+
     }
     virtual ~JackHostImpl()
     {
         Close();
         CleanRestartThreads(true);
-        jack_set_error_function(nullptr);
-        jack_set_info_function(nullptr);
+
+        delete audioDriver;
+
     }
 
     virtual JackConfiguration GetServerConfiguration()
     {
         JackConfiguration result;
 
-        result.Initialize();
+        result.JackInitialize();
         return result;
     }
 
@@ -980,14 +884,13 @@ public:
         return result;
     }
 
-    static int jackInstanceId; 
 
-    virtual void Open(const JackChannelSelection &channelSelection)
+    virtual void Open(const JackServerSettings &jackServerSettings,const JackChannelSelection &channelSelection)
     {
 
         std::lock_guard guard(mutex);
         if (channelSelection.GetInputAudioPorts().size() == 0
-        || channelSelection.getOutputAudioPorts().size() == 0)
+        || channelSelection.GetOutputAudioPorts().size() == 0)
         {
             return;
         }
@@ -1008,162 +911,32 @@ public:
 
         StartReaderThread();
 
-        jack_status_t status;
-        try
-        {
-            // need a unique instance name every timme.
-            std::stringstream s;
-            s << "PiPedal";
-            if (jackInstanceId != 0) {
-                s << jackInstanceId;
-            }
-            ++jackInstanceId;
+        try {
 
-            std::string instanceName = s.str();
+            audioDriver->Open(jackServerSettings,this->channelSelection);
 
-            client = jack_client_open(instanceName.c_str(), JackNullOption, &status);
-
-            if (client == nullptr || status & JackFailure)
-            {
-                if (client)
-                {
-                    jack_client_close(client);
-                    client = nullptr;
-                }
-                std::string error = GetJackErrorMessage(status);
-                Lv2Log::error(error);
-                throw PiPedalStateException(error.c_str());
-            }
-
-            if (status & JackServerStarted)
-            {
-                Lv2Log::info("Jack server started.");
-            }
-
-            jack_set_process_callback(client, process_fn, this);
-
-            jack_on_shutdown(client, jack_shutdown_fn, this);
-
-            #if JACK_SESSION_CALLBACK
-                jack_set_session_callback(client, session_callback_fn, NULL);
-            #endif
-
-            jack_set_xrun_callback(client, xrun_callback_fn, this);
-
-            this->sampleRate = jack_get_sample_rate(client);
+            this->sampleRate = audioDriver->GetSampleRate();
 
             this->overrunGracePeriodSamples = (uint64_t)(((uint64_t)this->sampleRate)*OVERRUN_GRACE_PERIOD_S);
-
-
             this->vuSamplesPerUpdate = (size_t)(sampleRate * VU_UPDATE_RATE_S);
 
-            auto &selectedInputPorts = channelSelection.GetInputAudioPorts();
-            this->inputPorts.clear();
-            this->outputPorts.clear();
-            this->midiInputPorts.clear();
 
-            this->inputPorts.resize(selectedInputPorts.size());
-            for (int i = 0; i < selectedInputPorts.size(); ++i)
-            {
-                std::stringstream name;
-                name << "input" << (i + 1);
-                this->inputPorts[i] =
-                    jack_port_register(
-                        client, name.str().c_str(),
-                        JACK_DEFAULT_AUDIO_TYPE,
-                        JackPortIsInput, 0);
-                if (this->inputPorts[i] == nullptr)
-                {
-                    Lv2Log::error("Can't allocate Jack Audio input ports.");
-                    throw PiPedalStateException("Failed to allocate Jack Audio port.");
-                }
-            }
-            auto &selectedOutputPorts = channelSelection.getOutputAudioPorts();
-            this->outputPorts.resize(selectedOutputPorts.size());
-            for (int i = 0; i < selectedOutputPorts.size(); ++i)
-            {
-                std::stringstream name;
-                name << "output" << (i + 1);
-                this->outputPorts[i] =
-                    jack_port_register(client, name.str().c_str(),
-                                       JACK_DEFAULT_AUDIO_TYPE,
-                                       JackPortIsOutput, 0);
-                if (this->outputPorts[i] == nullptr)
-                {
-                    Lv2Log::error("Can't allocate Jack Audio output port.");
-                    throw PiPedalStateException("Failed to allocate Jack Audio port.");
-                }
-            }
-            auto &selectedMidiPorts = channelSelection.GetInputMidiPorts();
-
-            midiLv2Buffers.resize(selectedMidiPorts.size());
-            for (size_t i = 0; i < selectedMidiPorts.size(); ++i)
+            midiLv2Buffers.resize(audioDriver->MidiInputBufferCount());
+            for (size_t i = 0; i < audioDriver->MidiInputBufferCount(); ++i)
             {
                 midiLv2Buffers[i] = AllocateRealtimeBuffer(MIDI_LV2_BUFFER_SIZE);
             }
 
-            this->midiInputPorts.resize(selectedMidiPorts.size());
-            for (int i = 0; i < selectedMidiPorts.size(); ++i)
-            {
-                std::stringstream name;
-                name << "midiIn" << (i + 1);
-                this->midiInputPorts[i] =
-                    jack_port_register(client, name.str().c_str(),
-                                       JACK_DEFAULT_MIDI_TYPE,
-                                       JackPortIsInput, 0);
-                if (this->midiInputPorts[i] == nullptr)
-                {
-                    std::stringstream s;
-                    s << "can't register Jack port " << name.str().c_str();
-                    Lv2Log::error(s.str());
-                    throw PiPedalStateException(s.str().c_str());
-                }
-            }
 
-            int activateResult = jack_activate(client);
-            if (activateResult == 0)
-            {
-                active = true;
+            active = true;
+            audioDriver->Activate();
+            Lv2Log::info("Audio started.");
 
-                for (int i = 0; i < selectedInputPorts.size(); ++i)
-                {
-                    auto result = jack_connect(client, selectedInputPorts[i].c_str(), jack_port_name(this->inputPorts[i]));
-                    if (result)
-                    {
-                        Lv2Log::error("Can't connect input port %s", selectedInputPorts[i].c_str());
-                        throw PiPedalStateException("Jack Audio port connection failed.");
-                    }
-                }
-                for (int i = 0; i < selectedOutputPorts.size(); ++i)
-                {
-                    auto result = jack_connect(client, jack_port_name(this->outputPorts[i]), selectedOutputPorts[i].c_str());
-                    if (result)
-                    {
-                        Lv2Log::error("Can't connect output port %s", selectedOutputPorts[i].c_str());
-                        throw PiPedalStateException("Jack Audio port connection failed.");
-                    }
-                }
-                for (int i = 0; i < selectedMidiPorts.size(); ++i)
-                {
-                    auto result = jack_connect(client, selectedMidiPorts[i].c_str(), jack_port_name(this->midiInputPorts[i]));
-                    if (result)
-                    {
-                        Lv2Log::error("Can't connect midi input port %s", selectedMidiPorts[i].c_str());
-                        throw PiPedalStateException("Jack Audio midi port connection failed.");
-                    }
-                }
-
-                Lv2Log::info("Jack configuration complete.");
-            }
-            else
-            {
-                Lv2Log::error("Failed to activate Jack Audio client. (%d)", (int)activateResult);
-                throw PiPedalStateException("Failed to activate Jack Audio client.");
-            }
         }
         catch (PiPedalException &e)
         {
             Close();
+            active = false;
             throw;
         }
     }
@@ -1366,6 +1139,8 @@ private:
                 AdminClient client;
 
                 client.SetJackServerConfiguration(jackServerSettings);
+
+
                 //this_->Open(this_->channelSelection);
                 this_->restarting = false;
                 onComplete(true, "");
@@ -1468,16 +1243,12 @@ public:
 
         result.temperaturemC_ = GetRaspberryPiTemperature();
 
-        result.active_ = this->active;
+        result.active_ = IsAudioActive();
         result.restarting_ = this->restarting;
 
-        if (client != nullptr)
+        if (this->audioDriver != nullptr)
         {
-            result.cpuUsage_ = jack_cpu_load(this->client);
-        }
-        else
-        {
-            result.cpuUsage_ = 0;
+            result.cpuUsage_ = audioDriver->CpuUse();
         }
         GetCpuFrequency(&result.cpuFreqMax_,&result.cpuFreqMin_);
         result.governor_ = GetGovernor();
@@ -1497,7 +1268,6 @@ public:
     }
 };
 
-int JackHostImpl::jackInstanceId = 0;
 
 JackHost *JackHost::CreateInstance(IHost *pHost)
 {
@@ -1506,6 +1276,7 @@ JackHost *JackHost::CreateInstance(IHost *pHost)
 
 JSON_MAP_BEGIN(JackHostStatus)
 JSON_MAP_REFERENCE(JackHostStatus, active)
+JSON_MAP_REFERENCE(JackHostStatus, errorMessage)
 JSON_MAP_REFERENCE(JackHostStatus, restarting)
 JSON_MAP_REFERENCE(JackHostStatus, underruns)
 JSON_MAP_REFERENCE(JackHostStatus, cpuUsage)

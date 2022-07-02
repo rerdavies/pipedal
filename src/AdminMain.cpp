@@ -204,10 +204,16 @@ bool setJackConfiguration(JackServerSettings serverSettings)
 {
     bool success = true;
 
+#if JACK_HOST
+
     serverSettings.Write();
 
     silentSysExec("/usr/bin/systemctl unmask jack");
     silentSysExec("/usr/bin/systemctl enable jack");
+#else
+    // otherwise, 
+    // the config was written before invoking admin main. but we still need to restart the service.
+#endif
 
     std::thread delayedRestartThread(delayedRestartProc);
     delayedRestartThread.detach();

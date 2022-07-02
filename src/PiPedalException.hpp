@@ -57,6 +57,10 @@ namespace pipedal
             : PiPedalException(std::forward<std::string>(what))
         {
         }
+        PiPedalStateException(const std::string &what)
+            : PiPedalException(what)
+        {
+        }
     };
     class PiPedalLogicException : public PiPedalException
     {

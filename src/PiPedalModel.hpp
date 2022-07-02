@@ -153,6 +153,8 @@ private: // IJackHostCallbacks
     virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl);
     virtual void OnNotifyAtomOutput(uint64_t instanceId, const std::string&atomType,const std::string&atomJson);
 
+
+    PiPedalConfiguration configuration;
 public:
     PiPedalModel();
     virtual ~PiPedalModel();
@@ -164,9 +166,10 @@ public:
 
     AdminClient&GetAdminClient() { return adminClient; }
 
+    void Init(const PiPedalConfiguration&configuration);
 
-    void LoadLv2PluginInfo(const PiPedalConfiguration&configuration);
-    void Load(const PiPedalConfiguration&configuration);
+    void LoadLv2PluginInfo();
+    void Load();
 
     const Lv2Host& GetLv2Host() const { return lv2Host; }
     PedalBoard  GetCurrentPedalBoardCopy() 

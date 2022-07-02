@@ -1,0 +1,474 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2022 Robin E. R. Davies
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is furnished to do
+ * so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include "CommandLineParser.hpp"
+#include "PrettyPrinter.hpp"
+#include <iostream>
+#include "PiPedalAlsa.hpp"
+#include "Lv2Log.hpp"
+#include <mutex>
+#include "AlsaDriver.hpp"
+#include <iomanip>
+#include <chrono>
+
+using namespace pipedal;
+
+constexpr int E_NOSIGNAL = 1;
+constexpr int E_OPEN_FAILURE = 2;
+constexpr int E_XRUN = 3;
+
+constexpr uint64_t NO_SIGNAL_VALUE = 0x7000000;
+
+struct TestResult {
+    int error = 0;
+    uint64_t latency = 0;
+    float cpuOverhead = 0;
+};
+void PrintHelp()
+{
+    PrettyPrinter pp;
+    pp.width(160);
+
+    pp << "PiPedal Latency Tester\n";
+    pp << "Copyright (c) 2022 Robin Davies\n";
+    pp << "\n";
+    pp << Indent(0) << "Syntax\n\n";
+    pp << Indent(4) << "pipedal_latency_test [<options>] <device-name>\n\n";
+    pp << Indent(0) << "Options\n\n";
+    pp << Indent(15);
+
+    pp << HangingIndent() << "  -l --list\t"
+       << "List available devices.\n\n";
+    pp << HangingIndent() << "  -r --rate\t"
+       << "Sample rate (default 48000).\n\n";
+    pp << HangingIndent() << "  -h --help\t"
+       << "Display this message.\n\n";
+
+    pp << Indent(0) << "Remarks\n\n";
+    pp << Indent(4);
+    pp << "PiPedal Latency Tester measure actual audio latency from output to input of an ALSA device. "
+       << "To run a latency test, you must connect an audio cable from left (first) output of the device "
+          "under test to the left (first) input of the device under test.\n\n"
+
+       << "PiPedal Latency Tester will measure the time it takes for a signal to propagate from output to input.\n\n"
+
+       << "The tests run over a variety of buffer sizes. A nominal compute load is provided in order to put some "
+          "stress on the audio system.\n\n"
+
+       << "You may need to stop the pipedald audio service in order to access the ALSA device:\n\n"
+       << Indent(8) << "sudo systemctl stop pipedald\n\n";
+    pp << Indent(0) << "Examples\n\n";
+    pp << Indent(4) << "pipedal_latency_test --list\n\n";
+    pp << Indent(4) << "pipedal_latency_test M2\n\n";
+}
+
+void ListDevices()
+{
+    PiPedalAlsaDevices alsaDevices;
+    auto devices = alsaDevices.GetAlsaDevices();
+
+    PrettyPrinter pp;
+    if (devices.size() == 0)
+    {
+        pp << "No devices found.\n";
+    }
+    else
+    {
+        pp << Indent(0);
+        pp << "Alsa Devices\n";
+        pp << Indent(15);
+
+        for (auto &device : devices)
+        {
+            pp << HangingIndent() << (device.id_) << "\t"
+               << device.longName_ << "\n";
+        }
+    }
+}
+
+class AlsaTester : private AudioDriverHost
+{
+public:
+    enum class TestType
+    {
+        Oscillator,
+        LatencyMonitor,
+        NullTest
+    };
+
+private:
+    AudioDriver *audioDriver = nullptr;
+
+    const std::string &deviceId;
+    uint32_t sampleRate;
+    int bufferSize;
+    int buffers;
+
+public:
+    AlsaTester(const std::string &deviceId, uint32_t sampleRate, int bufferSize, int buffers)
+        : deviceId(deviceId),
+          sampleRate(sampleRate),
+          bufferSize(bufferSize),
+          buffers(buffers)
+    {
+    }
+    ~AlsaTester()
+    {
+        delete audioDriver;
+        delete[] inputBuffers;
+        delete[] outputBuffers;
+    }
+
+    TestResult Test()
+    {
+        TestResult result;
+        try
+        {
+            JackServerSettings serverSettings(deviceId, sampleRate, bufferSize, buffers);
+
+            JackConfiguration jackConfiguration;
+            jackConfiguration.AlsaInitialize(serverSettings);
+
+            JackChannelSelection channelSelection(
+                jackConfiguration.GetInputAudioPorts(),
+                jackConfiguration.GetOutputAudioPorts(),
+                std::vector<AlsaMidiDeviceInfo>());
+
+            audioDriver = CreateAlsaDriver(this);
+
+            latencyMonitor.Init(jackConfiguration.GetSampleRate());
+            audioDriver->Open(serverSettings, channelSelection);
+
+            inputBuffers = new float *[channelSelection.GetInputAudioPorts().size()];
+            outputBuffers = new float *[channelSelection.GetOutputAudioPorts().size()];
+
+            audioDriver->Activate();
+
+            sleep(3); // let audio stabilize.
+
+            this->SetXruns(0);
+
+            sleep(7); // run for a bit.
+
+            audioDriver->Deactivate();
+            audioDriver->Close();
+
+            if (this->GetXruns() != 0)
+            {
+                result.error =  E_XRUN;
+                return result;
+            }
+            result.latency =  latencyMonitor.GetLatency();
+            if (result.latency ==  NO_SIGNAL_VALUE)
+            {
+                result.error = E_NOSIGNAL;
+            }
+            result.cpuOverhead = audioDriver->CpuOverhead();
+        }
+        catch (const std::exception &e)
+        {
+            result.error = E_OPEN_FAILURE;
+        }
+        return result;
+    }
+
+    float **inputBuffers = nullptr;
+    float **outputBuffers = nullptr;
+
+    class Oscillator
+    {
+    private:
+        double dx = 0;
+        double x = 0;
+        double dx2 = 0;
+        double x2 = 0;
+
+    public:
+        void Init(float frequency, size_t sampleRate)
+        {
+            dx = frequency * 3.141592736 * 2 / sampleRate;
+            dx2 = 0.5 * 3.141592736 * 2 / sampleRate;
+        }
+
+        float Next()
+        {
+            float result = (float)std::cos(x);
+            float env = (float)std::cos(x2);
+            x += dx;
+            x2 += dx2;
+            return result * env;
+        }
+    };
+
+    class LatencyMonitor
+    {
+        enum class State
+        {
+            Idle,
+            Waiting,
+        };
+        State state = State::Idle;
+        uint64_t t;
+        uint64_t idle_samples;
+        uint64_t waiting_samples;
+        size_t current_latency = 0;
+        size_t latency = 0;
+        std::mutex sync;
+
+    public:
+        void Init(uint64_t sampleRate)
+        {
+            idle_samples = (uint64_t)(sampleRate * 0.5);
+            waiting_samples = (uint64_t)(sampleRate * 0.5);
+
+            state = State::Idle;
+            t = idle_samples;
+            latency = 0;
+        }
+        void StartTest()
+        {
+        }
+
+        size_t GetLatency()
+        {
+            std::lock_guard lock{sync};
+            return latency;
+        }
+        float Next(float input)
+        {
+            switch (state)
+            {
+            default:
+            case State::Idle:
+            {
+                if (t-- == 0)
+                {
+                    state = State::Waiting;
+                    current_latency = 0;
+                }
+                return 0.01;
+            }
+            break;
+            case State::Waiting:
+            {
+                if (std::abs(input) > 0.1 || current_latency >= 2000)
+                {
+                    {
+                        std::lock_guard lock{sync};
+                        if (latency >= 2000)
+                        {
+                            latency = NO_SIGNAL_VALUE;
+                        }
+                        else
+                        {
+                            latency = current_latency;
+                        }
+                    }
+                    state = State::Idle;
+                    t = idle_samples;
+                }
+                else
+                {
+                    ++current_latency;
+                }
+                return current_latency < 100 ? 0.25 : 0.0;
+            }
+            break;
+            }
+        }
+    };
+
+    Oscillator oscillator;
+    LatencyMonitor latencyMonitor;
+
+    virtual void OnAudioStopped()
+    {
+    }
+    virtual void OnProcess(size_t nFrames)
+    {
+
+        size_t inputs = audioDriver->InputBufferCount();
+        size_t outputs = audioDriver->OutputBufferCount();
+
+        for (size_t i = 0; i < inputs; ++i)
+        {
+            inputBuffers[i] = audioDriver->GetInputBuffer(i, nFrames);
+        }
+        for (size_t i = 0; i < outputs; ++i)
+        {
+            outputBuffers[i] = audioDriver->GetOutputBuffer(i, nFrames);
+        }
+
+        for (size_t i = 0; i < nFrames; ++i)
+        {
+            float v = latencyMonitor.Next(inputBuffers[0][i]);
+            for (size_t c = 0; c < outputs; ++c)
+            {
+                outputBuffers[c][i] = v;
+            }
+        }
+    }
+    std::mutex sync;
+    uint64_t xruns;
+
+    uint64_t GetXruns()
+    {
+        lock_guard lock{sync};
+        return xruns;
+    }
+    void SetXruns(uint64_t value)
+    {
+        lock_guard lock{sync};
+        xruns = value;
+    }
+    virtual void OnUnderrun()
+    {
+        lock_guard lock{sync};
+        ++xruns;
+    }
+};
+
+TestResult RunLatencyTest(const std::string deviceId, uint32_t sampleRate, int bufferSize, int buffers)
+{
+    AlsaTester tester(deviceId, sampleRate, bufferSize, buffers);
+    return tester.Test();
+}
+
+static std::string msDisplay(float value)
+{
+    std::stringstream s;
+    s << fixed;
+    s.precision(1);
+    s  << value << "ms";
+    return s.str();
+}
+static std::string overheadDisplay(float value)
+{
+    std::stringstream s;
+    s << setw(3) << value << "%";
+    return s.str();
+}
+
+void RunLatencyTest(const std::string &deviceId, uint32_t sampleRate)
+{
+    PrettyPrinter pp;
+    pp << "Device: " << deviceId << " Rate: " << sampleRate << "\n\n";
+
+    const int SIZE_COLUMN_WIDTH = 8;
+    const int BUFFERS_COLUMN_WIDTH = 20;
+
+    static int bufferCounts[] = {2, 3, 4};
+    static int bufferSizes[] = {16, 24, 32, 48, 64, 128};
+
+    pp << Column(SIZE_COLUMN_WIDTH) << "Buffers\n";
+    pp << "Size";
+
+    int column = SIZE_COLUMN_WIDTH;
+    for (auto bufferCount : bufferCounts)
+    {
+        pp << Column(column) << bufferCount;
+        column += BUFFERS_COLUMN_WIDTH;
+    }
+    pp << "\n";
+
+    for (auto bufferSize : bufferSizes)
+    {
+        pp << bufferSize;
+
+        int column = SIZE_COLUMN_WIDTH;
+
+        for (auto bufferCount : bufferCounts)
+        {
+            auto result = RunLatencyTest(deviceId, sampleRate, bufferSize, bufferCount);
+
+            pp.Column(column);
+            column += BUFFERS_COLUMN_WIDTH;
+            switch (result.error)
+            {
+            case E_NOSIGNAL:
+                pp << "No signal";
+                break;
+            case E_OPEN_FAILURE:
+                pp << "Failed";
+                break;
+            case E_XRUN:
+                pp << "Xrun";
+                break;
+
+            default:
+            {
+                float ms = 1000.0f * result.latency / sampleRate;
+                pp << result.latency << "/" << msDisplay(ms) ;
+                break;
+            }
+            }
+        }
+        pp << "\n";
+    }
+}
+
+int main(int argc, const char **argv)
+{
+
+    Lv2Log::log_level(LogLevel::Warning);
+
+    CommandLineParser parser;
+
+    std::string deviceName;
+    bool listDevices = false;
+    bool help = false;
+    uint32_t sampleRate = 48000;
+
+    parser.AddOption("l", "list", &listDevices);
+    parser.AddOption("h", "help", &help);
+    parser.AddOption("r", "rate", &sampleRate);
+
+    try
+    {
+        parser.Parse(argc, argv);
+
+        if (help)
+        {
+            PrintHelp();
+        }
+        else if (listDevices)
+        {
+            ListDevices();
+        }
+        else if (parser.Arguments().size() == 1)
+        {
+            RunLatencyTest(parser.Arguments()[0], sampleRate);
+        }
+        else
+        {
+            PrintHelp();
+        }
+    }
+    catch (std::exception &e)
+    {
+        cout << "Error: " << e.what() << endl;
+        return 1;
+    }
+    return 0;
+}

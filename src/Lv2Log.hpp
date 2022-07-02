@@ -47,8 +47,10 @@ namespace pipedal
     class Lv2Log
     {
     private:
+        
         static Lv2Logger *logger_;
         static LogLevel log_level_;
+        static bool show_time_;
 
         static void v_error(const char *format, va_list arglist);
         static void v_warning(const char *format, va_list arglist);
@@ -67,6 +69,13 @@ namespace pipedal
         static LogLevel log_level()
         {
             return Lv2Log::log_level_;
+        }
+        static void show_time(bool show)
+        {
+            show_time_ = show;
+        }
+        static bool show_time()  {
+            return show_time_;
         }
 
         // static void error(const char* message) {

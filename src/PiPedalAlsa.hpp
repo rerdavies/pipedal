@@ -34,6 +34,16 @@ namespace pipedal {
         DECLARE_JSON_MAP(AlsaDeviceInfo);
 
     };
+    class AlsaMidiDeviceInfo {
+    public:
+        AlsaMidiDeviceInfo() { }
+        AlsaMidiDeviceInfo(const char*name, const char*description);
+        std::string name_;
+        std::string description_;
+
+        DECLARE_JSON_MAP(AlsaMidiDeviceInfo);
+
+    };
 
     class PiPedalAlsaDevices {
 
@@ -45,4 +55,6 @@ namespace pipedal {
         
         std::vector<AlsaDeviceInfo> GetAlsaDevices();
     };
+    std::vector<AlsaMidiDeviceInfo> GetAlsaMidiInputDevices();
+    std::vector<AlsaMidiDeviceInfo> GetAlsaMidiOutputDevices();
 }

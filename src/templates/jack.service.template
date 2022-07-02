@@ -3,6 +3,7 @@ Description=Jack Audio Daemon
 After=sound.target
 After=local-fs.target
 After=dbus.socket
+After=pipedald
 
 
 [Service]

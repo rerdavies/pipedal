@@ -21,6 +21,7 @@ add_custom_command(
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/react
 
     DEPENDS 
+    src/AlsaMidiDeviceInfo.tsx
     src/SearchControl.tsx
     src/SplitControlView.tsx
     src/WifiConfigSettings.tsx

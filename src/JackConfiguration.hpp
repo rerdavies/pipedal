@@ -22,6 +22,9 @@
 #include <vector>
 #include <string>
 #include "json.hpp"
+#include "JackServerSettings.hpp"
+#include "PiPedalAlsa.hpp"
+
 
 namespace pipedal
 {
@@ -42,11 +45,13 @@ namespace pipedal
 
         std::vector<std::string> inputAudioPorts_;
         std::vector<std::string> outputAudioPorts_;
-        std::vector<std::string> inputMidiPorts_;
-        std::vector<std::string> outputMidiPorts_;
+        std::vector<AlsaMidiDeviceInfo> inputMidiDevices_;
     public:
         JackConfiguration();
-        void Initialize();
+
+        void AlsaInitialize(const JackServerSettings &jackServerSettings); // from also config settings.
+
+        void JackInitialize(); // from jack server instance.
         ~JackConfiguration();
         bool isValid() const { return isValid_;}
         bool isRestarting() const { return isRestarting_; }
@@ -59,8 +64,7 @@ namespace pipedal
 
         const std::vector<std::string> &GetInputAudioPorts() const { return inputAudioPorts_; }
         const std::vector<std::string> &GetOutputAudioPorts() const { return outputAudioPorts_; }
-        const std::vector<std::string> &GetInputMidiPorts() const { return inputMidiPorts_; }
-        const std::vector<std::string> &GetOutputMidiPorts() const { return outputMidiPorts_; }
+        const std::vector<AlsaMidiDeviceInfo> &GetInputMidiDevices() const { return inputMidiDevices_; }
 
         DECLARE_JSON_MAP(JackConfiguration);
 
@@ -69,10 +73,20 @@ namespace pipedal
     private:
         std::vector<std::string> inputAudioPorts_;
         std::vector<std::string> outputAudioPorts_;
-        std::vector<std::string> inputMidiPorts_;
+        std::vector<AlsaMidiDeviceInfo> inputMidiDevices_;
     public:
         JackChannelSelection()
         {
+        }
+        JackChannelSelection(
+            std::vector<std::string> inputAudioPorts,
+            std::vector<std::string> outputAudioPorts,
+            std::vector<AlsaMidiDeviceInfo> inputMidiDevices
+        ) : inputAudioPorts_(inputAudioPorts),
+            outputAudioPorts_(outputAudioPorts),
+            inputMidiDevices_(inputMidiDevices)
+        {
+
         }
 
         bool isValid() const {
@@ -83,14 +97,14 @@ namespace pipedal
         {
             return inputAudioPorts_;
         }
-        const std::vector<std::string>& getOutputAudioPorts() const
+        const std::vector<std::string>& GetOutputAudioPorts() const
         {
             return outputAudioPorts_;
         }
 
-        const std::vector<std::string>& GetInputMidiPorts() const
+        const std::vector<AlsaMidiDeviceInfo>& GetInputMidiDevices() const
         {
-            return inputMidiPorts_;
+            return inputMidiDevices_;
         }
         JackChannelSelection RemoveInvalidChannels(const JackConfiguration&config) const;
 

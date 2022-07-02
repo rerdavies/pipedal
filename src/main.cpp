@@ -18,6 +18,8 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
+
+#include "AudioConfig.hpp"
 #include "BeastServer.hpp"
 #include <iostream>
 #include "Lv2Log.hpp"
@@ -404,7 +406,7 @@ public:
     }
 };
 
-/* When hosting a react app, replace /var/config.json with 
+/* When hosting a react app, replace /var/config.json with
    data that will connect the react app with our socket server.
 */
 
@@ -487,7 +489,6 @@ static bool isJackServiceRunning()
     std::filesystem::path path = "/dev/shm/jack_default_0";
     return std::filesystem::exists(path);
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -621,39 +622,10 @@ int main(int argc, char *argv[])
     {
         PiPedalModel model;
 
-        // Pre-populate ALSA device info,wait for jackd service (daemon only)
-        model.GetAlsaDevices(); // pre-cache ALSA devices.
-        if (systemd)
-        {
-            auto devices = model.GetAlsaDevices(); // pre-cache ALSA devices (most especially, the one which Jack will open, that we can no longer read)
+        model.Init(configuration);
 
-            auto serverSettings = model.GetJackServerSettings();
-            if (serverSettings.IsValid())
-            {
-                // wait up to 15 seconds for the midi device to come online.
-                if (!HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
-                {
-                    Lv2Log::info("Waiting for ALSA device " + serverSettings.GetAlsaDevice());
-                    for (int i = 0; i < 10; ++i)
-                    {
-                        sleep(1);
-                        devices = model.GetAlsaDevices();
-                        if (HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
-                        {
-                            break;
-                        }
-                        if (g_SigBreak)
-                            break;
-                    }
-                }
-            }
-
-            // pre-cache device info before we let audio services run.
-            model.GetAlsaDevices();
-        }
-
-        // Get heavy IO out of the way before letting dependent (Jack) services run.
-        model.LoadLv2PluginInfo(configuration);
+        // Get heavy IO out of the way before letting dependent (Jack/ALSA) services run.
+        model.LoadLv2PluginInfo();
         if (systemd)
         {
             // Tell systemd we're done.
@@ -662,34 +634,85 @@ int main(int argc, char *argv[])
                        (unsigned long)getpid());
         }
 
-        if (!isJackServiceRunning())
-        {
-            Lv2Log::info("Waiting for Jack service.");
-            // wait up to 15 seconds for the jack service to come online.
-            for (int i = 0; i < 15; ++i)
-            {
-                // use the time to prepopulate ALSA device cache before jack
-                // opens the device and we can't read properties.
-                model.GetAlsaDevices();
 
-                sleep(1);
-                if (isJackServiceRunning())
+        auto serverSettings = model.GetJackServerSettings();
+
+
+        if (true || systemd)
+        {
+            // IF running as a service, wait for selected audio device to be initialized.
+            // It may take some time for ALSA to publish all available devices.
+
+            if (serverSettings.IsValid())
+            {
+                // wait up to 15 seconds for the midi device to come online.
+                auto devices = model.GetAlsaDevices();
+                bool firstMessage = true;
+                bool found = false;
+                if (!HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
                 {
-                    break;
+                    if (firstMessage) Lv2Log::info(SS("Waiting for ALSA device " << serverSettings.GetAlsaDevice() << " to come online..."));
+                    firstMessage = false;
+                    for (int i = 0; i < 5; ++i)
+                    {
+                        sleep(3);
+                        devices = model.GetAlsaDevices();
+                        if (HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
+                        {
+                            found = true;
+                            break;
+                        }
+                        if (g_SigBreak)
+                            exit(1);
+                    }
+                    if (found)
+                    {
+                        Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaDevice() << "."));
+                    } else {
+                        Lv2Log::info(SS("ALSA device " << serverSettings.GetAlsaDevice() << " not found."));
+                    }
                 }
             }
-        }
-        if (isJackServiceRunning())
-        {
-            Lv2Log::info("Found  Jack service.");
-            sleep(3); // jack needs a little time to get up to speed.
-        }
-        else
-        {
-            Lv2Log::info("Jack service not started.");
+
+            // pre-cache device info before we let audio services run.
+            model.GetAlsaDevices();
         }
 
-        model.Load(configuration);
+#if JACK_HOST
+        if (systemd)
+        {
+
+            if (!isJackServiceRunning())
+            {
+                Lv2Log::info("Waiting for Jack service.");
+                // wait up to 15 seconds for the jack service to come online.
+                for (int i = 0; i < 15; ++i)
+                {
+                    // use the time to prepopulate ALSA device cache before jack
+                    // opens the device and we can't read properties.
+                    model.GetAlsaDevices();
+
+                    sleep(1);
+                    if (isJackServiceRunning())
+                    {
+                        break;
+                    }
+                }
+            }
+            if (isJackServiceRunning())
+            {
+                Lv2Log::info("Found  Jack service.");
+                sleep(3); // jack needs a little time to get up to speed.
+            }
+            else
+            {
+                Lv2Log::info("Jack service not started.");
+            }
+            model.GetAlsaDevices();
+        }
+#endif
+
+        model.Load();
 
         auto pipedalSocketFactory = MakePiPedalSocketFactory(model);
 

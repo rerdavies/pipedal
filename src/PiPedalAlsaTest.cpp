@@ -32,7 +32,14 @@ TEST_CASE( "ALSA Test", "[pipedal_alsa_test][Build][Dev]" ) {
 
     PiPedalAlsaDevices devices;
     auto result = devices.GetAlsaDevices();
-    std::cout << result.size() << " ALSA devices found." << 0;
+    std::cout << result.size() << " ALSA devices found." << std::endl;
+
+    auto midiInputDevices = GetAlsaMidiInputDevices();
+    std::cout << midiInputDevices.size() << " ALSA MIDI input devices found." << std::endl;
+    auto midiOutputDevices = GetAlsaMidiOutputDevices();
+    std::cout << midiOutputDevices.size() << " ALSA MIDI output devices found." << std::endl;
+
+
 }
 
 

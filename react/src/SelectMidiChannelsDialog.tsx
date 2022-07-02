@@ -27,38 +27,43 @@ import Dialog from '@mui/material/Dialog';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 import Checkbox from '@mui/material/Checkbox';
+import {AlsaMidiDeviceInfo} from './AlsaMidiDeviceInfo';
 
 
 
 
 export interface SelectMidiChannelsDialogProps {
     open: boolean;
-    selectedChannels: string[];
-    availableChannels: string[];
-    onClose: (selectedChannels: string[] | null) => void;
+    selectedChannels: AlsaMidiDeviceInfo[];
+    availableChannels: AlsaMidiDeviceInfo[];
+    onClose: (selectedChannels: AlsaMidiDeviceInfo[] | null) => void;
 }
 
-function isChecked(selectedChannels: string[], channel: string): boolean {
+function isChecked(selectedChannels: AlsaMidiDeviceInfo[], channel: AlsaMidiDeviceInfo): boolean {
     for (let i = 0; i < selectedChannels.length; ++i) {
-        if (selectedChannels[i] === channel) return true;
+        if (selectedChannels[i].equals(channel)) return true;
     }
     return false;
 }
-function addPort(availableChannels: string[], selectedChannels: string[], newChannel: string) {
-    let result: string[] = [];
+function addPort(availableChannels: AlsaMidiDeviceInfo[], selectedChannels: AlsaMidiDeviceInfo[], newChannel: AlsaMidiDeviceInfo)
+:AlsaMidiDeviceInfo[]
+ {
+    let result: AlsaMidiDeviceInfo[] = [];
     for (let i = 0; i < availableChannels.length; ++i) {
         let channel = availableChannels[i];
-        if (isChecked(selectedChannels, channel) || channel === newChannel) {
+        if (isChecked(selectedChannels, channel) || channel.equals(newChannel)) {
             result.push(channel);
         }
     }
     return result;
 }
 
-function removePort(selectedChannels: string[], channel: string) {
-    let result: string[] = [];
+function removePort(selectedChannels: AlsaMidiDeviceInfo[], channel: AlsaMidiDeviceInfo) 
+:AlsaMidiDeviceInfo[]
+{
+    let result: AlsaMidiDeviceInfo[] = [];
     for (let i = 0; i < selectedChannels.length; ++i) {
-        if (selectedChannels[i] !== channel) {
+        if (!selectedChannels[i].equals(channel)) {
             result.push(selectedChannels[i]);
         }
     }
@@ -72,7 +77,7 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
 
 
 
-    let toggleSelect = (value: string) => {
+    let toggleSelect = (value: AlsaMidiDeviceInfo) => {
         if (!isChecked(currentSelection, value)) {
             setCurrentSelection(addPort(availableChannels, currentSelection, value));
         } else {
@@ -90,15 +95,15 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
 
     return (
         <Dialog onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
-            <DialogTitle id="simple-dialog-title">Select Channels</DialogTitle>
+            <DialogTitle id="simple-dialog-title">Select MIDI Device</DialogTitle>
             <List>
                 {availableChannels.map((channel) => (
                     <ListItem button >
                         <FormControlLabel
                             control={
-                                <Checkbox checked={isChecked(currentSelection, channel)} onClick={() => toggleSelect(channel)} key={channel} />
+                                <Checkbox checked={isChecked(currentSelection, channel)} onClick={() => toggleSelect(channel)} key={channel.name} />
                             }
-                            label={channel}
+                            label={channel.description}
                         />
                     </ListItem>
                 )
