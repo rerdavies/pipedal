@@ -176,7 +176,9 @@ void JackConfiguration::JackInitialize()
 
         AddPorts(client, &this->inputAudioPorts_, "system", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput);
         AddPorts(client, &this->outputAudioPorts_, "system", JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput);
-        isValid_ = true;
+        AddPorts(client, &this->inputMidiPorts_, "system", JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput);
+        AddPorts(client, &this->outputMidiPorts_, "system", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput);
+        isValid_ = (this->inputAudioPorts_.size() > 0 && this->outputAudioPorts_.size() > 0);
         this->errorStatus_ = "";
         jack_client_close(client);
     }

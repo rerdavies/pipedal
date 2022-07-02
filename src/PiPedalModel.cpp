@@ -704,7 +704,15 @@ void PiPedalModel::UpdateDnsSd()
 
     DeviceIdFile deviceIdFile;
     deviceIdFile.Load();
-    avahiService.Announce(webPort,deviceIdFile.deviceName,deviceIdFile.uuid,"pipedal");
+    if (deviceIdFile.deviceName != "" && deviceIdFile.uuid != "")
+    {
+        avahiService.Announce(webPort,deviceIdFile.deviceName,deviceIdFile.uuid,"pipedal");
+    } else {
+        // device_uuid file is written at install time. This warning is harmless if you're debugging.
+        // Without it, we can't pulblish the website via dnsDS.
+        // Run "pipedalconfig --install" to create the file.
+        Lv2Log::warning("Cant read device_uuid file. dnsSD announcement skipped.");
+    }
 
 }
 void PiPedalModel::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiDirectConfigSettings)

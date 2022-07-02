@@ -425,12 +425,18 @@ public:
     }
     std::string GetConfig(const std::string &fromAddress)
     {
-        std::string linkLocalAddress = GetLinkLocalAddress(fromAddress);
+        #define LINK_LOCAL_WEB_SOCKET 1
+        #if LINK_LOCAL_WEB_SOCKET 
+        std::string webSocketAddress = GetLinkLocalAddress(fromAddress);
+        Lv2Log::info(SS("Web Socket Adddress: " << webSocketAddress << ":" << portNumber));
+        #else
+        std::string webSocketAddress = "*";
+        #endif
 
         std::stringstream s;
 
         s << "{ \"socket_server_port\": " << portNumber
-          << ", \"socket_server_address\": \"" << linkLocalAddress << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize << " }";
+          << ", \"socket_server_address\": \"" << webSocketAddress << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize << " }";
 
         return s.str();
     }

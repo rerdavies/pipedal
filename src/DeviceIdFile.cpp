@@ -39,16 +39,16 @@ const char DeviceIdFile::DEVICEID_FILE_NAME[] = "/etc/pipedal/config/device_uuid
 
 void DeviceIdFile::Load()
 {
-    ifstream f;
-
-    f.open(DEVICEID_FILE_NAME);
-    if (!f.is_open())
     {
-        throw invalid_argument("Can't open file " + std::string(DEVICEID_FILE_NAME));
-    }
+        ifstream f;
 
-    std::getline(f, uuid);
-    std::getline(f, deviceName);
+        f.open(DEVICEID_FILE_NAME);
+        if (f.is_open())
+        {
+            std::getline(f, uuid);
+            std::getline(f, deviceName);
+        }
+    }
 }
 void DeviceIdFile::Save()
 {
@@ -67,9 +67,8 @@ void DeviceIdFile::Save()
         {
             throw logic_error("Group not found: pipedal_d");
         }
-        std::ignore = chown(path.c_str(),-1,group_->gr_gid);
+        std::ignore = chown(path.c_str(), -1, group_->gr_gid);
         std::ignore = chmod(path.c_str(), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-
 
         f << uuid << endl;
         f << deviceName << endl;

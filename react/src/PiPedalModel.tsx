@@ -63,6 +63,7 @@ export interface PluginPresetsChangedHandle {
 
 export interface ZoomedControlInfo {
     source: HTMLElement;
+    name: string;
     instanceId: number;
     uiControl: UiControl;
 }
@@ -432,6 +433,9 @@ export interface PiPedalModel {
     getAlsaDevices(): Promise<AlsaDeviceInfo[]>;
 
     zoomUiControl(sourceElement: HTMLElement, instanceId: number, uiControl: UiControl): void;
+
+    onPreviousZoomedControl() : void;
+    onNextZoomedControl() : void;
     clearZoomedControl(): void;
 
     setFavorite(pluginUrl: string, isFavorite: boolean): void;
@@ -2094,8 +2098,92 @@ class PiPedalModelImpl implements PiPedalModel {
 
     }
     zoomUiControl(sourceElement: HTMLElement, instanceId: number, uiControl: UiControl): void {
-        this.zoomedUiControl.set({ source: sourceElement, instanceId: instanceId, uiControl: uiControl });
+        let name = uiControl.name;
+        if (uiControl.port_group !== "")
+        {
+            let pedalboard = this.pedalBoard.get();
+            if (pedalboard)
+            {
+                let plugin = pedalboard.getItem(instanceId);
+                let uiPlugin = this.getUiPlugin(plugin.uri);
+                if (uiPlugin)
+                {
+                    for (let i = 0; i < uiPlugin.port_groups.length; ++i)
+                    {
+                        if (uiPlugin.port_groups[i].symbol === uiControl.port_group)
+                        {
+                            name = uiPlugin.port_groups[i].name + " / " + name;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        this.zoomedUiControl.set({ source: sourceElement, name: name, instanceId: instanceId, uiControl: uiControl });
     }
+    onPreviousZoomedControl() : void
+    {
+        let currentUiControl = this.zoomedUiControl.get();
+        if (!currentUiControl) return;
+
+        let currentSymbol = currentUiControl.uiControl.symbol;
+
+        let pedalboard = this.pedalBoard.get();
+        if (!pedalboard) return;
+
+        let pedalboardItem = pedalboard.getItem(currentUiControl.instanceId);
+
+        let uiPlugin = this.getUiPlugin(pedalboardItem.uri);
+        if (!uiPlugin) return;
+
+        let i = 0;
+        let ix = -1;
+        for (i = 0; i < uiPlugin.controls.length; ++i)
+        {
+            if (uiPlugin.controls[i].symbol === currentSymbol) {
+                ix = i;
+                break;
+            }
+        }
+        if (ix === -1) return;
+
+        ++ix;
+        if (ix >= uiPlugin.controls.length) return;
+
+        this.zoomUiControl(currentUiControl.source,currentUiControl.instanceId,uiPlugin.controls[ix]);
+    }
+    onNextZoomedControl() : void
+    {
+        let currentUiControl = this.zoomedUiControl.get();
+        if (!currentUiControl) return;
+
+        let currentSymbol = currentUiControl.uiControl.symbol;
+
+        let pedalboard = this.pedalBoard.get();
+        if (!pedalboard) return;
+
+        let pedalboardItem = pedalboard.getItem(currentUiControl.instanceId);
+
+        let uiPlugin = this.getUiPlugin(pedalboardItem.uri);
+        if (!uiPlugin) return;
+
+        let i = 0;
+        let ix = -1;
+        for (i = 0; i < uiPlugin.controls.length; ++i)
+        {
+            if (uiPlugin.controls[i].symbol === currentSymbol) {
+                ix = i;
+                break;
+            }
+        }
+        if (ix === -1) return;
+
+        --ix;
+        if (ix < 0) return;
+        
+        this.zoomUiControl(currentUiControl.source,currentUiControl.instanceId,uiPlugin.controls[ix]);
+    }
+
     clearZoomedControl(): void {
         this.zoomedUiControl.set(undefined);
     }

@@ -75,7 +75,7 @@ using namespace pipedal;
 #define PIPEDAL_P2PD_SERVICE "pipedal_p2pd"
 #define JACK_SERVICE "jack"
 
-#define REMOVE_OLD_SERVICE 1 // Grandfathering: whether to remove the old shutdown service (now pipedaladmind)
+#define REMOVE_OLD_SERVICE 0 // Grandfathering: whether to remove the old shutdown service (now pipedaladmind)
 #define OLD_SHUTDOWN_SERVICE "pipedalshutdownd"
 
 std::filesystem::path GetServiceFileName(const std::string &serviceName)
@@ -112,11 +112,11 @@ void EnableService()
 {
     if (sysExec(SYSTEMCTL_BIN " enable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to enable the " NATIVE_SERVICE " service.";
+        cout << "Error: Failed to enable the " NATIVE_SERVICE " service.\n";
     }
     if (sysExec(SYSTEMCTL_BIN " enable " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to enable the " ADMIN_SERVICE " service.";
+        cout << "Error: Failed to enable the " ADMIN_SERVICE " service.\n";
     }
 }
 void DisableService()
@@ -131,16 +131,16 @@ void DisableService()
     #endif
     if (sysExec(SYSTEMCTL_BIN " disable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to disable the " NATIVE_SERVICE " service.";
+        cout << "Error: Failed to disable the " NATIVE_SERVICE " service.\n";
     }
     if (sysExec(SYSTEMCTL_BIN " disable " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to disable the " ADMIN_SERVICE " service.";
+        cout << "Error: Failed to disable the " ADMIN_SERVICE " service.\n";
     }
 #if REMOVE_OLD_SERVICE
     if (sysExec(SYSTEMCTL_BIN " disable " OLD_SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to disable the " OLD_SHUTDOWN_SERVICE " service.";
+        cout << "Error: Failed to disable the " OLD_SHUTDOWN_SERVICE " service.\n";
     }
 #endif
 }
@@ -149,18 +149,18 @@ void StopService(bool excludeShutdownService = false)
 {
     if (sysExec(SYSTEMCTL_BIN " stop " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to stop the " NATIVE_SERVICE " service.";
+        cout << "Error: Failed to stop the " NATIVE_SERVICE " service.\n";
     }
     if (!excludeShutdownService)
     {
         if (sysExec(SYSTEMCTL_BIN " stop " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
         {
-            cout << "Error: Failed to stop the " ADMIN_SERVICE " service.";
+            cout << "Error: Failed to stop the " ADMIN_SERVICE " service.\n";
         }
 #if REMOVE_OLD_SERVICE
         if (sysExec(SYSTEMCTL_BIN " stop " OLD_SHUTDOWN_SERVICE ".service") != EXIT_SUCCESS)
         {
-            cout << "Error: Failed to stop the " OLD_SHUTDOWN_SERVICE " service.";
+            cout << "Error: Failed to stop the " OLD_SHUTDOWN_SERVICE " service.\n";
         }
 #endif
     }
@@ -168,7 +168,7 @@ void StopService(bool excludeShutdownService = false)
     if (sysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
         #if INSTALL_JACK_SERVICE
-        throw PiPedalException("Failed to stop the " JACK_SERVICE " service.");
+        cout << PiPedalException("Failed to stop the " JACK_SERVICE " service.");
         #endif
     }
 #endif
@@ -551,9 +551,24 @@ static void PrepareDeviceidFile()
     {
         DeviceIdFile deviceIdFile;
 
-        deviceIdFile.deviceName = "PiPedal-" + RandomChars(2);
+        deviceIdFile.deviceName = "PiPedal";
         deviceIdFile.uuid = MakeUuid();
         deviceIdFile.Save();
+    } else {
+        DeviceIdFile deviceIdFile;
+        if (deviceIdFile.deviceName == "" || deviceIdFile.uuid == "")
+        {
+            if (deviceIdFile.deviceName == "")
+            {
+                deviceIdFile.deviceName = "PiPedal";
+            }
+            if (deviceIdFile.uuid == "")
+            {
+                deviceIdFile.uuid = MakeUuid();
+            }
+            deviceIdFile.Save();
+        }
+
     }
 }
 
@@ -562,6 +577,10 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
     if (sysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
         throw PiPedalException("Failed to create audio service group.");
+    }
+    if (sysExec(GROUPADD_BIN " -f " SERVICE_GROUP_NAME) != EXIT_SUCCESS)
+    {
+        throw PiPedalException("Failed to create pipedald service group.");
     }
 
     PrepareDeviceidFile();

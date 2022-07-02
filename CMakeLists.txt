@@ -4,7 +4,6 @@ project(pipedal
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
-
 set (DISPLAY_VERSION "v0.9.11-rc-2")
 
 set (CMAKE_INSTALL_PREFIX "/usr/")
