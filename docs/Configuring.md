@@ -48,13 +48,33 @@ If you already have another web server on port 80, see [*How to Change the Web S
 
 Once connected, select the Settings menu item on the Hamburger menu at the top left corner of the display. Click on Audio Device Settings to select and configure the audio device you want to use. 
 
-<table border="1px #c0c0c0"><tr><td>
-     IMPORTANT NOTE: If you are using a USB audio device, you <i>MUST</i? set the number of buffers to 3, and you <i>MUST</i> set the sample rate to 48,000
-     in order to acheive reasonable latency on Linux. For other devices, you probably want to use 2 buffers.
-    </td></tr></table>
-
 You may also need to choose which audio input and output channels you will use for guitar signals, once you have selected and configured 
-an audio device. Most external USB audio devices that have two inputs provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from.
+an audio device. Many external USB audio devices that have two inputs provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from.
+
+#### Selecting Audio Buffer Sizes
+
+You may have to experiment to find the buffer size, and buffer count that works best for your. The actual round-trip latency and frequency of audio overruns and underruns depends the the operating system system version, the audio hardware being used, and upon CPU use of the audio patches you are using. Selecting larger buffer sizes or larger buffer counts increase the amount of computing power available for your audio effects, and will reduce the number of dropouts caused by audio overruns/underruns (xruns); smaller buffer sizes and buffer counts improve the overall round-trip latency but will increase the likelihood of xruns.
+
+Please note that the Raspberry Pi OS is not completely robust with respect to realtime scheduling. Significant display activity, SD-CARD activity or heavy CPU use by programs other than PiPedal may cause audio xruns. For best results, run PiPedal without a display attached, and with no other programs running. Connecting remotely to the PiPedal web interface should not cause problems. 
+
+PiPedal provides the pipedal_latency_test utility to measure actual round-trip audio latency. You must temporarily disable pipedal (`sudo systemctl stop pipedal`), and connect the left audio output of your audio device to the left audio input of your audio device with a guitar cable to use this test. 
+
+The following table shows measured round-trip audio latencies for a MOTU M2 external USB adapter running on Raspbery Pi OS. You can use these figures as a rough guideline; but actual round-trip audio latency will depend on the audio device you are using.
+
+<table align='center'>
+    <tr><td></td><td colspan=3>Buffers</td></tr>
+    <tr><td>Size</td><td>2</td><td>3</td><td>4</td></tr>
+    <tr><td>16</td><td>No signal</td><td>185/3.9ms</td><td>201/4.2ms</td></tr>
+    <tr><td>24</td><td>192/4.0ms</td><td>213/4.4ms</td><td>236/4.9ms</td></tr>
+    <tr><td>32</td><td>219/4.6ms</td><td>236/4.9ms</td><td>272/5.7ms</td></tr>
+    <tr><td>48</td><td>253/5.3ms</td><td>299/6.2ms</td><td>348/7.2ms</td></tr>
+    <tr><td>64</td><td>280/5.8ms</td><td>346/7.2ms</td><td>411/8.6ms</td></tr>
+    <tr><td>128</td><td>442/9.2ms</td><td>571/11.9ms</td><td>699/14.6ms</td></tr>
+</table>
+
+LINUX Kernel version 5.16 includes fixes to ALSA audio that are supposed to dramatically improve USB audio latency. As of July 2022, these fixes have not yet made it into Raspberry Pi OS, but are probably available on non-LTS versions of Ubuntu.
+
+PiPedal uses the ALSA audio stack; so (unlike Jack Audio) there is no performance penalty for using 44100Hz sample rates. However, using a 48000Hz sampling rates does provide significant improvements in high-frequency audio quality when performing digital audio signal processing.
 
 ### Activating the P2P (Wi-Fi Direct) Hotspot
 
