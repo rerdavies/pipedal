@@ -1,19 +1,5 @@
 ## Configuring PiPedal After Installation
 
-<table border="1px #C0C0C0">
-    <tr>
-        <td>
-            Note: Because PiPedal Remote Android app has just been released on Google Play, you won't be able 
-            to find it in the search listings yet. Use the following URL to directly access and install PiPedal Remote:
-            <br/>
-            <br/>
-            &nbsp;&nbsp;&nbsp;&nbsp;<a href="https://play.google.com/store/apps/details?id=com.twoplay.piped">https://play.google.com/store/apps/details?id=com.twoplay.pipedal</a>
-            <br/>
-            <br/>
-        </td>
-    </tr>
-</table>
-
 Before using PiPedal, you will need to configure settings for the audio device that PiPedal will use.
 
 You will also want to configure PiPedal  to provide a Wi-Fi Direct access point (hotspot) that you can connect to using your phone. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that the Wi-Fi Direct access point is enabled before you do. 
