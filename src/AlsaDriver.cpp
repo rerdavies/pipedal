@@ -582,7 +582,7 @@ namespace pipedal
         {
             int err;
 
-            alsa_device_name = jackServerSettings.GetAlsaDevice();
+            alsa_device_name = jackServerSettings.GetAlsaInputDevice();
 
             this->numberOfBuffers = jackServerSettings.GetNumberOfBuffers();
             this->bufferSize = jackServerSettings.GetBufferSize();
@@ -1506,7 +1506,7 @@ namespace pipedal
         snd_pcm_t *captureHandle = nullptr;
         snd_pcm_hw_params_t *playbackHwParams = nullptr;
         snd_pcm_hw_params_t *captureHwParams = nullptr;
-        std::string alsaDeviceName = jackServerSettings.GetAlsaDevice();
+        std::string alsaDeviceName = jackServerSettings.GetAlsaInputDevice();
         bool result = false;
 
         try

@@ -24,6 +24,7 @@
 #include "viewstream.hpp"
 #include "PiPedalVersion.hpp"
 #include <atomic>
+#include <limits>
 #include "Lv2Log.hpp"
 #include "JackConfiguration.hpp"
 #include <future>
@@ -41,14 +42,13 @@
 using namespace std;
 using namespace pipedal;
 
-
-class NotifyMidiListenerBody {
+class NotifyMidiListenerBody
+{
 public:
     int64_t clientHandle_;
     bool isNote_;
     int32_t noteOrControl_;
     DECLARE_JSON_MAP(NotifyMidiListenerBody);
-
 };
 JSON_MAP_BEGIN(NotifyMidiListenerBody)
 JSON_MAP_REFERENCE(NotifyMidiListenerBody, clientHandle)
@@ -56,7 +56,8 @@ JSON_MAP_REFERENCE(NotifyMidiListenerBody, isNote)
 JSON_MAP_REFERENCE(NotifyMidiListenerBody, noteOrControl)
 JSON_MAP_END()
 
-class NotifyAtomOutputBody {
+class NotifyAtomOutputBody
+{
 public:
     int64_t clientHandle_;
     uint64_t instanceId_;
@@ -71,8 +72,9 @@ JSON_MAP_REFERENCE(NotifyAtomOutputBody, instanceId)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, atomJson)
 JSON_MAP_END()
 
-class ListenForMidiEventBody {
-public: 
+class ListenForMidiEventBody
+{
+public:
     bool listenForControlsOnly_;
     int64_t handle_;
     DECLARE_JSON_MAP(ListenForMidiEventBody);
@@ -83,8 +85,9 @@ JSON_MAP_REFERENCE(ListenForMidiEventBody, listenForControlsOnly)
 JSON_MAP_REFERENCE(ListenForMidiEventBody, handle)
 JSON_MAP_END()
 
-class ListenForAtomOutputBody {
-public: 
+class ListenForAtomOutputBody
+{
+public:
     uint64_t instanceId_;
     int64_t handle_;
     DECLARE_JSON_MAP(ListenForAtomOutputBody);
@@ -95,9 +98,9 @@ JSON_MAP_REFERENCE(ListenForAtomOutputBody, instanceId)
 JSON_MAP_REFERENCE(ListenForAtomOutputBody, handle)
 JSON_MAP_END()
 
-
-class OnLoadPluginPresetBody {
-public: 
+class OnLoadPluginPresetBody
+{
+public:
     int64_t instanceId_;
     std::vector<ControlValue> controlValues_;
     DECLARE_JSON_MAP(OnLoadPluginPresetBody);
@@ -108,8 +111,9 @@ JSON_MAP_REFERENCE(OnLoadPluginPresetBody, instanceId)
 JSON_MAP_REFERENCE(OnLoadPluginPresetBody, controlValues)
 JSON_MAP_END()
 
-class LoadPluginPresetBody {
-public: 
+class LoadPluginPresetBody
+{
+public:
     uint64_t pluginInstanceId_;
     uint64_t presetInstanceId_;
     DECLARE_JSON_MAP(LoadPluginPresetBody);
@@ -146,7 +150,6 @@ JSON_MAP_BEGIN(MonitorResultBody)
 JSON_MAP_REFERENCE(MonitorResultBody, subscriptionHandle)
 JSON_MAP_REFERENCE(MonitorResultBody, value)
 JSON_MAP_END()
-
 
 class GetLv2ParameterBody
 {
@@ -204,15 +207,15 @@ JSON_MAP_REFERENCE(SavePluginPresetAsBody, instanceId)
 JSON_MAP_REFERENCE(SavePluginPresetAsBody, name)
 JSON_MAP_END()
 
-class RenameBankBody {
+class RenameBankBody
+{
 public:
     int64_t bankId_;
     std::string newName_;
     DECLARE_JSON_MAP(RenameBankBody);
-
 };
 JSON_MAP_BEGIN(RenameBankBody)
-JSON_MAP_REFERENCE(RenameBankBody,bankId)
+JSON_MAP_REFERENCE(RenameBankBody, bankId)
 JSON_MAP_REFERENCE(RenameBankBody, newName)
 JSON_MAP_END()
 
@@ -332,15 +335,11 @@ JSON_MAP_REFERENCE(ControlChangedBody, symbol)
 JSON_MAP_REFERENCE(ControlChangedBody, value)
 JSON_MAP_END()
 
-
-
-
-
-
 class PiPedalSocketHandler : public SocketHandler, public IPiPedalModelSubscriber
 {
 private:
-    AdminClient& GetAdminClient() const {
+    AdminClient &GetAdminClient() const
+    {
         return model.GetAdminClient();
     }
     void RequestShutdown(bool restart);
@@ -364,8 +363,11 @@ private:
     {
         int64_t subscriptionHandle = -1;
         int64_t instanceId = -1;
-        bool waitingForAck = false;
         std::string key;
+
+        float lastSentValue = 0;
+        bool pendingValue = false;
+        bool waitingForAck = false;
     };
 
     std::vector<PortMonitorSubscription> activePortMonitors;
@@ -396,9 +398,9 @@ public:
         : model(model), clientId(++nextClientId)
     {
         std::stringstream imageList;
-        const std::filesystem::path& webRoot = model.GetWebRoot() / "img";
+        const std::filesystem::path &webRoot = model.GetWebRoot() / "img";
         bool firstTime = true;
-        for (const auto&entry: std::filesystem::directory_iterator(webRoot))
+        for (const auto &entry : std::filesystem::directory_iterator(webRoot))
         {
             if (!firstTime)
             {
@@ -407,7 +409,7 @@ public:
             firstTime = false;
             imageList << entry.path().filename().string();
         }
-        this->imageList = imageList.str();        
+        this->imageList = imageList.str();
     }
 
 private:
@@ -637,39 +639,88 @@ public:
         Reply(replyTo, "error", what);
     }
 
-    bool waitingForPortMonitorAck(uint64_t subscriptionId)
+    PortMonitorSubscription *getPortMonitorSubscription(uint64_t subscriptionId)
     {
+        for (int i = 0; i < this->activePortMonitors.size(); ++i)
         {
-            std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
-            for (int i = 0; i < this->activePortMonitors.size(); ++i)
+            auto *portMonitor = &activePortMonitors[i];
+            if (portMonitor->subscriptionHandle == subscriptionId)
             {
-                auto &portMonitor = activePortMonitors[i];
-                if (portMonitor.subscriptionHandle == subscriptionId)
-                {
-                    if (portMonitor.waitingForAck)
-                        return true;
-                    portMonitor.waitingForAck = true;
-                    return false;
-                }
+                return portMonitor;
             }
         }
-        return true; // subscription has been closed. don't sent to client.
+        return nullptr;
     }
-    void portMonitorAck(uint64_t subscriptionId)
+
+    void SendMonitorPortMessage(PortMonitorSubscription *subscription, float value)
     {
-        {
-            std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
-            for (int i = 0; i < this->activePortMonitors.size(); ++i)
+
+        auto subscriptionHandle_ = subscription->subscriptionHandle;
+        MonitorResultBody body;
+        body.subscriptionHandle_ = subscriptionHandle_;
+        body.value_ = value;
+        this->Request<bool, MonitorResultBody>( // send the message and wait for a response.
+            "onMonitorPortOutput",
+            body,
+            [this, subscriptionHandle_](const bool &result)
             {
-                auto &portMonitor = activePortMonitors[i];
-                if (portMonitor.subscriptionHandle == subscriptionId)
+                PortMonitorSubscription *subscription = getPortMonitorSubscription(subscriptionHandle_);
+                if (subscription == nullptr) return;
+
+                if (subscription->pendingValue)
                 {
-                    portMonitor.waitingForAck = false;
-                    break;
+                    subscription->pendingValue = false;
+                    SendMonitorPortMessage(subscription, subscription->lastSentValue);
+                }
+                else
+                {
+                    subscription->waitingForAck = false;
+                }
+            },
+            [](const std::exception &e)
+            {
+                Lv2Log::debug("Failed to monitor port output. (%s)", e.what());
+            });
+    }
+    void MonitorPort(int replyTo,MonitorPortBody &body)
+    {
+        std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
+        int64_t subscriptionHandle = model.MonitorPort(
+            body.instanceId_,
+            body.key_,
+            body.updateRate_,
+            [this](int64_t subscriptionHandle_, float value)
+            {
+                PortMonitorSubscription *subscription = getPortMonitorSubscription(subscriptionHandle_);
+
+                if (subscription)
+                {
+                    if (subscription->waitingForAck)
+                    {
+                        if (subscription->lastSentValue != value)
+                        {
+                            subscription->lastSentValue = value;
+                            subscription->pendingValue = true;
+                        }
+                    }
+                    else
+                    {
+                        subscription->lastSentValue = value;
+
+                        subscription->waitingForAck = true;
+                        SendMonitorPortMessage(subscription, value);
+                    }
                 }
             }
-        }
+
+        );
+        activePortMonitors.push_back(
+            PortMonitorSubscription{subscriptionHandle, body.instanceId_, body.key_});
+
+        this->Reply(replyTo, "monitorPort", subscriptionHandle);
     }
+
+    /***********************/
 
     void handleMessage(int reply, int replyTo, const std::string &message, json_reader *pReader)
     {
@@ -723,66 +774,66 @@ public:
         {
             ListenForMidiEventBody body;
             pReader->read(&body);
-            this->model.ListenForMidiEvent(this->clientId,body.handle_, body.listenForControlsOnly_);
+            this->model.ListenForMidiEvent(this->clientId, body.handle_, body.listenForControlsOnly_);
         }
         else if (message == "cancelListenForMidiEvent")
         {
             uint64_t handle;
             pReader->read(&handle);
-            this->model.CancelListenForMidiEvent(this->clientId,handle);
+            this->model.CancelListenForMidiEvent(this->clientId, handle);
         }
         else if (message == "listenForAtomOutput")
         {
             ListenForAtomOutputBody body;
             pReader->read(&body);
-            this->model.ListenForAtomOutputs(this->clientId,body.handle_, body.instanceId_);
+            this->model.ListenForAtomOutputs(this->clientId, body.handle_, body.instanceId_);
         }
         else if (message == "cancelListenForAtomOutput")
         {
             int64_t handle;
             pReader->read(&handle);
-            this->model.CancelListenForMidiEvent(this->clientId,handle);
+            this->model.CancelListenForMidiEvent(this->clientId, handle);
         }
 
         else if (message == "getJackStatus")
         {
             JackHostStatus status = model.GetJackStatus();
-            this->Reply(replyTo,"getJackStatus",status);
-        } else if (message == "getAlsaDevices")
+            this->Reply(replyTo, "getJackStatus", status);
+        }
+        else if (message == "getAlsaDevices")
         {
             std::vector<AlsaDeviceInfo> devices = model.GetAlsaDevices();
-            this->Reply(replyTo,"getAlsaDevices",devices);
-            
-
-        } else if (message == "getWifiChannels")
+            this->Reply(replyTo, "getAlsaDevices", devices);
+        }
+        else if (message == "getWifiChannels")
         {
             std::string country;
             pReader->read(&country);
             std::vector<WifiChannel> channels = pipedal::getWifiChannels(country.c_str());
-            this->Reply(replyTo,"getWifiChannels",channels);
+            this->Reply(replyTo, "getWifiChannels", channels);
         }
         else if (message == "getPluginPresets")
         {
             std::string uri;
             pReader->read(&uri);
-            this->Reply(replyTo,"getPluginPresets",this->model.GetPluginUiPresets(uri));
+            this->Reply(replyTo, "getPluginPresets", this->model.GetPluginUiPresets(uri));
         }
         else if (message == "loadPluginPreset")
         {
             LoadPluginPresetBody body;
             pReader->read(&body);
-            this->model.LoadPluginPreset(body.pluginInstanceId_,body.presetInstanceId_);
-
+            this->model.LoadPluginPreset(body.pluginInstanceId_, body.presetInstanceId_);
         }
-        else if (message == "setJackServerSettings") {
+        else if (message == "setJackServerSettings")
+        {
             JackServerSettings jackServerSettings;
             pReader->read(&jackServerSettings);
             this->model.SetJackServerSettings(jackServerSettings);
-            this->Reply(replyTo,"setJackserverSettings");
-
+            this->Reply(replyTo, "setJackserverSettings");
         }
-        else if (message == "setGovernorSettings") {
-            std::string  governor;
+        else if (message == "setGovernorSettings")
+        {
+            std::string governor;
             pReader->read(&governor);
             std::string fromAddress = this->getFromAddress();
             if (!IsOnLocalSubnet(fromAddress))
@@ -790,9 +841,10 @@ public:
                 throw PiPedalException("Permission denied. Not on local subnet.");
             }
             this->model.SetGovernorSettings(governor);
-            this->Reply(replyTo,"setGovernorSettings");
+            this->Reply(replyTo, "setGovernorSettings");
         }
-        else if (message == "setWifiConfigSettings") {
+        else if (message == "setWifiConfigSettings")
+        {
             WifiConfigSettings wifiConfigSettings;
             pReader->read(&wifiConfigSettings);
             if (!GetAdminClient().CanUseShutdownClient())
@@ -805,15 +857,15 @@ public:
                 throw PiPedalException("Permission denied. Not on local subnet.");
             }
 
-
             this->model.SetWifiConfigSettings(wifiConfigSettings);
-            this->Reply(replyTo,"setWifiConfigSettings");
+            this->Reply(replyTo, "setWifiConfigSettings");
         }
-        else if (message == "getWifiConfigSettings") {
+        else if (message == "getWifiConfigSettings")
+        {
             this->Reply(replyTo, "getWifiConfigSettings", model.GetWifiConfigSettings());
-
         }
-        else if (message == "setWifiDirectConfigSettings") {
+        else if (message == "setWifiDirectConfigSettings")
+        {
             WifiDirectConfigSettings wifiDirectConfigSettings;
             pReader->read(&wifiDirectConfigSettings);
             if (!GetAdminClient().CanUseShutdownClient())
@@ -826,28 +878,27 @@ public:
                 throw PiPedalException("Permission denied. Not on local subnet.");
             }
 
-
             this->model.SetWifiDirectConfigSettings(wifiDirectConfigSettings);
-            this->Reply(replyTo,"setWifiDirectConfigSettings");
+            this->Reply(replyTo, "setWifiDirectConfigSettings");
         }
-        else if (message == "getWifiDirectConfigSettings") {
+        else if (message == "getWifiDirectConfigSettings")
+        {
             this->Reply(replyTo, "getWifiDirectConfigSettings", model.GetWifiDirectConfigSettings());
-
         }
 
-        else if (message == "getGovernorSettings") {
+        else if (message == "getGovernorSettings")
+        {
             this->Reply(replyTo, "getGovernorSettings", model.GetGovernorSettings());
-
         }
 
-        else if (message == "getJackServerSettings") {
+        else if (message == "getJackServerSettings")
+        {
             this->Reply(replyTo, "getJackServerSettings", model.GetJackServerSettings());
-
         }
-        else if (message == "getBankIndex") {
+        else if (message == "getBankIndex")
+        {
             BankIndex bankIndex = model.GetBankIndex();
             this->Reply(replyTo, "getBankIndex", bankIndex);
-
         }
         else if (message == "getJackConfiguration")
         {
@@ -932,7 +983,7 @@ public:
         }
         else if (message == "getShowStatusMonitor")
         {
-            Reply(replyTo,"getShowStatusMonitor",this->model.GetShowStatusMonitor());
+            Reply(replyTo, "getShowStatusMonitor", this->model.GetShowStatusMonitor());
         }
         else if (message == "version")
         {
@@ -970,15 +1021,15 @@ public:
         else if (message == "shutdown")
         {
             PresetIndex newIndex;
-            
+
             RequestShutdown(false);
-            this->Reply(replyTo,"shutdown");
+            this->Reply(replyTo, "shutdown");
         }
         else if (message == "restart")
         {
             PresetIndex newIndex;
             RequestShutdown(true);
-            this->Reply(replyTo,"restart");
+            this->Reply(replyTo, "restart");
         }
         else if (message == "deletePresetItem")
         {
@@ -1007,40 +1058,46 @@ public:
             json_reader tReader(tIn);
             std::string tResult;
             tReader.read(&tResult);
-            
+
             body.newName_ = tResult;
 
-
-            try {
-                model.RenameBank(this->clientId,body.bankId_, body.newName_);
-                        this->Reply(replyTo, "renameBank");
-            } catch (const std::exception &e)
+            try
             {
-                this->SendError(replyTo,std::string(e.what()));
+                model.RenameBank(this->clientId, body.bankId_, body.newName_);
+                this->Reply(replyTo, "renameBank");
+            }
+            catch (const std::exception &e)
+            {
+                this->SendError(replyTo, std::string(e.what()));
             }
         }
         else if (message == "openBank")
         {
             int64_t bankId = -1;
             pReader->read(&bankId);
-            try {
-                model.OpenBank(this->clientId,bankId);;
-                this->Reply(replyTo, "openBank");
-            } catch (const std::exception &e)
+            try
             {
-                this->SendError(replyTo,std::string(e.what()));
+                model.OpenBank(this->clientId, bankId);
+                ;
+                this->Reply(replyTo, "openBank");
+            }
+            catch (const std::exception &e)
+            {
+                this->SendError(replyTo, std::string(e.what()));
             }
         }
         else if (message == "saveBankAs")
         {
             RenameBankBody body;
             pReader->read(&body);
-            try {
-                int64_t newId = model.SaveBankAs(this->clientId,body.bankId_, body.newName_);
-                this->Reply(replyTo, "saveBankAs",newId);
-            } catch (const std::exception &e)
+            try
             {
-                this->SendError(replyTo,std::string(e.what()));
+                int64_t newId = model.SaveBankAs(this->clientId, body.bankId_, body.newName_);
+                this->Reply(replyTo, "saveBankAs", newId);
+            }
+            catch (const std::exception &e)
+            {
+                this->SendError(replyTo, std::string(e.what()));
             }
         }
         else if (message == "renamePresetItem")
@@ -1057,31 +1114,31 @@ public:
             pReader->read(&body);
             int64_t result = model.CopyPreset(body.clientId_, body.fromId_, body.toId_);
             this->Reply(replyTo, "copyPreset", result);
-        } 
+        }
         else if (message == "copyPluginPreset")
         {
             CopyPluginPresetBody body;
             pReader->read(&body);
-            uint64_t result = model.CopyPluginPreset(body.pluginUri_,body.instanceId_);
+            uint64_t result = model.CopyPluginPreset(body.pluginUri_, body.instanceId_);
             this->Reply(replyTo, "copyPluginPreset", result);
-        } 
-        else if (message =="getLv2Parameter")
+        }
+        else if (message == "getLv2Parameter")
         {
             GetLv2ParameterBody body;
             pReader->read(&body);
-            
+
             model.GetLv2Parameter(
                 this->clientId,
                 body.instanceId_,
                 body.uri_,
-                [this,replyTo] (const std::string &jsonResult)
+                [this, replyTo](const std::string &jsonResult)
                 {
-                    this->JsonReply(replyTo,"getLv2Parameter",jsonResult.c_str());
+                    this->JsonReply(replyTo, "getLv2Parameter", jsonResult.c_str());
                 },
-                [this,replyTo] (const std::string &error) {
-                    this->SendError(replyTo,error.c_str());
+                [this, replyTo](const std::string &error)
+                {
+                    this->SendError(replyTo, error.c_str());
                 });
-            
         }
         else if (message == "monitorPort")
         {
@@ -1089,38 +1146,7 @@ public:
             MonitorPortBody body;
             pReader->read(&body);
 
-            int64_t subscriptionHandle = model.MonitorPort(
-                body.instanceId_,
-                body.key_,
-                body.updateRate_,
-                [this](int64_t subscriptionHandle_, float value)
-                {
-                    MonitorResultBody body;
-                    body.subscriptionHandle_ = subscriptionHandle_;
-                    body.value_ = value;
-                    if (!waitingForPortMonitorAck(subscriptionHandle_)) //only one outstanding response.
-                    {
-                        this->Request<bool, MonitorResultBody>( // send the message and wait for a response.
-                            "onMonitorPortOutput",
-                            body,
-                            [this, subscriptionHandle_](const bool &result)
-                            {
-                                this->portMonitorAck(subscriptionHandle_); // please can we have some more.
-                                                                           
-                            },
-                            [](const std::exception &e)
-                            {
-                                Lv2Log::debug("Failed to monitor port output. (%s)", e.what());
-                            });
-                    }
-                });
-            {
-                std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
-                activePortMonitors.push_back(
-                    PortMonitorSubscription{subscriptionHandle, body.instanceId_,false, body.key_});
-            }
-
-            this->Reply(replyTo, "monitorPort", subscriptionHandle);
+            MonitorPort(replyTo,body);
         }
         else if (message == "unmonitorPort")
         {
@@ -1175,16 +1201,17 @@ public:
         }
         else if (message == "imageList")
         {
-  
-            this->Reply(replyTo, "imageList", imageList);
-        } else if (message == "getFavorites")
-        {
-            std::map<std::string,bool> favorites = this->model.GetFavorites();
-            this->Reply(replyTo,"getFavorites",favorites);
 
-        } else if (message == "setFavorites")
+            this->Reply(replyTo, "imageList", imageList);
+        }
+        else if (message == "getFavorites")
         {
-            std::map<std::string,bool> favorites;
+            std::map<std::string, bool> favorites = this->model.GetFavorites();
+            this->Reply(replyTo, "getFavorites", favorites);
+        }
+        else if (message == "setFavorites")
+        {
+            std::map<std::string, bool> favorites;
             pReader->read(&favorites);
             this->model.SetFavorites(favorites);
         }
@@ -1254,20 +1281,21 @@ protected:
         {
             SendError(replyTo, e.what());
         }
-        catch (const std::exception & e)
+        catch (const std::exception &e)
         {
             SendError(replyTo, e.what());
         }
     }
 
 public:
-    virtual void OnFavoritesChanged(const std::map<std::string,bool> &favorites)
+    virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites)
     {
-        Send("onFavoritesChanged",favorites);
+        Send("onFavoritesChanged", favorites);
     }
 
-    virtual void OnShowStatusMonitorChanged(bool show) {
-        Send("onShowStatusMonitorChanged",show);
+    virtual void OnShowStatusMonitorChanged(bool show)
+    {
+        Send("onShowStatusMonitorChanged", show);
     }
 
     virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection)
@@ -1284,7 +1312,7 @@ public:
         body.presets_ = const_cast<PresetIndex *>(&presets);
         Send("onPresetsChanged", body);
     }
-    virtual void OnPluginPresetsChanged(const std::string&pluginUri)
+    virtual void OnPluginPresetsChanged(const std::string &pluginUri)
     {
         Send("onPluginPresetsChanged", pluginUri);
     }
@@ -1293,14 +1321,14 @@ public:
         Send("onJackConfigurationChanged", jackConfiguration);
     }
 
-    virtual void OnLoadPluginPreset(int64_t instanceId,const std::vector<ControlValue>&controlValues) {
+    virtual void OnLoadPluginPreset(int64_t instanceId, const std::vector<ControlValue> &controlValues)
+    {
         OnLoadPluginPresetBody body;
         body.instanceId_ = instanceId;
-        body.controlValues_ = const_cast<std::vector<ControlValue>&>(controlValues);
-        Send("onLoadPluginPreset",body);
+        body.controlValues_ = const_cast<std::vector<ControlValue> &>(controlValues);
+        Send("onLoadPluginPreset", body);
     }
 
-    
     int updateRequestOutstanding = 0;
     bool vuUpdateDropped = false;
 
@@ -1359,7 +1387,8 @@ public:
         Send("onControlChanged", body);
     }
 
-    class DeferredValue {
+    class DeferredValue
+    {
     public:
         int64_t instanceId;
         std::string symbol;
@@ -1369,11 +1398,12 @@ public:
     std::vector<DeferredValue> deferredValues;
     bool midiValueChangedOutstanding = false;
 
-
-    virtual void OnMidiValueChanged(int64_t instanceId, const std::string&symbol, float value) {
+    virtual void OnMidiValueChanged(int64_t instanceId, const std::string &symbol, float value)
+    {
         if (midiValueChangedOutstanding)
         {
-            for (size_t i = 0; i < deferredValues.size(); ++i) {
+            for (size_t i = 0; i < deferredValues.size(); ++i)
+            {
                 auto &deferredValue = deferredValues[i];
                 if (deferredValue.instanceId == instanceId && deferredValue.symbol == symbol)
                 {
@@ -1381,37 +1411,39 @@ public:
                     return;
                 }
             }
-            DeferredValue newValue {instanceId,symbol,value};
+            DeferredValue newValue{instanceId, symbol, value};
             deferredValues.push_back(newValue);
-        } else {
+        }
+        else
+        {
             midiValueChangedOutstanding = true;
             ControlChangedBody body;
             body.clientId_ = -1;
             body.instanceId_ = instanceId;
             body.symbol_ = symbol;
             body.value_ = value;
-            Request<bool>("onMidiValueChanged", body,
-            [this] (const bool& value)
-            {
-                this->midiValueChangedOutstanding = false;
-                if (this->deferredValues.size() != 0)
+            Request<bool>(
+                "onMidiValueChanged", body,
+                [this](const bool &value)
                 {
-                    DeferredValue value = deferredValues[0];
-                    deferredValues.erase(deferredValues.begin());
-                    this->OnMidiValueChanged(value.instanceId,value.symbol,value.value);
-                }
+                    this->midiValueChangedOutstanding = false;
+                    if (this->deferredValues.size() != 0)
+                    {
+                        DeferredValue value = deferredValues[0];
+                        deferredValues.erase(deferredValues.begin());
+                        this->OnMidiValueChanged(value.instanceId, value.symbol, value.value);
+                    }
+                },
+                [](const std::exception &e) {
 
-            },
-            [] (const std::exception &e) {
-                
-            }
-            );
+                });
         }
     }
 
     int outstandingNotifyAtomOutputs = 0;
 
-    class PendingNotifyAtomOutput {
+    class PendingNotifyAtomOutput
+    {
     public:
         int64_t clientHandle;
         uint64_t instanceId;
@@ -1421,8 +1453,8 @@ public:
 
     std::vector<PendingNotifyAtomOutput> pendingNotifyAtomOutputs;
 
-
-    void OnAckNotifyAtomOutput() {
+    void OnAckNotifyAtomOutput()
+    {
         std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
         if (--outstandingNotifyAtomOutputs <= 0)
         {
@@ -1436,12 +1468,11 @@ public:
                     t.instanceId,
                     t.atomType,
                     t.json);
-                
             }
         }
     }
 
-    virtual void OnNotifyAtomOutput(int64_t clientHandle,uint64_t instanceId,const std::string&atomType, const std::string&atomJson)
+    virtual void OnNotifyAtomOutput(int64_t clientHandle, uint64_t instanceId, const std::string &atomType, const std::string &atomJson)
     {
         NotifyAtomOutputBody body;
         body.clientHandle_ = clientHandle;
@@ -1462,53 +1493,53 @@ public:
                         return;
                     }
                 }
-                pendingNotifyAtomOutputs.push_back(PendingNotifyAtomOutput{ clientHandle, instanceId,atomType,atomJson });
+                pendingNotifyAtomOutputs.push_back(PendingNotifyAtomOutput{clientHandle, instanceId, atomType, atomJson});
                 return;
             }
             ++outstandingNotifyAtomOutputs;
         }
-        
-        Request<bool>("onNotifyAtomOut",body,
-            [this] (const bool& value)
+
+        Request<bool>(
+            "onNotifyAtomOut", body,
+            [this](const bool &value)
             {
                 this->OnAckNotifyAtomOutput();
             },
-            [] (const std::exception &e) {
-                
-            }
-            );
+            [](const std::exception &e) {
 
+            });
     }
-    virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) 
+    virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl)
     {
         NotifyMidiListenerBody body;
         body.clientHandle_ = clientHandle;
         body.isNote_ = isNote;
         body.noteOrControl_ = noteOrControl;
 
-        Send("onNotifyMidiListener",body);
+        Send("onNotifyMidiListener", body);
     }
 
-
-
-    virtual void OnBankIndexChanged(const BankIndex& bankIndex) 
+    virtual void OnBankIndexChanged(const BankIndex &bankIndex)
     {
-        Send("onBanksChanged",bankIndex);
+        Send("onBanksChanged", bankIndex);
     }
 
-    virtual void OnJackServerSettingsChanged(const JackServerSettings& jackServerSettings) 
+    virtual void OnJackServerSettingsChanged(const JackServerSettings &jackServerSettings)
     {
-        Send("onJackServerSettingsChanged",jackServerSettings);
+        Send("onJackServerSettingsChanged", jackServerSettings);
     }
-    virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings&wifiConfigSettings) {
-        Send("onWifiConfigSettingsChanged",wifiConfigSettings);
+    virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings &wifiConfigSettings)
+    {
+        Send("onWifiConfigSettingsChanged", wifiConfigSettings);
     }
 
-    virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings&wifiConfigSettings) {
-        Send("onWifiDirectConfigSettingsChanged",wifiConfigSettings);
+    virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings &wifiConfigSettings)
+    {
+        Send("onWifiDirectConfigSettingsChanged", wifiConfigSettings);
     }
-    virtual void OnGovernorSettingsChanged(const std::string& governor) {
-        Send("onGovernorSettingsChanged",governor);
+    virtual void OnGovernorSettingsChanged(const std::string &governor)
+    {
+        Send("onGovernorSettingsChanged", governor);
     }
 
     virtual void OnPedalBoardChanged(int64_t clientId, const PedalBoard &pedalBoard)
@@ -1518,7 +1549,6 @@ public:
         body.pedalBoard_ = pedalBoard;
         Send("onPedalBoardChanged", body);
     }
-
 
     virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled)
     {
@@ -1564,21 +1594,22 @@ std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &
     return std::make_shared<PiPedalSocketFactory>(model);
 }
 
-
 void PiPedalSocketHandler::RequestShutdown(bool restart)
 {
     if (GetAdminClient().CanUseShutdownClient())
     {
         GetAdminClient().RequestShutdown(restart);
     }
-    else {
+    else
+    {
         // ONLY works when interactively logged in.
         std::stringstream s;
         s << "/usr/sbin/shutdown ";
         if (restart)
         {
             s << "-r";
-        } else 
+        }
+        else
         {
             s << "-P";
         }
@@ -1587,9 +1618,12 @@ void PiPedalSocketHandler::RequestShutdown(bool restart)
         if (sysExec(s.str().c_str()) != EXIT_SUCCESS)
         {
             Lv2Log::error("shutdown failed.");
-            if (restart) {
+            if (restart)
+            {
                 throw new PiPedalStateException("Restart request failed.");
-            } else {
+            }
+            else
+            {
                 throw new PiPedalStateException("Shutdown request failed.");
             }
         }

@@ -655,15 +655,15 @@ int main(int argc, char *argv[])
                 auto devices = model.GetAlsaDevices();
                 bool firstMessage = true;
                 bool found = false;
-                if (!HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
+                if (!HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
                 {
-                    if (firstMessage) Lv2Log::info(SS("Waiting for ALSA device " << serverSettings.GetAlsaDevice() << " to come online..."));
+                    if (firstMessage) Lv2Log::info(SS("Waiting for ALSA device " << serverSettings.GetAlsaInputDevice() << " to come online..."));
                     firstMessage = false;
                     for (int i = 0; i < 5; ++i)
                     {
                         sleep(3);
                         devices = model.GetAlsaDevices();
-                        if (HasAlsaDevice(devices, serverSettings.GetAlsaDevice()))
+                        if (HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
                         {
                             found = true;
                             break;
@@ -673,9 +673,9 @@ int main(int argc, char *argv[])
                     }
                     if (found)
                     {
-                        Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaDevice() << "."));
+                        Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
                     } else {
-                        Lv2Log::info(SS("ALSA device " << serverSettings.GetAlsaDevice() << " not found."));
+                        Lv2Log::info(SS("ALSA device " << serverSettings.GetAlsaInputDevice() << " not found."));
                     }
                 }
             }

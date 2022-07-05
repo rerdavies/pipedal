@@ -22,6 +22,7 @@
 export default class JackServerSettings {
     deserialize(input: any) : JackServerSettings{
         this.valid = input.valid;
+        this.isJackAudio = input.isJackAudio;
         this.rebootRequired = input.rebootRequired;
         this.alsaDevice = input.alsaDevice?? "";
         this.sampleRate = input.sampleRate;
@@ -44,6 +45,7 @@ export default class JackServerSettings {
     }
     valid: boolean = false;
     rebootRequired = false;
+    isJackAudio = false;
     alsaDevice: string = "";
     sampleRate = 48000;
     bufferSize = 64;

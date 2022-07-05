@@ -23,6 +23,7 @@
  */
 
 #include "CommandLineParser.hpp"
+#include "ss.hpp"
 #include "PrettyPrinter.hpp"
 #include <iostream>
 #include "PiPedalAlsa.hpp"
@@ -40,7 +41,8 @@ constexpr int E_XRUN = 3;
 
 constexpr uint64_t NO_SIGNAL_VALUE = 0x7000000;
 
-struct TestResult {
+struct TestResult
+{
     int error = 0;
     uint64_t latency = 0;
     float cpuOverhead = 0;
@@ -62,6 +64,11 @@ void PrintHelp()
        << "List available devices.\n\n";
     pp << HangingIndent() << "  -r --rate\t"
        << "Sample rate (default 48000).\n\n";
+    pp << HangingIndent() << "  -i --in_channels\t"
+       << "Input channels. Command-seperated list. e.g.: 0,3. Default: all channels.\n\n";
+    pp << HangingIndent() << "  -o --out_channels\t"
+       << "Output channels. Command-seperated list. e.g.: 0,1,4. Default: all channels.\n\n";
+
     pp << HangingIndent() << "  -h --help\t"
        << "Display this message.\n\n";
 
@@ -107,6 +114,9 @@ void ListDevices()
     }
 }
 
+
+using ChannelsT = std::vector<int>;
+
 class AlsaTester : private AudioDriverHost
 {
 public:
@@ -121,14 +131,22 @@ private:
     AudioDriver *audioDriver = nullptr;
 
     const std::string &deviceId;
+    ChannelsT inputChannels;
+    ChannelsT outputChannels;
     uint32_t sampleRate;
     int bufferSize;
     int buffers;
 
 public:
-    AlsaTester(const std::string &deviceId, uint32_t sampleRate, int bufferSize, int buffers)
+    AlsaTester(
+        const std::string &deviceId,
+        const ChannelsT &inputChannels,
+        const ChannelsT &outputChannels,
+        uint32_t sampleRate, int bufferSize, int buffers)
         : deviceId(deviceId),
           sampleRate(sampleRate),
+          inputChannels(inputChannels),
+          outputChannels(outputChannels),
           bufferSize(bufferSize),
           buffers(buffers)
     {
@@ -138,6 +156,21 @@ public:
         delete audioDriver;
         delete[] inputBuffers;
         delete[] outputBuffers;
+    }
+    std::vector<std::string> SelectChannels(const std::vector<std::string>&available, const std::vector<int>& selection)
+    {
+        if (selection.size() == 0) return available;
+
+        std::vector<std::string> result;
+        for (int sel: selection)
+        {
+            if (sel < 0 || sel >= available.size())
+            {
+                throw PiPedalArgumentException(SS("Invalid channel: " + sel));
+            }
+            result.push_back(available[sel]);
+        }
+        return result;
     }
 
     TestResult Test()
@@ -150,9 +183,17 @@ public:
             JackConfiguration jackConfiguration;
             jackConfiguration.AlsaInitialize(serverSettings);
 
+            auto & availableInputs = jackConfiguration.GetInputAudioPorts();
+            auto & availableOutputs = jackConfiguration.GetOutputAudioPorts();
+
+
+            std::vector<std::string> inputAudioPorts, outputAudioPorts;
+
+            inputAudioPorts = SelectChannels(availableInputs,this->inputChannels);
+            outputAudioPorts = SelectChannels(availableOutputs,this->outputChannels);
+
             JackChannelSelection channelSelection(
-                jackConfiguration.GetInputAudioPorts(),
-                jackConfiguration.GetOutputAudioPorts(),
+                inputAudioPorts, outputAudioPorts,
                 std::vector<AlsaMidiDeviceInfo>());
 
             audioDriver = CreateAlsaDriver(this);
@@ -176,11 +217,11 @@ public:
 
             if (this->GetXruns() != 0)
             {
-                result.error =  E_XRUN;
+                result.error = E_XRUN;
                 return result;
             }
-            result.latency =  latencyMonitor.GetLatency();
-            if (result.latency ==  NO_SIGNAL_VALUE)
+            result.latency = latencyMonitor.GetLatency();
+            if (result.latency == NO_SIGNAL_VALUE)
             {
                 result.error = E_NOSIGNAL;
             }
@@ -267,7 +308,7 @@ public:
                     state = State::Waiting;
                     current_latency = 0;
                 }
-                return 0.01;
+                return 0.001;
             }
             break;
             case State::Waiting:
@@ -349,9 +390,13 @@ public:
     }
 };
 
-TestResult RunLatencyTest(const std::string deviceId, uint32_t sampleRate, int bufferSize, int buffers)
+TestResult RunLatencyTest(
+    const std::string deviceId,
+    const ChannelsT &inputChannels,
+    const ChannelsT &outputChannels,
+    uint32_t sampleRate, int bufferSize, int buffers)
 {
-    AlsaTester tester(deviceId, sampleRate, bufferSize, buffers);
+    AlsaTester tester(deviceId, inputChannels, outputChannels, sampleRate, bufferSize, buffers);
     return tester.Test();
 }
 
@@ -360,7 +405,7 @@ static std::string msDisplay(float value)
     std::stringstream s;
     s << fixed;
     s.precision(1);
-    s  << value << "ms";
+    s << value << "ms";
     return s.str();
 }
 static std::string overheadDisplay(float value)
@@ -370,7 +415,11 @@ static std::string overheadDisplay(float value)
     return s.str();
 }
 
-void RunLatencyTest(const std::string &deviceId, uint32_t sampleRate)
+void RunLatencyTest(
+    const std::string &deviceId,
+    const ChannelsT &inputChannels,
+    const ChannelsT &outputChannels,
+    uint32_t sampleRate)
 {
     PrettyPrinter pp;
     pp << "Device: " << deviceId << " Rate: " << sampleRate << "\n\n";
@@ -400,7 +449,7 @@ void RunLatencyTest(const std::string &deviceId, uint32_t sampleRate)
 
         for (auto bufferCount : bufferCounts)
         {
-            auto result = RunLatencyTest(deviceId, sampleRate, bufferSize, bufferCount);
+            auto result = RunLatencyTest(deviceId, inputChannels,outputChannels, sampleRate, bufferSize, bufferCount);
 
             pp.Column(column);
             column += BUFFERS_COLUMN_WIDTH;
@@ -419,13 +468,46 @@ void RunLatencyTest(const std::string &deviceId, uint32_t sampleRate)
             default:
             {
                 float ms = 1000.0f * result.latency / sampleRate;
-                pp << result.latency << "/" << msDisplay(ms) ;
+                pp << result.latency << "/" << msDisplay(ms);
                 break;
             }
             }
         }
         pp << "\n";
     }
+}
+
+
+ChannelsT ParseChannels(const std::string&channels)
+{
+    ChannelsT result;
+    std::stringstream s(channels);
+
+    while (true)
+    {
+        int c = s.peek();
+        if (c == -1) break;
+
+        if (c == ',') {
+            s.get();
+            c = s.peek();
+        }
+        if (c < '0' || c > '9')
+        {
+            throw PiPedalArgumentException("Invalid channel selection: " + channels);
+        }
+        int v = 0;
+        while (s.peek() >= '0' && s.peek() <= '9')
+        {
+            c = s.get();
+            v = v*10 + c-'0';
+        }
+        result.push_back(v);
+    }
+
+    return result;
+
+
 }
 
 int main(int argc, const char **argv)
@@ -439,10 +521,16 @@ int main(int argc, const char **argv)
     bool listDevices = false;
     bool help = false;
     uint32_t sampleRate = 48000;
+std:
+    string strInputChannels, strOutputChannels;
+
+    ChannelsT inputChannels, outputChannels;
 
     parser.AddOption("l", "list", &listDevices);
     parser.AddOption("h", "help", &help);
     parser.AddOption("r", "rate", &sampleRate);
+    parser.AddOption("i", "in_channels", &strInputChannels);
+    parser.AddOption("o", "out_channels", &strOutputChannels);
 
     try
     {
@@ -458,7 +546,9 @@ int main(int argc, const char **argv)
         }
         else if (parser.Arguments().size() == 1)
         {
-            RunLatencyTest(parser.Arguments()[0], sampleRate);
+            inputChannels = ParseChannels(strInputChannels);
+            outputChannels = ParseChannels(strInputChannels);
+            RunLatencyTest(parser.Arguments()[0], inputChannels, outputChannels, sampleRate);
         }
         else
         {

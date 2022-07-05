@@ -113,7 +113,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
 
-            "args": [            "--rate", "48000", "hw:M2"     ],
+            "args": [            "--rate", "48000", "hw:KATANA", "-i","0,1","-o","2,3"     ],
 
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

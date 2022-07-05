@@ -94,6 +94,7 @@ type GxTunerControlState = {
     pitchInfo: PitchInfo
     tet: number;
     refFrequency: number;
+    animationTime: number;
 };
 
 const GxTunerControl =
@@ -119,6 +120,7 @@ const GxTunerControl =
                      fraction: 0,
                      semitoneCents: 100},
                  tet: 12,
+                 animationTime: 0,
                  refFrequency: 440   
 
                 };
@@ -204,6 +206,38 @@ const GxTunerControl =
                 this.setState({  
                     pitchInfo: pitchInfo
                 });
+                if (value === 0)
+                {
+                    this.startAnimationTimer();
+                } else {
+                    this.cancelAnimationTimer();
+                }
+            }
+
+            animationTimer?: NodeJS.Timeout = undefined;
+
+            cancelAnimationTimer(): void {
+                if (this.animationTimer)
+                {
+                    clearTimeout(this.animationTimer);
+                    this.animationTimer = undefined;
+                }
+            }
+
+
+            startAnimationTimer(): void {
+                if (!this.animationTimer)
+                {
+                    this.animationTimer = setInterval(
+                        () => {
+                            this.setState({
+                                animationTime: new Date().getTime()
+                            });
+                        },
+                        1000/30
+                    );
+                }
+                
             }
 
             subscribedInstanceId: number = -1;
@@ -251,6 +285,7 @@ const GxTunerControl =
             {
                 this.model.state.removeOnChangedHandler(this.onStateChanged);
                 this.removeSubscription();
+                this.cancelAnimationTimer();
             }
 
 
@@ -295,7 +330,7 @@ const GxTunerControl =
                 let cents: number;
                 if (!pitchInfo.valid)
                 {
-                    const NEEDLE_DECAY_RATE_PER_MS = -25/100;
+                    const NEEDLE_DECAY_RATE_PER_MS = -50*7/1000;
 
                     // animate to zero position.
                     let time = new Date().getTime();
@@ -306,6 +341,7 @@ const GxTunerControl =
                     {
                         cents = -maxCents;
                         this.animationIdle = true;
+                        this.cancelAnimationTimer();
                     } else {
                         this.animationIdle = false;
                     }
