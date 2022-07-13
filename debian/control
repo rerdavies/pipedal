@@ -9,6 +9,6 @@ Package: pipedal
 Pre-Depends: hostapd;authbind
 Priority: optional
 Section: sound
-Version: 0.9.12
+Version: 1.0.14
 Installed-Size: 15147
 
