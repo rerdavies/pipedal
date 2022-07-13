@@ -89,9 +89,10 @@ set (PIPEDAL_SOURCES
     CpuUse.hpp CpuUse.cpp 
     P2pConfigFiles.hpp
     AvahiService.cpp AvahiService.hpp
-    DeviceIdFile.cpp DeviceIdFile.hpp
+    ServiceConfiguration.cpp ServiceConfiguration.hpp
     WriteTemplateFile.cpp WriteTemplateFile.hpp
-
+    ConfigUtil.hpp ConfigUtil.cpp
+    ConfigSerializer.h ConfigSerializer.cpp
     StdErrorCapture.hpp StdErrorCapture.cpp
     Ipv6Helpers.cpp Ipv6Helpers.hpp
     PluginPreset.cpp PluginPreset.hpp
@@ -236,12 +237,13 @@ add_test(NAME DevTest COMMAND pipedaltest "[Dev]")
 
 add_executable(pipedalconfig 
     PrettyPrinter.hpp
-    DeviceIdFile.cpp DeviceIdFile.hpp
+    ServiceConfiguration.cpp ServiceConfiguration.hpp
     json.cpp json.hpp 
     HtmlHelper.cpp HtmlHelper.hpp
     CommandLineParser.hpp
     WriteTemplateFile.hpp WriteTemplateFile.cpp
     PiPedalException.hpp 
+    ConfigSerializer.h ConfigSerializer.cpp
     ConfigMain.cpp
     WifiConfigSettings.cpp WifiConfigSettings.hpp 
     WifiDirectConfigSettings.cpp WifiDirectConfigSettings.hpp 
@@ -283,7 +285,9 @@ target_link_libraries(pipedal_latency_test PRIVATE pthread  asound
  
 add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     UnixSocket.cpp UnixSocket.hpp
-    DeviceIdFile.cpp DeviceIdFile.hpp
+    ServiceConfiguration.cpp ServiceConfiguration.hpp
+    ConfigSerializer.h ConfigSerializer.cpp
+    autoptr_vector.h
 
     JackServerSettings.hpp JackServerSettings.cpp
     json.hpp json.cpp HtmlHelper.hpp HtmlHelper.cpp Lv2Log.hpp Lv2Log.cpp

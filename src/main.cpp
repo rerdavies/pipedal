@@ -23,7 +23,7 @@
 #include "BeastServer.hpp"
 #include <iostream>
 #include "Lv2Log.hpp"
-#include "DeviceIdFile.hpp"
+#include "ServiceConfiguration.hpp"
 #include "AvahiService.hpp"
 
 #include "PiPedalSocket.hpp"
@@ -428,7 +428,7 @@ public:
         #define LINK_LOCAL_WEB_SOCKET 1
         #if LINK_LOCAL_WEB_SOCKET 
         std::string webSocketAddress = GetLinkLocalAddress(fromAddress);
-        Lv2Log::info(SS("Web Socket Adddress: " << webSocketAddress << ":" << portNumber));
+        Lv2Log::info(SS("Web Socket Address: " << webSocketAddress << ":" << portNumber));
         #else
         std::string webSocketAddress = "*";
         #endif

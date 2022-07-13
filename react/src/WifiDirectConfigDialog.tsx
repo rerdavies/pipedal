@@ -339,7 +339,7 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                                     autoComplete="off"
                                     id="name"
                                     spellCheck="false"
-                                    label="SSID"
+                                    label="Service Name"
                                     type="text"
                                     size={this.state.controlSize}
                                     fullWidth
@@ -348,11 +348,11 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                                     value={this.state.name}
                                     onChange={(e) => this.setState({ name: e.target.value, nameError: false, nameErrorMessage: NBSP })}
                                     inputRef={this.refName}
-                                    disabled={!this.state.enabled}
                                     variant="filled"
                                 />
 
                                 <TextField
+                                    required
                                     inputRef={this.refPassword}
                                     sx={{ maxWidth: this.state.controlWidth }}
 
@@ -377,7 +377,7 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                                 </div>
                             </div>
                             <div style={{ marginTop: 0, display: 'flex', alignItems: 'stretch', gap: 16 }}>
-                                <TextField select label="Country" size={this.state.controlSize} value={this.state.countryCode} variant="filled"
+                                <TextField required select label="Country" size={this.state.controlSize} value={this.state.countryCode} variant="filled"
                                     sx={{ width: this.state.controlWidth }}
                                     disabled={!this.state.enabled}
                                     onChange={(event) => { this.handleCountryChanged(event); }}
@@ -413,17 +413,18 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                     )}
                     {(!this.state.landscapeLayout) && (
                         <DialogContent sx={{minHeight: 96}} >
-                            <FormControlLabel
-                                control={(
-                                    <Switch
-                                        checked={this.state.enabled}
-                                        onChange={(e: any) => this.handleEnableChanged(e)}
-                                        color="secondary"
-                                    />
-                                )}
-                                label="Wi-Fi Direct Hotspot"
-                            />
-                            <div style={{ marginTop: 16 }}>
+                            <div>
+                                <FormControlLabel
+                                    control={(
+                                        <Switch
+                                            checked={this.state.enabled}
+                                            onChange={(e: any) => this.handleEnableChanged(e)}
+                                            color="secondary"
+                                        />
+                                    )}
+                                    label="Wi-Fi Direct Hotspot"
+                                />
+                            </div><div style={{ marginTop: 16 }}>
                                 <TextField
                                     required
 
@@ -431,7 +432,7 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                                     autoComplete="off"
                                     id="name"
                                     spellCheck="false"
-                                    label="SSID"
+                                    label="Service Name"
                                     type="text"
                                     size={this.state.controlSize}
                                     fullWidth
@@ -440,10 +441,10 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                                     value={this.state.name}
                                     onChange={(e) => this.setState({ name: e.target.value, nameError: false, nameErrorMessage: NBSP })}
                                     inputRef={this.refName}
-                                    disabled={!this.state.enabled}
                                     variant="filled"
                                 />
-                            </div><div>
+                            </div>
+                            <div>
                                 <TextField
                                     inputRef={this.refPassword}
                                     sx={{ maxWidth: this.state.controlWidth }}

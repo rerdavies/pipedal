@@ -44,6 +44,7 @@ export class  Port implements Deserializable<Port> {
         this.supports_midi = input.supports_midi;
         this.supports_time_position = input.supports_time_position;
         this.port_group = input.port_group;
+        this.comment = input.comment;
         return this;
     }
 
@@ -73,6 +74,7 @@ export class  Port implements Deserializable<Port> {
     supports_midi:   boolean = false;
     supports_time_position: boolean = false;
     port_group:      string = "";
+    comment: string = "";
 }
 
 export class PortGroup {
@@ -221,8 +223,11 @@ export class  UiControl implements Deserializable<UiControl> {
         this.scale_points = ScalePoint.deserialize_array(input.scale_points);
         this.port_group = input.port_group;
         this.units = input.units as Units;
+        this.comment = input.comment;
 
         this.controlType = ControlType.Dial;
+
+
         if (this.enumeration_property && this.scale_points.length === 2)
         {
             this.controlType = ControlType.Toggle;
@@ -239,7 +244,6 @@ export class  UiControl implements Deserializable<UiControl> {
         {
             this.controlType = ControlType.Select;
         }
-
         return this;
 
     }
@@ -271,6 +275,7 @@ export class  UiControl implements Deserializable<UiControl> {
     scale_points: ScalePoint[] = [];
     port_group: string = "";
     units: Units = Units.none;
+    comment: string = "";
 
     // Return the value of the closest scale_point.
     clampSelectValue(value: number): number{

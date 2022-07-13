@@ -25,7 +25,7 @@
 #include <stdexcept>
 #include <random>
 #include "ConfigUtil.hpp"
-#include "DeviceIdFile.hpp"
+#include "ServiceConfiguration.hpp"
 #include "WriteTemplateFile.hpp"
 #include "ss.hpp"
 
@@ -169,7 +169,7 @@ void WifiDirectConfigSettings::Load()
         this->channel_ = "6";
     }
     try {
-        DeviceIdFile deviceIdFile;
+        ServiceConfiguration deviceIdFile;
         deviceIdFile.Load();
         if (deviceIdFile.deviceName == "")
         {

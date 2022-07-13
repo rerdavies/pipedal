@@ -52,7 +52,7 @@ inputStage:filterGroup
 
 <http://two-play.com/plugins/toob-input_stage>
         a lv2:Plugin ,
-                lv2:MixerPlugin ;
+                lv2:SimulatorPlugin ;
         doap:name "TooB Input Stage" ,
                 "TooB Input Stage"@en-gb 
                 ;
@@ -118,7 +118,8 @@ use the following plugins in the following order.
                 ] , [
                         rdfs:label "-INF" ;
                         rdf:value -60.0
-                ] 
+                ];
+                rdfs:comment "Input level trim"                 
         ],  [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
@@ -154,7 +155,7 @@ use the following plugins in the following order.
                         rdfs:label "OFF" ;
                         rdf:value 0.0
                 ];
-                rdfs:comment "Boost high frequencies." ;
+                rdfs:comment "High frequency boost. Zero to disable." ;
 
         ],  [
                 a lv2:InputPort ,
@@ -173,7 +174,7 @@ use the following plugins in the following order.
                         rdfs:label "OFF" ;
                         rdf:value 0.0
                 ];
-                rdfs:comment "Bright frequency." ;
+                rdfs:comment "Bright cutoff frequency." ;
 
         ],  [
                 a lv2:InputPort ,

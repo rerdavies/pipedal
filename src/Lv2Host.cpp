@@ -785,6 +785,9 @@ Lv2PortInfo::Lv2PortInfo(Lv2Host *host, const LilvPlugin *plugin, const LilvPort
     NodeAutoFree unitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris.unitsUri);
     this->units_ = UriToUnits(nodeAsString(unitsValueUri));
 
+    NodeAutoFree commentNode = lilv_port_get(plugin,pPort,host->lilvUris.rdfsComment);
+    this->comment_ = nodeAsString(commentNode);
+
     NodeAutoFree bufferType = lilv_port_get(plugin, pPort, host->lilvUris.bufferType_uri);
 
     this->buffer_type_ = "";
@@ -1167,6 +1170,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{{
     MAP_REF(Lv2PortInfo, buffer_type),
     MAP_REF(Lv2PortInfo, port_group),
     json_map::enum_reference("units", &Lv2PortInfo::units_, get_units_enum_converter()),
+    MAP_REF(Lv2PortInfo, comment)
 }};
 
 json_map::storage_type<Lv2PortGroup> Lv2PortGroup::jmap{{
@@ -1229,6 +1233,7 @@ json_map::storage_type<Lv2PluginUiControlPort> Lv2PluginUiControlPort::jmap{{
     MAP_REF(Lv2PluginUiControlPort, port_group),
 
     json_map::enum_reference("units", &Lv2PluginUiControlPort::units_, get_units_enum_converter()),
+    MAP_REF(Lv2PluginUiControlPort, comment),
 
 }};
 

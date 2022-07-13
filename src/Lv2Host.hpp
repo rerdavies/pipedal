@@ -205,6 +205,7 @@ private:
 
     std::string designation_;
     Units units_ = Units::none;
+    std::string comment_;
 public:
     bool IsSwitch() const {
         return min_value_ == 0 && max_value_ == 1 
@@ -261,6 +262,7 @@ public:
     LV2_PROPERTY_GETSET_SCALAR(toggled_property);
     LV2_PROPERTY_GETSET_SCALAR(not_on_gui);
     LV2_PROPERTY_GETSET(port_group);
+    LV2_PROPERTY_GETSET(comment);
     LV2_PROPERTY_GETSET_SCALAR(units);
 
     LV2_PROPERTY_GETSET(buffer_type);
@@ -417,6 +419,7 @@ public:
     , toggled_property_(pPort->toggled_property())
     , not_on_gui_(pPort->not_on_gui())
     , scale_points_(pPort->scale_points())
+    , comment_(pPort->comment())
     , units_(pPort->units())
     {
         // Use symbols to index port groups, instead of uris.
@@ -450,6 +453,7 @@ private:
     std::vector<Lv2ScalePoint> scale_points_;
     std::string port_group_;
     Units units_ = Units::none;
+    std::string comment_;
 public:
     LV2_PROPERTY_GETSET(symbol);
     LV2_PROPERTY_GETSET_SCALAR(index);
@@ -466,6 +470,7 @@ public:
     LV2_PROPERTY_GETSET_SCALAR(not_on_gui);
     LV2_PROPERTY_GETSET(scale_points);
     LV2_PROPERTY_GETSET(units);
+    LV2_PROPERTY_GETSET(comment);
 
 public:
     static json_map::storage_type<Lv2PluginUiControlPort> jmap;

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "DeviceIdFile.hpp"
+#include "ServiceConfiguration.hpp"
 #include <fstream>
 #include <stdexcept>
 #include <grp.h>
@@ -33,44 +33,45 @@
 using namespace pipedal;
 
 using namespace std;
+using namespace config_serializer;
 
 
-const char DeviceIdFile::DEVICEID_FILE_NAME[] = "/etc/pipedal/config/device_uuid";
+const char ServiceConfiguration::DEVICEID_FILE_NAME[] = "/etc/pipedal/config/service.conf";
 
-void DeviceIdFile::Load()
+#define SERIALIZER_ENTRY(MEMBER_NAME) \
+    new ConfigSerializer<ServiceConfiguration,decltype(ServiceConfiguration::MEMBER_NAME)>(#MEMBER_NAME, &ServiceConfiguration::MEMBER_NAME, "")
+
+
+static p2p::autoptr_vector<ConfigSerializerBase<ServiceConfiguration>>
+deviceIdSerializers  
 {
-    {
-        ifstream f;
+    SERIALIZER_ENTRY(uuid),
+    SERIALIZER_ENTRY(deviceName),
+    SERIALIZER_ENTRY(server_port)
+};
 
-        f.open(DEVICEID_FILE_NAME);
-        if (f.is_open())
-        {
-            std::getline(f, uuid);
-            std::getline(f, deviceName);
-        }
-    }
+
+ServiceConfiguration::ServiceConfiguration()
+: base(deviceIdSerializers)
+{
+
 }
-void DeviceIdFile::Save()
-{
-    {
-        std::string path = DEVICEID_FILE_NAME;
-        ofstream f;
-        f.open(path, ios_base::trunc);
-        if (!f.is_open())
-        {
-            throw invalid_argument("Can't write to file " + path);
-        }
 
+void ServiceConfiguration::Load()
+{
+    base::Load(DEVICEID_FILE_NAME,false);
+}
+void ServiceConfiguration::Save()
+{
+    base::Save(DEVICEID_FILE_NAME);
+    {
         struct group *group_;
         group_ = getgrnam("pipedal_d");
         if (group_ == nullptr)
         {
             throw logic_error("Group not found: pipedal_d");
         }
-        std::ignore = chown(path.c_str(), -1, group_->gr_gid);
-        std::ignore = chmod(path.c_str(), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-
-        f << uuid << endl;
-        f << deviceName << endl;
+        std::ignore = chown(DEVICEID_FILE_NAME,-1,group_->gr_gid);
+        std::ignore = chmod(DEVICEID_FILE_NAME, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
     }
 }

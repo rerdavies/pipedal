@@ -268,6 +268,15 @@ namespace pipedal
                 snd_pcm_sw_params_free(playbackSwParams);
                 playbackSwParams = nullptr;
             }
+            for (auto *midiState: this->midiStates)
+            {
+                if (midiState != nullptr)
+                {
+                    midiState->Close();
+                    delete midiState;
+                }
+            }
+            midiStates.resize(0);
         }
 
         std::string discover_alsa_using_apps()
@@ -573,9 +582,14 @@ namespace pipedal
             this->channelSelection = channelSelection;
 
             open = true;
-
-            OpenMidi(jackServerSettings, channelSelection);
-            OpenAudio(jackServerSettings, channelSelection);
+            try {
+                OpenMidi(jackServerSettings, channelSelection);
+                OpenAudio(jackServerSettings, channelSelection);
+            } catch (const std::exception&e)
+            {
+                Close();
+                throw;
+            }
         }
 
         void OpenAudio(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
@@ -1512,7 +1526,7 @@ namespace pipedal
         try
         {
             int err;
-            for (int retry = 0; retry < 5; ++retry)
+            for (int retry = 0; retry < 15; ++retry)
             {
                 err = snd_pcm_open(&playbackHandle, alsaDeviceName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
                 if (err == -EBUSY)
@@ -1524,13 +1538,22 @@ namespace pipedal
             }
             if (err < 0)
             {
-                throw PiPedalStateException(SS(alsaDeviceName << " not found. "
+                throw PiPedalStateException(SS(alsaDeviceName << " playback device not found. "
                                                               << "(" << snd_strerror(err) << ")"));
             }
 
-            err = snd_pcm_open(&captureHandle, alsaDeviceName.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
+            for (int retry = 0; retry < 15; ++retry)
+            {
+                err = snd_pcm_open(&captureHandle, alsaDeviceName.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
+                if (err == -EBUSY)
+                {
+                    sleep(1);
+                    continue;
+                }
+                break;
+            }
             if (err < 0)
-                throw PiPedalStateException(SS(alsaDeviceName << " not found."));
+                throw PiPedalStateException(SS(alsaDeviceName << " capture device not found."));
 
             if (snd_pcm_hw_params_malloc(&playbackHwParams) < 0)
             {

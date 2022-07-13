@@ -503,7 +503,6 @@ export const MainPage =
                                       GetControlView(pedalBoardItem)
                                 )
                             }
-
                         </div>
                         <MidiBindingsDialog open={this.state.showMidiBindingsDialog}
                             onClose={()=> this.setState({showMidiBindingsDialog: false} ) }

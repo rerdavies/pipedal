@@ -2020,14 +2020,18 @@ class PiPedalModelImpl implements PiPedalModel {
             let oldSettings = this.wifiDirectConfigSettings.get();
             wifiDirectConfigSettings = wifiDirectConfigSettings.clone();
 
-            if ((!oldSettings.enable) && (!wifiDirectConfigSettings.enable)) {
+            if ((!oldSettings.enable) && (!wifiDirectConfigSettings.enable)
+            && (oldSettings.hotspotName == wifiDirectConfigSettings.hotspotName)
+            ) {
                 // no effective change.
                 resolve();
                 return;
             }
             if (!wifiDirectConfigSettings.enable) {
+                let t = wifiDirectConfigSettings.hotspotName; // hotspot name can be changed when disabled because it's also the mDNS service name.
                 wifiDirectConfigSettings = oldSettings.clone();
                 wifiDirectConfigSettings.enable = false;
+                wifiDirectConfigSettings.hotspotName = t;
             } else {
                 if (wifiDirectConfigSettings.countryCode === oldSettings.countryCode
                     && wifiDirectConfigSettings.channel === oldSettings.channel

@@ -40,7 +40,7 @@ toobml:filterGroup
 
 <http://two-play.com/plugins/toob-ml>
         a lv2:Plugin ,
-                lv2:AmplifierPlugin ;
+                lv2:SimulatorPlugin ;
                 doap:name "TooB ML Amplifier" ,
                 "TooB ML Amplifier"@en-gb 
                 ;
@@ -84,7 +84,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 lv2:minimum -30.0 ;
                 lv2:maximum 30.0 ;    
                 units:unit units:db ;
-                rdf:comment "Input volume trim (pre-model)";
+                rdfs:comment "Input volume trim (pre-model)";
         ],  
         [
                 a lv2:InputPort, lv2:ControlPort ;
@@ -228,6 +228,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 rdfs:label "XoticCompSP";
                 rdf:value 32.0
                 ];
+                rdfs:comment "Select neural network model."
         ] ,
         [
                 a lv2:InputPort ,
@@ -239,7 +240,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 lv2:default 3.0 ;
                 lv2:minimum 0.0 ;
                 lv2:maximum 10.0 ;
-                rdf:comment "Model gain (used by some but not all models)"
+                rdfs:comment "Model gain parameter (used by some but not all models)"
         ],  
         [
                 a lv2:InputPort ,
@@ -252,7 +253,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 lv2:minimum -30.0 ;
                 lv2:maximum 30.0 ;    
                 units:unit units:db ;
-                rdf:comment "Output volume trim (pot-model)";
+                rdfs:comment "Output volume trim (pre-model)";
         ],  
 
         [
@@ -269,7 +270,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 lv2:minimum 0.0 ;
                 lv2:maximum 1.0 ;
 
-                rdf:comment "Bass eq (pre-model)";
+                rdfs:comment "Bass eq (pre-model)";
         ], [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
@@ -285,9 +286,11 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 lv2:maximum 1.0 ;
 
 
-                rdf:comment "Mid eq (pre-model)";
+                rdfs:comment "Mid eq (pre-model)";
 
-        ],  
+        ],
+        
+          
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
@@ -303,7 +306,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 lv2:maximum 1.0 ;
 
 
-                rdf:comment "Treble eq (pre-model)";
+                rdfs:comment "Treble eq (pre-model)";
         ],
         [
                 a lv2:OutputPort ,
@@ -321,15 +324,41 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
         ],
 
         [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 8 ;
+                lv2:symbol "sag" ;
+                lv2:name "Sag Vol";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+                rdfs:comment "Transformer sag (volume)." ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 9 ;
+                lv2:symbol "sagd" ;
+                lv2:name "Sag Dist";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+                rdfs:comment "Transformer sag (distortion)." ;
+        ], 
+
+
+        [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 8 ;
+                lv2:index 10 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ], [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 9 ;
+                lv2:index 11 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ]
@@ -340,7 +369,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 atom:bufferType atom:Sequence ;
                 atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 10 ;
+                lv2:index 12 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Plugin to GUI communication" ;
@@ -351,11 +380,35 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 atom:bufferType atom:Sequence ;
                 atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 11 ;
+                lv2:index 13 ;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Plugin to GUI communication" ;
+        ],
+        [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 13 ;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 14 ;
+                lv2:symbol "sagf" ;
+                lv2:name "SagF";
+                lv2:default 13.0 ;
+                lv2:minimum 5.0 ;
+                lv2:maximum 25.0;    
+                rdfs:comment "Sag filter Fc." ;
         ]
+
         .
 
 

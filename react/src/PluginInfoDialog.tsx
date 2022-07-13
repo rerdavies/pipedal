@@ -134,21 +134,62 @@ function makeParagraphs(description: string) {
     );
 }
 function makeControls(controls: UiControl[]) {
-    return (
-        <Grid container direction="row" justifyContent="flex-start" alignItems="flex-start" spacing={1} style={{ paddingLeft: "24px" }}>
-            {
-                controls.map((control) => (
-                    <Grid xs={6} sm={4} key={control.symbol} >
-                        <Typography variant="body2">
+    let hasComments = false;
+
+    for (let i = 0; i < controls.length; ++i) {
+        if (controls[i].comment !== "") {
+            hasComments = true;
+            break;
+        }
+    }
+    if (hasComments) {
+        let trs: React.ReactElement[] = [];
+        for (let i = 0; i < controls.length; ++i) {
+            let control = controls[i];
+
+            trs.push((
+                <tr>
+                    <td style={{ verticalAlign: "top" }}>
+                        <Typography variant="body2" style={{ whiteSpace: "nowrap" }}>
                             {control.name}
                         </Typography>
-                    </Grid>
-                ))
-            }
-        </Grid>
-    );
+                    </td>
+                    <td style={{ paddingLeft: "16px", verticalAlign: "top" }}>
+                        <Typography variant="body2">
+                            {control.comment}
+                        </Typography>
+                    </td>
+                </tr >
+            ));
+
+        }
+        return (
+            <table style={{ paddingLeft: "24px", verticalAlign: "top" }}>
+                {
+                    trs
+                }
+            </table>
+        );
+
+    } else {
+        return (
+            <Grid container direction="row" justifyContent="flex-start" alignItems="flex-start" spacing={1} style={{ paddingLeft: "24px" }}>
+                {
+                    controls.map((control) => (
+                        <Grid xs={6} sm={4} key={control.symbol + "x"} >
+                            <Typography variant="body2">
+                                {control.name}
+                            </Typography>
+                        </Grid>
+                    ))
+                }
+            </Grid>
+        );
+    }
 
 }
+
+
 
 const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
 
@@ -205,19 +246,25 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                         </div>
                     </MuiDialogTitle>
                     <PluginInfoDialogContent dividers style={{ width: "100%", maxHeight: "80%", overflowX: "hidden" }}>
-                        <Typography gutterBottom>
-                            Author:&nbsp;
-                            {(plugin.author_homepage !== "")
-                                ? <a href={plugin.author_homepage} target="_blank" rel="noreferrer">{plugin.author_name}</a>
-                                : (
-                                    plugin.author_name
-                                )
-                            }
-                        </Typography>
-                        <Typography gutterBottom>
-                            {ioDescription(plugin)}
-                        </Typography>
+                        <div style={{ width: "100%",display: "flex", flexFlow: "row", justifyItems: "stretch", flexWrap: "nowrap" }} >
+                            <div style={{ flex: "1 1 100%" }}>
+                                <Typography gutterBottom >
+                                    Author:&nbsp;
+                                    {(plugin.author_homepage !== "")
+                                        ? <a href={plugin.author_homepage} target="_blank" rel="noreferrer">{plugin.author_name}</a>
+                                        : (
+                                            plugin.author_name
+                                        )
+                                    }
+                                </Typography>
+                            </div>
+                            <div style={{ flex: "0 0 auto" }}>
+                                <Typography gutterBottom >
+                                    {ioDescription(plugin)}
+                                </Typography>
+                            </div>
 
+                        </div>
                         <Typography variant="body1" gutterBottom style={{ paddingTop: "1em" }}>
                             Controls:
                         </Typography>

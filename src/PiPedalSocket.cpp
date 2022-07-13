@@ -836,10 +836,10 @@ public:
             std::string governor;
             pReader->read(&governor);
             std::string fromAddress = this->getFromAddress();
-            if (!IsOnLocalSubnet(fromAddress))
-            {
-                throw PiPedalException("Permission denied. Not on local subnet.");
-            }
+            // if (!IsOnLocalSubnet(fromAddress))
+            // {
+            //     throw PiPedalException("Permission denied. Not on local subnet.");
+            // }
             this->model.SetGovernorSettings(governor);
             this->Reply(replyTo, "setGovernorSettings");
         }
@@ -852,10 +852,10 @@ public:
                 throw PiPedalException("Can't change server settings when running interactively.");
             }
             std::string fromAddress = this->getFromAddress();
-            if (!IsOnLocalSubnet(fromAddress))
-            {
-                throw PiPedalException("Permission denied. Not on local subnet.");
-            }
+            // if (!IsOnLocalSubnet(fromAddress))
+            // {
+            //     throw PiPedalException("Permission denied. Not on local subnet.");
+            // }
 
             this->model.SetWifiConfigSettings(wifiConfigSettings);
             this->Reply(replyTo, "setWifiConfigSettings");
@@ -873,10 +873,10 @@ public:
                 throw PiPedalException("Can't change server settings when running interactively.");
             }
             std::string fromAddress = this->getFromAddress();
-            if (!IsOnLocalSubnet(fromAddress))
-            {
-                throw PiPedalException("Permission denied. Not on local subnet.");
-            }
+            // if (!IsOnLocalSubnet(fromAddress))
+            // {
+            //     throw PiPedalException("Permission denied. Not on local subnet.");
+            // }
 
             this->model.SetWifiDirectConfigSettings(wifiDirectConfigSettings);
             this->Reply(replyTo, "setWifiDirectConfigSettings");

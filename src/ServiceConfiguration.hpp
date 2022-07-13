@@ -25,10 +25,17 @@
 #pragma once
 
 #include <string>
+#include "ConfigSerializer.h"
 
 namespace pipedal {
-    class DeviceIdFile {
+    using namespace config_serializer;
+
+    class ServiceConfiguration: protected ConfigSerializable<ServiceConfiguration> {
     public:
+        using base = ConfigSerializable<ServiceConfiguration>;
+
+        ServiceConfiguration();
+
         static const char DEVICEID_FILE_NAME[];
 
         void Load();
@@ -36,6 +43,7 @@ namespace pipedal {
 
 
         std::string uuid;
-        std::string deviceName;
+        std::string deviceName = "PiPedal";
+        uint32_t server_port = 80;
     };
 }

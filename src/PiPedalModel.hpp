@@ -142,6 +142,8 @@ private:
     void UpdateRealtimeMonitorPortSubscriptions();
     void OnVuUpdate(const std::vector<VuUpdate>& updates);
 
+    void RestartAudio();
+
     std::vector<RealtimeParameterRequest*> outstandingParameterRequests;
 
     IPiPedalModelSubscriber*GetNotificationSubscriber(int64_t clientId);

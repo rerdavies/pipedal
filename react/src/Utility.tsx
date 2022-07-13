@@ -38,7 +38,14 @@ export interface ControlEntry {
 };
 
 const Utility = class {
+    static isLandscape(): boolean {
+        return window.innerWidth > window.innerHeight;
+    }
     static isTouchDevice(): boolean {
+        if (!this.isLandscape()) return false;
+
+        if (window.innerHeight > 500) return false;
+
         return (('ontouchstart' in window) &&
         ((navigator.maxTouchPoints??0) > 0) );
     }

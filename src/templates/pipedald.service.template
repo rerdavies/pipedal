@@ -7,6 +7,7 @@ After=local-fs.target
 
 
 [Service]
+Restart=on-failure
 Type=notify
 LimitMEMLOCK=infinity
 LimitRTPRIO=95

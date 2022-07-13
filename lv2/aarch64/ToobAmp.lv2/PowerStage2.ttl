@@ -60,7 +60,7 @@ pstage:stage3
 
 <http://two-play.com/plugins/toob-power-stage-2>
         a lv2:Plugin ,
-                lv2:AmplifierPlugin ;
+                lv2:SimulatorPlugin ;
 
         doap:name "TooB Power Stage";
 
@@ -79,8 +79,8 @@ pstage:stage3
 
 rdfs:comment """
 The TooB Power Stage provides flexible and nuanced emulations of guitar amp power stages. 
-The goal of TooB Power Stage is not to inflexibly emulate existing tube power stages, but instead,
-to be better. 
+The goal of TooB Power Stage is emulate the best features of real tube amps without slavishly
+reproducing the undesirable features as well.
 
 TooB Power Stage provides 3 consecutive gain stages, each of which can be overdriven to varying
 degrees. Power transformer sag is emulated using the SAG and SAGD controls, which emulate the 
@@ -105,19 +105,22 @@ General experience seems to suggest that gradually increasing the gain in each s
 the signal harder without introducing undesirable effects in the output. However, there definitely interesting
 and subtle differences in tone that can be acheived by not adhering to that rule of thumb. 
 
-The SAG and SAGD controls are important controls. You need to undertand how they work. SAG controls how much
+The SAG and SAGD controls the emulation of "forgiveness", and "compression" that are provided in a real tube 
+amp by sagging of power supply voltage. SAG controls how much
 the overall volume of the output decreases as the transform sags. It provides the subtle "compression" that 
 tube amps provide, which is quite different from the compression provided by compressors. SAGD controls 
 the amount of additional distortion that occurs as the gain stages receive reduced voltage. It provides 
-the "forgiveness" of a good tube amp. Specifically, because SAGD operates in a feedback loop that runs through
+the "forgiveness" of a good tube amp. Because SAGD operates in a feedback loop that runs through
 all three gain stages. Increasing the distortion in the gain stages increases the power use of the gain stages; 
 increasing the power use of the gain stages increases the effect of SAG and SAGD which has an opposing effect 
-on power use. The net result is that using SAG and SAGD causes signals to break up more gradually 
+on power use. The net result is that SAGD causes signals to break up more gradually 
 (hence the perceived "forgiveness"). The effects are non-linear, so not easy to describe completely. You
-are strongly urged to experiment with SAG and SAGD settings in order to get best tone results. 
+are strongly urged to experiment with SAG and SAGD settings in order to get best tone results. Use very 
+moderate settings to emulate tube amp output; higher settings of SAG and SAGD will cause audible compression
+and pumping of the outputs which may or may not be desireable.
 
 The TooB Power Stage design is based on an experimental design, that unexpectedly produced extraordinarily 
-good amp tones. To be perfectly honest, we have not completely explored the sonic possibilities of the 
+good amp tones. We have not completely explored the sonic possibilities of the 
 TooB Power Stage. What's known so far: it produces exceptionally pretty clean tones; it can be driven really 
 hard, and seems to preserve an unusual amount of detail in the signal even when being driven hard; and it 
 can definitely produce signals that have many of the most prized features of tube amplifiers: warmth, detail, 
@@ -235,10 +238,11 @@ use the following plugins in the following order.
 
                 lv2:index 5 ;
                 lv2:symbol "bias1" ;
-                lv2:name "Bias1";
+                lv2:name "Bias";
                 lv2:default 0.0 ;
                 lv2:minimum -2.0 ;
                 lv2:maximum 2.0;
+                rdfs:comment "Waveshape bias (stage 1)"                 
         ],  
 
         
@@ -345,10 +349,12 @@ use the following plugins in the following order.
 
                 lv2:index 11 ;
                 lv2:symbol "bias2" ;
-                lv2:name "Bias2";
+                lv2:name "Bias";
                 lv2:default 0.0 ;
                 lv2:minimum -2.0 ;
                 lv2:maximum 2.0;
+                rdfs:comment "Waveshape bias (stage 2)"                 
+
         ],  
         [
                 a lv2:InputPort ,
@@ -466,10 +472,12 @@ use the following plugins in the following order.
 
                 lv2:index 18 ;
                 lv2:symbol "bias3" ;
-                lv2:name "Bias3";
+                lv2:name "Bias";
                 lv2:default 0.0 ;
                 lv2:minimum -2.0 ;
                 lv2:maximum 2.0;
+                rdfs:comment "Waveshape bias (stage 3)"                 
+
         ],  
 
         

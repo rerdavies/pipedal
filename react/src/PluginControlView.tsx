@@ -455,7 +455,12 @@ const PluginControlView =
                             {
                                 nodes
                             }
-                            <div style={{ flex: "0 0 40px", width: 40, height: 1 }} />
+                            <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
+                            {
+                                (!this.state.landscapeGrid) && (
+                                    <div style={{ flex: "0 1 100%", width: "0px", height: 40 }} />
+                                )
+                            }
                         </div>
                         <FullScreenIME uiControl={this.state.imeUiControl} value={this.state.imeValue}
 

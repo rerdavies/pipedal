@@ -1,8 +1,8 @@
 {
-    "socket_server_port": 8080,
+    "socket_server_port": 80,
     "socket_server_address": "*",
     "debug": true,
     "max_upload_size": 1048576,
-    "fakeAndroid": true,
+    "fakeAndroid": false,
     "ui_plugins": []
 }

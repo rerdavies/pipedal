@@ -41,7 +41,7 @@
          lv2:minorVersion 0 ;
         lv2:microVersion 13 ;
         rdfs:comment """
-Digital delay.
+A straighforward no-frills digital delay.
 
 """ ;
 
@@ -62,6 +62,7 @@ Digital delay.
                 lv2:maximum 1200;
                 units:unit units:ms;
                 lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic>;
+                rdfs:comment "Delay in ms";
 
         ],  
         [
@@ -76,6 +77,8 @@ Digital delay.
                 lv2:minimum 0.0 ;
                 lv2:maximum 100.0 ;
                 units:unit units:pc;
+                rdfs:comment "Attenuation of the first delay";
+
         ], [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
@@ -89,6 +92,7 @@ Digital delay.
                 lv2:minimum 0.0 ;
                 lv2:maximum 100.0 ;
                 units:unit units:pc;
+                rdfs:comment "Attenuation of subequent delays";
         ],  
         [
                 a lv2:AudioPort ,

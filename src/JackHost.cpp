@@ -161,6 +161,12 @@ private:
 
         isOpen = false;
         StopReaderThread();
+
+        if (realtimeMonitorPortSubscriptions != nullptr)
+        {
+            delete realtimeMonitorPortSubscriptions;
+            realtimeMonitorPortSubscriptions = nullptr;
+        }
         if (active)
         {
             audioDriver->Deactivate();
@@ -933,8 +939,9 @@ public:
             Lv2Log::info("Audio started.");
 
         }
-        catch (PiPedalException &e)
+        catch (const std::exception &e)
         {
+            Lv2Log::error(SS("Failed to start audio. " << e.what()));
             Close();
             active = false;
             throw;

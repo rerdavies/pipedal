@@ -33,7 +33,7 @@
 #include "JackServerSettings.hpp"
 #include "P2pConfigFiles.hpp"
 #include "PrettyPrinter.hpp"
-#include "DeviceIdFile.hpp"
+#include "ServiceConfiguration.hpp"
 #include <uuid/uuid.h>
 #include <random>
 #include "AudioConfig.hpp"
@@ -366,6 +366,7 @@ void InstallLimits()
 }
 
 
+#if JACK_HOST
 void MaybeStartJackService()
 {
     std::filesystem::path drcFile = "/etc/jackdrc";
@@ -379,7 +380,9 @@ void MaybeStartJackService()
         silentSysExec(SYSTEMCTL_BIN " mask jack");
     }
 }
-void InstallJackService()
+#endif
+
+void InstallAudioService()
 {
     InstallLimits();
     InstallPamEnv();
@@ -435,6 +438,28 @@ int SudoExec(char **argv)
     }
 }
 
+static bool IsP2pServiceEnabled()
+{
+    WifiDirectConfigSettings settings;
+    settings.Load();
+    return settings.enable_;
+}
+
+static void RestartP2pdService()
+{
+    if (IsP2pServiceEnabled())
+    {
+        silentSysExec(SYSTEMCTL_BIN " restart " PIPEDAL_P2PD_SERVICE);
+    }
+}
+
+static void UninstallP2pdService()
+{
+    silentSysExec("systemctl stop " PIPEDAL_P2PD_SERVICE);
+    silentSysExec("systemctl disable " PIPEDAL_P2PD_SERVICE);
+}
+
+
 void Uninstall()
 {
     try
@@ -444,9 +469,13 @@ void Uninstall()
 
         StopService();
         DisableService();
+        UninstallP2pdService();
+
+#if UNINSTALL_JACK_SERVICE
         silentSysExec(SYSTEMCTL_BIN " stop jack");
         silentSysExec(SYSTEMCTL_BIN " disable jack");
-        OnWifiUninstall();
+#endif
+
 
         try
         {
@@ -545,32 +574,32 @@ static std::string RandomChars(int nchars)
     return s.str();
 }
 
-static void PrepareDeviceidFile()
+static void PrepareServiceConfigurationFile(uint16_t portNumber)
 {
-    if (!std::filesystem::exists(DeviceIdFile::DEVICEID_FILE_NAME))
+    ServiceConfiguration serviceConfiguration;
+    try {
+        serviceConfiguration.Load();
+    } catch (const std::exception &)
     {
-        DeviceIdFile deviceIdFile;
-
-        deviceIdFile.deviceName = "PiPedal";
-        deviceIdFile.uuid = MakeUuid();
-        deviceIdFile.Save();
-    } else {
-        DeviceIdFile deviceIdFile;
-        if (deviceIdFile.deviceName == "" || deviceIdFile.uuid == "")
-        {
-            if (deviceIdFile.deviceName == "")
-            {
-                deviceIdFile.deviceName = "PiPedal";
-            }
-            if (deviceIdFile.uuid == "")
-            {
-                deviceIdFile.uuid = MakeUuid();
-            }
-            deviceIdFile.Save();
-        }
 
     }
+    if (serviceConfiguration.deviceName == "" || serviceConfiguration.uuid == ""
+        || portNumber != serviceConfiguration.server_port
+    )
+    {
+        if (serviceConfiguration.deviceName == "")
+        {
+            serviceConfiguration.deviceName = "PiPedal";
+        }
+        if (serviceConfiguration.uuid == "")
+        {
+            serviceConfiguration.uuid = MakeUuid();
+        }
+        serviceConfiguration.server_port = portNumber;
+        serviceConfiguration.Save();
+    }
 }
+
 
 void Install(const std::filesystem::path &programPrefix, const std::string endpointAddress)
 {
@@ -583,8 +612,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         throw PiPedalException("Failed to create pipedald service group.");
     }
 
-    PrepareDeviceidFile();
-    InstallJackService();
+    InstallAudioService();
     auto endpos = endpointAddress.find_last_of(':');
     if (endpos == string::npos)
     {
@@ -610,6 +638,9 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
         s << "Invalid port number: " << strPort;
         throw PiPedalException(s.str());
     }
+    PrepareServiceConfigurationFile(port);
+
+
 
     bool authBindRequired = port < 512;
 
@@ -743,6 +774,8 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
          << "\n";
     RestartService(false);
     EnableService();
+
+    RestartP2pdService();
 
     cout << "Complete"
          << "\n";

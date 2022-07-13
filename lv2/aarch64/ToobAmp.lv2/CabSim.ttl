@@ -42,7 +42,7 @@
 
 <http://two-play.com/plugins/toob-cab-sim>
         a lv2:Plugin ,
-                lv2:AmplifierPlugin ;
+                lv2:SimulatorPlugin ;
         doap:name "TooB Cab Simulator" ,
                 "TooB Cab Simulator"@en-gb 
                 ;

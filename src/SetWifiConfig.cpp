@@ -21,7 +21,7 @@
 #include "ss.hpp"
 
 #include "P2pConfigFiles.hpp"
-#include "DeviceIdFile.hpp"
+#include "ServiceConfiguration.hpp"
 #include "SetWifiConfig.hpp"
 #include "PiPedalException.hpp"
 #include "SystemConfigFile.hpp"
@@ -410,6 +410,16 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
     {
         cout << "Disabling P2P" << endl;
         UninstallP2p();
+
+        ServiceConfiguration deviceIdFile;
+        deviceIdFile.Load();
+        deviceIdFile.deviceName = settings.hotspotName_;
+        deviceIdFile.Save();
+
+
+        // Announce new mDNS service with potentially new deviceName.
+        sysExec(SYSTEMCTL_BIN " restart pipedald");
+
     }
     else
     {
@@ -417,7 +427,7 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
         settings.Save();
         // ******************* device_uuid
 
-        DeviceIdFile deviceIdFile;
+        ServiceConfiguration deviceIdFile;
         deviceIdFile.Load();
         deviceIdFile.deviceName = settings.hotspotName_;
         deviceIdFile.Save();
@@ -502,12 +512,9 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
         sysExec(SYSTEMCTL_BIN " daemon-reload");
         
         sysExec(SYSTEMCTL_BIN " stop pipedal_p2pd");
-        sysExec(SYSTEMCTL_BIN " stop dnsmasq");
-        sysExec(SYSTEMCTL_BIN " stop wpa_supplicant");
         sysExec(SYSTEMCTL_BIN " restart dhcpcd");
-        sysExec(SYSTEMCTL_BIN " unmask wpa_supplicant");
         sysExec(SYSTEMCTL_BIN " start wpa_supplicant");
-        sysExec(SYSTEMCTL_BIN " enable wpa_supplicant");
+        sysExec(SYSTEMCTL_BIN " enable wpa_supplicant"); // ?? Not sure that's still right. :-/
         sysExec(SYSTEMCTL_BIN " start dnsmasq");
         sysExec(SYSTEMCTL_BIN " enable dnsmasq");
         sysExec(SYSTEMCTL_BIN " start pipedal_p2pd");
