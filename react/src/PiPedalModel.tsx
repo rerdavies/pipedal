@@ -2021,7 +2021,7 @@ class PiPedalModelImpl implements PiPedalModel {
             wifiDirectConfigSettings = wifiDirectConfigSettings.clone();
 
             if ((!oldSettings.enable) && (!wifiDirectConfigSettings.enable)
-            && (oldSettings.hotspotName == wifiDirectConfigSettings.hotspotName)
+            && (oldSettings.hotspotName === wifiDirectConfigSettings.hotspotName)
             ) {
                 // no effective change.
                 resolve();
