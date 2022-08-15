@@ -20,7 +20,7 @@
 #include "pch.h"
 #include "SplitEffect.hpp"
 
-#include "Lv2Host.hpp"
+#include "PiPedalHost.hpp"
 #include "PedalBoard.hpp"
 
 using namespace pipedal;

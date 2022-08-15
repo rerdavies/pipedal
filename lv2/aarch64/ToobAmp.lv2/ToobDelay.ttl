@@ -77,7 +77,7 @@ A straighforward no-frills digital delay.
                 lv2:minimum 0.0 ;
                 lv2:maximum 100.0 ;
                 units:unit units:pc;
-                rdfs:comment "Attenuation of the first delay";
+                rdfs:comment "Attenuation of the first echo";
 
         ], [
                 a lv2:InputPort ,
@@ -92,7 +92,7 @@ A straighforward no-frills digital delay.
                 lv2:minimum 0.0 ;
                 lv2:maximum 100.0 ;
                 units:unit units:pc;
-                rdfs:comment "Attenuation of subequent delays";
+                rdfs:comment "Attenuation of subequent echoes";
         ],  
         [
                 a lv2:AudioPort ,

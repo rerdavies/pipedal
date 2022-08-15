@@ -30,10 +30,14 @@
 #include "OptionsFeature.hpp"
 #include <filesystem>
 #include <cmath>
+#include <string>
 
 #include "lv2.h"
 #include "Units.hpp"
 #include "PluginPreset.hpp"
+
+#include "IEffect.hpp"
+#include "PiPedalConfiguration.hpp"
 
 
 namespace pipedal {
@@ -42,19 +46,23 @@ namespace pipedal {
 // forward declarations
 class Lv2Effect;
 class Lv2PedalBoard;
-class Lv2Host;
+class PiPedalHost;
 class JackConfiguration;
 class JackChannelSelection;
 
+#ifndef LV2_PROPERTY_GETSET
 #define LV2_PROPERTY_GETSET(name) \
     const decltype(name##_) & name() const { return name##_; }; \
     decltype(name##_) & name()  { return name##_; }; \
     void  name(const decltype(name##_) &value) { name##_ = value; }; 
+#endif
 
 
+#ifndef LV2_PROPERTY_GETSET_SCALAR
 #define LV2_PROPERTY_GETSET_SCALAR(name) \
     decltype(name##_) name() const { return name##_;}; \
     void  name(decltype(name##_) value) { name##_ = value; }; 
+#endif
 
 
 
@@ -62,7 +70,7 @@ class JackChannelSelection;
 
 class Lv2PluginClass {
 public:
-    friend class Lv2Host;
+    friend class PiPedalHost;
 private:
     Lv2PluginClass*  parent_ = nullptr; // NOT SERIALIZED!
     std::string parent_uri_;
@@ -72,7 +80,7 @@ private:
     std::vector<std::shared_ptr<Lv2PluginClass>> children_;
 
 
-    friend class ::pipedal::Lv2Host;
+    friend class ::pipedal::PiPedalHost;
     // hide copy constructor.
     Lv2PluginClass(const Lv2PluginClass &other)
     {
@@ -135,7 +143,7 @@ public:
     {
         return classes_;
     }
-    bool is_a(Lv2Host*lv2Plugins,const char*classUri) const;
+    bool is_a(PiPedalHost*lv2Plugins,const char*classUri) const;
 
     static json_map::storage_type<Lv2PluginClasses> jmap;
 
@@ -171,7 +179,7 @@ enum class Lv2BufferType {
 
 class Lv2PortInfo {
 public:
-    Lv2PortInfo(Lv2Host*lv2Host,const LilvPlugin*pPlugin,const LilvPort *pPort);
+    Lv2PortInfo(PiPedalHost*lv2Host,const LilvPlugin*pPlugin,const LilvPort *pPort);
 private:
     friend class Lv2PluginInfo;
 
@@ -276,7 +284,7 @@ public:
 public:
     Lv2PortInfo() { }
     ~Lv2PortInfo() = default;
-    bool is_a(Lv2Host*lv2Plugins,const char*classUri);
+    bool is_a(PiPedalHost*lv2Plugins,const char*classUri);
 
     static json_map::storage_type<Lv2PortInfo> jmap;
     
@@ -294,19 +302,19 @@ public:
     LV2_PROPERTY_GETSET(name);
 
     Lv2PortGroup() { }
-    Lv2PortGroup(Lv2Host*lv2Host,const std::string &groupUri);
+    Lv2PortGroup(PiPedalHost*lv2Host,const std::string &groupUri);
 
     static json_map::storage_type<Lv2PortGroup> jmap;
 };
 
 class Lv2PluginInfo {
 private:
-    friend class Lv2Host;
+    friend class PiPedalHost;
 public:
-    Lv2PluginInfo(Lv2Host*lv2Host,const LilvPlugin*);
+    Lv2PluginInfo(PiPedalHost*lv2Host,const LilvPlugin*);
     Lv2PluginInfo() { }
 private:
-    bool HasFactoryPresets(Lv2Host*lv2Host, const LilvPlugin*plugin);
+    bool HasFactoryPresets(PiPedalHost*lv2Host, const LilvPlugin*plugin);
     std::string uri_;
     std::string name_;
     std::string plugin_class_;
@@ -399,139 +407,151 @@ public:
 
 };
 
-
-class Lv2PluginUiControlPort {
-public:
-    Lv2PluginUiControlPort() {
-    }
-    Lv2PluginUiControlPort(const Lv2PluginInfo *pPlugin,const Lv2PortInfo*pPort)
-    : symbol_(pPort->symbol())
-    , index_(pPort->index())
-    , name_(pPort->name())
-    , min_value_(pPort->min_value())
-    , max_value_(pPort->max_value())
-    , default_value_(pPort->default_value())
-    , range_steps_(pPort->range_steps())
-    , display_priority_(pPort->display_priority())
-    , is_logarithmic_(pPort->is_logarithmic())
-    , integer_property_(pPort->integer_property())
-    , enumeration_property_(pPort->enumeration_property())
-    , toggled_property_(pPort->toggled_property())
-    , not_on_gui_(pPort->not_on_gui())
-    , scale_points_(pPort->scale_points())
-    , comment_(pPort->comment())
-    , units_(pPort->units())
+    class Lv2PluginUiPortGroup
     {
-        // Use symbols to index port groups, instead of uris.
-        // symbols are guaranteed to be unique.
-        auto &portGroup = pPort->port_group();
-        for (int i = 0; i < pPlugin->port_groups().size(); ++i)
+    private:
+        std::string symbol_;
+        std::string name_;
+
+        std::string parent_group_;
+        int32_t program_list_id_ = -1; // used by VST3.
+    public:
+        LV2_PROPERTY_GETSET(symbol)
+        LV2_PROPERTY_GETSET(name)
+        LV2_PROPERTY_GETSET(parent_group)
+        LV2_PROPERTY_GETSET_SCALAR(program_list_id)
+
+    public:
+        Lv2PluginUiPortGroup() {}
+        Lv2PluginUiPortGroup(Lv2PortGroup *pPortGroup)
+            : symbol_(pPortGroup->symbol()), name_(pPortGroup->name())
+        {
+        }
+        Lv2PluginUiPortGroup(
+            const std::string &symbol, const std::string &name,
+            const std::string &parent_group, int32_t programListId)
+        : symbol_(symbol),name_(name),parent_group_(parent_group),program_list_id_(programListId)
         {
 
-            auto &p = pPlugin->port_groups()[i];
-            if (p->uri() == portGroup)
-            {
-                this->port_group_ = p->symbol();
-                break;
-            }
-            
+        }
 
-        }   
-    }
-private:
-    std::string symbol_;
-    int index_;
-    std::string name_;
-    float min_value_ = 0, max_value_ = 1,default_value_ = 0;
-    int range_steps_ = 0;
-    int display_priority_ = -1;
-    bool is_logarithmic_ = false;
-    bool integer_property_ = false;
-    bool enumeration_property_ = false;
-    bool toggled_property_ = false;
-    bool not_on_gui_ = false;
-    std::vector<Lv2ScalePoint> scale_points_;
-    std::string port_group_;
-    Units units_ = Units::none;
-    std::string comment_;
-public:
-    LV2_PROPERTY_GETSET(symbol);
-    LV2_PROPERTY_GETSET_SCALAR(index);
-    LV2_PROPERTY_GETSET(name);
-    LV2_PROPERTY_GETSET_SCALAR(min_value);
-    LV2_PROPERTY_GETSET_SCALAR(max_value);
-    LV2_PROPERTY_GETSET_SCALAR(default_value);
-    LV2_PROPERTY_GETSET_SCALAR(range_steps);
-    LV2_PROPERTY_GETSET_SCALAR(display_priority);
-    LV2_PROPERTY_GETSET_SCALAR(is_logarithmic);
-    LV2_PROPERTY_GETSET_SCALAR(integer_property);
-    LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
-    LV2_PROPERTY_GETSET_SCALAR(toggled_property);
-    LV2_PROPERTY_GETSET_SCALAR(not_on_gui);
-    LV2_PROPERTY_GETSET(scale_points);
-    LV2_PROPERTY_GETSET(units);
-    LV2_PROPERTY_GETSET(comment);
+    public:
+        static json_map::storage_type<Lv2PluginUiPortGroup> jmap;
+    };
 
-public:
-    static json_map::storage_type<Lv2PluginUiControlPort> jmap;
-
-};
-
-class Lv2PluginUiPortGroup {
-private:
-    std::string symbol_;
-    std::string name_;
-public:
-    Lv2PluginUiPortGroup() { }
-    Lv2PluginUiPortGroup(Lv2PortGroup *pPortGroup)
-    : symbol_(pPortGroup->symbol())
-    , name_(pPortGroup->name())
+    class Lv2PluginUiControlPort
     {
-    }
-public:
-    static json_map::storage_type<Lv2PluginUiPortGroup> jmap;
+    public:
+        Lv2PluginUiControlPort()
+        {
+        }
+        Lv2PluginUiControlPort(const Lv2PluginInfo *pPlugin, const Lv2PortInfo *pPort)
+            : symbol_(pPort->symbol()), index_(pPort->index()), name_(pPort->name()), min_value_(pPort->min_value()), max_value_(pPort->max_value()), default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()), is_logarithmic_(pPort->is_logarithmic()), integer_property_(pPort->integer_property()), enumeration_property_(pPort->enumeration_property()), toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()), comment_(pPort->comment()), units_(pPort->units())
+        {
+            // Use symbols to index port groups, instead of uris.
+            // symbols are guaranteed to be unique.
+            auto &portGroup = pPort->port_group();
+            for (int i = 0; i < pPlugin->port_groups().size(); ++i)
+            {
 
-};
+                auto &p = pPlugin->port_groups()[i];
+                if (p->uri() == portGroup)
+                {
+                    this->port_group_ = p->symbol();
+                    break;
+                }
+            }
+        }
 
-class Lv2PluginUiInfo {
-public:
-    Lv2PluginUiInfo() { }
-    Lv2PluginUiInfo(Lv2Host *pPlugins,const Lv2PluginInfo *plugin);
+    private:
+        std::string symbol_;
+        int index_;
+        std::string name_;
+        float min_value_ = 0, max_value_ = 1, default_value_ = 0;
+        int range_steps_ = 0;
+        int display_priority_ = -1;
+        bool is_logarithmic_ = false;
+        bool integer_property_ = false;
+        bool enumeration_property_ = false;
+        bool toggled_property_ = false;
+        bool not_on_gui_ = false;
+        std::vector<Lv2ScalePoint> scale_points_;
+        std::string port_group_;
+        Units units_ = Units::none;
+        std::string comment_;
+        bool is_bypass_ = false;
+        bool is_program_controller_ = false;
+        std::string custom_units_;
 
-private:
-    std::string uri_;
-    std::string name_;
-    std::string author_name_;
-    std::string author_homepage_;
-    PluginType plugin_type_;
-    std::string plugin_display_type_;
-    int audio_inputs_ = 0;
-    int audio_outputs_ = 0;
-    int has_midi_input_ = false;
-    int has_midi_output_ = false;
-    std::string description_;
+    public:
+        LV2_PROPERTY_GETSET(symbol);
+        LV2_PROPERTY_GETSET_SCALAR(index);
+        LV2_PROPERTY_GETSET(name);
+        LV2_PROPERTY_GETSET(port_group);
+        LV2_PROPERTY_GETSET_SCALAR(min_value);
+        LV2_PROPERTY_GETSET_SCALAR(max_value);
+        LV2_PROPERTY_GETSET_SCALAR(default_value);
+        LV2_PROPERTY_GETSET_SCALAR(range_steps);
+        LV2_PROPERTY_GETSET_SCALAR(display_priority);
+        LV2_PROPERTY_GETSET_SCALAR(is_logarithmic);
+        LV2_PROPERTY_GETSET_SCALAR(integer_property);
+        LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
+        LV2_PROPERTY_GETSET_SCALAR(toggled_property);
+        LV2_PROPERTY_GETSET_SCALAR(not_on_gui);
+        LV2_PROPERTY_GETSET(scale_points);
+        LV2_PROPERTY_GETSET(units);
+        LV2_PROPERTY_GETSET(comment);
+        LV2_PROPERTY_GETSET_SCALAR(is_bypass);
+        LV2_PROPERTY_GETSET_SCALAR(is_program_controller);
+        LV2_PROPERTY_GETSET(custom_units);
 
-    std::vector<Lv2PluginUiControlPort> controls_;
-    std::vector<Lv2PluginUiPortGroup> port_groups_;
+    public:
+        static json_map::storage_type<Lv2PluginUiControlPort> jmap;
+    };
 
-public:
-    LV2_PROPERTY_GETSET(uri)
-    LV2_PROPERTY_GETSET(name)
-    LV2_PROPERTY_GETSET(author_name)
-    LV2_PROPERTY_GETSET(author_homepage)
-    LV2_PROPERTY_GETSET_SCALAR(plugin_type)
-    LV2_PROPERTY_GETSET(plugin_display_type)
-    LV2_PROPERTY_GETSET_SCALAR(audio_inputs)
-    LV2_PROPERTY_GETSET_SCALAR(audio_outputs)
-    LV2_PROPERTY_GETSET_SCALAR(has_midi_input)
-    LV2_PROPERTY_GETSET_SCALAR(has_midi_output)
-    LV2_PROPERTY_GETSET_SCALAR(description)
-    LV2_PROPERTY_GETSET(port_groups)
+    class Lv2PluginUiInfo
+    {
+    public:
+        Lv2PluginUiInfo() {}
+        Lv2PluginUiInfo(PiPedalHost *pPlugins, const Lv2PluginInfo *plugin);
+
+    private:
+        std::string uri_;
+        std::string name_;
+        std::string author_name_;
+        std::string author_homepage_;
+        PluginType plugin_type_;
+        std::string plugin_display_type_;
+        int audio_inputs_ = 0;
+        int audio_outputs_ = 0;
+        int has_midi_input_ = false;
+        int has_midi_output_ = false;
+        std::string description_;
+        bool is_vst3_ = false;
+
+        std::vector<Lv2PluginUiControlPort> controls_;
+        std::vector<Lv2PluginUiPortGroup> port_groups_;
+
+    public:
+        LV2_PROPERTY_GETSET(uri)
+        LV2_PROPERTY_GETSET(name)
+        LV2_PROPERTY_GETSET(author_name)
+        LV2_PROPERTY_GETSET(author_homepage)
+        LV2_PROPERTY_GETSET_SCALAR(plugin_type)
+        LV2_PROPERTY_GETSET(plugin_display_type)
+        LV2_PROPERTY_GETSET_SCALAR(audio_inputs)
+        LV2_PROPERTY_GETSET_SCALAR(audio_outputs)
+        LV2_PROPERTY_GETSET_SCALAR(has_midi_input)
+        LV2_PROPERTY_GETSET_SCALAR(has_midi_output)
+        LV2_PROPERTY_GETSET_SCALAR(description)
+        LV2_PROPERTY_GETSET(controls)
+        LV2_PROPERTY_GETSET(port_groups)
+        LV2_PROPERTY_GETSET_SCALAR(is_vst3)
+
+        static json_map::storage_type<Lv2PluginUiInfo> jmap;
+    };
 
 
-    static json_map::storage_type<Lv2PluginUiInfo> jmap;
-
-};
 
 class IHost {
 public:
@@ -552,7 +572,7 @@ public:
     virtual std::shared_ptr<Lv2PluginInfo> GetPluginInfo(const std::string&uri) const = 0;
 
 
-    virtual Lv2Effect*CreateEffect(const PedalBoardItem &pedalBoard) = 0;
+    virtual IEffect*CreateEffect(PedalBoardItem &pedalBoard) = 0;
 };
 
 
@@ -583,8 +603,24 @@ public:
     LilvNodePtr&operator=(LilvNode*node) { Free(); this->node = node; return *this;}
 };
 
-class Lv2Host: private IHost {
+}
+
+#if ENABLE_VST3
+#include "vst3/Vst3Host.hpp"
+#endif
+
+
+namespace pipedal{
+
+
+
+
+class PiPedalHost: private IHost {
 private:
+#if ENABLE_VST3
+    Vst3Host::Ptr vst3Host;
+
+#endif
     static const char *RDFS_COMMENT_URI;
     class LilvUris {
     public:
@@ -619,6 +655,8 @@ private:
 
 
     };
+    bool vst3Enabled = true;
+
     LilvUris lilvUris;
 
     LilvNode *get_comment(const std::string &uri);
@@ -630,6 +668,8 @@ private:
     int numberOfAudioInputChannels = 2;
     int numberOfAudioOutputChannels = 2;
     double sampleRate = 0;
+
+    std::string vst3CachePath;
 
     LV2_Feature*const*lv2Features = nullptr;
     MapFeature mapFeature;
@@ -678,17 +718,20 @@ private:
     }
     static void PortValueCallback(const char*symbol,void*user_data,const void* value,uint32_t size, uint32_t type);
 
-    virtual Lv2Effect*CreateEffect(const PedalBoardItem &pedalBoardItem);
+    virtual IEffect*CreateEffect(PedalBoardItem &pedalBoardItem);
     void LoadPluginClassesFromLilv();
     void AddJsonClassesToMap(std::shared_ptr<Lv2PluginClass> pluginClass);
 
 public:
-    Lv2Host();
-    virtual ~Lv2Host();
+    PiPedalHost();
+
+    void SetConfiguration(const PiPedalConfiguration&configuration);
+
+    virtual ~PiPedalHost();
 
     IHost* asIHost() { return this;}
 
-    virtual Lv2PedalBoard * CreateLv2PedalBoard(const PedalBoard& pedalBoard);
+    virtual Lv2PedalBoard * CreateLv2PedalBoard(PedalBoard& pedalBoard);
 
     void setSampleRate(double sampleRate)
     {
@@ -719,7 +762,7 @@ public:
 
 
     void LoadPluginClassesFromJson(std::filesystem::path jsonFile);
-    void Load(const char*lv2Path = Lv2Host::DEFAULT_LV2_PATH);
+    void Load(const char*lv2Path = PiPedalHost::DEFAULT_LV2_PATH);
 
     virtual LV2_URID GetLv2Urid(const char*uri)  {
         return this->mapFeature.GetUrid(uri);
@@ -736,5 +779,5 @@ public:
 };
 
 #undef LV2_PROPERTY_GETSET
-
+#undef LV2_PROPERTY_GETSET_SCALAR
 } // namespace pipedal.

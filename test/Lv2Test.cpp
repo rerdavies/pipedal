@@ -19,7 +19,7 @@
 #include "pch.h"
 #include "catch.hpp"
 #include <string>
-#include "Lv2Host.hpp"
+#include "PiPedalHost.hpp"
 
 using namespace piddle;
 

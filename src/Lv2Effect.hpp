@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "Lv2Host.hpp"
+#include "PiPedalHost.hpp"
 #include "PedalBoard.hpp"
 #include <lilv/lilv.h>
 #include "BufferPool.hpp"
@@ -82,7 +82,6 @@ namespace pipedal
 
         LV2_Atom_Forge outputForgeRt;
 
-        void WriteAtom(json_writer &writer, LV2_Atom*pAtom);
 
         class Uris
         {
@@ -167,9 +166,10 @@ namespace pipedal
 
         void BypassTo(float value);
 
+
         virtual void RequestParameter(LV2_URID uridUri);
         virtual void GatherParameter(RealtimeParameterRequest*pRequest);
-
+        virtual bool IsVst3() const { return false; }
         virtual void RelayOutputMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter);
 
         virtual uint8_t*GetAtomInputBuffer() {
@@ -182,10 +182,6 @@ namespace pipedal
             return (uint8_t*)this->outputAtomBuffers[0];
 
         }
-        virtual std::string AtomToJson(uint8_t*pAtom);
-        virtual std::string GetAtomObjectType(uint8_t*pData);
-
-
 
 
     public:
@@ -196,29 +192,30 @@ namespace pipedal
         ~Lv2Effect();
 
 
+
         virtual void ResetAtomBuffers();
-        virtual long GetInstanceId() const { return instanceId; }
+        virtual uint64_t GetInstanceId() const { return instanceId; }
         virtual int GetNumberOfInputAudioPorts() const { return inputAudioPortIndices.size(); }
         virtual int GetNumberOfOutputAudioPorts() const { return outputAudioPortIndices.size(); }
-        int GetNumberOfInputAtomPorts() const { return inputAtomPortIndices.size(); }
-        int GetNumberOfOutputAtomPorts() const { return outputAtomPortIndices.size(); }
-        int GetNumberOfMidiInputPorts() const { return inputMidiPortIndices.size(); }
-        int GetNumberOfMidiOutputPorts() const { return outputMidiPortIndices.size(); }
+        virtual int GetNumberOfInputAtomPorts() const { return inputAtomPortIndices.size(); }
+        virtual int GetNumberOfOutputAtomPorts() const { return outputAtomPortIndices.size(); }
+        virtual int GetNumberOfMidiInputPorts() const { return inputMidiPortIndices.size(); }
+        virtual int GetNumberOfMidiOutputPorts() const { return outputMidiPortIndices.size(); }
 
         virtual void SetAudioInputBuffer(int index, float *buffer);
-        float *GetAudioInputBuffer(int index) const { return this->inputAudioBuffers[index]; }
+        virtual float *GetAudioInputBuffer(int index) const { return this->inputAudioBuffers[index]; }
 
-        void SetAudioInputBuffer(float *buffer);
-        void SetAudioInputBuffers(float *left, float *right);
+        virtual void SetAudioInputBuffer(float *buffer);
+        virtual void SetAudioInputBuffers(float *left, float *right);
 
         virtual void SetAudioOutputBuffer(int index, float *buffer);
-        float *GetAudioOutputBuffer(int index) const { return this->outputAudioBuffers[index]; }
+        virtual float *GetAudioOutputBuffer(int index) const { return this->outputAudioBuffers[index]; }
 
-        void SetAtomInputBuffer(int index, void *buffer);
-        void *GetAtomInputBuffer(int index) const { return this->inputAtomBuffers[index]; }
+        virtual void SetAtomInputBuffer(int index, void *buffer) { this->inputAtomBuffers[index] = (char*)buffer;}
+        virtual void *GetAtomInputBuffer(int index) const { return this->inputAtomBuffers[index]; }
 
-        void SetAtomOutputBuffer(int index, void *buffer);
-        void *GetAtomOutputBuffer(int index) const { return this->outputAtomBuffers[index]; }
+        virtual void SetAtomOutputBuffer(int index, void *buffer) { this->outputAtomBuffers[index] = (char*)buffer; }
+        virtual void *GetAtomOutputBuffer(int index) const { return this->outputAtomBuffers[index]; }
 
         virtual int GetControlIndex(const std::string &symbol) const;
 
@@ -254,22 +251,10 @@ namespace pipedal
             }
 
         }
-        int GetNumberOfInputs() const
-        {
-            return this->inputAudioPortIndices.size();
-        }
-        int GetNumberOfOutputs() const
-        {
-            return this->outputAudioPortIndices.size();
-        }
-        int GetNumberOfMidiInputs() const
-        {
-            return this->inputMidiPortIndices.size();
-        }
 
-        void Activate();
-        void Run(uint32_t samples, uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter);
-        void Deactivate();
+        virtual void Activate();
+        virtual void Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter);
+        virtual void Deactivate();
     };
 
 } // namespace

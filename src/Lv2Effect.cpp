@@ -216,7 +216,7 @@ void Lv2Effect::SetAudioInputBuffer(int index, float *buffer)
 
 void Lv2Effect::SetAudioInputBuffer(float *left)
 {
-    if (GetNumberOfInputs() > 1)
+    if (GetNumberOfInputAudioPorts() > 1)
     {
         SetAudioInputBuffer(0, left);
         SetAudioInputBuffer(1, left);
@@ -229,7 +229,7 @@ void Lv2Effect::SetAudioInputBuffer(float *left)
 
 void Lv2Effect::SetAudioInputBuffers(float *left, float *right)
 {
-    if (GetNumberOfInputs() == 1)
+    if (GetNumberOfInputAudioPorts() == 1)
     {
         SetAudioInputBuffer(0, left);
     }
@@ -343,7 +343,7 @@ static inline void CopyBuffer(float *input, float *output, uint32_t frames)
     }
 }
 
-void Lv2Effect::Run(uint32_t samples,uint64_t instanceId, RealtimeRingBufferWriter *realtimeRingBufferWriter)
+void Lv2Effect::Run(uint32_t samples,RealtimeRingBufferWriter *realtimeRingBufferWriter)
 {
     // close off the atom input frame.
     if (this->inputAtomBuffers.size() != 0)
@@ -441,7 +441,7 @@ void Lv2Effect::Run(uint32_t samples,uint64_t instanceId, RealtimeRingBufferWrit
         }
         
     }
-    RelayOutputMessages(instanceId,realtimeRingBufferWriter);
+    RelayOutputMessages(this->instanceId,realtimeRingBufferWriter);
 }
 
 LV2_Worker_Status Lv2Effect::worker_schedule_fn(LV2_Worker_Schedule_Handle handle,
@@ -600,164 +600,5 @@ void Lv2Effect::GatherParameter(RealtimeParameterRequest *pRequest)
     }
 }
 
-std::string Lv2Effect::GetAtomObjectType(uint8_t*pData)
-{
-    LV2_Atom_Object *pAtom = (LV2_Atom_Object*)pData;
-    if (pAtom->atom.type != uris.atom_Object)
-    {
-        throw std::invalid_argument("Not an Lv2 Object");
-    }
-    return pHost->Lv2UriudToString(pAtom->body.otype);
 
-}
-std::string Lv2Effect::AtomToJson(uint8_t*pData)
-{
-    std::stringstream s;
-    json_writer writer(s);
-    LV2_Atom *pAtom = (LV2_Atom*)pData;
 
-    WriteAtom(writer,pAtom);
-    return s.str();
-}
-
-static std::string UriToFieldName(const std::string&uri){
-    int pos;
-    for (pos = uri.length(); pos >= 0; --pos)
-    {
-        char c = uri[pos];
-        if (c == '#' || c == '/' || c == ':')
-        {
-            break;
-        }
-    }
-    return uri.substr(pos+1);
-}
-void Lv2Effect::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
-{
-    if (pAtom->type == uris.atom_Blank)
-    {
-        writer.write_raw("null");
-    }
-    else if (pAtom->type == uris.atom_float)
-    {
-        writer.write(
-            ((LV2_Atom_Float*)pAtom)->body
-        );
-
-    } else if (pAtom->type == uris.atom_Int)
-    {
-        writer.write(
-            ((LV2_Atom_Int*)pAtom)->body
-        );
-    } else if (pAtom->type == uris.atom_Long)
-    {
-        writer.write(
-            ((LV2_Atom_Long*)pAtom)->body
-        );
-    } else if (pAtom->type == uris.atom_Double)
-    {
-        writer.write(
-            ((LV2_Atom_Double*)pAtom)->body
-        );
-    } else if (pAtom->type == uris.atom_Bool)
-    {
-        writer.write(
-            ((LV2_Atom_Bool*)pAtom)->body
-        );
-    } else if (pAtom->type == uris.atom_String)
-    {
-        const char *p = (((const char*) pAtom) + sizeof(LV2_Atom_String));
-        writer.write(
-            p
-        );
-    } else if (pAtom->type == uris.atom_Vector)
-    {
-        LV2_Atom_Vector *pVector = (LV2_Atom_Vector*)pAtom;
-        writer.start_array();
-        {
-            size_t n = (pAtom->size-sizeof(pVector->body))/pVector->body.child_size;
-            char *pItems = ((char*)pAtom) + sizeof(LV2_Atom_Vector);
-            if (pVector->body.child_type == uris.atom_float)
-            {
-                float *p = (float*)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0) writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            } else if (pVector->body.child_type == uris.atom_Int)
-            {
-                int32_t *p = (int32_t*)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0) writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            } else if (pVector->body.child_type == uris.atom_Long)
-            {
-                int64_t *p = (int64_t*)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0) writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            } else if (pVector->body.child_type == uris.atom_Double)
-            {
-                double *p = (double*)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0) writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            } else if (pVector->body.child_type == uris.atom_Bool)
-            {
-                bool *p = (bool*)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0) writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            }
-        }
-        writer.end_array();
-    } else if (pAtom->type == uris.atom_Object)
-    {
-        writer.start_object();
-
-        const LV2_Atom_Object *obj = (const LV2_Atom_Object *)pAtom;
-        bool firstMember = true;
-        if (obj->body.id != 0)
-        {
-            std::string id = pHost->Lv2UriudToString(obj->body.id);
-            writer.write_member("id",id.c_str());
-            firstMember = false;
-        }
-
-        if (obj->body.otype != 0)
-        {
-            std::string type =  pHost->Lv2UriudToString(obj->body.otype);        
-            writer.write_member("lv2Type",type.c_str());
-            if (!firstMember)
-            {
-                writer.write_raw(",");
-            }
-            firstMember = false;
-        }
-
-        LV2_ATOM_OBJECT_FOREACH (obj, prop) {
-            if (!firstMember) {
-                writer.write_raw(",");
-            }
-            firstMember = false;
-            std::string key = pHost->Lv2UriudToString(prop->key);
-            key = UriToFieldName(key);
-            writer.write(key);
-            writer.write_raw(": ");
-            LV2_Atom *value = &(prop->value);
-            WriteAtom(writer,value);
-        }
-        writer.end_object();
-        
-    }
-
-}

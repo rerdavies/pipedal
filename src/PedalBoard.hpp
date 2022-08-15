@@ -82,10 +82,12 @@ class PedalBoardItem: public JsonWritable {
     std::vector<PedalBoardItem> topChain_;
     std::vector<PedalBoardItem> bottomChain_;
     std::vector<MidiBinding> midiBindings_;
+    std::string vstState_;
 public:
     ControlValue*GetControlValue(const std::string&symbol);
     GETTER_SETTER(instanceId)
     GETTER_SETTER_REF(uri)
+    GETTER_SETTER_REF(vstState);
     GETTER_SETTER_REF(pluginName)
     GETTER_SETTER(isEnabled)
     GETTER_SETTER_VEC(controlValues)

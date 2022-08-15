@@ -106,6 +106,73 @@ static std::string GetGovernor()
 class JackHostImpl : public JackHost, private AudioDriverHost
 {
 private:
+    IHost *pHost = nullptr;
+
+        class Uris
+        {
+        public:
+            Uris(IHost *pHost)
+            {
+                atom_Blank = pHost->GetLv2Urid(LV2_ATOM__Blank);
+                atom_Path = pHost->GetLv2Urid(LV2_ATOM__Path);
+                atom_float = pHost->GetLv2Urid(LV2_ATOM__Float);
+                atom_Double = pHost->GetLv2Urid(LV2_ATOM__Double);
+                atom_Int = pHost->GetLv2Urid(LV2_ATOM__Int);
+                atom_Long = pHost->GetLv2Urid(LV2_ATOM__Long);
+                atom_Bool = pHost->GetLv2Urid(LV2_ATOM__Bool);
+                atom_String = pHost->GetLv2Urid(LV2_ATOM__String);
+                atom_Vector = pHost->GetLv2Urid(LV2_ATOM__Vector);
+                atom_Object = pHost->GetLv2Urid(LV2_ATOM__Object);
+
+
+                atom_Sequence = pHost->GetLv2Urid(LV2_ATOM__Sequence);
+                atom_Chunk = pHost->GetLv2Urid(LV2_ATOM__Chunk);
+                atom_URID = pHost->GetLv2Urid(LV2_ATOM__URID);
+                atom_eventTransfer = pHost->GetLv2Urid(LV2_ATOM__eventTransfer);
+                patch_Get = pHost->GetLv2Urid(LV2_PATCH__Get);
+                patch_Set = pHost->GetLv2Urid(LV2_PATCH__Set);
+                patch_Put = pHost->GetLv2Urid(LV2_PATCH__Put);
+                patch_body = pHost->GetLv2Urid(LV2_PATCH__body);
+                patch_subject = pHost->GetLv2Urid(LV2_PATCH__subject);
+                patch_property = pHost->GetLv2Urid(LV2_PATCH__property);
+                //patch_accept = pHost->GetLv2Urid(LV2_PATCH__accept);
+                patch_value = pHost->GetLv2Urid(LV2_PATCH__value);
+                unitsFrame = pHost->GetLv2Urid(LV2_UNITS__frame);
+
+            }
+            //LV2_URID patch_accept;
+
+            LV2_URID unitsFrame;
+            LV2_URID pluginUri;
+            LV2_URID atom_Blank;
+            LV2_URID atom_Bool;
+            LV2_URID atom_float;
+            LV2_URID atom_Double;
+            LV2_URID atom_Int;
+            LV2_URID atom_Long;
+            LV2_URID atom_String;
+            LV2_URID atom_Object;
+            LV2_URID atom_Vector;
+            LV2_URID atom_Path;
+            LV2_URID atom_Sequence;
+            LV2_URID atom_Chunk;
+            LV2_URID atom_URID;
+            LV2_URID atom_eventTransfer;
+            LV2_URID midi_Event;
+            LV2_URID patch_Get;
+            LV2_URID patch_Set;
+            LV2_URID patch_Put;
+            LV2_URID patch_body;
+            LV2_URID patch_subject;
+            LV2_URID patch_property;
+            LV2_URID patch_value;
+            LV2_URID param_uiState;
+        };
+
+        Uris uris;
+
+
+
     AudioDriver*audioDriver = nullptr;
 
     inherit_priority_recursive_mutex mutex;
@@ -145,6 +212,30 @@ private:
     std::atomic<uint64_t> underruns = 0;
     std::atomic<std::chrono::system_clock::time_point> lastUnderrunTime =
         std::chrono::system_clock::from_time_t(0);
+
+
+    std::string GetAtomObjectType(uint8_t*pData)
+    {
+        LV2_Atom_Object *pAtom = (LV2_Atom_Object*)pData;
+        if (pAtom->atom.type != uris.atom_Object)
+        {
+            throw std::invalid_argument("Not an Lv2 Object");
+        }
+        return pHost->Lv2UriudToString(pAtom->body.otype);
+
+    }
+
+    void WriteAtom(json_writer &writer, LV2_Atom*pAtom);
+
+    std::string AtomToJson(uint8_t*pData)
+    {
+        std::stringstream s;
+        json_writer writer(s);
+        LV2_Atom *pAtom = (LV2_Atom*)pData;
+
+        WriteAtom(writer,pAtom);
+        return s.str();
+    }
 
     virtual void OnUnderrun()
     {
@@ -582,7 +673,6 @@ private:
         }
 
     }
-
     
 public:
     JackHostImpl(IHost *pHost)
@@ -592,7 +682,9 @@ public:
           realtimeWriter(&this->outputRingBuffer),
           hostReader(&this->outputRingBuffer),
           hostWriter(&this->inputRingBuffer),
-          eventBufferUrids(pHost)
+          eventBufferUrids(pHost),
+          pHost(pHost),
+          uris(pHost)
     {
 
         #if JACK_HOST 
@@ -758,7 +850,7 @@ public:
                                         }
                                         else
                                         {
-                                            pRequest->jsonResponse = pEffect->AtomToJson(pRequest->response);
+                                            pRequest->jsonResponse = AtomToJson(pRequest->response);
                                         }
                                     }
                                     pRequest->onJackRequestComplete(pRequest);
@@ -802,8 +894,8 @@ public:
                                 IEffect *pEffect = currentPedalBoard->GetEffect(instanceId);
                                 if (pEffect != nullptr &&this->pNotifyCallbacks && listenForAtomOutput)
                                 {
-                                    std::string atomType = pEffect->GetAtomObjectType(&atomBuffer[0]);
-                                    auto json  = pEffect->AtomToJson(&(atomBuffer[0]));
+                                    std::string atomType = GetAtomObjectType(&atomBuffer[0]);
+                                    auto json  = AtomToJson(&(atomBuffer[0]));
                                     this->pNotifyCallbacks->OnNotifyAtomOutput(instanceId,atomType,json);
                                 }
                             }
@@ -1275,6 +1367,148 @@ public:
     }
 };
 
+static std::string UriToFieldName(const std::string&uri){
+    int pos;
+    for (pos = uri.length(); pos >= 0; --pos)
+    {
+        char c = uri[pos];
+        if (c == '#' || c == '/' || c == ':')
+        {
+            break;
+        }
+    }
+    return uri.substr(pos+1);
+}
+
+void JackHostImpl::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
+{
+    if (pAtom->type == uris.atom_Blank)
+    {
+        writer.write_raw("null");
+    }
+    else if (pAtom->type == uris.atom_float)
+    {
+        writer.write(
+            ((LV2_Atom_Float*)pAtom)->body
+        );
+
+    } else if (pAtom->type == uris.atom_Int)
+    {
+        writer.write(
+            ((LV2_Atom_Int*)pAtom)->body
+        );
+    } else if (pAtom->type == uris.atom_Long)
+    {
+        writer.write(
+            ((LV2_Atom_Long*)pAtom)->body
+        );
+    } else if (pAtom->type == uris.atom_Double)
+    {
+        writer.write(
+            ((LV2_Atom_Double*)pAtom)->body
+        );
+    } else if (pAtom->type == uris.atom_Bool)
+    {
+        writer.write(
+            ((LV2_Atom_Bool*)pAtom)->body
+        );
+    } else if (pAtom->type == uris.atom_String)
+    {
+        const char *p = (((const char*) pAtom) + sizeof(LV2_Atom_String));
+        writer.write(
+            p
+        );
+    } else if (pAtom->type == uris.atom_Vector)
+    {
+        LV2_Atom_Vector *pVector = (LV2_Atom_Vector*)pAtom;
+        writer.start_array();
+        {
+            size_t n = (pAtom->size-sizeof(pVector->body))/pVector->body.child_size;
+            char *pItems = ((char*)pAtom) + sizeof(LV2_Atom_Vector);
+            if (pVector->body.child_type == uris.atom_float)
+            {
+                float *p = (float*)pItems;
+                for (size_t i = 0; i < n; ++i)
+                {
+                    if (i != 0) writer.write_raw(",");
+                    writer.write(*p++);
+                }
+            } else if (pVector->body.child_type == uris.atom_Int)
+            {
+                int32_t *p = (int32_t*)pItems;
+                for (size_t i = 0; i < n; ++i)
+                {
+                    if (i != 0) writer.write_raw(",");
+                    writer.write(*p++);
+                }
+            } else if (pVector->body.child_type == uris.atom_Long)
+            {
+                int64_t *p = (int64_t*)pItems;
+                for (size_t i = 0; i < n; ++i)
+                {
+                    if (i != 0) writer.write_raw(",");
+                    writer.write(*p++);
+                }
+            } else if (pVector->body.child_type == uris.atom_Double)
+            {
+                double *p = (double*)pItems;
+                for (size_t i = 0; i < n; ++i)
+                {
+                    if (i != 0) writer.write_raw(",");
+                    writer.write(*p++);
+                }
+            } else if (pVector->body.child_type == uris.atom_Bool)
+            {
+                bool *p = (bool*)pItems;
+                for (size_t i = 0; i < n; ++i)
+                {
+                    if (i != 0) writer.write_raw(",");
+                    writer.write(*p++);
+                }
+            }
+        }
+        writer.end_array();
+    } else if (pAtom->type == uris.atom_Object)
+    {
+        writer.start_object();
+
+        const LV2_Atom_Object *obj = (const LV2_Atom_Object *)pAtom;
+        bool firstMember = true;
+        if (obj->body.id != 0)
+        {
+            std::string id = pHost->Lv2UriudToString(obj->body.id);
+            writer.write_member("id",id.c_str());
+            firstMember = false;
+        }
+
+        if (obj->body.otype != 0)
+        {
+            std::string type =  pHost->Lv2UriudToString(obj->body.otype);        
+            writer.write_member("lv2Type",type.c_str());
+            if (!firstMember)
+            {
+                writer.write_raw(",");
+            }
+            firstMember = false;
+        }
+
+        LV2_ATOM_OBJECT_FOREACH (obj, prop) {
+            if (!firstMember) {
+                writer.write_raw(",");
+            }
+            firstMember = false;
+            std::string key = pHost->Lv2UriudToString(prop->key);
+            key = UriToFieldName(key);
+            writer.write(key);
+            writer.write_raw(": ");
+            LV2_Atom *value = &(prop->value);
+            WriteAtom(writer,value);
+        }
+        writer.end_object();
+        
+    }
+
+}
 
 JackHost *JackHost::CreateInstance(IHost *pHost)
 {

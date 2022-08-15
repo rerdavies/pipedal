@@ -44,6 +44,7 @@ enum class Units  {
     pc,
     s,
     semitone12TET,
+    custom
 
 };
 

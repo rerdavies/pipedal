@@ -4,7 +4,10 @@
             "name": "Linux",
             "includePath": [
                 "${default}",
-                "/usr/include/lilv-0"
+                "${workspaceFolder}",
+                "${workspaceFolder}/src",
+                "/usr/include/lilv-0",
+                "~/src/vst3sdk"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",

@@ -19,7 +19,7 @@
 
 #include "pch.h"
 #include "Lv2EventBufferWriter.hpp"
-#include "Lv2Host.hpp"
+#include "PiPedalHost.hpp"
 
 
 using namespace pipedal;

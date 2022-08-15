@@ -29,6 +29,7 @@
 #include "AlsaDriver.hpp"
 #include "JackServerSettings.hpp"
 #include <thread>
+#include "RtInversionGuard.hpp"
 
 #include "CpuUse.hpp"
 
@@ -967,7 +968,7 @@ namespace pipedal
 
                 struct sched_param param;
                 memset(&param, 0, sizeof(param));
-                param.sched_priority = 79;
+                param.sched_priority = RT_THREAD_PRIORITY;
 
                 int result = sched_setscheduler(0, SCHED_RR, &param);
                 if (result == 0)

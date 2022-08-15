@@ -19,7 +19,7 @@
 
 #pragma once
 #include "PedalBoard.hpp"
-#include "Lv2Host.hpp"
+#include "PiPedalHost.hpp"
 #include "Lv2Effect.hpp"
 #include "BufferPool.hpp"
 #include <functional>
@@ -81,7 +81,7 @@ class Lv2PedalBoard {
 
 
     std::vector<float*> PrepareItems(
-        const std::vector<PedalBoardItem> & items,
+        std::vector<PedalBoardItem> & items,
         std::vector<float*> inputBuffers
         );
 
@@ -95,7 +95,9 @@ public:
     Lv2PedalBoard() { }
     ~Lv2PedalBoard() { }
 
-    void Prepare(IHost *pHost,const PedalBoard&pedalBoard);
+    void Prepare(IHost *pHost,PedalBoard&pedalBoard);
+
+    std::vector<IEffect* > GetEffects() { return realtimeEffects; }
 
     int GetIndexOfInstanceId(uint64_t instanceId) {
         for (int i = 0; i < this->realtimeEffects.size(); ++i)

@@ -277,18 +277,18 @@ JSON_MAP_REFERENCE(PedalBoardItemEnabledBody, instanceId)
 JSON_MAP_REFERENCE(PedalBoardItemEnabledBody, enabled)
 JSON_MAP_END()
 
-class SetCurrentPedalBoardBody
+class UpdateCurrentPedalBoardBody
 {
 public:
     int64_t clientId_ = -1;
     PedalBoard pedalBoard_;
 
-    DECLARE_JSON_MAP(SetCurrentPedalBoardBody);
+    DECLARE_JSON_MAP(UpdateCurrentPedalBoardBody);
 };
 
-JSON_MAP_BEGIN(SetCurrentPedalBoardBody)
-JSON_MAP_REFERENCE(SetCurrentPedalBoardBody, clientId)
-JSON_MAP_REFERENCE(SetCurrentPedalBoardBody, pedalBoard)
+JSON_MAP_BEGIN(UpdateCurrentPedalBoardBody)
+JSON_MAP_REFERENCE(UpdateCurrentPedalBoardBody, clientId)
+JSON_MAP_REFERENCE(UpdateCurrentPedalBoardBody, pedalBoard)
 JSON_MAP_END()
 
 class ChannelSelectionChangedBody
@@ -334,6 +334,26 @@ JSON_MAP_REFERENCE(ControlChangedBody, instanceId)
 JSON_MAP_REFERENCE(ControlChangedBody, symbol)
 JSON_MAP_REFERENCE(ControlChangedBody, value)
 JSON_MAP_END()
+
+class Vst3ControlChangedBody
+{
+public:
+    int64_t clientId_;
+    int64_t instanceId_;
+    std::string symbol_;
+    float value_;
+    std::string state_;
+
+    DECLARE_JSON_MAP(Vst3ControlChangedBody);
+};
+JSON_MAP_BEGIN(Vst3ControlChangedBody)
+JSON_MAP_REFERENCE(Vst3ControlChangedBody, clientId)
+JSON_MAP_REFERENCE(Vst3ControlChangedBody, instanceId)
+JSON_MAP_REFERENCE(Vst3ControlChangedBody, symbol)
+JSON_MAP_REFERENCE(Vst3ControlChangedBody, value)
+JSON_MAP_REFERENCE(Vst3ControlChangedBody, state)
+JSON_MAP_END()
+
 
 class PiPedalSocketHandler : public SocketHandler, public IPiPedalModelSubscriber
 {
@@ -940,13 +960,13 @@ public:
             pReader->read(&body);
             model.SetPedalBoardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
         }
-        else if (message == "setCurrentPedalBoard")
+        else if (message == "updateCurrentPedalBoard")
         {
             {
-                SetCurrentPedalBoardBody body;
+                UpdateCurrentPedalBoardBody body;
 
                 pReader->read(&body);
-                this->model.SetPedalBoard(body.clientId_, body.pedalBoard_);
+                this->model.UpdateCurrentPedalBoard(body.clientId_, body.pedalBoard_);
             }
         }
         else if (message == "currentPedalBoard")
@@ -1377,6 +1397,17 @@ public:
         }
     }
 
+    virtual void OnVst3ControlChanged(int64_t clientId, int64_t instanceId, const std::string &key, float value, const std::string &state)
+    {
+        Vst3ControlChangedBody body;
+        body.clientId_ = clientId;
+        body.instanceId_ = instanceId;
+        body.symbol_ = key;
+        body.value_ = value;
+        body.state_ = state;
+        Send("onVst3ControlChanged", body);
+    }
+
     virtual void OnControlChanged(int64_t clientId, int64_t instanceId, const std::string &key, float value)
     {
         ControlChangedBody body;
@@ -1544,7 +1575,7 @@ public:
 
     virtual void OnPedalBoardChanged(int64_t clientId, const PedalBoard &pedalBoard)
     {
-        SetCurrentPedalBoardBody body;
+        UpdateCurrentPedalBoardBody body;
         body.clientId_ = clientId;
         body.pedalBoard_ = pedalBoard;
         Send("onPedalBoardChanged", body);

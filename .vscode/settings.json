@@ -90,9 +90,8 @@
         "span_ext": "cpp",
         "string_span": "cpp",
         "util": "cpp",
-
-
-
+        "charconv": "cpp",
+        "valarray": "cpp"
     },
     "cSpell.words": [
         "Guitarix",

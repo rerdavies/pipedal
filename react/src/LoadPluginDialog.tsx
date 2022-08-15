@@ -228,6 +228,7 @@ export const LoadPluginDialog =
                 let gridWidth = width - this.margin_reserve;
                 let columns = Math.floor((gridWidth) / this.nominal_column_width);
                 if (columns < 1) columns = 1;
+                if (columns > 3) columns = 3;
                 return columns;
             }
 
@@ -388,6 +389,14 @@ export const LoadPluginDialog =
                 // let selectedUri = this.state.selected_uri;
             }
 
+            vst3_indicator(uiPlugin? : UiPlugin)
+            {
+                if (uiPlugin?.is_vst3)
+                {
+                    return (<img alt="vst" src="/img/vst.svg" style={{marginLeft: 8,height: 22, opacity: 0.6,position: "relative",top: -1}} />)
+                }
+                return null;
+            }
             stereo_indicator(uiPlugin?: UiPlugin): string {
                 if (!uiPlugin) return "";
                 if (uiPlugin.audio_inputs === 2 || uiPlugin.audio_outputs === 2) {
@@ -436,7 +445,13 @@ export const LoadPluginDialog =
                 for (let i = 0; i < plugins.length; ++i) {
                     let plugin = plugins[i];
                     if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
-                        let score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
+                        let score:number = 0;
+                        if (plugin.is_vst3)
+                        {
+                            score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name,"vst3");
+                        } else {
+                            score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
+                        }
 
                         if (score !== 0) {
                             if (this.state.favoritesList[plugin.uri]) {
@@ -668,8 +683,9 @@ export const LoadPluginDialog =
                                             <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", height: "100%", overflow: "hidden" }} >
                                                 <PluginInfoDialog plugin_uri={this.state.selected_uri ?? ""} />
                                                 <Typography display='block' variant='body2' color="textPrimary" noWrap >
-                                                    {this.info_string(selectedPlugin)}
+                                                    {this.info_string(selectedPlugin)} 
                                                 </Typography>
+                                                {this.vst3_indicator(selectedPlugin)}
                                                 <div style={{
                                                     color: isFavorite ? "#F80" : "#CCC", display: (this.state.selected_uri !== "" ? "block" : "none"),
                                                     position: "relative", top: -2

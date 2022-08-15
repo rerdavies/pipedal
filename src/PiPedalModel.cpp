@@ -43,9 +43,18 @@ T &constMutex(const T &mutex)
     return const_cast<T &>(mutex);
 }
 
-std::string AtomToJson(int length, uint8_t *pData)
+static const char *hexChars = "0123456789ABCDEF";
+
+static std::string BytesToHex(const std::vector<uint8_t> &bytes)
 {
-    return "";
+    std::stringstream s;
+
+    for (size_t i = 0; i < bytes.size(); ++i)
+    {
+        uint8_t b = bytes[i];
+        s << hexChars[(b >> 4) & 0x0F] << hexChars[b & 0x0F];
+    }
+    return s.str();
 }
 
 PiPedalModel::PiPedalModel()
@@ -119,6 +128,7 @@ PiPedalModel::~PiPedalModel()
 void PiPedalModel::Init(const PiPedalConfiguration &configuration)
 {
     this->configuration = configuration;
+    lv2Host.SetConfiguration(configuration);
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
     storage.Initialize();
@@ -282,7 +292,17 @@ void PiPedalModel::RemoveNotificationSubsription(IPiPedalModelSubscriber *pSubsc
 void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
 {
 
-    jackHost->SetControlValue(pedalItemId, symbol, value);
+    IEffect* effect = lv2PedalBoard->GetEffect(pedalItemId);
+    if (effect->IsVst3())
+    {
+        int index = lv2PedalBoard->GetControlIndex(pedalItemId, symbol);
+        if (index != -1)
+        {
+            effect->SetControl(index,value);;
+        }
+    } else {
+        jackHost->SetControlValue(pedalItemId, symbol, value);
+    }
 }
 
 void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
@@ -291,6 +311,8 @@ void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::
         std::lock_guard<std::recursive_mutex> guard(mutex);
         PreviewControl(clientId, pedalItemId, symbol, value);
         this->pedalBoard.SetControlValue(pedalItemId, symbol, value);
+        IEffect *pEffect = this->lv2PedalBoard->GetEffect(pedalItemId);
+
         {
 
             // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
@@ -300,9 +322,11 @@ void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::
                 t[i] = this->subscribers[i];
             }
             size_t n = this->subscribers.size();
-            for (size_t i = 0; i < n; ++i)
             {
-                t[i]->OnControlChanged(clientId, pedalItemId, symbol, value);
+                for (size_t i = 0; i < n; ++i)
+                {
+                    t[i]->OnControlChanged(clientId, pedalItemId, symbol, value);
+                }
             }
             delete[] t;
 
@@ -372,6 +396,23 @@ void PiPedalModel::SetPedalBoard(int64_t clientId, PedalBoard &pedalBoard)
 {
     {
         std::lock_guard<std::recursive_mutex> guard(mutex);
+        this->pedalBoard = pedalBoard;
+        UpdateDefaults(&this->pedalBoard);
+
+        this->FirePedalBoardChanged(clientId);
+        this->SetPresetChanged(clientId, true);
+    }
+}
+void PiPedalModel::UpdateCurrentPedalBoard(int64_t clientId, PedalBoard &pedalBoard)
+{
+    {
+        std::lock_guard<std::recursive_mutex> guard(mutex);
+
+        // update vst3 presets if neccessary.
+        // the pedalboard must be a manipualted instance of the current Lv2Pedalboard.
+
+        UpdateVst3Settings(pedalBoard);
+
         this->pedalBoard = pedalBoard;
         UpdateDefaults(&this->pedalBoard);
 
@@ -475,10 +516,35 @@ void PiPedalModel::FirePluginPresetsChanged(const std::string &pluginUri)
     }
 }
 
+void PiPedalModel::UpdateVst3Settings(PedalBoard &pedalBoard)
+{
+    // get the vst3 state bundle from lv2Pedalboard for the current pedalBoard.
+#if ENABLE_VST3
+    PedalBoard pb;
+    for (IEffect *effect : lv2PedalBoard->GetEffects())
+    {
+        if (effect->IsVst3())
+        {
+            PedalBoardItem *item = pedalBoard.GetItem(effect->GetInstanceId());
+            if (item)
+            {
+                Vst3Effect *vst3Effect = (Vst3Effect *)effect;
+                std::vector<uint8_t> state;
+                if (vst3Effect->GetState(&state))
+                {
+                    item->vstState(BytesToHex(state));
+                }
+            }
+        }
+    }
+#endif
+}
+
 void PiPedalModel::SaveCurrentPreset(int64_t clientId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
+    UpdateVst3Settings(this->pedalBoard);
     storage.SaveCurrentPreset(this->pedalBoard);
     this->SetPresetChanged(clientId, false);
 }
@@ -517,6 +583,7 @@ int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, const std::string &n
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
     auto pedalboard = this->pedalBoard;
+    UpdateVst3Settings(pedalBoard);
     pedalboard.name(name);
     int64_t result = storage.SaveCurrentPresetAs(pedalboard, name, saveAfterInstanceId);
     FirePresetsChanged(clientId);
@@ -697,14 +764,13 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
     }
 }
 
-
 static std::string GetP2pdName()
 {
     std::string name = "/etc/pipedal/config/pipedal_p2pd.conf";
 
     std::string result;
 
-    if (ConfigUtil::GetConfigLine(name,"p2p_device_name",&result))
+    if (ConfigUtil::GetConfigLine(name, "p2p_device_name", &result))
     {
         return result;
     }
@@ -718,17 +784,15 @@ void PiPedalModel::UpdateDnsSd()
     ServiceConfiguration deviceIdFile;
     deviceIdFile.Load();
 
-
     std::string p2pdName = GetP2pdName();
-    if (p2pdName != "") {
+    if (p2pdName != "")
+    {
         deviceIdFile.deviceName = p2pdName;
     }
 
     if (deviceIdFile.deviceName != "" && deviceIdFile.uuid != "")
     {
         avahiService.Announce(webPort, deviceIdFile.deviceName, deviceIdFile.uuid, "pipedal");
-
-
     }
     else
     {
@@ -820,16 +884,16 @@ void PiPedalModel::RestartAudio()
 
         this->jackHost->Close();
     }
-        // restarting is a bit dodgy. It was impossible with Jack, but
-        // now very plausible with the ALSA audio stack.
+    // restarting is a bit dodgy. It was impossible with Jack, but
+    // now very plausible with the ALSA audio stack.
 
-        // Still bugs wrt/ restarting the circular buffers for the audio thread.
+    // Still bugs wrt/ restarting the circular buffers for the audio thread.
 
-        // for the meantime, just rely on the fact that the admin service will restart
-        // the process.
-        //...
+    // for the meantime, just rely on the fact that the admin service will restart
+    // the process.
+    //...
 
-        // do a complete reload.
+    // do a complete reload.
 
     this->jackHost->SetPedalBoard(nullptr);
 
@@ -839,13 +903,13 @@ void PiPedalModel::RestartAudio()
     {
         JackChannelSelection selection = storage.GetJackChannelSelection(jackConfiguration);
         selection = selection.RemoveInvalidChannels(jackConfiguration);
-
-    } else {
+    }
+    else
+    {
         jackConfiguration.SetErrorStatus("Error");
     }
 
     FireJackConfigurationChanged(jackConfiguration);
-
 
     if (!jackServerSettings.IsValid() || !jackConfiguration.isValid())
     {
@@ -1223,12 +1287,11 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     }
     delete[] t;
 
-
 #if ALSA_HOST
     storage.SetJackServerSettings(jackServerSettings);
 
     FireJackConfigurationChanged(this->jackConfiguration);
-    
+
     guard.unlock();
     RestartAudio();
 
@@ -1280,7 +1343,6 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 #endif
                 }
             });
-
     }
 #endif
 }

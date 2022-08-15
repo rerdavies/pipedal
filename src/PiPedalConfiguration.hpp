@@ -47,9 +47,10 @@ private:
     uint64_t maxUploadSize_ = 1024*1024;
     std::string accessPointGateway_;
     std::string accessPointServerAddress_;
+    bool isVst3Enabled_ = true;
 
 public:
-
+    bool IsVst3Enabled() const { return isVst3Enabled_; }
     std::filesystem::path GetConfigFilePath() const {
         return docRoot_ / "config.jason";
     }

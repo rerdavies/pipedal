@@ -67,6 +67,7 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
         this.midiBindings = MidiBinding.deserialize_array(input.midiBindings);
 
         this.controlValues = ControlValue.deserializeArray(input.controlValues);
+        this.vstState = input.vstState ?? "";
         return this;
     }
     deserialize(input: any): PedalBoardItem {
@@ -183,6 +184,7 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
     pluginName?: string;
     controlValues: ControlValue[] = ControlValue.EmptyArray;
     midiBindings: MidiBinding[] = [];
+    vstState: string = "";
 };
 
 

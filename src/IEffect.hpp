@@ -23,16 +23,18 @@
 
 namespace pipedal {
     class RealtimeParameterRequest;
+    class RealtimeRingBufferWriter;
 
     class IEffect {
     public:
         virtual ~IEffect() {}
-        virtual long GetInstanceId() const = 0;
+        virtual uint64_t GetInstanceId() const = 0;
         virtual int GetControlIndex(const std::string&symbol) const = 0;
         virtual void SetControl(int index, float value)  = 0;
         virtual float GetControlValue(int index) const = 0;
         virtual void SetBypass(bool enable)  = 0;
         virtual float GetOutputControlValue(int controlIndex) const = 0;
+
 
 
         virtual int GetNumberOfInputAudioPorts() const = 0;
@@ -43,13 +45,19 @@ namespace pipedal {
         virtual void RequestParameter(LV2_URID uridUri) = 0;
         virtual void GatherParameter(RealtimeParameterRequest*pRequest) = 0;
 
-        virtual std::string AtomToJson(uint8_t*pAtom) = 0;
-        virtual std::string GetAtomObjectType(uint8_t*pData) = 0;
+        //virtual std::string AtomToJson(uint8_t*pAtom) = 0;
+        //virtual std::string GetAtomObjectType(uint8_t*pData) = 0;
 
 
+        virtual void SetAudioInputBuffer(int index, float *buffer) = 0;
         virtual void SetAudioOutputBuffer(int index, float*buffer) = 0;
 
         virtual void Activate() = 0;
+
+        virtual void Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter) = 0;
+
         virtual void Deactivate() = 0;
+
+        virtual bool IsVst3() const = 0;
     };
 } //namespace

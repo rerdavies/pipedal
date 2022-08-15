@@ -22,7 +22,7 @@ import { UiPlugin, UiControl, PluginType } from './Lv2Plugin';
 import { PiPedalArgumentError, PiPedalStateError } from './PiPedalError';
 
 import { ObservableProperty } from './ObservableProperty';
-import { PedalBoard, ControlValue } from './PedalBoard'
+import { PedalBoard, PedalBoardItem, ControlValue } from './PedalBoard'
 import PluginClass from './PluginClass';
 import PiPedalSocket, { PiPedalMessageHeader } from './PiPedalSocket';
 import { nullCast } from './Utility'
@@ -302,6 +302,13 @@ interface ControlChangedBody {
     instanceId: number;
     symbol: string;
     value: number;
+};
+interface Vst3ControlChangedBody {
+    clientId: number;
+    instanceId: number;
+    symbol: string;
+    value: number;
+    state: string;
 };
 
 export interface FavoritesList {
@@ -634,6 +641,16 @@ class PiPedalModelImpl implements PiPedalModel {
                 controlChangedBody.value,
                 false // do NOT notify the server of the change.
             );
+        } else if (message === "onVst3ControlChanged") {
+            let controlChangedBody = body as Vst3ControlChangedBody;
+            this._setVst3PedalBoardControlValue(
+                controlChangedBody.instanceId,
+                controlChangedBody.symbol,
+                controlChangedBody.value,
+                controlChangedBody.state,
+                false // do NOT notify the server of the change.
+            );
+
         } else if (message === "onJackServerSettingsChanged") {
             let jackServerSettings = new JackServerSettings().deserialize(body);
             this.jackServerSettings.set(jackServerSettings);
@@ -1196,6 +1213,29 @@ class PiPedalModelImpl implements PiPedalModel {
         }
 
     }
+    _setVst3PedalBoardControlValue(instanceId: number, key: string, value: number, state: string, notifyServer: boolean ): void {
+        let pedalBoard = this.pedalBoard.get();
+        if (pedalBoard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
+        let newPedalBoard = pedalBoard.clone();
+
+        let item: PedalBoardItem = newPedalBoard.getItem(instanceId);
+        let changed = item.setControlValue(key, value);
+        item.vstState = state;
+
+        if (changed) {
+            this.pedalBoard.set(newPedalBoard);
+            if (notifyServer) {
+                this._setServerControl("setControl", instanceId, key, value);
+            }
+            for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
+                let item = this._controlValueChangeItems[i];
+                if (instanceId === item.instanceId) {
+                    item.onValueChanged(key, value);
+                }
+            }
+        }
+
+    }
 
     setPedalBoardControlValue(instanceId: number, key: string, value: number): void {
         this._setPedalBoardControlValue(instanceId, key, value, true);
@@ -1232,7 +1272,7 @@ class PiPedalModelImpl implements PiPedalModel {
             clientId: this.clientId,
             pedalBoard: this.pedalBoard.get()
         };
-        this.webSocket?.send("setCurrentPedalBoard", body);
+        this.webSocket?.send("updateCurrentPedalBoard", body);
 
     }
 
@@ -1288,6 +1328,8 @@ class PiPedalModelImpl implements PiPedalModel {
     deletePedalBoardPedal(instanceId: number): number | null {
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+        this.updateVst3State(newPedalBoard);
+
         let result = newPedalBoard.deleteItem(instanceId);
         if (result != null) {
             this.pedalBoard.set(newPedalBoard);
@@ -1301,6 +1343,9 @@ class PiPedalModelImpl implements PiPedalModel {
         if (fromInstanceId === toInstanceId) return;
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+
+        this.updateVst3State(newPedalBoard);
+
         let fromItem = newPedalBoard.getItem(fromInstanceId);
         if (fromItem === null) {
             throw new PiPedalArgumentError("fromInstanceId not found.");
@@ -1317,6 +1362,9 @@ class PiPedalModelImpl implements PiPedalModel {
         if (fromInstanceId === toInstanceId) return;
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+
+        this.updateVst3State(newPedalBoard);
+
         let fromItem = newPedalBoard.getItem(fromInstanceId);
         if (fromItem === null) {
             throw new PiPedalArgumentError("fromInstanceId not found.");
@@ -1334,6 +1382,10 @@ class PiPedalModelImpl implements PiPedalModel {
 
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+
+        this.updateVst3State(newPedalBoard);
+
+
         let fromItem = newPedalBoard.getItem(instanceId);
         if (fromItem === null) {
             throw new PiPedalArgumentError("fromInstanceId not found.");
@@ -1350,6 +1402,9 @@ class PiPedalModelImpl implements PiPedalModel {
 
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+        this.updateVst3State(newPedalBoard);
+
+
         let fromItem = newPedalBoard.getItem(instanceId);
         if (fromItem === null) {
             throw new PiPedalArgumentError("fromInstanceId not found.");
@@ -1371,6 +1426,9 @@ class PiPedalModelImpl implements PiPedalModel {
 
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+        this.updateVst3State(newPedalBoard);
+
+
         let fromItem = newPedalBoard.getItem(fromInstanceId);
         let toItem = newPedalBoard.getItem(toInstanceId);
         if (fromItem === null) {
@@ -1389,6 +1447,9 @@ class PiPedalModelImpl implements PiPedalModel {
     addPedalBoardItem(instanceId: number, append: boolean): number {
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+        this.updateVst3State(newPedalBoard);
+
+
         let item = newPedalBoard.getItem(instanceId);
         if (item === null) {
             throw new PiPedalArgumentError("instanceId not found.");
@@ -1402,6 +1463,8 @@ class PiPedalModelImpl implements PiPedalModel {
     addPedalBoardSplitItem(instanceId: number, append: boolean): number {
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+        this.updateVst3State(newPedalBoard);
+
         let item = newPedalBoard.getItem(instanceId);
         if (item === null) {
             throw new PiPedalArgumentError("instanceId not found.");
@@ -1416,6 +1479,9 @@ class PiPedalModelImpl implements PiPedalModel {
     setPedalBoardItemEmpty(instanceId: number): number {
         let pedalBoard = this.pedalBoard.get();
         let newPedalBoard = pedalBoard.clone();
+        this.updateVst3State(newPedalBoard);
+
+
         let item = newPedalBoard.getItem(instanceId);
         if (item === null) {
             throw new PiPedalArgumentError("instanceId not found.");
@@ -1768,12 +1834,24 @@ class PiPedalModelImpl implements PiPedalModel {
                 this.showAlert(error);
             });
     }
+
+    updateVst3State(pedalBoard: PedalBoard)
+    {
+        // let it = pedalBoard.itemsGenerator();
+        // while (true) {
+        //     let v = it.next();
+        //     if (v.done) break;
+        //     let item = v.value;
+        // }
+    }
+
     setMidiBinding(instanceId: number, midiBinding: MidiBinding): void {
         let pedalBoard = this.pedalBoard.get();
         if (!pedalBoard) {
             throw new PiPedalStateError("Pedalboard not loaded.");
         }
         let newPedalBoard = pedalBoard.clone();
+        this.updateVst3State(newPedalBoard);
         if (newPedalBoard.setMidiBinding(instanceId, midiBinding)) {
             this.pedalBoard.set(newPedalBoard);
             // notify the server.

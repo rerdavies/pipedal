@@ -45,6 +45,8 @@ export class  Port implements Deserializable<Port> {
         this.supports_time_position = input.supports_time_position;
         this.port_group = input.port_group;
         this.comment = input.comment;
+        this.is_bypass = input.is_bypass;
+        this.is_program_controller = input.is_program_controller;
         return this;
     }
 
@@ -75,12 +77,17 @@ export class  Port implements Deserializable<Port> {
     supports_time_position: boolean = false;
     port_group:      string = "";
     comment: string = "";
+    is_bypass: boolean = false;
+    is_program_controller: boolean = false;
 }
 
 export class PortGroup {
     deserialize(input: any): PortGroup {
         this.symbol = input.symbol;
         this.name = input.name;
+        this.parent_group = input.parent_group;
+        this.program_list_id = input.program_list_id ?? -1;
+
         return this;
     }
     static deserialize_array(input: any) : PortGroup[] {
@@ -94,6 +101,8 @@ export class PortGroup {
 
     symbol: string = "";
     name: string = "";
+    parent_group: string = "";
+    program_list_id: number = -1;
 };
 
 export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
@@ -223,9 +232,18 @@ export class  UiControl implements Deserializable<UiControl> {
         this.scale_points = ScalePoint.deserialize_array(input.scale_points);
         this.port_group = input.port_group;
         this.units = input.units as Units;
-        this.comment = input.comment;
+
+        this.comment = input.comment ?? "";
+        this.is_bypass = input.is_bypass ? true: false;
+        this.is_program_controller = input.is_program_controller? true: false;
+        this.custom_units = input.custom_units ?? "";
 
         this.controlType = ControlType.Dial;
+
+        if (this.is_bypass)
+        {
+            this.not_on_gui = true;
+        }
 
 
         if (this.enumeration_property && this.scale_points.length === 2)
@@ -234,7 +252,7 @@ export class  UiControl implements Deserializable<UiControl> {
         } else {
             if (this.min_value === 0 && this.max_value === 1)
             {
-                if (this.toggled_property || this.integer_property)
+                if (this.toggled_property || this.integer_property || this.range_steps === 2)
                 {
                     this.controlType = ControlType.OnOffSwitch;
                 }
@@ -276,6 +294,10 @@ export class  UiControl implements Deserializable<UiControl> {
     port_group: string = "";
     units: Units = Units.none;
     comment: string = "";
+    is_bypass: boolean = true;
+    is_program_controller: boolean = true;
+    custom_units: string = "";
+
 
     // Return the value of the closest scale_point.
     clampSelectValue(value: number): number{
@@ -452,6 +474,7 @@ export class UiPlugin implements Deserializable<UiPlugin> {
         this.description = input.description;
         this.controls = UiControl.deserialize_array(input.controls);
         this.port_groups = PortGroup.deserialize_array(input.port_groups);
+        this.is_vst3 = input.is_vst3;
         return this;
 
     }
@@ -501,5 +524,6 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     description: string  = "";
     controls:            UiControl[] = [];
     port_groups:  PortGroup[] = [];
+    is_vst3 :            boolean = false;
 }
 

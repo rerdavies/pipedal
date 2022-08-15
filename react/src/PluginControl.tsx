@@ -603,17 +603,23 @@ const PluginControl =
                 let uiControl = this.props.uiControl;
                 if (uiControl) {
                     if (uiControl.range_steps > 1) {
-                        range = Math.round(range * uiControl.range_steps-1) / (uiControl.range_steps-1);
+                        range = Math.round(range * (uiControl.range_steps-1)) / (uiControl.range_steps-1);
                     }
                     let value: number;
-                    if (uiControl.is_logarithmic)
+                    if (uiControl.min_value === uiControl.max_value)
                     {
-                        value = uiControl.min_value*Math.pow(uiControl.max_value/uiControl.min_value,range);
-                    } else {
-                        value = range * (uiControl.max_value - uiControl.min_value) + uiControl.min_value;
-                    }
-                    if (uiControl.integer_property) {
-                        value = Math.round(value);
+                        value = uiControl.min_value;
+                    } else
+                    {
+                        if (uiControl.is_logarithmic)
+                        {
+                            value = uiControl.min_value*Math.pow(uiControl.max_value/uiControl.min_value,range);
+                        } else {
+                            value = range * (uiControl.max_value - uiControl.min_value) + uiControl.min_value;
+                        }
+                        if (uiControl.integer_property) {
+                            value = Math.round(value);
+                        }
                     }
                     return value;
                 }

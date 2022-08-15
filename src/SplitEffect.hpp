@@ -22,6 +22,7 @@
 #include "IEffect.hpp"
 #include "PiPedalException.hpp"
 #include "PiPedalMath.hpp"
+#include <assert.h>
 
 namespace pipedal
 {
@@ -60,6 +61,18 @@ namespace pipedal
     class SplitEffect : public IEffect
     {
     private:
+
+
+        virtual void SetAudioInputBuffer(int index, float *buffer) 
+        {
+            assert(false); // not used.
+        }
+        virtual void Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter) 
+        {
+            assert(false); // not used.
+        }
+
+
         const double MIX_TRANSITION_TIME_S = 0.1;
         double sampleRate;
         std::vector<float *> inputs;
@@ -283,6 +296,8 @@ namespace pipedal
         virtual std::string AtomToJson(uint8_t *pAtom) { return ""; }
         virtual std::string GetAtomObjectType(uint8_t*pData) { return "not implemented";}
 
+        virtual bool IsVst3() const { return false; }
+
     public:
         SplitEffect(
             uint64_t instanceId,
@@ -297,7 +312,7 @@ namespace pipedal
         }
 
 
-        virtual long GetInstanceId() const
+        virtual uint64_t GetInstanceId() const
         {
             return instanceId;
         }

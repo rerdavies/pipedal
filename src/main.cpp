@@ -27,7 +27,7 @@
 #include "AvahiService.hpp"
 
 #include "PiPedalSocket.hpp"
-#include "Lv2Host.hpp"
+#include "PiPedalHost.hpp"
 #include <boost/system/error_code.hpp>
 #include <filesystem>
 #include "PiPedalConfiguration.hpp"

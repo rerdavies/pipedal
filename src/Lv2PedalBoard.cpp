@@ -21,6 +21,7 @@
 #include "Lv2PedalBoard.hpp"
 #include "Lv2Effect.hpp"
 
+
 #include "SplitEffect.hpp"
 #include "RingBufferReader.hpp"
 #include "VuUpdate.hpp"
@@ -57,7 +58,7 @@ int Lv2PedalBoard::GetControlIndex(uint64_t instanceId, const std::string &symbo
     return -1;
 }
 std::vector<float *> Lv2PedalBoard::PrepareItems(
-    const std::vector<PedalBoardItem> &items,
+    std::vector<PedalBoardItem> &items,
     std::vector<float *> inputBuffers)
 {
     for (int i = 0; i < items.size(); ++i)
@@ -142,9 +143,9 @@ std::vector<float *> Lv2PedalBoard::PrepareItems(
                     }
 
                     this->processActions.push_back(
-                        [pLv2Effect,this,instanceId](uint32_t frames)
+                        [pLv2Effect,this](uint32_t frames)
                         {
-                            pLv2Effect->Run(frames,instanceId,this->ringBufferWriter);
+                            pLv2Effect->Run(frames,this->ringBufferWriter);
                         });
                 }
             }
@@ -197,7 +198,7 @@ std::vector<float *> Lv2PedalBoard::PrepareItems(
     return inputBuffers;
 }
 
-void Lv2PedalBoard::Prepare(IHost *pHost, const PedalBoard &pedalBoard)
+void Lv2PedalBoard::Prepare(IHost *pHost, PedalBoard &pedalBoard)
 {
     this->pHost = pHost;
 

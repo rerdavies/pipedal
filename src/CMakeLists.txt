@@ -7,6 +7,37 @@ set (USE_PCH 1)
 
 include(FindPkgConfig)
 
+#################################################################
+# ENABLE/DISABLE VST3 Support.
+# Disabled, pending Steinberg licensing agreement implementation
+# and approval..
+# Do not enable unless you have non-GPL3 access to the Steinberg 
+# SDK.
+#################################################################
+
+set (ENABLE_VST3 0)
+
+
+if (ENABLE_VST3) 
+    set (VST3PATH  "../../vst3sdk")
+    message(STATUS " VST3 Support Enabled")
+    set (VST3_INCLUDES "${VST3PATH}")
+
+    if (CMAKE_BUILD_TYPE MATCHES Debug)
+        add_compile_definitions("DEVELOPMENT")
+    else()
+    add_compile_definitions("RELEASE")
+    endif()
+    add_compile_definitions("ENABLE_VST3" )
+    #add_compile_definitions("_GLIBCXX_USE_CXX11_ABI")
+
+else()
+    message(STATUS " VST3 Support Disabled")
+    set (VST3_INCLUDES "")
+endif()
+
+########### VST 3 SUPPORT #############################################3
+
 
 
 # Can't get the pkg_check to work.
@@ -60,19 +91,27 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set (USE_SANITIZE False)
+
+if (!ENABLE_VST3)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-psabi")
+else()
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
+endif()
+
+
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
-    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -O0 -DDEBUG -Werror" )
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -DDEBUG" )
     if (USE_SANITIZE) 
-        set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fsanitize=address -static-libasan " )
+        set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -static-libasan " )
     endif()
 elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     message(STATUS "RelWithgDebInfo build")
-    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -Werror" )
+    #set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "" )
 else()
     message(STATUS "Release build")
-    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-psabi -Werror" )
+    #set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "" )
 endif()
 
 
@@ -84,8 +123,19 @@ message (STATUS "Cxx flags: ${CMAKE_CXX_FLAGS}"  )
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_BIND_GLOBAL_PLACEHOLDERS -DONBOARDING)
 
  
+if (VST3PATH)
+set (VST3_SOURCES
+    vst3/Vst3Effect.hpp Vst3Effect.cpp
+    vst3/Vst3Host.hpp Vst3Host.cpp
+    Vst3MidiToEvent.hpp
+    vst3/Vst3RtStream.hpp Vst3RtStream.cpp
+    )
+else()
+   set (VST3_SOURCES)
+endif()
 
 set (PIPEDAL_SOURCES
+    RtInversionGuard.hpp
     CpuUse.hpp CpuUse.cpp 
     P2pConfigFiles.hpp
     AvahiService.cpp AvahiService.hpp
@@ -104,7 +154,7 @@ set (PIPEDAL_SOURCES
     WifiDirectConfigSettings.hpp WifiDirectConfigSettings.cpp
     ConfigUtil.hpp ConfigUtil.cpp
 
-    RequestHandler.hpp json.cpp json.hpp Scratch.cpp Lv2Host.hpp Lv2Host.cpp
+    RequestHandler.hpp json.cpp json.hpp Scratch.cpp PiPedalHost.hpp PiPedalHost.cpp
     PluginType.hpp PluginType.cpp
     Lv2Log.hpp Lv2Log.cpp
     PiPedalSocket.hpp PiPedalSocket.cpp
@@ -152,6 +202,7 @@ set (PIPEDAL_SOURCES
     AudioDriver.hpp
     AudioConfig.hpp
 
+    ${VST3_SOURCES}
 )
 
 
@@ -161,16 +212,25 @@ include_directories( ${pipedald_SOURCE_DIR}/. ../build/src)
 set (PIPEDAL_INCLUDES     
     ${LV2DEV_INCLUDE_DIRS}
     ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS} ${LVDEV_INCLUDE_DIRS}
+    ${VST3_INCLUDES}
+    .
 )
 
-set(PIPEDAL_LIBS libpipedald pthread atomic stdc++fs asound avahi-common avahi-client systemd
+set(PIPEDAL_LIBS libpipedald 
+    pthread atomic stdc++fs asound avahi-common avahi-client systemd
      ${LILV_0_LIBRARIES} 
      # ${JACK_LIBRARIES} 
-     ${LIBNL3_LIBRARIES}  )
+     ${LIBNL3_LIBRARIES} 
+      )
+
+if (VST3_ENABLED)
+
+    set (PIPEDAL_LIBS vst3_lib ${PIPEDAL_LIBS})
+endif()
 
 
 ##########################
-
+ 
 add_library(libpipedald STATIC ${PIPEDAL_SOURCES})
 
 target_include_directories(libpipedald PRIVATE ${PIPEDAL_INCLUDES}
@@ -224,6 +284,217 @@ target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 
 target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} 
     )
+
+
+#########################################################
+#  VST3 Source.
+#
+#  VST3 support is optional, because it poses unfortunate 
+#  licensing problems.
+
+#  There's no easy way to get the VST SDK to build without
+#  GCC c++11 linkage, which is not compatible with  pipedal's
+#  use of C++20 features (strictly a link time breakage).
+#
+#  So pipedal rebuilds the VST3 SDK using pipedal-compatible
+#  compile flags.
+#
+#  The current build supports only Linux builds. Refer to the 
+#  original VST3 SDK build for details on how to build 
+#  for other platforms.
+#
+#########################################################
+if(ENABLE_VST3)
+
+    set (VST3_SRCPATH "${VST3PATH}/public.sdk/source")
+
+    set (VST3_BASEPATH "${VST3PATH}/base")
+    set (VST3_PLUGININTERFACES_BASE_PATH "${VST3PATH}/pluginterfaces/base")
+
+    set(vst3_sources
+
+
+        ${VST3_SRCPATH}/vst/vstpresetfile.cpp
+        ${VST3_SRCPATH}/vst/vstpresetfile.h
+
+        # base files.
+
+
+        ${VST3_BASEPATH}/source/baseiids.cpp
+        ${VST3_BASEPATH}/source/classfactoryhelpers.h
+        ${VST3_BASEPATH}/source/fbuffer.cpp
+        ${VST3_BASEPATH}/source/fbuffer.h
+        ${VST3_BASEPATH}/source/fcleanup.h
+        ${VST3_BASEPATH}/source/fcommandline.h
+        ${VST3_BASEPATH}/source/fdebug.cpp
+        ${VST3_BASEPATH}/source/fdebug.h
+        ${VST3_BASEPATH}/source/fdynlib.cpp
+        ${VST3_BASEPATH}/source/fdynlib.h
+        ${VST3_BASEPATH}/source/fobject.cpp
+        ${VST3_BASEPATH}/source/fobject.h
+        ${VST3_BASEPATH}/source/fstreamer.cpp
+        ${VST3_BASEPATH}/source/fstreamer.h
+        ${VST3_BASEPATH}/source/fstring.cpp
+        ${VST3_BASEPATH}/source/fstring.h
+        ${VST3_BASEPATH}/source/timer.cpp
+        ${VST3_BASEPATH}/source/timer.h
+        ${VST3_BASEPATH}/source/updatehandler.cpp
+        ${VST3_BASEPATH}/source/updatehandler.h
+    
+        ${VST3_BASEPATH}/thread/include/fcondition.h
+        ${VST3_BASEPATH}/thread/include/flock.h
+        ${VST3_BASEPATH}/thread/source/fcondition.cpp
+        ${VST3_BASEPATH}/thread/source/flock.cpp
+    
+
+
+        # sdk_common files.
+        ${VST3_SRCPATH}/common/commoniids.cpp
+        ${VST3_SRCPATH}/common/openurl.cpp
+        ${VST3_SRCPATH}/common/openurl.h
+        ${VST3_SRCPATH}/common/systemclipboard.h
+        ${VST3_SRCPATH}/common/systemclipboard_win32.cpp
+        ${VST3_SRCPATH}/common/threadchecker_linux.cpp
+        ${VST3_SRCPATH}/common/threadchecker_win32.cpp
+        ${VST3_SRCPATH}/common/threadchecker.h
+        ${VST3_SRCPATH}/common/memorystream.cpp
+        ${VST3_SRCPATH}/common/memorystream.h
+
+        # pluginterfaces
+        ${VST3_PLUGININTERFACES_BASE_PATH}/conststringtable.cpp
+        ${VST3_PLUGININTERFACES_BASE_PATH}/conststringtable.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/coreiids.cpp
+        ${VST3_PLUGININTERFACES_BASE_PATH}/falignpop.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/falignpush.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/fplatform.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/fstrdefs.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/ftypes.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/funknown.cpp
+        ${VST3_PLUGININTERFACES_BASE_PATH}/funknown.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/funknownimpl.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/futils.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/fvariant.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/geoconstants.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/ibstream.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/icloneable.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/ierrorcontext.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/ipersistent.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/ipluginbase.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/istringresult.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/iupdatehandler.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/keycodes.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/pluginbasefwd.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/smartpointer.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/typesizecheck.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/ucolorspec.h
+        ${VST3_PLUGININTERFACES_BASE_PATH}/ustring.cpp
+        ${VST3_PLUGININTERFACES_BASE_PATH}/ustring.h
+    
+
+        # sdk files.
+        # ${VST3_SRCPATH}/main/moduleinit.cpp
+        # ${VST3_SRCPATH}/main/moduleinit.h
+        ${VST3_SRCPATH}/vst/utility/audiobuffers.h
+        ${VST3_SRCPATH}/vst/utility/processcontextrequirements.h
+        ${VST3_SRCPATH}/vst/utility/processdataslicer.h
+        ${VST3_SRCPATH}/vst/utility/ringbuffer.h
+        ${VST3_SRCPATH}/vst/utility/rttransfer.h
+        ${VST3_SRCPATH}/vst/utility/sampleaccurate.h
+        ${VST3_SRCPATH}/vst/utility/stringconvert.cpp
+        ${VST3_SRCPATH}/vst/utility/stringconvert.h
+        ${VST3_SRCPATH}/vst/utility/testing.cpp
+        ${VST3_SRCPATH}/vst/utility/testing.h
+        ${VST3_SRCPATH}/vst/utility/vst2persistence.h
+        ${VST3_SRCPATH}/vst/utility/vst2persistence.cpp
+        ${VST3_SRCPATH}/vst/vstaudioeffect.cpp
+        ${VST3_SRCPATH}/vst/vstaudioeffect.h
+        ${VST3_SRCPATH}/vst/vstbus.cpp
+        ${VST3_SRCPATH}/vst/vstbus.h
+        ${VST3_SRCPATH}/vst/vstbypassprocessor.h
+        ${VST3_SRCPATH}/vst/vstcomponent.cpp
+        ${VST3_SRCPATH}/vst/vstcomponent.h
+        ${VST3_SRCPATH}/vst/vstcomponentbase.cpp
+        ${VST3_SRCPATH}/vst/vstcomponentbase.h
+        ${VST3_SRCPATH}/vst/vsteditcontroller.cpp
+        ${VST3_SRCPATH}/vst/vsteditcontroller.h
+        ${VST3_SRCPATH}/vst/vsteventshelper.h
+        ${VST3_SRCPATH}/vst/vsthelpers.h
+        ${VST3_SRCPATH}/vst/vstinitiids.cpp
+        ${VST3_SRCPATH}/vst/vstnoteexpressiontypes.cpp
+        ${VST3_SRCPATH}/vst/vstnoteexpressiontypes.h
+        ${VST3_SRCPATH}/vst/vstparameters.cpp
+        ${VST3_SRCPATH}/vst/vstparameters.h
+        ${VST3_SRCPATH}/vst/vstrepresentation.cpp
+        ${VST3_SRCPATH}/vst/vstrepresentation.h
+
+        # sdk_host.a files.
+
+        ${VST3_SRCPATH}/vst/hosting/connectionproxy.cpp
+        ${VST3_SRCPATH}/vst/hosting/connectionproxy.h
+        ${VST3_SRCPATH}/vst/hosting/eventlist.cpp
+        ${VST3_SRCPATH}/vst/hosting/eventlist.h
+        ${VST3_SRCPATH}/vst/hosting/hostclasses.cpp
+        ${VST3_SRCPATH}/vst/hosting/hostclasses.h
+        ${VST3_SRCPATH}/vst/hosting/module.cpp
+        ${VST3_SRCPATH}/vst/hosting/module.h
+        ${VST3_SRCPATH}/vst/hosting/parameterchanges.cpp
+        ${VST3_SRCPATH}/vst/hosting/parameterchanges.h 
+        ${VST3_SRCPATH}/vst/hosting/pluginterfacesupport.cpp
+        ${VST3_SRCPATH}/vst/hosting/pluginterfacesupport.h
+        ${VST3_SRCPATH}/vst/hosting/plugprovider.cpp
+        ${VST3_SRCPATH}/vst/hosting/plugprovider.h
+        ${VST3_SRCPATH}/vst/hosting/processdata.cpp
+        ${VST3_SRCPATH}/vst/hosting/processdata.h
+        ${VST3_SRCPATH}/vst/utility/optional.h
+        ${VST3_SRCPATH}/vst/utility/stringconvert.cpp
+        ${VST3_SRCPATH}/vst/utility/stringconvert.h
+        ${VST3_SRCPATH}/vst/utility/uid.h
+        ${VST3_SRCPATH}/vst/vstinitiids.cpp
+
+        ${VST3_SRCPATH}/vst/hosting/module_linux.cpp
+
+    # source/audiohost.cpp
+    # source/audiohost.h
+    # source/media/audioclient.cpp
+    # ource/media/audioclient.h
+    # source/media/imediaserver.h
+    # source/media/iparameterclient.h
+    # #source/media/jack/jackclient.cpp
+    # source/media/miditovst.h
+    # source/platform/appinit.h
+    # source/usediids.cpp
+    )
+
+    add_library(vst3_lib STATIC ${vst3_sources})
+
+    target_include_directories(vst3_lib PRIVATE  ${VST3_INCLUDES}
+    )
+
+    
+    add_executable(vst3test Vst3test.cpp
+
+        MemDebug.cpp
+        MemDebug.hpp
+
+        Vst3SdkRepro.cpp
+
+        ${VST3_FILES}
+    
+        #vst3/Vst3PresetFile.hpp Vst3PresetFile.cpp
+        asan_options.cpp
+    )
+
+    target_include_directories(vst3test PRIVATE ${PIPEDAL_INCLUDES} 
+        )
+
+    
+    target_link_libraries(vst3test PRIVATE ${PIPEDAL_LIBS} 
+        vst3_lib dl pthread
+        )
+
+endif(ENABLE_VST3)
+
+
 
 
 # Build machine tests. Run tests that are not dependent on hardware.

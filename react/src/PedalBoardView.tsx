@@ -62,6 +62,12 @@ const EMPTY_ICON_URL = "img/fx_empty.svg";
 const ERROR_ICON_URL = "img/fx_error.svg";
 const TERMINAL_ICON_URL = "img/fx_terminal.svg";
 
+function CalculateConnection(numberOfInputs: number, numberOfOutputs: number)
+{
+    let result = Math.min(numberOfInputs, numberOfOutputs);
+    if (result > 2) result = 2;
+    return result;
+}
 
 const pedalBoardStyles = (theme: Theme) => createStyles({
     scrollContainer: {
@@ -210,10 +216,9 @@ class PedalLayout {
 
     bounds: Rect = new Rect();
 
-    inputs: number = 0;
-    outputs: number = 0;
-    stereoInput: boolean = false;
-    stereoOutput: boolean = false;
+    numberOfInputs: number = 2;
+    numberOfOutputs: number = 2;
+
     pedalItem?: PedalBoardItem;
 
     // Split Layout only.
@@ -227,8 +232,8 @@ class PedalLayout {
         let t: PedalLayout = new PedalLayout();
         t.uri = START_PEDALBOARD_ITEM_URI;
         t.iconUrl = TERMINAL_ICON_URL;
-        t.inputs = 0;
-        t.outputs = 1;
+        t.numberOfInputs = 0;
+        t.numberOfOutputs = 2;
         return t;
     }
     static End(): PedalLayout {
@@ -236,8 +241,8 @@ class PedalLayout {
         t.pluginType = PluginType.UtilityPlugin;
         t.uri = END_PEDALBOARD_ITEM_URI;
         t.iconUrl = TERMINAL_ICON_URL;
-        t.inputs = 2;
-        t.outputs = 0;
+        t.numberOfInputs = 2;
+        t.numberOfOutputs = 0;
         return t;
     }
     constructor(model?: PiPedalModel, pedalItem?: PedalBoardItem) {
@@ -256,27 +261,27 @@ class PedalLayout {
             this.topChildren = makeChain(model, splitter.topChain);
             this.bottomChildren = makeChain(model, splitter.bottomChain);
 
-            this.inputs = 2;
-            this.outputs = 2;
+            this.numberOfInputs = 2;
+            this.numberOfOutputs = 2;
 
         } else if (pedalItem.isEmpty()) {
 
             this.pluginType = PluginType.UtilityPlugin;
             this.iconUrl = EMPTY_ICON_URL;
-            this.inputs = 2;
-            this.outputs = 2;
+            this.numberOfInputs = 2;
+            this.numberOfOutputs = 2;
 
         } else if (pedalItem.uri === START_PEDALBOARD_ITEM_URI) {
             this.pluginType = PluginType.UtilityPlugin;
             this.iconUrl = TERMINAL_ICON_URL;
-            this.inputs = 0;
-            this.outputs = PiPedalModelFactory.getInstance().jackSettings.get().inputAudioPorts.length;
+            this.numberOfInputs = 0;
+            this.numberOfOutputs = PiPedalModelFactory.getInstance().jackSettings.get().inputAudioPorts.length;
 
         } else if (pedalItem.uri === END_PEDALBOARD_ITEM_URI) {
             this.pluginType = PluginType.UtilityPlugin;
             this.iconUrl = TERMINAL_ICON_URL;
-            this.inputs = PiPedalModelFactory.getInstance().jackSettings.get().outputAudioPorts.length;
-            this.outputs = 0;
+            this.numberOfInputs = PiPedalModelFactory.getInstance().jackSettings.get().outputAudioPorts.length;
+            this.numberOfOutputs = 0;
         }
         else {
             let uiPlugin = model.getUiPlugin(pedalItem.uri);
@@ -284,15 +289,15 @@ class PedalLayout {
                 this.pluginType = uiPlugin.plugin_type;
                 this.iconUrl = SelectIcon(uiPlugin.plugin_type,uiPlugin.uri);
                 this.name = uiPlugin.name;
-                this.inputs = uiPlugin.audio_inputs;
-                this.outputs = uiPlugin.audio_outputs;
+                this.numberOfInputs = Math.max(uiPlugin.audio_inputs,2);
+                this.numberOfOutputs = Math.max(uiPlugin.audio_outputs,2);
             } else {
                 // default to empty plugin.
                 this.pluginType = PluginType.UtilityPlugin;
                 this.name = pedalItem.pluginName??"#error";
                 this.iconUrl = ERROR_ICON_URL;
-                this.inputs = 2;
-                this.outputs = 2;
+                this.numberOfInputs = 2;
+                this.numberOfOutputs = 2;
             }
         }
     }
@@ -677,18 +682,18 @@ const PedalBoardView =
                 // let classes = this.props.classes;
                 let x_ = item.bounds.x + CELL_WIDTH / 2;
                 let y_ = item.bounds.y + CELL_HEIGHT / 2;
-                let isStereo = item.stereoOutput;
+                let numberOfOutputs = item.numberOfOutputs;
                 let color = enabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
                 let svgPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_ + CELL_WIDTH, y_).toString();
 
-                if (isStereo) {
+                if (numberOfOutputs === 2) {
                     output.push((
                         <path d={svgPath} stroke={color} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
                     ));
                     output.push((
                         <path d={svgPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
                     ));
-                } else {
+                } else if (numberOfOutputs === 1) {
                     output.push((
                         <path d={svgPath} stroke={color} strokeWidth={SVG_STROKE_WIDTH} />
                     ));
@@ -712,18 +717,18 @@ const PedalBoardView =
                 let topStartPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_, yTop).lineTo(x_ + CELL_WIDTH, yTop).toString();
                 let bottomStartPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_, yBottom).lineTo(x_ + CELL_WIDTH, yBottom).toString();
 
-                if (item.stereoInput && item.topChildren[0].stereoInput) {
+                if (item.numberOfInputs === 2 && item.topChildren[0].numberOfInputs === 2) {
                     output.push((<path d={topStartPath} stroke={topColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />));
                     output.push((<path d={topStartPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />));
-                } else {
+                } else if (item.numberOfInputs !== 0 && item.topChildren[0].numberOfInputs !== 0) {
                     output.push((<path d={topStartPath} stroke={topColor} strokeWidth={SVG_STROKE_WIDTH} />));
                 }
 
-                if (item.stereoInput && item.bottomChildren[0].stereoInput) {
+                if (item.numberOfInputs === 2 && item.bottomChildren[0].numberOfInputs === 2) {
                     output.push((<path d={bottomStartPath} stroke={bottomColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />));
                     output.push((<path d={bottomStartPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />));
 
-                } else {
+                } else if (item.numberOfInputs !== 0 && item.bottomChildren[0].numberOfInputs !== 0) {
                     output.push((<path d={bottomStartPath} stroke={bottomColor} strokeWidth={SVG_STROKE_WIDTH} />));
                 }
 
@@ -741,6 +746,8 @@ const PedalBoardView =
 
                 let firstPathStereo: boolean;
                 let secondPathStereo: boolean;
+                let firstPathAbsent: boolean;
+                let secondPathAbsent: boolean;
                 let firstPathEnabled: boolean;
                 let secondPathEnabled: boolean;
                 let xTee: number;
@@ -753,11 +760,13 @@ const PedalBoardView =
 
                 // Third case: L/R stereo output, when both outputs are mono, requires a third stroke.
                 let thirdPath: string | null = null; // for L/R stereo output (which can be stereo even if both outputs are mono)
-                let hasThirdPath = item.stereoOutput && (!lastTop.stereoOutput) && (!lastBottom.stereoOutput);
+                let hasThirdPath = item.numberOfOutputs === 2 && (lastTop.numberOfOutputs !== 2) && (lastBottom.numberOfOutputs !== 2);
 
                 if (hasThirdPath) {
                     firstPathStereo = false;
                     secondPathStereo = false;
+                    firstPathAbsent = lastTop.numberOfOutputs === 0 || item.numberOfOutputs === 0;
+                    secondPathAbsent = lastBottom.numberOfOutputs === 0 || item.numberOfOutputs === 0;
                     xTee = xTee0 - monoAdjustment;
                     firstPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).toString();
 
@@ -767,10 +776,13 @@ const PedalBoardView =
                     thirdPath= new SvgPathBuilder().moveTo(xTee0,y_).lineTo(xEnd,y_).toString();
                     firstPathEnabled = bottomEnabled;
                     secondPathEnabled = topEnabled;
-                } else if (bottomPathFirst || (topEnabled && lastTop.stereoOutput)) {
+                } else if (bottomPathFirst || (topEnabled && lastTop.numberOfOutputs === 2)) {
                     // draw the bottom path first.
-                    firstPathStereo = item.stereoOutput && lastBottom.stereoOutput;
-                    secondPathStereo = item.stereoOutput && lastTop.stereoOutput;
+                    firstPathStereo = item.numberOfOutputs === 2 && lastBottom.numberOfOutputs === 2;
+                    secondPathStereo = item.numberOfOutputs === 2 && lastTop.numberOfOutputs === 2;
+                    firstPathAbsent = item.numberOfOutputs === 0 || lastBottom.numberOfOutputs === 0;
+                    secondPathAbsent = item.numberOfOutputs === 0 || lastTop.numberOfOutputs === 0;
+
                     xTee = firstPathStereo ? xTee0 : xTee0 - monoAdjustment;
                     firstPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).toString();
                     xTee = secondPathStereo ? xTee0 : xTee0 - monoAdjustment;
@@ -780,8 +792,10 @@ const PedalBoardView =
                     secondPathEnabled = topEnabled;
                 } else {
                     // draw the top path first.
-                    firstPathStereo = item.stereoOutput && lastTop.stereoOutput;
-                    secondPathStereo = item.stereoOutput && lastBottom.stereoOutput;
+                    firstPathStereo = item.numberOfOutputs === 2 && lastTop.numberOfOutputs === 2;
+                    secondPathStereo = item.numberOfOutputs === 2 && lastBottom.numberOfOutputs === 2;
+                    firstPathAbsent = item.numberOfOutputs === 0 || lastTop.numberOfOutputs === 0;
+                    secondPathAbsent = item.numberOfOutputs === 0 || lastBottom.numberOfOutputs === 0;
 
                     xTee = firstPathStereo ? xTee0 : xTee0 - monoAdjustment;
                     firstPath = new SvgPathBuilder().moveTo(xTop, yTop).lineTo(xTee, yTop).lineTo(xTee, y_).toString();
@@ -804,7 +818,7 @@ const PedalBoardView =
                         output.push((
                             <path d={firstPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
                         ));
-                    } else {
+                    } else if (!firstPathAbsent) {
                         output.push((
                             <path d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STROKE_WIDTH} />
                         ));
@@ -816,7 +830,7 @@ const PedalBoardView =
                         output.push((
                             <path d={secondPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
                         ));
-                    } else {
+                    } else if (!secondPathAbsent) {
                         output.push((
                             <path d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STROKE_WIDTH} />
                         ));
@@ -828,7 +842,7 @@ const PedalBoardView =
                         output.push((
                             <path d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
                         ));
-                    } else {
+                    } else if (!firstPathAbsent) {
                         output.push((
                             <path d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STROKE_WIDTH} />
                         ));
@@ -837,7 +851,7 @@ const PedalBoardView =
                         output.push((
                             <path d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
                         ));
-                    } else {
+                    } else if (!secondPathAbsent) {
                         output.push((
                             <path d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STROKE_WIDTH} />
                         ));
@@ -1011,126 +1025,130 @@ const PedalBoardView =
                 }
                 return true;
             }
-            canOutputStereo(item: PedalLayout): boolean {
+            getNumberOfInputs(item: PedalLayout): number {
                 if (item.pedalItem) {
                     let plugin = this.model.getUiPlugin(item.pedalItem.uri);
                     if (plugin) {
-                        return plugin.audio_outputs === 2;
+                        return plugin.audio_inputs;
                     }
                 }
-                return true;
+                return 1;
+            }
+            getNumberOfOutputs(item: PedalLayout): number {
+                if (item.pedalItem) {
+                    let plugin = this.model.getUiPlugin(item.pedalItem.uri);
+                    if (plugin) {
+                        return plugin.audio_outputs;
+                    }
+                }
+                return 1;
             }
 
-            markStereoOutputs(layoutChain: PedalLayout[], stereoInput: boolean, stereoOutput: boolean) {
+            markStereoOutputs(layoutChain: PedalLayout[], numberOfInputs: number, numberOfOutputs: number) {
                 // analyze forward flow.
-                this.markStereoForward(layoutChain, stereoInput);
+                this.markStereoForward(layoutChain, numberOfInputs);
                 // mark items that feed a mono effect as mono.
-                this.markStereoBackward(layoutChain, stereoOutput);
+                this.markStereoBackward(layoutChain, numberOfOutputs);
             }
 
-            markStereoBackward(layoutChain: PedalLayout[], stereoOutput: boolean) : boolean
+            markStereoBackward(layoutChain: PedalLayout[], numberOfOutputs: number) : number
             {
                 for (let i = layoutChain.length-1; i >= 0; --i)
                 {
                     let item = layoutChain[i];
                     if (item.isSplitter())
                     {
-                        if (!stereoOutput)
-                        {
-                            item.stereoOutput = false;
-                        }
-                        this.markStereoBackward(item.topChildren,stereoOutput);
-                        this.markStereoBackward(item.bottomChildren,stereoOutput);
-                        let topStereoInput = item.topChildren[0].stereoInput;
-                        let bottomStereoInput = item.bottomChildren[0].stereoInput;
+                        item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs)
 
-                        if (! (topStereoInput || bottomStereoInput))
+                        this.markStereoBackward(item.topChildren,numberOfOutputs);
+                        this.markStereoBackward(item.bottomChildren,numberOfOutputs);
+                        let topInputs = item.topChildren[0].numberOfInputs;
+                        let bottomInputs = item.bottomChildren[0].numberOfInputs;
+
+                        let splitItem = item.pedalItem as PedalBoardSplitItem;
+                        if (splitItem.getSplitType() !== SplitType.Lr)
                         {
-                            let splitItem = item.pedalItem as PedalBoardSplitItem;
-                            if (splitItem.getSplitType() !== SplitType.Lr)
-                            {
-                                item.stereoInput = false;
-                            }
+                            item.numberOfInputs = CalculateConnection(item.numberOfInputs, Math.max(topInputs,bottomInputs));
                         }
                     } else if (item.isEnd())
                     {
 
                     } else if (item.isStart())
                     {
-                        if (!stereoOutput)
-                        {
-                            item.stereoOutput = false;
-                        }
-                        return item.stereoOutput;
+                        item.numberOfOutputs = CalculateConnection(item.numberOfOutputs,numberOfOutputs);
+                        return item.numberOfOutputs;
 
                     } else if (item.isEmpty()) {
-                        if (!stereoOutput)
+                        if (numberOfOutputs === 0)
                         {
-                            item.stereoOutput = false;
-                            item.stereoInput = false;
+                            item.numberOfOutputs = 0;
+                            item.numberOfInputs = CalculateConnection(item.numberOfInputs,2);
+                        } else {
+                            item.numberOfOutputs = CalculateConnection(item.numberOfOutputs,numberOfOutputs);
+                            item.numberOfInputs = CalculateConnection(item.numberOfInputs,numberOfOutputs);
                         }
                     } else {
-                        if (!stereoOutput)
-                        {
-                            item.stereoOutput = false;
-                        }
+                        item.numberOfOutputs = CalculateConnection(item.numberOfOutputs,numberOfOutputs);
                     }
-                    stereoOutput = item.stereoInput;
+                    numberOfOutputs = item.numberOfInputs;
                 }
-                return stereoOutput;
+                return numberOfOutputs;
             }
-            markStereoForward(layoutChain: PedalLayout[],stereoInput: boolean): boolean
+            markStereoForward(layoutChain: PedalLayout[],numberOfInputs: number): number
             {
                 if (layoutChain.length === 0) {
-                    return stereoInput;
+                    return numberOfInputs;
                 }
                 for (let i = 0; i < layoutChain.length; ++i) {
                     let item = layoutChain[i];
                     if (item.isSplitter()) {
                         let splitter = item.pedalItem as PedalBoardSplitItem;
-                        item.stereoInput = stereoInput;
+                        item.numberOfInputs = numberOfInputs;
 
-                        let isChainInputStereo = stereoInput;
+                        let chainInputs = numberOfInputs;
                         if (splitter.getSplitType() === SplitType.Lr)
                         {
-                            isChainInputStereo = false;
+                            chainInputs = CalculateConnection(numberOfInputs,1);
                         }
-
-                        let topStereo = this.markStereoForward(item.topChildren, isChainInputStereo);
-                        let bottomStereo = this.markStereoForward(item.bottomChildren, isChainInputStereo);
+                        let topOutputs = this.markStereoForward(item.topChildren, chainInputs);
+                        let bottomOutputs = this.markStereoForward(item.bottomChildren, chainInputs);
 
 
                         if (splitter.getSplitType() === SplitType.Ab) {
                             if (splitter.isASelected()) {
-                                item.stereoOutput = topStereo;
+                                item.numberOfOutputs = topOutputs;
                             } else {
-                                item.stereoOutput = bottomStereo;
+                                item.numberOfOutputs = bottomOutputs;
                             }
                         } else if (splitter.getSplitType() === SplitType.Lr) {
-                            item.stereoOutput = true;   
+                            item.numberOfOutputs = (topOutputs !== 0 && bottomOutputs !== 0) ? 2: 0;
                         } else {
-                            item.stereoOutput = topStereo || bottomStereo;
+                            item.numberOfOutputs = CalculateConnection(topOutputs,bottomOutputs);
                         }
                     } else if (item.isStart())
                     {
-                        item.stereoOutput = (PiPedalModelFactory.getInstance().jackSettings.get().inputAudioPorts.length > 1);
+                        item.numberOfOutputs = Math.min(PiPedalModelFactory.getInstance().jackSettings.get().inputAudioPorts.length,2);
                     } else if (item.isEnd()) {
-                        item.stereoInput = (PiPedalModelFactory.getInstance().jackSettings.get().outputAudioPorts.length > 1) && stereoInput;
-                        return item.stereoInput;
+                        item.numberOfInputs = 
+                            CalculateConnection(
+                                Math.min(PiPedalModelFactory.getInstance().jackSettings.get().outputAudioPorts.length,2),
+                                numberOfInputs);
+                        return item.numberOfInputs;
                     } else if (item.isEmpty()) {
-                        item.stereoInput = stereoInput;
-                        item.stereoOutput = stereoInput;
-                    } else  {
-                        if (stereoInput && this.canOutputStereo(item)) {
-                            item.stereoInput = true;
+                        item.numberOfInputs = numberOfInputs;
+                        if (numberOfInputs === 0)
+                        {
+                            item.numberOfOutputs = 2;
                         } else {
-                            item.stereoInput = false;
+                            item.numberOfOutputs = item.numberOfInputs;
                         }
-                        item.stereoOutput = this.canOutputStereo(item);
+                    } else  {
+                        item.numberOfInputs = CalculateConnection(numberOfInputs,this.getNumberOfInputs(item));
+                        item.numberOfOutputs = this.getNumberOfOutputs(item);
                     }
-                    stereoInput = item.stereoOutput;
+                    numberOfInputs = item.numberOfOutputs;
                 }
-                return stereoInput;
+                return numberOfInputs;
             }
 
             currentLayout?: PedalLayout[];
@@ -1145,7 +1163,7 @@ const PedalBoardView =
                 {
                     layoutChain.splice(0, 0, start);
                     layoutChain.splice(layoutChain.length, 0, end);
-                    this.markStereoOutputs(layoutChain, true, true);
+                    this.markStereoOutputs(layoutChain, 2,2);
                 }
 
                 let layoutSize = this.doLayout(layoutChain);

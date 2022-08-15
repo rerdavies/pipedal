@@ -19,7 +19,7 @@
 
 #pragma once
 #include <mutex>
-#include "Lv2Host.hpp"
+#include "PiPedalHost.hpp"
 #include "GovernorSettings.hpp"
 #include "PedalBoard.hpp"
 #include "Storage.hpp"
@@ -52,6 +52,7 @@ public:
     virtual int64_t GetClientId() = 0;
     virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
     virtual void OnControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value) = 0;
+    virtual void OnVst3ControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value, const std::string&state) = 0;
     virtual void OnPedalBoardChanged(int64_t clientId, const PedalBoard &pedalBoard) = 0;
     virtual void OnPresetsChanged(int64_t clientId, const PresetIndex&presets) = 0;
     virtual void OnPluginPresetsChanged(const std::string&pluginUri) = 0;
@@ -104,7 +105,7 @@ private:
     std::vector<AtomOutputListener> atomOutputListeners;
 
     JackServerSettings jackServerSettings;
-    Lv2Host lv2Host;
+    PiPedalHost lv2Host;
     PedalBoard pedalBoard;
     Storage storage;
     bool hasPresetChanged = false;
@@ -155,6 +156,7 @@ private: // IJackHostCallbacks
     virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl);
     virtual void OnNotifyAtomOutput(uint64_t instanceId, const std::string&atomType,const std::string&atomJson);
 
+    void UpdateVst3Settings(PedalBoard&pedalBoard);
 
     PiPedalConfiguration configuration;
 public:
@@ -173,7 +175,7 @@ public:
     void LoadLv2PluginInfo();
     void Load();
 
-    const Lv2Host& GetLv2Host() const { return lv2Host; }
+    const PiPedalHost& GetLv2Host() const { return lv2Host; }
     PedalBoard  GetCurrentPedalBoardCopy() 
     { 
         std::lock_guard<std::recursive_mutex> guard(mutex);
@@ -191,6 +193,8 @@ public:
     void SetControl(int64_t clientId,int64_t pedalItemId, const std::string&symbol,float value);
     void PreviewControl(int64_t clientId,int64_t pedalItemId, const std::string&symbol,float value);
     void SetPedalBoard(int64_t clientId,PedalBoard &pedalBoard);
+    void UpdateCurrentPedalBoard(int64_t clientId, PedalBoard &pedalBoard);
+
 
     void GetPresets(PresetIndex*pResult);
     PedalBoard GetPreset(int64_t instanceId);
