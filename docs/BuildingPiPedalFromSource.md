@@ -1,6 +1,11 @@
+---
+page_icon: img/Compiling.jpg
+---
 ## Building PiPedal From Source
 
-PiPedal has only been tested on Raspbian, and Ubuntu, but should run with little or no modification on most Linux distributions. Pull requests to correct problems with building PiPedal on other versions of Linux are welcome. 
+{% include pageIcon.html %}
+
+PiPedal has only been tested on Raspberry Pi OS, and Ubuntu, but should run with little or no modification on most Linux distributions. Pull requests to correct problems with building PiPedal on other versions of Linux are welcome. 
 
 To build PiPedal, a Raspberry Pi 4B, with at least 4GB of memory is required (8GB recommended). You can build PiPedal from the command-line using CMake; but the project was originally build using
 Microsoft Visual Studio Code. If you use VSCode, you will almost definitely need to hav 8GB of RAM.

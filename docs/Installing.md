@@ -1,18 +1,19 @@
 ---
-page_icon: img/Install3.jpg
+page_icon: img/Install4.jpg
 ---
+
+{% include pageIcon.html %}
 
 
 ## Installing PiPedal
 
-{% include pageIcon.html %}
 
 ### Install for Ubuntu <br/>or Raspberry Pi OS (64-bit)
 
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS (64-bit) v1.0.15](https://github.com/rerdavies/pipedal/releases/download/v1.0.15/pipedal_1.0.15_arm64.deb)
+- [Ubuntu/Raspberry Pi OS (64-bit) v1.0.15](https://github.com/rerdavies/pipedal/releases/download/v1.0.15/pipedal_1.0.15_arm64.deb)
 
 Install the package by running 
 

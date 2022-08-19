@@ -22,4 +22,7 @@
 #### [The Build Systems](TheBuildSystem.md)
 #### [How to Debug PiPedal](Debugging.md)
 
+ 
+
+#### [PiPedal Architecture](Architecture.md)
 

@@ -98,7 +98,7 @@ Wi-Fi Direct connections differ in a couple of ways from normal Wi-Fi connection
 - Wi-Fi Direct connections are backward compatible with Wi-Fi access points if you are using an older device. Look for the DIRECT-xx-YourDeviceName access point.
   But if you use a legacy connection, the connecting device cannot have a simultanous Wi-Fi router connection.
 
-If you use the PiPedal Android app (coming VERY soon - being pushed up for distribution now), the Android app will manage discovery and setting up of Wi-Fi direct connections to your Raspberry Pi device automatically.
+If you use the PiPedal Android app, the Android app will manage discovery and setting up of Wi-Fi direct connections to your Raspberry Pi device automatically; but you must complete the initial configuration using a direct web connection first.
      
 PC support for Wi-Fi Direct connections varies dramatically. Modern PCs support Wi-Fi Direct; but you may find it easier to communicate with PiPedal via your Wi-Fi router. Configure PiPedal to use a Wi-Fi connection as well as a Wi-Fi Direct access point (or connect an ethernet cable to your Raspberry Pi). Just remember to configure your phone to use a Wi-Fi Diret connection _before_ you take PiPedal out on a gig, because you won't have a Wi-Fi router then.
 
@@ -110,7 +110,7 @@ You _must_ select the correct country when setting up your Wi-Fi Direct connecti
 
 For best results, you should select Wi-Fi channel 1, 6 or 11 (referred to as the "Wi-Fi Direct Social Channels"). Doing so reduces the time it takes for other devices to discover the Raspberry Pi. While it is possible to use 5Ghz channels for Wi-Fi Direct, it may take some time for connecting devices to find your PiPedal device.
 
-Support for Apple/IOS devices: a client for Apple/IoS devices is in long-term development plans; but I don't own any Apple device on which to do development and testing. If you'd like to see an Apple/IOS client, your sponsorship would help. (The client performs discovery and set up of Wi-Fi direct connections, and relies on the Web interface after that. Not difficult. Just expensive.
+Support for Apple/IOS devices: a client for Apple/IoS devices is in long-term development plans; but I don't own any Apple device on which to do development and testing. If you'd like to see an Apple/IOS client, your sponsorship would help. (The client performs automatic discovery and set up of Wi-Fi direct connections, and relies on the Web interface after that. Not difficult to implement. Just expensive.)
 
 --------
 [<< Installing PiPedal](Installing.md)  | [Up](Documentation.md) | | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)

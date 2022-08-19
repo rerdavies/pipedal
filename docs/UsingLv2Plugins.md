@@ -1,10 +1,14 @@
+---
+page_icon: img/Plugins.jpg
+---
 ## Using LV2 PLugins
 
+{% include pageIcon.html %}
 PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
 
-By default, PiPedal comes with a few plugins from the ToobAmp plugin collection. You will probably want to install more.
+By default, PiPedal comes with a basic set of plugins from the ToobAmp plugin collection. You will probably want to install more.
 
-Here is a brief list of particularly recommend plugin collections.
+Here is a brief list of particularly recommended plugin collections.
 
 | Collection                      | To Install                            | Description      |
 |---------------------------------|---------------------------------------|------------------|

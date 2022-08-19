@@ -1,5 +1,5 @@
 ---
-page_icon: img/Requirements.jpg
+page_icon: img/Requirements2.jpg
 ---
 ## System Requirements
 
