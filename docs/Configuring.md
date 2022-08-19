@@ -1,6 +1,14 @@
+---
+page_icon: img/Setup.jpg
+icon_width: 320px
+icon_float: left
+---
 ## Configuring PiPedal After Installation
 
+
 Before using PiPedal, you will need to configure settings for the audio device that PiPedal will use.
+
+{% include pageIconL.html %}
 
 You will also want to configure PiPedal  to provide a Wi-Fi Direct access point (hotspot) that you can connect to using your phone. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that the Wi-Fi Direct access point is enabled before you do. 
 
@@ -50,7 +58,7 @@ The following table shows measured round-trip audio latencies for a MOTU M2 exte
 <table align='center'>
     <tr><td></td><td colspan=3>Buffers</td></tr>
     <tr><td>Size</td><td>2</td><td>3</td><td>4</td></tr>
-    <tr><td>16</td><td>No signal</td><td>185/3.9ms</td><td>201/4.2ms</td></tr>
+    <tr><td>16</td><td>Fails</td><td>185/3.9ms</td><td>201/4.2ms</td></tr>
     <tr><td>24</td><td>192/4.0ms</td><td>213/4.4ms</td><td>236/4.9ms</td></tr>
     <tr><td>32</td><td>219/4.6ms</td><td>236/4.9ms</td><td>272/5.7ms</td></tr>
     <tr><td>48</td><td>253/5.3ms</td><td>299/6.2ms</td><td>348/7.2ms</td></tr>

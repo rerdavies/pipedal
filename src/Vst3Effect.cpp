@@ -70,6 +70,7 @@ std::unique_ptr<Vst3Effect> Vst3Effect::CreateInstance(uint64_t instanceId, cons
 
 	result->Load(instanceId, info, pHost);
 
+
 	return std::move(result);
 }
 
@@ -874,6 +875,13 @@ void Vst3EffectImpl::fireControlChanged(int control, float normalizedValue)
 		parameterValues[control] = plainValue;
 		controlChangedHandler(control,plainValue);
 	}
+}
+
+
+const Lv2PluginUiInfo& Vst3EffectImpl::GetCurrentPluginInfo()
+{
+	Vst3Host::Private::UpdateControlInfo(this->controller,this->info.pluginInfo_);
+	return this->info.pluginInfo_;
 }
 
 JSON_MAP_BEGIN(Vst3PluginInfo)

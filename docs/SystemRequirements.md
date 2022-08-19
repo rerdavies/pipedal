@@ -1,4 +1,9 @@
+---
+page_icon: img/Requirements.jpg
+---
 ## System Requirements
+
+{% include pageIcon.html %}
 
 * A Raspberry PI 4B or 400, with at least 2GB of RAM to run (4GB recommended).
 * To build PiPedal, at least 4GB of RAM (8GB recommended).

@@ -35,6 +35,14 @@
 #include "PedalBoard.hpp"
 
 
+namespace Steinberg
+{
+    namespace Vst {
+        class IEditController; // forward decl.
+    }
+}
+
+
  namespace pipedal {
 
 
@@ -63,6 +71,13 @@
 
 
         static Ptr CreateInstance(const std::string &cacheFilePath = "");
+
+    public:
+         class Private { // private use.
+         public:
+
+            static void UpdateControlInfo(::Steinberg::Vst::IEditController *controller, Lv2PluginUiInfo &pluginInfo);
+        };
 
     };
 

@@ -1,6 +1,14 @@
+---
+page_icon: img/Install3.jpg
+---
+
+
 ## Installing PiPedal
 
-### Install for Ubuntu or Raspberry Pi OS (64-bit)
+{% include pageIcon.html %}
+
+### Install for Ubuntu <br/>or Raspberry Pi OS (64-bit)
+
 
 Download the most recent Debian (.deb) package for your platform:
 
@@ -13,9 +21,11 @@ Install the package by running
   cd ~/Downloads  
   sudo dpkg --install pipedal_1.0.15_arm64.deb
 ```
-On Raspberry Pi OS, if you have a graphical desktop installed, you can also install package by double-clicking on the downloaded package in the File Manager.
+On Raspberry Pi OS, if you have a graphical desktop installed, you can also install the package by double-clicking on the downloaded package in the File Manager.
 
 
 After installing, follow the instructions in [Configuring PiPedal after Installation](Configuring.md).
+
+
 --------
 [<< System Requirements](SystemRequirements.md) | [Up](Documentation.md) | [Configuring PiPedal after Installation >>](Configuring.md)

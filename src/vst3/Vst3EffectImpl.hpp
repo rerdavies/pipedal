@@ -81,6 +81,9 @@ namespace pipedal
 
 		void SetState(const std::vector<uint8_t> state);
 
+
+        const Lv2PluginUiInfo&  GetCurrentPluginInfo();
+
 		virtual void CheckSync();
 
 		//- PiPedalHost Interfaces.

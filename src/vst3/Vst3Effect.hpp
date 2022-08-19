@@ -59,7 +59,10 @@ namespace pipedal {
     public:
         using Ptr = std::unique_ptr<Vst3Effect>;
 
+
         virtual void Prepare(int32_t sampleRate, size_t maxBufferSize,int inputChannels, int outputChannels) = 0;
+
+        virtual const Lv2PluginUiInfo& GetCurrentPluginInfo() = 0;
 
         virtual void Activate() = 0;
         virtual void Deactivate() = 0;

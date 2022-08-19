@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-
 #include "ss.hpp"
 #include "PiPedalHost.hpp"
 #include "vst3/Vst3Host.hpp"
@@ -80,17 +79,17 @@ namespace pipedal
 		std::string cacheFilePath;
 
 	public:
-		Vst3HostImpl(const std::string&cacheFilePath);
+		Vst3HostImpl(const std::string &cacheFilePath);
 
 		const Vst3Host::PluginList &RescanPlugins() override;
 		const Vst3Host::PluginList &RefreshPlugins() override;
 		const Vst3Host::PluginList &getPluginList() override { return pluginList; }
 
 		std::unique_ptr<Vst3Effect> CreatePlugin(long instanceId, const std::string &url, IHost *pHost) override;
-		std::unique_ptr<Vst3Effect> CreatePlugin(PedalBoardItem&pedalBoardItem, IHost*pHost) override;
+		std::unique_ptr<Vst3Effect> CreatePlugin(PedalBoardItem &pedalBoardItem, IHost *pHost) override;
 
 	private:
-		Lv2PluginUiInfo *GetPluginInfo(const std::string&uri);
+		Lv2PluginUiInfo *GetPluginInfo(const std::string &uri);
 
 		void LoadPluginCache();
 		void SavePluginCache();
@@ -104,7 +103,7 @@ namespace pipedal
 		void MakeVst3Info(const std::filesystem::path &path, Vst3Host::PluginList &list);
 	};
 
-	Vst3Host::Ptr Vst3Host::CreateInstance(const std::string&cacheFilePath)
+	Vst3Host::Ptr Vst3Host::CreateInstance(const std::string &cacheFilePath)
 	{
 		return std::make_unique<Vst3HostImpl>(cacheFilePath);
 	}
@@ -113,14 +112,12 @@ namespace pipedal
 
 } // namespace pipedal
 
-Vst3HostImpl::Vst3HostImpl(const std::string&cacheFilePath)
-:cacheFilePath(cacheFilePath)
+Vst3HostImpl::Vst3HostImpl(const std::string &cacheFilePath)
+	: cacheFilePath(cacheFilePath)
 {
 	this->hostApplication = new Vst3HostApplication();
 	EnsureContext();
-
 }
-
 
 static bool hasSubCategory(const ClassInfo &classInfo, const std::string &subcategory)
 {
@@ -248,6 +245,192 @@ void Vst3HostImpl::EnsureContext()
 	PluginContextFactory::instance().setPluginContext(this->hostApplication);
 }
 
+void Vst3Host::Private::UpdateControlInfo(IEditController *controller, Lv2PluginUiInfo &pluginInfo)
+{
+	// update UI text and control info.
+	FUnknownPtr<IUnitInfo> iUnitInfo(controller);
+	pluginInfo.controls().resize(0);
+	pluginInfo.port_groups().resize(0);
+
+	if (iUnitInfo)
+	{
+		auto nUnits = iUnitInfo->getUnitCount();
+		for (int i = 0; i < nUnits; ++i)
+		{
+			Steinberg::Vst::UnitInfo unitInfo;
+			iUnitInfo->getUnitInfo(i, unitInfo);
+			Lv2PluginUiPortGroup portGroup(
+				SS(unitInfo.id), VST3::StringConvert::convert(unitInfo.name), SS(unitInfo.parentUnitId), unitInfo.programListId);
+
+			pluginInfo.port_groups().push_back(portGroup);
+		}
+	}
+
+	auto nParams = controller->getParameterCount();
+	for (int32 param = 0; param < nParams; ++param)
+	{
+		Steinberg::Vst::ParameterInfo info;
+		tresult tErr = controller->getParameterInfo(param, info);
+
+		Lv2PluginUiControlPort port;
+		port.index(param);		  // used for LV2 purposes.
+		port.symbol(SS(info.id)); // Used for VST3 purposes. convert to int to specifiy a vst control id.
+
+		std::string shortTitle = VST3::StringConvert::convert(info.shortTitle);
+		std::string title = VST3::StringConvert::convert(info.title);
+		if (shortTitle.length() == 0)
+		{
+			shortTitle = title;
+		}
+		port.name(shortTitle);
+		port.comment(title);
+
+		// guard against NaN value (mda Talkbox)
+		port.display_priority(param);
+
+		bool isList = (info.flags & ParameterInfo::kIsList) != ParameterInfo::kNoFlags;
+		bool canAutomate = (info.flags & ParameterInfo::kCanAutomate) != ParameterInfo::kNoFlags;
+		bool isProgramChange = (info.flags & ParameterInfo::kIsProgramChange) != ParameterInfo::kNoFlags;
+		bool isReadOnly = (info.flags & ParameterInfo::kIsReadOnly) != ParameterInfo::kNoFlags;
+		bool notOnGui = (info.flags & ParameterInfo::kIsHidden) != ParameterInfo::kNoFlags;
+		bool isBypass = (info.flags & ParameterInfo::kIsBypass) != ParameterInfo::kNoFlags;
+
+		port.is_bypass(isBypass);
+
+		port.not_on_gui(isReadOnly | notOnGui);
+
+		port.min_value(controller->normalizedParamToPlain(info.id, 0));
+		port.max_value(controller->normalizedParamToPlain(info.id, 1));
+
+		double t = controller->normalizedParamToPlain(info.id, info.defaultNormalizedValue);
+		if (std::isnan(t) || std::isinf(t))
+		{
+			t = 0;
+		}
+
+		port.default_value(t);
+
+		port.range_steps(info.stepCount == 0 ? 0 : info.stepCount + 1);
+		if (isList && !isProgramChange)
+		{
+			port.enumeration_property(true);
+			for (int i = 0; i <= info.stepCount; ++i)
+			{
+				double normalizedValue;
+				if (info.stepCount == 0)
+				{
+					normalizedValue = 0;
+				}
+				else
+				{
+					normalizedValue = i * 1.0 / (info.stepCount);
+				}
+
+				String128 strValue;
+				if (controller->getParamStringByValue(info.id, normalizedValue, strValue) == kResultOk)
+				{
+					Lv2ScalePoint scalePoint((float)controller->normalizedParamToPlain(info.id, normalizedValue), VST3::StringConvert::convert(strValue));
+					port.scale_points().push_back(scalePoint);
+				}
+			}
+		}
+		if (info.unitId != 0)
+		{
+			port.port_group(SS(info.unitId));
+		}
+		std::string units = VST3::StringConvert::convert(info.units);
+		if (units.size() != 0)
+		{
+			if (units == "dB")
+			{
+				port.units(Units::db);
+			}
+			else if (units == "%")
+			{
+				port.units(Units::pc);
+			}
+			else if (units == "Hz")
+			{
+				port.units(Units::hz);
+			}
+			else if (units == "kHz")
+			{
+				port.units(Units::khz);
+			}
+			else if (units == "sec" || units == "s")
+			{
+				port.units(Units::s);
+			}
+			else if (units == "ms")
+			{
+				port.units(Units::ms);
+			}
+			else if (units == "cent")
+			{
+				port.units(Units::cent);
+			}
+			else
+			{
+				port.units(Units::custom);
+				port.custom_units(units);
+			}
+		}
+
+		pluginInfo.controls().push_back(port);
+	}
+}
+
+static void UpdateBusInfo(IComponent *component, Lv2PluginUiInfo &pluginInfo)
+{
+
+	int audioOutputs = 0;
+	auto count = component->getBusCount(MediaTypes::kAudio, BusDirections::kOutput);
+	for (int32_t i = 0; i < count; i++)
+	{
+		BusInfo busInfo;
+		if (component->getBusInfo(MediaTypes::kAudio, BusDirections::kOutput, i, busInfo) ==
+			kResultOk)
+		{
+			auto channelName = VST3::StringConvert::convert(busInfo.name, 128);
+
+			if (busInfo.busType == BusTypes::kMain) // aux channels not currently supported.
+			{
+				audioOutputs += busInfo.channelCount;
+			}
+		}
+	}
+	pluginInfo.audio_outputs(audioOutputs);
+
+	count = component->getBusCount(MediaTypes::kAudio, BusDirections::kInput);
+	int audioInputs = 0;
+	for (int32_t i = 0; i < count; i++)
+	{
+		BusInfo busInfo;
+		if (component->getBusInfo(MediaTypes::kAudio, BusDirections::kInput, i, busInfo) ==
+			kResultOk)
+		{
+			auto channelName = VST3::StringConvert::convert(busInfo.name, 128);
+			if (busInfo.busType == BusTypes::kMain) // aux channels not currently supported.
+			{
+				audioInputs += busInfo.channelCount;
+			}
+		}
+	}
+
+	pluginInfo.audio_inputs(audioInputs);
+
+	count = component->getBusCount(MediaTypes::kEvent, BusDirections::kInput);
+	if (count >= 1)
+	{
+		pluginInfo.has_midi_input(1);
+	}
+	count = component->getBusCount(MediaTypes::kEvent, BusDirections::kOutput);
+	if (count >= 1)
+	{
+		pluginInfo.has_midi_output(1);
+	}
+}
+
 unique_ptr<Vst3PluginInfo> Vst3HostImpl::MakeDetailedPluginInfo(const PluginFactory &factory, const ClassInfo &classInfo, const std::string &path)
 {
 	IPtr<PlugProvider> plugProvider = owned(NEW PlugProvider(factory, classInfo, true));
@@ -256,8 +439,6 @@ unique_ptr<Vst3PluginInfo> Vst3HostImpl::MakeDetailedPluginInfo(const PluginFact
 		OPtr<IEditController> controller = plugProvider->getController();
 
 		FUnknownPtr<IMidiMapping> midiMapping(controller);
-
-		FUnknownPtr<IUnitInfo> iUnitInfo(controller);
 
 		unique_ptr<Vst3PluginInfo> info = make_unique<Vst3PluginInfo>();
 
@@ -277,166 +458,9 @@ unique_ptr<Vst3PluginInfo> Vst3HostImpl::MakeDetailedPluginInfo(const PluginFact
 			getVst3PluginType(classInfo));
 		pluginInfo.plugin_display_type(""); // fill this in later. VSTHost has list of name translations; we don;'t.
 
-		if (iUnitInfo)
-		{
-			auto nUnits = iUnitInfo->getUnitCount();
-			for (int i = 0; i < nUnits; ++i)
-			{
-				Steinberg::Vst::UnitInfo unitInfo;
-				iUnitInfo->getUnitInfo(i, unitInfo);
-				Lv2PluginUiPortGroup portGroup(
-					SS(unitInfo.id), VST3::StringConvert::convert(unitInfo.name), SS(unitInfo.parentUnitId), unitInfo.programListId);
+		Private::UpdateControlInfo(controller, pluginInfo);
+		UpdateBusInfo(component, pluginInfo);
 
-				pluginInfo.port_groups().push_back(portGroup);
-			}
-		}
-
-		auto nParams = controller->getParameterCount();
-		for (int32 param = 0; param < nParams; ++param)
-		{
-			Steinberg::Vst::ParameterInfo info;
-			tresult tErr = controller->getParameterInfo(param, info);
-
-			Lv2PluginUiControlPort port;
-			port.index(param);		  // used for LV2 purposes.
-			port.symbol(SS(info.id)); // Used for VST3 purposes. convert to int to specifiy a vst control id.
-
-			std::string shortTitle = VST3::StringConvert::convert(info.shortTitle);
-			std::string title = VST3::StringConvert::convert(info.title);
-			if (shortTitle.length() == 0)
-			{
-				shortTitle = title;
-			}
-			port.name(shortTitle);
-			port.comment(title);
-
-
-			// guard against NaN value (mda Talkbox)
-			port.display_priority(param);
-
-			bool isList = (info.flags & ParameterInfo::kIsList) != ParameterInfo::kNoFlags;
-			bool canAutomate = (info.flags & ParameterInfo::kCanAutomate) != ParameterInfo::kNoFlags;
-			bool isProgramChange = (info.flags & ParameterInfo::kIsProgramChange) != ParameterInfo::kNoFlags;
-			bool isReadOnly = (info.flags & ParameterInfo::kIsReadOnly) != ParameterInfo::kNoFlags;
-			bool notOnGui = (info.flags & ParameterInfo::kIsHidden) != ParameterInfo::kNoFlags;
-			bool isBypass = (info.flags & ParameterInfo::kIsBypass) != ParameterInfo::kNoFlags;
-
-			port.is_bypass(isBypass);
-
-			port.not_on_gui(isReadOnly | notOnGui);
-
-			port.min_value(controller->normalizedParamToPlain(info.id,0));
-			port.max_value(controller->normalizedParamToPlain(info.id,1));
-
-			double t = controller->normalizedParamToPlain(info.id,info.defaultNormalizedValue);
-			if (std::isnan(t) || std::isinf(t))
-			{
-				t = 0;
-			} 
-
-			port.default_value(t);
-
-			port.range_steps(info.stepCount == 0 ? 0 : info.stepCount + 1);
-			if (isList && !isProgramChange)
-			{
-				port.enumeration_property(true);
-				for (int i = 0; i <= info.stepCount; ++i)
-				{
-					double normalizedValue;
-					if (info.stepCount == 0)
-					{
-						normalizedValue = 0;
-					}
-					else
-					{
-						normalizedValue = i * 1.0 / (info.stepCount);
-					}
-
-					String128 strValue;
-					if (controller->getParamStringByValue(info.id, normalizedValue, strValue) == kResultOk)
-					{
-						Lv2ScalePoint scalePoint((float)controller->normalizedParamToPlain(info.id,normalizedValue), VST3::StringConvert::convert(strValue));
-						port.scale_points().push_back(scalePoint);
-					}
-				}
-			}
-			if (info.unitId != 0)
-			{
-				port.port_group(SS(info.unitId));
-			}
-			std::string units = VST3::StringConvert::convert(info.units);
-			if (units.size() != 0)
-			{
-				if (units == "dB")
-				{
-					port.units(Units::db);
-				} else if (units == "%")
-				{
-					port.units(Units::pc);
-				} else if (units == "Hz")
-				{
-					port.units(Units::hz);
-				} else if (units == "kHz")
-				{
-					port.units(Units::khz);
-				} else if (units == "sec" || units == "s")
-				{
-					port.units(Units::s);
-				} else if (units == "ms")
-				{
-					port.units(Units::ms);
-				} else if (units == "cent")
-				{
-					port.units(Units::cent);
-				} else {
-					port.units(Units::custom);
-					port.custom_units(units);
-				}
-			}
-
-			pluginInfo.controls().push_back(port);
-		}
-
-		auto count = component->getBusCount(MediaTypes::kAudio, BusDirections::kOutput);
-		for (int32_t i = 0; i < count; i++)
-		{
-			BusInfo busInfo;
-			if (component->getBusInfo(MediaTypes::kAudio, BusDirections::kOutput, i, busInfo) ==
-				kResultOk)
-			{
-				auto channelName = VST3::StringConvert::convert(busInfo.name, 128);
-
-				if (busInfo.busType == BusTypes::kMain) // aux channels not currently supported.
-				{
-					pluginInfo.audio_outputs(pluginInfo.audio_outputs() + busInfo.channelCount);
-				}
-			}
-		}
-		count = component->getBusCount(MediaTypes::kAudio, BusDirections::kInput);
-		for (int32_t i = 0; i < count; i++)
-		{
-			BusInfo busInfo;
-			if (component->getBusInfo(MediaTypes::kAudio, BusDirections::kInput, i, busInfo) ==
-				kResultOk)
-			{
-				auto channelName = VST3::StringConvert::convert(busInfo.name, 128);
-
-				if (busInfo.busType == BusTypes::kMain) // aux channels not currently supported.
-				{
-					pluginInfo.audio_inputs(pluginInfo.audio_inputs() + busInfo.channelCount);
-				}
-			}
-		}
-		count = component->getBusCount(MediaTypes::kEvent, BusDirections::kInput);
-		if (count >= 1)
-		{
-			pluginInfo.has_midi_input(1);
-		}
-		count = component->getBusCount(MediaTypes::kEvent, BusDirections::kOutput);
-		if (count >= 1)
-		{
-			pluginInfo.has_midi_output(1);
-		}
 		return info;
 	}
 }
@@ -525,8 +549,8 @@ const Vst3Host::PluginList &Vst3HostImpl::RescanPlugins()
 
 	PluginList list;
 
-	//pathList.insert(pathList.begin(),"/home/pi/.vst3/mda-vst3.vst3");
-	
+	// pathList.insert(pathList.begin(),"/home/pi/.vst3/mda-vst3.vst3");
+
 	for (auto &path : pathList)
 	{
 		if (path == std::string("/home/pi/.vst3/mda-vst3.vst3"))
@@ -571,26 +595,29 @@ std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(long instanceId, const st
 
 static inline uint8_t Hex(char c)
 {
-	if (c >= '0' && c <= '9') return c-'0';
-	if (c >= 'a' && c <= 'z') return c-'a'+10;
-	if (c >= 'A' && c <= 'Z') return c-'A'+10;
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'z')
+		return c - 'a' + 10;
+	if (c >= 'A' && c <= 'Z')
+		return c - 'A' + 10;
 
 	throw Vst3Exception("Invalid state bundle.");
 }
 
-static std::vector<uint8_t> HexToByteArray(const std::string&hexState)
+static std::vector<uint8_t> HexToByteArray(const std::string &hexState)
 {
 	std::vector<uint8_t> result;
-	result.resize(hexState.length()/2);
+	result.resize(hexState.length() / 2);
 	for (int i = 0; i < result.size(); ++i)
 	{
-		result[i] = Hex(hexState[i*2])*16 + Hex(hexState[i*2+1]);
+		result[i] = Hex(hexState[i * 2]) * 16 + Hex(hexState[i * 2 + 1]);
 	}
 	return result;
 }
-std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(PedalBoardItem&pedalBoardItem, IHost*pHost)
+std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(PedalBoardItem &pedalBoardItem, IHost *pHost)
 {
-	std::unique_ptr<Vst3Effect> result = CreatePlugin(pedalBoardItem.instanceId(),pedalBoardItem.uri(),pHost);
+	std::unique_ptr<Vst3Effect> result = CreatePlugin(pedalBoardItem.instanceId(), pedalBoardItem.uri(), pHost);
 	auto pluginInfo = this->GetPluginInfo(pedalBoardItem.uri());
 	if (!pluginInfo)
 	{
@@ -600,8 +627,10 @@ std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(PedalBoardItem&pedalBoard
 	{
 		std::vector<uint8_t> state = HexToByteArray(pedalBoardItem.vstState());
 		result->SetState(state);
-
-		for (ControlValue &controlValue: pedalBoardItem.controlValues())
+	}
+	else
+	{
+		for (const ControlValue &controlValue : pedalBoardItem.controlValues())
 		{
 			int32_t index = -1;
 			for (size_t i = 0; i < pluginInfo->controls().size(); ++i)
@@ -614,34 +643,38 @@ std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(PedalBoardItem&pedalBoard
 			}
 			if (index != -1)
 			{
-				float value = result->GetControlValue(index);
-				controlValue.value(value);
+				result->SetControl(index, controlValue.value());
 			}
-			
-		}
-
-	} else {
-		for (const ControlValue &controlValue: pedalBoardItem.controlValues())
-		{
-			int32_t index = -1;
-			for (size_t i = 0; i < pluginInfo->controls().size(); ++i)
-			{
-				if (pluginInfo->controls()[i].symbol() == controlValue.key())
-				{
-					index = (int32_t)(pluginInfo->controls()[i].index());
-					break;
-				}
-			}
-			if (index != -1)
-			{
-				result->SetControl(index,controlValue.value());
-			}
-			
 		}
 	}
+	for (ControlValue &controlValue : pedalBoardItem.controlValues())
+	{
+		int32_t index = -1;
+		for (size_t i = 0; i < pluginInfo->controls().size(); ++i)
+		{
+			if (pluginInfo->controls()[i].symbol() == controlValue.key())
+			{
+				index = (int32_t)(pluginInfo->controls()[i].index());
+				break;
+			}
+		}
+		if (index != -1)
+		{
+			float t = result->GetControlValue(index);
+			if (std::isnan(t) || std::isinf(t))
+			{
+				t = 0;
+			}
+			controlValue.value(t);
+		} else {
+			Lv2Log::warning(SS(pedalBoardItem.pluginName() << ": Control key not found. key=" << controlValue.key() ));
+		}
+	}
+
+	result->GetCurrentPluginInfo();
+
 	return result;
 }
-
 
 #include <fstream>
 
@@ -656,7 +689,6 @@ void Vst3HostImpl::LoadPluginCache()
 
 			reader.read(&(this->pluginList));
 		}
-	
 	}
 }
 void Vst3HostImpl::SavePluginCache()
@@ -670,14 +702,12 @@ void Vst3HostImpl::SavePluginCache()
 
 			writer.write(this->pluginList);
 		}
-		
 	}
-
 }
 
-Lv2PluginUiInfo *Vst3HostImpl::GetPluginInfo(const std::string&uri)
+Lv2PluginUiInfo *Vst3HostImpl::GetPluginInfo(const std::string &uri)
 {
-	for (const auto &pluginInfo: pluginList)
+	for (const auto &pluginInfo : pluginList)
 	{
 		if (pluginInfo->pluginInfo_.uri() == uri)
 		{
@@ -686,4 +716,3 @@ Lv2PluginUiInfo *Vst3HostImpl::GetPluginInfo(const std::string&uri)
 	}
 	return nullptr;
 }
-		

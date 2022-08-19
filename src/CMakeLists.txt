@@ -9,20 +9,19 @@ include(FindPkgConfig)
 
 #################################################################
 # ENABLE/DISABLE VST3 Support.
-# Disabled, pending Steinberg licensing agreement implementation
-# and approval..
+# Disabled, pending approval of Steinberg VST3 License.
 # Do not enable unless you have non-GPL3 access to the Steinberg 
 # SDK.
 #################################################################
 
-set (ENABLE_VST3 0)
+set (ENABLE_VST3 1)
 
 
 if (ENABLE_VST3) 
     set (VST3PATH  "../../vst3sdk")
     message(STATUS " VST3 Support Enabled")
     set (VST3_INCLUDES "${VST3PATH}")
-
+    set (VST3_LIBRARIES vst3_lib dl)
     if (CMAKE_BUILD_TYPE MATCHES Debug)
         add_compile_definitions("DEVELOPMENT")
     else()
@@ -34,6 +33,7 @@ if (ENABLE_VST3)
 else()
     message(STATUS " VST3 Support Disabled")
     set (VST3_INCLUDES "")
+    set (VST3_LIBRARIES "")
 endif()
 
 ########### VST 3 SUPPORT #############################################3
@@ -218,15 +218,12 @@ set (PIPEDAL_INCLUDES
 
 set(PIPEDAL_LIBS libpipedald 
     pthread atomic stdc++fs asound avahi-common avahi-client systemd
-     ${LILV_0_LIBRARIES} 
-     # ${JACK_LIBRARIES} 
+    ${VST3_LIBRARIES}
+    ${LILV_0_LIBRARIES} 
+     # ${JACK_LIBRARIES} - pending delete for JACK support.
      ${LIBNL3_LIBRARIES} 
       )
 
-if (VST3_ENABLED)
-
-    set (PIPEDAL_LIBS vst3_lib ${PIPEDAL_LIBS})
-endif()
 
 
 ##########################
