@@ -14,7 +14,7 @@ include(FindPkgConfig)
 # SDK.
 #################################################################
 
-set (ENABLE_VST3 1)
+set (ENABLE_VST3 0)
 
 
 if (ENABLE_VST3) 
