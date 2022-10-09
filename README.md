@@ -1,7 +1,8 @@
 
 <img src='docs/GithubBanner.png' width="100%" />
 
-Download: <a href='docs/download.md'>v1.0.15</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
+Download: <a href='https://rerdavies.github.io/pipedal/Installing.html'>v1.0.15</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
+
 
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
@@ -23,22 +24,22 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 ----
 &nbsp;
 
-### [System Requirements](docs/SystemRequirements.md)
-### [Installing PiPedal](docs/Installing.md)
-### [Configuring PiPedal After Installation](docs/Configuring.md)
-### [Choosing a USB Audio Adapter](docs/ChoosingAUsbAudioAdapter.md)
-### [Optimizing Audio Latency](docs/AudioLatency.md)
-### [Command-Line Configuration of PiPedal](docs/CommandLine.md)
-### [Changing the Web Server Port](docs/ChangingTheWebServerPort.md)
-### [Using LV2 Audio Plugins](docs/UsingLv2Plugins.md)
-### [Which LV2 Plugins does PiPedal support?](docs/WhichLv2PluginsAreSupported.md)
+### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.md)
+### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.md)
+### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.md)
+### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.md)
+### [Optimizing Audio Latency](https://rerdavies.github.io/pipedal/AudioLatency.md)
+### [Command-Line Configuration of PiPedal](https://rerdavies.github.io/pipedal/CommandLine.md)
+### [Changing the Web Server Port](https://rerdavies.github.io/pipedal/ChangingTheWebServerPort.md)
+### [Using LV2 Audio Plugins](https://rerdavies.github.io/pipedal/UsingLv2Plugins.md)
+### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.md)
 
  
 
-### [Building PiPedal from Source](docs/BuildingPiPedalFromSource.md)
-### [Build Prerequisites](docs/BuildPrerequisites.md)
-### [The Build System](docs/TheBuildSystem.md)
-### [How to Debug PiPedal](docs/Debugging.md)
+### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.md)
+### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.md)
+### [The Build System](https://rerdavies.github.io/pipedal/TheBuildSystem.md)
+### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.md)
 
 
 
