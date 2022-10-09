@@ -1,8 +1,9 @@
 
-<img src='docs/GithubBanner.png' width="100%" />
+<img src='docs/GithubBanner.png' width="100%" /><br/>
 
-Download: <a href='https://rerdavies.github.io/pipedal/Installing.html'>v1.0.15</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
-
+Download: <a href='https://rerdavies.github.io/pipedal/Installing.html'>v1.0.15</a><br/>
+Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).<br/>
+Documentation: [https://rerdavies.github.io/pipedal/documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
@@ -24,22 +25,22 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 ----
 &nbsp;
 
-### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.md)
-### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.md)
-### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.md)
-### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.md)
-### [Optimizing Audio Latency](https://rerdavies.github.io/pipedal/AudioLatency.md)
-### [Command-Line Configuration of PiPedal](https://rerdavies.github.io/pipedal/CommandLine.md)
-### [Changing the Web Server Port](https://rerdavies.github.io/pipedal/ChangingTheWebServerPort.md)
+### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.html)
+### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.html)
+### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.html)
+### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.html)
+### [Optimizing Audio Latency](https://rerdavies.github.io/pipedal/AudioLatency.html)
+### [Command-Line Configuration of PiPedal](https://rerdavies.github.io/pipedal/CommandLine.html)
+### [Changing the Web Server Port](https://rerdavies.github.io/pipedal/ChangingTheWebServerPort.html)
 ### [Using LV2 Audio Plugins](https://rerdavies.github.io/pipedal/UsingLv2Plugins.md)
-### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.md)
+### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.html)
 
  
 
-### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.md)
-### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.md)
-### [The Build System](https://rerdavies.github.io/pipedal/TheBuildSystem.md)
-### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.md)
+### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.html)
+### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.html)
+### [The Build System](https://rerdavies.github.io/pipedal/TheBuildSystem.html)
+### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.html)
 
 
 
