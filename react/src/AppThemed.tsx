@@ -584,7 +584,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             displayState: newState,
             canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted()
         });
-        if (newState == State.Ready)
+        if (newState === State.Ready)
         {
             if (!this.onboardingShown)
             {
