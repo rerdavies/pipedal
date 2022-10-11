@@ -122,10 +122,10 @@ void EnableService()
 void DisableService()
 {
     #if INSTALL_JACK_SERVICE || UNINSTALL_JACK_SERVICE
-    if (sysExec(SYSTEMCTL_BIN " disable " JACK_SERVICE ".service") != EXIT_SUCCESS)
+    if (silentSysExec(SYSTEMCTL_BIN " disable " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
         #if INSTALL_JACK_SERVICE
-        cout << "Error: Failed to disable the " JACK_SERVICE " service.";
+        // cout << "Error: Failed to disable the " JACK_SERVICE " service.";
         #endif
     }
     #endif
@@ -165,10 +165,10 @@ void StopService(bool excludeShutdownService = false)
 #endif
     }
 #if INSTALL_JACK_SERVICE || UNINSTALL_JACK_SERVICE
-    if (sysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
+    if (silentSysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
         #if INSTALL_JACK_SERVICE
-        cout << PiPedalException("Failed to stop the " JACK_SERVICE " service.");
+        // cout << PiPedalException("Failed to stop the " JACK_SERVICE " service.");
         #endif
     }
 #endif

@@ -1,7 +1,7 @@
 
 <img src='docs/GithubBanner.png' width="100%" />
 
-Download: <a href='docs/download.md'>v1.0.15</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
+Download: <a href='docs/download.md'>v1.0.16</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.

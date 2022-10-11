@@ -37,6 +37,7 @@
 
 #include "Lv2Log.hpp"
 #include <limits>
+#include "ss.hpp"
 
 #undef ALSADRIVER_CONFIG_DBG
 
@@ -184,7 +185,7 @@ namespace pipedal
     private:
         void OnShutdown()
         {
-            Lv2Log::info("Jack Audio Server has shut down.");
+            Lv2Log::info("ALSA Audio Server has shut down.");
         }
 
         static void
@@ -1091,9 +1092,10 @@ namespace pipedal
                 int sourceIndex = IndexFromPortName(x);
                 if (sourceIndex >= captureBuffers.size())
                 {
-                    throw PiPedalArgumentException("Invalid input port.");
+                    Lv2Log::error(SS("Invalid audio input port: " << x));
+                } else {
+                    this->activeCaptureBuffers[ix++] = this->captureBuffers[sourceIndex];
                 }
-                this->activeCaptureBuffers[ix++] = this->captureBuffers[sourceIndex];
             }
 
             this->activePlaybackBuffers.resize(channelSelection.GetOutputAudioPorts().size());
@@ -1104,9 +1106,10 @@ namespace pipedal
                 int sourceIndex = IndexFromPortName(x);
                 if (sourceIndex >= playbackBuffers.size())
                 {
-                    throw PiPedalArgumentException("Invalid output port.");
+                    Lv2Log::error(SS("Invalid audio output port: " << x));
+                } else {
+                    this->activePlaybackBuffers[ix++] = this->playbackBuffers[sourceIndex];
                 }
-                this->activePlaybackBuffers[ix++] = this->playbackBuffers[sourceIndex];
             }
 
             audioThread = new std::jthread([this]()
@@ -1598,15 +1601,15 @@ namespace pipedal
             }
 
             inputAudioPorts.clear();
-            for (unsigned int i = 0; i < playbackChannels; ++i)
+            for (unsigned int i = 0; i < captureChannels; ++i)
             {
-                inputAudioPorts.push_back(SS("system::playback_" << i));
+                inputAudioPorts.push_back(SS("system::capture_" << i));
             }
 
             outputAudioPorts.clear();
-            for (unsigned int i = 0; i < captureChannels; ++i)
+            for (unsigned int i = 0; i < playbackChannels; ++i)
             {
-                outputAudioPorts.push_back(SS("system::capture_" << i));
+                outputAudioPorts.push_back(SS("system::playback_" << i));
             }
 
             result = true;

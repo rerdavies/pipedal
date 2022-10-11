@@ -451,6 +451,8 @@ export interface PiPedalModel {
     showAndroidDonationActivity(): void;
     getAndroidHostVersion(): string;
     chooseNewDevice(): void;
+
+    hasConfiguration(): boolean;
 };
 
 class PiPedalModelImpl implements PiPedalModel {
@@ -2315,7 +2317,11 @@ class PiPedalModelImpl implements PiPedalModel {
         if (this.androidHost) {
             return this.androidHost.chooseNewDevice();
         }
+    }
 
+    hasConfiguration(): boolean {
+        var jackConfig = this.jackConfiguration.get();
+        return jackConfig.isValid;
     }
 
 };

@@ -227,14 +227,18 @@ void PiPedalModel::Load()
         try
         {
             jackHost->Open(this->jackServerSettings, selection);
-
-            std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
-            this->lv2PedalBoard = lv2PedalBoard;
-            jackHost->SetPedalBoard(lv2PedalBoard);
-        }
-        catch (PiPedalException &e)
+            try {
+                std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
+                this->lv2PedalBoard = lv2PedalBoard;
+                jackHost->SetPedalBoard(lv2PedalBoard);
+            }
+            catch (const std::exception &e)
+            {
+                Lv2Log::error("Failed to load initial plugin. (%s)", e.what());
+            }
+        } catch (std::exception &e)
         {
-            Lv2Log::error("Failed to load initial plugin. (%s)", e.what());
+            Lv2Log::error("Failed to start audio device. %s", e.what());
         }
     }
     else

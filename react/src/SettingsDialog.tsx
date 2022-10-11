@@ -26,6 +26,7 @@ import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import ButtonBase from "@mui/material/ButtonBase";
 import AppBar from '@mui/material/AppBar';
+import Button from '@mui/material/Button';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material//ArrowBack';
 import JackConfiguration, { JackChannelSelection } from './Jack';
@@ -42,7 +43,7 @@ import WifiConfigDialog from './WifiConfigDialog';
 import WifiDirectConfigDialog from './WifiDirectConfigDialog';
 import DialogEx from './DialogEx'
 import GovernorSettings from './GovernorSettings';
-import {AlsaMidiDeviceInfo} from './AlsaMidiDeviceInfo';
+import { AlsaMidiDeviceInfo } from './AlsaMidiDeviceInfo';
 
 import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
@@ -52,6 +53,7 @@ import { WithStyles, withStyles } from '@mui/styles';
 
 interface SettingsDialogProps extends WithStyles<typeof styles> {
     open: boolean;
+    onboarding: boolean;
     onClose: () => void;
 
 
@@ -65,6 +67,7 @@ interface SettingsDialogState {
     jackServerSettings: JackServerSettings;
     jackStatus?: JackHostStatus;
     governorSettings: GovernorSettings;
+    continueDisabled: boolean;
 
     wifiConfigSettings: WifiConfigSettings;
     wifiDirectConfigSettings: WifiDirectConfigSettings;
@@ -167,6 +170,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 wifiConfigSettings: this.model.wifiConfigSettings.get(),
                 wifiDirectConfigSettings: this.model.wifiDirectConfigSettings.get(),
                 governorSettings: this.model.governorSettings.get(),
+                continueDisabled: true,
                 showWifiConfigDialog: false,
                 showWifiDirectConfigDialog: false,
                 showGovernorSettingsDialog: false,
@@ -270,7 +274,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
         }
         handleJackServerSettingsChanged(): void {
             this.setState({
-                jackServerSettings: this.model.jackServerSettings.get()
+                jackServerSettings: this.model.jackServerSettings.get(),
+                continueDisabled: !this.model.jackServerSettings.get().valid
             });
         }
 
@@ -498,15 +503,30 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <AppBar className={classes.dialogAppBar} >
-                                <Toolbar>
-                                    <IconButton edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
-                                    >
-                                        <ArrowBackIcon />
-                                    </IconButton>
-                                    <Typography variant="h6" className={classes.dialogTitle}>
-                                        Settings
-                                    </Typography>
-                                </Toolbar>
+                                {
+                                    this.props.onboarding ?
+                                        (
+                                            <Toolbar>
+                                                <Typography variant="h6" className={classes.dialogTitle}>
+                                                    Initial Configuration
+                                                </Typography>
+                                            </Toolbar>
+
+                                        )
+                                        :
+                                        (
+                                            <Toolbar>
+                                                <IconButton edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
+                                                >
+                                                    <ArrowBackIcon />
+                                                </IconButton>
+                                                <Typography variant="h6" className={classes.dialogTitle}>
+                                                    Settings
+                                                </Typography>
+                                            </Toolbar>
+
+                                        )
+                                }
                             </AppBar>
                         </div>
                         <div style={{
@@ -515,23 +535,39 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         }}
                         >
                             <div >
-                                <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
-                                    STATUS
-                                </Typography>
-                                {(!isConfigValid) ?
-                                    (
-                                        <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                            <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
-                                            <Typography display="block" variant="caption" color="textSecondary">Governor: </Typography>
-                                        </div>
-                                    ) :
-                                    (
-                                        <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                            {JackHostStatus.getDisplayView("", this.state.jackStatus)}
-                                            {JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
-                                        </div>
-                                    )
-                                }
+                                {this.props.onboarding ? 
+                                (
+                                    <div>
+                                        <Typography display="block" variant="caption" color="textSecondary" style={{paddingLeft: 24,paddingBottom: 8 }}>
+                                            Select and configure an audio device. You may optionally configure MIDI inputs, and set up a Wi-Fi Direct Hotspot now as well.
+                                        </Typography>
+                                        <Typography display="block" variant="caption" color="textSecondary" style={{paddingLeft: 24,paddingBottom: 8 }}>
+                                            Access and modify these settings later by selecting the <i>Settings</i> menu item on the main menu.
+                                        </Typography>
+                                    </div>
+                                ):
+                                (
+                                    <div>
+
+                                        <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
+                                                STATUS
+                                        </Typography>
+                                        {(!isConfigValid) ?
+                                            (
+                                                <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                                    <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
+                                                    <Typography display="block" variant="caption" color="textSecondary">Governor: </Typography>
+                                                </div>
+                                            ) :
+                                            (
+                                                <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                                    {JackHostStatus.getDisplayView("", this.state.jackStatus)}
+                                                    {JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
+                                                </div>
+                                            )
+                                        }
+                                    </div>
+                                )}
 
                                 {this.state.jackConfiguration.errorState !== "" &&
                                     (
@@ -650,79 +686,90 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     </div>
                                 </ButtonBase>
                             </div>
-                            <Divider />
-                            <div >
-                                <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">SYSTEM</Typography>
+                            { (!this.props.onboarding) ? (
+                                <div >
+                                    <Divider />
+                                    <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">SYSTEM</Typography>
 
-                                <ButtonBase
-                                    style={{ display: "none" }}
-                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    onClick={() => this.handleShowGovernorSettingsDialogDialog()}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            CPU Governor</Typography>
-                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            {this.state.governorSettings.governor}
-                                        </Typography>
-
-                                    </div>
-                                </ButtonBase>
-
-                                <ButtonBase
-                                    className={classes.setting}
-                                    onClick={() => { this.setState({ showStatusMonitorDialog: true }); }}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <div style={{
-                                            width: "100%", display: "flex", flexDirection: "row", flexWrap: "nowrap",
-                                            alignItems: "center", maxWidth: 400
-                                        }}>
-                                            <div style={{ flex: "1 1 auto" }}>
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                    Show status monitor on main screen.</Typography>
-                                            </div>
-                                            <div style={{ flex: "0 0 auto" }}>
-                                                <Switch
-                                                    checked={this.state.showStatusMonitor}
-                                                    onChange={
-                                                        (e) => { this.model.setShowStatusMonitor(e.target.checked); }
-                                                    }
-                                                />
-                                            </div>
+                                    <ButtonBase
+                                        style={{ display: "none" }}
+                                        className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                        onClick={() => this.handleShowGovernorSettingsDialogDialog()}  >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                CPU Governor</Typography>
+                                            <Typography display="block" variant="caption" noWrap color="textSecondary">
+                                                {this.state.governorSettings.governor}
+                                            </Typography>
 
                                         </div>
-                                    </div>
-                                </ButtonBase>
+                                    </ButtonBase>
 
-                                <ButtonBase className={classes.setting} disabled={disableShutdown}
-                                    onClick={() => this.handleRestart()}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        {
-                                            this.state.restarting ? (
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textSecondary" noWrap>Rebooting...</Typography>
-                                            ) : (
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Reboot PiPedal</Typography>
-                                            )
-                                        }
-                                    </div>
-                                </ButtonBase>
+                                    <ButtonBase
+                                        className={classes.setting}
+                                        onClick={() => { this.setState({ showStatusMonitorDialog: true }); }}  >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <div style={{
+                                                width: "100%", display: "flex", flexDirection: "row", flexWrap: "nowrap",
+                                                alignItems: "center", maxWidth: 400
+                                            }}>
+                                                <div style={{ flex: "1 1 auto" }}>
+                                                    <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                        Show status monitor on main screen.</Typography>
+                                                </div>
+                                                <div style={{ flex: "0 0 auto" }}>
+                                                    <Switch
+                                                        checked={this.state.showStatusMonitor}
+                                                        onChange={
+                                                            (e) => { this.model.setShowStatusMonitor(e.target.checked); }
+                                                        }
+                                                    />
+                                                </div>
 
-                                <ButtonBase className={classes.setting} disabled={disableShutdown}
-                                    onClick={() => this.handleShutdown()}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        {
-                                            this.state.shuttingDown ? (
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textSecondary" noWrap>Shutting down...</Typography>
-                                            ) : (
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Shut down</Typography>
-                                            )
-                                        }
-                                    </div >
-                                </ButtonBase>
-                            </div>
+                                            </div>
+                                        </div>
+                                    </ButtonBase>
+
+                                    <ButtonBase className={classes.setting} disabled={disableShutdown}
+                                        onClick={() => this.handleRestart()}  >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            {
+                                                this.state.restarting ? (
+                                                    <Typography className={classes.primaryItem} display="block" variant="body2" color="textSecondary" noWrap>Rebooting...</Typography>
+                                                ) : (
+                                                    <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Reboot PiPedal</Typography>
+                                                )
+                                            }
+                                        </div>
+                                    </ButtonBase>
+
+                                    <ButtonBase className={classes.setting} disabled={disableShutdown}
+                                        onClick={() => this.handleShutdown()}  >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            {
+                                                this.state.shuttingDown ? (
+                                                    <Typography className={classes.primaryItem} display="block" variant="body2" color="textSecondary" noWrap>Shutting down...</Typography>
+                                                ) : (
+                                                    <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Shut down</Typography>
+                                                )
+                                            }
+                                        </div >
+                                    </ButtonBase>
+                                </div>
+                            ): (
+                                <div>
+                                    <Divider/>
+                                    <div style={{display: "grid", placeContent: "end", maxWidth: 550, marginLeft: 16,marginRight: 16,
+                                    marginTop: 16,marginBottom: 16}}>
+                                        <Button variant="outlined" disabled={this.state.continueDisabled} style={{width: 120}}>Continue</Button>      
+                                    </div>
+                                </div>
+                            )
+                        }
 
 
 

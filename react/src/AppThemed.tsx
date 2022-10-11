@@ -249,6 +249,7 @@ type AppState = {
     alertDialogOpen: boolean;
     alertDialogMessage: string;
     isSettingsDialogOpen: boolean;
+    onboarding: boolean;
     isDebug: boolean;
 
     renameBankDialogOpen: boolean;
@@ -301,6 +302,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             alertDialogMessage: "",
             presetName: this.model_.presets.get().getSelectedText(),
             isSettingsDialogOpen: false,
+            onboarding: false,
             isDebug: true,
             presetChanged: this.model_.presets.get().presetChanged,
             banks: this.model_.banks.get(),
@@ -383,13 +385,24 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     }
     handleSettingsDialogClose() {
         this.setState({
-            isSettingsDialogOpen: false
+            isSettingsDialogOpen: false,
+            onboarding: false
         });
     }
     handleDrawerSettingsClick() {
         this.setState({
             isDrawerOpen: false,
-            isSettingsDialogOpen: true
+            isSettingsDialogOpen: true,
+            onboarding: false
+        });
+
+    }
+
+    handDisplayOnboarding() {
+        this.setState({
+            isDrawerOpen: false,
+            isSettingsDialogOpen: true,
+            onboarding: true
         });
 
     }
@@ -561,6 +574,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     setErrorMessage(message: string): void {
         this.setState({ errorMessage: message });
     }
+
+    onboardingShown: boolean =  false;
+
     setDisplayState(newState: State): void {
         this.updateOverscroll();
 
@@ -568,6 +584,17 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             displayState: newState,
             canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted()
         });
+        if (newState == State.Ready)
+        {
+            if (!this.onboardingShown)
+            {
+                this.onboardingShown = true;
+                if (!this.model_.hasConfiguration())
+                {
+                    this.handDisplayOnboarding();
+                }
+            }
+        }
     }
 
     showDrawer() {
@@ -778,7 +805,10 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 </main>
                 <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
                 <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
-                <SettingsDialog open={this.state.isSettingsDialogOpen} onClose={() => this.handleSettingsDialogClose()} />
+                <SettingsDialog 
+                    open={this.state.isSettingsDialogOpen} 
+                    onboarding={this.state.onboarding}
+                    onClose={() => this.handleSettingsDialogClose()} />
                 <RenameDialog
                     open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
                     defaultName={this.model_.banks.get().getSelectedEntryName()}
