@@ -3,6 +3,13 @@
 <img src="GithubBanner.png" width="100%"/>
 <a href="Installing.html"><i>v1.0.16</i></a>
 
+&nbsp;
+
+To read the PiPedal documentation, click [here](Documentation.md).
+
+To download PiPedal, click [here](download.md).
+
+To sponsor the PiPedal project, click [here](https://github.com/sponsors/rerdavies).
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
 PiPedal running on a Raspberry Pi 4 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
@@ -18,11 +25,5 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 
 {% include gallery.html %}
 
-&nbsp;
 
-To read the PiPedal documentation, click [here](Documentation.md).
-
-To download PiPedal, click [here](download.md).
-
-To sponsor the PiPedal project, click [here](https://github.com/sponsors/rerdavies).
 
