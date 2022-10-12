@@ -88,17 +88,17 @@ namespace pipedal
 
         static AudioFormat leFormats[]{
             {"32-bit float little-endian", SND_PCM_FORMAT_FLOAT_LE},
-            {"24-bit little-endian in 3bytes format", SND_PCM_FORMAT_S24_3LE},
             {"32-bit integer little-endian", SND_PCM_FORMAT_S32_LE},
             {"24-bit little-endian", SND_PCM_FORMAT_S24_LE},
+            {"24-bit little-endian in 3bytes format", SND_PCM_FORMAT_S24_3LE},
             {"16-bit little-endian", SND_PCM_FORMAT_S16_LE},
 
         };
         static AudioFormat beFormats[]{
             {"32-bit float big-endian", SND_PCM_FORMAT_FLOAT_BE},
-            {"24-bit big-endian in 3bytes format", SND_PCM_FORMAT_S24_3BE},
             {"32-bit integer big-endian", SND_PCM_FORMAT_S32_BE},
             {"24-bit big-endian", SND_PCM_FORMAT_S24_BE},
+            {"24-bit big-endian in 3bytes format", SND_PCM_FORMAT_S24_3BE},
             {"16-bit big-endian", SND_PCM_FORMAT_S16_BE},
         };
 
@@ -491,6 +491,47 @@ namespace pipedal
             snd_pcm_dump(playbackHandle, snd_output);
 #endif
         }
+
+        int32_t EndianSwap(int32_t v)
+        {
+            int32_t b0 = v & 0xFF;
+            int32_t b1 = (v >> 8) & 0xFF;
+            int32_t b2 = (v >> 16) & 0xFF;
+            int32_t b3 = (v >> 24) & 0xFF;
+
+            return (b0 << 24) | (b1 << 16) | (b2 << 8) | (b3);
+        }
+        int16_t EndianSwap(int16_t v)
+        {
+            int16_t b0 = v & 0xFF;
+            int16_t b1 = (v >> 8) & 0xFF;
+
+            return (b0 << 8) | (b1);
+        }
+        void EndianSwap(float*p,float v_)
+        {
+            int32_t v = EndianSwap(*(int32_t*)&v_);
+            *(int32_t*)p = v;
+        }
+
+        void CopyCaptureFloatBe(size_t frames)
+        {
+            int32_t *p = (int32_t *)rawCaptureBuffer;
+
+            std::vector<float *> &buffers = this->captureBuffers;
+            int channels = this->captureChannels;
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    int32_t v = EndianSwap(*p);
+                    ++p;
+
+                    *(int32_t*)(buffers[channel]+frame) = v;
+                }
+            }
+        }
+
         void CopyCaptureFloatLe(size_t frames)
         {
             float *p = (float *)rawCaptureBuffer;
@@ -503,6 +544,39 @@ namespace pipedal
                 {
                     float v = *p++;
                     buffers[channel][frame] = v;
+                }
+            }
+        }
+
+        void CopyCaptureS16Le(size_t frames)
+        {
+            int16_t *p = (int16_t *)rawCaptureBuffer;
+
+            std::vector<float *> &buffers = this->captureBuffers;
+            int channels = this->captureChannels;
+            constexpr float scale = 1.0f / (std::numeric_limits<int16_t>::max() + 1L);
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    int16_t v = *p++;
+                    buffers[channel][frame] = scale * v;
+                }
+            }
+        }
+        void CopyCaptureS16Be(size_t frames)
+        {
+            int16_t *p = (int16_t *)rawCaptureBuffer;
+
+            std::vector<float *> &buffers = this->captureBuffers;
+            int channels = this->captureChannels;
+            constexpr float scale = 1.0f / (std::numeric_limits<int16_t>::max() + 1L);
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    int16_t v = EndianSwap(*p++);
+                    buffers[channel][frame] = scale * v;
                 }
             }
         }
@@ -523,6 +597,128 @@ namespace pipedal
                 }
             }
         }
+        void CopyCaptureS24_3Le(size_t frames)
+        {
+            uint8_t *p = (uint8_t*)rawCaptureBuffer;
+
+            std::vector<float *> &buffers = this->captureBuffers;
+            int channels = this->captureChannels;
+            constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1L);
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    int32_t v = (p[0] << 8)+(p[1] << 16) | (p[2] << 24);
+                    p += 3;
+                    buffers[channel][frame] = scale * v;
+                }
+            }
+        }
+        void CopyCaptureS24_3Be(size_t frames)
+        {
+            uint8_t *p = (uint8_t*)rawCaptureBuffer;
+
+            std::vector<float *> &buffers = this->captureBuffers;
+            int channels = this->captureChannels;
+            constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1L);
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    int32_t v = (p[2] << 8)+(p[1] << 16) | (p[0] << 24);
+                    p += 3;
+                    buffers[channel][frame] = scale * v;
+                }
+            }
+        }
+        void CopyCaptureS24Le(size_t frames)
+        {
+            int32_t *p = (int32_t *)rawCaptureBuffer;
+
+            std::vector<float *> &buffers = this->captureBuffers;
+            int channels = this->captureChannels;
+            constexpr float scale = 1.0f / (0x00FFFFFFL + 1L);
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    int32_t v = *p++;
+                    buffers[channel][frame] = scale * v;
+                }
+            }
+        }
+        void CopyCaptureS24Be(size_t frames)
+        {
+            int32_t *p = (int32_t *)rawCaptureBuffer;
+
+            std::vector<float *> &buffers = this->captureBuffers;
+            int channels = this->captureChannels;
+            constexpr float scale = 1.0f / (0x00FFFFFFL + 1L);
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    int32_t v = EndianSwap(*p++);
+                    buffers[channel][frame] = scale * v;
+                }
+            }
+        }
+        void CopyCaptureS32Be(size_t frames)
+        {
+            int32_t *p = (int32_t *)rawCaptureBuffer;
+
+            std::vector<float *> &buffers = this->captureBuffers;
+            int channels = this->captureChannels;
+            constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1L);
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    int32_t v = EndianSwap(*p++);
+                    buffers[channel][frame] = scale * v;
+                }
+            }
+        }
+        void CopyPlaybackS16Le(size_t frames)
+        {
+            int16_t *p = (int16_t *)rawPlaybackBuffer;
+
+            std::vector<float *> &buffers = this->playbackBuffers;
+            int channels = this->playbackChannels;
+            constexpr float scale = std::numeric_limits<int16_t>::max();
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    float v = buffers[channel][frame];
+                    if (v > 1.0f)
+                        v = 1.0f;
+                    else if (v < -1.0f)
+                        v = -1.0f;
+                    *p++ = (int16_t)(scale * v);
+                }
+            }
+        }
+        void CopyPlaybackS16Be(size_t frames)
+        {
+            int16_t *p = (int16_t *)rawPlaybackBuffer;
+
+            std::vector<float *> &buffers = this->playbackBuffers;
+            int channels = this->playbackChannels;
+            constexpr float scale = std::numeric_limits<int16_t>::max();
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    float v = buffers[channel][frame];
+                    if (v > 1.0f)
+                        v = 1.0f;
+                    else if (v < -1.0f)
+                        v = -1.0f;
+                    *p++ = EndianSwap((int16_t)(scale * v));
+                }
+            }
+        }
         void CopyPlaybackS32Le(size_t frames)
         {
             int32_t *p = (int32_t *)rawPlaybackBuffer;
@@ -537,12 +733,123 @@ namespace pipedal
                     float v = buffers[channel][frame];
                     if (v > 1.0f)
                         v = 1.0f;
-                    if (v < -1.0f)
+                    else if (v < -1.0f)
                         v = -1.0f;
                     *p++ = (int32_t)(scale * v);
                 }
             }
         }
+        void CopyPlaybackS24Le(size_t frames)
+        {
+            // 24 bits in low bits of an int32_t.
+
+            int32_t *p = (int32_t *)rawPlaybackBuffer;
+
+            std::vector<float *> &buffers = this->playbackBuffers;
+            int channels = this->playbackChannels;
+            constexpr float scale = 0x00FFFFFF;
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    float v = buffers[channel][frame];
+                    if (v > 1.0f)
+                        v = 1.0f;
+                    else if (v < -1.0f)
+                        v = -1.0f;
+                    *p++ = (int32_t)(scale * v);
+                }
+            }
+        }
+        void CopyPlaybackS24Be(size_t frames)
+        {
+            // 24 bits in low bits of an int32_t.
+
+            int32_t *p = (int32_t *)rawPlaybackBuffer;
+
+            std::vector<float *> &buffers = this->playbackBuffers;
+            int channels = this->playbackChannels;
+            constexpr float scale = 0x00FFFFFF;
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    float v = buffers[channel][frame];
+                    if (v > 1.0f)
+                        v = 1.0f;
+                    else if (v < -1.0f)
+                        v = -1.0f;
+                    *p++ = EndianSwap((int32_t)(scale * v));
+                }
+            }
+        }
+        void CopyPlaybackS32Be(size_t frames)
+        {
+            int32_t *p = (int32_t *)rawPlaybackBuffer;
+
+            std::vector<float *> &buffers = this->playbackBuffers;
+            int channels = this->playbackChannels;
+            constexpr float scale = std::numeric_limits<int32_t>::max();
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    float v = buffers[channel][frame];
+                    if (v > 1.0f)
+                        v = 1.0f;
+                    else if (v < -1.0f)
+                        v = -1.0f;
+                    *p++ = EndianSwap((int32_t)(scale * v));
+                }
+            }
+        }
+        void CopyPlaybackS24_3Be(size_t frames)
+        {
+            uint8_t *p = (uint8_t *)rawPlaybackBuffer;
+
+            std::vector<float *> &buffers = this->playbackBuffers;
+            int channels = this->playbackChannels;
+            constexpr float scale = std::numeric_limits<int32_t>::max();
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    float v = buffers[channel][frame];
+                    if (v > 1.0f)
+                        v = 1.0f;
+                    else if (v < -1.0f)
+                        v = -1.0f;
+                    int32_t iValue =  (int32_t)(scale * v);
+                    p[0] = (uint8_t)(iValue >> 24);
+                    p[1] = (uint8_t)(iValue >> 16);
+                    p[2] = (uint8_t)(iValue >> 8);
+                }
+            }
+        }
+        void CopyPlaybackS24_3Le(size_t frames)
+        {
+            uint8_t *p = (uint8_t *)rawPlaybackBuffer;
+
+            std::vector<float *> &buffers = this->playbackBuffers;
+            int channels = this->playbackChannels;
+            constexpr float scale = std::numeric_limits<int32_t>::max();
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    float v = buffers[channel][frame];
+                    if (v > 1.0f)
+                        v = 1.0f;
+                    else if (v < -1.0f)
+                        v = -1.0f;
+                    int32_t iValue =  (int32_t)(scale * v);
+                    p[0] = (uint8_t)(iValue >> 8);
+                    p[1] = (uint8_t)(iValue >> 16);
+                    p[2] = (uint8_t)(iValue >> 24);
+                }
+            }
+        }
+
         void CopyPlaybackFloatLe(size_t frames)
         {
             float *p = (float *)rawPlaybackBuffer;
@@ -555,6 +862,22 @@ namespace pipedal
                 {
                     float v = buffers[channel][frame];
                     *p++ = v;
+                }
+            }
+        }
+        void CopyPlaybackFloatBe(size_t frames)
+        {
+            float *p = (float *)rawPlaybackBuffer;
+
+            std::vector<float *> &buffers = this->playbackBuffers;
+            int channels = this->captureChannels;
+            for (size_t frame = 0; frame < frames; ++frame)
+            {
+                for (int channel = 0; channel < channels; ++channel)
+                {
+                    float v = buffers[channel][frame];
+                    EndianSwap(p,v);
+                    p++;
                 }
             }
         }
@@ -709,6 +1032,7 @@ namespace pipedal
 
                 snd_pcm_format_t captureFormat;
                 snd_pcm_hw_params_get_format(captureHwParams, &captureFormat);
+                copyInputFn = nullptr;
 
                 switch (captureFormat)
                 {
@@ -717,6 +1041,7 @@ namespace pipedal
                     copyInputFn = &AlsaDriverImpl::CopyCaptureFloatLe;
                     break;
                 case SND_PCM_FORMAT_S24_3LE:
+                    copyInputFn = &AlsaDriverImpl::CopyCaptureS24_3Le;
                     captureSampleSize = 3;
                     break;
                 case SND_PCM_FORMAT_S32_LE:
@@ -725,27 +1050,39 @@ namespace pipedal
                     break;
                 case SND_PCM_FORMAT_S24_LE:
                     captureSampleSize = 4;
+                    copyInputFn = &AlsaDriverImpl::CopyCaptureS24Le;
                     break;
                 case SND_PCM_FORMAT_S16_LE:
                     captureSampleSize = 2;
+                    copyInputFn = &AlsaDriverImpl::CopyCaptureS16Le;
                     break;
                 case SND_PCM_FORMAT_FLOAT_BE:
+                    captureSampleSize = 4;
+                    copyInputFn = &AlsaDriverImpl::CopyCaptureFloatBe;
                     captureSampleSize = 4;
                     break;
                 case SND_PCM_FORMAT_S24_3BE:
                     captureSampleSize = 3;
+                    copyInputFn = &AlsaDriverImpl::CopyCaptureS24_3Be;
                     break;
                 case SND_PCM_FORMAT_S32_BE:
+                    copyInputFn = &AlsaDriverImpl::CopyCaptureS32Be;
                     captureSampleSize = 4;
                     break;
                 case SND_PCM_FORMAT_S24_BE:
+                    copyInputFn = &AlsaDriverImpl::CopyCaptureS24Be;
                     captureSampleSize = 4;
                     break;
                 case SND_PCM_FORMAT_S16_BE:
+                    copyInputFn = &AlsaDriverImpl::CopyCaptureS16Be;
                     captureSampleSize = 2;
                     break;
                 default:
-                    throw PiPedalStateException("Invalid format.");
+                    break;
+                }
+                if (copyInputFn == nullptr)
+                {
+                    throw PiPedalStateException(SS("Audio input format not supported. (" << captureFormat << ")"));
                 }
                 captureFrameSize = captureSampleSize * captureChannels;
                 rawCaptureBuffer = new uint8_t[captureFrameSize * bufferSize];
@@ -756,6 +1093,7 @@ namespace pipedal
                 snd_pcm_format_t playbackFormat;
                 snd_pcm_hw_params_get_format(playbackHwParams, &playbackFormat);
 
+                copyOutputFn = nullptr;
                 switch (playbackFormat)
                 {
                 case SND_PCM_FORMAT_FLOAT_LE:
@@ -763,6 +1101,7 @@ namespace pipedal
                     copyOutputFn = &AlsaDriverImpl::CopyPlaybackFloatLe;
                     break;
                 case SND_PCM_FORMAT_S24_3LE:
+                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24_3Le;
                     playbackSampleSize = 3;
                     break;
                 case SND_PCM_FORMAT_S32_LE:
@@ -770,29 +1109,41 @@ namespace pipedal
                     playbackSampleSize = 4;
                     break;
                 case SND_PCM_FORMAT_S24_LE:
+                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24Le;
                     playbackSampleSize = 4;
                     break;
                 case SND_PCM_FORMAT_S16_LE:
+                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS16Le;
                     playbackSampleSize = 2;
                     break;
                 case SND_PCM_FORMAT_FLOAT_BE:
+                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackFloatBe;
                     playbackSampleSize = 4;
                     break;
                 case SND_PCM_FORMAT_S24_3BE:
+                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24_3Be;
                     playbackSampleSize = 3;
                     break;
                 case SND_PCM_FORMAT_S32_BE:
+                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS32Be;
                     playbackSampleSize = 4;
                     break;
                 case SND_PCM_FORMAT_S24_BE:
+                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24Be;
                     playbackSampleSize = 4;
                     break;
                 case SND_PCM_FORMAT_S16_BE:
+                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS16Be;
                     playbackSampleSize = 2;
                     break;
                 default:
-                    throw PiPedalStateException("Invalid format.");
+                    break;
                 }
+                if (copyOutputFn == nullptr)
+                {
+                    throw PiPedalStateException(SS("Unsupported audio output format. (" << playbackFormat << ")"));
+                }
+
                 playbackFrameSize = playbackSampleSize * playbackChannels;
                 rawPlaybackBuffer = new uint8_t[playbackFrameSize * bufferSize];
                 memset(rawPlaybackBuffer, 0, playbackFrameSize * bufferSize);
