@@ -1,4 +1,10 @@
+---
+page_icon: img/commandline.jpg
+---
 ## Command-Line Configuration of PiPedal
+
+
+ {% include pageIcon.html %}
 
 The pipedalconfig program can be used to modify configuration of PiPedal from a shell command line. Run 'pipedalconfig --help' to view
 available configuration commands, some of which are not avaialbe from the web interface. For example, you can change the port number
