@@ -1,6 +1,6 @@
 ---
 page_icon: img/commandline.jpg
-icon_width: 48px
+icon_width: 64px
 ---
 ## Command-Line Configuration of PiPedal
 
