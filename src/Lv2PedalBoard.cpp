@@ -25,7 +25,7 @@
 #include "SplitEffect.hpp"
 #include "RingBufferReader.hpp"
 #include "VuUpdate.hpp"
-#include "JackHost.hpp"
+#include "AudioHost.hpp"
 #include "Lv2EventBufferWriter.hpp"
 
 using namespace pipedal;

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022-2023 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -1235,6 +1235,17 @@ public:
             pReader->read(&favorites);
             this->model.SetFavorites(favorites);
         }
+        else if (message == "setSystemMidiBindings")
+        {
+            std::vector<MidiBinding> bindings;
+            pReader->read(&bindings);
+            this->model.SetSystemMidiBindings(bindings);
+        }
+        else if (message == "getSystemMidiBindings")
+        {
+            std::vector<MidiBinding> bindings = this->model.GetSystemMidiBidings();
+            this->Reply(replyTo,"getSystemMidiBindings",bindings);
+        }
         else
         {
             Lv2Log::error("Unknown message received: %s", message.c_str());
@@ -1308,6 +1319,10 @@ protected:
     }
 
 public:
+    virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) {
+        Send("onSystemMidiBindingsChanged",bindings);
+    }
+
     virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites)
     {
         Send("onFavoritesChanged", favorites);

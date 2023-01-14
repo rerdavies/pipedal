@@ -20,7 +20,7 @@
 #include "pch.h"
 
 #include "AudioConfig.hpp"
-#include "BeastServer.hpp"
+#include "WebServer.hpp"
 #include <iostream>
 #include "Lv2Log.hpp"
 #include "ServiceConfiguration.hpp"
@@ -601,7 +601,7 @@ int main(int argc, char *argv[])
     }
 
     uint16_t port;
-    std::shared_ptr<BeastServer> server;
+    std::shared_ptr<WebServer> server;
     try
     {
         auto const address = boost::asio::ip::make_address(configuration.GetSocketServerAddress());
@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
 
         auto const threads = std::max<int>(1, configuration.GetThreads());
 
-        server = createBeastServer(
+        server = WebServer::create(
             address, port, web_root.c_str(), threads);
 
         Lv2Log::info("Document root: %s Threads: %d", doc_root.c_str(), (int)threads);

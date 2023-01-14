@@ -257,7 +257,7 @@ const MidiBindingView =
                                         onChange={(e, extra) => this.handleLatchControlTypeChange(e, extra)}
                                         value={midiBinding.switchControlType}
                                     >
-                                        <MenuItem value={MidiBinding.LATCH_CONTROL_TYPE}>Latch</MenuItem>
+                                        <MenuItem value={MidiBinding.LATCH_CONTROL_TYPE}>Toggle</MenuItem>
                                         <MenuItem value={MidiBinding.MOMENTARY_CONTROL_TYPE}>Momentary</MenuItem>
                                     </Select>
                                 </div>

@@ -37,7 +37,7 @@
 #include "lv2/parameters.lv2/parameters.h"
 #include "lv2/units.lv2/units.h"
 #include "lv2/atom.lv2/util.h"
-#include "JackHost.hpp"
+#include "AudioHost.hpp"
 #include <exception>
 #include "RingBufferReader.hpp"
 

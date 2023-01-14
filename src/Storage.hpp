@@ -109,6 +109,7 @@ public:
     void LoadUserSettings();
     void SaveUserSettings();
     void LoadBank(int64_t instanceId);
+    int64_t GetBankByMidiBankNumber(uint8_t bankNumber);
     const PedalBoard& GetCurrentPreset();
     void SaveCurrentPreset(const PedalBoard&pedalBoard);
     int64_t SaveCurrentPresetAs(const PedalBoard&pedalBoard, const std::string&namne,int64_t saveAfterInstanceId = -1);
@@ -116,11 +117,12 @@ public:
     void GetPresetIndex(PresetIndex*pResult);
     void SetPresetIndex(const PresetIndex &presetIndex);
     PedalBoard GetPreset(int64_t instanceId) const;
+    int64_t GetPresetByProgramNumber(uint8_t program) const;
     void GetBankFile(int64_t instanceId,BankFile*pResult) const;
     int64_t UploadPreset(const BankFile&bankFile, int64_t uploadAfter);
     int64_t UploadBank(BankFile&bankFile, int64_t uploadAfter);
 
-
+    
     bool LoadPreset(int64_t presetId);
     int64_t DeletePreset(int64_t presetId);
     bool RenamePreset(int64_t presetId, const std::string&name);
@@ -170,6 +172,8 @@ public:
 
     void SetShowStatusMonitor(bool show);
     bool GetShowStatusMonitor() const;
+    void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings);
+    std::vector<MidiBinding> GetSystemMidiBindings();
 
 };
 

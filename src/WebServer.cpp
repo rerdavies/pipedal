@@ -18,7 +18,7 @@
 #include <strings.h>
 #include "Ipv6Helpers.hpp"
 
-#include "BeastServer.hpp"
+#include "WebServer.hpp"
 
 #include "Uri.hpp"
 
@@ -133,7 +133,7 @@ std::string GetFromAddress(const tcp::socket &socket)
 namespace pipedal
 {
 
-    class BeastServerImpl : public BeastServer
+    class WebServerImpl : public WebServer
     {
     private:
         int signalOnDone = -1;
@@ -200,7 +200,7 @@ namespace pipedal
 
         class WebSocketSession : public std::enable_shared_from_this<WebSocketSession>, public SocketHandler::IWriteCallback
         {
-            BeastServerImpl *pServer;
+            WebServerImpl *pServer;
             server::connection_ptr webSocket;
             std::string fromAddress;
             std::shared_ptr<SocketHandler> socketHandler;
@@ -224,7 +224,7 @@ namespace pipedal
                 Lv2Log::info("WebSocketSession closed.");
             }
             using ptr = std::shared_ptr<WebSocketSession>;
-            WebSocketSession(BeastServerImpl *pServer, server::connection_ptr &webSocket)
+            WebSocketSession(WebServerImpl *pServer, server::connection_ptr &webSocket)
                 : pServer(pServer),
                   webSocket(webSocket)
             {
@@ -599,9 +599,9 @@ namespace pipedal
                 using websocketpp::lib::placeholders::_1;
                 using websocketpp::lib::placeholders::_2;
 
-                m_endpoint.set_open_handler(bind(&BeastServerImpl::on_open, this, _1));
-                m_endpoint.set_close_handler(bind(&BeastServerImpl::on_close, this, _1));
-                m_endpoint.set_http_handler(bind(&BeastServerImpl::on_http, this, _1));
+                m_endpoint.set_open_handler(bind(&WebServerImpl::on_open, this, _1));
+                m_endpoint.set_close_handler(bind(&WebServerImpl::on_close, this, _1));
+                m_endpoint.set_http_handler(bind(&WebServerImpl::on_http, this, _1));
 
                 std::string hostName = getHostName();
                 if (hostName.length() != 0)
@@ -660,7 +660,7 @@ namespace pipedal
             }
         }
 
-        static void ThreadProc(BeastServerImpl *server)
+        static void ThreadProc(WebServerImpl *server)
         {
             server->Run();
         }
@@ -717,7 +717,7 @@ namespace pipedal
             this->pBgThread = new std::thread(ThreadProc, this);
         }
 
-        BeastServerImpl(const std::string &address, int port, const char *rootPath, int threads)
+        WebServerImpl(const std::string &address, int port, const char *rootPath, int threads)
             : address(address),
               rootPath(rootPath),
               port(port),
@@ -727,7 +727,7 @@ namespace pipedal
     };
 } // namespace pipedal
 
-std::shared_ptr<ISocketFactory> BeastServerImpl::GetSocketFactory(const uri &requestUri)
+std::shared_ptr<ISocketFactory> WebServerImpl::GetSocketFactory(const uri &requestUri)
 {
 
     for (auto factory : this->socket_factories)
@@ -740,7 +740,7 @@ std::shared_ptr<ISocketFactory> BeastServerImpl::GetSocketFactory(const uri &req
     return nullptr;
 }
 
-std::shared_ptr<BeastServer> pipedal::createBeastServer(const boost::asio::ip::address &address, int port, const char *rootPath, int threads)
+std::shared_ptr<WebServer> pipedal::WebServer::create(const boost::asio::ip::address &address, int port, const char *rootPath, int threads)
 {
-    return std::shared_ptr<BeastServer>(new BeastServerImpl(address.to_string(), port, rootPath, threads));
+    return std::shared_ptr<WebServer>(new WebServerImpl(address.to_string(), port, rootPath, threads));
 }

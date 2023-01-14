@@ -19,13 +19,13 @@
 #include "pch.h"
 #include "catch.hpp"
 
-#include "BeastServer.hpp"
+#include "WebServer.hpp"
 #include "MemDebug.hpp"
 #include <iostream>
 
 using namespace pipedal;
 
-TEST_CASE("BeastServer shutdown", "[beastServerShutdown][Build][Dev]")
+TEST_CASE("WebServer shutdown", "[webServerShutdown][Build][Dev]")
 {
     MemStats initialMemory = GetMemStats();
     {
@@ -34,7 +34,7 @@ TEST_CASE("BeastServer shutdown", "[beastServerShutdown][Build][Dev]")
         std::string doc_root = ".";
         auto const threads = 3;
 
-        auto server = createBeastServer(
+        auto server = WebServer::create(
             address, port, doc_root.c_str(), threads);
         server->RunInBackground();
         sleep(5);

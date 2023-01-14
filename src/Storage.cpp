@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022-2023 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -511,6 +511,7 @@ void Storage::SetPresetIndex(const PresetIndex &presets)
     this->currentBank = std::move(bankFile); // deleting any stray presets while we're at it.
     this->SaveCurrentBank();
 }
+
 void Storage::GetPresetIndex(PresetIndex *pResult)
 {
     *pResult = PresetIndex();
@@ -522,6 +523,15 @@ void Storage::GetPresetIndex(PresetIndex *pResult)
         entry.name(item->preset().name());
         pResult->presets().push_back(entry);
     }
+}
+int64_t Storage::GetPresetByProgramNumber(uint8_t program)const
+{
+    if (program >= currentBank.presets().size())
+    {
+        if (currentBank.presets().size() == 0) return -1;
+        program = (uint8_t)currentBank.presets().size()-1;
+    }
+    return currentBank.presets()[program]->instanceId();
 }
 
 PedalBoard Storage::GetPreset(int64_t instanceId) const
@@ -735,6 +745,17 @@ void Storage::MoveBank(int from, int to)
 {
     this->bankIndex.move(from, to);
     this->SaveBankIndex();
+}
+
+
+int64_t Storage::GetBankByMidiBankNumber(uint8_t bankNumber) {
+    auto &entries = this->bankIndex.entries();
+    if (bankNumber >= entries.size())
+    {
+        if (entries.size() == 0) return -1;
+        bankNumber = (uint8_t)(entries.size()-1);
+    }
+    return entries[bankNumber].instanceId();
 }
 int64_t Storage::DeleteBank(int64_t bankId)
 {
@@ -1332,6 +1353,36 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
     }
 #endif
 }
+
+void Storage::SetSystemMidiBindings(const std::vector<MidiBinding>&bindings)
+{
+    std::filesystem::path fileName = this->dataRoot / "SystemMidiBindings.json";
+    std::ofstream f;
+    f.open(fileName);
+    if (f.is_open())
+    {
+        json_writer writer(f);
+        writer.write(bindings);
+    }
+}
+std::vector<MidiBinding> Storage::GetSystemMidiBindings()
+{
+    std::vector<MidiBinding> result;
+
+    std::filesystem::path fileName = this->dataRoot / "SystemMidiBindings.json";
+    std::ifstream f;
+    f.open(fileName);
+    if (f.is_open())
+    {
+        json_reader reader(f);
+        reader.read(&result);
+    } else {
+        result.push_back(MidiBinding::SystemBinding("prevProgram"));
+        result.push_back(MidiBinding::SystemBinding("nextProgram"));
+    }
+    return result;
+}
+
 
 JSON_MAP_BEGIN(UserSettings)
 JSON_MAP_REFERENCE(UserSettings, governor)

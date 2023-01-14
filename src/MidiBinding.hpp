@@ -58,15 +58,21 @@ public:
 private:
     std::string symbol_;
     int channel_ = -1;
-    int bindingType_;
+    int bindingType_ = BINDING_TYPE_NONE;
     int note_ = 12*4+24;
     int control_ = 1;
     float minValue_ = 0;
     float maxValue_ = 1;
     float rotaryScale_ = 1;
-    int linearControlType_ = 0;
-    int switchControlType_ = 0;
+    int linearControlType_ = LINEAR_CONTROL_TYPE;
+    int switchControlType_ = LATCH_CONTROL_TYPE;
 public:
+    static MidiBinding SystemBinding(const std::string&symbol)
+    {
+        MidiBinding result;
+        result.symbol_ = symbol;
+        return result;
+    }
     GETTER_SETTER(channel);
     GETTER_SETTER_REF(symbol);
     GETTER_SETTER(bindingType);

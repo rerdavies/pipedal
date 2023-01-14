@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022-2023 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -24,7 +24,7 @@
 #include "Lv2PedalBoard.hpp"
 #include "VuUpdate.hpp"
 #include "json.hpp"
-#include "JackHost.hpp"
+#include "AudioHost.hpp"
 #include "JackServerSettings.hpp"
 #include <functional>
 #include "PiPedalAlsa.hpp"
@@ -32,6 +32,8 @@
 namespace pipedal {
 
 
+struct RealtimeMidiProgramRequest;
+struct RealtimeNextMidiProgramRequest;
 
 using PortMonitorCallback = std::function<void (int64_t handle, float value)>;
 
@@ -91,7 +93,7 @@ public:
 
 };
 
-class IJackHostCallbacks {
+class IAudioHostCallbacks {
 public:
     virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> & updates) = 0;
     virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
@@ -99,6 +101,8 @@ public:
     virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) = 0;
     virtual void OnNotifyAtomOutput(uint64_t instanceId, const std::string&atomType,const std::string&atomJson) = 0;
 
+    virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProgramRequest) = 0;
+    virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) = 0;
 
 };
 
@@ -124,17 +128,17 @@ public:
 
 class IHost;
 
-class JackHost {
+class AudioHost {
 protected: 
-    JackHost() { }
+    AudioHost() { }
 public: 
-    static JackHost*CreateInstance(IHost *pHost);
-    virtual ~JackHost() { };
+    static AudioHost*CreateInstance(IHost *pHost);
+    virtual ~AudioHost() { };
 
     virtual void UpdateServerConfiguration(const JackServerSettings & jackServerSettings,
         std::function<void(bool success, const std::string&errorMessage)> onComplete) = 0;
 
-    virtual void SetNotificationCallbacks(IJackHostCallbacks *pNotifyCallbacks) = 0;
+    virtual void SetNotificationCallbacks(IAudioHostCallbacks *pNotifyCallbacks) = 0;
 
     virtual void SetListenForMidiEvent(bool listen) = 0;
     virtual void SetListenForAtomOutput(bool listen) = 0;
@@ -158,7 +162,10 @@ public:
     virtual void SetVuSubscriptions(const std::vector<int64_t> &instanceIds) = 0;
     virtual void SetMonitorPortSubscriptions(const std::vector<MonitorPortSubscription> &subscriptions) = 0;
 
+    virtual void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings) = 0;
+
     virtual void getRealtimeParameter(RealtimeParameterRequest*pParameterRequest) = 0;
+    virtual void AckMidiProgramRequest(uint64_t requestId) = 0;
 
     virtual JackHostStatus getJackStatus() = 0;
 

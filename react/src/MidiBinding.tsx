@@ -31,6 +31,11 @@ export default class MidiBinding {
         this.switchControlType = input.switchControlType;
         return this;
     }
+    static systemBinding(symbol: string): MidiBinding {
+        let result = new MidiBinding();
+        result.symbol = symbol;
+        return result;
+    }
     static deserialize_array(input: any): MidiBinding[] {
         let result: MidiBinding[] = [];
         for (let i = 0; i < input.length; ++i)

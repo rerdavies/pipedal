@@ -339,6 +339,7 @@ export interface PiPedalModel {
     favorites: ObservableProperty<FavoritesList>;
 
     presets: ObservableProperty<PresetIndex>;
+    systemMidiBindings: ObservableProperty<MidiBinding[]>;
 
 
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined>;
@@ -409,6 +410,8 @@ export interface PiPedalModel {
     updatePluginPresets(uri: string, presets: PluginUiPresets): Promise<void>;
     duplicatePluginPreset(uri: string, instanceId: number): Promise<number>;
 
+    setSystemMidiBinding(instanceId: number, midiBinding: MidiBinding): void;
+
     shutdown(): Promise<void>;
     restart(): Promise<void>;
 
@@ -441,8 +444,8 @@ export interface PiPedalModel {
 
     zoomUiControl(sourceElement: HTMLElement, instanceId: number, uiControl: UiControl): void;
 
-    onPreviousZoomedControl() : void;
-    onNextZoomedControl() : void;
+    onPreviousZoomedControl(): void;
+    onNextZoomedControl(): void;
     clearZoomedControl(): void;
 
     setFavorite(pluginUrl: string, isFavorite: boolean): void;
@@ -495,7 +498,13 @@ class PiPedalModelImpl implements PiPedalModel {
         (
             new PresetIndex()
         );
-
+    systemMidiBindings: ObservableProperty<MidiBinding[]> = new ObservableProperty<MidiBinding[]>
+        (
+            [
+                MidiBinding.systemBinding("prevProgram"),
+                MidiBinding.systemBinding("nextProgram")
+            ]
+        );
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
 
     svgImgUrl(svgImage: string): string {
@@ -682,7 +691,10 @@ class PiPedalModelImpl implements PiPedalModel {
             if (header.replyTo) {
                 this.webSocket?.reply(header.replyTo, "onVuUpdate", true);
             }
-
+        } else if (message === "onSystemMidiBindingsChanged")
+        {
+            let bindings = MidiBinding.deserialize_array(body);
+            this.systemMidiBindings.set(bindings);
         } else {
             throw new PiPedalStateError("Unrecognized message received from server: " + message);
         }
@@ -815,6 +827,12 @@ class PiPedalModelImpl implements PiPedalModel {
             .then((data) => {
                 this.favorites.set(data);
 
+                return this.getWebSocket().request<MidiBinding[]>("getSystemMidiBindings");
+            })
+            .then((data)=> {
+                let bindings = MidiBinding.deserialize_array(data);
+                this.systemMidiBindings.set(bindings);
+
                 this.setState(State.Ready);
             })
             .catch((what) => {
@@ -944,7 +962,7 @@ class PiPedalModelImpl implements PiPedalModel {
                     })
                     .then(data => {
                         this.showStatusMonitor.set(data);
-        
+
                         return this.getWebSocket().request<any>("getJackServerSettings");
                     })
                     .then(data => {
@@ -977,6 +995,12 @@ class PiPedalModelImpl implements PiPedalModel {
                     .then((data) => {
                         this.favorites.set(data);
 
+                        return this.getWebSocket().request<MidiBinding[]>("getSystemMidiBindings");
+                    })
+                    .then((data)=> {
+                        let bindings = MidiBinding.deserialize_array(data);
+                        this.systemMidiBindings.set(bindings);
+        
                         if (this.webSocket) {
                             // MUST not allow reconnect until at least one complete load has finished.
                             this.webSocket.canReconnect = true;
@@ -1215,7 +1239,7 @@ class PiPedalModelImpl implements PiPedalModel {
         }
 
     }
-    _setVst3PedalBoardControlValue(instanceId: number, key: string, value: number, state: string, notifyServer: boolean ): void {
+    _setVst3PedalBoardControlValue(instanceId: number, key: string, value: number, state: string, notifyServer: boolean): void {
         let pedalBoard = this.pedalBoard.get();
         if (pedalBoard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalBoard = pedalBoard.clone();
@@ -1251,7 +1275,7 @@ class PiPedalModelImpl implements PiPedalModel {
         let newPedalBoard = pedalBoard.clone();
 
         let item = newPedalBoard.getItem(instanceId);
-    
+
         let changed = value !== item.isEnabled;
         if (changed) {
             item.isEnabled = value;
@@ -1837,8 +1861,7 @@ class PiPedalModelImpl implements PiPedalModel {
             });
     }
 
-    updateVst3State(pedalBoard: PedalBoard)
-    {
+    updateVst3State(pedalBoard: PedalBoard) {
         // let it = pedalBoard.itemsGenerator();
         // while (true) {
         //     let v = it.next();
@@ -1861,6 +1884,23 @@ class PiPedalModelImpl implements PiPedalModel {
             this.updateServerPedalBoard()
 
         }
+    }
+    setSystemMidiBinding(instanceId: number, midiBinding: MidiBinding): void {
+        let currentBindings = this.systemMidiBindings.get();
+
+        let result: MidiBinding[] = [];
+
+        for (var binding of currentBindings)
+        {
+            if (binding.symbol === midiBinding.symbol)
+            {
+                result.push(midiBinding);
+            } else {
+                result.push(binding);
+            }
+        }
+        this.systemMidiBindings.set(result);
+        this.webSocket?.send("setSystemMidiBindings",result);
     }
     midiListeners: MidiEventListener[] = [];
     atomOutputListeners: AtomOutputListener[] = [];
@@ -1918,8 +1958,7 @@ class PiPedalModelImpl implements PiPedalModel {
                 break;
             }
         }
-        if (!found)
-        {
+        if (!found) {
             console.log('cancelListenForMidiEvent: event not found.');
         }
         this.webSocket?.send("cancelListenForMidiEvent", listenHandle._handle);
@@ -2101,7 +2140,7 @@ class PiPedalModelImpl implements PiPedalModel {
             wifiDirectConfigSettings = wifiDirectConfigSettings.clone();
 
             if ((!oldSettings.enable) && (!wifiDirectConfigSettings.enable)
-            && (oldSettings.hotspotName === wifiDirectConfigSettings.hotspotName)
+                && (oldSettings.hotspotName === wifiDirectConfigSettings.hotspotName)
             ) {
                 // no effective change.
                 resolve();
@@ -2183,19 +2222,14 @@ class PiPedalModelImpl implements PiPedalModel {
     }
     zoomUiControl(sourceElement: HTMLElement, instanceId: number, uiControl: UiControl): void {
         let name = uiControl.name;
-        if (uiControl.port_group !== "")
-        {
+        if (uiControl.port_group !== "") {
             let pedalboard = this.pedalBoard.get();
-            if (pedalboard)
-            {
+            if (pedalboard) {
                 let plugin = pedalboard.getItem(instanceId);
                 let uiPlugin = this.getUiPlugin(plugin.uri);
-                if (uiPlugin)
-                {
-                    for (let i = 0; i < uiPlugin.port_groups.length; ++i)
-                    {
-                        if (uiPlugin.port_groups[i].symbol === uiControl.port_group)
-                        {
+                if (uiPlugin) {
+                    for (let i = 0; i < uiPlugin.port_groups.length; ++i) {
+                        if (uiPlugin.port_groups[i].symbol === uiControl.port_group) {
                             name = uiPlugin.port_groups[i].name + " / " + name;
                             break;
                         }
@@ -2205,8 +2239,7 @@ class PiPedalModelImpl implements PiPedalModel {
         }
         this.zoomedUiControl.set({ source: sourceElement, name: name, instanceId: instanceId, uiControl: uiControl });
     }
-    onPreviousZoomedControl() : void
-    {
+    onPreviousZoomedControl(): void {
         let currentUiControl = this.zoomedUiControl.get();
         if (!currentUiControl) return;
 
@@ -2222,8 +2255,7 @@ class PiPedalModelImpl implements PiPedalModel {
 
         let i = 0;
         let ix = -1;
-        for (i = 0; i < uiPlugin.controls.length; ++i)
-        {
+        for (i = 0; i < uiPlugin.controls.length; ++i) {
             if (uiPlugin.controls[i].symbol === currentSymbol) {
                 ix = i;
                 break;
@@ -2234,10 +2266,9 @@ class PiPedalModelImpl implements PiPedalModel {
         ++ix;
         if (ix >= uiPlugin.controls.length) return;
 
-        this.zoomUiControl(currentUiControl.source,currentUiControl.instanceId,uiPlugin.controls[ix]);
+        this.zoomUiControl(currentUiControl.source, currentUiControl.instanceId, uiPlugin.controls[ix]);
     }
-    onNextZoomedControl() : void
-    {
+    onNextZoomedControl(): void {
         let currentUiControl = this.zoomedUiControl.get();
         if (!currentUiControl) return;
 
@@ -2253,8 +2284,7 @@ class PiPedalModelImpl implements PiPedalModel {
 
         let i = 0;
         let ix = -1;
-        for (i = 0; i < uiPlugin.controls.length; ++i)
-        {
+        for (i = 0; i < uiPlugin.controls.length; ++i) {
             if (uiPlugin.controls[i].symbol === currentSymbol) {
                 ix = i;
                 break;
@@ -2264,8 +2294,8 @@ class PiPedalModelImpl implements PiPedalModel {
 
         --ix;
         if (ix < 0) return;
-        
-        this.zoomUiControl(currentUiControl.source,currentUiControl.instanceId,uiPlugin.controls[ix]);
+
+        this.zoomUiControl(currentUiControl.source, currentUiControl.instanceId, uiPlugin.controls[ix]);
     }
 
     clearZoomedControl(): void {

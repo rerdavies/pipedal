@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "BeastServer.hpp"
+#include "WebServer.hpp"
 #include "PiPedalModel.hpp"
 
 

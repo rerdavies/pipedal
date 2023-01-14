@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022-2023 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -23,13 +23,14 @@
 #include "ConfigUtil.hpp"
 #include <sched.h>
 #include "PiPedalModel.hpp"
-#include "JackHost.hpp"
+#include "AudioHost.hpp"
 #include "Lv2Log.hpp"
 #include <set>
 #include "PiPedalConfiguration.hpp"
 #include "AdminClient.hpp"
 #include "SplitEffect.hpp"
 #include "CpuGovernor.hpp"
+#include "RingBufferReader.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -84,9 +85,9 @@ void PiPedalModel::Close()
     }
     delete[] t;
 
-    if (jackHost)
+    if (audioHost)
     {
-        jackHost->Close();
+        audioHost->Close();
     }
 }
 
@@ -113,9 +114,9 @@ PiPedalModel::~PiPedalModel()
 
     try
     {
-        if (jackHost)
+        if (audioHost)
         {
-            jackHost->Close();
+            audioHost->Close();
         }
     }
     catch (...)
@@ -132,6 +133,8 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
     storage.Initialize();
+
+    this->systemMidiBindings = storage.GetSystemMidiBindings();
 
     this->jackServerSettings.ReadJackConfiguration();
 }
@@ -191,10 +194,14 @@ void PiPedalModel::Load()
     }
     UpdateDefaults(&this->pedalBoard);
 
-    std::unique_ptr<JackHost> p{JackHost::CreateInstance(lv2Host.asIHost())};
-    this->jackHost = std::move(p);
+    std::unique_ptr<AudioHost> p{AudioHost::CreateInstance(lv2Host.asIHost())};
+    this->audioHost = std::move(p);
 
-    this->jackHost->SetNotificationCallbacks(this);
+    this->audioHost->SetNotificationCallbacks(this);
+
+    this->systemMidiBindings = storage.GetSystemMidiBindings();
+
+    this->audioHost->SetSystemMidiBindings(this->systemMidiBindings);
 
     if (configuration.GetMLock())
     {
@@ -226,11 +233,11 @@ void PiPedalModel::Load()
         this->lv2Host.OnConfigurationChanged(jackConfiguration, selection);
         try
         {
-            jackHost->Open(this->jackServerSettings, selection);
+            audioHost->Open(this->jackServerSettings, selection);
             try {
                 std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
                 this->lv2PedalBoard = lv2PedalBoard;
-                jackHost->SetPedalBoard(lv2PedalBoard);
+                audioHost->SetPedalBoard(lv2PedalBoard);
             }
             catch (const std::exception &e)
             {
@@ -305,7 +312,7 @@ void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const s
             effect->SetControl(index,value);;
         }
     } else {
-        jackHost->SetControlValue(pedalItemId, symbol, value);
+        audioHost->SetControlValue(pedalItemId, symbol, value);
     }
 }
 
@@ -387,11 +394,11 @@ void PiPedalModel::FirePedalBoardChanged(int64_t clientId)
     delete[] t;
 
     // notify the audio thread.
-    if (jackHost->IsOpen())
+    if (audioHost->IsOpen())
     {
         std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
         this->lv2PedalBoard = lv2PedalBoard;
-        jackHost->SetPedalBoard(lv2PedalBoard);
+        audioHost->SetPedalBoard(lv2PedalBoard);
         UpdateRealtimeVuSubscriptions();
         UpdateRealtimeMonitorPortSubscriptions();
     }
@@ -446,7 +453,7 @@ void PiPedalModel::SetPedalBoardItemEnable(int64_t clientId, int64_t pedalItemId
         this->SetPresetChanged(clientId, true);
 
         // Notify audo thread.
-        this->jackHost->SetBypass(pedalItemId, enabled);
+        this->audioHost->SetBypass(pedalItemId, enabled);
     }
 }
 
@@ -620,6 +627,87 @@ int64_t PiPedalModel::UploadBank(BankFile &bankFile, int64_t uploadAfter)
     FireBanksChanged(-1);
     return newPreset;
 }
+
+void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    try {
+        PresetIndex index;
+        storage.GetPresetIndex(&index);
+        auto currentPresetId = storage.GetCurrentPresetId();
+        size_t currentPresetIndex = 0;
+
+        for (size_t i = 0; i < index.presets().size(); ++i)
+        {
+            if (index.presets()[i].instanceId() == currentPresetId)
+            {
+                currentPresetIndex = i;
+                break;
+            }
+        }
+        if (index.presets().size() == 0)
+        {
+            throw PiPedalException("No presets loaded.");
+        }
+        if (request.direction < 0)
+        {
+            if (currentPresetIndex == 0)
+            {
+                currentPresetIndex = index.presets().size()-1;
+            } else {
+                --currentPresetIndex;
+            }
+        } else {
+            ++currentPresetIndex;
+            if (currentPresetIndex >= index.presets().size())
+            {
+                currentPresetIndex = 0;
+            }
+        }
+        LoadPreset(-1,index.presets()[currentPresetIndex].instanceId());
+    } catch (std::exception&e)
+    {
+        
+        Lv2Log::error(e.what());
+    }
+    if (this->audioHost)
+    {
+        this->audioHost->AckMidiProgramRequest(request.requestId);
+    }
+}
+
+
+void PiPedalModel::OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProgramRequest)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    try {
+        if (midiProgramRequest.bank >= 0)
+        {   
+            int64_t bankId = storage.GetBankByMidiBankNumber(midiProgramRequest.bank);
+            if (bankId == -1) throw PiPedalException("Bank not found.");
+            if (bankId != this->storage.GetBanks().selectedBank())
+            {
+                storage.LoadBank(bankId);
+
+                FireBanksChanged(-1);
+                FirePresetsChanged(-1);
+            }
+        } 
+        int64_t presetId = storage.GetPresetByProgramNumber(midiProgramRequest.program);
+        if (presetId == -1) throw PiPedalException("No valid preset.");
+        LoadPreset(-1,presetId);
+    } catch (std::exception&e)
+    {
+        
+        Lv2Log::error(e.what());
+    }
+    if (this->audioHost)
+    {
+        this->audioHost->AckMidiProgramRequest(midiProgramRequest.requestId);
+    }
+}
+
+
 
 void PiPedalModel::LoadPreset(int64_t clientId, int64_t instanceId)
 {
@@ -883,10 +971,10 @@ JackConfiguration PiPedalModel::GetJackConfiguration()
 
 void PiPedalModel::RestartAudio()
 {
-    if (this->jackHost->IsOpen())
+    if (this->audioHost->IsOpen())
     {
 
-        this->jackHost->Close();
+        this->audioHost->Close();
     }
     // restarting is a bit dodgy. It was impossible with Jack, but
     // now very plausible with the ALSA audio stack.
@@ -899,7 +987,7 @@ void PiPedalModel::RestartAudio()
 
     // do a complete reload.
 
-    this->jackHost->SetPedalBoard(nullptr);
+    this->audioHost->SetPedalBoard(nullptr);
 
     this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
 
@@ -928,13 +1016,13 @@ void PiPedalModel::RestartAudio()
             Lv2Log::error("Audio configuration not valid.");
             return;
         }
-        this->jackHost->Open(this->jackServerSettings, channelSelection);
+        this->audioHost->Open(this->jackServerSettings, channelSelection);
 
         this->lv2Host.OnConfigurationChanged(jackConfiguration, channelSelection);
 
         std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
         this->lv2PedalBoard = lv2PedalBoard;
-        jackHost->SetPedalBoard(lv2PedalBoard);
+        audioHost->SetPedalBoard(lv2PedalBoard);
         this->UpdateRealtimeVuSubscriptions();
         UpdateRealtimeMonitorPortSubscriptions();
     }
@@ -1121,12 +1209,12 @@ void PiPedalModel::UpdateRealtimeVuSubscriptions()
         }
     }
     std::vector<int64_t> instanceids(addedInstances.begin(), addedInstances.end());
-    jackHost->SetVuSubscriptions(instanceids);
+    audioHost->SetVuSubscriptions(instanceids);
 }
 
 void PiPedalModel::UpdateRealtimeMonitorPortSubscriptions()
 {
-    jackHost->SetMonitorPortSubscriptions(this->activeMonitorPortSubscriptions);
+    audioHost->SetMonitorPortSubscriptions(this->activeMonitorPortSubscriptions);
 }
 
 int64_t PiPedalModel::MonitorPort(int64_t instanceId, const std::string &key, float updateInterval, PortMonitorCallback onUpdate)
@@ -1220,7 +1308,7 @@ void PiPedalModel::GetLv2Parameter(
 
     std::lock_guard<std::recursive_mutex> guard(mutex);
     outstandingParameterRequests.push_back(request);
-    this->jackHost->getRealtimeParameter(request);
+    this->audioHost->getRealtimeParameter(request);
 }
 
 BankIndex PiPedalModel::GetBankIndex() const
@@ -1254,6 +1342,7 @@ void PiPedalModel::OpenBank(int64_t clientId, int64_t bankId)
     FirePresetsChanged(clientId);
 
     this->pedalBoard = storage.GetCurrentPreset();
+
     UpdateDefaults(&this->pedalBoard);
     this->hasPresetChanged = false;
     this->FirePedalBoardChanged(clientId);
@@ -1311,7 +1400,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 
         this->jackConfiguration.SetIsRestarting(true);
         FireJackConfigurationChanged(this->jackConfiguration);
-        this->jackHost->UpdateServerConfiguration(
+        this->audioHost->UpdateServerConfiguration(
             jackServerSettings,
             [this](bool success, const std::string &errorMessage)
             {
@@ -1341,7 +1430,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
                     std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
                     this->lv2PedalBoard = lv2PedalBoard;
 
-                    jackHost->SetPedalBoard(lv2PedalBoard);
+                    audioHost->SetPedalBoard(lv2PedalBoard);
                     UpdateRealtimeVuSubscriptions();
                     UpdateRealtimeMonitorPortSubscriptions();
 #endif
@@ -1418,7 +1507,7 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
     if (pedalBoardItem != nullptr)
     {
         std::vector<ControlValue> controlValues = storage.GetPluginPresetValues(pedalBoardItem->uri(), presetInstanceId);
-        jackHost->SetPluginPreset(pluginInstanceId, controlValues);
+        audioHost->SetPluginPreset(pluginInstanceId, controlValues);
 
         for (size_t i = 0; i < controlValues.size(); ++i)
         {
@@ -1451,7 +1540,7 @@ void PiPedalModel::DeleteAtomOutputListeners(int64_t clientId)
             --i;
         }
     }
-    jackHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
 }
 
 void PiPedalModel::DeleteMidiListeners(int64_t clientId)
@@ -1465,7 +1554,7 @@ void PiPedalModel::DeleteMidiListeners(int64_t clientId)
             --i;
         }
     }
-    jackHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+    audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
 }
 
 void PiPedalModel::OnNotifyAtomOutput(uint64_t instanceId, const std::string &atomType, const std::string &atomJson)
@@ -1489,7 +1578,7 @@ void PiPedalModel::OnNotifyAtomOutput(uint64_t instanceId, const std::string &at
             }
         }
     }
-    jackHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
 }
 
 void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
@@ -1513,7 +1602,7 @@ void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
             }
         }
     }
-    jackHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+    audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
 }
 
 void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly)
@@ -1521,7 +1610,7 @@ void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bo
     std::lock_guard<std::recursive_mutex> guard(mutex);
     MidiListener listener{clientId, clientHandle, listenForControlsOnly};
     midiEventListeners.push_back(listener);
-    jackHost->SetListenForMidiEvent(true);
+    audioHost->SetListenForMidiEvent(true);
 }
 
 void PiPedalModel::ListenForAtomOutputs(int64_t clientId, int64_t clientHandle, uint64_t instanceId)
@@ -1529,7 +1618,7 @@ void PiPedalModel::ListenForAtomOutputs(int64_t clientId, int64_t clientHandle, 
     std::lock_guard<std::recursive_mutex> guard(mutex);
     AtomOutputListener listener{clientId, clientHandle, instanceId};
     atomOutputListeners.push_back(listener);
-    jackHost->SetListenForAtomOutput(true);
+    audioHost->SetListenForAtomOutput(true);
 }
 
 void PiPedalModel::CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle)
@@ -1546,7 +1635,7 @@ void PiPedalModel::CancelListenForMidiEvent(int64_t clientId, int64_t clientHand
     }
     if (midiEventListeners.size() == 0)
     {
-        jackHost->SetListenForMidiEvent(false);
+        audioHost->SetListenForMidiEvent(false);
     }
 }
 void PiPedalModel::CancelListenForAtomOutputs(int64_t clientId, int64_t clientHandle)
@@ -1563,7 +1652,7 @@ void PiPedalModel::CancelListenForAtomOutputs(int64_t clientId, int64_t clientHa
     }
     if (midiEventListeners.size() == 0)
     {
-        jackHost->SetListenForMidiEvent(false);
+        audioHost->SetListenForMidiEvent(false);
     }
 }
 std::vector<AlsaDeviceInfo> PiPedalModel::GetAlsaDevices()
@@ -1599,4 +1688,32 @@ void PiPedalModel::SetFavorites(const std::map<std::string, bool> &favorites)
     {
         t[i]->OnFavoritesChanged(favorites);
     }
+}
+std::vector<MidiBinding> PiPedalModel::GetSystemMidiBidings() {
+    std::lock_guard<std::recursive_mutex> guard(mutex);
+    return this->systemMidiBindings;
+}
+void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
+{
+    std::lock_guard<std::recursive_mutex> guard(mutex);
+    this->systemMidiBindings = bindings;
+    storage.SetSystemMidiBindings(bindings);
+    if (this->audioHost)
+    {
+        this->audioHost->SetSystemMidiBindings(bindings);
+    }
+
+    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+    for (size_t i = 0; i < subscribers.size(); ++i)
+    {
+        t[i] = this->subscribers[i];
+    }
+    size_t n = this->subscribers.size();
+    for (size_t i = 0; i < n; ++i)
+    {
+        t[i]->OnSystemMidiBindingsChanged(bindings);
+    }
+    delete[] t;
+
+
 }

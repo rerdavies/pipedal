@@ -42,8 +42,8 @@ add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 add_executable(piddletest main.cpp pch.h UriTest.cpp JsonTest.cpp
 
 
-    ../src/Uri.cpp ../src/Uri.hpp ../src/HtmlHelper.cpp ../src/HtmlHelper.hpp BeastServerTest.cpp 
-    ../src/BeastServer.cpp ../src/BeastServer.hpp ../src/json.hpp ../src/json.cpp
+    ../src/Uri.cpp ../src/Uri.hpp ../src/HtmlHelper.cpp ../src/HtmlHelper.hpp WebServerTest.cpp 
+    ../src/WebServer.cpp ../src/WebServer.hpp ../src/json.hpp ../src/json.cpp
     ../src/Lv2Host.cpp ../src/Lv2Host.hpp
     ../src/Lv2Log.hpp ../src/Lv2Log.cpp
     ../src/PluginType.hpp ../src/PluginType.cpp

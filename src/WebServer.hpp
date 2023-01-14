@@ -68,10 +68,10 @@ public:
 //xxx move this to HtmlHelpers.
 std::string last_modified(const std::filesystem::path& path);
 
-class BeastServerImpl;
+class WebServerImpl;
 
 class SocketHandler {
-    friend class BeastServerImpl;
+    friend class WebServerImpl;
 public:
 
     class IWriteCallback {
@@ -213,9 +213,9 @@ public:
 
 };
 
-class BeastServer {
+class WebServer {
 public:
-    virtual ~BeastServer() { }
+    virtual ~WebServer() { }
 
     virtual void SetLogHttpRequests(bool enableLogging) = 0;
 
@@ -227,10 +227,17 @@ public:
 
     // signalOnDone: fire the specified POSIX signal when the service thread terminates. -1 for no signal.
     virtual void RunInBackground(int signalOnDone = -1) = 0;
+
+    static std::shared_ptr<WebServer> create(
+        const boost::asio::ip::address &address, 
+        int port, 
+        const char *rootPath, 
+        int threads);
+
+
 };
 
 
-std::shared_ptr<BeastServer> createBeastServer(const boost::asio::ip::address &address, int port, const char *rootPath, int threads);
 
 
 

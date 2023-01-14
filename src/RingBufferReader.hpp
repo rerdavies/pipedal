@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022-2023 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -22,7 +22,7 @@
 #include "PiPedalException.hpp"
 #include "Lv2Log.hpp"
 #include "VuUpdate.hpp"
-#include "JackHost.hpp"
+#include "AudioHost.hpp"
 namespace pipedal
 {
 
@@ -51,7 +51,24 @@ namespace pipedal
 
         AtomOutput = 17,
 
+        MidiProgramChange = 18, // program change requested via midi.
+        AckMidiProgramChange = 19,
+
+        NextMidiProgram = 20,
+
     };
+
+    struct RealtimeNextMidiProgramRequest {
+        int64_t requestId;
+        int32_t direction;
+    };
+
+    struct RealtimeMidiProgramRequest {
+        int64_t requestId;
+        int8_t bank;
+        uint8_t program;
+    };
+
 
     class RealtimeMonitorPortSubscription
     {
@@ -304,6 +321,25 @@ namespace pipedal
             write(RingBufferCommand::OnMidiListen, msg);
         }
 
+        /**
+         * @brief Notify host of a midi program change request.
+         * 
+         * @param bank MIDI bank number, or -1 for current bank.
+         * @param program MIDI program number.
+         */
+        void OnMidiProgramChange(int64_t _requestId,int8_t _bank,uint8_t _program)
+        {
+            RealtimeMidiProgramRequest msg { requestId:_requestId, bank: _bank,program: _program};
+
+
+            write(RingBufferCommand::MidiProgramChange,msg);
+        }
+        void OnNextMidiProgram(int64_t requestId,int32_t direction)
+        {
+            RealtimeNextMidiProgramRequest msg { requestId: requestId, direction:direction};
+            write(RingBufferCommand::NextMidiProgram,msg);
+        }
+
         void SetControlValue(int effectIndex, int controlIndex, float value)
         {
             SetControlValueBody body;
@@ -350,6 +386,10 @@ namespace pipedal
         void SetVuSubscriptions(RealtimeVuBuffers *configuration)
         {
             write(RingBufferCommand::SetVuSubscriptions, configuration);
+        }
+        void AckMidiProgramRequest(int64_t requestId)
+        {
+            write(RingBufferCommand::AckMidiProgramChange,requestId);
         }
 
         void SetMonitorPortSubscriptions(RealtimeMonitorPortSubscriptions *subscriptions)

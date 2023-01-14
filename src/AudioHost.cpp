@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022-2023 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -17,18 +17,16 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "JackHost.hpp"
+#include "AudioHost.hpp"
 
 #include "Lv2Log.hpp"
 
 #include "JackDriver.hpp"
 #include "AlsaDriver.hpp"
 
-
 using namespace pipedal;
 
 #include "AudioConfig.hpp"
-
 
 #include <string.h>
 #include <stdio.h>
@@ -61,38 +59,42 @@ using namespace pipedal;
 #include "AdminClient.hpp"
 
 const double VU_UPDATE_RATE_S = 1.0 / 30;
-const double OVERRUN_GRACE_PERIOD_S = 15; 
+const double OVERRUN_GRACE_PERIOD_S = 15;
 using namespace pipedal;
 
 const int MIDI_LV2_BUFFER_SIZE = 16 * 1024;
 
-
-static void GetCpuFrequency(uint64_t*freqMin,uint64_t*freqMax)
+static void GetCpuFrequency(uint64_t *freqMin, uint64_t *freqMax)
 {
     uint64_t fMax = 0;
     uint64_t fMin = UINT64_MAX;
     char deviceName[128];
-    try {
-    for (int i = 0; true; ++i)
+    try
     {
-        
-        snprintf(deviceName,sizeof(deviceName),"/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq",i);
-        std::ifstream f(deviceName);
-        if (!f)
+        for (int i = 0; true; ++i)
         {
-            break;
-        }
-        uint64_t freq;
-        f >> freq;
-        if (!f) break;
-        if (freq < fMin) fMin = freq;
-        if (freq > fMax) fMax = freq;
-    }
-    } catch (const std::exception &)
-    {
 
+            snprintf(deviceName, sizeof(deviceName), "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", i);
+            std::ifstream f(deviceName);
+            if (!f)
+            {
+                break;
+            }
+            uint64_t freq;
+            f >> freq;
+            if (!f)
+                break;
+            if (freq < fMin)
+                fMin = freq;
+            if (freq > fMax)
+                fMax = freq;
+        }
     }
-    if (fMin == 0) fMax = 0;
+    catch (const std::exception &)
+    {
+    }
+    if (fMin == 0)
+        fMax = 0;
     *freqMin = fMin;
     *freqMax = fMax;
 }
@@ -102,85 +104,157 @@ static std::string GetGovernor()
 }
 
 
+class SystemMidiBinding {
+private:
+    MidiBinding currentBinding;
+    bool controlState = false;
+public:
+    void SetBinding(const MidiBinding&binding) { currentBinding = binding; controlState = false; }
 
-class JackHostImpl : public JackHost, private AudioDriverHost
+    bool IsMatch(const MidiEvent&event);
+    bool IsTriggered(const MidiEvent&event);
+};
+
+bool SystemMidiBinding::IsTriggered(const MidiEvent &event)
+{
+    switch (currentBinding.bindingType())
+    {
+        case BINDING_TYPE_NOTE:
+        {
+            if (event.size != 3) return false;
+            auto  command = event.buffer[0] & 0xF0;
+            if (command != 0x90) return false; // MIDI note on
+            if (event.buffer[1] != currentBinding.note()) return false;
+            return event.buffer[2] != 0;  // note-on with velicity of zero is a note-off.
+        }
+        break;
+        case BINDING_TYPE_CONTROL:
+        {
+            if (event.size != 3) return false;
+            auto  command = event.buffer[0] & 0xF0;
+            if (command != 0xB0) return false;
+            if (event.buffer[1] != currentBinding.control()) return false;
+            bool state = event.buffer[2] >= 0x64;
+            if (state != this->controlState)
+            {
+                this->controlState = state;
+                return state;
+            }
+            return false;
+        }
+        break;
+        default:
+            return false;
+    }
+}
+
+bool SystemMidiBinding::IsMatch(const MidiEvent&event)
+{
+    switch (currentBinding.bindingType())
+    {
+        case BINDING_TYPE_NOTE:
+        {
+            if (event.size != 3) return false;
+            auto  command = event.buffer[0] & 0xF0;
+            if (command != 0x80 && command != 0x90) return false; // note on/note off.
+            return event.buffer[1] == currentBinding.note();
+        }
+        break;
+        case BINDING_TYPE_CONTROL:
+        {
+            if (event.size != 3) return false;
+            auto  command = event.buffer[0] & 0xF0;
+            if (command != 0xB0) return false;
+            return event.buffer[1] == currentBinding.control();
+        }
+        break;
+        default:
+            return false;
+    }
+}
+
+class AudioHostImpl : public AudioHost, private AudioDriverHost
 {
 private:
     IHost *pHost = nullptr;
 
-        class Uris
+    static constexpr size_t DEFERRED_MIDI_BUFFER_SIZE = 1024;
+
+    uint8_t deferredMidiMessages[DEFERRED_MIDI_BUFFER_SIZE];
+    size_t deferredMidiMessageCount;
+    bool midiProgramChangePending = false;
+    int selectedBank = -1;
+    int64_t midiProgramChangeId = 0;
+
+    class Uris
+    {
+    public:
+        Uris(IHost *pHost)
         {
-        public:
-            Uris(IHost *pHost)
-            {
-                atom_Blank = pHost->GetLv2Urid(LV2_ATOM__Blank);
-                atom_Path = pHost->GetLv2Urid(LV2_ATOM__Path);
-                atom_float = pHost->GetLv2Urid(LV2_ATOM__Float);
-                atom_Double = pHost->GetLv2Urid(LV2_ATOM__Double);
-                atom_Int = pHost->GetLv2Urid(LV2_ATOM__Int);
-                atom_Long = pHost->GetLv2Urid(LV2_ATOM__Long);
-                atom_Bool = pHost->GetLv2Urid(LV2_ATOM__Bool);
-                atom_String = pHost->GetLv2Urid(LV2_ATOM__String);
-                atom_Vector = pHost->GetLv2Urid(LV2_ATOM__Vector);
-                atom_Object = pHost->GetLv2Urid(LV2_ATOM__Object);
+            atom_Blank = pHost->GetLv2Urid(LV2_ATOM__Blank);
+            atom_Path = pHost->GetLv2Urid(LV2_ATOM__Path);
+            atom_float = pHost->GetLv2Urid(LV2_ATOM__Float);
+            atom_Double = pHost->GetLv2Urid(LV2_ATOM__Double);
+            atom_Int = pHost->GetLv2Urid(LV2_ATOM__Int);
+            atom_Long = pHost->GetLv2Urid(LV2_ATOM__Long);
+            atom_Bool = pHost->GetLv2Urid(LV2_ATOM__Bool);
+            atom_String = pHost->GetLv2Urid(LV2_ATOM__String);
+            atom_Vector = pHost->GetLv2Urid(LV2_ATOM__Vector);
+            atom_Object = pHost->GetLv2Urid(LV2_ATOM__Object);
 
+            atom_Sequence = pHost->GetLv2Urid(LV2_ATOM__Sequence);
+            atom_Chunk = pHost->GetLv2Urid(LV2_ATOM__Chunk);
+            atom_URID = pHost->GetLv2Urid(LV2_ATOM__URID);
+            atom_eventTransfer = pHost->GetLv2Urid(LV2_ATOM__eventTransfer);
+            patch_Get = pHost->GetLv2Urid(LV2_PATCH__Get);
+            patch_Set = pHost->GetLv2Urid(LV2_PATCH__Set);
+            patch_Put = pHost->GetLv2Urid(LV2_PATCH__Put);
+            patch_body = pHost->GetLv2Urid(LV2_PATCH__body);
+            patch_subject = pHost->GetLv2Urid(LV2_PATCH__subject);
+            patch_property = pHost->GetLv2Urid(LV2_PATCH__property);
+            // patch_accept = pHost->GetLv2Urid(LV2_PATCH__accept);
+            patch_value = pHost->GetLv2Urid(LV2_PATCH__value);
+            unitsFrame = pHost->GetLv2Urid(LV2_UNITS__frame);
+        }
+        // LV2_URID patch_accept;
 
-                atom_Sequence = pHost->GetLv2Urid(LV2_ATOM__Sequence);
-                atom_Chunk = pHost->GetLv2Urid(LV2_ATOM__Chunk);
-                atom_URID = pHost->GetLv2Urid(LV2_ATOM__URID);
-                atom_eventTransfer = pHost->GetLv2Urid(LV2_ATOM__eventTransfer);
-                patch_Get = pHost->GetLv2Urid(LV2_PATCH__Get);
-                patch_Set = pHost->GetLv2Urid(LV2_PATCH__Set);
-                patch_Put = pHost->GetLv2Urid(LV2_PATCH__Put);
-                patch_body = pHost->GetLv2Urid(LV2_PATCH__body);
-                patch_subject = pHost->GetLv2Urid(LV2_PATCH__subject);
-                patch_property = pHost->GetLv2Urid(LV2_PATCH__property);
-                //patch_accept = pHost->GetLv2Urid(LV2_PATCH__accept);
-                patch_value = pHost->GetLv2Urid(LV2_PATCH__value);
-                unitsFrame = pHost->GetLv2Urid(LV2_UNITS__frame);
+        LV2_URID unitsFrame;
+        LV2_URID pluginUri;
+        LV2_URID atom_Blank;
+        LV2_URID atom_Bool;
+        LV2_URID atom_float;
+        LV2_URID atom_Double;
+        LV2_URID atom_Int;
+        LV2_URID atom_Long;
+        LV2_URID atom_String;
+        LV2_URID atom_Object;
+        LV2_URID atom_Vector;
+        LV2_URID atom_Path;
+        LV2_URID atom_Sequence;
+        LV2_URID atom_Chunk;
+        LV2_URID atom_URID;
+        LV2_URID atom_eventTransfer;
+        LV2_URID midi_Event;
+        LV2_URID patch_Get;
+        LV2_URID patch_Set;
+        LV2_URID patch_Put;
+        LV2_URID patch_body;
+        LV2_URID patch_subject;
+        LV2_URID patch_property;
+        LV2_URID patch_value;
+        LV2_URID param_uiState;
+    };
 
-            }
-            //LV2_URID patch_accept;
+    Uris uris;
 
-            LV2_URID unitsFrame;
-            LV2_URID pluginUri;
-            LV2_URID atom_Blank;
-            LV2_URID atom_Bool;
-            LV2_URID atom_float;
-            LV2_URID atom_Double;
-            LV2_URID atom_Int;
-            LV2_URID atom_Long;
-            LV2_URID atom_String;
-            LV2_URID atom_Object;
-            LV2_URID atom_Vector;
-            LV2_URID atom_Path;
-            LV2_URID atom_Sequence;
-            LV2_URID atom_Chunk;
-            LV2_URID atom_URID;
-            LV2_URID atom_eventTransfer;
-            LV2_URID midi_Event;
-            LV2_URID patch_Get;
-            LV2_URID patch_Set;
-            LV2_URID patch_Put;
-            LV2_URID patch_body;
-            LV2_URID patch_subject;
-            LV2_URID patch_property;
-            LV2_URID patch_value;
-            LV2_URID param_uiState;
-        };
-
-        Uris uris;
-
-
-
-    AudioDriver*audioDriver = nullptr;
+    AudioDriver *audioDriver = nullptr;
 
     inherit_priority_recursive_mutex mutex;
     int64_t overrunGracePeriodSamples = 0;
 
-    IJackHostCallbacks *pNotifyCallbacks = nullptr;
+    IAudioHostCallbacks *pNotifyCallbacks = nullptr;
 
-    virtual void SetNotificationCallbacks(IJackHostCallbacks *pNotifyCallbacks)
+    virtual void SetNotificationCallbacks(IAudioHostCallbacks *pNotifyCallbacks)
     {
         this->pNotifyCallbacks = pNotifyCallbacks;
     }
@@ -190,12 +264,15 @@ private:
     RingBuffer<true, false> inputRingBuffer;
     RingBuffer<false, true> outputRingBuffer;
 
-    RingBufferWriter<true,false> x;
+    RingBufferWriter<true, false> x;
 
     RealtimeRingBufferReader realtimeReader;
     RealtimeRingBufferWriter realtimeWriter;
     HostRingBufferReader hostReader;
     HostRingBufferWriter hostWriter;
+
+    SystemMidiBinding nextMidiBinding;
+    SystemMidiBinding prevMidiBinding;
 
     JackChannelSelection channelSelection;
     bool active = false;
@@ -213,27 +290,25 @@ private:
     std::atomic<std::chrono::system_clock::time_point> lastUnderrunTime =
         std::chrono::system_clock::from_time_t(0);
 
-
-    std::string GetAtomObjectType(uint8_t*pData)
+    std::string GetAtomObjectType(uint8_t *pData)
     {
-        LV2_Atom_Object *pAtom = (LV2_Atom_Object*)pData;
+        LV2_Atom_Object *pAtom = (LV2_Atom_Object *)pData;
         if (pAtom->atom.type != uris.atom_Object)
         {
             throw std::invalid_argument("Not an Lv2 Object");
         }
         return pHost->Lv2UriudToString(pAtom->body.otype);
-
     }
 
-    void WriteAtom(json_writer &writer, LV2_Atom*pAtom);
+    void WriteAtom(json_writer &writer, LV2_Atom *pAtom);
 
-    std::string AtomToJson(uint8_t*pData)
+    std::string AtomToJson(uint8_t *pData)
     {
         std::stringstream s;
         json_writer writer(s);
-        LV2_Atom *pAtom = (LV2_Atom*)pData;
+        LV2_Atom *pAtom = (LV2_Atom *)pData;
 
-        WriteAtom(writer,pAtom);
+        WriteAtom(writer, pAtom);
         return s.str();
     }
 
@@ -242,7 +317,6 @@ private:
         ++this->underruns;
         this->lastUnderrunTime = std::chrono::system_clock ::now();
     }
-
 
     virtual void Close()
     {
@@ -286,13 +360,11 @@ private:
         this->inputRingBuffer.reset();
         this->outputRingBuffer.reset();
 
-
         for (size_t i = 0; i < midiLv2Buffers.size(); ++i)
         {
             delete[] midiLv2Buffers[i];
         }
         midiLv2Buffers.resize(0);
-
     }
 
     void ZeroBuffer(float *buffer, size_t nframes)
@@ -340,6 +412,9 @@ private:
             this->realtimeMonitorPortSubscriptions = nullptr;
         }
     }
+
+
+    virtual void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings);
 
     void writeVu()
     {
@@ -459,6 +534,16 @@ private:
                 this->realtimeMonitorPortSubscriptions = pSubscriptions;
                 break;
             }
+            case RingBufferCommand::AckMidiProgramChange:
+            {
+                int64_t requestId;
+                realtimeReader.readComplete(&requestId);
+                if (requestId == this->midiProgramChangeId)
+                {
+                    this->midiProgramChangePending = false;
+                }
+                break;
+            }
             case RingBufferCommand::SetVuSubscriptions:
             {
                 RealtimeVuBuffers *configuration;
@@ -485,14 +570,17 @@ private:
                 ReplaceEffectBody body;
                 realtimeReader.readComplete(&body);
 
-                auto oldValue = this->realtimeActivePedalBoard;
-                this->realtimeActivePedalBoard = body.effect;
+                if (body.effect != nullptr)
+                {
+                    auto oldValue = this->realtimeActivePedalBoard;
+                    this->realtimeActivePedalBoard = body.effect;
 
-                realtimeWriter.EffectReplaced(oldValue);
+                    realtimeWriter.EffectReplaced(oldValue);
 
-                // invalidate the possibly no-good subscriptions. Model will update them shortly.
-                freeRealtimeVuConfiguration();
-                freeRealtimeMonitorPortSubscriptions();
+                    // invalidate the possibly no-good subscriptions. Model will update them shortly.
+                    freeRealtimeVuConfiguration();
+                    freeRealtimeMonitorPortSubscriptions();
+                }
                 break;
             }
             default:
@@ -502,54 +590,137 @@ private:
         reEntered = false;
     }
 
+    virtual void AckMidiProgramRequest(uint64_t requestId)
+    {
+        hostWriter.AckMidiProgramRequest(requestId);
+    }
+
     void OnMidiValueChanged(uint64_t instanceId, int controlIndex, float value)
     {
         realtimeWriter.MidiValueChanged(instanceId, controlIndex, value);
     }
     static void fnMidiValueChanged(void *data, uint64_t instanceId, int controlIndex, float value)
     {
-        ((JackHostImpl *)data)->OnMidiValueChanged(instanceId, controlIndex, value);
+        ((AudioHostImpl *)data)->OnMidiValueChanged(instanceId, controlIndex, value);
     }
-    void ProcessJackMidi()
+    static bool isBankChange(MidiEvent &event)
+    {
+        return (event.size == 3 && event.buffer[0] == 0xB0 && event.buffer[1] == 0x00);
+    }
+
+    bool onMidiEvent(Lv2EventBufferWriter&eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent&event)
+    {
+        eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
+
+        this->realtimeActivePedalBoard->OnMidiMessage(event.size, event.buffer, this, fnMidiValueChanged);
+        if (listenForMidiEvent)
+        {
+            if (event.size >= 3)
+            {
+                uint8_t cmd = (uint8_t)(event.buffer[0] & 0xF0);
+                bool isNote = cmd == 0x90;
+                bool isControl = cmd == 0xB0;
+                if (isNote || isControl)
+                {
+                    realtimeWriter.OnMidiListen(isNote, event.buffer[1]);
+                }
+            }
+        }
+        return true;
+    }
+
+
+    void ProcessMidiInput()
     {
         Lv2EventBufferWriter eventBufferWriter(this->eventBufferUrids);
 
-        size_t midiInputBufferCount = audioDriver->MidiInputBufferCount(); 
+        size_t midiInputBufferCount = audioDriver->MidiInputBufferCount();
 
         audioDriver->FillMidiBuffers();
-        
-        for (size_t i = 0; i < midiInputBufferCount; ++i)
+
+        for (size_t midiDeviceIx = 0; midiDeviceIx < midiInputBufferCount; ++midiDeviceIx)
         {
-            
-            void *portBuffer = audioDriver->GetMidiInputBuffer(i,0);
+
+            void *portBuffer = audioDriver->GetMidiInputBuffer(midiDeviceIx, 0);
             if (portBuffer)
             {
-                uint8_t *lv2Buffer = this->midiLv2Buffers[i];
+                uint8_t *lv2Buffer = this->midiLv2Buffers[midiDeviceIx];
                 size_t n = audioDriver->GetMidiInputEventCount(portBuffer);
 
                 eventBufferWriter.Reset(lv2Buffer, MIDI_LV2_BUFFER_SIZE);
-                auto iterator = eventBufferWriter.begin();
+                Lv2EventBufferWriter::LV2_EvBuf_Iterator iterator = eventBufferWriter.begin();
+                MidiEvent event;
+
+
+                // write all deferred midi messages.
+                if (deferredMidiMessageCount != 0 && !midiProgramChangePending)
+                {
+                    for (size_t i = 0; i < deferredMidiMessageCount; /**/)
+                    {
+                        int8_t deviceIndex = deferredMidiMessages[i++];
+                        int8_t messageCount = deferredMidiMessages[i++];
+                        if (deviceIndex == midiDeviceIx)
+                        {
+                            event.size = messageCount;
+                            event.buffer = deferredMidiMessages +i;
+                            event.time = 0;
+
+                            onMidiEvent(eventBufferWriter,iterator,event);
+                        }
+
+                        i += messageCount;
+                    }
+                }
+
 
                 for (size_t frame = 0; frame < n; ++frame)
                 {
-                    MidiEvent event;
-                    if (audioDriver->GetMidiInputEvent(&event,portBuffer,frame)) 
+                    if (audioDriver->GetMidiInputEvent(&event, portBuffer, frame))
                     {
-                        eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
-
-                        this->realtimeActivePedalBoard->OnMidiMessage(event.size, event.buffer, this, fnMidiValueChanged);
-                        if (listenForMidiEvent)
+                        uint8_t midiCommand = (uint8_t)(event.buffer[0] & 0xF0);
+                        if (midiCommand == 0xC0) // midi program change.
                         {
-                            if (event.size >= 3)
+                            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
+                            midiProgramChangePending = true;
+
+                            this->realtimeWriter.OnMidiProgramChange(++(this->midiProgramChangeId), selectedBank,event.buffer[1]);
+                        }
+                        else if (isBankChange(event))
+                        {
+                            this->selectedBank = event.buffer[2];
+                        } else if (this->nextMidiBinding.IsMatch(event))
+                        {
+                            if (nextMidiBinding.IsTriggered(event))
                             {
-                                uint8_t cmd = (uint8_t)(event.buffer[0] & 0xF0);
-                                bool isNote = cmd == 0x90;
-                                bool isControl = cmd == 0xB0;
-                                if (isNote || isControl)
+                                midiProgramChangePending = true;
+                                this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId),1);
+                            }
+                        } else if (this->prevMidiBinding.IsMatch(event))
+                        {
+                            if (prevMidiBinding.IsTriggered(event))
+                            {
+                                midiProgramChangePending = true;
+                                this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId),-1);
+                            }
+                        }
+                        else if (midiProgramChangePending)
+                        {
+                            // defer the message for processing after the program change has completed.
+                            if (event.size > 0 
+                                && event.size < 128 
+                                && event.size + 2 + this->deferredMidiMessageCount < DEFERRED_MIDI_BUFFER_SIZE)
+                            {
+                                this->deferredMidiMessages[deferredMidiMessageCount++] = midiDeviceIx;
+                                this->deferredMidiMessages[deferredMidiMessageCount++] = (uint8_t)event.size;
+                                for (size_t i = 0; i < event.size; ++i)
                                 {
-                                    realtimeWriter.OnMidiListen(isNote, event.buffer[1]);
+                                    this->deferredMidiMessages[deferredMidiMessageCount++] = event.buffer[i];
                                 }
                             }
+                        }
+                        else
+                        {
+                            onMidiEvent(eventBufferWriter,iterator,event);
                         }
                     }
                 }
@@ -563,15 +734,14 @@ private:
 
     bool IsAudioActive()
     {
-        std::lock_guard lock { audioStoppedMutex};
+        std::lock_guard lock{audioStoppedMutex};
         return this->active;
     }
     virtual void OnAudioStopped()
     {
-        std::lock_guard lock { audioStoppedMutex};
+        std::lock_guard lock{audioStoppedMutex};
         this->active = false;
         Lv2Log::info("Audio stopped.");
-
     }
 
     virtual void OnProcess(size_t nframes)
@@ -589,7 +759,7 @@ private:
             Lv2PedalBoard *pedalBoard = this->realtimeActivePedalBoard;
             if (pedalBoard != nullptr)
             {
-                ProcessJackMidi();
+                ProcessMidiInput();
                 float *inputBuffers[4];
                 float *outputBuffers[4];
                 bool buffersValid = true;
@@ -607,7 +777,7 @@ private:
 
                 for (int i = 0; i < audioDriver->OutputBufferCount(); ++i)
                 {
-                    float *output =  audioDriver->GetOutputBuffer(i,nframes);
+                    float *output = audioDriver->GetOutputBuffer(i, nframes);
                     if (output == nullptr)
                     {
                         buffersValid = false;
@@ -622,7 +792,7 @@ private:
                     pedalBoard->ResetAtomBuffers();
                     pedalBoard->ProcessParameterRequests(pParameterRequests);
 
-                    processed = pedalBoard->Run(inputBuffers, outputBuffers, (uint32_t)nframes,&realtimeWriter);
+                    processed = pedalBoard->Run(inputBuffers, outputBuffers, (uint32_t)nframes, &realtimeWriter);
                     if (processed)
                     {
                         if (this->realtimeVuBuffers != nullptr)
@@ -664,18 +834,16 @@ private:
                 this->underruns = 0;
             }
             this->currentSample += nframes;
-
         }
         catch (const std::exception &e)
         {
             Lv2Log::error("Fatal error while processing jack audio. (%s)", e.what());
             throw;
         }
-
     }
-    
+
 public:
-    JackHostImpl(IHost *pHost)
+    AudioHostImpl(IHost *pHost)
         : inputRingBuffer(RING_BUFFER_SIZE),
           outputRingBuffer(RING_BUFFER_SIZE),
           realtimeReader(&this->inputRingBuffer),
@@ -687,21 +855,19 @@ public:
           uris(pHost)
     {
 
-        #if JACK_HOST 
+#if JACK_HOST
         audioDriver = CreateJackDriver(this);
-        #endif
-        #if ALSA_HOST
+#endif
+#if ALSA_HOST
         audioDriver = CreateAlsaDriver(this);
-        #endif
-
+#endif
     }
-    virtual ~JackHostImpl()
+    virtual ~AudioHostImpl()
     {
         Close();
         CleanRestartThreads(true);
 
         delete audioDriver;
-
     }
 
     virtual JackConfiguration GetServerConfiguration()
@@ -716,6 +882,8 @@ public:
     {
         return this->sampleRate;
     }
+
+
 
     void OnAudioComplete()
     {
@@ -878,7 +1046,8 @@ public:
                                     this->pNotifyCallbacks->OnNotifyVusSubscription(*updates);
                                 }
                                 this->hostWriter.AckVuUpdate(); // please sir, can I have some more?
-                            } else if (command == RingBufferCommand::AtomOutput)
+                            }
+                            else if (command == RingBufferCommand::AtomOutput)
                             {
                                 uint64_t instanceId;
                                 hostReader.read(&instanceId);
@@ -888,15 +1057,14 @@ public:
                                 {
                                     atomBuffer.resize(extraBytes);
                                 }
-                                hostReader.read(extraBytes,&(atomBuffer[0]));
+                                hostReader.read(extraBytes, &(atomBuffer[0]));
 
-                        
                                 IEffect *pEffect = currentPedalBoard->GetEffect(instanceId);
-                                if (pEffect != nullptr &&this->pNotifyCallbacks && listenForAtomOutput)
+                                if (pEffect != nullptr && this->pNotifyCallbacks && listenForAtomOutput)
                                 {
                                     std::string atomType = GetAtomObjectType(&atomBuffer[0]);
-                                    auto json  = AtomToJson(&(atomBuffer[0]));
-                                    this->pNotifyCallbacks->OnNotifyAtomOutput(instanceId,atomType,json);
+                                    auto json = AtomToJson(&(atomBuffer[0]));
+                                    this->pNotifyCallbacks->OnNotifyAtomOutput(instanceId, atomType, json);
                                 }
                             }
                             else if (command == RingBufferCommand::FreeVuSubscriptions)
@@ -923,6 +1091,16 @@ public:
                                 hostReader.read(&body);
                                 OnAudioComplete();
                                 return;
+                            } else if (command == RingBufferCommand::MidiProgramChange)
+                            {
+                                RealtimeMidiProgramRequest programRequest;
+                                hostReader.read(&programRequest);
+                                OnMidiProgramRequest(programRequest);
+                            } else if (command == RingBufferCommand::NextMidiProgram)
+                            {
+                                RealtimeNextMidiProgramRequest request;
+                                hostReader.read(&request);
+                                pNotifyCallbacks->OnNotifyNextMidiProgram(request);
                             }
                             else
                             {
@@ -982,13 +1160,11 @@ public:
         return result;
     }
 
-
-    virtual void Open(const JackServerSettings &jackServerSettings,const JackChannelSelection &channelSelection)
+    virtual void Open(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
     {
 
         std::lock_guard guard(mutex);
-        if (channelSelection.GetInputAudioPorts().size() == 0
-        || channelSelection.GetOutputAudioPorts().size() == 0)
+        if (channelSelection.GetInputAudioPorts().size() == 0 || channelSelection.GetOutputAudioPorts().size() == 0)
         {
             return;
         }
@@ -1009,15 +1185,15 @@ public:
 
         StartReaderThread();
 
-        try {
+        try
+        {
 
-            audioDriver->Open(jackServerSettings,this->channelSelection);
+            audioDriver->Open(jackServerSettings, this->channelSelection);
 
             this->sampleRate = audioDriver->GetSampleRate();
 
-            this->overrunGracePeriodSamples = (uint64_t)(((uint64_t)this->sampleRate)*OVERRUN_GRACE_PERIOD_S);
+            this->overrunGracePeriodSamples = (uint64_t)(((uint64_t)this->sampleRate) * OVERRUN_GRACE_PERIOD_S);
             this->vuSamplesPerUpdate = (size_t)(sampleRate * VU_UPDATE_RATE_S);
-
 
             midiLv2Buffers.resize(audioDriver->MidiInputBufferCount());
             for (size_t i = 0; i < audioDriver->MidiInputBufferCount(); ++i)
@@ -1025,11 +1201,9 @@ public:
                 midiLv2Buffers[i] = AllocateRealtimeBuffer(MIDI_LV2_BUFFER_SIZE);
             }
 
-
             active = true;
             audioDriver->Activate();
             Lv2Log::info("Audio started.");
-
         }
         catch (const std::exception &e)
         {
@@ -1040,6 +1214,10 @@ public:
         }
     }
 
+    void OnMidiProgramRequest(RealtimeMidiProgramRequest &programRequest)
+    {
+        pNotifyCallbacks->OnNotifyMidiProgramChange(programRequest);
+    }
     void OnActivePedalBoardReleased(Lv2PedalBoard *pPedalBoard)
     {
         if (pPedalBoard)
@@ -1107,7 +1285,7 @@ public:
         }
     }
 
-    void SetControlValue(uint64_t  instanceId, const std::string &symbol, float value)
+    void SetControlValue(uint64_t instanceId, const std::string &symbol, float value)
     {
         std::lock_guard guard(mutex);
         if (active && this->currentPedalBoard)
@@ -1207,7 +1385,7 @@ public:
 private:
     class RestartThread
     {
-        JackHostImpl *this_;
+        AudioHostImpl *this_;
         JackServerSettings jackServerSettings;
         std::function<void(bool success, const std::string &errorMessage)> onComplete;
         std::atomic<bool> isComplete = false;
@@ -1215,7 +1393,7 @@ private:
 
     public:
         RestartThread(
-            JackHostImpl *host,
+            AudioHostImpl *host,
             const JackServerSettings &jackServerSettings_,
             std::function<void(bool success, const std::string &errorMessage)> onComplete_)
             : this_(host),
@@ -1234,19 +1412,20 @@ private:
         {
             this_->restarting = true;
             // this_->Close(); (JackServerConfiguration now does a service restart.)
-            try {
+            try
+            {
                 AdminClient client;
 
                 client.SetJackServerConfiguration(jackServerSettings);
 
-
-                //this_->Open(this_->channelSelection);
+                // this_->Open(this_->channelSelection);
                 this_->restarting = false;
                 onComplete(true, "");
                 isComplete = true;
-            } catch (const std::exception &e)
+            }
+            catch (const std::exception &e)
             {
-                onComplete(false,e.what());
+                onComplete(false, e.what());
                 this_->restarting = false;
                 isComplete = true;
             }
@@ -1349,7 +1528,7 @@ public:
         {
             result.cpuUsage_ = audioDriver->CpuUse();
         }
-        GetCpuFrequency(&result.cpuFreqMax_,&result.cpuFreqMin_);
+        GetCpuFrequency(&result.cpuFreqMax_, &result.cpuFreqMin_);
         result.governor_ = GetGovernor();
 
         return result;
@@ -1367,7 +1546,8 @@ public:
     }
 };
 
-static std::string UriToFieldName(const std::string&uri){
+static std::string UriToFieldName(const std::string &uri)
+{
     int pos;
     for (pos = uri.length(); pos >= 0; --pos)
     {
@@ -1377,10 +1557,10 @@ static std::string UriToFieldName(const std::string&uri){
             break;
         }
     }
-    return uri.substr(pos+1);
+    return uri.substr(pos + 1);
 }
 
-void JackHostImpl::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
+void AudioHostImpl::WriteAtom(json_writer &writer, LV2_Atom *pAtom)
 {
     if (pAtom->type == uris.atom_Blank)
     {
@@ -1389,86 +1569,95 @@ void JackHostImpl::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
     else if (pAtom->type == uris.atom_float)
     {
         writer.write(
-            ((LV2_Atom_Float*)pAtom)->body
-        );
-
-    } else if (pAtom->type == uris.atom_Int)
+            ((LV2_Atom_Float *)pAtom)->body);
+    }
+    else if (pAtom->type == uris.atom_Int)
     {
         writer.write(
-            ((LV2_Atom_Int*)pAtom)->body
-        );
-    } else if (pAtom->type == uris.atom_Long)
+            ((LV2_Atom_Int *)pAtom)->body);
+    }
+    else if (pAtom->type == uris.atom_Long)
     {
         writer.write(
-            ((LV2_Atom_Long*)pAtom)->body
-        );
-    } else if (pAtom->type == uris.atom_Double)
+            ((LV2_Atom_Long *)pAtom)->body);
+    }
+    else if (pAtom->type == uris.atom_Double)
     {
         writer.write(
-            ((LV2_Atom_Double*)pAtom)->body
-        );
-    } else if (pAtom->type == uris.atom_Bool)
+            ((LV2_Atom_Double *)pAtom)->body);
+    }
+    else if (pAtom->type == uris.atom_Bool)
     {
         writer.write(
-            ((LV2_Atom_Bool*)pAtom)->body
-        );
-    } else if (pAtom->type == uris.atom_String)
+            ((LV2_Atom_Bool *)pAtom)->body);
+    }
+    else if (pAtom->type == uris.atom_String)
     {
-        const char *p = (((const char*) pAtom) + sizeof(LV2_Atom_String));
+        const char *p = (((const char *)pAtom) + sizeof(LV2_Atom_String));
         writer.write(
-            p
-        );
-    } else if (pAtom->type == uris.atom_Vector)
+            p);
+    }
+    else if (pAtom->type == uris.atom_Vector)
     {
-        LV2_Atom_Vector *pVector = (LV2_Atom_Vector*)pAtom;
+        LV2_Atom_Vector *pVector = (LV2_Atom_Vector *)pAtom;
         writer.start_array();
         {
-            size_t n = (pAtom->size-sizeof(pVector->body))/pVector->body.child_size;
-            char *pItems = ((char*)pAtom) + sizeof(LV2_Atom_Vector);
+            size_t n = (pAtom->size - sizeof(pVector->body)) / pVector->body.child_size;
+            char *pItems = ((char *)pAtom) + sizeof(LV2_Atom_Vector);
             if (pVector->body.child_type == uris.atom_float)
             {
-                float *p = (float*)pItems;
+                float *p = (float *)pItems;
                 for (size_t i = 0; i < n; ++i)
                 {
-                    if (i != 0) writer.write_raw(",");
+                    if (i != 0)
+                        writer.write_raw(",");
                     writer.write(*p++);
                 }
-            } else if (pVector->body.child_type == uris.atom_Int)
+            }
+            else if (pVector->body.child_type == uris.atom_Int)
             {
-                int32_t *p = (int32_t*)pItems;
+                int32_t *p = (int32_t *)pItems;
                 for (size_t i = 0; i < n; ++i)
                 {
-                    if (i != 0) writer.write_raw(",");
+                    if (i != 0)
+                        writer.write_raw(",");
                     writer.write(*p++);
                 }
-            } else if (pVector->body.child_type == uris.atom_Long)
+            }
+            else if (pVector->body.child_type == uris.atom_Long)
             {
-                int64_t *p = (int64_t*)pItems;
+                int64_t *p = (int64_t *)pItems;
                 for (size_t i = 0; i < n; ++i)
                 {
-                    if (i != 0) writer.write_raw(",");
+                    if (i != 0)
+                        writer.write_raw(",");
                     writer.write(*p++);
                 }
-            } else if (pVector->body.child_type == uris.atom_Double)
+            }
+            else if (pVector->body.child_type == uris.atom_Double)
             {
-                double *p = (double*)pItems;
+                double *p = (double *)pItems;
                 for (size_t i = 0; i < n; ++i)
                 {
-                    if (i != 0) writer.write_raw(",");
+                    if (i != 0)
+                        writer.write_raw(",");
                     writer.write(*p++);
                 }
-            } else if (pVector->body.child_type == uris.atom_Bool)
+            }
+            else if (pVector->body.child_type == uris.atom_Bool)
             {
-                bool *p = (bool*)pItems;
+                bool *p = (bool *)pItems;
                 for (size_t i = 0; i < n; ++i)
                 {
-                    if (i != 0) writer.write_raw(",");
+                    if (i != 0)
+                        writer.write_raw(",");
                     writer.write(*p++);
                 }
             }
         }
         writer.end_array();
-    } else if (pAtom->type == uris.atom_Object)
+    }
+    else if (pAtom->type == uris.atom_Object)
     {
         writer.start_object();
 
@@ -1477,14 +1666,14 @@ void JackHostImpl::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
         if (obj->body.id != 0)
         {
             std::string id = pHost->Lv2UriudToString(obj->body.id);
-            writer.write_member("id",id.c_str());
+            writer.write_member("id", id.c_str());
             firstMember = false;
         }
 
         if (obj->body.otype != 0)
         {
-            std::string type =  pHost->Lv2UriudToString(obj->body.otype);        
-            writer.write_member("lv2Type",type.c_str());
+            std::string type = pHost->Lv2UriudToString(obj->body.otype);
+            writer.write_member("lv2Type", type.c_str());
             if (!firstMember)
             {
                 writer.write_raw(",");
@@ -1492,8 +1681,10 @@ void JackHostImpl::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
             firstMember = false;
         }
 
-        LV2_ATOM_OBJECT_FOREACH (obj, prop) {
-            if (!firstMember) {
+        LV2_ATOM_OBJECT_FOREACH(obj, prop)
+        {
+            if (!firstMember)
+            {
                 writer.write_raw(",");
             }
             firstMember = false;
@@ -1502,17 +1693,30 @@ void JackHostImpl::WriteAtom(json_writer &writer, LV2_Atom*pAtom)
             writer.write(key);
             writer.write_raw(": ");
             LV2_Atom *value = &(prop->value);
-            WriteAtom(writer,value);
+            WriteAtom(writer, value);
         }
         writer.end_object();
-        
     }
-
 }
 
-JackHost *JackHost::CreateInstance(IHost *pHost)
+void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding>&bindings) 
 {
-    return new JackHostImpl(pHost);
+    for (auto i = bindings.begin(); i != bindings.end(); ++i)
+    {
+        if (i->symbol() == "nextProgram")
+        {
+            this->nextMidiBinding.SetBinding(*i);
+        } else if (i->symbol() == "prevProgram")
+        {
+            this->prevMidiBinding.SetBinding(*i);
+        }
+    }
+}
+
+
+AudioHost *AudioHost::CreateInstance(IHost *pHost)
+{
+    return new AudioHostImpl(pHost);
 }
 
 JSON_MAP_BEGIN(JackHostStatus)

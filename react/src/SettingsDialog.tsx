@@ -44,6 +44,7 @@ import WifiDirectConfigDialog from './WifiDirectConfigDialog';
 import DialogEx from './DialogEx'
 import GovernorSettings from './GovernorSettings';
 import { AlsaMidiDeviceInfo } from './AlsaMidiDeviceInfo';
+import SystemMidiBindingsDialog from './SystemMidiBindingsDialog';
 
 import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
@@ -84,6 +85,7 @@ interface SettingsDialogState {
     isAndroidHosted: boolean;
     showRestartOkDialog: boolean;
     showShutdownOkDialog: boolean;
+    showSystemMidiBindingsDialog: boolean;
 };
 
 
@@ -182,6 +184,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 restarting: false,
                 showShutdownOkDialog: false,
                 showRestartOkDialog: false,
+                showSystemMidiBindingsDialog: false,
                 isAndroidHosted: this.model.isAndroidHosted()
 
 
@@ -375,6 +378,12 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.setState({
                 showMidiSelectDialog: true
             })
+        }
+        handleMidiMessageSettings() {
+            this.setState({
+                showSystemMidiBindingsDialog: true
+            });
+
         }
         handleJackServerSettings() {
             this.setState({
@@ -634,6 +643,14 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>{this.midiSummary()}</Typography>
                                         </div>
                                     </ButtonBase>
+                                    <ButtonBase className={classes.setting} disabled={!isConfigValid} onClick={() => this.handleMidiMessageSettings()}  >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>System MIDI Bindings</Typography>
+                                            
+                                        </div>
+                                    </ButtonBase>
+
                                 </div>
                             </div>
                             <Divider />
@@ -840,6 +857,10 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         onOk={() => { this.setState({ showShutdownOkDialog: false }); this.handleShutdownOk(); }}
                         onClose={() => { this.setState({ showShutdownOkDialog: false }); }}
                     />
+                    <SystemMidiBindingsDialog
+                        open={this.state.showSystemMidiBindingsDialog}
+                        onClose={()=> { this.setState({showSystemMidiBindingsDialog: false});}}
+                        />
                 </DialogEx >
 
             );

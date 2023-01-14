@@ -149,7 +149,7 @@ set (PIPEDAL_SOURCES
     CpuGovernor.cpp CpuGovernor.hpp
     GovernorSettings.cpp GovernorSettings.hpp
     SysExec.cpp SysExec.hpp
-    BeastServer.cpp BeastServer.hpp HtmlHelper.cpp HtmlHelper.hpp pch.h Uri.cpp Uri.hpp
+    WebServer.cpp WebServer.hpp HtmlHelper.cpp HtmlHelper.hpp pch.h Uri.cpp Uri.hpp
     WifiConfigSettings.hpp WifiConfigSettings.cpp
     WifiDirectConfigSettings.hpp WifiDirectConfigSettings.cpp
     ConfigUtil.hpp ConfigUtil.cpp
@@ -164,7 +164,7 @@ set (PIPEDAL_SOURCES
     Presets.hpp Presets.cpp
     Storage.hpp Storage.cpp
     Banks.hpp Banks.cpp
-    JackHost.hpp JackHost.cpp
+    AudioHost.hpp AudioHost.cpp
     JackConfiguration.hpp JackConfiguration.cpp
     defer.hpp
     Lv2Effect.cpp Lv2Effect.hpp
@@ -264,7 +264,7 @@ add_executable(pipedaltest testMain.cpp
 
     SystemConfigFile.hpp SystemConfigFile.cpp
     SystemConfigFileTest.cpp
-    BeastServerTest.cpp
+    WebServerTest.cpp
     MemDebug.cpp
     MemDebug.hpp
     )
