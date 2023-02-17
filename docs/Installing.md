@@ -13,14 +13,14 @@ page_icon: img/Install4.jpg
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Ubuntu/Raspberry Pi OS (64-bit) v1.0.18](https://github.com/rerdavies/pipedal/releases/download/v1.0.18/pipedal_1.0.18_arm64.deb)
+- [Ubuntu/Raspberry Pi OS (64-bit) v1.0.19](https://github.com/rerdavies/pipedal/releases/download/v1.0.19/pipedal_1.0.19_arm64.deb)
 
 Install the package by running 
 
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_1.0.18_arm64.deb
+  sudo apt-get install ./pipedal_1.0.19_arm64.deb
 ```
 On Raspberry Pi OS, if you have a graphical desktop installed, you can also install the package by double-clicking on the downloaded package in the File Manager.
 

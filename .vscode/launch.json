@@ -79,7 +79,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
 
-            "args": [            "[alsa_midi_test]"     ],
+            "args": [            "[alsa_test]"     ],
 
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -84,6 +84,8 @@ namespace pipedal {
         virtual void Deactivate() = 0;
         virtual void Close() = 0;
 
+        virtual std::string GetConfigurationDescription() = 0;
+
     };
 
 };

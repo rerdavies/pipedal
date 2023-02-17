@@ -37,7 +37,8 @@ namespace pipedal {
 
     AudioDriver* CreateAlsaDriver(AudioDriverHost*driverHost);
 
-
+    // test only.
+    void AlsaFormatEncodeDecodeTest(AudioDriverHost*driverHost);
     void MidiDecoderTest();
 }
 

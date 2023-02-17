@@ -1203,7 +1203,7 @@ public:
 
             active = true;
             audioDriver->Activate();
-            Lv2Log::info("Audio started.");
+            Lv2Log::info(SS("Audio started. " << audioDriver->GetConfigurationDescription()));
         }
         catch (const std::exception &e)
         {

@@ -55,12 +55,8 @@ namespace pipedal
         char name[40];
         snd_pcm_format_t pcm_format;
     };
-    [[noreturn]] static void AlsaError(const std::string &message)
-    {
-        throw PiPedalStateException(message);
-    }
 
-    static bool SetPreferredAlsaFormat(
+    bool SetPreferredAlsaFormat(
         const char *streamType,
         snd_pcm_t *handle,
         snd_pcm_hw_params_t *hwParams,
@@ -78,29 +74,54 @@ namespace pipedal
         return false;
     }
 
-    static void SetPreferredAlsaFormat(
+    static AudioFormat leFormats[]{
+        {"16-bit little-endian", SND_PCM_FORMAT_S16_LE},
+
+        {"32-bit float little-endian", SND_PCM_FORMAT_FLOAT_LE},
+        {"32-bit integer little-endian", SND_PCM_FORMAT_S32_LE},
+        {"24-bit little-endian", SND_PCM_FORMAT_S24_LE},
+        {"24-bit little-endian in 3bytes format", SND_PCM_FORMAT_S24_3LE},
+        {"16-bit little-endian", SND_PCM_FORMAT_S16_LE},
+
+    };
+    static AudioFormat beFormats[]{
+        {"32-bit float big-endian", SND_PCM_FORMAT_FLOAT_BE},
+        {"32-bit integer big-endian", SND_PCM_FORMAT_S32_BE},
+        {"24-bit big-endian", SND_PCM_FORMAT_S24_BE},
+        {"24-bit big-endian in 3bytes format", SND_PCM_FORMAT_S24_3BE},
+        {"16-bit big-endian", SND_PCM_FORMAT_S16_BE},
+    };
+    [[noreturn]] static void AlsaError(const std::string &message)
+    {
+        throw PiPedalStateException(message);
+    }
+
+    std::string GetAlsaFormatDescription(snd_pcm_format_t format)
+    {
+        for (size_t i = 0; i < sizeof(beFormats) / sizeof(beFormats[0]); ++i)
+        {
+            if (beFormats[i].pcm_format == format)
+            {
+                return beFormats[i].name;
+            }
+        }
+        for (size_t i = 0; i < sizeof(leFormats) / sizeof(leFormats[0]); ++i)
+        {
+            if (leFormats[i].pcm_format == format)
+            {
+                return leFormats[i].name;
+            }
+        }
+        return "Unknown format.";
+    }
+
+    void SetPreferredAlsaFormat(
         const std::string &alsa_device_name,
         const char *streamType,
         snd_pcm_t *handle,
         snd_pcm_hw_params_t *hwParams)
     {
         int err;
-
-        static AudioFormat leFormats[]{
-            {"32-bit float little-endian", SND_PCM_FORMAT_FLOAT_LE},
-            {"32-bit integer little-endian", SND_PCM_FORMAT_S32_LE},
-            {"24-bit little-endian", SND_PCM_FORMAT_S24_LE},
-            {"24-bit little-endian in 3bytes format", SND_PCM_FORMAT_S24_3LE},
-            {"16-bit little-endian", SND_PCM_FORMAT_S16_LE},
-
-        };
-        static AudioFormat beFormats[]{
-            {"32-bit float big-endian", SND_PCM_FORMAT_FLOAT_BE},
-            {"32-bit integer big-endian", SND_PCM_FORMAT_S32_BE},
-            {"24-bit big-endian", SND_PCM_FORMAT_S24_BE},
-            {"24-bit big-endian in 3bytes format", SND_PCM_FORMAT_S24_3BE},
-            {"16-bit big-endian", SND_PCM_FORMAT_S16_BE},
-        };
 
         if (std::endian::native == std::endian::big)
         {
@@ -139,6 +160,8 @@ namespace pipedal
 
         uint32_t user_threshold = 0;
         bool soft_mode = false;
+
+        snd_pcm_format_t captureFormat = snd_pcm_format_t::SND_PCM_FORMAT_UNKNOWN;
 
         uint32_t playbackSampleSize = 0;
         uint32_t captureSampleSize = 0;
@@ -208,6 +231,7 @@ namespace pipedal
         JackServerSettings jackServerSettings;
 
         std::string alsa_device_name;
+
         snd_pcm_t *playbackHandle = nullptr;
         snd_pcm_t *captureHandle = nullptr;
 
@@ -270,7 +294,7 @@ namespace pipedal
                 snd_pcm_sw_params_free(playbackSwParams);
                 playbackSwParams = nullptr;
             }
-            for (auto *midiState: this->midiStates)
+            for (auto *midiState : this->midiStates)
             {
                 if (midiState != nullptr)
                 {
@@ -344,16 +368,18 @@ namespace pipedal
 
             snd_pcm_uframes_t effectivePeriodSize = this->bufferSize;
 
+            int dir = 0;
             if ((err = snd_pcm_hw_params_set_period_size_near(handle, hwParams,
                                                               &effectivePeriodSize,
-                                                              0)) < 0)
+                                                              &dir)) < 0)
             {
                 AlsaError(SS("Can't set period size to " << this->bufferSize << " (" << alsa_device_name << "/" << streamType << ")"));
             }
             this->bufferSize = effectivePeriodSize;
 
             *periods = this->numberOfBuffers;
-            snd_pcm_hw_params_set_periods_min(handle, hwParams, periods, NULL);
+            dir = 0;
+            snd_pcm_hw_params_set_periods_min(handle, hwParams, periods, &dir);
             if (*periods < this->numberOfBuffers)
                 *periods = this->numberOfBuffers;
             if (snd_pcm_hw_params_set_periods_near(handle, hwParams,
@@ -508,10 +534,10 @@ namespace pipedal
 
             return (b0 << 8) | (b1);
         }
-        void EndianSwap(float*p,float v_)
+        void EndianSwap(float *p, float v_)
         {
-            int32_t v = EndianSwap(*(int32_t*)&v_);
-            *(int32_t*)p = v;
+            int32_t v = EndianSwap(*(int32_t *)&v_);
+            *(int32_t *)p = v;
         }
 
         void CopyCaptureFloatBe(size_t frames)
@@ -527,7 +553,7 @@ namespace pipedal
                     int32_t v = EndianSwap(*p);
                     ++p;
 
-                    *(int32_t*)(buffers[channel]+frame) = v;
+                    *(int32_t *)(buffers[channel] + frame) = v;
                 }
             }
         }
@@ -599,16 +625,16 @@ namespace pipedal
         }
         void CopyCaptureS24_3Le(size_t frames)
         {
-            uint8_t *p = (uint8_t*)rawCaptureBuffer;
+            uint8_t *p = (uint8_t *)rawCaptureBuffer;
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
-            constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1L);
+            constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1LL);
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
                 {
-                    int32_t v = (p[0] << 8)+(p[1] << 16) | (p[2] << 24);
+                    int32_t v = (p[0] << 8) + (p[1] << 16) | (p[2] << 24);
                     p += 3;
                     buffers[channel][frame] = scale * v;
                 }
@@ -616,16 +642,16 @@ namespace pipedal
         }
         void CopyCaptureS24_3Be(size_t frames)
         {
-            uint8_t *p = (uint8_t*)rawCaptureBuffer;
+            uint8_t *p = (uint8_t *)rawCaptureBuffer;
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
-            constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1L);
+            constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1LL);
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
                 {
-                    int32_t v = (p[2] << 8)+(p[1] << 16) | (p[0] << 24);
+                    int32_t v = (p[2] << 8) + (p[1] << 16) | (p[0] << 24);
                     p += 3;
                     buffers[channel][frame] = scale * v;
                 }
@@ -819,10 +845,12 @@ namespace pipedal
                         v = 1.0f;
                     else if (v < -1.0f)
                         v = -1.0f;
-                    int32_t iValue =  (int32_t)(scale * v);
+                    int32_t iValue = (int32_t)(scale * v);
                     p[0] = (uint8_t)(iValue >> 24);
                     p[1] = (uint8_t)(iValue >> 16);
                     p[2] = (uint8_t)(iValue >> 8);
+
+                    p += 3;
                 }
             }
         }
@@ -842,10 +870,12 @@ namespace pipedal
                         v = 1.0f;
                     else if (v < -1.0f)
                         v = -1.0f;
-                    int32_t iValue =  (int32_t)(scale * v);
+                    int32_t iValue = (int32_t)(scale * v);
                     p[0] = (uint8_t)(iValue >> 8);
                     p[1] = (uint8_t)(iValue >> 16);
                     p[2] = (uint8_t)(iValue >> 24);
+
+                    p += 3;
                 }
             }
         }
@@ -876,11 +906,15 @@ namespace pipedal
                 for (int channel = 0; channel < channels; ++channel)
                 {
                     float v = buffers[channel][frame];
-                    EndianSwap(p,v);
+                    EndianSwap(p, v);
                     p++;
                 }
             }
         }
+
+    public:
+        void TestFormatEncodeDecode(snd_pcm_format_t captureFormat);
+    private:
         void AllocateBuffers(std::vector<float *> &buffers, size_t n)
         {
             buffers.resize(n);
@@ -907,14 +941,150 @@ namespace pipedal
             this->channelSelection = channelSelection;
 
             open = true;
-            try {
+            try
+            {
                 OpenMidi(jackServerSettings, channelSelection);
                 OpenAudio(jackServerSettings, channelSelection);
-            } catch (const std::exception&e)
+            }
+            catch (const std::exception &e)
             {
                 Close();
                 throw;
             }
+        }
+
+        void PrepareCaptureFunctions(snd_pcm_format_t captureFormat)
+        {
+            this->captureFormat = captureFormat;
+
+            switch (captureFormat)
+            {
+            case SND_PCM_FORMAT_FLOAT_LE:
+                captureSampleSize = 4;
+                copyInputFn = &AlsaDriverImpl::CopyCaptureFloatLe;
+                break;
+            case SND_PCM_FORMAT_S24_3LE:
+                copyInputFn = &AlsaDriverImpl::CopyCaptureS24_3Le;
+                captureSampleSize = 3;
+                break;
+            case SND_PCM_FORMAT_S32_LE:
+                captureSampleSize = 4;
+                copyInputFn = &AlsaDriverImpl::CopyCaptureS32Le;
+                break;
+            case SND_PCM_FORMAT_S24_LE:
+                captureSampleSize = 4;
+                copyInputFn = &AlsaDriverImpl::CopyCaptureS24Le;
+                break;
+            case SND_PCM_FORMAT_S16_LE:
+                captureSampleSize = 2;
+                copyInputFn = &AlsaDriverImpl::CopyCaptureS16Le;
+                break;
+            case SND_PCM_FORMAT_FLOAT_BE:
+                captureSampleSize = 4;
+                copyInputFn = &AlsaDriverImpl::CopyCaptureFloatBe;
+                captureSampleSize = 4;
+                break;
+            case SND_PCM_FORMAT_S24_3BE:
+                captureSampleSize = 3;
+                copyInputFn = &AlsaDriverImpl::CopyCaptureS24_3Be;
+                break;
+            case SND_PCM_FORMAT_S32_BE:
+                copyInputFn = &AlsaDriverImpl::CopyCaptureS32Be;
+                captureSampleSize = 4;
+                break;
+            case SND_PCM_FORMAT_S24_BE:
+                copyInputFn = &AlsaDriverImpl::CopyCaptureS24Be;
+                captureSampleSize = 4;
+                break;
+            case SND_PCM_FORMAT_S16_BE:
+                copyInputFn = &AlsaDriverImpl::CopyCaptureS16Be;
+                captureSampleSize = 2;
+                break;
+            default:
+                break;
+            }
+            if (copyInputFn == nullptr)
+            {
+                throw PiPedalStateException(SS("Audio input format not supported. (" << captureFormat << ")"));
+            }
+
+            captureFrameSize = captureSampleSize * captureChannels;
+            rawCaptureBuffer = new uint8_t[captureFrameSize * bufferSize];
+            memset(rawCaptureBuffer, 0, captureFrameSize * bufferSize);
+
+            AllocateBuffers(captureBuffers, captureChannels);
+        }
+
+        virtual std::string GetConfigurationDescription()
+        {
+            std::string result = SS(
+                "ALSA, "
+                << this->alsa_device_name
+                << ", " << GetAlsaFormatDescription(this->captureFormat)
+                << ", " << this->sampleRate
+                << ", " << this->bufferSize << "x" << this->numberOfBuffers
+                << ", in: " << this->InputBufferCount() << "/" << this->captureChannels
+                << ", out: " << this->OutputBufferCount() << "/" << this->playbackChannels);
+            return result;
+        }
+        void PreparePlaybackFunctions(snd_pcm_format_t playbackFormat)
+        {
+            copyOutputFn = nullptr;
+            switch (playbackFormat)
+            {
+            case SND_PCM_FORMAT_FLOAT_LE:
+                playbackSampleSize = 4;
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackFloatLe;
+                break;
+            case SND_PCM_FORMAT_S24_3LE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24_3Le;
+                playbackSampleSize = 3;
+                break;
+            case SND_PCM_FORMAT_S32_LE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackS32Le;
+                playbackSampleSize = 4;
+                break;
+            case SND_PCM_FORMAT_S24_LE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24Le;
+                playbackSampleSize = 4;
+                break;
+            case SND_PCM_FORMAT_S16_LE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackS16Le;
+                playbackSampleSize = 2;
+                break;
+            case SND_PCM_FORMAT_FLOAT_BE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackFloatBe;
+                playbackSampleSize = 4;
+                break;
+            case SND_PCM_FORMAT_S24_3BE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24_3Be;
+                playbackSampleSize = 3;
+                break;
+            case SND_PCM_FORMAT_S32_BE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackS32Be;
+                playbackSampleSize = 4;
+                break;
+            case SND_PCM_FORMAT_S24_BE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24Be;
+                playbackSampleSize = 4;
+                break;
+            case SND_PCM_FORMAT_S16_BE:
+                copyOutputFn = &AlsaDriverImpl::CopyPlaybackS16Be;
+                playbackSampleSize = 2;
+                break;
+            default:
+                break;
+            }
+            if (copyOutputFn == nullptr)
+            {
+                throw PiPedalStateException(SS("Unsupported audio output format. (" << playbackFormat << ")"));
+            }
+
+            playbackFrameSize = playbackSampleSize * playbackChannels;
+            rawPlaybackBuffer = new uint8_t[playbackFrameSize * bufferSize];
+            memset(rawPlaybackBuffer, 0, playbackFrameSize * bufferSize);
+
+            AllocateBuffers(playbackBuffers, playbackChannels);
         }
 
         void OpenAudio(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
@@ -1034,121 +1204,12 @@ namespace pipedal
                 snd_pcm_hw_params_get_format(captureHwParams, &captureFormat);
                 copyInputFn = nullptr;
 
-                switch (captureFormat)
-                {
-                case SND_PCM_FORMAT_FLOAT_LE:
-                    captureSampleSize = 4;
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureFloatLe;
-                    break;
-                case SND_PCM_FORMAT_S24_3LE:
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureS24_3Le;
-                    captureSampleSize = 3;
-                    break;
-                case SND_PCM_FORMAT_S32_LE:
-                    captureSampleSize = 4;
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureS32Le;
-                    break;
-                case SND_PCM_FORMAT_S24_LE:
-                    captureSampleSize = 4;
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureS24Le;
-                    break;
-                case SND_PCM_FORMAT_S16_LE:
-                    captureSampleSize = 2;
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureS16Le;
-                    break;
-                case SND_PCM_FORMAT_FLOAT_BE:
-                    captureSampleSize = 4;
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureFloatBe;
-                    captureSampleSize = 4;
-                    break;
-                case SND_PCM_FORMAT_S24_3BE:
-                    captureSampleSize = 3;
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureS24_3Be;
-                    break;
-                case SND_PCM_FORMAT_S32_BE:
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureS32Be;
-                    captureSampleSize = 4;
-                    break;
-                case SND_PCM_FORMAT_S24_BE:
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureS24Be;
-                    captureSampleSize = 4;
-                    break;
-                case SND_PCM_FORMAT_S16_BE:
-                    copyInputFn = &AlsaDriverImpl::CopyCaptureS16Be;
-                    captureSampleSize = 2;
-                    break;
-                default:
-                    break;
-                }
-                if (copyInputFn == nullptr)
-                {
-                    throw PiPedalStateException(SS("Audio input format not supported. (" << captureFormat << ")"));
-                }
-                captureFrameSize = captureSampleSize * captureChannels;
-                rawCaptureBuffer = new uint8_t[captureFrameSize * bufferSize];
-                memset(rawCaptureBuffer, 0, captureFrameSize * bufferSize);
-
-                AllocateBuffers(captureBuffers, captureChannels);
+                PrepareCaptureFunctions(captureFormat);
 
                 snd_pcm_format_t playbackFormat;
                 snd_pcm_hw_params_get_format(playbackHwParams, &playbackFormat);
 
-                copyOutputFn = nullptr;
-                switch (playbackFormat)
-                {
-                case SND_PCM_FORMAT_FLOAT_LE:
-                    playbackSampleSize = 4;
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackFloatLe;
-                    break;
-                case SND_PCM_FORMAT_S24_3LE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24_3Le;
-                    playbackSampleSize = 3;
-                    break;
-                case SND_PCM_FORMAT_S32_LE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS32Le;
-                    playbackSampleSize = 4;
-                    break;
-                case SND_PCM_FORMAT_S24_LE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24Le;
-                    playbackSampleSize = 4;
-                    break;
-                case SND_PCM_FORMAT_S16_LE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS16Le;
-                    playbackSampleSize = 2;
-                    break;
-                case SND_PCM_FORMAT_FLOAT_BE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackFloatBe;
-                    playbackSampleSize = 4;
-                    break;
-                case SND_PCM_FORMAT_S24_3BE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24_3Be;
-                    playbackSampleSize = 3;
-                    break;
-                case SND_PCM_FORMAT_S32_BE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS32Be;
-                    playbackSampleSize = 4;
-                    break;
-                case SND_PCM_FORMAT_S24_BE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS24Be;
-                    playbackSampleSize = 4;
-                    break;
-                case SND_PCM_FORMAT_S16_BE:
-                    copyOutputFn = &AlsaDriverImpl::CopyPlaybackS16Be;
-                    playbackSampleSize = 2;
-                    break;
-                default:
-                    break;
-                }
-                if (copyOutputFn == nullptr)
-                {
-                    throw PiPedalStateException(SS("Unsupported audio output format. (" << playbackFormat << ")"));
-                }
-
-                playbackFrameSize = playbackSampleSize * playbackChannels;
-                rawPlaybackBuffer = new uint8_t[playbackFrameSize * bufferSize];
-                memset(rawPlaybackBuffer, 0, playbackFrameSize * bufferSize);
-
-                AllocateBuffers(playbackBuffers, playbackChannels);
+                PreparePlaybackFunctions(playbackFormat);
             }
             catch (const std::exception &e)
             {
@@ -1444,7 +1505,9 @@ namespace pipedal
                 if (sourceIndex >= captureBuffers.size())
                 {
                     Lv2Log::error(SS("Invalid audio input port: " << x));
-                } else {
+                }
+                else
+                {
                     this->activeCaptureBuffers[ix++] = this->captureBuffers[sourceIndex];
                 }
             }
@@ -1458,7 +1521,9 @@ namespace pipedal
                 if (sourceIndex >= playbackBuffers.size())
                 {
                     Lv2Log::error(SS("Invalid audio output port: " << x));
-                } else {
+                }
+                else
+                {
                     this->activePlaybackBuffers[ix++] = this->playbackBuffers[sourceIndex];
                 }
             }
@@ -1836,6 +1901,16 @@ namespace pipedal
             activePlaybackBuffers.clear();
             FreeBuffers(this->playbackBuffers);
             FreeBuffers(this->captureBuffers);
+            if (rawCaptureBuffer)
+            {
+                delete[] rawCaptureBuffer;
+                rawCaptureBuffer = nullptr;
+            }
+            if (rawPlaybackBuffer)
+            {
+                delete[] rawPlaybackBuffer;
+                rawPlaybackBuffer = nullptr;
+            }
         }
         virtual void Close()
         {
@@ -1858,7 +1933,6 @@ namespace pipedal
         {
             return cpuUse.GetCpuOverhead();
         }
-
     };
 
     AudioDriver *CreateAlsaDriver(AudioDriverHost *driverHost)
@@ -1994,7 +2068,7 @@ namespace pipedal
     static void ExpectEvent(AlsaDriverImpl::MidiState &m, int event, const std::vector<uint8_t> message)
     {
         MidiEvent e;
-        m.GetMidiInputEvent(&e,event);
+        m.GetMidiInputEvent(&e, event);
         AlsaAssert(e.size == message.size());
         for (size_t i = 0; i < message.size(); ++i)
         {
@@ -2002,6 +2076,83 @@ namespace pipedal
         }
     }
 
+    void AlsaDriverImpl::TestFormatEncodeDecode(snd_pcm_format_t captureFormat)
+    {
+        this->alsa_device_name = "Test";
+        this->numberOfBuffers = 3;
+        this->bufferSize = 64;
+        this->user_threshold = this->bufferSize;
+        this->sampleRate = 44100;
+        this->captureChannels = 2;
+        this->playbackChannels = 2;
+
+        PrepareCaptureFunctions(captureFormat);
+        PreparePlaybackFunctions(captureFormat);
+
+        // make sure encode decode round-trips with reasonable accuracy.
+
+        for (size_t i= 0; i < bufferSize; ++i)
+        {
+            for (size_t c = 0; c < captureChannels; ++c)
+            {
+                // provide a rich set of approximately readable bits in the output.
+                float value = 1.0f*i/bufferSize
+                +1.0f*(i)/(128.0*256.0);
+
+                // only 16-bits of precision in data for 16-bit formats
+                if (captureFormat != snd_pcm_format_t::SND_PCM_FORMAT_S16_BE && captureFormat != snd_pcm_format_t::SND_PCM_FORMAT_S16_LE)
+                {
+                    value += 1.0f*(c)/(128.0*256.0*256.0);
+                }
+                this->playbackBuffers[c][i] = value;
+            }
+        }
+
+        (this->*copyOutputFn)(bufferSize);
+
+        assert(captureFrameSize == playbackFrameSize);
+        memcpy(this->rawCaptureBuffer,this->rawPlaybackBuffer,captureFrameSize*bufferSize);
+
+        (this->*copyInputFn)(bufferSize);
+
+        for (size_t i= 0; i < bufferSize; ++i)
+        {
+            for (size_t c = 0; c < captureChannels; ++c)
+            {
+                float error = 
+                    this->captureBuffers[c][i] - this->playbackBuffers[c][i];
+
+                assert(std::abs(error) < 4e-5);
+            }
+        }
+
+
+    }
+
+    void AlsaFormatEncodeDecodeTest(AudioDriverHost*testDriverHost)
+    {
+        static snd_pcm_format_t formats[] = {
+            snd_pcm_format_t::SND_PCM_FORMAT_S16_LE,
+            snd_pcm_format_t::SND_PCM_FORMAT_S16_BE,
+            snd_pcm_format_t::SND_PCM_FORMAT_S32_LE,
+            snd_pcm_format_t::SND_PCM_FORMAT_S32_BE,
+            snd_pcm_format_t::SND_PCM_FORMAT_S24_3BE,
+            snd_pcm_format_t::SND_PCM_FORMAT_S24_3LE,
+            snd_pcm_format_t::SND_PCM_FORMAT_FLOAT_BE,
+            snd_pcm_format_t::SND_PCM_FORMAT_FLOAT_LE,
+        };
+
+        for (auto format:  formats)
+        {
+            // Check audio encode/decode.
+            std::unique_ptr<AlsaDriverImpl> alsaDriver {
+                (AlsaDriverImpl*)new AlsaDriverImpl(testDriverHost)
+            };
+
+            alsaDriver->TestFormatEncodeDecode(format);
+        }
+
+    }
     void MidiDecoderTest()
     {
 
@@ -2011,24 +2162,23 @@ namespace pipedal
 
         // Running status decoding.
         {
-            static uint8_t m0[] = {0x80, 0x1, 0x2, 0x3,0x4,0x5};
+            static uint8_t m0[] = {0x80, 0x1, 0x2, 0x3, 0x4, 0x5};
             midiState.NextEventBuffer();
             midiState.WriteBuffer(m0, sizeof(m0));
             AlsaAssert(midiState.GetMidiInputEventCount() == 2);
             AlsaAssert(midiState.GetMidiInputEvent(&event, 0));
 
-            ExpectEvent(midiState,0, {0x80,0x1,0x2});
-            ExpectEvent(midiState,1, {0x80,0x3,0x4});
+            ExpectEvent(midiState, 0, {0x80, 0x1, 0x2});
+            ExpectEvent(midiState, 1, {0x80, 0x3, 0x4});
 
-            static uint8_t m1[] = {0x06,0xC0,0x1,0x2};
+            static uint8_t m1[] = {0x06, 0xC0, 0x1, 0x2};
             midiState.NextEventBuffer();
-            midiState.WriteBuffer(m1,sizeof(m1));
+            midiState.WriteBuffer(m1, sizeof(m1));
             AlsaAssert(midiState.GetMidiInputEventCount() == 3);
-            ExpectEvent(midiState,0,{0x80,0x05,0x06});
-            ExpectEvent(midiState,1,{0xC0,0x1});
-            ExpectEvent(midiState,2,{0xC0,0x2});
+            ExpectEvent(midiState, 0, {0x80, 0x05, 0x06});
+            ExpectEvent(midiState, 1, {0xC0, 0x1});
+            ExpectEvent(midiState, 2, {0xC0, 0x2});
         }
-
 
         // SYSEX.
         {
