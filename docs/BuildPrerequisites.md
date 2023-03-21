@@ -33,14 +33,14 @@ If you are using Visual Studio Code, install the C/C++ Extension Pack (Microsoft
 
 Clone the rerdavies/pipdal package from github. Use the source control tools from Visual Studio Code, or 
    
-   cd ~/src    # or whereever you keep your source repositories.
-   git clone https://github.com/rerdavies/pipedal.git 
+    cd ~/src    # or whereever you keep your source repositories.
+    git clone https://github.com/rerdavies/pipedal.git 
    
 In the project root, run the following commands to initialze and update pipedal submodules
 
-   cd ~/src/pipedal
-   git submodule init
-   git submodule update
+    cd ~/src/pipedal
+    git submodule init
+    git submodule update
    
 Run the following command to install and configure React dependencies.
 
