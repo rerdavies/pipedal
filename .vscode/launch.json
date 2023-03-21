@@ -79,7 +79,10 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
 
-            "args": [            "[alsa_test]"     ],
+            "args": [
+                //"[Dev]"
+                "[json_variants]"
+            ],
 
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

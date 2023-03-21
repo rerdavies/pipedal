@@ -17,7 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { UiPlugin, UiControl, PluginType } from './Lv2Plugin';
+import { UiPlugin, UiControl, PluginType, PiPedalFileProperty } from './Lv2Plugin';
 
 import { PiPedalArgumentError, PiPedalStateError } from './PiPedalError';
 
@@ -50,6 +50,7 @@ export enum State {
 };
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
+export type PropertyValueChangedHandler = (properyUri: string, value: number) => void;
 
 
 export type PluginPresetsChangedHandler = (pluginUri: string) => void;
@@ -91,6 +92,18 @@ interface ControlValueChangeItem {
     handle: number;
     instanceId: number;
     onValueChanged: ControlValueChangedHandler;
+
+};
+
+export interface PropertyValueChangedHandle {
+    _PropertyValueChangedHandle: number;
+
+};
+
+interface PropertyValueChangeItem {
+    handle: number;
+    instanceId: number;
+    onValueChanged: PropertyValueChangedHandler;
 
 };
 
@@ -354,9 +367,9 @@ export interface PiPedalModel {
     loadPedalBoardPlugin(itemId: number, selectedUri: string): number;
 
     setPedalBoardControlValue(instanceId: number, key: string, value: number): void;
+    setPedalBoardPropertyValue(instanceId: number, propertyUri: string, value: any): void;
     setPedalBoardItemEnabled(instanceId: number, value: boolean): void;
     previewPedalBoardValue(instanceId: number, key: string, value: number): void;
-    setPedalBoardControlValue(instanceId: number, key: string, value: number): void;
     deletePedalBoardPedal(instanceId: number): number | null;
 
     movePedalBoardItem(fromInstanceId: number, toInstanceId: number): void;
@@ -456,6 +469,8 @@ export interface PiPedalModel {
     chooseNewDevice(): void;
 
     hasConfiguration(): boolean;
+
+    requestFileList(piPedalFileProperty: PiPedalFileProperty): Promise<string[]>;
 };
 
 class PiPedalModelImpl implements PiPedalModel {
@@ -722,6 +737,7 @@ class PiPedalModelImpl implements PiPedalModel {
         }
     }
 
+    
     requestPluginClasses(): Promise<boolean> {
         const myRequest = new Request(this.varRequest('plugin_classes.json'));
         return fetch(myRequest)
@@ -891,6 +907,10 @@ class PiPedalModelImpl implements PiPedalModel {
                     }
                 );
                 return this.webSocket.connect();
+            })
+            .catch((error) => {
+                this.setError("Failed to connect to server.");
+                return false;
             })
             .then(() => {
                 const isoRequest = new Request('iso_codes.json');
@@ -1171,7 +1191,7 @@ class PiPedalModelImpl implements PiPedalModel {
     }
 
 
-    _controlValueChangeItems: ControlValueChangeItem[] = [];
+    private _controlValueChangeItems: ControlValueChangeItem[] = [];
 
     addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle {
         let handle = ++this.nextListenHandle;
@@ -1182,6 +1202,21 @@ class PiPedalModelImpl implements PiPedalModel {
         for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
             if (this._controlValueChangeItems[i].handle === handle._ControlValueChangedHandle) {
                 this._controlValueChangeItems.splice(i, 1);
+                return;
+            }
+        }
+    }
+    private _propertyValueChangeItems: PropertyValueChangeItem[] = [];
+
+    addPropertyValueChangeListener(instanceId: number, onValueChanged: PropertyValueChangedHandler): PropertyValueChangedHandle {
+        let handle = ++this.nextListenHandle;
+        this._propertyValueChangeItems.push({ handle: handle, instanceId: instanceId, onValueChanged: onValueChanged });
+        return { _PropertyValueChangedHandle: handle };
+    }
+    removePropertyValueChangeListener(handle: PropertyValueChangedHandle) {
+        for (let i = 0; i < this._propertyValueChangeItems.length; ++i) {
+            if (this._propertyValueChangeItems[i].handle === handle._PropertyValueChangedHandle) {
+                this._propertyValueChangeItems.splice(i, 1);
                 return;
             }
         }
@@ -1217,7 +1252,27 @@ class PiPedalModelImpl implements PiPedalModel {
 
     }
 
+    _setPedalBoardPropertyValue(instanceId: number, propertyUri: string, value: any, notifyServer: boolean): void {
+        let pedalBoard = this.pedalBoard.get();
+        if (pedalBoard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
+        let newPedalBoard = pedalBoard.clone();
 
+        let item = newPedalBoard.getItem(instanceId);
+        let changed = item.setPropertyValue(propertyUri, value);
+        if (changed) {
+            this.pedalBoard.set(newPedalBoard);
+            if (notifyServer) {
+                // FIX ME!: this._setServerProperty("setProperty", instanceId, propertyUri, value);
+            }
+            for (let i = 0; i < this._propertyValueChangeItems.length; ++i) {
+                let item = this._propertyValueChangeItems[i];
+                if (instanceId === item.instanceId) {
+                    item.onValueChanged(propertyUri, value);
+                }
+            }
+        }
+
+    }
     _setPedalBoardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
         let pedalBoard = this.pedalBoard.get();
         if (pedalBoard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
@@ -1262,14 +1317,17 @@ class PiPedalModelImpl implements PiPedalModel {
         }
 
     }
-
+    setPedalBoardPropertyValue(instanceId: number, propertyUri: string, value: any): void
+    {
+        this._setPedalBoardPropertyValue(instanceId, propertyUri, value, true);
+    }
     setPedalBoardControlValue(instanceId: number, key: string, value: number): void {
         this._setPedalBoardControlValue(instanceId, key, value, true);
     }
     setPedalBoardItemEnabled(instanceId: number, value: boolean): void {
         this._setPedalBoardItemEnabled(instanceId, value, true);
     }
-    _setPedalBoardItemEnabled(instanceId: number, value: boolean, notifyServer: boolean): void {
+    private _setPedalBoardItemEnabled(instanceId: number, value: boolean, notifyServer: boolean): void {
         let pedalBoard = this.pedalBoard.get();
         if (pedalBoard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalBoard = pedalBoard.clone();
@@ -1544,6 +1602,13 @@ class PiPedalModelImpl implements PiPedalModel {
                 return newPresetId;
             });
     }
+
+    requestFileList(piPedalFileProperty: PiPedalFileProperty): Promise<string[]>
+    {
+        return nullCast(this.webSocket)
+            .request<string[]>('requestFileList',piPedalFileProperty);
+    }
+
     saveCurrentPluginPresetAs(pluginInstanceId: number, newName: string): Promise<number> {
         // default behaviour is to save after the currently selected preset.
         let request: any = {
@@ -2353,6 +2418,8 @@ class PiPedalModelImpl implements PiPedalModel {
         var jackConfig = this.jackConfiguration.get();
         return jackConfig.isValid;
     }
+
+
 
 };
 

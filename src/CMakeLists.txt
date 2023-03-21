@@ -5,6 +5,8 @@ set (CMAKE_INSTALL_PREFIX "/usr/")
 
 set (USE_PCH 1)
 
+set(CXX_STANDARD 20)
+
 include(FindPkgConfig)
 
 #################################################################
@@ -135,6 +137,10 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    AutoLilvNode.hpp
+    AutoLilvNode.cpp
+    PiPedalUI.hpp
+    PiPedalUI.cpp
     RtInversionGuard.hpp
     CpuUse.hpp CpuUse.cpp 
     P2pConfigFiles.hpp
@@ -154,7 +160,9 @@ set (PIPEDAL_SOURCES
     WifiDirectConfigSettings.hpp WifiDirectConfigSettings.cpp
     ConfigUtil.hpp ConfigUtil.cpp
 
-    RequestHandler.hpp json.cpp json.hpp Scratch.cpp PiPedalHost.hpp PiPedalHost.cpp
+    RequestHandler.hpp json.cpp json.hpp 
+    json_variant.hpp json_variant.cpp
+    Scratch.cpp PiPedalHost.hpp PiPedalHost.cpp
     PluginType.hpp PluginType.cpp
     Lv2Log.hpp Lv2Log.cpp
     PiPedalSocket.hpp PiPedalSocket.cpp

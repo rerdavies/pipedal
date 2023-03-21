@@ -23,9 +23,9 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { UiPlugin, UiControl } from './Lv2Plugin';
+import { UiPlugin, UiControl, PiPedalFileProperty,PiPedalFileType } from './Lv2Plugin';
 import {
-    PedalBoard, PedalBoardItem, ControlValue,
+    PedalBoard, PedalBoardItem, ControlValue,PropertyValue
 } from './PedalBoard';
 import PluginControl from './PluginControl';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
@@ -34,6 +34,8 @@ import { nullCast } from './Utility'
 import { PiPedalStateError } from './PiPedalError';
 import Typography from '@mui/material/Typography';
 import FullScreenIME from './FullScreenIME';
+import FilePropertyControl from './FilePropertyControl';
+import FilePropertyDialog from './FilePropertyDialog';
 
 
 export const StandardItemSize = { width: 80, height: 110 };
@@ -167,8 +169,7 @@ const styles = (theme: Theme) => createStyles({
 });
 
 export class ControlGroup {
-    constructor(name: string, controls: ReactNode[])
-    {
+    constructor(name: string, controls: ReactNode[]) {
         this.name = name;
         this.controls = controls;
     }
@@ -197,6 +198,9 @@ type PluginControlViewState = {
     imeValue: number;
     imeCaption: string;
     imeInitialHeight: number;
+    showFileDialog: boolean,
+    dialogFileProperty: PiPedalFileProperty,
+    dialogFileValue: string
 };
 
 const PluginControlView =
@@ -214,11 +218,14 @@ const PluginControlView =
                     imeUiControl: undefined,
                     imeValue: 0,
                     imeCaption: "",
-                    imeInitialHeight: 0
+                    imeInitialHeight: 0,
+                    showFileDialog: false,
+                    dialogFileProperty: new PiPedalFileProperty(),
+                    dialogFileValue: ""
 
                 }
                 this.onPedalBoardChanged = this.onPedalBoardChanged.bind(this);
-                this.onValueChanged = this.onValueChanged.bind(this);
+                this.onControlValueChanged = this.onControlValueChanged.bind(this);
                 this.onPreviewChange = this.onPreviewChange.bind(this);
             }
 
@@ -227,8 +234,11 @@ const PluginControlView =
                 this.model.previewPedalBoardValue(this.props.instanceId, key, value);
             }
 
-            onValueChanged(key: string, value: number): void {
+            onControlValueChanged(key: string, value: number): void {
                 this.model.setPedalBoardControlValue(this.props.instanceId, key, value);
+            }
+            onPropertyValueChanged(propertyUri: string, value: any): void {
+                this.model.setPedalBoardPropertyValue(this.props.instanceId, propertyUri, value);
             }
 
             onPedalBoardChanged(value?: PedalBoard) {
@@ -274,6 +284,30 @@ const PluginControlView =
 
                 });
             }
+
+            makeFilePropertyUI(fileProperty: PiPedalFileProperty, propertyValues: PropertyValue[]): ReactNode {
+                let propertyValue: PropertyValue | undefined = undefined;
+                for (let i = 0; i < propertyValues.length; ++i) {
+                    if (propertyValues[i].propertyUri === fileProperty.patchProperty) {
+                        propertyValue = propertyValues[i];
+                        break;
+                    }
+                }
+                if (!propertyValue) {
+                    propertyValue = new PropertyValue();
+                    propertyValue.value = fileProperty.defaultFile;
+                    propertyValue.propertyUri = fileProperty.patchProperty;
+                }
+                return ((
+
+                    <FilePropertyControl instanceId={this.props.instanceId} value={propertyValue.value}
+                        fileProperty={fileProperty}
+                        onFileClick={(fileProperty,selectedFile) => {
+                            this.setState({showFileDialog: true,dialogFileProperty: fileProperty,dialogFileValue: selectedFile});
+                        }}
+                    />
+                ));
+            }
             makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
                 let symbol = uiControl.symbol;
 
@@ -288,18 +322,18 @@ const PluginControlView =
                     throw new PiPedalStateError("Missing control value.");
                 }
                 return ((
-                    
-                        <PluginControl instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
-                            onChange={(value: number) => { this.onValueChanged(controlValue!.key, value) }}
-                            onPreviewChange={(value: number) => { this.onPreviewChange(controlValue!.key, value) }}
-                            requestIMEEdit={(uiControl, value) => this.requestImeEdit(uiControl, value)}
 
-                        />
+                    <PluginControl instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
+                        onChange={(value: number) => { this.onControlValueChanged(controlValue!.key, value) }}
+                        onPreviewChange={(value: number) => { this.onPreviewChange(controlValue!.key, value) }}
+                        requestIMEEdit={(uiControl, value) => this.requestImeEdit(uiControl, value)}
+
+                    />
                 ));
 
             }
-            
-            getStandardControlNodes(plugin: UiPlugin, controlValues: ControlValue[]): ControlNodes {
+
+            getStandardControlNodes(plugin: UiPlugin, controlValues: ControlValue[],propertyValues: PropertyValue[]): ControlNodes {
                 let result: ControlNodes = [];
 
                 for (let i = 0; i < plugin.controls.length; ++i) {
@@ -325,10 +359,16 @@ const PluginControlView =
                             )
                         } else {
                             result.push(
-                                    this.makeStandardControl(pluginControl, controlValues)
+                                this.makeStandardControl(pluginControl, controlValues)
                             );
                         }
                     }
+                }
+                for (let i = 0; i < plugin.fileProperties.length; ++i) {
+                    let fileProperty = plugin.fileProperties[i];
+                    result.push(
+                        this.makeFilePropertyUI(fileProperty, propertyValues)
+                    );
                 }
                 return result;
             }
@@ -352,10 +392,8 @@ const PluginControlView =
                 });
             }
 
-            hasGroups(nodes: (ReactNode | ControlGroup)[]): boolean
-            {
-                for (let i = 0; i < nodes.length; ++i)
-                {
+            hasGroups(nodes: (ReactNode | ControlGroup)[]): boolean {
+                for (let i = 0; i < nodes.length; ++i) {
                     let node = nodes[i];
                     if (node instanceof ControlGroup) return true;
                 }
@@ -374,13 +412,12 @@ const PluginControlView =
                     if (node instanceof ControlGroup) {
                         let controlGroup = node as ControlGroup;
                         let controls: ReactNode[] = [];
-                        for (let j = 0; j < controlGroup.controls.length; ++j)
-                        {
+                        for (let j = 0; j < controlGroup.controls.length; ++j) {
                             let item = controlGroup.controls[j];
                             controls.push(
                                 (
                                     <div className={classes.controlPadding}>
-                                        { item }
+                                        {item}
                                     </div>
 
                                 )
@@ -402,7 +439,7 @@ const PluginControlView =
 
                     } else {
                         result.push((
-                            <div className={ hasGroups ? classes.portgroupControlPadding: classes.controlPadding } >
+                            <div className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
                                 {node as ReactNode}
                             </div>
                         ));
@@ -421,6 +458,7 @@ const PluginControlView =
                     return (<div className={classes.frame} ></div>);
 
                 let controlValues = pedalBoardItem.controlValues;
+                let propertyValues = pedalBoardItem.propertyValues;
 
 
                 let plugin: UiPlugin = nullCast(this.model.getUiPlugin(pedalBoardItem.uri));
@@ -429,14 +467,14 @@ const PluginControlView =
                 controlValues = this.filterNotOnGui(controlValues, plugin);
 
 
+
                 let gridClass = this.state.landscapeGrid ? classes.landscapeGrid : classes.normalGrid;
                 let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
                 let controlNodes: ControlNodes;
 
-                controlNodes = this.getStandardControlNodes(plugin, controlValues);
-                
-                if (this.props.customization)
-                {
+                controlNodes = this.getStandardControlNodes(plugin, controlValues,propertyValues);
+
+                if (this.props.customization) {
                     // allow wrapper class to insert/remove/rebuild controls.
                     controlNodes = this.props.customization.ModifyControls(controlNodes);
                 }
@@ -462,6 +500,15 @@ const PluginControlView =
                                 )
                             }
                         </div>
+                        <FilePropertyDialog open={this.state.showFileDialog} 
+                            fileProperty={this.state.dialogFileProperty} 
+                            selectedFile={this.state.dialogFileValue}  
+                            onClose={()=> { this.setState({ showFileDialog: false});}}
+                            onOk={(fileProperty,selectedFile)=> { 
+                                this.model.setPedalBoardPropertyValue(this.props.instanceId,fileProperty.patchProperty,selectedFile)
+                                this.setState({ showFileDialog: false});}
+                            }
+                            />
                         <FullScreenIME uiControl={this.state.imeUiControl} value={this.state.imeValue}
 
                             onChange={(key, value) => this.onImeValueChange(key, value)}

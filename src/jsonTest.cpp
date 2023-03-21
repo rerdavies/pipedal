@@ -25,6 +25,9 @@
 
 
 #include "json.hpp"
+#include "json_variant.hpp"
+#include <concepts>
+#include <type_traits>
 
 using namespace pipedal;
 
@@ -94,6 +97,7 @@ json_map::storage_type<JsonTestTarget> JsonTestTarget::jmap {{
 
 
 TEST_CASE( "json write", "[json_write_test]" ) {
+    std::cout << "== json write ==" << std::endl;
     std::stringstream os;
     json_writer writer { os };
 
@@ -101,7 +105,7 @@ TEST_CASE( "json write", "[json_write_test]" ) {
 
     writer.write(testTarget);
 
-    std::cout << os.str();
+    std::cout << os.str() << std::endl;
 }
 
 static std::string get_json()
@@ -166,4 +170,125 @@ TEST_CASE( "json smart ptrs", "[json_smart_ptrs][Build][Dev]" ) {
         reader.read(&sharedPtr); 
     }
 
+}
+
+template <typename T>
+void TestVariantRoundTrip(const T &value)
+{
+    json_variant variant(value);
+    T out = variant.get<T>();
+    REQUIRE(out == value);
+
+    std::string output;
+    {
+        std::stringstream s;
+        json_writer writer(s);
+        writer.write(variant);  
+        output = s.str();
+    }
+    std::cout << output << std::endl;
+
+    {
+        std::stringstream s(output);
+        json_reader reader(s);
+        
+        json_variant outputVariant;
+        reader.read(&outputVariant);
+        REQUIRE(outputVariant == variant);
+
+    }
+}
+void TestVariantRoundTrip(json_variant &value)
+{
+    json_variant variant(value);
+    REQUIRE(variant == value);
+
+    std::string output;
+    {
+        std::stringstream s;
+        json_writer writer(s);
+        writer.write(variant);  
+        output = s.str();
+    }
+    std::cout << output << std::endl;
+
+    json_variant outputVariant;
+    {
+        std::stringstream s(output);
+        json_reader reader(s);
+
+        json_variant outputVariant;
+        reader.read(&outputVariant);
+        REQUIRE(outputVariant == variant);
+    }
+}
+
+
+
+class X{
+public:
+
+    template<typename T>
+    requires std::derived_from<T,JsonSerializable>
+    bool write(T &v)
+    {
+        (void)v;
+        return true;
+    }
+    template <typename T>
+    bool write(T &v)
+    {
+        (void)v;
+        return false;
+    }
+};
+
+
+
+void TestVariantSFINAE()
+{
+    X x;
+
+
+    json_variant v;
+    dynamic_cast<JsonSerializable&>(v);
+
+    REQUIRE(x.write(v) == true);
+
+    int i;
+    REQUIRE(x.write(i) == false);
+}
+TEST_CASE( "json variants", "[json_variants][Build][Dev]" ) {
+    TestVariantSFINAE();
+    json_variant v(0);
+
+    TestVariantRoundTrip(json_null());
+
+    TestVariantRoundTrip(0.0);
+    TestVariantRoundTrip(std::string("abc"));
+
+    json_array array;
+    array.push_back(json_null());
+    array.push_back(3.25E19);
+    array.push_back(std::string("abc"));
+
+    json_variant variantArray { std::move(array) };
+    TestVariantRoundTrip(variantArray);
+
+    {
+        json_object obj;
+        obj["a"] = json_null();
+        obj["b"] = 0.25;
+        obj["c"] = std::move(variantArray);
+        json_variant variantObj { std::move(obj)};
+        TestVariantRoundTrip(variantObj);
+
+        variantObj["a"] = std::string("abc");
+        TestVariantRoundTrip(variantObj);
+    }
+    {
+        json_variant x = json_variant::MakeArray();
+        x.resize(3);
+        x[0] = "def";
+    }
 }

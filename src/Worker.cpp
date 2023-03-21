@@ -39,6 +39,8 @@
 #include <mutex>
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include "Lv2Log.hpp"
+#include <iostream>
+#include <unistd.h> // for nice()
 
 using namespace pipedal;
 
@@ -103,6 +105,14 @@ void Worker::EmitResponses()
 }
 void Worker::ThreadProc()
 {
+    // run nice +1 (priority -1 on Windows)
+    errno = 0;
+    nice(1);
+    if (errno != 0)
+    {
+        std::cout << "Warning: Unable to run Lv2 schedule thread at nice +1" << std::endl;
+    }
+
     try
     {
         while (true)

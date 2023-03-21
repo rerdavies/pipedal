@@ -27,6 +27,7 @@
 #include "Lv2Log.hpp"
 #include <map>
 #include <sys/stat.h>
+#include "PiPedalUI.hpp"
 
 using namespace pipedal;
 
@@ -254,6 +255,11 @@ std::filesystem::path Storage::GetPluginPresetsDirectory() const
 {
     return this->dataRoot / "plugin_presets";
 }
+std::filesystem::path Storage::GetAudioFilesDirectory() const
+{
+    return this->dataRoot / "audio_uploads";
+}
+
 std::filesystem::path Storage::GetCurrentPresetPath() const
 {
     return this->dataRoot / "currentPreset.json";
@@ -1381,6 +1387,54 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
         result.push_back(MidiBinding::SystemBinding("nextProgram"));
     }
     return result;
+}
+
+static bool containsDotDot(const std::string&value)
+{
+    std::size_t offset = value.find("..");
+    return offset != std::string::npos;
+}
+static bool containsDirectorySeparator(const std::string&value)
+{
+    if (value.find("/") != std::string::npos) return true; //linux
+    if (value.find("\\") != std::string::npos) return true; // windows
+    if (value.find("::") != std::string::npos) return true; // mac
+    return false;
+}
+
+static bool containsNonAlphaNumericCharacter(const std::string&value)
+{
+    for (char c:value)
+    {
+        if (
+            (c >= '0' && c <= '9')
+            || (c >= 'a' && c <= 'z')
+            || (c >= 'A' && c <= 'Z)
+            || (c == '_')
+
+        ) {
+            continue;
+        }
+        return false;
+
+    }
+    return true;
+}
+
+static void sanityCheckDirectory(const std::string&directory)
+{
+    // we can afford to be highly restrictive here. Alpha-numeric only.
+    if (containsNonAlphaNumericCharacter(directory))
+    {
+        throw std::logic_error("Invalid directory name.");        
+    }
+}
+
+std::vector<std::string> Storage::GetFileList(const PiPedalFileProperty&fileProperty)
+{
+    sanityCheckDirectory(fileProperty.directory());
+    std::filesystem::path path = this->GetAudioFilesDirectory() / fileProperty.directory();
+
 }
 
 

@@ -22,6 +22,7 @@
 #include <string_view>
 #include <cctype>
 #include "PiPedalException.hpp"
+#include "json_variant.hpp"
 
 using namespace pipedal;
 
@@ -631,3 +632,8 @@ void json_reader::throw_format_error(const char*error)
     throw PiPedalException(message);
 
 }
+
+// void json_writer::write(const json_variant &value)
+// {
+//     ((JsonSerializable *)&value)->write_json(*this);
+// }

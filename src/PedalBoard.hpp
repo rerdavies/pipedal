@@ -20,6 +20,7 @@
 #pragma once
 
 #include "json.hpp"
+#include "json_variant.hpp"
 #include "MidiBinding.hpp"
 
 namespace pipedal {
@@ -72,25 +73,52 @@ public:
 
 
 };
+class PropertyValue {
+private:
+    std::string propertyUri_;
+    json_variant value_;
+public:
+    PropertyValue()
+    {
 
-class PedalBoardItem: public JsonWritable {
+    }
+    template <typename T>
+    PropertyValue(const std::string&propertyUri, T value)
+    :propertyUri_(propertyUri)
+    , value_(value)
+    {
+
+    }
+    GETTER_SETTER_REF(propertyUri)
+    GETTER_SETTER_REF(value)
+
+    DECLARE_JSON_MAP(PropertyValue);
+
+
+};
+
+class PedalBoardItem: public JsonMemberWritable {
     int64_t instanceId_ = 0;
     std::string uri_;
     std::string pluginName_;
     bool isEnabled_ = true;
     std::vector<ControlValue> controlValues_;
+    std::vector<PropertyValue> propertyValues_;
     std::vector<PedalBoardItem> topChain_;
     std::vector<PedalBoardItem> bottomChain_;
     std::vector<MidiBinding> midiBindings_;
     std::string vstState_;
 public:
     ControlValue*GetControlValue(const std::string&symbol);
+    PropertyValue*GetPropertyValue(const std::string&propertyUri);
+    
     GETTER_SETTER(instanceId)
     GETTER_SETTER_REF(uri)
     GETTER_SETTER_REF(vstState);
     GETTER_SETTER_REF(pluginName)
     GETTER_SETTER(isEnabled)
     GETTER_SETTER_VEC(controlValues)
+    GETTER_SETTER_VEC(propertyValues)
     GETTER_SETTER_VEC(topChain)
     GETTER_SETTER_VEC(bottomChain)
     GETTER_SETTER_VEC(midiBindings)

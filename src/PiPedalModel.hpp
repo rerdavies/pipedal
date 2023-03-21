@@ -281,6 +281,8 @@ namespace pipedal
 
         std::map<std::string, bool> GetFavorites() const;
         void SetFavorites(const std::map<std::string, bool> &favorites);
+
+        std::vector<std::string> GetFileList(const PiPedalFileProperty&fileProperty);
     };
 
 } // namespace pipedal.

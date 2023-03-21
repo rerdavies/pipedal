@@ -272,18 +272,19 @@ class PiPedalSocket {
     connectInternal_(): Promise<WebSocket> {
         return new Promise<WebSocket>((resolve, reject) => {
             let ws = new WebSocket(this.url);
+
             let self = this;
 
             ws.onmessage = this.handleMessage.bind(this);
             ws.onclose = (event: Event) => {
                 ws.onclose = null;
                 ws.onerror = null;
-                reject("Can't connect to server.");
+                reject("Connection closed unexpectedly.");
             };
             ws.onerror = (event: Event) => {
                 ws.onclose = null;
                 ws.onerror = null;
-                reject("Can't connect to server.");
+                reject("Failed to connect.");
             };
             ws.onopen = (event: Event) => {
                 ws.onerror = self.handleError.bind(self);

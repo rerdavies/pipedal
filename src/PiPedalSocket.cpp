@@ -1246,6 +1246,12 @@ public:
             std::vector<MidiBinding> bindings = this->model.GetSystemMidiBidings();
             this->Reply(replyTo,"getSystemMidiBindings",bindings);
         }
+        else if (message == "requestFileList")
+        {
+            PiPedalFileProperty fileProperty;
+            std::vector<std::string> list = this->model.GetFileList(fileProperty);
+            this->Reply(replyTo,"requestFileList",list);
+        }
         else
         {
             Lv2Log::error("Unknown message received: %s", message.c_str());

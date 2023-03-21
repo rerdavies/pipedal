@@ -8,5 +8,6 @@
     "http://two-play.com/plugins/toob-power-stage-2": true,
     "http://two-play.com/plugins/toob-spectrum": true,
     "http://two-play.com/plugins/toob-tone-stack": true,
-    "http://two-play.com/plugins/toob-tuner": true
+    "http://two-play.com/plugins/toob-tuner": true,
+    "http://two-play.com/plugins/toob-convolution-reverb": true
 }

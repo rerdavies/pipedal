@@ -61,6 +61,12 @@ namespace pipedal {
 		LogFeature();
 		void Prepare(MapFeature* map);
 
+		void LogError(const char*fmt,...);
+		void LogWarning(const char*fmt,...);
+		void LogNote(const char*fmt,...);
+		void LogTrace(const char*fmt,...);
+		
+
 	public:
 		const LV2_Feature* GetFeature()
 		{

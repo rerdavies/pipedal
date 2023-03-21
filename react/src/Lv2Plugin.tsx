@@ -105,6 +105,49 @@ export class PortGroup {
     program_list_id: number = -1;
 };
 
+export class PiPedalFileType {
+    deserialize(input: any): PiPedalFileType {
+        this.name = input.name;
+        this.fileExtension = input.fileExtension;
+        return this;
+    }
+    static deserialize_array(input: any): PiPedalFileType[]
+    {
+        let result: PiPedalFileType[] = [];
+        for (let i = 0; i < input.length; ++i)
+        {
+            result[i] = new PiPedalFileType().deserialize(input[i]);
+        }
+        return result;
+    }
+    name: string = "";
+    fileExtension: string = "";
+}
+export class PiPedalFileProperty {
+        deserialize(input: any): PiPedalFileProperty
+        {
+            this.name = input.name;
+            this.fileTypes = PiPedalFileType.deserialize_array(input.fileTypes);
+            this.patchProperty = input.patchProperty;
+            this.defaultFile = input.defaultFile;
+            return this;
+        }
+        static deserialize_array(input: any): PiPedalFileProperty[]
+        {
+            let result: PiPedalFileProperty[] = [];
+            for (let i = 0; i < input.length; ++i)
+            {
+                result[i] = new PiPedalFileProperty().deserialize(input[i]);
+            }
+            return result;
+        }
+
+        name:   string = "";
+        fileTypes: PiPedalFileType[] = [];
+        patchProperty: string = "";
+        defaultFile: string = "";
+
+};
 export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
     deserialize(input: any): Lv2Plugin
     {
@@ -119,6 +162,12 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
         this.comment = input.comment;
         this.ports=  Port.deserialize_array(input.ports);
         this.port_groups = PortGroup.deserialize_array(input.port_groups);
+        if (input.fileProperties)
+        {
+            this.fileProperties = PiPedalFileProperty.deserialize_array(input.fileProperties)
+        } else {
+            this.fileProperties = [];
+        }
         return this;
     }
     static EmptyFeatures: string[] = [];
@@ -133,7 +182,8 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
     author_homepage:    string = "";
     comment:            string = "";
     ports:              Port[] = Port.EmptyPorts;
-    port_groups: PortGroup[] = [];
+    port_groups:        PortGroup[] = [];
+    fileProperties:            PiPedalFileProperty[] = [];
 }
 
 
@@ -474,6 +524,13 @@ export class UiPlugin implements Deserializable<UiPlugin> {
         this.description = input.description;
         this.controls = UiControl.deserialize_array(input.controls);
         this.port_groups = PortGroup.deserialize_array(input.port_groups);
+        if (input.fileProperties)
+        {
+            this.fileProperties = PiPedalFileProperty.deserialize_array(input.fileProperties)
+        } else {
+            this.fileProperties = [];
+        }
+
         this.is_vst3 = input.is_vst3;
         return this;
 
@@ -523,7 +580,8 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     has_midi_output:     number = 0;
     description: string  = "";
     controls:            UiControl[] = [];
-    port_groups:  PortGroup[] = [];
+    port_groups:         PortGroup[] = [];
+    fileProperties:             PiPedalFileProperty[] = [];
     is_vst3 :            boolean = false;
 }
 

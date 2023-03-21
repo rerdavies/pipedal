@@ -91,3 +91,39 @@ void LogFeature::Prepare(MapFeature*map)
 
 }
 
+
+void LogFeature::LogError(const char*fmt,...)
+{
+	va_list va;
+	va_start(va, fmt);
+
+	vprintf(uris.ridError,fmt,va);
+
+}
+void LogFeature::LogWarning(const char*fmt,...)
+{
+	va_list va;
+	va_start(va, fmt);
+
+	vprintf(uris.ridWarning,fmt,va);
+
+}
+void LogFeature::LogNote(const char*fmt,...)
+{
+	va_list va;
+	va_start(va, fmt);
+
+	vprintf(uris.ridNote,fmt,va);
+
+}
+void LogFeature::LogTrace(const char*fmt,...)
+{
+{
+	va_list va;
+	va_start(va, fmt);
+
+	vprintf(uris.ridNote,fmt,va);
+
+}
+
+}

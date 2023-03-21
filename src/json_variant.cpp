@@ -1,7 +1,7 @@
 /*
  * MIT License
  * 
- * Copyright (c) 2022 Robin E. R. Davies
+ * Copyright (c) 2023 Robin E. R. Davies
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,26 +22,23 @@
  * SOFTWARE.
  */
 
-#include "catch.hpp"
-#include "AvahiService.hpp"
-#include "ss.hpp"
-#include <unistd.h>
-#include <cassert>
+#include "json_variant.hpp"
+#include <limits>
+#include <cmath>
+#include <cstddef>
 
 using namespace pipedal;
 
-TEST_CASE("Avahi Service Test", "[avahi_service][dev]")
+void concrete_json_variant_base::write_double_value(json_writer &writer,double value) const
 {
-
+    if (value < std::numeric_limits<int32_t>::max() && value > std::numeric_limits<int32_t>::min())
     {
-        AvahiService service;
-
-        service.Announce(81, "Test Announcement", "0a6045b0-1753-4104-b3e4-b9713b9cc358","pipedal");
-
-        sleep(10);
-
-        service.Unannounce();
-        service.Announce(81, "Test Announcement 2", "0a6045b0-1753-4104-b3e4-b9713b9cc358","pipedal");
-        sleep(10);
+        double frac = value-(int32_t)value;
+        if (value == 0)
+        {
+            writer.write((int32_t)value);
+            return;
+        }
     }
+    writer.write(value);
 }

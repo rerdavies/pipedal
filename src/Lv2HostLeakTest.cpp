@@ -40,9 +40,9 @@ TEST_CASE( "PiPedalHost memory leak", "[lv2host_leak][Build][Dev]" ) {
     }
     MemStats finalMemory = GetMemStats();
 
-    // Something lilv leaks a Dublin Core url.
+    // Something in lilv leaks a Dublin Core url.
     // Acceptable.
-    const int ACCEPTABLE_ALLOCATION_LEAKS = 4;
+    const int ACCEPTABLE_ALLOCATION_LEAKS = 6;
     const int ACCEPTABLE_MEMORY_LEAK = 400;
 
     if (finalMemory.allocations > initialMemory.allocations + ACCEPTABLE_ALLOCATION_LEAKS

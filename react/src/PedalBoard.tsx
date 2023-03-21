@@ -57,6 +57,27 @@ export class ControlValue implements Deserializable<ControlValue> {
     value: number;
 
 }
+export class PropertyValue implements Deserializable<PropertyValue> {
+    deserialize(input: any): PropertyValue {
+        this.propertyUri = input.propertyUri;
+        this.value = input.value;
+        return this;
+    }
+    static deserializeArray(input: any[]): PropertyValue[] {
+        let result: PropertyValue[] = [];
+        for (let i = 0; i < input.length; ++i) {
+            result[i] = new PropertyValue().deserialize(input[i]);
+        }
+        return result;
+    }
+    setValue(value: number) {
+        this.value = value;
+    }
+
+    propertyUri: string = "";
+    value: any = null;
+
+}
 
 export class PedalBoardItem implements Deserializable<PedalBoardItem> {
     deserializePedalBoardItem(input: any): PedalBoardItem {
@@ -67,6 +88,7 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
         this.midiBindings = MidiBinding.deserialize_array(input.midiBindings);
 
         this.controlValues = ControlValue.deserializeArray(input.controlValues);
+        this.propertyValues = PropertyValue.deserializeArray(input.propertyValues);
         this.vstState = input.vstState ?? "";
         return this;
     }
@@ -136,6 +158,17 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
         }
         return false;
     }
+    setPropertyValue(propertyUri: string, value: any): boolean {
+        for (let i = 0; i < this.propertyValues.length; ++i) {
+            let v = this.propertyValues[i];
+            if (v.propertyUri === propertyUri) {
+                if (v.value === value) return false;
+                v.value = value;
+                return true;
+            }
+        }
+        return false;
+    }
     setMidiBinding(midiBinding: MidiBinding): boolean {
         if (this.midiBindings)
         {
@@ -183,6 +216,7 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
     uri: string = "";
     pluginName?: string;
     controlValues: ControlValue[] = ControlValue.EmptyArray;
+    propertyValues: PropertyValue[] = [];
     midiBindings: MidiBinding[] = [];
     vstState: string = "";
 };

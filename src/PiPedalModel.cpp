@@ -1467,6 +1467,21 @@ void PiPedalModel::UpdateDefaults(PedalBoardItem *pedalBoardItem)
                 }
             }
         }
+        if (pPlugin->piPedalUI())
+        {
+            auto&piPedalUi = pPlugin->piPedalUI();
+            for (auto &fileProperty : piPedalUi->fileProperties())
+            {
+                PropertyValue *pValue = pedalBoardItem->GetPropertyValue(fileProperty->patchProperty());
+                if (pValue == nullptr)
+                {
+                    // missing? set it to default value
+                    pedalBoardItem->propertyValues().push_back(
+                        PropertyValue(fileProperty->patchProperty(),fileProperty->defaultFile())
+                    );
+                }
+            }
+        }
     }
     for (size_t i = 0; i < pedalBoardItem->topChain().size(); ++i)
     {
@@ -1716,4 +1731,9 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
     delete[] t;
 
 
+}
+
+std::vector<std::string> PiPedalModel::GetFileList(const PiPedalFileProperty&fileProperty)
+{
+    return this->storage.GetFileList(PiPedalFilesProperty&fileProperty);    
 }

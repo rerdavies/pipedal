@@ -33,6 +33,7 @@
 
 namespace pipedal {
 
+class PiPedalFileProperty;
 
 class CurrentPreset {
 public:
@@ -67,6 +68,7 @@ private:
     static std::string SafeDecodeName(const std::string& name);
     std::filesystem::path GetPresetsDirectory() const;
     std::filesystem::path GetPluginPresetsDirectory() const;
+    std::filesystem::path GetAudioFilesDirectory() const
     std::filesystem::path GetIndexFileName() const;
     std::filesystem::path GetBankFileName(const std::string & name) const;
     std::filesystem::path GetChannelSelectionFileName();
@@ -133,6 +135,8 @@ public:
 
     void MoveBank(int from, int to);
     int64_t DeleteBank(int64_t bankId);
+
+    std::vector<std::string> GetFileList(const PiPedalFileProperty&fileProperty);
 
 
     void SetJackChannelSelection(const JackChannelSelection&channelSelection);

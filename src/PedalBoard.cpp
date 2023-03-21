@@ -53,6 +53,18 @@ PedalBoardItem*PedalBoard::GetItem(long pedalItemId)
      return const_cast<PedalBoardItem*>(GetItem_(this->items(),pedalItemId));
  }
 
+
+PropertyValue*PedalBoardItem::GetPropertyValue(const std::string&propertyUri)
+{
+    for (auto&propertyValue: this->propertyValues_)
+    {
+        if (propertyValue.propertyUri() == propertyUri)
+        {
+            return &propertyValue;
+        }
+    }
+    return nullptr;
+}
 ControlValue* PedalBoardItem::GetControlValue(const std::string&symbol)
 {
     for (size_t i = 0; i < this->controlValues().size(); ++i)
@@ -164,6 +176,10 @@ PedalBoard PedalBoard::MakeDefault()
 }
 
 
+bool IsPedalBoardSplitItem(const PedalBoardItem*self, const std::vector<PedalBoardItem>&value)
+{
+    return self->uri() == SPLIT_PEDALBOARD_ITEM_URI;
+}
 
 
 
@@ -176,17 +192,19 @@ JSON_MAP_BEGIN(ControlValue)
     JSON_MAP_REFERENCE(ControlValue,value)
 JSON_MAP_END()
 
+JSON_MAP_BEGIN(PropertyValue)
+    JSON_MAP_REFERENCE(PropertyValue,propertyUri)
+    JSON_MAP_REFERENCE(PropertyValue,value)
+JSON_MAP_END()
 
-bool IsPedalBoardSplitItem(const PedalBoardItem*self, const std::vector<PedalBoardItem>&value)
-{
-    return self->uri() == SPLIT_PEDALBOARD_ITEM_URI;
-}
+
 
 JSON_MAP_BEGIN(PedalBoardItem)
     JSON_MAP_REFERENCE(PedalBoardItem,instanceId)
     JSON_MAP_REFERENCE(PedalBoardItem,uri)
     JSON_MAP_REFERENCE(PedalBoardItem,isEnabled)
     JSON_MAP_REFERENCE(PedalBoardItem,controlValues)
+    JSON_MAP_REFERENCE(PedalBoardItem,propertyValues)
     JSON_MAP_REFERENCE(PedalBoardItem,pluginName)
     JSON_MAP_REFERENCE_CONDITIONAL(PedalBoardItem,topChain,IsPedalBoardSplitItem)
     JSON_MAP_REFERENCE_CONDITIONAL(PedalBoardItem,bottomChain,&IsPedalBoardSplitItem)
