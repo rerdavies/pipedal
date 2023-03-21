@@ -68,7 +68,7 @@ private:
     static std::string SafeDecodeName(const std::string& name);
     std::filesystem::path GetPresetsDirectory() const;
     std::filesystem::path GetPluginPresetsDirectory() const;
-    std::filesystem::path GetAudioFilesDirectory() const
+    std::filesystem::path GetAudioFilesDirectory() const;
     std::filesystem::path GetIndexFileName() const;
     std::filesystem::path GetBankFileName(const std::string & name) const;
     std::filesystem::path GetChannelSelectionFileName();

@@ -93,6 +93,9 @@ namespace pipedal {
         const std::vector<PiPedalFileType> &fileTypes() const { return fileTypes_; }
 
         const std::string &patchProperty() const { return patchProperty_; }
+        bool IsValidExtension(const std::string&extension) const;
+        static  bool IsDirectoryNameValid(const std::string&value);
+
     public:
         DECLARE_JSON_MAP(PiPedalFileProperty);
     };
@@ -108,4 +111,9 @@ namespace pipedal {
     private:
         std::vector<PiPedalFileProperty::ptr> fileProperites_;
     };
+
+    // Utiltities for validating file paths received via PiPedalFileProperty-related APIs.
+    bool IsAlphaNumeric(const std::string&value);
+  
+
 };

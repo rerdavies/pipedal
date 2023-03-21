@@ -105,6 +105,10 @@ PiPedalFileProperty::PiPedalFileProperty(PiPedalHost *pHost, const LilvNode *nod
     if (directory)
     {
         this->directory_ = name.AsString();
+        if (!IsDirectoryNameValid(this->directory_))
+        {
+            throw std::logic_error("Pipedal FileProperty::director must have only alpha-numeric characters.");
+        }
     }
     else
     {
@@ -154,6 +158,43 @@ std::vector<PiPedalFileType> PiPedalFileType::GetArray(PiPedalHost*pHost, const 
     }
     lilv_nodes_free(fileTypeNodes);
     return result;
+}
+
+bool pipedal::IsAlphaNumeric(const std::string&value)
+{
+    for (char c:value)
+    {
+        if (
+            (c >= '0' && c <= '9')
+            || (c >= 'a' && c <= 'z')
+            || (c >= 'A' && c <= 'Z')
+            || (c == '_')
+
+        ) {
+            continue;
+        }
+        return false;
+
+    }
+    return true;
+}
+
+bool PiPedalFileProperty::IsDirectoryNameValid(const std::string&value)
+{
+    return IsAlphaNumeric(value);
+}
+
+bool PiPedalFileProperty::IsValidExtension(const std::string&extension) const
+{
+
+    for (auto&fileType: fileTypes_)
+    {
+        if (fileType.fileExtension() == extension)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 

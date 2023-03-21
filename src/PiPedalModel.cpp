@@ -31,6 +31,7 @@
 #include "SplitEffect.hpp"
 #include "CpuGovernor.hpp"
 #include "RingBufferReader.hpp"
+#include "PiPedalUI.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -1735,5 +1736,5 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
 
 std::vector<std::string> PiPedalModel::GetFileList(const PiPedalFileProperty&fileProperty)
 {
-    return this->storage.GetFileList(PiPedalFilesProperty&fileProperty);    
+    return this->storage.GetFileList(fileProperty);    
 }

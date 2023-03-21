@@ -1402,39 +1402,35 @@ static bool containsDirectorySeparator(const std::string&value)
     return false;
 }
 
-static bool containsNonAlphaNumericCharacter(const std::string&value)
+
+
+static  void ThrowPermissionDeniedError()
 {
-    for (char c:value)
-    {
-        if (
-            (c >= '0' && c <= '9')
-            || (c >= 'a' && c <= 'z')
-            || (c >= 'A' && c <= 'Z)
-            || (c == '_')
-
-        ) {
-            continue;
-        }
-        return false;
-
-    }
-    return true;
+    throw std::logic_error("Permission denied.");
 }
-
-static void sanityCheckDirectory(const std::string&directory)
-{
-    // we can afford to be highly restrictive here. Alpha-numeric only.
-    if (containsNonAlphaNumericCharacter(directory))
-    {
-        throw std::logic_error("Invalid directory name.");        
-    }
-}
-
 std::vector<std::string> Storage::GetFileList(const PiPedalFileProperty&fileProperty)
 {
-    sanityCheckDirectory(fileProperty.directory());
-    std::filesystem::path path = this->GetAudioFilesDirectory() / fileProperty.directory();
+    if (!PiPedalFileProperty::IsDirectoryNameValid(fileProperty.directory()))
+    {
+        ThrowPermissionDeniedError();
+    }
 
+    std::vector<std::string> result;
+    std::filesystem::path audioFileDirectory = this->GetAudioFilesDirectory() / fileProperty.directory();
+
+    for (auto const&dir_entry: std::filesystem::directory_iterator(audioFileDirectory))
+    {
+        if (dir_entry.is_regular_file())
+        {
+            auto &path = dir_entry.path();
+            if (fileProperty.IsValidExtension(path.extension().string()))
+            {
+                result.push_back(fileProperty.directory() / path.filename());
+            }
+        }
+    }
+
+    return result;
 }
 
 
