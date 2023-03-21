@@ -104,10 +104,10 @@ PiPedalFileProperty::PiPedalFileProperty(PiPedalHost *pHost, const LilvNode *nod
         nullptr);
     if (directory)
     {
-        this->directory_ = name.AsString();
+        this->directory_ = directory.AsString();
         if (!IsDirectoryNameValid(this->directory_))
         {
-            throw std::logic_error("Pipedal FileProperty::director must have only alpha-numeric characters.");
+            throw std::logic_error("Pipedal FileProperty::directory must have only alpha-numeric characters.");
         }
     }
     else
@@ -181,6 +181,7 @@ bool pipedal::IsAlphaNumeric(const std::string&value)
 
 bool PiPedalFileProperty::IsDirectoryNameValid(const std::string&value)
 {
+    if (value.length() == 0) return false;
     return IsAlphaNumeric(value);
 }
 

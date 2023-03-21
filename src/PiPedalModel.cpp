@@ -1736,5 +1736,11 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
 
 std::vector<std::string> PiPedalModel::GetFileList(const PiPedalFileProperty&fileProperty)
 {
-    return this->storage.GetFileList(fileProperty);    
+    try {
+        return this->storage.GetFileList(fileProperty);    
+    } catch (const std::exception & e)
+    {
+        Lv2Log::warning("GetFileList() failed:  (%s)", e.what());
+        return std::vector<std::string>(); // don't disclose to users what the problem is.
+    }
 }

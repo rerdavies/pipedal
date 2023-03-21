@@ -130,6 +130,7 @@ export class PiPedalFileProperty {
             this.fileTypes = PiPedalFileType.deserialize_array(input.fileTypes);
             this.patchProperty = input.patchProperty;
             this.defaultFile = input.defaultFile;
+            this.directory = input.directory;
             return this;
         }
         static deserialize_array(input: any): PiPedalFileProperty[]
@@ -145,6 +146,7 @@ export class PiPedalFileProperty {
         name:   string = "";
         fileTypes: PiPedalFileType[] = [];
         patchProperty: string = "";
+        directory: string = "";
         defaultFile: string = "";
 
 };

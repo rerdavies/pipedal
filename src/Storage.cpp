@@ -1418,16 +1418,21 @@ std::vector<std::string> Storage::GetFileList(const PiPedalFileProperty&fileProp
     std::vector<std::string> result;
     std::filesystem::path audioFileDirectory = this->GetAudioFilesDirectory() / fileProperty.directory();
 
-    for (auto const&dir_entry: std::filesystem::directory_iterator(audioFileDirectory))
-    {
-        if (dir_entry.is_regular_file())
+    try {
+        for (auto const&dir_entry: std::filesystem::directory_iterator(audioFileDirectory))
         {
-            auto &path = dir_entry.path();
-            if (fileProperty.IsValidExtension(path.extension().string()))
+            if (dir_entry.is_regular_file())
             {
-                result.push_back(fileProperty.directory() / path.filename());
+                auto &path = dir_entry.path();
+                if (fileProperty.IsValidExtension(path.extension().string()))
+                {
+                    result.push_back(fileProperty.directory() / path.filename());
+                }
             }
         }
+    } catch(const std::exception&error)
+    {
+        throw std::logic_error("Directory not found: " + audioFileDirectory.string());
     }
 
     return result;

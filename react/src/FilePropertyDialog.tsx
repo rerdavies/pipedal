@@ -74,7 +74,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
             fullScreen: false,
             selectedFile: props.selectedFile,
             hasSelection: false,
-            files: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+            files: []
         };
 
         this.requestFiles();
@@ -83,7 +83,15 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
     private model: PiPedalModel;
 
     private requestFiles() {
-        this.model.requestFileList(this.props.fileProperty);
+        this.model.requestFileList(this.props.fileProperty)
+        .then((files) => {
+            if (this.mounted)
+            {
+                this.setState({files: files,hasSelection: this.isFileInList(files,this.state.selectedFile)});
+            }
+        }).catch((error)=>{
+            this.model.showAlert(error.toString())
+        });
     }
 
     onWindowSizeChanged(width: number, height: number): void {
@@ -118,11 +126,11 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
 
     }
 
-    private isFileInList(selectedFile: string) {
+    private isFileInList(files: string[],file: string) {
 
         let hasSelection = false;
-        for (var file of this.state.files) {
-            if (file === selectedFile) {
+        for (var listFile of files) {
+            if (listFile === file) {
                 hasSelection = true;
                 break;
             }
@@ -131,7 +139,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
     }
 
     onSelect(selectedFile: string) {
-        this.setState({ selectedFile: selectedFile, hasSelection: this.isFileInList(selectedFile) })
+        this.setState({ selectedFile: selectedFile, hasSelection: this.isFileInList(this.state.files,selectedFile) })
     }
 
     render() {
