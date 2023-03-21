@@ -29,7 +29,10 @@ Run the following commands to install dependent libraries required by the PiPeda
 
 ### Installing Sources
 
-If you are using Visual Studio Code, install the C/C++ Extension Pack (Microsoft).
+If you are using Visual Studio Code, install the following Extensions:
+
+- C/C++ Extension Pack (Microsoft).
+- CMake Tools (Microsoft)
 
 Clone the rerdavies/pipdal package from github. Use the source control tools from Visual Studio Code, or 
    
