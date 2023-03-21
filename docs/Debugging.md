@@ -117,5 +117,47 @@ Or you can avoid all of this, by configuring the debug instance to use a data fo
         ...
     }
 
+Run pipedald in a debugger, you need to use the following command-line to launch pipedal:
+
+    build/src/pipedald /etc/pipedal/config /etc/pipedal/react -port0.0.0.0:8080
+    
+The first argument specifies where the pipedal daemon's configuration files are. The second argument specifies where 
+built static web pages for the web application are. And the port option specifies the port on which the daemon will
+listen. If you are using a React debug server to serve up the web appliation you will point your browser at the 
+React debug server on port 3000; but the web application will still need to connect to web sockets on the 8080 port.
+
+If you are using Visual Studio Code, you might find it useful to add the following section to your `.vscode/launch.json` file:
+
+    {
+       ...
+       {
+            "name": "(gdb) pipedald",
+            "type": "cppdbg",
+            "request": "launch",
+            // Resolved by CMake Tools:
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [   "/etc/pipedal/config",  "/etc/pipedal/react",  "-port", "0.0.0.0:8080"  ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    // add the directory where our target was built to the PATHs
+                    // it gets resolved by CMake Tools:
+                    "name": "PATH",
+                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        ...
+    }
 -----
 [<< The Build System](TheBuildSystem.md) | [Up](Documentation.md)  | [PiPedal Architecture >>](Architecture.md)
