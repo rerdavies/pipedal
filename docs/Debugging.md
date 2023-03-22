@@ -108,6 +108,9 @@ You will need to add your userid to the pipedal_d group if you plan to share the
      
      sudo usermod -a -G pipedal_d *youruserid*
 
+You will need to reboot your machine to get the group membership change to take effect,or log out and log back
+in if you can do that.
+
 Or you can avoid all of this, by configuring the debug instance to use a data folder in your home directory. Edit 
 `debugConfig/config.json`:
 
