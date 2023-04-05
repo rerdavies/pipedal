@@ -23,10 +23,10 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { UiPlugin, UiControl, PiPedalFileProperty,PiPedalFileType } from './Lv2Plugin';
+import { UiPlugin, UiControl, PiPedalFileProperty} from './Lv2Plugin';
 import {
-    PedalBoard, PedalBoardItem, ControlValue,PropertyValue
-} from './PedalBoard';
+    Pedalboard, PedalboardItem, ControlValue
+} from './Pedalboard';
 import PluginControl from './PluginControl';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import VuMeter from './VuMeter';
@@ -36,6 +36,7 @@ import Typography from '@mui/material/Typography';
 import FullScreenIME from './FullScreenIME';
 import FilePropertyControl from './FilePropertyControl';
 import FilePropertyDialog from './FilePropertyDialog';
+import JsonAtom from './JsonAtom';
 
 
 export const StandardItemSize = { width: 80, height: 110 };
@@ -188,7 +189,7 @@ export interface ControlViewCustomization {
 export interface PluginControlViewProps extends WithStyles<typeof styles> {
     theme: Theme;
     instanceId: number;
-    item: PedalBoardItem;
+    item: PedalboardItem;
     customization?: ControlViewCustomization;
     customizationId?: number;
 }
@@ -224,35 +225,32 @@ const PluginControlView =
                     dialogFileValue: ""
 
                 }
-                this.onPedalBoardChanged = this.onPedalBoardChanged.bind(this);
+                this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
                 this.onControlValueChanged = this.onControlValueChanged.bind(this);
                 this.onPreviewChange = this.onPreviewChange.bind(this);
             }
 
 
             onPreviewChange(key: string, value: number): void {
-                this.model.previewPedalBoardValue(this.props.instanceId, key, value);
+                this.model.previewPedalboardValue(this.props.instanceId, key, value);
             }
 
             onControlValueChanged(key: string, value: number): void {
-                this.model.setPedalBoardControlValue(this.props.instanceId, key, value);
-            }
-            onPropertyValueChanged(propertyUri: string, value: any): void {
-                this.model.setPedalBoardPropertyValue(this.props.instanceId, propertyUri, value);
+                this.model.setPedalboardControl(this.props.instanceId, key, value);
             }
 
-            onPedalBoardChanged(value?: PedalBoard) {
-                //let item = this.model.pedalBoard.get().maybeGetItem(this.props.instanceId);
-                //this.setState({ pedalBoardItem: item });
+            onPedalboardChanged(value?: Pedalboard) {
+                //let item = this.model.pedalboard.get().maybeGetItem(this.props.instanceId);
+                //this.setState({ pedalboardItem: item });
             }
 
 
             componentDidMount() {
                 super.componentDidMount();
-                this.model.pedalBoard.addOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
             }
             componentWillUnmount() {
-                this.model.pedalBoard.removeOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
                 super.componentWillUnmount();
             }
 
@@ -285,22 +283,10 @@ const PluginControlView =
                 });
             }
 
-            makeFilePropertyUI(fileProperty: PiPedalFileProperty, propertyValues: PropertyValue[]): ReactNode {
-                let propertyValue: PropertyValue | undefined = undefined;
-                for (let i = 0; i < propertyValues.length; ++i) {
-                    if (propertyValues[i].propertyUri === fileProperty.patchProperty) {
-                        propertyValue = propertyValues[i];
-                        break;
-                    }
-                }
-                if (!propertyValue) {
-                    propertyValue = new PropertyValue();
-                    propertyValue.value = fileProperty.defaultFile;
-                    propertyValue.propertyUri = fileProperty.patchProperty;
-                }
+            makeFilePropertyUI(fileProperty: PiPedalFileProperty): ReactNode {
                 return ((
 
-                    <FilePropertyControl instanceId={this.props.instanceId} value={propertyValue.value}
+                    <FilePropertyControl instanceId={this.props.instanceId} 
                         fileProperty={fileProperty}
                         onFileClick={(fileProperty,selectedFile) => {
                             this.setState({showFileDialog: true,dialogFileProperty: fileProperty,dialogFileValue: selectedFile});
@@ -333,7 +319,7 @@ const PluginControlView =
 
             }
 
-            getStandardControlNodes(plugin: UiPlugin, controlValues: ControlValue[],propertyValues: PropertyValue[]): ControlNodes {
+            getStandardControlNodes(plugin: UiPlugin, controlValues: ControlValue[]): ControlNodes {
                 let result: ControlNodes = [];
 
                 for (let i = 0; i < plugin.controls.length; ++i) {
@@ -350,7 +336,7 @@ const PluginControlView =
                                 pluginControl = plugin.controls[i];
                                 if (!pluginControl.not_on_gui) {
                                     groupControls.push(
-                                        this.makeStandardControl(pluginControl, controlValues)
+                                        this.makeStandardControl(pluginControl,controlValues)
                                     )
                                 }
                             }
@@ -359,7 +345,7 @@ const PluginControlView =
                             )
                         } else {
                             result.push(
-                                this.makeStandardControl(pluginControl, controlValues)
+                                this.makeStandardControl(pluginControl,controlValues)
                             );
                         }
                     }
@@ -367,7 +353,7 @@ const PluginControlView =
                 for (let i = 0; i < plugin.fileProperties.length; ++i) {
                     let fileProperty = plugin.fileProperties[i];
                     result.push(
-                        this.makeFilePropertyUI(fileProperty, propertyValues)
+                        this.makeFilePropertyUI(fileProperty)
                     );
                 }
                 return result;
@@ -383,7 +369,7 @@ const PluginControlView =
             }
 
             onImeValueChange(key: string, value: number) {
-                this.model.setPedalBoardControlValue(this.props.instanceId, key, value);
+                this.model.setPedalboardControl(this.props.instanceId, key, value);
                 this.onImeClose();
             }
             onImeClose() {
@@ -427,7 +413,7 @@ const PluginControlView =
                         result.push((
                             <div className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
                                 <div className={classes.portGroupTitle}>
-                                    <Typography variant="caption">{controlGroup.name}</Typography>
+                                    <Typography noWrap variant="caption">{controlGroup.name}</Typography>
                                 </div>
                                 <div className={classes.portGroupControls} >
                                     {
@@ -452,16 +438,15 @@ const PluginControlView =
 
             render(): ReactNode {
                 let classes = this.props.classes;
-                let pedalBoardItem = this.model.pedalBoard.get().getItem(this.props.instanceId);
+                let pedalboardItem = this.model.pedalboard.get().getItem(this.props.instanceId);
 
-                if (!pedalBoardItem)
+                if (!pedalboardItem)
                     return (<div className={classes.frame} ></div>);
 
-                let controlValues = pedalBoardItem.controlValues;
-                let propertyValues = pedalBoardItem.propertyValues;
+                let controlValues = pedalboardItem.controlValues;
 
 
-                let plugin: UiPlugin = nullCast(this.model.getUiPlugin(pedalBoardItem.uri));
+                let plugin: UiPlugin = nullCast(this.model.getUiPlugin(pedalboardItem.uri));
 
 
                 controlValues = this.filterNotOnGui(controlValues, plugin);
@@ -472,7 +457,7 @@ const PluginControlView =
                 let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
                 let controlNodes: ControlNodes;
 
-                controlNodes = this.getStandardControlNodes(plugin, controlValues,propertyValues);
+                controlNodes = this.getStandardControlNodes(plugin, controlValues);
 
                 if (this.props.customization) {
                     // allow wrapper class to insert/remove/rebuild controls.
@@ -484,10 +469,10 @@ const PluginControlView =
                 return (
                     <div className={classes.frame}>
                         <div className={classes.vuMeterL}>
-                            <VuMeter display="input" instanceId={pedalBoardItem.instanceId} />
+                            <VuMeter display="input" instanceId={pedalboardItem.instanceId} />
                         </div>
                         <div className={vuMeterRClass}>
-                            <VuMeter display="output" instanceId={pedalBoardItem.instanceId} />
+                            <VuMeter display="output" instanceId={pedalboardItem.instanceId} />
                         </div>
                         <div className={gridClass}  >
                             {
@@ -503,9 +488,21 @@ const PluginControlView =
                         <FilePropertyDialog open={this.state.showFileDialog} 
                             fileProperty={this.state.dialogFileProperty} 
                             selectedFile={this.state.dialogFileValue}  
-                            onClose={()=> { this.setState({ showFileDialog: false});}}
+                            onCancel={()=> { this.setState({ showFileDialog: false});}}
                             onOk={(fileProperty,selectedFile)=> { 
-                                this.model.setPedalBoardPropertyValue(this.props.instanceId,fileProperty.patchProperty,selectedFile)
+
+                                this.model.setPatchProperty(
+                                    this.props.instanceId,
+                                    fileProperty.patchProperty,
+                                    JsonAtom.Path(selectedFile)
+                                )
+                                .then( () => {
+
+                                })
+                                .catch((error) => 
+                                {
+                                    this.model.showAlert("setPatchProperty failed: " +error);
+                                });
                                 this.setState({ showFileDialog: false});}
                             }
                             />

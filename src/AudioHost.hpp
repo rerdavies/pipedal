@@ -21,13 +21,15 @@
 
 #include "JackConfiguration.hpp"
 
-#include "Lv2PedalBoard.hpp"
+#include "Lv2Pedalboard.hpp"
 #include "VuUpdate.hpp"
 #include "json.hpp"
 #include "AudioHost.hpp"
 #include "JackServerSettings.hpp"
 #include <functional>
 #include "PiPedalAlsa.hpp"
+#include "Promise.hpp"
+#include "json_variant.hpp"
 
 namespace pipedal {
 
@@ -45,39 +47,86 @@ public:
     int64_t subscriptionHandle;
     float value;
 };
-class RealtimeParameterRequest {
+class RealtimePatchPropertyRequest {
 public:
     int64_t clientId;
     int64_t instanceId;
     LV2_URID uridUri;
 
-    std::function<void (RealtimeParameterRequest*)> onJackRequestComplete;
+    enum class RequestType {
+        PatchGet,
+        PatchSet
+    };
+    RequestType requestType;
+
+    std::function<void (RealtimePatchPropertyRequest*)> onPatchRequestComplete;
     std::function<void(const std::string &jsonResjult)> onSuccess;
     std::function<void(const std::string &error)> onError;
 
     const char*errorMessage = nullptr;
-    int responseLength = 0;
-    uint8_t response[2048];
     std::string jsonResponse;
 
-    RealtimeParameterRequest *pNext = nullptr;
+    RealtimePatchPropertyRequest *pNext = nullptr;
+
+    void SetSize(size_t size)
+    {
+        responseLength = size;
+        if (responseLength > sizeof(atomBuffer))
+        {
+            longAtomBuffer.resize(size);
+        }
+    }
+    size_t GetSize() const { return responseLength; }
+    uint8_t *GetBuffer() {
+        if (responseLength > sizeof(atomBuffer))
+        {
+            return &(longAtomBuffer[0]);
+        }
+        return atomBuffer;
+    }
+private:
+    int responseLength = 0;
+    uint8_t atomBuffer[2048];
+    std::vector<uint8_t> longAtomBuffer;
 
 public:
-    RealtimeParameterRequest(
-        std::function<void (RealtimeParameterRequest*)> onJackRequestComplete_,
+    RealtimePatchPropertyRequest(
+        std::function<void (RealtimePatchPropertyRequest*)> onPatchRequestcomplete_,
         int64_t clientId_,
         int64_t instanceId_,
         LV2_URID uridUri_,
         std::function<void(const std::string &jsonResjult)> onSuccess_,
-        std::function<void(const std::string &error)> onError_)
-        :   onJackRequestComplete(onJackRequestComplete_),
+        std::function<void(const std::string &error)> onError_
+    )
+        :   onPatchRequestComplete(onPatchRequestcomplete_),
              clientId(clientId_),
             instanceId(instanceId_),
             uridUri(uridUri_),
             onSuccess(onSuccess_),
             onError(onError_)
         {
-            
+            requestType = RequestType::PatchGet;            
+        }
+    RealtimePatchPropertyRequest(
+        std::function<void (RealtimePatchPropertyRequest*)> onPatchRequestcomplete_,
+        int64_t clientId_,
+        int64_t instanceId_,
+        LV2_URID uridUri_,
+        LV2_Atom*atomValue,
+        std::function<void(const std::string &jsonResjult)> onSuccess_,
+        std::function<void(const std::string &error)> onError_
+        )
+        :   onPatchRequestComplete(onPatchRequestcomplete_),
+             clientId(clientId_),
+            instanceId(instanceId_),
+            uridUri(uridUri_),
+            onSuccess(onSuccess_),
+            onError(onError_)
+        {
+            requestType = RequestType::PatchSet;
+            size_t size = atomValue->size+ sizeof(LV2_Atom);
+            SetSize(size);
+            memcpy(GetBuffer(),atomValue,size);
         }
 
 };
@@ -95,11 +144,13 @@ public:
 
 class IAudioHostCallbacks {
 public:
+    virtual void OnNotifyLv2StateChanged(uint64_t instanceId) = 0;
     virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> & updates) = 0;
     virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
     virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;
     virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) = 0;
-    virtual void OnNotifyAtomOutput(uint64_t instanceId, const std::string&atomType,const std::string&atomJson) = 0;
+    virtual bool WantsAtomOutput(uint64_t instanceId,LV2_URID patchSetProperty) = 0;
+    virtual void OnNotifyAtomOutput(uint64_t instanceId, LV2_URID patchSetProperty, const std::string&atomJson) = 0;
 
     virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProgramRequest) = 0;
     virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) = 0;
@@ -143,6 +194,8 @@ public:
     virtual void SetListenForMidiEvent(bool listen) = 0;
     virtual void SetListenForAtomOutput(bool listen) = 0;
 
+    virtual void UpdatePluginStates(Pedalboard& pedalboard) = 0;
+
 
     virtual void Open(const JackServerSettings&jackServerSettings,const JackChannelSelection & channelSelection) = 0;
     virtual void Close() = 0;
@@ -151,7 +204,7 @@ public:
 
     virtual JackConfiguration GetServerConfiguration() = 0;
 
-    virtual void SetPedalBoard(const std::shared_ptr<Lv2PedalBoard> &pedalBoard) = 0;
+    virtual void SetPedalboard(const std::shared_ptr<Lv2Pedalboard> &pedalboard) = 0;
 
     virtual void SetControlValue(uint64_t instanceId,const std::string&symbol, float value) = 0;
     virtual void SetPluginPreset(uint64_t instanceId, const std::vector<ControlValue> & values) = 0;
@@ -164,11 +217,10 @@ public:
 
     virtual void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings) = 0;
 
-    virtual void getRealtimeParameter(RealtimeParameterRequest*pParameterRequest) = 0;
+    virtual void sendRealtimeParameterRequest(RealtimePatchPropertyRequest*pParameterRequest) = 0;
     virtual void AckMidiProgramRequest(uint64_t requestId) = 0;
 
     virtual JackHostStatus getJackStatus() = 0;
-
 
 };
 

@@ -206,7 +206,7 @@ bool setJackConfiguration(JackServerSettings serverSettings)
 
 #if JACK_HOST
 
-    serverSettings.Write();
+    serverSettings.WriteDaemonConfig();
 
     silentSysExec("/usr/bin/systemctl unmask jack");
     silentSysExec("/usr/bin/systemctl enable jack");

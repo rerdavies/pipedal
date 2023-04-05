@@ -26,7 +26,7 @@ import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
-import { PedalBoardItem } from './PedalBoard';
+import { PedalboardItem } from './Pedalboard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
@@ -37,7 +37,7 @@ const styles = (theme: Theme) => createStyles({
 
 interface ToobInputStageProps extends WithStyles<typeof styles> {
     instanceId: number;
-    item: PedalBoardItem;
+    item: PedalboardItem;
 
 }
 interface ToobInputStageState {
@@ -84,8 +84,8 @@ const ToobInputStageView =
 class ToobInputStageViewFactory implements IControlViewFactory {
     uri: string = "http://two-play.com/plugins/toob-input_stage";
 
-    Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<ToobInputStageView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+    Create(model: PiPedalModel, pedalboardItem: PedalboardItem): React.ReactNode {
+        return (<ToobInputStageView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
     }
 
 

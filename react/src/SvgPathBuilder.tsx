@@ -20,7 +20,7 @@
 import StringBuilder from './StringBuilder';
 
 class SvgPathBuilder {
-    _sb: StringBuilder = new StringBuilder();
+    private _sb: StringBuilder = new StringBuilder();
 
     moveTo(x: number, y: number): SvgPathBuilder
     {
@@ -37,7 +37,7 @@ class SvgPathBuilder {
         this._sb.append('C').append(x1).append(',').append(y1)
             .append(' ').append(x2).append(',').append(y2)
             .append(' ').append(x).append(',').append(y).append(' ');
-
+        return this;
     }
     closePath(): SvgPathBuilder {
         this._sb.append("Z ");

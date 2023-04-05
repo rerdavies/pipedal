@@ -17,6 +17,7 @@
 #include <set>
 #include <strings.h>
 #include "Ipv6Helpers.hpp"
+#include "util.hpp"
 
 #include "WebServer.hpp"
 
@@ -582,6 +583,7 @@ namespace pipedal
         {
             try
             {
+                SetThreadName("webMain");
                 // The io_context is required for all I/O
                 boost::asio::io_service ioc{threads};
                 //*********************************
@@ -632,8 +634,9 @@ namespace pipedal
                 v.reserve(threads - 1);
                 for (auto i = threads - 1; i > 0; --i)
                     v.emplace_back(
-                        [&ioc]
+                        [&ioc,i]
                         {
+                            SetThreadName(SS("web_" << i));
                             ioc.run();
                         });
 

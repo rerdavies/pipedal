@@ -18,54 +18,63 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
-#include "PedalBoard.hpp"
+#include "Pedalboard.hpp"
 
 
 using namespace pipedal;
 
 
-static const PedalBoardItem* GetItem_(const std::vector<PedalBoardItem>&items,long pedalBoardItemId)
+static const PedalboardItem* GetItem_(const std::vector<PedalboardItem>&items,long pedalboardItemId)
 {
     for (size_t i = 0; i < items.size(); ++i)
     {
         auto &item = items[i];
-        if (items[i].instanceId() == pedalBoardItemId)
+        if (items[i].instanceId() == pedalboardItemId)
         {
             return &(items[i]);
         }
         if (item.isSplit())
         {
-            const PedalBoardItem* t = GetItem_(item.topChain(),pedalBoardItemId);
+            const PedalboardItem* t = GetItem_(item.topChain(),pedalboardItemId);
             if (t != nullptr) return t;
-            t = GetItem_(item.bottomChain(),pedalBoardItemId);
+            t = GetItem_(item.bottomChain(),pedalboardItemId);
             if (t != nullptr) return t;
         }
     }
     return nullptr;
 }
 
-const PedalBoardItem*PedalBoard::GetItem(long pedalItemId) const
+static void GetAllItems(std::vector<PedalboardItem*> & result, std::vector<PedalboardItem>&items)
+{
+    for (auto& item: items)
+    {
+        if (item.isSplit())
+        {
+            GetAllItems(result,item.topChain());
+            GetAllItems(result,item.bottomChain());
+        }
+        result.push_back(&item);
+    }    
+}
+std::vector<PedalboardItem*> Pedalboard::GetAllPlugins()
+{
+    std::vector<PedalboardItem*> result;
+    GetAllItems(result,this->items());
+    return result;
+}
+
+
+const PedalboardItem*Pedalboard::GetItem(long pedalItemId) const
 {
     return GetItem_(this->items(),pedalItemId);
 }
-PedalBoardItem*PedalBoard::GetItem(long pedalItemId)
+PedalboardItem*Pedalboard::GetItem(long pedalItemId)
  {
-     return const_cast<PedalBoardItem*>(GetItem_(this->items(),pedalItemId));
+     return const_cast<PedalboardItem*>(GetItem_(this->items(),pedalItemId));
  }
 
 
-PropertyValue*PedalBoardItem::GetPropertyValue(const std::string&propertyUri)
-{
-    for (auto&propertyValue: this->propertyValues_)
-    {
-        if (propertyValue.propertyUri() == propertyUri)
-        {
-            return &propertyValue;
-        }
-    }
-    return nullptr;
-}
-ControlValue* PedalBoardItem::GetControlValue(const std::string&symbol)
+ControlValue* PedalboardItem::GetControlValue(const std::string&symbol)
 {
     for (size_t i = 0; i < this->controlValues().size(); ++i)
     {
@@ -77,9 +86,9 @@ ControlValue* PedalBoardItem::GetControlValue(const std::string&symbol)
     return nullptr;
 }
 
-bool PedalBoard::SetItemEnabled(long pedalItemId, bool enabled)
+bool Pedalboard::SetItemEnabled(long pedalItemId, bool enabled)
 {
-    PedalBoardItem*item = GetItem(pedalItemId);
+    PedalboardItem*item = GetItem(pedalItemId);
     if (!item) return false;
     if (item->isEnabled() != enabled)
     {
@@ -91,9 +100,9 @@ bool PedalBoard::SetItemEnabled(long pedalItemId, bool enabled)
 }
 
 
-bool PedalBoard::SetControlValue(long pedalItemId, const std::string &symbol, float value)
+bool Pedalboard::SetControlValue(long pedalItemId, const std::string &symbol, float value)
 {
-    PedalBoardItem*item = GetItem(pedalItemId);
+    PedalboardItem*item = GetItem(pedalItemId);
     if (!item) return false;
     ControlValue*controlValue = item->GetControlValue(symbol);
     if (controlValue == nullptr) return false;
@@ -106,11 +115,11 @@ bool PedalBoard::SetControlValue(long pedalItemId, const std::string &symbol, fl
 }
 
 
-PedalBoardItem PedalBoard::MakeEmptyItem()
+PedalboardItem Pedalboard::MakeEmptyItem()
 {
     uint64_t instanceId = NextInstanceId();
 
-    PedalBoardItem result;
+    PedalboardItem result;
     result.instanceId(instanceId);
     result.uri(EMPTY_PEDALBOARD_ITEM_URI);
     result.pluginName("");
@@ -119,11 +128,11 @@ PedalBoardItem PedalBoard::MakeEmptyItem()
 }
 
 
-PedalBoardItem PedalBoard::MakeSplit()
+PedalboardItem Pedalboard::MakeSplit()
 {
     uint64_t instanceId = NextInstanceId();
 
-    PedalBoardItem result;
+    PedalboardItem result;
     result.instanceId(instanceId);
     result.uri(SPLIT_PEDALBOARD_ITEM_URI);
     result.pluginName("");
@@ -151,10 +160,10 @@ PedalBoardItem PedalBoard::MakeSplit()
 
 
 
-PedalBoard PedalBoard::MakeDefault()
+Pedalboard Pedalboard::MakeDefault()
 {
     // copy insanity. but it happens so rarely.
-    PedalBoard result;
+    Pedalboard result;
 
     auto split = result.MakeSplit();
     split.topChain().push_back(result.MakeEmptyItem());
@@ -176,7 +185,7 @@ PedalBoard PedalBoard::MakeDefault()
 }
 
 
-bool IsPedalBoardSplitItem(const PedalBoardItem*self, const std::vector<PedalBoardItem>&value)
+bool IsPedalboardSplitItem(const PedalboardItem*self, const std::vector<PedalboardItem>&value)
 {
     return self->uri() == SPLIT_PEDALBOARD_ITEM_URI;
 }
@@ -192,29 +201,24 @@ JSON_MAP_BEGIN(ControlValue)
     JSON_MAP_REFERENCE(ControlValue,value)
 JSON_MAP_END()
 
-JSON_MAP_BEGIN(PropertyValue)
-    JSON_MAP_REFERENCE(PropertyValue,propertyUri)
-    JSON_MAP_REFERENCE(PropertyValue,value)
+
+
+JSON_MAP_BEGIN(PedalboardItem)
+    JSON_MAP_REFERENCE(PedalboardItem,instanceId)
+    JSON_MAP_REFERENCE(PedalboardItem,uri)
+    JSON_MAP_REFERENCE(PedalboardItem,isEnabled)
+    JSON_MAP_REFERENCE(PedalboardItem,controlValues)
+    JSON_MAP_REFERENCE(PedalboardItem,pluginName)
+    JSON_MAP_REFERENCE_CONDITIONAL(PedalboardItem,topChain,IsPedalboardSplitItem)
+    JSON_MAP_REFERENCE_CONDITIONAL(PedalboardItem,bottomChain,&IsPedalboardSplitItem)
+    JSON_MAP_REFERENCE(PedalboardItem,midiBindings)
+    JSON_MAP_REFERENCE(PedalboardItem,lv2State)
 JSON_MAP_END()
 
 
-
-JSON_MAP_BEGIN(PedalBoardItem)
-    JSON_MAP_REFERENCE(PedalBoardItem,instanceId)
-    JSON_MAP_REFERENCE(PedalBoardItem,uri)
-    JSON_MAP_REFERENCE(PedalBoardItem,isEnabled)
-    JSON_MAP_REFERENCE(PedalBoardItem,controlValues)
-    JSON_MAP_REFERENCE(PedalBoardItem,propertyValues)
-    JSON_MAP_REFERENCE(PedalBoardItem,pluginName)
-    JSON_MAP_REFERENCE_CONDITIONAL(PedalBoardItem,topChain,IsPedalBoardSplitItem)
-    JSON_MAP_REFERENCE_CONDITIONAL(PedalBoardItem,bottomChain,&IsPedalBoardSplitItem)
-    JSON_MAP_REFERENCE(PedalBoardItem,midiBindings)
-JSON_MAP_END()
-
-
-JSON_MAP_BEGIN(PedalBoard)
-    JSON_MAP_REFERENCE(PedalBoard,name)
-    JSON_MAP_REFERENCE(PedalBoard,items)
-    JSON_MAP_REFERENCE(PedalBoard,nextInstanceId)
+JSON_MAP_BEGIN(Pedalboard)
+    JSON_MAP_REFERENCE(Pedalboard,name)
+    JSON_MAP_REFERENCE(Pedalboard,items)
+    JSON_MAP_REFERENCE(Pedalboard,nextInstanceId)
 JSON_MAP_END()
 

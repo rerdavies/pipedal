@@ -123,8 +123,8 @@ export const MidiBindingDialog =
             {
                 this.cancelListenForControl();
                 
-                let pedalBoard = this.model.pedalBoard.get();
-                let item = pedalBoard.getItem(instanceId);
+                let pedalboard = this.model.pedalboard.get();
+                let item = pedalboard.getItem(instanceId);
                 if (!item) return;
 
                 let binding = item.getMidiBinding(symbol);
@@ -181,7 +181,7 @@ export const MidiBindingDialog =
                 let classes = this.props.classes;
                 let result: React.ReactNode[] = [];
 
-                let pedalboard = this.model.pedalBoard.get();
+                let pedalboard = this.model.pedalboard.get();
                 let iter = pedalboard.itemsGenerator();
                 while (true) {
                     let v = iter.next();
@@ -285,7 +285,7 @@ export const MidiBindingDialog =
                                                 size="large">
                                                 <ArrowBackIcon />
                                             </IconButton>
-                                            <Typography variant="h6" className={classes.dialogTitle}>
+                                            <Typography noWrap variant="h6" className={classes.dialogTitle}>
                                                 Preset MIDI Bindings
                                             </Typography>
                                         </Toolbar>

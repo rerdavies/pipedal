@@ -297,6 +297,7 @@ JSON_MAP_END()
 
 JSON_MAP_BEGIN(JackConfiguration)
     JSON_MAP_REFERENCE(JackConfiguration,isValid)
+    JSON_MAP_REFERENCE(JackConfiguration,isOnboarding)
     JSON_MAP_REFERENCE(JackConfiguration,isRestarting)
     JSON_MAP_REFERENCE(JackConfiguration,errorStatus)
     JSON_MAP_REFERENCE(JackConfiguration,sampleRate)

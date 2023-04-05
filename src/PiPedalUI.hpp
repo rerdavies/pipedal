@@ -28,6 +28,7 @@
 #include <memory>
 #include <lilv/lilv.h>
 #include "json.hpp"
+#include <filesystem>
 
 
 #define PIPEDAL_UI "http://github.com/rerdavies/pipedal/ui"
@@ -38,7 +39,6 @@
 #define PIPEDAL_UI__fileProperties PIPEDAL_UI_PREFIX "fileProperties"
 
 #define PIPEDAL_UI__fileProperty PIPEDAL_UI_PREFIX "fileProperty"
-#define PIPEDAL_UI__defaultFile PIPEDAL_UI_PREFIX "defaultFile"
 #define PIPEDAL_UI__patchProperty  PIPEDAL_UI_PREFIX "patchProperty"
 #define PIPEDAL_UI__directory  PIPEDAL_UI_PREFIX "directory"
 #define PIPEDAL_UI__fileTypes  PIPEDAL_UI_PREFIX "fileTypes"
@@ -53,7 +53,7 @@
 
 namespace pipedal {
 
-    class PiPedalHost;
+    class PluginHost;
 
     class PiPedalFileType {
     private:
@@ -61,9 +61,9 @@ namespace pipedal {
         std::string fileExtension_;
     public:
         PiPedalFileType() { }
-        PiPedalFileType(PiPedalHost*pHost, const LilvNode*node);
+        PiPedalFileType(PluginHost*pHost, const LilvNode*node);
 
-        static std::vector<PiPedalFileType> GetArray(PiPedalHost*pHost, const LilvNode*node,const LilvNode*uri);
+        static std::vector<PiPedalFileType> GetArray(PluginHost*pHost, const LilvNode*node,const LilvNode*uri);
 
         const std::string& name() const { return name_;}
         const std::string &fileExtension() const { return fileExtension_; }
@@ -73,22 +73,38 @@ namespace pipedal {
 
     };
 
-    class PiPedalFileProperty {
+
+
+    class UiPortNotification {
+    private:
+        int32_t portIndex_;
+        std::string symbol_;
+        std::string plugin_;
+        std::string protocol_;
+    public:
+        using ptr = std::shared_ptr<UiPortNotification>;
+
+        UiPortNotification() { }
+        UiPortNotification(PluginHost*pHost, const LilvNode*node);
+    
+    public:
+        DECLARE_JSON_MAP(UiPortNotification);
+
+    };
+    class UiFileProperty {
     private:
         std::string name_;
         std::string directory_;
         std::vector<PiPedalFileType> fileTypes_;
         std::string patchProperty_;
-        std::string defaultFile_;
     public:
-        using ptr = std::shared_ptr<PiPedalFileProperty>;
-        PiPedalFileProperty() { }
-        PiPedalFileProperty(PiPedalHost*pHost, const LilvNode*node);
+        using ptr = std::shared_ptr<UiFileProperty>;
+        UiFileProperty() { }
+        UiFileProperty(PluginHost*pHost, const LilvNode*node, const std::filesystem::path&resourcePath);
 
 
         const std::string &name() const { return name_; }
         const std::string &directory() const { return directory_; }
-        const std::string &defaultFile() const { return defaultFile_; }
 
         const std::vector<PiPedalFileType> &fileTypes() const { return fileTypes_; }
 
@@ -97,19 +113,35 @@ namespace pipedal {
         static  bool IsDirectoryNameValid(const std::string&value);
 
     public:
-        DECLARE_JSON_MAP(PiPedalFileProperty);
+        DECLARE_JSON_MAP(UiFileProperty);
     };
 
     class PiPedalUI {
     public:
         using ptr = std::shared_ptr<PiPedalUI>;
-        PiPedalUI(PiPedalHost*pHost, const LilvNode*uiNode);
-        const std::vector<PiPedalFileProperty::ptr>& fileProperties() const
+        PiPedalUI(PluginHost*pHost, const LilvNode*uiNode, const std::filesystem::path&resourcePath);
+        const std::vector<UiFileProperty::ptr>& fileProperties() const
         {
             return fileProperites_;
         }
+
+        const std::vector<UiPortNotification::ptr> &portNotifications() const { return portNotifications_; }
+
+        const UiFileProperty*GetFileProperty(const std::string &propertyUri) const
+        {
+            for (const auto&fileProperty : fileProperties())
+            {
+                if (fileProperty->patchProperty() == propertyUri)
+                {
+                    return fileProperty.get();
+                }
+            }
+            return nullptr;
+        }
+
     private:
-        std::vector<PiPedalFileProperty::ptr> fileProperites_;
+        std::vector<UiFileProperty::ptr> fileProperites_;
+        std::vector<UiPortNotification::ptr> portNotifications_;
     };
 
     // Utiltities for validating file paths received via PiPedalFileProperty-related APIs.

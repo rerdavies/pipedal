@@ -26,7 +26,7 @@ import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
-import { PedalBoardItem } from './PedalBoard';
+import { PedalboardItem } from './Pedalboard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
 import GxTunerControl from './GxTunerControl';
 
@@ -40,7 +40,7 @@ const styles = (theme: Theme) => createStyles({
 
 interface GxTunerProps extends WithStyles<typeof styles> {
     instanceId: number;
-    item: PedalBoardItem;
+    item: PedalboardItem;
     isToobTuner: boolean;
 
 }
@@ -115,8 +115,8 @@ const GxTunerView =
 export class GxTunerViewFactory implements IControlViewFactory {
     uri: string = GXTUNER_URI;
 
-    Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<GxTunerView  isToobTuner={false} instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+    Create(model: PiPedalModel, pedalboardItem: PedalboardItem): React.ReactNode {
+        return (<GxTunerView  isToobTuner={false} instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
     }
 
 
@@ -126,8 +126,8 @@ export class GxTunerViewFactory implements IControlViewFactory {
 export class ToobTunerViewFactory implements IControlViewFactory {
     uri: string = TOOBTUNER_URI;
 
-    Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<GxTunerView isToobTuner={true} instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+    Create(model: PiPedalModel, pedalboardItem: PedalboardItem): React.ReactNode {
+        return (<GxTunerView isToobTuner={true} instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
     }
 
 

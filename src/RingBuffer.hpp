@@ -22,28 +22,35 @@
 #include "PiPedalException.hpp"
 #include <atomic>
 #include <mutex>
-#include <semaphore.h>
-
+#include <condition_variable>
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
 #endif /* NO_MLOCK */
 
-
 namespace pipedal
 {
+
+    enum class RingBufferStatus
+    {
+        Ready,
+        TimedOut,
+        Closed
+    };
     template <bool MULTI_WRITER = false, bool SEMAPHORE_READER = false>
-    class RingBuffer {
+    class RingBuffer
+    {
         char *buffer;
         bool mlocked = false;
         size_t ringBufferSize;
         size_t ringBufferMask;
         volatile int64_t readPosition = 0;  // volatile = ordering barrier wrt writePosition
         volatile int64_t writePosition = 0; // volatile = ordering barrier wrt/ readPosition
-        std::mutex write_mutex;
+        std::mutex mutex;
+        std::mutex writeMutex;
 
-        sem_t readSemaphore;
-        bool semaphore_open = false;
+        bool is_open = true;
+        std::condition_variable cvRead;
 
         size_t nextPowerOfTwo(size_t size)
         {
@@ -54,205 +61,352 @@ namespace pipedal
             }
             return v;
         }
+
     public:
-        RingBuffer(size_t ringBufferSize = 65536, bool mLock = true) 
+        RingBuffer(size_t ringBufferSize = 65536, bool mLock = true)
         {
             this->ringBufferSize = ringBufferSize = nextPowerOfTwo(ringBufferSize);
-            ringBufferMask = ringBufferSize-1;
+            ringBufferMask = ringBufferSize - 1;
             buffer = new char[ringBufferSize];
 
-            if (SEMAPHORE_READER) {
-                sem_init(&readSemaphore,0,0);
-                semaphore_open = true;
-            }
-
-            #ifndef NO_MLOCK
+#ifndef NO_MLOCK
             if (mLock)
             {
-                if (mlock (buffer, ringBufferSize)) {
-		            throw PiPedalStateException("Mlock failed.");
+                if (mlock(buffer, ringBufferSize))
+                {
+                    throw PiPedalStateException("Mlock failed.");
                 }
                 this->mlocked = true;
             }
-            #endif
+#endif
         }
 
-        void reset() {
+        void reset()
+        {
             this->readPosition = 0;
             this->writePosition = 0;
-            if (SEMAPHORE_READER)
-            {
-                sem_destroy(&readSemaphore);
-                sem_init(&readSemaphore,0,0);
-                this->semaphore_open = true;
-            }
+            cvRead.notify_all();
         }
-        void close() {
+        void close()
+        {
             if (SEMAPHORE_READER)
             {
-                this->semaphore_open = false;
-                sem_post(&readSemaphore);
-            }
-        }
-        // 0 -> ready. -1: timed out. -2: closing.
-        int readWait(const struct timespec& timeoutMs) {
-            if (SEMAPHORE_READER)
-            {
-                int result = sem_timedwait(&readSemaphore,&timeoutMs);
-                if (!semaphore_open) return -2;
-                return  (result == 0) ? 0: -1;
-            } else {
-                throw PiPedalStateException("SEMAPHORE_READER is not set to true.");
+                this->is_open = false;
+                cvRead.notify_all();
             }
         }
 
-        bool readWait() {
-            if (SEMAPHORE_READER)
+        template <class Rep, class Period>
+        RingBufferStatus readWait_for(const std::chrono::duration<Rep, Period> &timeout)
+        {
+            while (true)
             {
-                sem_wait(&readSemaphore);
-                return semaphore_open;
-            } else {
-                throw PiPedalStateException("SEMAPHORE_READER is not set to true.");
+                if (SEMAPHORE_READER)
+                {
+                    std::unique_lock lock(mutex);
+                    if (isReadReady_())
+                    {
+                        return RingBufferStatus::Ready;
+                    }
+                    if (!is_open)
+                        return RingBufferStatus::Closed;
+
+                    auto status = cvRead.wait_for(lock, timeout);
+                    if (status == std::cv_status::timeout)
+                    {
+                        return RingBufferStatus::TimedOut;
+                    }
+                }
+                else
+                {
+                    static_assert("SEMAPHORE_READER is not set to true.");
+                }
             }
         }
-        size_t writeSpace() {
-            // at most ringBufferSize-1 in order to 
+
+        template <class Clock, class Duration>
+        RingBufferStatus readWait_until(const std::chrono::time_point<Clock, Duration> &time_point)
+        {
+            while (true)
+            {
+                if (SEMAPHORE_READER)
+                {
+                    std::unique_lock lock(mutex);
+                    if (isReadReady_())
+                    {
+                        return RingBufferStatus::Ready;
+                    }
+                    if (!is_open)
+                        return RingBufferStatus::Closed;
+
+                    auto status = cvRead.wait_until(lock, time_point);
+                    if (status == std::cv_status::timeout)
+                    {
+                        return RingBufferStatus::TimedOut;
+                    }
+                }
+                else
+                {
+                    static_assert("SEMAPHORE_READER is not set to true.");
+                }
+            }
+        }
+        template <class Clock, class Duration>
+        RingBufferStatus readWait_until(size_t size,const std::chrono::time_point<Clock, Duration> &time_point)
+        {
+            while (true)
+            {
+                if (SEMAPHORE_READER)
+                {
+                    std::unique_lock lock(mutex);
+                    size_t available = readSpace_();
+                    if (available >= size) 
+                    {
+                        return RingBufferStatus::Ready;
+                    }
+                    if (!is_open)
+                        return RingBufferStatus::Closed;
+
+                    auto status = cvRead.wait_until(lock, time_point);
+                    if (status == std::cv_status::timeout)
+                    {
+                        return RingBufferStatus::TimedOut;
+                    }
+                }
+                else
+                {
+                    static_assert("SEMAPHORE_READER is not set to true.");
+                }
+            }
+        }
+
+        bool readWait()
+        {
+            if (SEMAPHORE_READER)
+            {
+                while (true)
+                {
+                    std::unique_lock lock(mutex);
+                    if (isReadReady_())
+                    {
+                        return true;
+                    }
+
+                    if (!is_open)
+                        return false;
+                    cvRead.wait(lock);
+                }
+            }
+            else
+            {
+                static_assert("SEMAPHORE_READER is not set to true.");
+            }
+        }
+        size_t writeSpace()
+        {
+            // at most ringBufferSize-1 in order to
             // to distinguish the empty buffer from the full buffer.
-            int64_t size = readPosition-1-writePosition;
-            if (size < 0) size += this->ringBufferSize;
+            std::unique_lock lock(mutex);
+
+            int64_t size = readPosition - 1 - writePosition;
+            if (size < 0)
+                size += this->ringBufferSize;
             return (size_t)size;
         }
-        size_t readSpace() {
-            int64_t size = writePosition-readPosition;
-            if (size < 0) size += this->ringBufferSize;
-            return size_t(size);
+
+
+        size_t readSpace()
+        {
+            std::unique_lock lock(mutex);
+            return readSpace_();
         }
         bool write(size_t bytes, uint8_t *data)
         {
             if (MULTI_WRITER)
             {
-                std::lock_guard guard(write_mutex);
-                if (writeSpace() < bytes) {
+                std::lock_guard writeLock{writeMutex};
+                if (writeSpace() < bytes + sizeof(bytes))
+                {
                     return false;
                 }
                 size_t index = this->writePosition;
                 for (size_t i = 0; i < bytes; ++i)
                 {
-                    buffer[(index+i) & ringBufferMask] = data[i];
+                    buffer[(index + i) & ringBufferMask] = data[i];
                 }
-                this->writePosition = (index+bytes) & ringBufferMask;
+                {
+                    std::lock_guard lock(mutex);
+                    this->writePosition = (index + bytes) & ringBufferMask;
+                }
                 if (SEMAPHORE_READER)
                 {
-                    sem_post(&readSemaphore);
+                    cvRead.notify_all();
                 }
                 return true;
-            } else {
-                if (writeSpace() < bytes) {
+            }
+            else
+            {
+                if (writeSpace() < sizeof(bytes) + bytes)
+                {
                     return false;
                 }
                 size_t index = this->writePosition;
                 for (size_t i = 0; i < bytes; ++i)
                 {
-                    buffer[(index+i) & ringBufferMask] = data[i];
+                    buffer[(index + i) & ringBufferMask] = data[i];
                 }
-                this->writePosition = (index+bytes) & ringBufferMask;
+                {
+                    std::lock_guard lock{mutex};
+                    this->writePosition = (index + bytes) & ringBufferMask;
+                }
                 if (SEMAPHORE_READER)
                 {
-                    sem_post(&readSemaphore);
+                    cvRead.notify_all();
                 }
                 return true;
             }
         }
         // Write two disjoint areas of memory atomically.
-        bool write(size_t bytes, uint8_t *data, size_t bytes2, uint8_t*data2)
+        bool write(size_t bytes, uint8_t *data, size_t bytes2, uint8_t *data2)
         {
             if (MULTI_WRITER)
             {
-                std::lock_guard guard(write_mutex);
-                if (writeSpace() <= bytes+sizeof(bytes2)+bytes2) {
+                std::lock_guard guard(writeMutex);
+                if (writeSpace() <= sizeof(bytes) + bytes +bytes2)
+                {
                     return false;
                 }
                 size_t index = this->writePosition;
                 for (size_t i = 0; i < bytes; ++i)
                 {
-                    buffer[(index+i) & ringBufferMask] = data[i];
+                    buffer[(index + i) & ringBufferMask] = data[i];
                 }
-                index = (index+bytes) & ringBufferMask;
-                
+                index = (index + bytes) & ringBufferMask;
+
                 for (size_t i = 0; i < sizeof(bytes2); ++i)
                 {
-                    buffer[(index+i) & ringBufferMask] = ((char*)&bytes2)[i];
+                    buffer[(index + i) & ringBufferMask] = ((char *)&bytes2)[i];
                 }
-                index = (index+sizeof(bytes2)) & ringBufferMask;
+                index = (index + sizeof(bytes2)) & ringBufferMask;
 
                 for (size_t i = 0; i < bytes2; ++i)
                 {
-                    buffer[(index+i) & ringBufferMask] = data2[i];
+                    buffer[(index + i) & ringBufferMask] = data2[i];
                 }
-                this->writePosition = (index+bytes2) & ringBufferMask;
+                {
+                    std::lock_guard lock{mutex};
+                    this->writePosition = (index + bytes2) & ringBufferMask;
+                }
                 if (SEMAPHORE_READER)
                 {
-                    sem_post(&readSemaphore);
+                    cvRead.notify_all();
                 }
                 return true;
-            } else {
-                if (writeSpace() <= bytes+sizeof(bytes2)+bytes2) {
+            }
+            else
+            {
+                if (writeSpace() <= sizeof(bytes2) + bytes + bytes2)
+                {
                     return false;
                 }
                 size_t index = this->writePosition;
                 for (size_t i = 0; i < bytes; ++i)
                 {
-                    buffer[(index+i) & ringBufferMask] = data[i];
+                    buffer[(index + i) & ringBufferMask] = data[i];
                 }
-                index = (index+bytes) & ringBufferMask;
-                
+                index = (index + bytes) & ringBufferMask;
+
                 for (size_t i = 0; i < sizeof(bytes2); ++i)
                 {
-                    buffer[(index+i) & ringBufferMask] = ((char*)&bytes2)[i];
+                    buffer[(index + i) & ringBufferMask] = ((char *)&bytes2)[i];
                 }
-                index = (index+sizeof(bytes2)) & ringBufferMask;
+                index = (index + sizeof(bytes2)) & ringBufferMask;
 
                 for (size_t i = 0; i < bytes2; ++i)
                 {
-                    buffer[(index+i) & ringBufferMask] = data2[i];
+                    buffer[(index + i) & ringBufferMask] = data2[i];
                 }
-                this->writePosition = (index+bytes2) & ringBufferMask;
-                
+                {
+                    std::lock_guard lock{mutex};
+                    this->writePosition = (index + bytes2) & ringBufferMask;
+                }
+
                 if (SEMAPHORE_READER)
                 {
-                    sem_post(&readSemaphore);
+                    cvRead.notify_all();
                 }
                 return true;
             }
         }
 
-        bool read(size_t bytes, uint8_t*data)
+        bool read(size_t bytes, uint8_t *data)
         {
-            if (readSpace() < bytes) return false;
+            if (readSpace() < bytes)
+                return false;
             int64_t readPosition = this->readPosition;
             for (size_t i = 0; i < bytes; ++i)
             {
-                data[i] = this->buffer[(readPosition+i) & this->ringBufferMask];
+                data[i] = this->buffer[(readPosition + i) & this->ringBufferMask];
             }
-            this->readPosition = (readPosition + bytes) & this->ringBufferMask;
+            {
+                std::lock_guard lock{mutex};
+                this->readPosition = (readPosition + bytes) & this->ringBufferMask;
+            }
             return true;
         }
-        ~RingBuffer() 
+        ~RingBuffer()
         {
-            #ifdef USE_MLOCK
-                if (this->mlocked)
-                {
-                    munlock(buffer,ringBufferSize);
-                }
-            #endif
-            if (SEMAPHORE_READER)
+#ifdef USE_MLOCK
+            if (this->mlocked)
             {
-                sem_destroy(&this->readSemaphore);
+                munlock(buffer, ringBufferSize);
             }
+#endif
 
             delete[] buffer;
         }
+        bool isReadReady() {
+            std::lock_guard lock(mutex);
+            if (isReadReady_()) return true;
+            return !this->is_open;
+        }
+        bool isReadReady(size_t size) {
+            size_t available = readSpace();
+            return available >= size;
+        }
+
+    private:
+
+        size_t readSpace_()
+        {
+            int64_t size = writePosition - readPosition;
+            if (size < 0)
+                size += this->ringBufferSize;
+            return size_t(size);
+        }
+
+        uint32_t peekSize()
+        {
+            volatile uint32_t result;
+            uint8_t *p = (uint8_t*)&result;
+            size_t ix = this->readPosition;
+            for (size_t i = 0; i < sizeof(result); ++i)
+            {
+                *p++ = this->buffer[(ix++) & ringBufferMask];
+            }
+            return result;
+        }
+        bool isReadReady_()
+        {
+            size_t available = readSpace_();
+            if (available < sizeof(uint32_t)) return false;
+            // peak to get the size!
+            uint32_t packetSize = peekSize();
+            return packetSize+sizeof(uint32_t) <= available;
+        }
+
+
     };
 
-};
 
+};

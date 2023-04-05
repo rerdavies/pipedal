@@ -24,15 +24,15 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import {
-    PedalBoard, PedalBoardItem, PedalBoardSplitItem, SplitType
-} from './PedalBoard';
+    Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType
+} from './Pedalboard';
 import Button from '@mui/material/Button';
 import InputIcon from '@mui/icons-material/Input';
 import LoadPluginDialog from './LoadPluginDialog';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
 
-import PedalBoardView from './PedalBoardView';
+import PedalboardView from './PedalboardView';
 import { PiPedalStateError } from './PiPedalError';
 import IconButton from '@mui/material/IconButton';
 import AddIcon from '@mui/icons-material/Add';
@@ -58,11 +58,11 @@ const styles = ({ palette }: Theme) => createStyles({
         position: "absolute", display: "flex", flexDirection: "column", flexWrap: "nowrap",
         justifyContent: "flex-start", left: "0px", top: "0px", bottom: "0px", right: "0px", overflow: "hidden"
     },
-    pedalBoardScroll: {
+    pedalboardScroll: {
         position: "relative", width: "100%",
         flex: "0 0 auto", overflow: "auto", maxHeight: 220
     },
-    pedalBoardScrollSmall: {
+    pedalboardScrollSmall: {
         position: "relative", width: "100%",
         flex: "1 1 1px", overflow: "auto"
     },
@@ -97,7 +97,7 @@ interface MainProps extends WithStyles<typeof styles> {
 interface MainState {
     selectedPedal: number;
     loadDialogOpen: boolean;
-    pedalBoard: PedalBoard;
+    pedalboard: Pedalboard;
     addMenuAnchorEl: HTMLElement | null;
     splitControlBar: boolean;
     horizontalScrollLayout: boolean;
@@ -116,13 +116,13 @@ export const MainPage =
             constructor(props: MainProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
-                let pedalboard = this.model.pedalBoard.get();
+                let pedalboard = this.model.pedalboard.get();
                 let selectedPedal = pedalboard.getFirstSelectableItem();
 
                 this.state = {
                     selectedPedal: selectedPedal,
                     loadDialogOpen: false,
-                    pedalBoard: pedalboard,
+                    pedalboard: pedalboard,
                     addMenuAnchorEl: null,
                     splitControlBar: this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD,
                     horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
@@ -135,31 +135,31 @@ export const MainPage =
                 this.onLoadClick = this.onLoadClick.bind(this);
                 this.onLoadOk = this.onLoadOk.bind(this);
                 this.onLoadCancel = this.onLoadCancel.bind(this);
-                this.onPedalBoardChanged = this.onPedalBoardChanged.bind(this);
+                this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
                 this.handleEnableCurrentItemChanged = this.handleEnableCurrentItemChanged.bind(this);
             }
 
             onInsertPedal(instanceId: number) {
                 this.setAddMenuAnchorEl(null);
-                let newId = this.model.addPedalBoardItem(instanceId, false);
+                let newId = this.model.addPedalboardItem(instanceId, false);
                 this.setSelection(newId);
             }
             onAppendPedal(instanceId: number) {
                 this.setAddMenuAnchorEl(null);
-                let newId = this.model.addPedalBoardItem(instanceId, true);
+                let newId = this.model.addPedalboardItem(instanceId, true);
 
                 this.setSelection(newId);
 
             }
             onInsertSplit(instanceId: number) {
                 this.setAddMenuAnchorEl(null);
-                let newId = this.model.addPedalBoardSplitItem(instanceId, false);
+                let newId = this.model.addPedalboardSplitItem(instanceId, false);
                 this.setSelection(newId);
 
             }
             onAppendSplit(instanceId: number) {
                 this.setAddMenuAnchorEl(null);
-                let newId = this.model.addPedalBoardSplitItem(instanceId, true);
+                let newId = this.model.addPedalboardSplitItem(instanceId, true);
                 this.setSelection(newId);
 
             }
@@ -182,16 +182,16 @@ export const MainPage =
             }
             handleEnableCurrentItemChanged(event: any): void {
                 let newValue = event.target.checked;
-                let item = this.getSelectedPedalBoardItem();
+                let item = this.getSelectedPedalboardItem();
                 if (item != null) {
-                    this.model.setPedalBoardItemEnabled(item.getInstanceId(), newValue);
+                    this.model.setPedalboardItemEnabled(item.getInstanceId(), newValue);
 
                 }
             }
             handleSelectPluginPreset(instanceId: number, presetInstanceId: number) {
                 this.model.loadPluginPreset(instanceId, presetInstanceId);
             }
-            onPedalBoardChanged(value: PedalBoard) {
+            onPedalboardChanged(value: Pedalboard) {
                 let selectedItem = -1;
                 if (value.hasItem(this.state.selectedPedal))
                 {
@@ -200,12 +200,12 @@ export const MainPage =
                     selectedItem = value.getFirstSelectableItem();
                 }
                 this.setState({ 
-                    pedalBoard: value,
+                    pedalboard: value,
                     selectedPedal: selectedItem
                  });
             }
             onDeletePedal(instanceId: number): void {
-                let result = this.model.deletePedalBoardPedal(instanceId);
+                let result = this.model.deletePedalboardPedal(instanceId);
                 if (result != null) {
                     this.setState({ selectedPedal: result });
                 }
@@ -213,10 +213,10 @@ export const MainPage =
 
             componentDidMount() {
                 super.componentDidMount();
-                this.model.pedalBoard.addOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
             }
             componentWillUnmount() {
-                this.model.pedalBoard.removeOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
                 super.componentWillUnmount();
             }
             updateResponsive() {
@@ -241,14 +241,14 @@ export const MainPage =
             }
             onPedalDoubleClick(selectedId: number): void {
                 this.setSelection(selectedId);
-                let item = this.getPedalBoardItem(selectedId);
+                let item = this.getPedalboardItem(selectedId);
                 if (item != null) {
                     if (item.isSplit()) {
-                        let split = item as PedalBoardSplitItem;
+                        let split = item as PedalboardSplitItem;
                         if (split.getSplitType() === SplitType.Ab) {
                             let cv = split.getToggleAbControlValue();
                             if (split.instanceId === undefined) throw new PiPedalStateError("Split without valid id.");
-                            this.model.setPedalBoardControlValue(split.instanceId, cv.key, cv.value);
+                            this.model.setPedalboardControl(split.instanceId, cv.key, cv.value);
                         }
                     } else {
                         this.setState({ loadDialogOpen: true });
@@ -261,7 +261,7 @@ export const MainPage =
             onLoadOk(selectedUri: string): void {
                 this.setState({ loadDialogOpen: false });
                 let itemId = this.state.selectedPedal;
-                let newSelectedItem = this.model.loadPedalBoardPlugin(itemId, selectedUri);
+                let newSelectedItem = this.model.loadPedalboardPlugin(itemId, selectedUri);
                 this.setState({ selectedPedal: newSelectedItem });
             }
 
@@ -269,12 +269,12 @@ export const MainPage =
                 this.setState({ loadDialogOpen: true });
             }
 
-            getPedalBoardItem(selectedId?: number): PedalBoardItem | null {
+            getPedalboardItem(selectedId?: number): PedalboardItem | null {
                 if (selectedId === undefined) return null;
 
-                let pedalBoard = this.model.pedalBoard.get();
-                if (!pedalBoard) return null;
-                let it = pedalBoard.itemsGenerator();
+                let pedalboard = this.model.pedalboard.get();
+                if (!pedalboard) return null;
+                let it = pedalboard.itemsGenerator();
                 if (!selectedId) return null;
                 while (true) {
                     let v = it.next();
@@ -290,32 +290,32 @@ export const MainPage =
             }
 
             onPedalboardPropertyChanged(instanceId: number, key: string, value: number) {
-                this.model.setPedalBoardControlValue(instanceId, key, value);
+                this.model.setPedalboardControl(instanceId, key, value);
             }
-            getSelectedPedalBoardItem(): PedalBoardItem | null {
-                return this.getPedalBoardItem(this.state.selectedPedal);
+            getSelectedPedalboardItem(): PedalboardItem | null {
+                return this.getPedalboardItem(this.state.selectedPedal);
             }
             getSelectedUri(): string {
-                let pedalBoardItem = this.getSelectedPedalBoardItem();
-                if (pedalBoardItem == null) return "";
-                return pedalBoardItem.uri;
+                let pedalboardItem = this.getSelectedPedalboardItem();
+                if (pedalboardItem == null) return "";
+                return pedalboardItem.uri;
             }
-            titleBar(pedalBoardItem: PedalBoardItem | null): React.ReactNode {
+            titleBar(pedalboardItem: PedalboardItem | null): React.ReactNode {
                 let title = "";
                 let author = "";
                 let pluginUri = "";
                 let presetsUri = "";
                 let missing = false;
-                if (pedalBoardItem) {
-                    if (pedalBoardItem.isEmpty()) {
+                if (pedalboardItem) {
+                    if (pedalboardItem.isEmpty()) {
                         title = "";
-                    } else if (pedalBoardItem.isSplit()) {
+                    } else if (pedalboardItem.isSplit()) {
                         title = "Split";
                     } else {
-                        let uiPlugin = this.model.getUiPlugin(pedalBoardItem.uri);
+                        let uiPlugin = this.model.getUiPlugin(pedalboardItem.uri);
                         if (!uiPlugin) {
                             missing = true;
-                            title = pedalBoardItem?.pluginName ?? "Missing plugin";
+                            title = pedalboardItem?.pluginName ?? "Missing plugin";
                         } else {
                             title = uiPlugin.name;
                             author = uiPlugin.author_name;
@@ -362,7 +362,7 @@ export const MainPage =
                             <PluginInfoDialog plugin_uri={pluginUri} />
                         </div>
                         <div style={{ flex: "0 0 auto" }}>
-                            <PluginPresetSelector pluginUri={presetsUri} instanceId={pedalBoardItem?.instanceId ?? 0}
+                            <PluginPresetSelector pluginUri={presetsUri} instanceId={pedalboardItem?.instanceId ?? 0}
                             />
                         </div>
                     </div>
@@ -373,8 +373,8 @@ export const MainPage =
 
             render() {
                 let classes = this.props.classes;
-                let pedalBoard = this.model.pedalBoard.get();
-                let pedalBoardItem = this.getSelectedPedalBoardItem();
+                let pedalboard = this.model.pedalboard.get();
+                let pedalboardItem = this.getSelectedPedalboardItem();
                 let uiPlugin = null;
                 let bypassVisible = false;
                 let bypassChecked = false;
@@ -384,20 +384,20 @@ export const MainPage =
                 let missing = false;
                 let pluginUri = "#error";
 
-                if (pedalBoardItem) {
-                    canDelete = pedalBoard.canDeleteItem(pedalBoardItem.instanceId);
-                    instanceId = pedalBoardItem.instanceId;
-                    if (pedalBoardItem.isEmpty()) {
+                if (pedalboardItem) {
+                    canDelete = pedalboard.canDeleteItem(pedalboardItem.instanceId);
+                    instanceId = pedalboardItem.instanceId;
+                    if (pedalboardItem.isEmpty()) {
                         canAdd = true;
-                    } else if (pedalBoardItem.isSplit()) {
+                    } else if (pedalboardItem.isSplit()) {
                         canAdd = true;
                     } else {
-                        pluginUri = pedalBoardItem.uri;
+                        pluginUri = pedalboardItem.uri;
                         uiPlugin = this.model.getUiPlugin(pluginUri);
                         canAdd = true;
                         if (uiPlugin) {
                             bypassVisible = true;
-                            bypassChecked = pedalBoardItem.isEnabled;
+                            bypassChecked = pedalboardItem.isEnabled;
                         } else {
                             missing = true;
                         }
@@ -407,9 +407,9 @@ export const MainPage =
 
                 return (
                     <div className={classes.frame}>
-                        <div id="pedalBoardScroll" className={horizontalScrollLayout ? classes.pedalBoardScrollSmall : classes.pedalBoardScroll}
+                        <div id="pedalboardScroll" className={horizontalScrollLayout ? classes.pedalboardScrollSmall : classes.pedalboardScroll}
                             style={{ maxHeight: horizontalScrollLayout ? undefined : this.state.screenHeight / 2 }}>
-                            <PedalBoardView key={pluginUri} selectedId={this.state.selectedPedal}
+                            <PedalboardView key={pluginUri} selectedId={this.state.selectedPedal}
                                 onSelectionChanged={this.onSelectionChanged}
                                 onDoubleClick={this.onPedalDoubleClick}
                                 hasTinyToolBar={this.props.hasTinyToolBar}
@@ -427,7 +427,7 @@ export const MainPage =
                                     </div>
                                 </div>
                                 {
-                                    (!this.state.splitControlBar) && this.titleBar(pedalBoardItem)
+                                    (!this.state.splitControlBar) && this.titleBar(pedalboardItem)
                                 }
                                 <div style={{ flex: "1 1 1px" }}>
 
@@ -453,7 +453,7 @@ export const MainPage =
                                 </div>
                                 <div style={{ flex: "0 0 auto", display: canDelete ? "block" : "none", paddingRight: 8 }}>
                                     <IconButton
-                                        onClick={() => { this.onDeletePedal(pedalBoardItem?.instanceId ?? -1) }}
+                                        onClick={() => { this.onDeletePedal(pedalboardItem?.instanceId ?? -1) }}
                                         size="large">
                                         <img src="/img/old_delete_outline_black_24dp.svg" alt="Delete" style={{ width: 24, height: 24, opacity: 0.6 }} />
                                     </IconButton>
@@ -464,7 +464,7 @@ export const MainPage =
                                         color="primary"
                                         size="small"
                                         onClick={this.onLoadClick}
-                                        disabled={this.state.selectedPedal === -1 || (this.getSelectedPedalBoardItem()?.isSplit() ?? true)}
+                                        disabled={this.state.selectedPedal === -1 || (this.getSelectedPedalboardItem()?.isSplit() ?? true)}
                                         startIcon={<InputIcon />}
                                         style={{ borderRadius: 24, paddingLeft: 18, paddingRight: 18, textTransform: "none"}}
                                     >
@@ -485,7 +485,7 @@ export const MainPage =
                             this.state.splitControlBar && (
                                 <div className={classes.splitControlBar}>
                                     {
-                                        this.titleBar(pedalBoardItem)
+                                        this.titleBar(pedalboardItem)
                                     }
                                 </div>
                             )
@@ -495,12 +495,12 @@ export const MainPage =
                                 missing ? (
                                     <div style={{marginLeft: 100,marginTop: 20}}>
                                         <Typography variant="body1" paragraph={true}>Error: Plugin is not installed.</Typography>
-                                        <Typography variant="body2"  paragraph={true}>{pluginUri}</Typography>
+                                        <Typography noWrap variant="body2"  paragraph={true}>{pluginUri}</Typography>
                                     </div>
 
                                 ): 
                                 (
-                                      GetControlView(pedalBoardItem)
+                                      GetControlView(pedalboardItem)
                                 )
                             }
                         </div>

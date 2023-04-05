@@ -21,7 +21,7 @@ import React from 'react';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 
 
-import {PedalBoardItem, PedalBoardSplitItem} from './PedalBoard';
+import {PedalboardItem, PedalboardSplitItem} from './Pedalboard';
 import PluginControlView from './PluginControlView';
 import SplitControlView from './SplitControlView';
 import Typography from '@mui/material/Typography';
@@ -47,38 +47,38 @@ let pluginFactories: IControlViewFactory[] = [
 ];
 
 
-export function GetControlView(pedalBoardItem?: PedalBoardItem| null): React.ReactNode
+export function GetControlView(pedalboardItem?: PedalboardItem| null): React.ReactNode
 {
     let model: PiPedalModel = PiPedalModelFactory.getInstance();
 
-    if (!pedalBoardItem) {
+    if (!pedalboardItem) {
         return (<div/>);
     }
-    if (pedalBoardItem.isSplit())
+    if (pedalboardItem.isSplit())
     {
         return (
-            <SplitControlView item={pedalBoardItem as PedalBoardSplitItem} instanceId={pedalBoardItem!.instanceId}
+            <SplitControlView item={pedalboardItem as PedalboardSplitItem} instanceId={pedalboardItem!.instanceId}
             />
         );
     } else {
         for (let i = 0; i < pluginFactories.length; ++i)
         {
             let factory = pluginFactories[i];
-            if (factory.uri === pedalBoardItem.uri)
+            if (factory.uri === pedalboardItem.uri)
             {
-                return factory.Create(model,pedalBoardItem);
+                return factory.Create(model,pedalboardItem);
             }
         }
-        let uiPlugin = model.getUiPlugin(pedalBoardItem.uri);
+        let uiPlugin = model.getUiPlugin(pedalboardItem.uri);
         if (!uiPlugin)
         {
             <div style={{paddingLeft: 40, paddingRight: 40}}>
                 <Typography color="error" variant="h6" >Missing plugin.</Typography>
-                <Typography>The plugin '{pedalBoardItem.pluginName}' ({pedalBoardItem.uri}) is not currently installed.</Typography>
+                <Typography>The plugin '{pedalboardItem.pluginName}' ({pedalboardItem.uri}) is not currently installed.</Typography>
             </div>
         } else {
             return (
-                <PluginControlView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />
+                <PluginControlView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />
             )
         }
     }

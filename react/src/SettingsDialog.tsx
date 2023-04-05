@@ -497,6 +497,10 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
         }
 
+        onOnboardingContinue() {
+            this.model.setOnboarding(false);
+            this.props.onClose();
+        }
         render() {
             let classes = this.props.classes;
             let isConfigValid = this.state.jackConfiguration.isValid;
@@ -544,39 +548,40 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         }}
                         >
                             <div >
-                                {this.props.onboarding ? 
+                                {this.props.onboarding && 
                                 (
                                     <div>
-                                        <Typography display="block" variant="caption" color="textSecondary" style={{paddingLeft: 24,paddingBottom: 8 }}>
+                                        <Typography display="block" variant="body1" color="textSecondary" style={{paddingLeft: 24,paddingBottom: 8 }}>
                                             Select and configure an audio device. You may optionally configure MIDI inputs, and set up a Wi-Fi Direct Hotspot now as well.
                                         </Typography>
-                                        <Typography display="block" variant="caption" color="textSecondary" style={{paddingLeft: 24,paddingBottom: 8 }}>
+                                        <Typography display="block" variant="body1" color="textSecondary" style={{paddingLeft: 24,paddingBottom: 8 }}>
                                             Access and modify these settings later by selecting the <i>Settings</i> menu item on the main menu.
                                         </Typography>
-                                    </div>
-                                ):
-                                (
-                                    <div>
-
-                                        <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
-                                                STATUS
-                                        </Typography>
-                                        {(!isConfigValid) ?
-                                            (
-                                                <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                                    <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
-                                                    <Typography display="block" variant="caption" color="textSecondary">Governor: </Typography>
-                                                </div>
-                                            ) :
-                                            (
-                                                <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                                    {JackHostStatus.getDisplayView("", this.state.jackStatus)}
-                                                    {JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
-                                                </div>
-                                            )
-                                        }
+                                        <Divider />
                                     </div>
                                 )}
+
+                                <div>
+                                    <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
+                                            STATUS
+                                    </Typography>
+                                    {(!isConfigValid) ?
+                                        (
+                                            <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                                <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
+                                                {(!this.props.onboarding) && (
+                                                    <Typography display="block" variant="caption" color="textSecondary">Governor: </Typography>
+                                                )}
+                                            </div>
+                                        ) :
+                                        (
+                                            <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                                {JackHostStatus.getDisplayView("", this.state.jackStatus)}
+                                                { (!this.props.onboarding) && JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
+                                            </div>
+                                        )
+                                    }
+                                </div>
 
                                 {this.state.jackConfiguration.errorState !== "" &&
                                     (
@@ -782,7 +787,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     <Divider/>
                                     <div style={{display: "grid", placeContent: "end", maxWidth: 550, marginLeft: 16,marginRight: 16,
                                     marginTop: 16,marginBottom: 16}}>
-                                        <Button variant="outlined" disabled={this.state.continueDisabled} style={{width: 120}}>Continue</Button>      
+                                        <Button variant="outlined" onClick={()=> {this.onOnboardingContinue()}} disabled={this.state.continueDisabled} style={{width: 120}}>Continue</Button>      
                                     </div>
                                 </div>
                             )

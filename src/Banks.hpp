@@ -20,7 +20,7 @@
 #pragma once
 
 #include "json.hpp"
-#include "PedalBoard.hpp"
+#include "Pedalboard.hpp"
 #include "PiPedalException.hpp"
 
 namespace pipedal {
@@ -75,7 +75,7 @@ public:
 
 class BankFileEntry {
     int64_t instanceId_;
-    PedalBoard preset_;
+    Pedalboard preset_;
 public:
     GETTER_SETTER(instanceId);
     GETTER_SETTER_REF(preset);
@@ -122,7 +122,7 @@ public:
         }
         this->nextInstanceId_ = t;
     }
-    int64_t addPreset(const PedalBoard&preset, int64_t afterItem = -1)
+    int64_t addPreset(const Pedalboard&preset, int64_t afterItem = -1)
     {
         if (hasName(preset.name()))
         {
@@ -213,8 +213,8 @@ public:
                 } else {
                     // zero length? We can never have a zero-length bank.
                     // Add a default preset and make it the selected preset.
-                    PedalBoard pedalBoard = PedalBoard::MakeDefault();
-                    this->addPreset(pedalBoard);
+                    Pedalboard pedalboard = Pedalboard::MakeDefault();
+                    this->addPreset(pedalboard);
                     newSelection = presets_[0]->instanceId();
                 }
                 if (instanceId == this->selectedPreset_)

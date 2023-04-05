@@ -108,8 +108,11 @@ static std::int32_t GetJackArg(const std::vector<std::string> &args, const std::
 }
 
 
-void JackServerSettings::ReadJackConfiguration()
+void JackServerSettings::ReadJackDaemonConfiguration()
 {
+    #if !JACK_HOST
+        return;
+    #endif
     this->valid_ = false;
 
     std::string lastLine;
@@ -155,7 +158,7 @@ void JackServerSettings::ReadJackConfiguration()
     }
 }
 
-void JackServerSettings::Write()
+void JackServerSettings::WriteDaemonConfig()
 {
     #if JACK_HOST
     this->valid_ = false;
@@ -240,6 +243,7 @@ void JackServerSettings::Write()
 
 JSON_MAP_BEGIN(JackServerSettings)
 JSON_MAP_REFERENCE(JackServerSettings, valid)
+JSON_MAP_REFERENCE(JackServerSettings, isOnboarding)
 JSON_MAP_REFERENCE(JackServerSettings, rebootRequired)
 JSON_MAP_REFERENCE(JackServerSettings, isJackAudio)
 JSON_MAP_REFERENCE(JackServerSettings, alsaDevice)

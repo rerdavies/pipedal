@@ -28,6 +28,8 @@
 #include <map>
 #include <sys/stat.h>
 #include "PiPedalUI.hpp"
+#include "PluginHost.hpp"
+#include "ss.hpp"
 
 using namespace pipedal;
 
@@ -233,13 +235,20 @@ void Storage::LoadBank(int64_t instanceId)
 {
     auto indexEntry = this->bankIndex.getBankIndexEntry(instanceId);
 
-    LoadBankFile(indexEntry.name(), &(this->currentBank));
-    if (this->bankIndex.selectedBank() != instanceId)
+    try
     {
-        this->bankIndex.selectedBank(instanceId);
-        SaveBankIndex();
+        LoadBankFile(indexEntry.name(), &(this->currentBank));
+        if (this->bankIndex.selectedBank() != instanceId)
+        {
+            this->bankIndex.selectedBank(instanceId);
+            SaveBankIndex();
+        }
+        this->LoadPreset(this->currentBank.selectedPreset());
     }
-    this->LoadPreset(this->currentBank.selectedPreset());
+    catch (const std::exception &e)
+    {
+        throw std::logic_error(SS("Bank file corrupted. " << e.what() << "(" << GetBankFileName(indexEntry.name()) << ")"));
+    }
 }
 
 void Storage::LoadCurrentBank()
@@ -255,7 +264,7 @@ std::filesystem::path Storage::GetPluginPresetsDirectory() const
 {
     return this->dataRoot / "plugin_presets";
 }
-std::filesystem::path Storage::GetAudioFilesDirectory() const
+std::filesystem::path Storage::GetPluginStorageDirectory() const
 {
     return this->dataRoot / "audio_uploads";
 }
@@ -297,8 +306,8 @@ void Storage::LoadBankIndex()
         if (bankIndex.entries().size() == 0)
         {
             currentBank.clear();
-            PedalBoard defaultPedalBoard = PedalBoard::MakeDefault();
-            int64_t instanceId = currentBank.addPreset(defaultPedalBoard);
+            Pedalboard defaultPedalboard = Pedalboard::MakeDefault();
+            int64_t instanceId = currentBank.addPreset(defaultPedalboard);
             currentBank.selectedPreset(instanceId);
 
             std::string name = "Default Bank";
@@ -378,7 +387,7 @@ void Storage::ReIndex()
 void Storage::CreateBank(const std::string &name)
 {
     BankFile bankFile;
-    PedalBoard defaultPreset = PedalBoard::MakeDefault();
+    Pedalboard defaultPreset = Pedalboard::MakeDefault();
     defaultPreset.name(std::string("Default Preset"));
 
     bankFile.addPreset(defaultPreset);
@@ -449,7 +458,7 @@ void Storage::SaveCurrentBank()
     SaveBankFile(indexEntry.name(), this->currentBank);
 }
 
-const PedalBoard &Storage::GetCurrentPreset()
+const Pedalboard &Storage::GetCurrentPreset()
 {
     auto &item = currentBank.getItem(currentBank.selectedPreset());
     return item.preset();
@@ -466,18 +475,18 @@ bool Storage::LoadPreset(int64_t instanceId)
     }
     return true;
 }
-void Storage::SaveCurrentPreset(const PedalBoard &pedalBoard)
+void Storage::SaveCurrentPreset(const Pedalboard &pedalboard)
 {
     auto &item = currentBank.getItem(currentBank.selectedPreset());
-    item.preset(pedalBoard);
+    item.preset(pedalboard);
     SaveCurrentBank();
 }
-int64_t Storage::SaveCurrentPresetAs(const PedalBoard &pedalBoard, const std::string &name, int64_t saveAfterInstanceId)
+int64_t Storage::SaveCurrentPresetAs(const Pedalboard &pedalboard, const std::string &name, int64_t saveAfterInstanceId)
 {
-    PedalBoard newPedalBoard = pedalBoard;
-    newPedalBoard.name(name);
+    Pedalboard newPedalboard = pedalboard;
+    newPedalboard.name(name);
 
-    int64_t newInstanceId = currentBank.addPreset(newPedalBoard, saveAfterInstanceId);
+    int64_t newInstanceId = currentBank.addPreset(newPedalboard, saveAfterInstanceId);
     currentBank.selectedPreset(newInstanceId);
     SaveCurrentBank();
     return newInstanceId;
@@ -530,17 +539,18 @@ void Storage::GetPresetIndex(PresetIndex *pResult)
         pResult->presets().push_back(entry);
     }
 }
-int64_t Storage::GetPresetByProgramNumber(uint8_t program)const
+int64_t Storage::GetPresetByProgramNumber(uint8_t program) const
 {
     if (program >= currentBank.presets().size())
     {
-        if (currentBank.presets().size() == 0) return -1;
-        program = (uint8_t)currentBank.presets().size()-1;
+        if (currentBank.presets().size() == 0)
+            return -1;
+        program = (uint8_t)currentBank.presets().size() - 1;
     }
     return currentBank.presets()[program]->instanceId();
 }
 
-PedalBoard Storage::GetPreset(int64_t instanceId) const
+Pedalboard Storage::GetPreset(int64_t instanceId) const
 {
     for (size_t i = 0; i < currentBank.presets().size(); ++i)
     {
@@ -630,10 +640,10 @@ int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
     auto &fromItem = this->currentBank.getItem(fromId);
     if (toId == -1)
     {
-        PedalBoard newPedalBoard = fromItem.preset();
+        Pedalboard newPedalboard = fromItem.preset();
         std::string name = GetPresetCopyName(fromItem.preset().name());
-        newPedalBoard.name(name);
-        return this->currentBank.addPreset(newPedalBoard, fromId);
+        newPedalboard.name(name);
+        return this->currentBank.addPreset(newPedalboard, fromId);
     }
     else
     {
@@ -753,13 +763,14 @@ void Storage::MoveBank(int from, int to)
     this->SaveBankIndex();
 }
 
-
-int64_t Storage::GetBankByMidiBankNumber(uint8_t bankNumber) {
+int64_t Storage::GetBankByMidiBankNumber(uint8_t bankNumber)
+{
     auto &entries = this->bankIndex.entries();
     if (bankNumber >= entries.size())
     {
-        if (entries.size() == 0) return -1;
-        bankNumber = (uint8_t)(entries.size()-1);
+        if (entries.size() == 0)
+            return -1;
+        bankNumber = (uint8_t)(entries.size() - 1);
     }
     return entries[bankNumber].instanceId();
 }
@@ -792,8 +803,8 @@ int64_t Storage::DeleteBank(int64_t bankId)
                 BankIndexEntry newEntry;
 
                 BankFile defaultBank;
-                PedalBoard defaultPedalBoard = PedalBoard::MakeDefault();
-                int64_t instanceId = defaultBank.addPreset(defaultPedalBoard);
+                Pedalboard defaultPedalboard = Pedalboard::MakeDefault();
+                int64_t instanceId = defaultBank.addPreset(defaultPedalboard);
                 defaultBank.selectedPreset(instanceId);
 
                 std::string name = "Default Bank";
@@ -832,7 +843,7 @@ int64_t Storage::UploadPreset(const BankFile &bankFile, int64_t uploadAfter)
     }
     for (size_t i = 0; i < bankFile.presets().size(); ++i)
     {
-        PedalBoard preset = bankFile.presets()[i]->preset();
+        Pedalboard preset = bankFile.presets()[i]->preset();
 
         int n = 2;
         std::string baseName = preset.name();
@@ -1063,8 +1074,11 @@ bool Storage::RestoreCurrentPreset(CurrentPreset *pResult)
             reader.read(pResult);
             std::filesystem::remove(path); // one-shot only, restore the state from the last *orderly* shutdown.
         }
-        catch (const std::exception &)
+        catch (const std::exception &e)
         {
+            Lv2Log::warning(SS("Failed to restore current preset. " << e.what()));
+
+            std::filesystem::remove(path); // one-shot only, restore the state from the last *orderly* shutdown.
             return false;
         }
         return true;
@@ -1330,9 +1344,6 @@ void Storage::SetFavorites(const std::map<std::string, bool> &favorites)
 pipedal::JackServerSettings Storage::GetJackServerSettings()
 {
     JackServerSettings result;
-#if JACK_HOST
-    result.Initialize();
-#else
     std::filesystem::path fileName = this->dataRoot / "AudioConfig.json";
     std::ifstream f;
     f.open(fileName);
@@ -1341,14 +1352,14 @@ pipedal::JackServerSettings Storage::GetJackServerSettings()
         json_reader reader(f);
         reader.read(&result);
     }
+#if JACK_HOST
+    result.Initialize();
 #endif
+
     return result;
 }
 void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfiguration)
 {
-#if JACK_HOST
-#error IMPLEMENT ME
-#else
     std::filesystem::path fileName = this->dataRoot / "AudioConfig.json";
     std::ofstream f;
     f.open(fileName);
@@ -1357,10 +1368,12 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
         json_writer writer(f);
         writer.write(jackConfiguration);
     }
+#if JACK_HOST
+    jackConfiguration.Write();
 #endif
 }
 
-void Storage::SetSystemMidiBindings(const std::vector<MidiBinding>&bindings)
+void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
 {
     std::filesystem::path fileName = this->dataRoot / "SystemMidiBindings.json";
     std::ofstream f;
@@ -1382,62 +1395,84 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
     {
         json_reader reader(f);
         reader.read(&result);
-    } else {
+    }
+    else
+    {
         result.push_back(MidiBinding::SystemBinding("prevProgram"));
         result.push_back(MidiBinding::SystemBinding("nextProgram"));
     }
     return result;
 }
 
-static bool containsDotDot(const std::string&value)
+static bool containsDotDot(const std::string &value)
 {
     std::size_t offset = value.find("..");
     return offset != std::string::npos;
 }
-static bool containsDirectorySeparator(const std::string&value)
+static bool containsDirectorySeparator(const std::string &value)
 {
-    if (value.find("/") != std::string::npos) return true; //linux
-    if (value.find("\\") != std::string::npos) return true; // windows
-    if (value.find("::") != std::string::npos) return true; // mac
+    if (value.find("/") != std::string::npos)
+        return true; // linux
+    if (value.find("\\") != std::string::npos)
+        return true; // windows
+    if (value.find("::") != std::string::npos)
+        return true; // mac
     return false;
 }
 
-
-
-static  void ThrowPermissionDeniedError()
+static void ThrowPermissionDeniedError()
 {
     throw std::logic_error("Permission denied.");
 }
-std::vector<std::string> Storage::GetFileList(const PiPedalFileProperty&fileProperty)
+
+class LexicographicCompare
 {
-    if (!PiPedalFileProperty::IsDirectoryNameValid(fileProperty.directory()))
+public:
+    bool operator()(const std::string &left, const std::string &right)
+    {
+        return std::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end());
+    }
+} lexicographicCompare;
+
+std::vector<std::string> Storage::GetFileList(const UiFileProperty &fileProperty)
+{
+    if (!UiFileProperty::IsDirectoryNameValid(fileProperty.directory()))
     {
         ThrowPermissionDeniedError();
     }
 
     std::vector<std::string> result;
-    std::filesystem::path audioFileDirectory = this->GetAudioFilesDirectory() / fileProperty.directory();
 
-    try {
-        for (auto const&dir_entry: std::filesystem::directory_iterator(audioFileDirectory))
+    // if fileProperty has a user-accessible directory, push the entire file path.
+    if (fileProperty.directory().size() != 0)
+    {
+        std::filesystem::path audioFileDirectory = this->GetPluginStorageDirectory() / fileProperty.directory();
+        try
         {
-            if (dir_entry.is_regular_file())
+            for (auto const &dir_entry : std::filesystem::directory_iterator(audioFileDirectory))
             {
-                auto &path = dir_entry.path();
-                if (fileProperty.IsValidExtension(path.extension().string()))
+                if (dir_entry.is_regular_file())
                 {
-                    result.push_back(fileProperty.directory() / path.filename());
+                    auto &path = dir_entry.path();
+                    if (fileProperty.IsValidExtension(path.extension().string()))
+                    {
+                        // a relative path!
+                        result.push_back(path);
+                    }
                 }
             }
         }
-    } catch(const std::exception&error)
-    {
-        throw std::logic_error("Directory not found: " + audioFileDirectory.string());
+        catch (const std::exception &error)
+        {
+            throw std::logic_error("GetFileList failed. Directory not found: " + audioFileDirectory.string());
+        }
     }
 
+    // sort lexicographically
+
+    std::sort(result.begin(), result.end(), lexicographicCompare);
     return result;
 }
-
 
 JSON_MAP_BEGIN(UserSettings)
 JSON_MAP_REFERENCE(UserSettings, governor)

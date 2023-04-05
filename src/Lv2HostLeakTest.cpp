@@ -24,17 +24,17 @@
 #include <string>
 
 
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 #include "MemDebug.hpp"
 
 using namespace pipedal;
 
 
-TEST_CASE( "PiPedalHost memory leak", "[lv2host_leak][Build][Dev]" ) {
+TEST_CASE( "PluginHost memory leak", "[lv2host_leak][Build][Dev]" ) {
 
     MemStats initialMemory = GetMemStats();
     {
-        PiPedalHost host;
+        PluginHost host;
 
         host.Load("/usr/lib/lv2:/usr/local/lib/lv2:/usr/modep/lv2");
     }

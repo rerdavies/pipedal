@@ -26,8 +26,10 @@
 #include <vector>
 #include <variant>
 #include <map>
+
 #include <string>
 #include <stdexcept>
+#include <utility>
 #include "json.hpp"
 
 namespace pipedal
@@ -35,291 +37,514 @@ namespace pipedal
     class json_null
     {
     public:
-        bool operator==(const json_null&other) const { return true;}
+        static json_null instance;
+        bool operator==(const json_null &other) const { return true; }
+        bool operator!=(const json_null &other) const { return (!((*this) == other)); }
+
     private:
         int value = 0;
     };
 
+    class json_object;
+    class json_array;
 
-    template <class T> // avoid ordering problem in declarations.
-    class json_object_base: public JsonSerializable
+    class json_variant
+        : public JsonSerializable
     {
     public:
-        using json_variant = T;
-        json_object_base() {}
-
-        T &operator[](const std::string &index) { return values[index]; }
-        const T &operator[](const std::string &index) const { return values[index]; }
-
-    public: 
-        bool operator==(const json_object_base<T> &other) const
+        enum class ContentType
         {
-            for (const auto &pair: this->values)
-            {
-                auto index = other.values.find(pair.first);
-                if (index == other.values.end()) return false;
-                if (!(index->second == pair.second)) return false;
-            }
-            for (const auto &pair: other.values)
-            {
-                auto index = this->values.find(pair.first);
-                if (index == this->values.end()) return false;
-                if (!(index->second == pair.second)) return false;
-            }
-            return true;
-        }
+            Null,
+            Bool,
+            Number,
+            String,
+            Object,
+            Array
+        };
+        using object_ptr = std::shared_ptr<json_object>;
+        using array_ptr = std::shared_ptr<json_array>;
+
     private:
-        virtual void read_json(json_reader&reader) {
-            reader.read(&(this->values));
-        }
-        virtual void write_json(json_writer&writer) const {
-            writer.start_object();
-            bool first = true;
-            for (auto&value: values)
-            {
-                if (!first)
-                {
-                    writer.write_raw(",");
-                }
-                first = false;
-                writer.write(value.first);
-                writer.write_raw(": ");
-                writer.writeRawWritable(value.second);
-            }
-            writer.end_object();
-        }
-        std::map<std::string, T> values;
-    };
-    template <class T> // avoid ordering problem in declarations.
-    class json_array_base: public JsonSerializable
-    {
     public:
-        json_array_base() {}
+        ~json_variant();
+        json_variant();
+        json_variant(json_variant &&);
+        json_variant(const json_variant &);
 
-        T &operator[](size_t index) { 
-            check_index(index);
-            return values[index]; }
-        const T &operator[](size_t &index) const { 
-            check_index(index);
-            return values[index]; 
-        }
-        void resize(size_t size)
-        {
-            values.resize(size);
-        }
-        size_t size() const { return values.size(); }
-        template <typename U>
-        void push_back(const U&value) { values.push_back(value); }
-        template <typename U>
-        void push_back(U&&value) { values.push_back(value); }
-        bool operator==(const json_array_base<T>&other) const
-        {
-            if (!(this->size() == other.size())) return false;
-            for (size_t i = 0; i < this->size(); ++i)
-            {
-                if (!((*this)[i] == other[i])) return false;
-            }
-            return true;
-        }
-    private:
-        virtual void read_json(json_reader&reader) {
-            reader.read(&(this->values));
-        }    
-        virtual void write_json(json_writer&writer) const {
-            writer.start_array();
-            bool first = true;
-            for (auto&value: values)
-            {
-                if (!first) writer.write_raw(",");
-                first = false;
-                writer.writeRawWritable(value);
-            }
-            writer.end_array();
-        }
+        json_variant(json_null value);
+        json_variant(bool value);
+        json_variant(double value);
+        json_variant(const std::string &value);
+        json_variant(std::shared_ptr<json_object> &&value);
+        json_variant(const std::shared_ptr<json_object> &value);
+        json_variant(std::shared_ptr<json_array> &&value);
+        json_variant(const std::shared_ptr<json_array> &value);
+        json_variant(json_array &&array);
+        json_variant(json_object &&object);
+        json_variant(const char*sz);
 
-        void check_index(size_t size) const
+        json_variant(const void*) = delete; // do NOT allow implicit conversion of pointers to bool
+
+        json_variant &operator=(json_variant &&value);
+        json_variant &operator=(const json_variant &value);
+        json_variant &operator=(bool value);
+        json_variant &operator=(double value);
+        json_variant &operator=(const std::string &value);
+        json_variant &operator=(std::string &&value);
+        json_variant &operator=(json_object &&value);
+        json_variant &operator=(json_array &&value);
+
+        json_variant &operator=(const char*sz) { return (*this) = std::string(sz); }
+
+        json_variant &operator=(void*) = delete; // do NOT allow implicit conversion of pointers to bool
+
+        void require_type(ContentType content_type) const
         {
-            if (size >= values.size())
+            if (this->content_type != content_type)
             {
-                throw std::out_of_range("index out of range.");
+                throw std::logic_error("Content type is not valid.");
             }
         }
-        std::vector<T> values;
-    };
+        bool is_null() const { return content_type == ContentType::Null; }
+        bool is_bool() const { return content_type == ContentType::Bool; }
+        bool is_number() const { return content_type == ContentType::Number; }
+        bool is_string() const { return content_type == ContentType::String; }
+        bool is_object() const { return content_type == ContentType::Object; }
+        bool is_array() const { return content_type == ContentType::Array; }
 
+        const json_null &as_null() const
+        {
+            require_type(ContentType::Bool);
+            return json_null::instance;
+        }
+        json_null &as_null()
+        {
+            require_type(ContentType::Null);
+            return json_null::instance;
+        }
 
-    class concrete_json_variant_base {
-    protected:
-        void write_double_value(json_writer &writer,double value) const;
-    };
+        bool as_bool() const
+        {
+            require_type(ContentType::Bool);
+            return content.bool_value;
+        }
+        bool &as_bool()
+        {
+            require_type(ContentType::Bool);
+            return content.bool_value;
+        }
 
-    template <typename DUMMY = void>
-    class json_variant_base 
-    : public std::variant<json_null, bool, double, std::string, json_object_base<json_variant_base<DUMMY>>, json_array_base<json_variant_base<DUMMY>>>,
-        public JsonSerializable,
-        private concrete_json_variant_base
-    {
-    public:
-        using base = std::variant<json_null, bool, double, std::string, json_object_base<json_variant_base<DUMMY>>, json_array_base<json_variant_base<DUMMY>>>;
-        using json_object = json_object_base<json_variant_base<DUMMY>>;
-        using json_array = json_array_base<json_variant_base<DUMMY>>;
-        using json_variant = json_variant_base<void>;
+        double as_number() const
+        {
+            require_type(ContentType::Number);
+            return content.double_value;
+        }
+        double &as_number()
+        {
+            require_type(ContentType::Number);
+            return content.double_value;
+        }
 
+        const std::string &as_string() const;
+        std::string &as_string();
 
-        json_variant_base(json_null value)
-        :base(value)
-        {
+        const std::shared_ptr<json_object> &as_object() const;
+        std::shared_ptr<json_object> &as_object();
 
-        }
-        json_variant_base(double value)
-            : base(value)
-        {
-        }
-        json_variant_base(int value)
-            : base((double)value)
-        {
-        }
-        json_variant_base(const std::string &value)
-            : base(value)
-        {
-        }
-        json_variant_base(const char*value)
-        :base(std::string(value))
-        {
-
-        }
-        json_variant_base()
-            : base(json_null())
-        {
-        }
-        json_variant_base(json_object &&value)
-            : base(std::forward<json_object>(value))
-        {
-        }
-        json_variant_base(json_array &&value)
-        : base(std::forward<json_array>(value))
-        {
-        }
+        const std::shared_ptr<json_array> &as_array() const;
+        std::shared_ptr<json_array> &as_array();
 
         template <typename U>
-        bool holds_alternative() const { return std::holds_alternative<U>(*this);}
-
-        bool IsNull() const { return holds_alternative<json_null>(); }
-        bool IsBool() const { return holds_alternative<bool>(); }
-        bool IsNumber() const { return holds_alternative<double>(); }
-        bool IsString() const { return holds_alternative<std::string>(); }
-        bool IsObject() const { return holds_alternative<json_object>(); }
-        bool IsArray() const { return holds_alternative<json_array>(); }
-
-        template <typename U>
-        const U &get() const
-        {
-            return std::get<U>(*this);
-        }
-        template <typename U>
-        U &get()
-        {
-            return std::get<U>(*this);
-        }
-
-        bool &AsBool() { return get<bool>(); }
-        bool AsBool() const  { return get<bool>(); }
-
-        double &AsNumber() { return get<double>(); }
-        double AsNumber() const { return get<double>(); }
-        std::string &AsString() { return get<std::string>(); }
-        const std::string &AsString() const { return get<std::string>(); }
-
-        json_object &AsObject() { return get<json_object>(); }
-        const json_object &AsObject() const { return get<json_object>(); }
-
-        std::vector<float> AsFloatArray() { return get<json_object>().AsFloatArray(); }
-        std::vector<double> AsDoubleArray() { return get<json_object>().AsDoubleArray(); }
-
-        json_array &AsArray() { return get<json_array>(); }
-        const json_array &AsArray() const { return get<json_array>(); }
+        U &as() { static_assert("Invalid type."); }
 
         // convenience methods for object and array manipulation.
-        static json_variant MakeObject() { return json_variant{ json_object()};};
-        static json_variant MakeArray() { return json_variant{ json_array()};};
+        static json_variant make_object();
+        static json_variant make_array();
 
-        void resize(size_t size) { AsArray().resize(size); }
-        size_t size() const { return AsArray().size(); }
+        void resize(size_t size);
+        size_t size() const;
 
-        json_variant&operator[](size_t index) { return AsArray()[index];}
-        const json_variant&operator[](size_t index) const { return AsArray()[index];}
+        bool contains(const std::string &index) const;
 
-        const json_variant&operator[](const std::string& index) const { return AsObject()[index];}
-        json_variant&operator[](const std::string& index) { return AsObject()[index];}
+        json_variant &at(size_t index);
+        const json_variant &at(size_t index) const;
 
+        json_variant &operator[](size_t index);
+        const json_variant &operator[](size_t index) const;
+
+        json_variant &operator[](const std::string &index);
+        const json_variant &operator[](const std::string &index) const;
+
+        bool operator==(const json_variant &other) const;
+        bool operator!=(const json_variant &other) const;
+
+        std::string to_string() const;
+    private:
+        void free();
+        void write_double_value(json_writer &writer, double value) const;
+        void write_float_value(json_writer &writer, double value) const;
+        virtual void read_json(json_reader &reader);
+        virtual void write_json(json_writer &writer) const;
+
+        static constexpr size_t stringSize = sizeof(std::string);
+        static constexpr size_t objectSize = sizeof(std::shared_ptr<json_variant>);
+        static constexpr size_t memSize = stringSize > objectSize ? stringSize : objectSize;
+        union Content
+        {
+            bool bool_value;
+            double double_value;
+            float float_value;
+            int32_t int32_value;
+            uint8_t mem[memSize];
+        };
+
+        ContentType content_type = ContentType::Null;
+        Content content;
+
+        std::string &memString();
+        object_ptr &memObject();
+        array_ptr &memArray();
+
+        const std::string &memString() const;
+        const object_ptr &memObject() const;
+        const array_ptr &memArray() const;
+    };
+    class json_array : public JsonSerializable
+    {
+    private:
+        json_array(const json_array&) { } // deleted.
+    public:
+        using ptr = std::shared_ptr<json_array>;
+
+        json_array() { ++allocation_count_; }
+        json_array(json_array&&other);
+        ~json_array() { --allocation_count_; }
+
+        json_variant &at(size_t index);
+        const json_variant &at(size_t index) const;
+
+        json_variant &operator[](size_t index);
+        const json_variant &operator[](size_t &index) const;
+
+        void resize(size_t size) { values.resize(size); }
+        size_t size() const { return values.size(); }
+        void push_back(json_variant &&value) { values.push_back(std::move(value)); }
+        template <typename U>
+        void push_back(U &&value) { values.push_back(value); }
+        void push_back(double value) { values.push_back(json_variant{value}); }
+        void push_back(const std::string &value) { values.push_back(json_variant{value}); }
+        void push_back(bool value) { values.push_back(json_variant{value}); }
+        void push_back(const std::shared_ptr<json_array> &value) { values.push_back(json_variant(value)); }
+        void push_back(const std::shared_ptr<json_object> &value) { values.push_back(json_variant(value)); }
+
+        bool operator==(const json_array &other) const;
+        bool operator!=(const json_array &other) const { return (!((*this) == other)); }
+
+        // Strictly for testing purposes. Not thread-safe.
+        static int64_t allocation_count()
+        {
+            return allocation_count_;
+        }
+        using iterator = std::vector<json_variant>::iterator;
+        using const_iterator = std::vector<json_variant>::const_iterator;
+        
+        iterator begin() { return values.begin(); }
+        iterator end() { return values.end(); }
+        const_iterator begin() const { return values.begin(); }
+        const_iterator end() const { return values.end(); }
 
     private:
-        virtual void read_json(json_reader &reader)
-        {
-            int v = reader.peek();
-            if (v == '[')
-            {
-                json_array array;
-                reader.read(&array);
-                (*this) = std::move(array);
-            } else if (v == '{')
-            {
-                json_object object;
-                reader.read(&object);
-                (*this) = std::move(object);
-            }
-            else if (v == '\"') {
-                std::string s;
-                reader.read(&s);
-                (*this) = std::move(s);
-            } else if (v == 'n')
-            {   
-                reader.read_null();
-                (*this) = json_null();
+        static int64_t allocation_count_; // strictly for testing purposes. not thread safe.
 
-            } else if (v == 't' || v == 'f')
-            {
-                bool b;
-                reader.read(&b);
-                (*this) = b;
+        virtual void read_json(json_reader &reader);
+        virtual void write_json(json_writer &writer) const;
 
-            } else {
-                // it's a number.
-                double v;
-                reader.read(&v);
-                (*this) = v;
-            }
-        }
-        virtual void write_json(json_writer&writer) const
+        void check_index(size_t size) const;
+
+        std::vector<json_variant> values;
+    };
+    class json_object : public JsonSerializable
+    {
+    private:
+        json_object(const json_object&) { } // deleted.
+    public:
+        using ptr = std::shared_ptr<json_object>;
+
+        json_object() { ++ allocation_count_;}
+        json_object(json_object&&other);
+        ~json_object() { --allocation_count_;}
+
+        size_t size() const { return values.size(); }
+        json_variant &at(const std::string &index);
+        const json_variant &at(const std::string &index) const;
+
+        json_variant &operator[](const std::string &index);
+        const json_variant &operator[](const std::string &index) const;
+
+        bool operator==(const json_object &other) const;
+        bool operator!=(const json_object &other) const { return (!((*this) == other)); }
+        bool contains(const std::string &index) const;
+
+
+        using values_t = std::vector< std::pair<std::string, json_variant> >;
+        using iterator = values_t::iterator;
+        using const_iterator = values_t::const_iterator;
+        
+        iterator begin() { return values.begin(); }
+        iterator end() { return values.end(); }
+        const_iterator begin() const { return values.begin(); }
+        const_iterator end() const { return values.end(); }
+
+        iterator find(const std::string& key);
+        const_iterator find(const std::string& key) const;
+
+
+        // strictly for testing purposes. Not thread-safe.
+        static int64_t allocation_count() 
         {
-            switch (this->index())
-            {
-            case 0:
-                writer.write_raw("null");
-                break;
-            case 1:
-                writer.write(this->get<bool>());
-                break;
-            case 2:
-                write_double_value(writer,this->get<double>());
-                break;
-            case 3:
-                writer.write(get<std::string>());
-                break;
-            case 4:
-                writer.writeRawWritable(get<json_object>());
-                break;
-            case 5:
-                writer.writeRawWritable(get<json_array>());
-                break;
-            default:
-                throw std::logic_error("Invalid variant index");
-            }
+            return allocation_count_;
         }
+    private:
+        virtual void read_json(json_reader &reader);
+        virtual void write_json(json_writer &writer) const;
+
+        static int64_t allocation_count_;
+        values_t values;
     };
 
-    using json_variant = json_variant_base<void>;
-    using json_object = json_variant::json_object;
-    using json_array = json_variant::json_array;
+    ////////////////////////////////////////////////
+
+    inline std::string &json_variant::memString() { return *(std::string *)content.mem; }
+    inline const std::string &json_variant::memString() const { return *(const std::string *)content.mem; }
+
+    template <>
+    inline json_null &json_variant::as<json_null>() { return as_null(); }
+
+    template <>
+    inline bool &json_variant::as<bool>() { return as_bool(); }
+
+    template <>
+    inline double &json_variant::as<double>() { return as_number(); }
+
+    template <>
+    inline std::string &json_variant::as<std::string>() { return as_string(); }
+
+    template <>
+    inline std::shared_ptr<json_object> &json_variant::as<std::shared_ptr<json_object>>() { return as_object(); }
+
+    template <>
+    inline std::shared_ptr<json_array> &json_variant::as<std::shared_ptr<json_array>>() { return as_array(); }
+
+    template <>
+    inline json_variant &json_variant::as<json_variant>() { return *this; }
+
+    inline json_variant::object_ptr &json_variant::memObject()
+    {
+        return *(object_ptr *)content.mem;
+    }
+    inline json_variant::array_ptr &json_variant::memArray()
+    {
+        return *(array_ptr *)content.mem;
+    }
+
+    inline const json_variant::object_ptr &json_variant::memObject() const
+    {
+        return *(const object_ptr *)content.mem;
+    }
+    inline const json_variant::array_ptr &json_variant::memArray() const
+    {
+        return *(const array_ptr *)content.mem;
+    }
+
+    inline json_variant::json_variant(json_array &&array)
+    {
+        this->content_type = ContentType::Null;
+        new (content.mem) std::shared_ptr<json_array>{new json_array(std::move(array))};
+        this->content_type = ContentType::Array;
+    }
+    inline json_variant::json_variant(json_object &&object)
+    {
+        this->content_type = ContentType::Null;
+        new (content.mem) std::shared_ptr<json_object>{new json_object(std::move(object))};
+        this->content_type = ContentType::Object;
+    }
+
+    inline json_variant::json_variant(const std::string &value)
+    {
+        this->content_type = ContentType::Null;
+        new (content.mem) std::string(value); // placement new.
+        content_type = ContentType::String;
+    }
+
+    inline json_variant::json_variant(std::shared_ptr<json_object> &&value)
+    {
+        this->content_type = ContentType::Null;
+        new (content.mem) std::shared_ptr<json_object>(std::move(value)); // placement new.
+        content_type = ContentType::Object;
+    }
+    inline json_variant::json_variant(const std::shared_ptr<json_object> &value)
+    {
+        // don't deep copy!
+        std::shared_ptr<json_object> t = const_cast<std::shared_ptr<json_object> &>(value);
+        this->content_type = ContentType::Null;
+        new (content.mem) std::shared_ptr<json_object>(t); // placement new.
+        content_type = ContentType::Object;
+    }
+
+    inline json_variant::json_variant(const std::shared_ptr<json_array> &value)
+    {
+        // Make sure we don't deep copy!
+        std::shared_ptr<json_array> t = const_cast<std::shared_ptr<json_array> &>(value);
+        this->content_type = ContentType::Null;
+        new (content.mem) std::shared_ptr<json_array>(t); // placement new.
+        content_type = ContentType::Array;
+    }
+    inline json_variant::json_variant(array_ptr &&value)
+    {
+        this->content_type = ContentType::Null;
+        new (content.mem) std::shared_ptr<json_array>(std::move(value)); // placement new.
+        content_type = ContentType::Array;
+    }
+    inline json_variant::json_variant()
+    {
+        content_type = ContentType::Null;
+    }
+    inline json_variant::json_variant(json_null value)
+    {
+        content_type = ContentType::Null;
+    }
+    inline json_variant::json_variant(bool value)
+    {
+        content_type = ContentType::Bool;
+        content.bool_value = value;
+    }
+
+    inline json_variant::json_variant(double value)
+    {
+        content_type = ContentType::Number;
+        content.double_value = value;
+    }
+    inline std::string &json_variant::as_string()
+    {
+        require_type(ContentType::String);
+        return memString();
+    }
+
+    inline const std::string &json_variant::as_string() const
+    {
+        require_type(ContentType::String);
+        return memString();
+    }
+
+    inline const json_variant::object_ptr &json_variant::as_object() const
+    {
+        require_type(ContentType::Object);
+        return memObject();
+    }
+
+    inline json_variant::object_ptr &json_variant::as_object()
+    {
+        require_type(ContentType::Object);
+        return memObject();
+    }
+
+    inline const json_variant::array_ptr &json_variant::as_array() const
+    {
+        require_type(ContentType::Array);
+        return memArray();
+    }
+
+    inline json_variant::array_ptr &json_variant::as_array()
+    {
+        require_type(ContentType::Array);
+        return memArray();
+    }
+
+    inline /*static*/ json_variant json_variant::make_object()
+    {
+        return json_variant{std::make_shared<json_object>()};
+    };
+    inline /*static */ json_variant json_variant::make_array()
+    {
+        return json_variant{std::make_shared<json_array>()};
+    };
+
+    inline void json_variant::resize(size_t size)
+    {
+        as_array()->resize(size);
+    }
+
+    inline json_variant &json_variant::at(size_t index)
+    {
+        return as_array()->at(index);
+    }
+    inline const json_variant &json_variant::at(size_t index) const
+    {
+        return as_array()->at(index);
+    }
+
+    inline json_variant &json_variant::operator[](size_t index)
+    {
+        return as_array()->at(index);
+    }
+    inline const json_variant &json_variant::operator[](size_t index) const
+    {
+        return as_array()->at(index);
+    }
+
+    inline const json_variant &json_variant::operator[](const std::string &index) const
+    {
+        return (*as_object())[index];
+    }
+    inline json_variant &json_variant::operator[](const std::string &index)
+    {
+        return (*as_object())[index];
+    }
+
+    inline const json_variant &json_array::operator[](size_t &index) const
+    {
+        check_index(index);
+        return values[index];
+    }
+
+    inline json_variant &json_array::operator[](size_t index)
+    {
+        return at(index);
+    }
+
+    inline void json_array::check_index(size_t size) const
+    {
+        if (size >= values.size())
+        {
+            throw std::out_of_range("index out of range.");
+        }
+    }
+
+    inline bool json_variant::operator!=(const json_variant &other) const
+    {
+        return !(*this == other);
+    }
+
+
+    // Holds a string but is json_read and json_written as an unqoted json object.
+    class raw_json_string: public JsonSerializable {
+        public:
+            raw_json_string() { }
+            raw_json_string(const std::string &value) : value(value) {}
+            const std::string& as_string() const { return value; }
+
+            void Set(const std::string&value) { this->value = value; }
+
+    private: 
+
+        virtual void write_json(json_writer &writer) const {
+            writer.write_raw(value.c_str());
+        }
+        virtual void read_json(json_reader &reader) {
+            throw std::logic_error("Not implemented.");
+        }
+
+        std::string value;
+    };
 
 } // namespace pipedal

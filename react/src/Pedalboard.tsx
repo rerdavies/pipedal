@@ -57,30 +57,9 @@ export class ControlValue implements Deserializable<ControlValue> {
     value: number;
 
 }
-export class PropertyValue implements Deserializable<PropertyValue> {
-    deserialize(input: any): PropertyValue {
-        this.propertyUri = input.propertyUri;
-        this.value = input.value;
-        return this;
-    }
-    static deserializeArray(input: any[]): PropertyValue[] {
-        let result: PropertyValue[] = [];
-        for (let i = 0; i < input.length; ++i) {
-            result[i] = new PropertyValue().deserialize(input[i]);
-        }
-        return result;
-    }
-    setValue(value: number) {
-        this.value = value;
-    }
 
-    propertyUri: string = "";
-    value: any = null;
-
-}
-
-export class PedalBoardItem implements Deserializable<PedalBoardItem> {
-    deserializePedalBoardItem(input: any): PedalBoardItem {
+export class PedalboardItem implements Deserializable<PedalboardItem> {
+    deserializePedalboardItem(input: any): PedalboardItem {
         this.instanceId = input.instanceId ?? -1;
         this.uri = input.uri;
         this.pluginName = input.pluginName;
@@ -88,24 +67,24 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
         this.midiBindings = MidiBinding.deserialize_array(input.midiBindings);
 
         this.controlValues = ControlValue.deserializeArray(input.controlValues);
-        this.propertyValues = PropertyValue.deserializeArray(input.propertyValues);
         this.vstState = input.vstState ?? "";
+        this.lv2State = input.lv2State;
         return this;
     }
-    deserialize(input: any): PedalBoardItem {
-        return this.deserializePedalBoardItem(input);
+    deserialize(input: any): PedalboardItem {
+        return this.deserializePedalboardItem(input);
     }
-    static deserializeArray(input: any): PedalBoardItem[] {
-        let result: PedalBoardItem[] = [];
+    static deserializeArray(input: any): PedalboardItem[] {
+        let result: PedalboardItem[] = [];
         for (let i = 0; i < input.length; ++i) {
             let inputItem: any = input[i];
             let uri: string = inputItem.uri as string;
-            let outputItem: PedalBoardItem;
+            let outputItem: PedalboardItem;
 
             if (uri === SPLIT_PEDALBOARD_ITEM_URI) {
-                outputItem = new PedalBoardSplitItem().deserialize(inputItem);
+                outputItem = new PedalboardSplitItem().deserialize(inputItem);
             } else {
-                outputItem = new PedalBoardItem().deserialize(inputItem);
+                outputItem = new PedalboardItem().deserialize(inputItem);
             }
             result[i] = outputItem;
 
@@ -158,17 +137,6 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
         }
         return false;
     }
-    setPropertyValue(propertyUri: string, value: any): boolean {
-        for (let i = 0; i < this.propertyValues.length; ++i) {
-            let v = this.propertyValues[i];
-            if (v.propertyUri === propertyUri) {
-                if (v.value === value) return false;
-                v.value = value;
-                return true;
-            }
-        }
-        return false;
-    }
     setMidiBinding(midiBinding: MidiBinding): boolean {
         if (this.midiBindings)
         {
@@ -209,16 +177,16 @@ export class PedalBoardItem implements Deserializable<PedalBoardItem> {
     }
 
 
-    static EmptyArray: PedalBoardItem[] = [];
+    static EmptyArray: PedalboardItem[] = [];
 
     instanceId: number = -1;
     isEnabled: boolean = false;
     uri: string = "";
     pluginName?: string;
     controlValues: ControlValue[] = ControlValue.EmptyArray;
-    propertyValues: PropertyValue[] = [];
     midiBindings: MidiBinding[] = [];
     vstState: string = "";
+    lv2State: any = {};
 };
 
 
@@ -230,7 +198,7 @@ export enum SplitType {
 
 
 
-export class PedalBoardSplitItem extends PedalBoardItem {
+export class PedalboardSplitItem extends PedalboardItem {
     static PANL_KEY: string = "panL";
     static PANR_KEY: string = "panR";
     static VOLL_KEY: string = "volL";
@@ -241,15 +209,15 @@ export class PedalBoardSplitItem extends PedalBoardItem {
     static SELECT_KEY: string = "select";
 
 
-    deserialize(input: any): PedalBoardSplitItem {
-        this.deserializePedalBoardItem(input);
-        this.topChain = PedalBoardItem.deserializeArray(input.topChain);
-        this.bottomChain = PedalBoardItem.deserializeArray(input.bottomChain);
+    deserialize(input: any): PedalboardSplitItem {
+        this.deserializePedalboardItem(input);
+        this.topChain = PedalboardItem.deserializeArray(input.topChain);
+        this.bottomChain = PedalboardItem.deserializeArray(input.bottomChain);
 
         return this;
     }
     getSplitType(): SplitType {
-        let rawValue = this.getControlValue(PedalBoardSplitItem.TYPE_KEY);
+        let rawValue = this.getControlValue(PedalboardSplitItem.TYPE_KEY);
 
         if (rawValue <  1) return SplitType.Ab;
         if (rawValue < 2) return SplitType.Mix;
@@ -263,43 +231,43 @@ export class PedalBoardSplitItem extends PedalBoardItem {
 
     }
     getMixControl(): ControlValue {
-        return this.getControl(PedalBoardSplitItem.MIX_KEY);
+        return this.getControl(PedalboardSplitItem.MIX_KEY);
     }
     getMix(): number {
-        return this.getControlValue(PedalBoardSplitItem.MIX_KEY);
+        return this.getControlValue(PedalboardSplitItem.MIX_KEY);
     }
     isASelected(): boolean {
-        return this.getSplitType() !== SplitType.Ab ||  this.getControlValue(PedalBoardSplitItem.SELECT_KEY) === 0;
+        return this.getSplitType() !== SplitType.Ab ||  this.getControlValue(PedalboardSplitItem.SELECT_KEY) === 0;
     }
     isBSelected(): boolean {
-        return this.getSplitType() !== SplitType.Ab || this.getControlValue(PedalBoardSplitItem.SELECT_KEY) !== 0;
+        return this.getSplitType() !== SplitType.Ab || this.getControlValue(PedalboardSplitItem.SELECT_KEY) !== 0;
     }
 
-    topChain: PedalBoardItem[] = PedalBoardItem.EmptyArray;
-    bottomChain: PedalBoardItem[] = PedalBoardItem.EmptyArray;
+    topChain: PedalboardItem[] = PedalboardItem.EmptyArray;
+    bottomChain: PedalboardItem[] = PedalboardItem.EmptyArray;
 }
 
 
 
 
 
-export class PedalBoard implements Deserializable<PedalBoard> {
+export class Pedalboard implements Deserializable<Pedalboard> {
 
-    deserialize(input: any): PedalBoard {
+    deserialize(input: any): Pedalboard {
         this.name = input.name;
-        this.items = PedalBoardItem.deserializeArray(input.items);
+        this.items = PedalboardItem.deserializeArray(input.items);
         this.nextInstanceId = input.nextInstanceId ?? -1;
         return this;
     }
 
-    clone(): PedalBoard {
-        return new PedalBoard().deserialize(this);
+    clone(): Pedalboard {
+        return new Pedalboard().deserialize(this);
     }
     name: string = "";
-    items: PedalBoardItem[] = [];
+    items: PedalboardItem[] = [];
     nextInstanceId: number = -1;
 
-    *itemsGenerator(): Generator<PedalBoardItem, void, undefined> {
+    *itemsGenerator(): Generator<PedalboardItem, void, undefined> {
         let it = itemGenerator_(this.items);
         while (true)
         {
@@ -335,7 +303,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
 
     }
 
-    maybeGetItem(instanceId: number): PedalBoardItem | null{
+    maybeGetItem(instanceId: number): PedalboardItem | null{
         let it = this.itemsGenerator();
         while (true)
         {
@@ -348,7 +316,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
         }
         return null;
     }
-    getItem(instanceId: number): PedalBoardItem {
+    getItem(instanceId: number): PedalboardItem {
         let it = this.itemsGenerator();
         while (true)
         {
@@ -361,7 +329,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
         }
         throw new PiPedalArgumentError("Item not found.");
     }
-    deleteItem_(instanceId: number,items: PedalBoardItem[]): number | null
+    deleteItem_(instanceId: number,items: PedalboardItem[]): number | null
     {
         for (let i = 0; i < items.length; ++i)
         {
@@ -383,7 +351,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
             } else {
                 if (item.isSplit())
                 {
-                    let splitItem = item as PedalBoardSplitItem;
+                    let splitItem = item as PedalboardSplitItem;
                     let t = this.deleteItem_(instanceId,splitItem.topChain);
                     if (t != null) return t;
 
@@ -395,7 +363,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
         return null;
     }
 
-    canDeleteItem_(instanceId: number,items: PedalBoardItem[]): boolean
+    canDeleteItem_(instanceId: number,items: PedalboardItem[]): boolean
     {
         for (let i = 0; i < items.length; ++i)
         {
@@ -407,7 +375,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
             }
             if (item.isSplit())
             {
-                let splitItem = item as PedalBoardSplitItem;
+                let splitItem = item as PedalboardSplitItem;
                 if (this.canDeleteItem_(instanceId,splitItem.topChain))
                 {
                     return true;
@@ -436,15 +404,15 @@ export class PedalBoard implements Deserializable<PedalBoard> {
         if (!item) return false;
         return item.setMidiBinding(midiBinding);
     }
-    addToStart(item: PedalBoardItem)
+    addToStart(item: PedalboardItem)
     {
         this.items.splice(0,0,item);
     }
-    addToEnd(item: PedalBoardItem)
+    addToEnd(item: PedalboardItem)
     {
         this.items.splice(this.items.length,0,item);
     }
-    static _addRelative(items: PedalBoardItem[],newItem: PedalBoardItem, instanceId: number, addBefore: boolean): boolean
+    static _addRelative(items: PedalboardItem[],newItem: PedalboardItem, instanceId: number, addBefore: boolean): boolean
     {
         for (let i = 0; i < items.length; ++i)
         {
@@ -461,7 +429,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
             }
             if (item.isSplit())
             {
-                let split = item as PedalBoardSplitItem;
+                let split = item as PedalboardSplitItem;
                 if (this._addRelative(split.topChain,newItem,instanceId,addBefore))
                 {
                     return true;
@@ -476,19 +444,19 @@ export class PedalBoard implements Deserializable<PedalBoard> {
 
     }
 
-    addBefore(item: PedalBoardItem, instanceId: number)
+    addBefore(item: PedalboardItem, instanceId: number)
     {
         if (item.instanceId === instanceId) return;
-        let result = PedalBoard._addRelative(this.items,item, instanceId, true);
+        let result = Pedalboard._addRelative(this.items,item, instanceId, true);
         if (!result) {
             throw new PiPedalArgumentError("instanceId not found.");
         }
 
     }
-    addAfter(item: PedalBoardItem, instanceId: number)
+    addAfter(item: PedalboardItem, instanceId: number)
     {
         if (item.instanceId === instanceId) return;
-        let result = PedalBoard._addRelative(this.items,item, instanceId, false);
+        let result = Pedalboard._addRelative(this.items,item, instanceId, false);
         if (!result) {
             throw new PiPedalArgumentError("instanceId not found.");
         }
@@ -520,8 +488,8 @@ export class PedalBoard implements Deserializable<PedalBoard> {
             }
         }
     }
-    createEmptySplit(): PedalBoardSplitItem {
-        let result: PedalBoardSplitItem = new PedalBoardSplitItem();
+    createEmptySplit(): PedalboardSplitItem {
+        let result: PedalboardSplitItem = new PedalboardSplitItem();
         result.uri = SPLIT_PEDALBOARD_ITEM_URI;
         result.instanceId = ++this.nextInstanceId;
         result.pluginName = "";
@@ -529,13 +497,13 @@ export class PedalBoard implements Deserializable<PedalBoard> {
         result.topChain = [ this.createEmptyItem()];
         result.bottomChain = [ this.createEmptyItem()];
         result.controlValues = [
-            new ControlValue(PedalBoardSplitItem.TYPE_KEY, 0),
-            new ControlValue(PedalBoardSplitItem.SELECT_KEY,0),
-            new ControlValue(PedalBoardSplitItem.MIX_KEY,0),
-            new ControlValue(PedalBoardSplitItem.PANL_KEY,0),
-            new ControlValue(PedalBoardSplitItem.VOLL_KEY,-3),
-            new ControlValue(PedalBoardSplitItem.PANR_KEY,0),
-            new ControlValue(PedalBoardSplitItem.VOLR_KEY,-3)
+            new ControlValue(PedalboardSplitItem.TYPE_KEY, 0),
+            new ControlValue(PedalboardSplitItem.SELECT_KEY,0),
+            new ControlValue(PedalboardSplitItem.MIX_KEY,0),
+            new ControlValue(PedalboardSplitItem.PANL_KEY,0),
+            new ControlValue(PedalboardSplitItem.VOLL_KEY,-3),
+            new ControlValue(PedalboardSplitItem.PANR_KEY,0),
+            new ControlValue(PedalboardSplitItem.VOLR_KEY,-3)
         ];
 
 
@@ -543,8 +511,8 @@ export class PedalBoard implements Deserializable<PedalBoard> {
 
 
     }
-    createEmptyItem(): PedalBoardItem {
-        let result: PedalBoardItem = new PedalBoardItem();
+    createEmptyItem(): PedalboardItem {
+        let result: PedalboardItem = new PedalboardItem();
         result.uri = EMPTY_PEDALBOARD_ITEM_URI;
         result.instanceId = ++this.nextInstanceId;
         result.pluginName = "";
@@ -552,7 +520,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
 
         return result;
     }
-    setItemEmpty(item: PedalBoardItem)
+    setItemEmpty(item: PedalboardItem)
     {
         item.uri = EMPTY_PEDALBOARD_ITEM_URI;
         item.instanceId = ++this.nextInstanceId;
@@ -562,7 +530,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
 
     }
 
-    _replaceItem(items: PedalBoardItem[], instanceId: number, newItem: PedalBoardItem): boolean {
+    _replaceItem(items: PedalboardItem[], instanceId: number, newItem: PedalboardItem): boolean {
         for (let i = 0; i < items.length; ++i)
         {
             let item = items[i];
@@ -573,7 +541,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
             }
             if (items[i].isSplit())
             {
-                let  splitItem = item as PedalBoardSplitItem;
+                let  splitItem = item as PedalboardSplitItem;
                 if (this._replaceItem(splitItem.topChain,instanceId,newItem))
                     return true;
                 if (this._replaceItem(splitItem.bottomChain,instanceId,newItem))
@@ -585,7 +553,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
         return false;
     }
     
-    replaceItem(instanceId: number, newItem: PedalBoardItem)
+    replaceItem(instanceId: number, newItem: PedalboardItem)
     {
         let result = this._replaceItem(this.items,instanceId,newItem);
         if (!result)
@@ -593,7 +561,7 @@ export class PedalBoard implements Deserializable<PedalBoard> {
             throw new PiPedalArgumentError("instanceId not found.");
         }
     }
-    _addItem(items: PedalBoardItem[], newItem: PedalBoardItem, instanceId: number, append: boolean)
+    _addItem(items: PedalboardItem[], newItem: PedalboardItem, instanceId: number, append: boolean)
     {
         for (let i = 0; i < items.length; ++i)
         {
@@ -611,27 +579,27 @@ export class PedalBoard implements Deserializable<PedalBoard> {
             }
             if (item.isSplit())
             {
-                let splitItem = item as PedalBoardSplitItem;
+                let splitItem = item as PedalboardSplitItem;
                 if (this._addItem(splitItem.topChain,newItem,instanceId,append)) return true;
                 if (this._addItem(splitItem.bottomChain,newItem,instanceId,append)) return true;
             }
         }
     }
 
-    addItem(newItem: PedalBoardItem, instanceId: number, append: boolean): void
+    addItem(newItem: PedalboardItem, instanceId: number, append: boolean): void
     {
         this._addItem(this.items,newItem,instanceId,append);
     }
 
 }
 
-function* itemGenerator_(items: PedalBoardItem[]): Generator<PedalBoardItem, void, undefined> {
+function* itemGenerator_(items: PedalboardItem[]): Generator<PedalboardItem, void, undefined> {
     for (let i = 0; i < items.length; ++i) {
         let item = items[i];
         yield item;
         if (item.uri === SPLIT_PEDALBOARD_ITEM_URI) {
 
-            let splitItem = item as PedalBoardSplitItem;
+            let splitItem = item as PedalboardSplitItem;
 
             let it = itemGenerator_(splitItem.topChain);
             while (true) {

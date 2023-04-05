@@ -23,7 +23,7 @@
  */
 
 #include "ss.hpp"
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 #include "vst3/Vst3Host.hpp"
 #include "Lv2Log.hpp"
 #include <unordered_map>
@@ -86,7 +86,7 @@ namespace pipedal
 		const Vst3Host::PluginList &getPluginList() override { return pluginList; }
 
 		std::unique_ptr<Vst3Effect> CreatePlugin(long instanceId, const std::string &url, IHost *pHost) override;
-		std::unique_ptr<Vst3Effect> CreatePlugin(PedalBoardItem &pedalBoardItem, IHost *pHost) override;
+		std::unique_ptr<Vst3Effect> CreatePlugin(PedalboardItem &pedalboardItem, IHost *pHost) override;
 
 	private:
 		Lv2PluginUiInfo *GetPluginInfo(const std::string &uri);
@@ -615,22 +615,22 @@ static std::vector<uint8_t> HexToByteArray(const std::string &hexState)
 	}
 	return result;
 }
-std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(PedalBoardItem &pedalBoardItem, IHost *pHost)
+std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(PedalboardItem &pedalboardItem, IHost *pHost)
 {
-	std::unique_ptr<Vst3Effect> result = CreatePlugin(pedalBoardItem.instanceId(), pedalBoardItem.uri(), pHost);
-	auto pluginInfo = this->GetPluginInfo(pedalBoardItem.uri());
+	std::unique_ptr<Vst3Effect> result = CreatePlugin(pedalboardItem.instanceId(), pedalboardItem.uri(), pHost);
+	auto pluginInfo = this->GetPluginInfo(pedalboardItem.uri());
 	if (!pluginInfo)
 	{
-		throw Vst3Exception(SS("Plugin " << pedalBoardItem.pluginName() << " not found."));
+		throw Vst3Exception(SS("Plugin " << pedalboardItem.pluginName() << " not found."));
 	}
-	if (pedalBoardItem.vstState().length() != 0)
+	if (pedalboardItem.vstState().length() != 0)
 	{
-		std::vector<uint8_t> state = HexToByteArray(pedalBoardItem.vstState());
+		std::vector<uint8_t> state = HexToByteArray(pedalboardItem.vstState());
 		result->SetState(state);
 	}
 	else
 	{
-		for (const ControlValue &controlValue : pedalBoardItem.controlValues())
+		for (const ControlValue &controlValue : pedalboardItem.controlValues())
 		{
 			int32_t index = -1;
 			for (size_t i = 0; i < pluginInfo->controls().size(); ++i)
@@ -647,7 +647,7 @@ std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(PedalBoardItem &pedalBoar
 			}
 		}
 	}
-	for (ControlValue &controlValue : pedalBoardItem.controlValues())
+	for (ControlValue &controlValue : pedalboardItem.controlValues())
 	{
 		int32_t index = -1;
 		for (size_t i = 0; i < pluginInfo->controls().size(); ++i)
@@ -667,7 +667,7 @@ std::unique_ptr<Vst3Effect> Vst3HostImpl::CreatePlugin(PedalBoardItem &pedalBoar
 			}
 			controlValue.value(t);
 		} else {
-			Lv2Log::warning(SS(pedalBoardItem.pluginName() << ": Control key not found. key=" << controlValue.key() ));
+			Lv2Log::warning(SS(pedalboardItem.pluginName() << ": Control key not found. key=" << controlValue.key() ));
 		}
 	}
 

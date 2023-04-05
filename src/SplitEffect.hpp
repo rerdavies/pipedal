@@ -291,10 +291,11 @@ namespace pipedal
 
         virtual uint8_t *GetAtomInputBuffer() { return nullptr; }
         virtual uint8_t *GetAtomOutputBuffer() { return nullptr; }
-        virtual void RequestParameter(LV2_URID uridUri) {}
-        virtual void GatherParameter(RealtimeParameterRequest *pRequest) {}
+        virtual void RequestPatchProperty(LV2_URID uridUri) {}
+        virtual void GatherPatchProperties(RealtimePatchPropertyRequest *pRequest) {}
         virtual std::string AtomToJson(uint8_t *pAtom) { return ""; }
         virtual std::string GetAtomObjectType(uint8_t*pData) { return "not implemented";}
+        virtual bool GetLv2State(Lv2PluginState*state) { return false; }
 
         virtual bool IsVst3() const { return false; }
 
@@ -670,7 +671,6 @@ namespace pipedal
                 }
             }
         }
-
         void PostMix(uint32_t frames)
         {
             if (this->outputBuffers.size() == 1)

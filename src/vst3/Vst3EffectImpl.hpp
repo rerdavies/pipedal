@@ -86,7 +86,7 @@ namespace pipedal
 
 		virtual void CheckSync();
 
-		//- PiPedalHost Interfaces.
+		//- PluginHost Interfaces.
 		virtual void SetControl(int index, float value);
 		virtual float GetControlValue(int index) const
 		{
@@ -130,7 +130,7 @@ namespace pipedal
 		virtual float *GetAudioOutputBuffer(int index) const { return buffers.outputs[index]; }
 		virtual void ResetAtomBuffers() {}
 		virtual void RequestParameter(LV2_URID uridUri) {}					// no vst equivalent.
-		virtual void GatherParameter(RealtimeParameterRequest *pRequest) {} // no vst equivalent.
+		virtual void GatherPatchProperties(RealtimePatchPropertyRequest *pRequest) {} // no vst equivalent.
 
 		virtual void SetAudioInputBuffer(int index, float *buffer)
 		{

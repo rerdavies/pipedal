@@ -23,6 +23,7 @@
  */
 
 #include "pch.h"
+#include "util.hpp"
 #include <bit>
 #include <memory>
 #include "ss.hpp"
@@ -1367,6 +1368,7 @@ namespace pipedal
         }
         void AudioThread()
         {
+            SetThreadName("alsaDriver");
             try
             {
 #if defined(__WIN32)

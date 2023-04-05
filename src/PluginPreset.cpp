@@ -27,6 +27,7 @@ JSON_MAP_BEGIN(PluginPreset)
     JSON_MAP_REFERENCE(PluginPreset,instanceId)
     JSON_MAP_REFERENCE(PluginPreset,label)
     JSON_MAP_REFERENCE(PluginPreset,controlValues)
+    JSON_MAP_REFERENCE(PluginPreset,state)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(PluginPresets)

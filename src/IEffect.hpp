@@ -20,10 +20,13 @@
 #pragma once 
 
 #include <lv2/urid.lv2/urid.h>
+#include <lv2/atom.lv2/atom.h>
+
 
 namespace pipedal {
-    class RealtimeParameterRequest;
+    class RealtimePatchPropertyRequest;
     class RealtimeRingBufferWriter;
+    class Lv2PluginState;
 
     class IEffect {
     public:
@@ -35,15 +38,11 @@ namespace pipedal {
         virtual void SetBypass(bool enable)  = 0;
         virtual float GetOutputControlValue(int controlIndex) const = 0;
 
-
-
         virtual int GetNumberOfInputAudioPorts() const = 0;
         virtual int GetNumberOfOutputAudioPorts() const = 0;
         virtual float *GetAudioInputBuffer(int index) const = 0;
         virtual float *GetAudioOutputBuffer(int index) const = 0;
         virtual void ResetAtomBuffers() = 0;
-        virtual void RequestParameter(LV2_URID uridUri) = 0;
-        virtual void GatherParameter(RealtimeParameterRequest*pRequest) = 0;
 
         //virtual std::string AtomToJson(uint8_t*pAtom) = 0;
         //virtual std::string GetAtomObjectType(uint8_t*pData) = 0;
@@ -59,5 +58,6 @@ namespace pipedal {
         virtual void Deactivate() = 0;
 
         virtual bool IsVst3() const = 0;
+        virtual bool GetLv2State(Lv2PluginState*state) = 0;
     };
 } //namespace

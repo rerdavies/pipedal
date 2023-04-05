@@ -26,7 +26,7 @@ import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel,MonitorPortHandle } from "./PiPedalModel";
-import { PedalBoardItem } from './PedalBoard';
+import { PedalboardItem } from './Pedalboard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
@@ -37,7 +37,7 @@ const styles = (theme: Theme) => createStyles({
 
 interface ToobMLProps extends WithStyles<typeof styles> {
     instanceId: number;
-    item: PedalBoardItem;
+    item: PedalboardItem;
 
 }
 interface ToobMLState {
@@ -135,8 +135,8 @@ const ToobMLView =
 class ToobMLViewFactory implements IControlViewFactory {
     uri: string = "http://two-play.com/plugins/toob-ml";
 
-    Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<ToobMLView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+    Create(model: PiPedalModel, pedalboardItem: PedalboardItem): React.ReactNode {
+        return (<ToobMLView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
     }
 
 

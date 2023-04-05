@@ -23,7 +23,7 @@
 #include <memory>
 #include "json.hpp"
 #include "PluginType.hpp"
-#include "PedalBoard.hpp"
+#include "Pedalboard.hpp"
 #include <lilv/lilv.h>
 #include "MapFeature.hpp"
 #include "LogFeature.hpp"
@@ -31,6 +31,7 @@
 #include <filesystem>
 #include <cmath>
 #include <string>
+#include "IHost.hpp"
 
 #include "lv2.h"
 #include "Units.hpp"
@@ -40,14 +41,15 @@
 #include "PiPedalConfiguration.hpp"
 #include "AutoLilvNode.hpp"
 #include "PiPedalUI.hpp"
+#include "MapPathFeature.hpp"
 
 namespace pipedal
 {
 
     // forward declarations
     class Lv2Effect;
-    class Lv2PedalBoard;
-    class PiPedalHost;
+    class Lv2Pedalboard;
+    class PluginHost;
     class JackConfiguration;
     class JackChannelSelection;
 
@@ -82,7 +84,7 @@ namespace pipedal
     class Lv2PluginClass
     {
     public:
-        friend class PiPedalHost;
+        friend class PluginHost;
 
     private:
         Lv2PluginClass *parent_ = nullptr; // NOT SERIALIZED!
@@ -92,7 +94,7 @@ namespace pipedal
         PluginType plugin_type_;
         std::vector<std::shared_ptr<Lv2PluginClass>> children_;
 
-        friend class ::pipedal::PiPedalHost;
+        friend class ::pipedal::PluginHost;
         // hide copy constructor.
         Lv2PluginClass(const Lv2PluginClass &other)
         {
@@ -151,7 +153,7 @@ namespace pipedal
         {
             return classes_;
         }
-        bool is_a(PiPedalHost *lv2Plugins, const char *classUri) const;
+        bool is_a(PluginHost *lv2Plugins, const char *classUri) const;
 
         static json_map::storage_type<Lv2PluginClasses> jmap;
     };
@@ -186,7 +188,7 @@ namespace pipedal
     class Lv2PortInfo
     {
     public:
-        Lv2PortInfo(PiPedalHost *lv2Host, const LilvPlugin *pPlugin, const LilvPort *pPort);
+        Lv2PortInfo(PluginHost *lv2Host, const LilvPlugin *pPlugin, const LilvPort *pPort);
 
     private:
         friend class Lv2PluginInfo;
@@ -303,7 +305,7 @@ namespace pipedal
     public:
         Lv2PortInfo() {}
         ~Lv2PortInfo() = default;
-        bool is_a(PiPedalHost *lv2Plugins, const char *classUri);
+        bool is_a(PluginHost *lv2Plugins, const char *classUri);
 
         static json_map::storage_type<Lv2PortInfo> jmap;
     };
@@ -321,7 +323,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(name);
 
         Lv2PortGroup() {}
-        Lv2PortGroup(PiPedalHost *lv2Host, const std::string &groupUri);
+        Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri);
 
         static json_map::storage_type<Lv2PortGroup> jmap;
     };
@@ -329,14 +331,15 @@ namespace pipedal
     class Lv2PluginInfo
     {
     private:
-        friend class PiPedalHost;
+        friend class PluginHost;
 
     public:
-        Lv2PluginInfo(PiPedalHost *lv2Host, LilvWorld *pWorld, const LilvPlugin *);
+        Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvPlugin *);
         Lv2PluginInfo() {}
 
     private:
-        bool HasFactoryPresets(PiPedalHost *lv2Host, const LilvPlugin *plugin);
+        bool HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin);
+        std::string bundle_path_;
         std::string uri_;
         std::string name_;
         std::string plugin_class_;
@@ -358,6 +361,7 @@ namespace pipedal
         bool IsSupportedFeature(const std::string &feature) const;
 
     public:
+        LV2_PROPERTY_GETSET(bundle_path)
         LV2_PROPERTY_GETSET(uri)
         LV2_PROPERTY_GETSET(name)
         LV2_PROPERTY_GETSET(plugin_class)
@@ -537,7 +541,7 @@ namespace pipedal
     {
     public:
         Lv2PluginUiInfo() {}
-        Lv2PluginUiInfo(PiPedalHost *pPlugins, const Lv2PluginInfo *plugin);
+        Lv2PluginUiInfo(PluginHost *pPlugins, const Lv2PluginInfo *plugin);
 
     private:
         std::string uri_;
@@ -555,7 +559,8 @@ namespace pipedal
 
         std::vector<Lv2PluginUiControlPort> controls_;
         std::vector<Lv2PluginUiPortGroup> port_groups_;
-        std::vector<PiPedalFileProperty::ptr> fileProperties_;
+        std::vector<UiFileProperty::ptr> fileProperties_;
+        std::vector<UiPortNotification::ptr> uiPortNotifications_;
 
     public:
         LV2_PROPERTY_GETSET(uri)
@@ -573,30 +578,9 @@ namespace pipedal
         LV2_PROPERTY_GETSET(port_groups)
         LV2_PROPERTY_GETSET_SCALAR(is_vst3)
         LV2_PROPERTY_GETSET(fileProperties)
+        LV2_PROPERTY_GETSET(uiPortNotifications)
 
         static json_map::storage_type<Lv2PluginUiInfo> jmap;
-    };
-
-    class IHost
-    {
-    public:
-        virtual LilvWorld *getWorld() = 0;
-        virtual LV2_URID_Map *GetLv2UridMap() = 0;
-        virtual LV2_URID GetLv2Urid(const char *uri) = 0;
-        virtual std::string Lv2UriudToString(LV2_URID urid) = 0;
-
-        virtual LV2_Feature *const *GetLv2Features() const = 0;
-        virtual double GetSampleRate() const = 0;
-        virtual void SetMaxAudioBufferSize(size_t size) = 0;
-        virtual size_t GetMaxAudioBufferSize() const = 0;
-        virtual size_t GetAtomBufferSize() const = 0;
-
-        virtual bool HasMidiInputChannel() const = 0;
-        virtual int GetNumberOfInputAudioChannels() const = 0;
-        virtual int GetNumberOfOutputAudioChannels() const = 0;
-        virtual std::shared_ptr<Lv2PluginInfo> GetPluginInfo(const std::string &uri) const = 0;
-
-        virtual IEffect *CreateEffect(PedalBoardItem &pedalBoard) = 0;
     };
 
 }
@@ -608,7 +592,7 @@ namespace pipedal
 namespace pipedal
 {
 
-    class PiPedalHost : private IHost
+    class PluginHost : private IHost
     {
     private:
 #if ENABLE_VST3
@@ -618,6 +602,7 @@ namespace pipedal
         friend class pipedal::AutoLilvNode;
         friend class pipedal::PiPedalUI;
         static const char *RDFS_COMMENT_URI;
+
     public:
         class LilvUris
         {
@@ -648,7 +633,6 @@ namespace pipedal
             AutoLilvNode pipedalUI__fileProperties;
             AutoLilvNode pipedalUI__directory;
             AutoLilvNode pipedalUI__patchProperty;
-            AutoLilvNode pipedalUI__defaultFile;
 
             AutoLilvNode pipedalUI__fileProperty;
 
@@ -665,11 +649,18 @@ namespace pipedal
 
             AutoLilvNode appliesTo;
             AutoLilvNode isA;
+
+            AutoLilvNode ui__portNotification;
+            AutoLilvNode ui__plugin;
+            AutoLilvNode ui__protocol;
+            AutoLilvNode ui__floatProtocol;
+            AutoLilvNode ui__peakProtocol;
+            AutoLilvNode ui__portIndex;
+            AutoLilvNode lv2__symbol;
         };
         LilvUris lilvUris;
 
     private:
-
         bool vst3Enabled = true;
 
         LilvNode *get_comment(const std::string &uri);
@@ -683,10 +674,11 @@ namespace pipedal
 
         std::string vst3CachePath;
 
-        LV2_Feature *const *lv2Features = nullptr;
+        std::vector<const LV2_Feature *> lv2Features;
         MapFeature mapFeature;
         LogFeature logFeature;
         OptionsFeature optionsFeature;
+        MapPathFeature mapPathFeature;
 
         static void fn_LilvSetPortValueFunc(const char *port_symbol,
                                             void *user_data,
@@ -714,21 +706,21 @@ namespace pipedal
         // IHost implementation
 
     public:
-        void LogError(const std::string&message)
+        void LogError(const std::string &message)
         {
-            logFeature.LogError("%s",message.c_str());
+            logFeature.LogError("%s", message.c_str());
         }
-        void LogWarning(const std::string&message)
+        void LogWarning(const std::string &message)
         {
-            logFeature.LogWarning("%s",message.c_str());
+            logFeature.LogWarning("%s", message.c_str());
         }
-        void LogNote(const std::string&message)
+        void LogNote(const std::string &message)
         {
-            logFeature.LogNote("%s",message.c_str());
+            logFeature.LogNote("%s", message.c_str());
         }
-        void LogTrace(const std::string&message)
+        void LogTrace(const std::string &message)
         {
-            logFeature.LogTrace("%s",message.c_str());
+            logFeature.LogTrace("%s", message.c_str());
         }
         virtual LilvWorld *getWorld()
         {
@@ -736,33 +728,41 @@ namespace pipedal
         }
 
     private:
+        std::shared_ptr<HostWorkerThread> pHostWorkerThread;
+        // IHost implementation.
         virtual void SetMaxAudioBufferSize(size_t size) { maxBufferSize = size; }
         virtual size_t GetMaxAudioBufferSize() const { return maxBufferSize; }
         virtual size_t GetAtomBufferSize() const { return maxAtomBufferSize; }
         virtual bool HasMidiInputChannel() const { return hasMidiInputChannel; }
         virtual int GetNumberOfInputAudioChannels() const { return numberOfAudioInputChannels; }
         virtual int GetNumberOfOutputAudioChannels() const { return numberOfAudioOutputChannels; }
-        virtual LV2_Feature *const *GetLv2Features() const { return this->lv2Features; }
+        virtual LV2_Feature *const *GetLv2Features() const { return (LV2_Feature *const *)&(this->lv2Features[0]); }
+        virtual std::shared_ptr<HostWorkerThread> GetHostWorkerThread();
+
+    public:
+        virtual MapFeature &GetMapFeature() { return this->mapFeature; }
+
+    private:
         virtual LV2_URID_Map *GetLv2UridMap()
         {
             return this->mapFeature.GetMap();
         }
         static void PortValueCallback(const char *symbol, void *user_data, const void *value, uint32_t size, uint32_t type);
 
-        virtual IEffect *CreateEffect(PedalBoardItem &pedalBoardItem);
+        virtual IEffect *CreateEffect(PedalboardItem &pedalboardItem);
         void LoadPluginClassesFromLilv();
         void AddJsonClassesToMap(std::shared_ptr<Lv2PluginClass> pluginClass);
 
     public:
-        PiPedalHost();
-
+        PluginHost();
+        void SetPluginStoragePath(const std::filesystem::path &path);
         void SetConfiguration(const PiPedalConfiguration &configuration);
 
-        virtual ~PiPedalHost();
+        virtual ~PluginHost();
 
         IHost *asIHost() { return this; }
 
-        virtual Lv2PedalBoard *CreateLv2PedalBoard(PedalBoard &pedalBoard);
+        virtual Lv2Pedalboard *CreateLv2Pedalboard(Pedalboard &pedalboard);
 
         void setSampleRate(double sampleRate)
         {
@@ -792,19 +792,19 @@ namespace pipedal
         static constexpr const char *DEFAULT_LV2_PATH = "/usr/lib/lv2";
 
         void LoadPluginClassesFromJson(std::filesystem::path jsonFile);
-        void Load(const char *lv2Path = PiPedalHost::DEFAULT_LV2_PATH);
+        void Load(const char *lv2Path = PluginHost::DEFAULT_LV2_PATH);
 
         virtual LV2_URID GetLv2Urid(const char *uri)
         {
             return this->mapFeature.GetUrid(uri);
         }
-        virtual std::string Lv2UriudToString(LV2_URID urid)
+        virtual std::string Lv2UridToString(LV2_URID urid)
         {
             return this->mapFeature.UridToString(urid);
         }
 
         PluginPresets GetFactoryPluginPresets(const std::string &pluginUri);
-        std::vector<ControlValue> LoadFactoryPluginPreset(PedalBoardItem *pedalBoardItem,
+        std::vector<ControlValue> LoadFactoryPluginPreset(PedalboardItem *pedalboardItem,
                                                           const std::string &presetUri);
     };
 

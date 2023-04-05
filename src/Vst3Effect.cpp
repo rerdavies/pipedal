@@ -24,7 +24,7 @@
 
 #include "ss.hpp"
 #include <assert.h>
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 
 #include "vst3/Vst3Host.hpp"
 #include "Lv2Log.hpp"
@@ -60,7 +60,7 @@
 #include "Vst3MidiToEvent.hpp"
 
 #include "vst3/Vst3EffectImpl.hpp"
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 
 using namespace pipedal;
 

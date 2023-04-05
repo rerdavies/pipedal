@@ -22,33 +22,20 @@
  * SOFTWARE.
  */
 
-import React, { TouchEvent, PointerEvent, ReactNode, Component, SyntheticEvent } from 'react';
+import React, { Component, SyntheticEvent } from 'react';
 import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
-import { PiPedalFileProperty, PiPedalFileType } from './Lv2Plugin';
+import { PiPedalFileProperty } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
-import Input from '@mui/material/Input';
-import Select from '@mui/material/Select';
-import Switch from '@mui/material/Switch';
-import Utility, { nullCast } from './Utility';
-import MenuItem from '@mui/material/MenuItem';
-import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, ListenHandle, StateChangedHandle } from './PiPedalModel';
 import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 
-const MIN_ANGLE = -135;
-const MAX_ANGLE = 135;
-const FONT_SIZE = "0.8em";
 
 
 
-const SELECTED_OPACITY = 0.8;
-const DEFAULT_OPACITY = 0.6;
-const RANGE_SCALE = 120; // 120 pixels to move from 0 to 1.
-const FINE_RANGE_SCALE = RANGE_SCALE * 10; // 1200 pixels to move from 0 to 1.
-const ULTRA_FINE_RANGE_SCALE = RANGE_SCALE * 50; // 12000 pixels to move from 0 to 1.
 
 
 export const StandardItemSize = { width: 80, height: 140 }
@@ -88,13 +75,12 @@ const styles = (theme: Theme) => createStyles({
 export interface FilePropertyControlProps extends WithStyles<typeof styles> {
     instanceId: number;
     fileProperty: PiPedalFileProperty;
-    value: string;
-    onFileClick: (fileProperty:  PiPedalFileProperty,value: string) => void;
+    onFileClick: (fileProperty: PiPedalFileProperty, value: string) => void;
     theme: Theme;
 }
 type FilePropertyControlState = {
     error: boolean;
-    showDialog: boolean;
+    value: string;
 };
 
 const FilePropertyControl =
@@ -110,13 +96,75 @@ const FilePropertyControl =
 
                 this.state = {
                     error: false,
-                    showDialog: false
+                    value: "",
                 };
                 this.model = PiPedalModelFactory.getInstance();
+                if (this.props.fileProperty.patchProperty !== "") {
+                    this.subscribeToPropertyGet();
+                }
             }
 
-            componentWillUnmount() {
+            private propertyGetHandle?: ListenHandle;
+
+            refreshPatchProperty()
+            {
+                this.model.getPatchProperty(this.props.instanceId, this.props.fileProperty.patchProperty)
+                    .then(
+                        (json: any) => {
+                            if (json && json.otype_ === "Path") {
+                                let path = json.value as string;
+                                this.setState({ value: path });
+                            }
+                        }
+                    )
+                    .catch(
+                        (error: Error) => {
+                            this.model.showAlert(error.toString());
+                        }
+                    );
+
             }
+
+            stateChangedHandle?: StateChangedHandle;
+
+            subscribeToPropertyGet() {
+                // this.propertyGetHandle = this.model.listenForAtomOutput(this.props.instanceId,(instanceId,atomOutput)=>{
+                //     // PARSE THE OBJECT!
+                //     // this.setState({value: atomOutput?.value as string});
+                // });
+                if (this.stateChangedHandle)
+                {
+                    this.model.removeLv2StateChangedListener(this.stateChangedHandle);
+                }
+                this.refreshPatchProperty();
+                this.stateChangedHandle = this.model.addLv2StateChangedListener(
+                    this.props.instanceId,
+                    () => {
+                        this.refreshPatchProperty();
+                    });
+            }
+            unsubscribeToPropertyGet() {
+                if (this.stateChangedHandle)
+                {
+                    this.model.removeLv2StateChangedListener(this.stateChangedHandle);
+                }
+            }
+            componentDidMount() {
+                this.subscribeToPropertyGet();
+            }
+            componentWillUnmount() {
+                this.unsubscribeToPropertyGet();
+            }
+            componentDidUpdate(prevProps: Readonly<FilePropertyControlProps>, prevState: Readonly<FilePropertyControlState>, snapshot?: any): void {
+                if (prevProps.fileProperty.patchProperty !== this.props.fileProperty.patchProperty
+                    || prevProps.instanceId !== this.props.instanceId) {
+                    this.setState({ value: "" });
+                    this.unsubscribeToPropertyGet();
+                    this.subscribeToPropertyGet();
+                }
+            }
+
+
             inputChanged: boolean = false;
 
             onDrag(e: SyntheticEvent) {
@@ -124,40 +172,36 @@ const FilePropertyControl =
             }
 
             onFileClick() {
-                this.props.onFileClick(this.props.fileProperty,this.props.value);
+                this.props.onFileClick(this.props.fileProperty, this.state.value);
             }
             private fileNameOnly(path: string): string {
                 let slashPos = path.lastIndexOf('/');
-                if (slashPos < 0)
-                {
+                if (slashPos < 0) {
                     slashPos = 0;
                 } else {
                     ++slashPos;
                 }
                 let extPos = path.lastIndexOf('.');
-                if (extPos < 0 || extPos < slashPos)
-                {
+                if (extPos < 0 || extPos < slashPos) {
                     extPos = path.length;
-                } 
+                }
 
-                return path.substring(slashPos,extPos);
+                return path.substring(slashPos, extPos);
 
-            }   
+            }
             render() {
-                let classes = this.props.classes;
+                //let classes = this.props.classes;
                 let fileProperty = this.props.fileProperty;
 
-                let value = this.props.value;
-                if (!value || value.length === 0)
-                {
+                let value = this.fileNameOnly(this.state.value);
+                if (!value || value.length === 0) {
                     value = "\u00A0";
                 }
-                value = this.fileNameOnly(value);
 
                 let item_width = 264;
 
                 return (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", width: item_width, margin: 8, paddingLeft: 8}}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", width: item_width, margin: 8, paddingLeft: 8 }}>
                         {/* TITLE SECTION */}
                         <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
                             <Typography variant="caption" display="block" noWrap style={{
@@ -169,13 +213,13 @@ const FilePropertyControl =
 
                         <div style={{ flex: "0 0 auto", width: "100%" }}>
 
-                            <ButtonBase style={{ width: "100%", borderRadius: "4px 4px 0px 0px", overflow: "hidden",marginTop: 8}} onClick={()=> {this.onFileClick()}} >
-                                <div style={{width: "100%", background: "rgba(0,0,0,0.07)", borderRadius: "4px 4px 0px 0px"}}>
+                            <ButtonBase style={{ width: "100%", borderRadius: "4px 4px 0px 0px", overflow: "hidden", marginTop: 8 }} onClick={() => { this.onFileClick() }} >
+                                <div style={{ width: "100%", background: "rgba(0,0,0,0.07)", borderRadius: "4px 4px 0px 0px" }}>
                                     <div style={{ display: "flex", alignItems: "center", flexFlow: "row nowrap" }}>
-                                        <Typography noWrap={true} style={{ flex: "1 1 100%", textAlign: "start", verticalAlign: "center", paddingTop: 4,paddingBottom: 4,paddingLeft: 4}}
+                                        <Typography noWrap={true} style={{ flex: "1 1 100%", textAlign: "start", verticalAlign: "center", paddingTop: 4, paddingBottom: 4, paddingLeft: 4 }}
                                             variant='caption'
-                                            >{value}</Typography>
-                                        <MoreHorizIcon style={{ flex: "0 0 auto", width: "16px", height: "16px", verticalAlign: "center",opacity: 0.5, marginRight: 4 }} />
+                                        >{value}</Typography>
+                                        <MoreHorizIcon style={{ flex: "0 0 auto", width: "16px", height: "16px", verticalAlign: "center", opacity: 0.5, marginRight: 4 }} />
                                     </div>
                                     <div style={{ height: "1px", width: "100%", background: "black" }}>&nbsp;</div>
                                 </div>

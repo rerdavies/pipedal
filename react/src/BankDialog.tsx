@@ -298,7 +298,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                 <img src="img/ic_bank.svg" className={classes.itemIcon} alt="" />
                             </div>
                             <div className={classes.itemLabel}>
-                                <Typography>
+                                <Typography noWrap>
                                     {bankEntry.name}
                                 </Typography>
                             </div>
@@ -410,7 +410,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                     >
                                         <ArrowBackIcon />
                                     </IconButton>
-                                    <Typography variant="h6" className={classes.dialogTitle}>
+                                    <Typography noWrap variant="h6" className={classes.dialogTitle}>
                                         Banks
                                     </Typography>
                                     <IconButton color="inherit" onClick={(e) => this.showActionBar(true)} >
@@ -433,7 +433,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                         </IconButton>
 
                                     )}
-                                    <Typography variant="h6" className={classes.dialogTitle}>
+                                    <Typography noWrap variant="h6" className={classes.dialogTitle}>
                                         Banks
                                     </Typography>
                                     {(this.state.banks.getEntry(this.state.selectedItem) != null)

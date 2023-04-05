@@ -32,6 +32,7 @@
 #include <map>
 #include <variant>
 #include <concepts>
+#include <limits>
 
 #define DECLARE_JSON_MAP(CLASSNAME) \
     static json_map::storage_type<CLASSNAME> jmap
@@ -277,7 +278,7 @@ namespace pipedal
         const char *CRLF;
 
     private:
-        bool allowNaN_ = true;
+        bool allowNaN_ = false;
         std::ostream &os;
         int indent_level;
         bool compressed;
@@ -311,7 +312,7 @@ namespace pipedal
             os << text;
         }
         using string_view = boost::string_view;
-        json_writer(std::ostream &os, bool compressed = true, bool allowNaN = true)
+        json_writer(std::ostream &os, bool compressed = true, bool allowNaN = false)
             : os(os), compressed(compressed), allowNaN_(allowNaN), indent_level(0)
         {
             this->CRLF = compressed ? "" : "\r\n";
@@ -377,9 +378,14 @@ namespace pipedal
         }
         void write(float f)
         {
-            if (allowNaN_ && (std::isnan(f) || std::isinf(f)))
+            if ((std::isnan(f) || std::isinf(f)))
             {
-                os << "NaN";
+                if (allowNaN_)
+                {
+                    os << "NaN";
+                } else {
+                    os << std::numeric_limits<float>::max();
+                }
             }
             else
             {
@@ -388,9 +394,14 @@ namespace pipedal
         }
         void write(double f)
         {
-            if (allowNaN_ && (std::isnan(f) || std::isinf(f)))
+            if ((std::isnan(f) || std::isinf(f)))
             {
-                os << "NaN";
+                if (allowNaN_)
+                {
+                    os << "NaN";
+                } else {
+                    os << std::numeric_limits<float>::max();
+                }
             }
             else
             {
@@ -440,6 +451,23 @@ namespace pipedal
                 os << "]";
             }
         }
+    void write(const std::vector<float> &value)
+        {
+            // simple types: all on same line.
+            os << "[ ";
+
+            if (value.size() >= 1)
+            {
+                write(value[0]);
+            }
+            for (size_t i = 1; i < value.size(); ++i)
+            {
+                os << ",";
+                write(value[i]);
+            }
+            os << "]";
+        }
+
         template <
             class Category,
             class T,
@@ -561,6 +589,14 @@ namespace pipedal
             }
         }
 
+        template<typename T>
+        requires IsJsonSerializable<T>
+        void write(T*obj)
+        {
+            writeRawWritable(*obj);
+        }
+
+
         template <typename T>
         void write(T *obj)
         {
@@ -573,6 +609,13 @@ namespace pipedal
             {
                 write(*obj);
             }
+        }
+
+        template<typename T>
+        requires IsJsonSerializable<T>
+        void write(T&obj)
+        {
+            writeRawWritable(obj);
         }
 
         template<typename T>
@@ -678,6 +721,8 @@ namespace pipedal
         }
 
     public:
+        void start_object() { consume('{');}
+        void end_object() { consume('}');}
         void consume(char expected);
         void consumeToken(const char *expectedToken, const char *errorMessage);
         int peek()
@@ -685,7 +730,16 @@ namespace pipedal
             skip_whitespace();
             return is_.peek();
         }
+        template<typename U>
+        void read_member(const std::string&name,U *value)
+        {
+            std::string v;
+            read(&v);
+            if (v != name) throw std::logic_error("Expecting property '" + name + "'");
+            consume(':');
+            read(value);
 
+        }
     public:
         std::string read_string();
 

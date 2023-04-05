@@ -20,8 +20,8 @@
 
 #pragma once
 
-#include "PiPedalHost.hpp"
-#include "PedalBoard.hpp"
+#include "PluginHost.hpp"
+#include "Pedalboard.hpp"
 #include <lilv/lilv.h>
 #include "BufferPool.hpp"
 
@@ -32,6 +32,8 @@
 #include "lv2/log.lv2/logger.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
 #include "lv2/atom.lv2/forge.h"
+#include "AtomBuffer.hpp"
+#include "StateInterface.hpp"
 
 
 namespace pipedal
@@ -42,6 +44,12 @@ namespace pipedal
     class Lv2Effect : public IEffect
     {
     private:
+
+        std::unique_ptr<StateInterface> stateInterface;
+        void RestoreState(const PedalboardItem&pedalboardItem);
+
+        std::map<std::string,AtomBuffer> patchPropertyPrototypes;
+
         IHost *pHost = nullptr;
         int numberOfInputs = 0;
         int numberOfOutputs = 0;
@@ -73,6 +81,7 @@ namespace pipedal
         virtual std::string GetUri() const { return info->uri(); }
 
         std::vector<const Lv2PortInfo *> realtimePortInfo;
+
         void PreparePortIndices();
         void ConnectControlPorts();
         void AssignUnconnectedPorts();
@@ -83,68 +92,62 @@ namespace pipedal
         LV2_Atom_Forge outputForgeRt;
 
 
-        class Uris
+        class Urids
         {
         public:
-            Uris(IHost *pHost)
+            Urids(IHost *pHost)
             {
-                atom_Blank = pHost->GetLv2Urid(LV2_ATOM__Blank);
-                atom_Path = pHost->GetLv2Urid(LV2_ATOM__Path);
-                atom_float = pHost->GetLv2Urid(LV2_ATOM__Float);
-                atom_Double = pHost->GetLv2Urid(LV2_ATOM__Double);
-                atom_Int = pHost->GetLv2Urid(LV2_ATOM__Int);
-                atom_Long = pHost->GetLv2Urid(LV2_ATOM__Long);
-                atom_Bool = pHost->GetLv2Urid(LV2_ATOM__Bool);
-                atom_String = pHost->GetLv2Urid(LV2_ATOM__String);
-                atom_Vector = pHost->GetLv2Urid(LV2_ATOM__Vector);
-                atom_Object = pHost->GetLv2Urid(LV2_ATOM__Object);
+                atom__Chunk = pHost->GetLv2Urid(LV2_ATOM__Chunk);
+                atom__Path = pHost->GetLv2Urid(LV2_ATOM__Path);
+                atom__Float = pHost->GetLv2Urid(LV2_ATOM__Float);
+                atom__Double = pHost->GetLv2Urid(LV2_ATOM__Double);
+                atom__Int = pHost->GetLv2Urid(LV2_ATOM__Int);
+                atom__Long = pHost->GetLv2Urid(LV2_ATOM__Long);
+                atom__Bool = pHost->GetLv2Urid(LV2_ATOM__Bool);
+                atom__String = pHost->GetLv2Urid(LV2_ATOM__String);
+                atom__Vector = pHost->GetLv2Urid(LV2_ATOM__Vector);
+                atom__Object = pHost->GetLv2Urid(LV2_ATOM__Object);
 
 
-                atom_Sequence = pHost->GetLv2Urid(LV2_ATOM__Sequence);
-                atom_Chunk = pHost->GetLv2Urid(LV2_ATOM__Chunk);
-                atom_URID = pHost->GetLv2Urid(LV2_ATOM__URID);
-                atom_eventTransfer = pHost->GetLv2Urid(LV2_ATOM__eventTransfer);
-                patch_Get = pHost->GetLv2Urid(LV2_PATCH__Get);
-                patch_Set = pHost->GetLv2Urid(LV2_PATCH__Set);
-                patch_Put = pHost->GetLv2Urid(LV2_PATCH__Put);
-                patch_body = pHost->GetLv2Urid(LV2_PATCH__body);
-                patch_subject = pHost->GetLv2Urid(LV2_PATCH__subject);
-                patch_property = pHost->GetLv2Urid(LV2_PATCH__property);
-                //patch_accept = pHost->GetLv2Urid(LV2_PATCH__accept);
-                patch_value = pHost->GetLv2Urid(LV2_PATCH__value);
-                unitsFrame = pHost->GetLv2Urid(LV2_UNITS__frame);
+                atom__Sequence = pHost->GetLv2Urid(LV2_ATOM__Sequence);
+                atom__URID = pHost->GetLv2Urid(LV2_ATOM__URID);
+                patch__Get = pHost->GetLv2Urid(LV2_PATCH__Get);
+                patch__Set = pHost->GetLv2Urid(LV2_PATCH__Set);
+                patch__Put = pHost->GetLv2Urid(LV2_PATCH__Put);
+                patch__body = pHost->GetLv2Urid(LV2_PATCH__body);
+                patch__subject = pHost->GetLv2Urid(LV2_PATCH__subject);
+                patch__property = pHost->GetLv2Urid(LV2_PATCH__property);
+                patch__value = pHost->GetLv2Urid(LV2_PATCH__value);
+                units__frame = pHost->GetLv2Urid(LV2_UNITS__frame);
+                state__StateChanged = pHost->GetLv2Urid(LV2_STATE__StateChanged);
 
             }
-            //LV2_URID patch_accept;
-
-            LV2_URID unitsFrame;
+            LV2_URID atom__Chunk;
+            LV2_URID units__frame;
             LV2_URID pluginUri;
-            LV2_URID atom_Blank;
-            LV2_URID atom_Bool;
-            LV2_URID atom_float;
-            LV2_URID atom_Double;
-            LV2_URID atom_Int;
-            LV2_URID atom_Long;
-            LV2_URID atom_String;
-            LV2_URID atom_Object;
-            LV2_URID atom_Vector;
-            LV2_URID atom_Path;
-            LV2_URID atom_Sequence;
-            LV2_URID atom_Chunk;
-            LV2_URID atom_URID;
-            LV2_URID atom_eventTransfer;
-            LV2_URID midi_Event;
-            LV2_URID patch_Get;
-            LV2_URID patch_Set;
-            LV2_URID patch_Put;
-            LV2_URID patch_body;
-            LV2_URID patch_subject;
-            LV2_URID patch_property;
-            LV2_URID patch_value;
-            LV2_URID param_uiState;
+            LV2_URID atom__Bool;
+            LV2_URID atom__Float;
+            LV2_URID atom__Double;
+            LV2_URID atom__Int;
+            LV2_URID atom__Long;
+            LV2_URID atom__String;
+            LV2_URID atom__Object;
+            LV2_URID atom__Vector;
+            LV2_URID atom__Path;
+            LV2_URID atom__Sequence;
+            LV2_URID atom__URID;
+            LV2_URID midi__Event;
+            LV2_URID patch__Get;
+            LV2_URID patch__Set;
+            LV2_URID patch__Put;
+            LV2_URID patch__body;
+            LV2_URID patch__subject;
+            LV2_URID patch__property;
+            LV2_URID patch__value;
+            LV2_URID state__StateChanged;
         };
 
-        Uris uris;
+        Urids urids;
 
         uint64_t instanceId;
         BufferPool bufferPool;
@@ -166,11 +169,13 @@ namespace pipedal
 
         void BypassTo(float value);
 
-
-        virtual void RequestParameter(LV2_URID uridUri);
-        virtual void GatherParameter(RealtimeParameterRequest*pRequest);
+    public:
+        virtual bool GetLv2State(Lv2PluginState*state);
+        virtual void RequestPatchProperty(LV2_URID uridUri);
+        virtual void SetPatchProperty(LV2_URID uridUri,size_t size, LV2_Atom*value);
+        virtual void GatherPatchProperties(RealtimePatchPropertyRequest*pRequest);
         virtual bool IsVst3() const { return false; }
-        virtual void RelayOutputMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter);
+        virtual void RelayPatchSetMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter);
 
         virtual uint8_t*GetAtomInputBuffer() {
             if (this->inputAtomBuffers.size() == 0) return nullptr;
@@ -188,7 +193,7 @@ namespace pipedal
         Lv2Effect(
             IHost *pHost,
             const std::shared_ptr<Lv2PluginInfo> &info,
-            const PedalBoardItem &pedalBoardItem);
+            const PedalboardItem &pedalboardItem);
         ~Lv2Effect();
 
 
@@ -228,6 +233,7 @@ namespace pipedal
                 controlValues[index] = value;
             }
         }
+
         virtual float GetControlValue(int index) const {
             if (index == -1) 
             {

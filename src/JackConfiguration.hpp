@@ -37,6 +37,7 @@ namespace pipedal
         std::string errorStatus_;
 
         bool isRestarting_ = false;
+        bool isOnboarding_ = true;
 
         uint32_t sampleRate_ = 48000;
         size_t blockLength_ = 1024;
@@ -54,13 +55,16 @@ namespace pipedal
         void JackInitialize(); // from jack server instance.
         ~JackConfiguration();
         bool isValid() const { return isValid_;}
+        bool isOnboarding() const { return isOnboarding_;}
+        void isOnboarding(bool value) { isOnboarding_ = value; }
         bool isRestarting() const { return isRestarting_; }
-        void SetIsRestarting(bool value) { isRestarting_ = value; }
-        uint32_t GetSampleRate() const { return sampleRate_; }
-        size_t GetBlockLength() const { return blockLength_; }
-        size_t GetMidiBufferSize() const { return midiBufferSize_;}
-        double GetMaxAllowedMidiDelta() const { return maxAllowedMidiDelta_; }
-        void SetErrorStatus(const std::string&message) { this->errorStatus_ = message; }
+        void isRestarting(bool value) { isRestarting_ = value; }
+
+        uint32_t sampleRate() const { return sampleRate_; }
+        size_t blockLength() const { return blockLength_; }
+        size_t midiBufferSize() const { return midiBufferSize_;}
+        double maxAllowedMidiDelta() const { return maxAllowedMidiDelta_; }
+        void setErrorStatus(const std::string&message) { this->errorStatus_ = message; }
 
         const std::vector<std::string> &GetInputAudioPorts() const { return inputAudioPorts_; }
         const std::vector<std::string> &GetOutputAudioPorts() const { return outputAudioPorts_; }

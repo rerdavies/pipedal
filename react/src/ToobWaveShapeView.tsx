@@ -128,7 +128,7 @@ const ToobWaveShapeView =
                     data: []
                 };
 
-                this.onPedalBoardChanged = this.onPedalBoardChanged.bind(this);
+                this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
                 this.onStateChanged = this.onStateChanged.bind(this);
                 this.onControlValueChanged = this.onControlValueChanged.bind(this);
                 this.isReady = this.model.state.get() === State.Ready;
@@ -147,7 +147,7 @@ const ToobWaveShapeView =
                     }
                 }
             }
-            onPedalBoardChanged() {
+            onPedalboardChanged() {
                 this.updateWaveShape();
             }
             _valueChangedHandle?: ControlValueChangedHandle;
@@ -158,7 +158,7 @@ const ToobWaveShapeView =
             componentDidMount() {
                 this.mounted = true;
                 this.model.state.addOnChangedHandler(this.onStateChanged);
-                this.model.pedalBoard.addOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
                 this._valueChangedHandle = this.model.addControlValueChangeListener(
                     this.props.instanceId,
                     this.onControlValueChanged);
@@ -180,7 +180,7 @@ const ToobWaveShapeView =
                     this._valueChangedHandle = undefined;
                 }
                 this.model.state.removeOnChangedHandler(this.onStateChanged);
-                this.model.pedalBoard.removeOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
             }
 
             onControlValueChanged(key: string, value: number) {
@@ -230,21 +230,27 @@ const ToobWaveShapeView =
                     return;
                 }
                 this.requestOutstanding = true;
-                this.model.getLv2Parameter<number[]>(this.props.instanceId, WAVESHAPE_VECTOR_URI + this.props.controlNumber)
-                    .then((data) => {
-                        this.onWaveShapeUpdated(data);
-                        if (this.requestDeferred) {
-                            Utility.delay(10) // take  breath
-                                .then(
-                                    () => {
-                                        this.requestOutstanding = false;
-                                        this.requestDeferred = false;
-                                        this.updateWaveShape();
-                                    }
+                this.model.getPatchProperty<any>(this.props.instanceId, WAVESHAPE_VECTOR_URI + this.props.controlNumber)
+                    .then((json) => {
+                        if (!this.mounted) return;
+                        
+                        if (json.otype_ === "Vector" && json.vtype_ === "Float")
+                        {
+                            let data = json.value;
+                            this.onWaveShapeUpdated(data);
+                            if (this.requestDeferred) {
+                                Utility.delay(10) // take  breath
+                                    .then(
+                                        () => {
+                                            this.requestOutstanding = false;
+                                            this.requestDeferred = false;
+                                            this.updateWaveShape();
+                                        }
 
-                                );
-                        } else {
-                            this.requestOutstanding = false;
+                                    );
+                            } else {
+                                this.requestOutstanding = false;
+                            }
                         }
                     }).catch(error => {
                         // assume the connection was lost. We'll get saved by a reconnect.

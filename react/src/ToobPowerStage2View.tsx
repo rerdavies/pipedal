@@ -26,18 +26,19 @@ import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel, State,ListenHandle } from "./PiPedalModel";
-import { PedalBoardItem } from './PedalBoard';
+import { PedalboardItem } from './Pedalboard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
 import ToobWaveShapeView, {BidirectionalVuPeak} from './ToobWaveShapeView';
 
 
+let POWERSTAGE_UI_URI = "http://two-play.com/plugins/toob-power-stage-2#uiState";
 
 const styles = (theme: Theme) => createStyles({
 });
 
 interface ToobPowerstage2Props extends WithStyles<typeof styles> {
     instanceId: number;
-    item: PedalBoardItem;
+    item: PedalboardItem;
 
 }
 interface ToobPowerstage2State {
@@ -60,18 +61,11 @@ const ToobPowerstage2View =
                     uiState: [0,0,0,0,0,0,0,0]
                 }
                 this.onStateChanged = this.onStateChanged.bind(this);
-                this.onAtomOutput = this.onAtomOutput.bind(this);
             }
 
             listeningForOutput: boolean = false;
             atomOutputHandle?: ListenHandle;
 
-            onAtomOutput(instanceId: number, atomOutput: any): void {
-                if (atomOutput.lv2Type  === "http://two-play.com/plugins/toob-power-stage-2#uiState" )
-                {
-                    this.setState({uiState: atomOutput.data as number[]});
-                }
-            }
             maybeListenForAtomOutput(): void {
                 let listenForOutput = this.isReady && this.isControlMounted;
 
@@ -80,11 +74,22 @@ const ToobPowerstage2View =
                     this.listeningForOutput = listenForOutput;
                     if (listenForOutput)
                     {
-                        this.atomOutputHandle = this.model.listenForAtomOutput(this.props.instanceId,this.onAtomOutput);
+                        this.atomOutputHandle = this.model.monitorPatchProperty(
+                            this.props.instanceId,
+                            POWERSTAGE_UI_URI,
+                            (instanceId: number, propertyUri: string, json: any) => {
+                                if (json.otype_ === "Vector")
+                                {
+                                    this.setState({uiState: json.value as number[]});
+                                }
+                            });
+
+                        // discard the output as we will be getting it through monitorPatchProperty as well.
+                         this.model.getPatchProperty(this.props.instanceId,POWERSTAGE_UI_URI);
                     } else {
                         if (this.atomOutputHandle)
                         {
-                            this.model.cancelListenForAtomOutput(this.atomOutputHandle);
+                            this.model.cancelMonitorPatchProperty(this.atomOutputHandle);
                             this.atomOutputHandle = undefined;
                         }
 
@@ -180,8 +185,8 @@ const ToobPowerstage2View =
 class ToobPowerstage2ViewFactory implements IControlViewFactory {
     uri: string = "http://two-play.com/plugins/toob-power-stage-2";
 
-    Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<ToobPowerstage2View instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+    Create(model: PiPedalModel, pedalboardItem: PedalboardItem): React.ReactNode {
+        return (<ToobPowerstage2View instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
     }
 
 

@@ -32,7 +32,7 @@
 #include "public.sdk/source/vst/utility/uid.h"
 
 #include "vst3/Vst3Effect.hpp"
-#include "PedalBoard.hpp"
+#include "Pedalboard.hpp"
 
 
 namespace Steinberg
@@ -67,7 +67,7 @@ namespace Steinberg
 
 
         virtual std::unique_ptr<Vst3Effect> CreatePlugin(long instanceId,const std::string&url, IHost*pHost) = 0;
-        virtual std::unique_ptr<Vst3Effect> CreatePlugin(PedalBoardItem&pedalBoardItem, IHost*pHost) = 0;
+        virtual std::unique_ptr<Vst3Effect> CreatePlugin(PedalboardItem&pedalboardItem, IHost*pHost) = 0;
 
 
         static Ptr CreateInstance(const std::string &cacheFilePath = "");

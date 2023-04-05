@@ -48,7 +48,7 @@ add_executable(piddletest main.cpp pch.h UriTest.cpp JsonTest.cpp
     ../src/Lv2Log.hpp ../src/Lv2Log.cpp
     ../src/PluginType.hpp ../src/PluginType.cpp
     ../src/Lv2Effect.hpp ../src/Lv2Effect.cpp
-    ../src/Lv2PedalBoard.hpp ../src/Lv2PedalBoard.cpp
+    ../src/Lv2Pedalboard.hpp ../src/Lv2Pedalboard.cpp
 
     ../src/MapFeature.hpp ../src/MapFeature.cpp
     ../src/LogFeature.hpp ../src/LogFeature.cpp

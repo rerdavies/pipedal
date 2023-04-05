@@ -18,8 +18,8 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
-#include "PedalBoard.hpp"
-#include "PiPedalHost.hpp"
+#include "Pedalboard.hpp"
+#include "PluginHost.hpp"
 #include "Lv2Effect.hpp"
 #include "BufferPool.hpp"
 #include <functional>
@@ -31,15 +31,15 @@ namespace pipedal {
 
 
 class RealtimeVuBuffers;
-class RealtimeParameterRequest;
+class RealtimePatchPropertyRequest;
 class RealtimeRingBufferWriter;
 
-class Lv2PedalBoard {
+class Lv2Pedalboard {
     IHost *pHost = nullptr;
 
     BufferPool bufferPool;
-    std::vector<float*> pedalBoardInputBuffers;
-    std::vector<float*> pedalBoardOutputBuffers;
+    std::vector<float*> pedalboardInputBuffers;
+    std::vector<float*> pedalboardOutputBuffers;
 
     std::vector<std::shared_ptr<IEffect> > effects;
     std::vector<IEffect* > realtimeEffects; // std::shared_ptr is not thread-safe!!
@@ -81,21 +81,21 @@ class Lv2PedalBoard {
 
 
     std::vector<float*> PrepareItems(
-        std::vector<PedalBoardItem> & items,
+        std::vector<PedalboardItem> & items,
         std::vector<float*> inputBuffers
         );
 
-    void PrepareMidiMap(const PedalBoard&pedalBoard);
-    void PrepareMidiMap(const PedalBoardItem&pedalBoardItem);
+    void PrepareMidiMap(const Pedalboard&pedalboard);
+    void PrepareMidiMap(const PedalboardItem&pedalboardItem);
 
     std::vector<float*> AllocateAudioBuffers(int nChannels);
-    int CalculateChainInputs(const std::vector<float *> &inputBuffers, const std::vector<PedalBoardItem> &items);
+    int CalculateChainInputs(const std::vector<float *> &inputBuffers, const std::vector<PedalboardItem> &items);
     void AppendParameterRequest(uint8_t*atomBuffer, LV2_URID uridParameter);
 public:
-    Lv2PedalBoard() { }
-    ~Lv2PedalBoard() { }
+    Lv2Pedalboard() { }
+    ~Lv2Pedalboard() { }
 
-    void Prepare(IHost *pHost,PedalBoard&pedalBoard);
+    void Prepare(IHost *pHost,Pedalboard&pedalboard);
 
     std::vector<IEffect* > GetEffects() { return realtimeEffects; }
 
@@ -122,12 +122,12 @@ public:
     void ResetAtomBuffers();
 
 
-    void ProcessParameterRequests(RealtimeParameterRequest *pParameterRequests);
-    void GatherParameterRequests(RealtimeParameterRequest *pParameterRequests);
+    void ProcessParameterRequests(RealtimePatchPropertyRequest *pParameterRequests);
+    void GatherPatchProperties(RealtimePatchPropertyRequest *pParameterRequests);
 
 
-    std::vector<float*> &GetInputBuffers() { return this->pedalBoardInputBuffers;}
-    std::vector<float*> &GetoutputBuffers() { return this->pedalBoardOutputBuffers;}
+    std::vector<float*> &GetInputBuffers() { return this->pedalboardInputBuffers;}
+    std::vector<float*> &GetoutputBuffers() { return this->pedalboardOutputBuffers;}
 
 
 

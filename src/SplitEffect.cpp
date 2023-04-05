@@ -20,8 +20,8 @@
 #include "pch.h"
 #include "SplitEffect.hpp"
 
-#include "PiPedalHost.hpp"
-#include "PedalBoard.hpp"
+#include "PluginHost.hpp"
+#include "Pedalboard.hpp"
 
 using namespace pipedal;
 

@@ -14,6 +14,10 @@ include(FindPkgConfig)
 # Disabled, pending approval of Steinberg VST3 License.
 # Do not enable unless you have non-GPL3 access to the Steinberg 
 # SDK.
+#
+# Plus, there don't seem to be any VST3 plugins for linux, as it 
+# turns out. :-/ Status: not completely implemented due to lack 
+# of test targets. Deprecated, and non-functional.
 #################################################################
 
 set (ENABLE_VST3 0)
@@ -137,10 +141,20 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
-    AutoLilvNode.hpp
-    AutoLilvNode.cpp
+    util.hpp util.cpp
     PiPedalUI.hpp
     PiPedalUI.cpp
+    MapPathFeature.hpp
+    MapPathFeature.cpp
+    IHost.hpp
+    StateInterface.hpp
+    StateInterface.cpp
+    AtomConverter.hpp
+    AtomConverter.cpp
+    AtomBuffer.hpp
+
+    AutoLilvNode.hpp
+    AutoLilvNode.cpp
     RtInversionGuard.hpp
     CpuUse.hpp CpuUse.cpp 
     P2pConfigFiles.hpp
@@ -162,13 +176,13 @@ set (PIPEDAL_SOURCES
 
     RequestHandler.hpp json.cpp json.hpp 
     json_variant.hpp json_variant.cpp
-    Scratch.cpp PiPedalHost.hpp PiPedalHost.cpp
+    Scratch.cpp PluginHost.hpp PluginHost.cpp
     PluginType.hpp PluginType.cpp
     Lv2Log.hpp Lv2Log.cpp
     PiPedalSocket.hpp PiPedalSocket.cpp
     PiPedalVersion.hpp PiPedalVersion.cpp
     PiPedalModel.hpp PiPedalModel.cpp 
-    PedalBoard.hpp PedalBoard.cpp
+    Pedalboard.hpp Pedalboard.cpp
     Presets.hpp Presets.cpp
     Storage.hpp Storage.cpp
     Banks.hpp Banks.cpp
@@ -176,7 +190,7 @@ set (PIPEDAL_SOURCES
     JackConfiguration.hpp JackConfiguration.cpp
     defer.hpp
     Lv2Effect.cpp Lv2Effect.hpp
-    Lv2PedalBoard.cpp Lv2PedalBoard.hpp
+    Lv2Pedalboard.cpp Lv2Pedalboard.hpp
     BufferPool.hpp
     SplitEffect.hpp SplitEffect.cpp
     RingBufferReader.hpp
@@ -219,7 +233,7 @@ include_directories( ${pipedald_SOURCE_DIR}/. ../build/src)
 
 set (PIPEDAL_INCLUDES     
     ${LV2DEV_INCLUDE_DIRS}
-    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS} ${LVDEV_INCLUDE_DIRS}
+    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  ${LIBNL3_INCLUDE_DIRS} 
     ${VST3_INCLUDES}
     .
 )
@@ -261,7 +275,10 @@ target_link_libraries(pipedald PRIVATE
 #################################
 add_executable(pipedaltest testMain.cpp
     jsonTest.cpp
-     AlsaDriverTest.cpp
+    json_variant.cpp
+    json_variant.hpp
+    
+    AlsaDriverTest.cpp
     AvahiServiceTest.cpp
     WifiChannelsTest.cpp
     PiPedalAlsaTest.cpp
@@ -276,6 +293,36 @@ add_executable(pipedaltest testMain.cpp
     MemDebug.cpp
     MemDebug.hpp
     )
+
+target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
+) 
+
+add_executable(jsonTest
+     testMain.cpp
+     jsonTest.cpp
+     json.hpp
+     json.cpp
+     json_variant.cpp
+     json_variant.hpp
+     MapFeature.cpp
+     MapFeature.hpp
+     HtmlHelper.cpp
+     HtmlHelper.hpp
+     AtomConverter.hpp
+     AtomConverter.cpp
+     AtomConverterTest.cpp
+     AtomBuffer.hpp
+     Promise.hpp
+     PromiseTest.cpp
+)
+target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES}
+    ) 
+
+target_link_libraries(jsonTest PRIVATE pthread)
+add_test(NAME jsonTest COMMAND jsonTest)
+
+
+
 
 include_directories( ${pipedald_SOURCE_DIR}/. ../build/src) 
 
@@ -539,6 +586,8 @@ target_link_libraries(pipedalconfig PRIVATE pthread atomic uuid stdc++fs
     )
 
 add_executable(pipedal_latency_test
+    util.hpp
+    util.cpp
     PrettyPrinter.hpp
     CommandLineParser.hpp
     PiLatencyMain.cpp

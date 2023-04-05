@@ -170,8 +170,8 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
                 let uiControl = this.props.controlInfo.uiControl;
                 let instanceId = this.props.controlInfo.instanceId;
                 if (instanceId === -1) return 0;
-                let pedalBoardItem = this.model.pedalBoard.get()?.getItem(instanceId);
-                let value: number = pedalBoardItem?.getControlValue(uiControl.symbol) ?? 0;
+                let pedalboardItem = this.model.pedalboard.get()?.getItem(instanceId);
+                let value: number = pedalboardItem?.getControlValue(uiControl.symbol) ?? 0;
                 this.defaultValue = value;
                 return value;
             }

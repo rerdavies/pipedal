@@ -191,7 +191,7 @@ void StartService(bool excludeShutdownService = false)
     }
 #if INSTALL_JACK_SERVICE
     JackServerSettings serverSettings;
-    serverSettings.ReadJackConfiguration();
+    serverSettings.ReadJackDaemonConfiguration();
     if (serverSettings.IsValid())
     {
         if (sysExec(SYSTEMCTL_BIN " start " JACK_SERVICE ".service") != EXIT_SUCCESS)

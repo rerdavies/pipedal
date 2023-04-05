@@ -6,6 +6,7 @@
     "configurations": [
 
 
+
         {
             "name": "(gdb) generic",
             "type": "cppdbg",
@@ -21,11 +22,6 @@
                     // it gets resolved by CMake Tools:
                     "name": "PATH",
                     "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                },
-                {
-                    "name": "ASAN_OPTIONS",
-                    "value": "detect_leaks=0"
-
                 }
             ],
             "externalConsole": false,
@@ -54,11 +50,6 @@
                     // it gets resolved by CMake Tools:
                     "name": "PATH",
                     "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                },
-                {
-                    "name": "ASAN_OPTIONS",
-                    "value": "detect_leaks=0"
-
                 }
             ],
             "externalConsole": false,
@@ -80,8 +71,8 @@
             "program": "${command:cmake.launchTargetPath}",
 
             "args": [
-                //"[Dev]"
-                "[json_variants]"
+                //"[Dev]"  -- all dev-machine tests.
+                "[json_variants]"  // subtest of your choice, or none to run all of the tests.
             ],
 
             "stopAtEntry": false,
@@ -108,6 +99,44 @@
                 }
             ]
         },
+        {
+            "name": "(gdb) jsonTest Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            // Resolved by CMake Tools:
+            "program": "${command:cmake.launchTargetPath}",
+
+            "args": [
+                //"[Dev]"  -- all dev-machine tests.
+                //"[promise]"  // subtest of your choice, or none to run all of the tests.
+                "[atom_converter]"
+            ],
+
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    // add the directory where our target was built to the PATHs
+                    // it gets resolved by CMake Tools:
+                    "name": "PATH",
+                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
+                },
+                {
+                    "name": "OTHER_VALUE",
+                    "value": "Something something"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
 
         {
             "name": "(gdb) pipedal_latency_test Launch",

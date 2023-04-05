@@ -134,8 +134,8 @@ const JackServerSettingsDialog = withStyles(styles)(
 
             }
             if (result.sampleRate === 0) result.sampleRate = 48000;
-            if (result.bufferSize === 0) result.bufferSize = 64;
-            if (result.numberOfBuffers === 0) result.numberOfBuffers = 2;
+            if (result.bufferSize === 0) result.bufferSize = 16;
+            if (result.numberOfBuffers === 0) result.numberOfBuffers = 3;
             result.sampleRate = selectedDevice.closestSampleRate(result.sampleRate);
             result.bufferSize = selectedDevice.closestBufferSize(result.bufferSize);
             result.valid = true;

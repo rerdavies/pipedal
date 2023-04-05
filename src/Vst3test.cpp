@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 #include "vst3/Vst3Host.hpp"
 #include <iostream>
 
@@ -75,7 +75,7 @@ void RunVsts()
     cout << "Scanning" << endl;
     const auto & plugins = vst3Host->RescanPlugins();
 
-    PiPedalHost host;
+    PluginHost host;
 
     IHost *pHost = host.asIHost();
     host.setSampleRate(44100);

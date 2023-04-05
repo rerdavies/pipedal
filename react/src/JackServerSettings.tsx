@@ -22,6 +22,7 @@
 export default class JackServerSettings {
     deserialize(input: any) : JackServerSettings{
         this.valid = input.valid;
+        this.isOnboarding = input.isOnboarding;
         this.isJackAudio = input.isJackAudio;
         this.rebootRequired = input.rebootRequired;
         this.alsaDevice = input.alsaDevice?? "";
@@ -44,6 +45,7 @@ export default class JackServerSettings {
         return new JackServerSettings().deserialize(this);
     }
     valid: boolean = false;
+    isOnboarding: boolean = true;
     rebootRequired = false;
     isJackAudio = false;
     alsaDevice: string = "";
@@ -54,7 +56,7 @@ export default class JackServerSettings {
     getSummaryText() {
         if (this.valid) {
             let device = this.alsaDevice;
-            if (device.startsWith("hw:")) device = device.substr(3);
+            if (device.startsWith("hw:")) device = device.substring(3);
             return device + " - Rate: " + this.sampleRate + " BufferSize: " + this.bufferSize + " Buffers: " + this.numberOfBuffers;
         } else {
             return "Not configured";

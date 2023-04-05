@@ -1,3 +1,20 @@
+/*
+  Copyright 2007-2012 David Robillard <http://drobilla.net>
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+// (Borrows heavily from worker.c by David Robillard.)
+
 // Copyright (c) 2022 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -17,97 +34,160 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-/*
-  Borrows heavily from worker.c by David Robillard.
-
-  Copyright 2007-2012 David Robillard <http://drobilla.net>
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
 #include "Worker.hpp"
 #include <mutex>
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include "Lv2Log.hpp"
 #include <iostream>
 #include <unistd.h> // for nice()
+#include "util.hpp"
 
 using namespace pipedal;
 
-const int RING_BUFFER_SIZE = 16 * 1024;
+const int RING_BUFFER_SIZE = 64 * 1024;
 
-Worker::Worker(LilvInstance *lilvInstance_, const LV2_Worker_Interface *workerInterface_)
+Worker::Worker(const std::shared_ptr<HostWorkerThread> &pHostWorker, LilvInstance *lilvInstance_, const LV2_Worker_Interface *workerInterface_)
     : lilvInstance(lilvInstance_),
-      requestRingBuffer(RING_BUFFER_SIZE),
+      pHostWorker(pHostWorker),
       responseRingBuffer(RING_BUFFER_SIZE),
       workerInterface(workerInterface_)
 {
 
-    responseBuffer = (char *)malloc(RING_BUFFER_SIZE);
-
-    StartWorkerThread();
+    responseBuffer.resize(16 * 1024);
 }
 
+void Worker::Close()
+{
+    {
+        std::lock_guard lock(outstandingRequestMutex);
+        if (closed)
+            return;
+        closed = true;
+        exiting = true;
+    }
+    WaitForAllResponses();
+}
 Worker::~Worker()
 {
-    StopWorkerThread();
-    sem_destroy(&requestSemaphore);
-    free(responseBuffer);
+    Close();
 }
 
 LV2_Worker_Status Worker::worker_respond_fn(LV2_Worker_Respond_Handle handle, uint32_t size, const void *data)
 {
     Worker *this_ = (Worker *)handle;
-    return this_->WorkerResponse(size, data);
+    return this_->WorkerRespond(size, data);
 }
 
-LV2_Worker_Status Worker::WorkerResponse(uint32_t size, const void *data)
+LV2_Worker_Status Worker::WorkerRespond(uint32_t size, const void *data)
 {
-    if (responseRingBuffer.writeSpace() < sizeof(size)+size)
     {
+        std::lock_guard lock(outstandingRequestMutex);
+        ++outstandingRequests;
+    }
+    LV2_Worker_Status status;
+    if (responseRingBuffer.writeSpace() < sizeof(size) + size)
+    {
+        {
+            std::lock_guard lock(outstandingRequestMutex);
+            --outstandingRequests;
+            cvOutstandingRequests.notify_all();
+        }
         return LV2_WORKER_ERR_NO_SPACE;
     }
-    if (!responseRingBuffer.write(sizeof(size), (uint8_t *)&size))
+    else
     {
-        return LV2_WORKER_ERR_NO_SPACE;
+        if (!responseRingBuffer.write(sizeof(size), (uint8_t *)&size))
+        {
+            throw std::logic_error("Response queue sync lost.");
+        }
+        if (!responseRingBuffer.write(size, (uint8_t *)data))
+        {
+            throw std::logic_error("Response queue sync lost.");
+        }
+        return LV2_WORKER_SUCCESS;
     }
-    if (!responseRingBuffer.write(size, (uint8_t *)data))
-    {
-        return LV2_WORKER_ERR_NO_SPACE;
-    }
-    return LV2_WORKER_SUCCESS;
 }
 
-void Worker::EmitResponses()
+bool Worker::EmitResponses()
+{
+    bool emitted = false;
+    while (true)
+    {
+        if (!responseRingBuffer.isReadReady())
+        {
+            break;
+        }
+
+        emitted = true;
+        uint32_t size;
+        responseRingBuffer.read(sizeof(size), (uint8_t *)&size);
+        if (size > responseBuffer.size())
+        {
+            responseBuffer.resize(size);
+        }
+        uint8_t *pResponse = &(responseBuffer[0]);
+
+        responseRingBuffer.read(size, pResponse);
+
+        workerInterface->work_response(lilvInstance->lv2_handle, size, pResponse);
+        {
+            std::lock_guard lock(outstandingRequestMutex);
+            --outstandingRequests;
+        }
+        cvOutstandingRequests.notify_all();
+    }
+    return emitted;
+}
+
+void Worker::WaitForAllResponses()
 {
     while (true)
     {
-        uint32_t available = responseRingBuffer.readSpace();
-        uint32_t size = 0;
-        if (available <= sizeof(size)) // i.e. we need a size AND a response.
-            break;
-
-        responseRingBuffer.read(sizeof(size), (uint8_t *)&size);
-        responseRingBuffer.read(size, (uint8_t *)responseBuffer);
-
-        workerInterface->work_response(lilvInstance->lv2_handle, size, responseBuffer);
+        bool gotResponse = EmitResponses();
+        {
+            std::unique_lock lock(outstandingRequestMutex);
+            if (outstandingRequests == 0)
+            {
+                break;
+            }
+            if (!gotResponse)
+            {
+                cvOutstandingRequests.wait(lock);
+            }
+        }
     }
 }
-void Worker::ThreadProc()
+
+LV2_Worker_Status Worker::ScheduleWork(
+    uint32_t size,
+    const void *data)
 {
-    // run nice +1 (priority -1 on Windows)
+    {
+        std::lock_guard lock(outstandingRequestMutex);
+        ++outstandingRequests;
+        if (exiting)
+        {
+            return LV2_WORKER_ERR_NO_SPACE;
+        }
+    }
+    LV2_Worker_Status status = this->pHostWorker->ScheduleWork(this, size, data);
+    if (status != LV2_Worker_Status::LV2_WORKER_SUCCESS)
+    {
+        {
+            std::lock_guard lock(outstandingRequestMutex);
+            --outstandingRequests;
+        }
+        cvOutstandingRequests.notify_all();
+    }
+    return status;
+}
+
+void HostWorkerThread::ThreadProc() noexcept
+{
+    // run nice +2 (priority -2 on Windows)
+    SetThreadName("lv2_worker");
     errno = 0;
-    nice(1);
+    nice(2);
     if (errno != 0)
     {
         std::cout << "Warning: Unable to run Lv2 schedule thread at nice +1" << std::endl;
@@ -122,69 +202,117 @@ void Worker::ThreadProc()
                 return;
             }
             uint32_t size;
-            while (requestRingBuffer.readSpace() > sizeof(size))
+
+            Worker *pWorker;
+
+            if (!requestRingBuffer.read(sizeof(size), (uint8_t *)&size))
             {
-                if (!requestRingBuffer.read(sizeof(size), (uint8_t *)&size))
-                {
-                    throw PiPedalStateException("Working ringbuffer read failed.");
-                }
-                void *data = malloc(size);
-                if (!requestRingBuffer.read(size, (uint8_t *)data))
-                {
-                    throw PiPedalStateException("Working ringbuffer read failed.");
-                }
-                workerInterface->work(lilvInstance->lv2_handle, worker_respond_fn, (LV2_Handle)this, size, data);
-                free(data);
+                throw PiPedalStateException("Working ringbuffer read failed.");
             }
+
+            if (!requestRingBuffer.read(sizeof(pWorker), (uint8_t *)&pWorker))
+            {
+                throw PiPedalStateException("Worker ringbuffer read failed.");
+            }
+            size -= sizeof(pWorker);
+
+            if (size > dataBuffer.size())
+            {
+                dataBuffer.resize(size);
+            }
+            uint8_t *pData = &(dataBuffer[0]);
+            if (!requestRingBuffer.read(size, pData))
+            {
+                throw PiPedalStateException("Worker ringbuffer read failed.");
+            }
+            if (pWorker == nullptr) // signals close.
+            {
+                break;
+            }
+            pWorker->RunBackgroundTask(size, pData);
         }
     }
     catch (const std::exception &e)
     {
         Lv2Log::error("Lv2 Worker thread proc exited abnormally. (%s)", e.what());
     }
+    requestRingBuffer.close();
 }
 
-void Worker::StopWorkerThread()
+HostWorkerThread::HostWorkerThread()
+{
+    this->dataBuffer.resize(16*1024);
+    pThread = std::make_unique<std::thread>([this]()
+                                            { this->ThreadProc(); });
+}
+
+void HostWorkerThread::Close()
+{
+
+    bool sendClose = false;
+    {
+        std::lock_guard lock{submitMutex};
+        if (!closed)
+        {
+            closed = true;
+            sendClose = true;
+        }
+    }
+    if (sendClose)
+    {
+        ScheduleWork(nullptr, 0, nullptr);
+    }
+}
+HostWorkerThread::~HostWorkerThread()
 {
     if (pThread)
     {
-        auto pThread = this->pThread;
-        this->pThread = nullptr;
-        exiting = true;
-        requestRingBuffer.close();
+        // ask worker thread to terminate.
+        Close();
         pThread->join();
-        delete pThread;
+        pThread = nullptr;
     }
-}
-void Worker::StartWorkerThread()
-{
-    auto fn = [this]()
-    { this->ThreadProc(); };
-    this->pThread = new std::thread(fn);
 }
 
-LV2_Worker_Status Worker::ScheduleWork(
-    uint32_t size,
-    const void *data)
+LV2_Worker_Status HostWorkerThread::ScheduleWork(Worker *worker, size_t size, const void *data)
 {
-    if (!exiting)
+    std::lock_guard lock(submitMutex);
+
+    if (exiting)
     {
-        size_t space = requestRingBuffer.writeSpace();
-        if (space < sizeof(size) + size)
-        {
-            return LV2_WORKER_ERR_NO_SPACE;
-        }
-        if (!requestRingBuffer.write(sizeof(size), (uint8_t *)&size))
-        {
-            Lv2Log::debug("Not enough space in Worker ring buffer. Request failed.");
-            return LV2_WORKER_ERR_NO_SPACE;
-        }
-        if (!requestRingBuffer.write(size, (uint8_t *)data))
-        {
-            // probably not going to survive. :-(
-            Lv2Log::error("Not enough space in Worker ring buffer. Request ring buffer probably lost sync.");
-            return LV2_WORKER_ERR_NO_SPACE;
-        }
+        return LV2_Worker_Status::LV2_WORKER_ERR_NO_SPACE;
     }
-    return LV2_WORKER_ERR_NO_SPACE;
+    if (worker == nullptr)
+    {
+        exiting = true;
+    }
+
+    if (requestRingBuffer.writeSpace() < sizeof(worker) + sizeof(size) + size)
+    {
+        return LV2_Worker_Status::LV2_WORKER_ERR_NO_SPACE;
+    }
+    size_t packetSizeL = (size + sizeof(worker));
+    uint32_t packetSize = (uint32_t)(packetSizeL);
+    if (packetSizeL != packetSize)
+    {
+        return LV2_Worker_Status::LV2_WORKER_ERR_NO_SPACE;
+    }
+
+    requestRingBuffer.write(sizeof(packetSize), (uint8_t *)&packetSize);
+    requestRingBuffer.write(sizeof(worker), (uint8_t *)&worker);
+    requestRingBuffer.write(size, (uint8_t *)data);
+    
+    return LV2_Worker_Status::LV2_WORKER_SUCCESS;
+}
+
+void Worker::RunBackgroundTask(size_t size, uint8_t *data)
+{
+    workerInterface->work(lilvInstance->lv2_handle, worker_respond_fn, (LV2_Handle)this, size, data);
+
+    bool notify = false;
+    {
+        std::lock_guard lock(outstandingRequestMutex);
+        --outstandingRequests;
+    }
+    cvOutstandingRequests.notify_all();
 }

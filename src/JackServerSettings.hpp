@@ -28,6 +28,7 @@ namespace pipedal
     class JackServerSettings
     {
         bool valid_ = false;
+        bool isOnboarding_ = true;
         bool isJackAudio_ = JACK_HOST ? true : false;
         bool rebootRequired_ = false;
         std::string alsaDevice_;
@@ -44,7 +45,8 @@ namespace pipedal
               alsaDevice_(alsaInputDevice),
               sampleRate_(sampleRate),
               bufferSize_(bufferSize),
-              numberOfBuffers_(numberOfBuffers)
+              numberOfBuffers_(numberOfBuffers),
+              isOnboarding_(false)
         {
         }
 
@@ -53,23 +55,28 @@ namespace pipedal
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
         const std::string &GetAlsaInputDevice() const { return alsaDevice_; }
 
-        void ReadJackConfiguration();
+        void ReadJackDaemonConfiguration();
 
         bool IsValid() const { return valid_; }
 
-        JackServerSettings(uint64_t sampleRate, uint32_t bufferSize, uint32_t numberOfBuffers)
-        {
-            this->valid_ = true;
-            this->rebootRequired_ = true;
-            this->sampleRate_ = sampleRate;
-            this->bufferSize_ = bufferSize;
-            this->numberOfBuffers_ = numberOfBuffers;
-        }
-        void Write(); // requires root perms.
+        // JackServerSettings(uint64_t sampleRate, uint32_t bufferSize, uint32_t numberOfBuffers)
+        // {
+        //     this->valid_ = true;
+        //     this->rebootRequired_ = true;
+        //     this->sampleRate_ = sampleRate;
+        //     this->bufferSize_ = bufferSize;
+        //     this->numberOfBuffers_ = numberOfBuffers;
+        // }
+        void WriteDaemonConfig(); // requires root perms.
         void SetRebootRequired(bool value)
         {
             rebootRequired_ = value;
         }
+        void SetIsOnboarding(bool value)
+        {
+            isOnboarding_ = value;
+        }
+
         bool Equals(const JackServerSettings &other)
         {
             return this->alsaDevice_ == other.alsaDevice_ && this->sampleRate_ == other.sampleRate_ && this->bufferSize_ == other.bufferSize_ && this->numberOfBuffers_ == other.numberOfBuffers_;

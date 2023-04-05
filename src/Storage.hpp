@@ -20,7 +20,7 @@
 #pragma once
 #include <filesystem>
 #include <iostream>
-#include "PedalBoard.hpp"
+#include "Pedalboard.hpp"
 #include "Presets.hpp"
 #include "PluginPreset.hpp"
 #include "Banks.hpp"
@@ -33,12 +33,13 @@
 
 namespace pipedal {
 
-class PiPedalFileProperty;
+class UiFileProperty;
+class Lv2PluginInfo;
 
 class CurrentPreset {
 public:
     bool modified_ = false;
-    PedalBoard preset_;
+    Pedalboard preset_;
 
     DECLARE_JSON_MAP(CurrentPreset);
 };
@@ -63,12 +64,12 @@ private:
     PluginPresetIndex pluginPresetIndex;
     
 private:
+
     void MaybeCopyDefaultPresets();
     static std::string SafeEncodeName(const std::string& name);
     static std::string SafeDecodeName(const std::string& name);
     std::filesystem::path GetPresetsDirectory() const;
     std::filesystem::path GetPluginPresetsDirectory() const;
-    std::filesystem::path GetAudioFilesDirectory() const;
     std::filesystem::path GetIndexFileName() const;
     std::filesystem::path GetBankFileName(const std::string & name) const;
     std::filesystem::path GetChannelSelectionFileName();
@@ -99,7 +100,9 @@ public:
     void SetDataRoot(const std::filesystem::path& path);
     void SetConfigRoot(const std::filesystem::path& path);
 
-    std::vector<std::string> GetPedalBoards();
+    std::filesystem::path GetPluginStorageDirectory() const;
+
+    std::vector<std::string> GetPedalboards();
 
     const BankIndex & GetBanks() const { return bankIndex; }
 
@@ -112,13 +115,13 @@ public:
     void SaveUserSettings();
     void LoadBank(int64_t instanceId);
     int64_t GetBankByMidiBankNumber(uint8_t bankNumber);
-    const PedalBoard& GetCurrentPreset();
-    void SaveCurrentPreset(const PedalBoard&pedalBoard);
-    int64_t SaveCurrentPresetAs(const PedalBoard&pedalBoard, const std::string&namne,int64_t saveAfterInstanceId = -1);
+    const Pedalboard& GetCurrentPreset();
+    void SaveCurrentPreset(const Pedalboard&pedalboard);
+    int64_t SaveCurrentPresetAs(const Pedalboard&pedalboard, const std::string&namne,int64_t saveAfterInstanceId = -1);
     int64_t GetCurrentPresetId() const;
     void GetPresetIndex(PresetIndex*pResult);
     void SetPresetIndex(const PresetIndex &presetIndex);
-    PedalBoard GetPreset(int64_t instanceId) const;
+    Pedalboard GetPreset(int64_t instanceId) const;
     int64_t GetPresetByProgramNumber(uint8_t program) const;
     void GetBankFile(int64_t instanceId,BankFile*pResult) const;
     int64_t UploadPreset(const BankFile&bankFile, int64_t uploadAfter);
@@ -136,7 +139,7 @@ public:
     void MoveBank(int from, int to);
     int64_t DeleteBank(int64_t bankId);
 
-    std::vector<std::string> GetFileList(const PiPedalFileProperty&fileProperty);
+    std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
 
 
     void SetJackChannelSelection(const JackChannelSelection&channelSelection);
@@ -155,6 +158,8 @@ public:
 
     void SaveCurrentPreset(const CurrentPreset &currentPreset);
     bool RestoreCurrentPreset(CurrentPreset*pResult);
+
+    //std::string MapPropertyFileName(Lv2PluginInfo*pluginInfo, const std::string&path);
 
 private:
     bool pluginPresetIndexChanged = false;

@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
+#include "util.hpp"
 
 #include "AudioConfig.hpp"
 #include "WebServer.hpp"
@@ -27,7 +28,7 @@
 #include "AvahiService.hpp"
 
 #include "PiPedalSocket.hpp"
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 #include <boost/system/error_code.hpp>
 #include <filesystem>
 #include "PiPedalConfiguration.hpp"
@@ -38,6 +39,8 @@
 #include <boost/asio.hpp>
 #include "HtmlHelper.hpp"
 #include "Ipv6Helpers.hpp"
+#include <thread>
+#include <atomic>
 
 #include <signal.h>
 #include <semaphore.h>
@@ -49,6 +52,12 @@ using namespace pipedal;
 #define PRESET_EXTENSION ".piPreset"
 #define BANK_EXTENSION ".piBank"
 #define PLUGIN_PRESETS_EXTENSION ".piPluginPresets"
+
+
+#ifdef __ARM_ARCH_ISA_A64
+#define AARCH64
+#endif
+
 
 sem_t signalSemaphore;
 
@@ -70,6 +79,8 @@ public:
 };
 
 static volatile bool g_SigBreak = false;
+std::atomic<bool> ga_SigBreak { false };
+
 void sig_handler(int signo)
 {
     if (!g_SigBreak)
@@ -77,6 +88,11 @@ void sig_handler(int signo)
         g_SigBreak = true;
         sem_post(&signalSemaphore);
     }
+}
+
+void throwSystemError(int error)
+{
+    
 }
 using namespace boost::system;
 
@@ -156,19 +172,19 @@ public:
     {
         std::string strInstanceId = request_uri.query("id");
         int64_t instanceId = std::stol(strInstanceId);
-        auto pedalBoard = model->GetPreset(instanceId);
+        auto pedalboard = model->GetPreset(instanceId);
 
         // a certain elegance to using same file format for banks and presets.
         BankFile file;
-        file.name(pedalBoard.name());
-        int64_t newInstanceId = file.addPreset(pedalBoard);
+        file.name(pedalboard.name());
+        int64_t newInstanceId = file.addPreset(pedalboard);
         file.selectedPreset(newInstanceId);
 
         std::stringstream s;
         json_writer writer(s);
         writer.write(file);
         *pContent = s.str();
-        *pName = pedalBoard.name();
+        *pName = pedalboard.name();
     }
     void GetBank(const uri &request_uri, std::string *pName, std::string *pContent)
     {
@@ -501,7 +517,6 @@ int main(int argc, char *argv[])
 
     sem_init(&signalSemaphore, 0, 0);
 
-    signal(SIGINT, sig_handler);
 
 #ifndef WIN32
     umask(002); // newly created files in /var/pipedal get 775-ish permissions, which improves debugging/live-service interaction.
@@ -570,8 +585,8 @@ int main(int argc, char *argv[])
     {
         Lv2Log::set_logger(MakeLv2SystemdLogger());
     }
-    signal(SIGTERM, sig_handler);
-    signal(SIGUSR1, sig_handler);
+    SetThreadName("main");
+
 
     std::filesystem::path doc_root = parser.Arguments()[0];
     std::filesystem::path web_root = doc_root;
@@ -627,7 +642,6 @@ int main(int argc, char *argv[])
     try
     {
         PiPedalModel model;
-
         model.Init(configuration);
 
         // Get heavy IO out of the way before letting dependent (Jack/ALSA) services run.
@@ -731,15 +745,56 @@ int main(int argc, char *argv[])
         server->AddRequestHandler(downloadIntercept);
 
         {
-            server->RunInBackground(SIGUSR1);
+            server->RunInBackground(-1);
 
+            SetThreadName("avahi");
             model.UpdateDnsSd(); // now that the server is running, publish a  DNS-SD announcement.
+            SetThreadName("main");
 
-            sem_wait(&signalSemaphore);
+            // AARCH64 sem_wait pins CPU 100%.
+                // static_assert(std::atomic<bool>::is_always_lock_free);
 
-            if (systemd)
+                // while (true)
+                // {
+                //     auto sigBreak = ga_SigBreak.load();
+                //     if (sigBreak)
+                //     {
+                //         break;
+                //     }
+                //     std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+                // }
+
+
             {
-                sd_notify(0, "STOPPING=1");
+                int sig;
+                sigset_t sigSet;
+                int s;
+                sigemptyset(&sigSet);
+                sigaddset(&sigSet, SIGINT);
+                sigaddset(&sigSet, SIGTERM);
+                sigaddset(&sigSet, SIGUSR1);
+
+                s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
+                if (s != 0)
+                {
+                    throw std::logic_error("pthread_sigmask failed.");
+                }
+                if (s != 0)
+                {
+                    throwSystemError(s);
+                }
+
+                //signal(SIGINT, sig_handler);
+                //signal(SIGTERM, sig_handler);
+                //signal(SIGUSR1, sig_handler);
+
+                sigwait(&sigSet,&sig);
+                
+                if (systemd)
+                {
+                    sd_notify(0, "STOPPING=1");
+                }
             }
         }
 
@@ -753,7 +808,7 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         Lv2Log::error(e.what());
+        return EXIT_FAILURE;
     }
-    Lv2Log::info("PiPedal terminating.");
     return EXIT_SUCCESS; // only exit in response to a signal.
 }

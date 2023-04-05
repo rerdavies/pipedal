@@ -32,23 +32,22 @@ namespace pipedal
     class AutoLilvNode
     {
 
-        // const LilvNode* returns must not be freed, by convention.
-    private:
-        LilvNode *node = nullptr;
-        AutoLilvNode(const LilvNode *node) = delete;
-
     public:
         AutoLilvNode()
         {
         }
+        AutoLilvNode(const LilvNode *node)
+            : node(const_cast<LilvNode*>(node))
+        {
+              isConst = true;
+        }
         AutoLilvNode(LilvNode *node)
             : node(node)
         {
+            isConst = false;
         }
 
-
         ~AutoLilvNode() { Free(); }
-
 
         operator const LilvNode *()
         {
@@ -58,18 +57,30 @@ namespace pipedal
         {
             return this->node != nullptr;
         }
-        LilvNode*&Get() { return node; }
+        const LilvNode *Get() { return node; }
 
-        AutoLilvNode&operator=(LilvNode*node) { 
-            Free(); 
-            this->node = node; 
-            return *this;
-        }
-        AutoLilvNode&operator=(AutoLilvNode&&other) { 
-            std::swap(this->node,other.node);
+        AutoLilvNode &operator=(LilvNode *node)
+        {
+            Free();
+            this->node = node;
             return *this;
         }
 
+        operator LilvNode**() { 
+            Free();
+            this->isConst = false;
+            return &node;
+        }
+        operator const LilvNode**()  { 
+            Free();
+            this->isConst = true;
+            return (const LilvNode**)&node;
+        }
+        AutoLilvNode &operator=(AutoLilvNode &&other)
+        {
+            std::swap(this->node, other.node);
+            return *this;
+        }
 
         float AsFloat(float defaultValue = 0);
         int AsInt(int defaultValue = 0);
@@ -79,11 +90,13 @@ namespace pipedal
 
         void Free()
         {
-            if (node != nullptr)
+            if (node != nullptr && !isConst)
                 lilv_node_free(node);
             node = nullptr;
         }
 
-
+    private:
+        LilvNode *node = nullptr;
+        bool isConst = true;
     };
 };

@@ -30,6 +30,7 @@
 #include <future>
 #include <atomic>
 #include "Ipv6Helpers.hpp"
+#include "Promise.hpp"
 
 #include "AdminClient.hpp"
 #include "WifiConfigSettings.hpp"
@@ -41,6 +42,33 @@
 
 using namespace std;
 using namespace pipedal;
+
+
+class GetPatchPropertyBody {
+public:
+    uint64_t instanceId_;
+    std::string propertyUri_;
+    DECLARE_JSON_MAP(GetPatchPropertyBody);
+};
+
+JSON_MAP_BEGIN(GetPatchPropertyBody)
+JSON_MAP_REFERENCE(GetPatchPropertyBody, instanceId)
+JSON_MAP_REFERENCE(GetPatchPropertyBody, propertyUri)
+JSON_MAP_END()
+
+class SetPatchPropertyBody {
+public:
+    uint64_t instanceId_;
+    std::string propertyUri_;
+    json_variant value_;
+    DECLARE_JSON_MAP(SetPatchPropertyBody);
+};
+
+JSON_MAP_BEGIN(SetPatchPropertyBody)
+JSON_MAP_REFERENCE(SetPatchPropertyBody, instanceId)
+JSON_MAP_REFERENCE(SetPatchPropertyBody, propertyUri)
+JSON_MAP_REFERENCE(SetPatchPropertyBody, value)
+JSON_MAP_END()
 
 class NotifyMidiListenerBody
 {
@@ -61,14 +89,15 @@ class NotifyAtomOutputBody
 public:
     int64_t clientHandle_;
     uint64_t instanceId_;
-
-    std::string atomJson_;
+    std::string propertyUri_;
+    raw_json_string atomJson_;
 
     DECLARE_JSON_MAP(NotifyAtomOutputBody);
 };
 JSON_MAP_BEGIN(NotifyAtomOutputBody)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, clientHandle)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, instanceId)
+JSON_MAP_REFERENCE(NotifyAtomOutputBody, propertyUri)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, atomJson)
 JSON_MAP_END()
 
@@ -85,17 +114,19 @@ JSON_MAP_REFERENCE(ListenForMidiEventBody, listenForControlsOnly)
 JSON_MAP_REFERENCE(ListenForMidiEventBody, handle)
 JSON_MAP_END()
 
-class ListenForAtomOutputBody
+class MonitorPatchPropertyBody
 {
 public:
     uint64_t instanceId_;
-    int64_t handle_;
-    DECLARE_JSON_MAP(ListenForAtomOutputBody);
+    int64_t clientHandle_;
+    std::string propertyUri_;
+    DECLARE_JSON_MAP(MonitorPatchPropertyBody);
 };
 
-JSON_MAP_BEGIN(ListenForAtomOutputBody)
-JSON_MAP_REFERENCE(ListenForAtomOutputBody, instanceId)
-JSON_MAP_REFERENCE(ListenForAtomOutputBody, handle)
+JSON_MAP_BEGIN(MonitorPatchPropertyBody)
+JSON_MAP_REFERENCE(MonitorPatchPropertyBody, instanceId)
+JSON_MAP_REFERENCE(MonitorPatchPropertyBody, clientHandle)
+JSON_MAP_REFERENCE(MonitorPatchPropertyBody,propertyUri)
 JSON_MAP_END()
 
 class OnLoadPluginPresetBody
@@ -151,18 +182,6 @@ JSON_MAP_REFERENCE(MonitorResultBody, subscriptionHandle)
 JSON_MAP_REFERENCE(MonitorResultBody, value)
 JSON_MAP_END()
 
-class GetLv2ParameterBody
-{
-public:
-    int64_t instanceId_;
-    std::string uri_;
-
-    DECLARE_JSON_MAP(GetLv2ParameterBody);
-};
-JSON_MAP_BEGIN(GetLv2ParameterBody)
-JSON_MAP_REFERENCE(GetLv2ParameterBody, instanceId)
-JSON_MAP_REFERENCE(GetLv2ParameterBody, uri)
-JSON_MAP_END()
 
 class MonitorPortBody
 {
@@ -262,33 +281,33 @@ JSON_MAP_REFERENCE(CopyPluginPresetBody, pluginUri)
 JSON_MAP_REFERENCE(CopyPluginPresetBody, instanceId)
 JSON_MAP_END()
 
-class PedalBoardItemEnabledBody
+class PedalboardItemEnabledBody
 {
 public:
     int64_t clientId_ = -1;
     int64_t instanceId_ = -1;
     bool enabled_ = true;
 
-    DECLARE_JSON_MAP(PedalBoardItemEnabledBody);
+    DECLARE_JSON_MAP(PedalboardItemEnabledBody);
 };
-JSON_MAP_BEGIN(PedalBoardItemEnabledBody)
-JSON_MAP_REFERENCE(PedalBoardItemEnabledBody, clientId)
-JSON_MAP_REFERENCE(PedalBoardItemEnabledBody, instanceId)
-JSON_MAP_REFERENCE(PedalBoardItemEnabledBody, enabled)
+JSON_MAP_BEGIN(PedalboardItemEnabledBody)
+JSON_MAP_REFERENCE(PedalboardItemEnabledBody, clientId)
+JSON_MAP_REFERENCE(PedalboardItemEnabledBody, instanceId)
+JSON_MAP_REFERENCE(PedalboardItemEnabledBody, enabled)
 JSON_MAP_END()
 
-class UpdateCurrentPedalBoardBody
+class UpdateCurrentPedalboardBody
 {
 public:
     int64_t clientId_ = -1;
-    PedalBoard pedalBoard_;
+    Pedalboard pedalboard_;
 
-    DECLARE_JSON_MAP(UpdateCurrentPedalBoardBody);
+    DECLARE_JSON_MAP(UpdateCurrentPedalboardBody);
 };
 
-JSON_MAP_BEGIN(UpdateCurrentPedalBoardBody)
-JSON_MAP_REFERENCE(UpdateCurrentPedalBoardBody, clientId)
-JSON_MAP_REFERENCE(UpdateCurrentPedalBoardBody, pedalBoard)
+JSON_MAP_BEGIN(UpdateCurrentPedalboardBody)
+JSON_MAP_REFERENCE(UpdateCurrentPedalboardBody, clientId)
+JSON_MAP_REFERENCE(UpdateCurrentPedalboardBody, pedalboard)
 JSON_MAP_END()
 
 class ChannelSelectionChangedBody
@@ -333,6 +352,24 @@ JSON_MAP_REFERENCE(ControlChangedBody, clientId)
 JSON_MAP_REFERENCE(ControlChangedBody, instanceId)
 JSON_MAP_REFERENCE(ControlChangedBody, symbol)
 JSON_MAP_REFERENCE(ControlChangedBody, value)
+JSON_MAP_END()
+
+class PatchPropertyChangedBody
+{
+public:
+    int64_t clientId_;
+    int64_t instanceId_;
+    std::string propertyUri_;
+    json_variant value_;
+
+    DECLARE_JSON_MAP(PatchPropertyChangedBody);
+};
+
+JSON_MAP_BEGIN(PatchPropertyChangedBody)
+JSON_MAP_REFERENCE(PatchPropertyChangedBody, clientId)
+JSON_MAP_REFERENCE(PatchPropertyChangedBody, instanceId)
+JSON_MAP_REFERENCE(PatchPropertyChangedBody, propertyUri)
+JSON_MAP_REFERENCE(PatchPropertyChangedBody, value)
 JSON_MAP_END()
 
 class Vst3ControlChangedBody
@@ -420,14 +457,19 @@ public:
         std::stringstream imageList;
         const std::filesystem::path &webRoot = model.GetWebRoot() / "img";
         bool firstTime = true;
-        for (const auto &entry : std::filesystem::directory_iterator(webRoot))
-        {
-            if (!firstTime)
+        try {
+            for (const auto &entry : std::filesystem::directory_iterator(webRoot))
             {
-                imageList << ";";
+                if (!firstTime)
+                {
+                    imageList << ";";
+                }
+                firstTime = false;
+                imageList << entry.path().filename().string();
             }
-            firstTime = false;
-            imageList << entry.path().filename().string();
+        } catch (const std::exception&)
+        {
+            Lv2Log::error("Can't list files in %s. Image files will not be pre-loaded in the client.", webRoot.c_str());
         }
         this->imageList = imageList.str();
     }
@@ -778,17 +820,17 @@ public:
             }
             return;
         }
-        if (message == "previewControl")
-        {
-            ControlChangedBody message;
-            pReader->read(&message);
-            this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-        }
-        else if (message == "setControl")
+        if (message == "setControl")
         {
             ControlChangedBody message;
             pReader->read(&message);
             this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+        } 
+        else if (message == "previewControl")
+        {
+            ControlChangedBody message;
+            pReader->read(&message);
+            this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
         }
         else if (message == "listenForMidiEvent")
         {
@@ -802,17 +844,17 @@ public:
             pReader->read(&handle);
             this->model.CancelListenForMidiEvent(this->clientId, handle);
         }
-        else if (message == "listenForAtomOutput")
+        else if (message == "monitorPatchProperty")
         {
-            ListenForAtomOutputBody body;
+            MonitorPatchPropertyBody body;
             pReader->read(&body);
-            this->model.ListenForAtomOutputs(this->clientId, body.handle_, body.instanceId_);
+            this->model.MonitorPatchProperty(this->clientId, body.clientHandle_, body.instanceId_, body.propertyUri_);
         }
-        else if (message == "cancelListenForAtomOutput")
+        else if (message == "cancelMonitorPatchProperty")
         {
             int64_t handle;
             pReader->read(&handle);
-            this->model.CancelListenForMidiEvent(this->clientId, handle);
+            this->model.CancelMonitorPatchProperty(this->clientId, handle);
         }
 
         else if (message == "getJackStatus")
@@ -954,25 +996,25 @@ public:
             this->model.GetPresets(&presets);
             Reply(replyTo, "getPresets", presets);
         }
-        else if (message == "setPedalBoardItemEnable")
+        else if (message == "setPedalboardItemEnable")
         {
-            PedalBoardItemEnabledBody body;
+            PedalboardItemEnabledBody body;
             pReader->read(&body);
-            model.SetPedalBoardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
+            model.SetPedalboardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
         }
-        else if (message == "updateCurrentPedalBoard")
+        else if (message == "updateCurrentPedalboard")
         {
             {
-                UpdateCurrentPedalBoardBody body;
+                UpdateCurrentPedalboardBody body;
 
                 pReader->read(&body);
-                this->model.UpdateCurrentPedalBoard(body.clientId_, body.pedalBoard_);
+                this->model.UpdateCurrentPedalboard(body.clientId_, body.pedalboard_);
             }
         }
-        else if (message == "currentPedalBoard")
+        else if (message == "currentPedalboard")
         {
-            auto pedalBoard = model.GetCurrentPedalBoardCopy();
-            Reply(replyTo, "currentPedalBoard", pedalBoard);
+            auto pedalboard = model.GetCurrentPedalboardCopy();
+            Reply(replyTo, "currentPedalboard", pedalboard);
         }
         else if (message == "plugins")
         {
@@ -1142,18 +1184,35 @@ public:
             uint64_t result = model.CopyPluginPreset(body.pluginUri_, body.instanceId_);
             this->Reply(replyTo, "copyPluginPreset", result);
         }
-        else if (message == "getLv2Parameter")
+        else if (message == "setPatchProperty")
         {
-            GetLv2ParameterBody body;
+            SetPatchPropertyBody body;
+            pReader->read(&body);
+            model.SendSetPatchProperty(clientId,body.instanceId_,body.propertyUri_,body.value_,
+                [this, replyTo] () {
+                    this->JsonReply(replyTo, "setPatchProperty", "true");
+
+                },
+                [this, replyTo] (const std::string&error) {
+                    this->SendError(replyTo, error.c_str());
+
+                }
+            );
+
+        }
+        
+        else if (message == "getPatchProperty")
+        {
+            GetPatchPropertyBody body;
             pReader->read(&body);
 
-            model.GetLv2Parameter(
+            model.SendGetPatchProperty(
                 this->clientId,
                 body.instanceId_,
-                body.uri_,
+                body.propertyUri_,
                 [this, replyTo](const std::string &jsonResult)
                 {
-                    this->JsonReply(replyTo, "getLv2Parameter", jsonResult.c_str());
+                    this->JsonReply(replyTo, "getPatchProperty", jsonResult.c_str());
                 },
                 [this, replyTo](const std::string &error)
                 {
@@ -1248,9 +1307,16 @@ public:
         }
         else if (message == "requestFileList")
         {
-            PiPedalFileProperty fileProperty;
+            UiFileProperty fileProperty;
+            pReader->read(&fileProperty);
             std::vector<std::string> list = this->model.GetFileList(fileProperty);
             this->Reply(replyTo,"requestFileList",list);
+        }
+        else if (message == "setOnboarding")
+        {
+            bool value;
+            pReader->read(&value);
+            this->model.SetOnboarding(value);
         }
         else
         {
@@ -1260,8 +1326,7 @@ public:
     }
 
 protected:
-    virtual void
-    onReceive(const std::string_view &text)
+    virtual void onReceive(const std::string_view &text)
     {
         view_istream<char> s(text);
 
@@ -1324,7 +1389,22 @@ protected:
         }
     }
 
-public:
+private:
+    virtual void OnLv2StateChanged(int64_t instanceId)
+    {
+        Send("onLv2StateChanged",instanceId);
+
+    }
+    virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
+    {
+        PatchPropertyChangedBody body;
+        body.clientId_ = clientId;
+        body.instanceId_ = instanceId;
+        body.propertyUri_ = propertyUri;
+        body.value_ = value;
+        Send("onPatchPropertyChanged",body);
+    }
+
     virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) {
         Send("onSystemMidiBindingsChanged",bindings);
     }
@@ -1499,13 +1579,13 @@ public:
     public:
         int64_t clientHandle;
         uint64_t instanceId;
-        std::string atomType;
+        std::string propertyUri;
         std::string json;
     };
 
     std::vector<PendingNotifyAtomOutput> pendingNotifyAtomOutputs;
 
-    void OnAckNotifyAtomOutput()
+    void OnAckNotifyPatchProperty()
     {
         std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
         if (--outstandingNotifyAtomOutputs <= 0)
@@ -1518,19 +1598,24 @@ public:
                 OnNotifyAtomOutput(
                     t.clientHandle,
                     t.instanceId,
-                    t.atomType,
+                    t.propertyUri,
                     t.json);
             }
         }
     }
 
-    virtual void OnNotifyAtomOutput(int64_t clientHandle, uint64_t instanceId, const std::string &atomType, const std::string &atomJson)
+    virtual void OnNotifyAtomOutput(int64_t clientHandle, uint64_t instanceId, const std::string &atomProperty, const std::string &atomJson)
     {
         NotifyAtomOutputBody body;
         body.clientHandle_ = clientHandle;
         body.instanceId_ = instanceId;
-        body.atomJson_ = atomJson;
+        body.propertyUri_ = atomProperty;
+        body.atomJson_.Set(atomJson);
 
+        // flow control. We can only have one in-flight NotifyAtomOutput at a time.
+        // Subsequent notifications are held until we receive an ack. 
+        //
+        // If a duplicate atomProperty is queued, overwrite the previous value.
         {
             std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
 
@@ -1539,23 +1624,24 @@ public:
                 for (size_t i = 0; i < pendingNotifyAtomOutputs.size(); ++i)
                 {
                     auto &output = pendingNotifyAtomOutputs[i];
-                    if (output.clientHandle == clientHandle && output.instanceId == instanceId && output.atomType == atomType)
+                    if (output.clientHandle == clientHandle && output.instanceId == instanceId && output.propertyUri == atomProperty)
                     {
-                        output.json = atomJson;
-                        return;
+                        // better to erase than overwrite, since it provides better idempotence.
+                        pendingNotifyAtomOutputs.erase(pendingNotifyAtomOutputs.begin()+i);
+                        break;
                     }
                 }
-                pendingNotifyAtomOutputs.push_back(PendingNotifyAtomOutput{clientHandle, instanceId, atomType, atomJson});
+                pendingNotifyAtomOutputs.push_back(PendingNotifyAtomOutput{clientHandle, instanceId, atomProperty, atomJson});
                 return;
             }
             ++outstandingNotifyAtomOutputs;
         }
 
         Request<bool>(
-            "onNotifyAtomOut", body,
+            "onNotifyPatchProperty", body,
             [this](const bool &value)
             {
-                this->OnAckNotifyAtomOutput();
+                this->OnAckNotifyPatchProperty();
             },
             [](const std::exception &e) {
 
@@ -1594,17 +1680,17 @@ public:
         Send("onGovernorSettingsChanged", governor);
     }
 
-    virtual void OnPedalBoardChanged(int64_t clientId, const PedalBoard &pedalBoard)
+    virtual void OnPedalboardChanged(int64_t clientId, const Pedalboard &pedalboard)
     {
-        UpdateCurrentPedalBoardBody body;
+        UpdateCurrentPedalboardBody body;
         body.clientId_ = clientId;
-        body.pedalBoard_ = pedalBoard;
-        Send("onPedalBoardChanged", body);
+        body.pedalboard_ = pedalboard;
+        Send("onPedalboardChanged", body);
     }
 
     virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled)
     {
-        PedalBoardItemEnabledBody body;
+        PedalboardItemEnabledBody body;
         body.clientId_ = clientId;
         body.instanceId_ = pedalItemId;
         body.enabled_ = enabled;

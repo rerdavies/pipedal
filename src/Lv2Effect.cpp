@@ -32,6 +32,7 @@
 #include "lv2/log.lv2/logger.h"
 #include "lv2/uri-map.lv2/uri-map.h"
 #include "lv2/atom.lv2/forge.h"
+#include "lv2/state.lv2/state.h"
 #include "lv2/worker.lv2/worker.h"
 #include "lv2/patch.lv2/patch.h"
 #include "lv2/parameters.lv2/parameters.h"
@@ -48,14 +49,14 @@ const float BYPASS_TIME_S = 0.1f;
 Lv2Effect::Lv2Effect(
     IHost *pHost_,
     const std::shared_ptr<Lv2PluginInfo> &info_,
-    const PedalBoardItem &pedalBoardItem)
-    : pHost(pHost_), pInstance(nullptr), info(info_), uris(pHost)
+    const PedalboardItem &pedalboardItem)
+    : pHost(pHost_), pInstance(nullptr), info(info_), urids(pHost)
 {
     auto pWorld = pHost_->getWorld();
 
     this->bypassStartingSamples = (uint32_t)(pHost->GetSampleRate() * BYPASS_TIME_S);
 
-    this->bypass = pedalBoardItem.isEnabled();
+    this->bypass = pedalboardItem.isEnabled();
 
     // initialize the atom forge used on the realtime thread.
     LV2_URID_Map *map = this->pHost->GetLv2UridMap();
@@ -64,7 +65,7 @@ Lv2Effect::Lv2Effect(
 
     const LilvPlugins *plugins = lilv_world_get_all_plugins(pWorld);
 
-    auto uriNode = lilv_new_uri(pWorld, pedalBoardItem.uri().c_str());
+    auto uriNode = lilv_new_uri(pWorld, pedalboardItem.uri().c_str());
     const LilvPlugin *pPlugin = lilv_plugins_get_by_uri(plugins, uriNode);
     lilv_node_free(uriNode);
 
@@ -76,7 +77,7 @@ Lv2Effect::Lv2Effect(
     }
 
     this->work_schedule_feature = nullptr;
-    if (info_->hasExtension(LV2_WORKER__interface))
+    if (true) //info_->hasExtension(LV2_WORKER__interface))
     {
         // insane implementation. :-(
         LV2_Worker_Schedule *schedule = (LV2_Worker_Schedule *)malloc(sizeof(LV2_Worker_Schedule));
@@ -99,29 +100,36 @@ Lv2Effect::Lv2Effect(
     } catch (const std::exception &e)
     {
         this->pInstance = nullptr;
-        throw PiPedalException(SS("Plugin threw an exception: " << e.what()));
+        throw PiPedalException(SS("Plugin threw an exception: " << e.what() << " '" << info_->name() << "'"));
 
     }
     this->pInstance = pInstance;
     if (this->pInstance == nullptr)
     {
-        throw PiPedalException("Failed to create plugin.");
+        throw PiPedalException(SS("Failed to create plugin \'" << info_->name() << "\'."));
     }
 
-    if (info_->hasExtension(LV2_WORKER__interface))
+    const LV2_Worker_Interface *worker_interface =
+        (const LV2_Worker_Interface *)lilv_instance_get_extension_data(pInstance,
+                                                                        LV2_WORKER__interface);
+    if (worker_interface) {
+        this->worker = std::make_unique<Worker>(pHost->GetHostWorkerThread(), pInstance, worker_interface);
+    }
+    const LV2_State_Interface*state_interface = 
+        (const LV2_State_Interface *)lilv_instance_get_extension_data(pInstance,
+                                                                        LV2_STATE__interface);
+
+    if (state_interface)
     {
-        const LV2_Worker_Interface *worker_interface =
-            (const LV2_Worker_Interface *)lilv_instance_get_extension_data(pInstance,
-                                                                           LV2_WORKER__interface);
-        this->worker = std::make_unique<Worker>(pInstance, worker_interface);
+        this->stateInterface = std::make_unique<StateInterface>(pHost,pInstance,state_interface);
     }
 
-    this->instanceId = pedalBoardItem.instanceId();
+    this->instanceId = pedalboardItem.instanceId();
 
     this->controlValues.resize(info->ports().size());
 
     // Copy default pedalboard settings.
-    for (auto i = pedalBoardItem.controlValues().begin(); i != pedalBoardItem.controlValues().end(); ++i)
+    for (auto i = pedalboardItem.controlValues().begin(); i != pedalboardItem.controlValues().end(); ++i)
     {
         auto &v = (*i);
         int index = GetControlIndex(v.key());
@@ -132,6 +140,16 @@ Lv2Effect::Lv2Effect(
     }
     PreparePortIndices();
     ConnectControlPorts();
+
+    RestoreState(pedalboardItem);
+}
+void Lv2Effect::RestoreState(const PedalboardItem&pedalboardItem)
+{
+    // Restore state if present.
+    if (this->stateInterface)
+    {
+        this->stateInterface->Restore(pedalboardItem.lv2State());
+    }
 }
 
 void Lv2Effect::ConnectControlPorts()
@@ -262,6 +280,7 @@ Lv2Effect::~Lv2Effect()
 {
     if (worker)
     {
+        worker->Close();
         worker = nullptr; // delete the worker first!
     }
     if (pInstance)
@@ -281,7 +300,10 @@ void Lv2Effect::Activate()
     this->AssignUnconnectedPorts();
     lilv_instance_activate(pInstance);
     this->BypassTo(this->bypass ? 1.0f : 0.0f);
+
+
 }
+
 
 void Lv2Effect::AssignUnconnectedPorts()
 {
@@ -332,6 +354,10 @@ void Lv2Effect::AssignUnconnectedPorts()
 }
 void Lv2Effect::Deactivate()
 {
+    if (worker)
+    {
+        worker->Close();
+    }
     lilv_instance_deactivate(pInstance);
 }
 
@@ -441,7 +467,7 @@ void Lv2Effect::Run(uint32_t samples,RealtimeRingBufferWriter *realtimeRingBuffe
         }
         
     }
-    RelayOutputMessages(this->instanceId,realtimeRingBufferWriter);
+    RelayPatchSetMessages(this->instanceId,realtimeRingBufferWriter);
 }
 
 LV2_Worker_Status Lv2Effect::worker_schedule_fn(LV2_Worker_Schedule_Handle handle,
@@ -463,13 +489,13 @@ void Lv2Effect::ResetInputAtomBuffer(char *data)
 {
     BufferHeader *header = (BufferHeader *)data;
     header->size = sizeof(LV2_Atom_Sequence_Body);
-    header->type = uris.atom_Sequence;
+    header->type = urids.atom__Sequence;
 }
 void Lv2Effect::ResetOutputAtomBuffer(char *data)
 {
     BufferHeader *header = (BufferHeader *)data;
     header->size = pHost->GetAtomBufferSize() - 8;
-    header->type = uris.atom_Chunk;
+    header->type = urids.atom__Chunk;
 }
 
 void Lv2Effect::BypassTo(float targetValue)
@@ -509,24 +535,41 @@ void Lv2Effect::ResetAtomBuffers()
 
         // Start a sequence in the notify input port.
 
-        lv2_atom_forge_sequence_head(&this->inputForgeRt, &input_frame, uris.unitsFrame);
+        lv2_atom_forge_sequence_head(&this->inputForgeRt, &input_frame, urids.units__frame);
     }
 }
 
-void Lv2Effect::RequestParameter(LV2_URID uridUri)
+void Lv2Effect::RequestPatchProperty(LV2_URID uridUri)
 {
     lv2_atom_forge_frame_time(&inputForgeRt, 0);
 
     LV2_Atom_Forge_Frame objectFrame;
     LV2_Atom_Forge_Ref set =
-        lv2_atom_forge_object(&inputForgeRt, &objectFrame, 0, uris.patch_Get);
+        lv2_atom_forge_object(&inputForgeRt, &objectFrame, 0, urids.patch__Get);
 
-    lv2_atom_forge_key(&inputForgeRt, uris.patch_property);
+    lv2_atom_forge_key(&inputForgeRt, urids.patch__property);
     lv2_atom_forge_urid(&inputForgeRt, uridUri);
     lv2_atom_forge_pop(&inputForgeRt, &objectFrame);
 }
+void Lv2Effect::SetPatchProperty(LV2_URID uridUri,size_t size, LV2_Atom*value)
+{
+    lv2_atom_forge_frame_time(&inputForgeRt, 0);
 
-void Lv2Effect::RelayOutputMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter)
+    LV2_Atom_Forge_Frame objectFrame;
+    LV2_Atom_Forge_Ref set =
+        lv2_atom_forge_object(&inputForgeRt, &objectFrame, 0, urids.patch__Set);
+    {
+        lv2_atom_forge_key(&inputForgeRt, urids.patch__property);
+        lv2_atom_forge_urid(&inputForgeRt, uridUri);
+        lv2_atom_forge_key(&inputForgeRt, urids.patch__value);
+        lv2_atom_forge_write(&inputForgeRt,value,size);
+    }
+
+    lv2_atom_forge_pop(&inputForgeRt, &objectFrame);
+}
+
+
+void Lv2Effect::RelayPatchSetMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter)
 {
     LV2_Atom_Sequence*controlOutput = (LV2_Atom_Sequence*)GetAtomOutputBuffer();
     if (controlOutput == nullptr)
@@ -534,6 +577,7 @@ void Lv2Effect::RelayOutputMessages(uint64_t instanceId,RealtimeRingBufferWriter
         return;
     }
 
+    bool stateChanged = false;
     LV2_ATOM_SEQUENCE_FOREACH(controlOutput, ev)
     {
 
@@ -542,62 +586,72 @@ void Lv2Effect::RelayOutputMessages(uint64_t instanceId,RealtimeRingBufferWriter
         if (lv2_atom_forge_is_object_type(&this->outputForgeRt, ev->body.type))
         {
             const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
-            if (obj->body.otype != uris.patch_Set) // patch_Set is handled elsewhere.
+            if (obj->body.otype == urids.state__StateChanged)
+            {
+                stateChanged = true;
+            } else if (obj->body.otype == urids.patch__Set) // patch_Set is handled elsewhere.
             {
                 realtimeRingBufferWriter->AtomOutput(instanceId,obj->atom.size +sizeof(obj->atom),(uint8_t*)obj);
             }
         }
+        if (stateChanged)
+        {
+            realtimeRingBufferWriter->Lv2StateChanged(instanceId);
+        }
     }
 }
 
-void Lv2Effect::GatherParameter(RealtimeParameterRequest *pRequest)
+void Lv2Effect::GatherPatchProperties(RealtimePatchPropertyRequest *pRequest)
 {
-    LV2_Atom_Sequence*controlInput = (LV2_Atom_Sequence*)GetAtomOutputBuffer();
-    LV2_ATOM_SEQUENCE_FOREACH(controlInput, ev)
+    if (pRequest->requestType == RealtimePatchPropertyRequest::RequestType::PatchGet)
     {
-
-        // frame_offset = ev->time.frames;  // not really interested.
-
-        if (lv2_atom_forge_is_object_type(&this->outputForgeRt, ev->body.type))
+        LV2_Atom_Sequence*controlInput = (LV2_Atom_Sequence*)GetAtomOutputBuffer();
+        if (controlInput == nullptr) 
         {
-            const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
-            if (obj->body.otype == uris.patch_Set)
+            return;
+        }
+        LV2_ATOM_SEQUENCE_FOREACH(controlInput, ev)
+        {
+
+            // frame_offset = ev->time.frames;  // not really interested.
+
+            if (lv2_atom_forge_is_object_type(&this->outputForgeRt, ev->body.type))
             {
-                // Get the property and value of the set message
-                const LV2_Atom *property = NULL;
-                const LV2_Atom *value = NULL;
+                const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+                if (obj->body.otype == urids.patch__Set)
+                {
+                    // Get the property and value of the set message
+                    const LV2_Atom *property = NULL;
+                    const LV2_Atom *value = NULL;
 
-                lv2_atom_object_get(
-                    obj,
-                    uris.patch_property, &property,
-                    uris.patch_value, &value,
-                    0);
+                    lv2_atom_object_get(
+                        obj,
+                        urids.patch__property, &property,
+                        urids.patch__value, &value,
+                        0);
 
-                if (!property)
-                {
-                }
-                else if (property->type != uris.atom_URID)
-                {
-                }
-                else
-                {
-                    LV2_URID key = ((const LV2_Atom_URID *)property)->body;
-                    if (key == pRequest->uridUri)
+                    if (property && property->type == urids.atom__URID && value)
                     {
-                        int atom_size = value->size + sizeof(LV2_Atom);
-                        if (atom_size > sizeof(pRequest->response))
+                        LV2_URID key = ((const LV2_Atom_URID *)property)->body;
+                        if (key == pRequest->uridUri)
                         {
-                            pRequest->errorMessage = "Response is too large.";
-                        } else {
-                            pRequest->responseLength = atom_size;
-                            memcpy(pRequest->response,value,atom_size);
+                            int atom_size = value->size + sizeof(LV2_Atom);
+                            pRequest->SetSize(atom_size);
+                            memcpy(pRequest->GetBuffer(),value,atom_size);
+                            break;
                         }
-                        break;
                     }
                 }
             }
         }
     }
+}
+bool Lv2Effect::GetLv2State(Lv2PluginState*state)
+{
+    if (!this->stateInterface) return false;
+
+    *state = this->stateInterface->Save();
+    return true;
 }
 
 

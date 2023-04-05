@@ -123,13 +123,37 @@ export class PiPedalFileType {
     name: string = "";
     fileExtension: string = "";
 }
+
+export class UiPropertyNotification {
+    deserialize(input: any): UiPropertyNotification
+    {
+        this.portIndex = input.portIndex;
+        this.symbol = input.symbol;
+        this.plugin = input.plugin;
+        this.protocol = input.protocol;
+        return this;
+    }
+    static deserialize_array(input: any): UiPropertyNotification[]
+    {
+        let result: UiPropertyNotification[] = [];
+        for (let i = 0; i < input.length; ++i)
+        {
+            result[i] = new UiPropertyNotification().deserialize(input[i]);
+        }
+        return result;
+    }
+    portIndex: number = -1;
+    symbol: string = "";
+    plugin: string = "";
+    protocol: string = "";
+
+};
 export class PiPedalFileProperty {
         deserialize(input: any): PiPedalFileProperty
         {
             this.name = input.name;
             this.fileTypes = PiPedalFileType.deserialize_array(input.fileTypes);
             this.patchProperty = input.patchProperty;
-            this.defaultFile = input.defaultFile;
             this.directory = input.directory;
             return this;
         }
@@ -147,7 +171,6 @@ export class PiPedalFileProperty {
         fileTypes: PiPedalFileType[] = [];
         patchProperty: string = "";
         directory: string = "";
-        defaultFile: string = "";
 
 };
 export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
@@ -170,6 +193,12 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
         } else {
             this.fileProperties = [];
         }
+        if (input.uiPortNotifications)
+        {
+            this.uiPortNotifications = UiPropertyNotification.deserialize_array(input.uiPortNotifications);
+        } else {
+            this.uiPortNotifications = [];
+        }
         return this;
     }
     static EmptyFeatures: string[] = [];
@@ -186,6 +215,7 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
     ports:              Port[] = Port.EmptyPorts;
     port_groups:        PortGroup[] = [];
     fileProperties:            PiPedalFileProperty[] = [];
+    uiPortNotifications: UiPropertyNotification[] = [];
 }
 
 

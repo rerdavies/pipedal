@@ -23,6 +23,8 @@
 #include "Lv2Log.hpp"
 #include "VuUpdate.hpp"
 #include "AudioHost.hpp"
+#include "lv2/atom.lv2/atom.h"
+#include <chrono>
 namespace pipedal
 {
 
@@ -55,6 +57,8 @@ namespace pipedal
         AckMidiProgramChange = 19,
 
         NextMidiProgram = 20,
+
+        Lv2StateChanged = 21,
 
     };
 
@@ -151,17 +155,17 @@ namespace pipedal
         float value;
     };
 
-    class Lv2PedalBoard;
+    class Lv2Pedalboard;
 
     class ReplaceEffectBody
     {
     public:
-        Lv2PedalBoard *effect;
+        Lv2Pedalboard *effect;
     };
     class EffectReplacedBody
     {
     public:
-        Lv2PedalBoard *oldEffect;
+        Lv2Pedalboard *oldEffect;
     };
 
     template <bool MULTI_WRITE, bool SEMAPHORE_READ>
@@ -182,8 +186,20 @@ namespace pipedal
         }
 
         // 0 -> ready. -1: timed out. -2: closing.
-        int wait(struct timespec &timeout) {
-            return ringBuffer->readWait(timeout);
+        template <class Rep, class Period> 
+        RingBufferStatus wait_for(const std::chrono::duration<Rep,Period>& timeout) {
+            return ringBuffer->readWait_for(timeout);
+        }
+
+        template <typename Clock, typename Duration>
+        RingBufferStatus wait_until(std::chrono::time_point<Clock,Duration>&time_point)
+        {
+            return ringBuffer->readWait_until(time_point);
+        }
+        template <typename Clock, typename Duration>
+        RingBufferStatus wait_until(size_t size,std::chrono::time_point<Clock,Duration>&time_point)
+        {
+            return ringBuffer->readWait_until(size,time_point);
         }
 
         bool wait() {
@@ -196,9 +212,6 @@ namespace pipedal
         template <typename T>
         bool read(T *output)
         {
-            size_t available = readSpace();
-            if (available < sizeof(T))
-                return false;
             if (!ringBuffer->read(sizeof(T),(uint8_t*)output))
             {
                 throw PiPedalStateException("Ringbuffer read failed. Did you forget to check for space?");
@@ -294,15 +307,23 @@ namespace pipedal
 
             }
         }
+        void Lv2StateChanged(uint64_t instanceId)
+        {
+            write(RingBufferCommand::Lv2StateChanged,instanceId);
+        }
         void AtomOutput(uint64_t instanceId, size_t bytes, uint8_t*data)
         {
             write(RingBufferCommand::AtomOutput,instanceId,bytes,data);
         }
-        void ParameterRequest(RealtimeParameterRequest *pRequest)
+        void AtomOutput(uint64_t instanceId, const LV2_Atom*atom)
+        {
+            write(RingBufferCommand::AtomOutput,instanceId,atom->size+sizeof(LV2_Atom),(uint8_t*)atom);
+        }
+        void ParameterRequest(RealtimePatchPropertyRequest *pRequest)
         {
             write(RingBufferCommand::ParameterRequest,pRequest);
         }
-        void ParameterRequestComplete(RealtimeParameterRequest *pRequest)
+        void ParameterRequestComplete(RealtimePatchPropertyRequest *pRequest)
         {
             write(RingBufferCommand::ParameterRequestComplete,pRequest);
         }
@@ -407,9 +428,9 @@ namespace pipedal
             write(RingBufferCommand::SetBypass,body);
         }
 
-        void ReplaceEffect(Lv2PedalBoard *pedalBoard)
+        void ReplaceEffect(Lv2Pedalboard *pedalboard)
         {
-            write(RingBufferCommand::ReplaceEffect, pedalBoard);
+            write(RingBufferCommand::ReplaceEffect, pedalboard);
         }
 
         void AudioStopped()
@@ -418,9 +439,9 @@ namespace pipedal
             write(RingBufferCommand::AudioStopped, body);
         }
 
-        void EffectReplaced(Lv2PedalBoard *pedalBoard)
+        void EffectReplaced(Lv2Pedalboard *pedalboard)
         {
-            write(RingBufferCommand::EffectReplaced, pedalBoard);
+            write(RingBufferCommand::EffectReplaced, pedalboard);
         }
     };
 

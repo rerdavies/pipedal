@@ -22,6 +22,7 @@
 #include "json.hpp"
 #include "json_variant.hpp"
 #include "MidiBinding.hpp"
+#include "StateInterface.hpp"
 
 namespace pipedal {
 
@@ -73,55 +74,34 @@ public:
 
 
 };
-class PropertyValue {
-private:
-    std::string propertyUri_;
-    json_variant value_;
-public:
-    PropertyValue()
-    {
 
-    }
-    template <typename T>
-    PropertyValue(const std::string&propertyUri, T value)
-    :propertyUri_(propertyUri)
-    , value_(value)
-    {
-
-    }
-    GETTER_SETTER_REF(propertyUri)
-    GETTER_SETTER_REF(value)
-
-    DECLARE_JSON_MAP(PropertyValue);
-
-
-};
-
-class PedalBoardItem: public JsonMemberWritable {
+class PedalboardItem: public JsonMemberWritable {
     int64_t instanceId_ = 0;
     std::string uri_;
     std::string pluginName_;
     bool isEnabled_ = true;
     std::vector<ControlValue> controlValues_;
-    std::vector<PropertyValue> propertyValues_;
-    std::vector<PedalBoardItem> topChain_;
-    std::vector<PedalBoardItem> bottomChain_;
+    std::vector<PedalboardItem> topChain_;
+    std::vector<PedalboardItem> bottomChain_;
     std::vector<MidiBinding> midiBindings_;
     std::string vstState_;
+    Lv2PluginState lv2State_;
 public:
     ControlValue*GetControlValue(const std::string&symbol);
-    PropertyValue*GetPropertyValue(const std::string&propertyUri);
     
+    bool hasLv2State() const {
+        return lv2State_.values_.size() != 0;
+    }
     GETTER_SETTER(instanceId)
     GETTER_SETTER_REF(uri)
     GETTER_SETTER_REF(vstState);
     GETTER_SETTER_REF(pluginName)
     GETTER_SETTER(isEnabled)
     GETTER_SETTER_VEC(controlValues)
-    GETTER_SETTER_VEC(propertyValues)
     GETTER_SETTER_VEC(topChain)
     GETTER_SETTER_VEC(bottomChain)
     GETTER_SETTER_VEC(midiBindings)
+    GETTER_SETTER_REF(lv2State)
 
 
     bool isSplit() const
@@ -137,7 +117,6 @@ public:
         writer.write_member("uri",uri_);
         writer.write_member("pluginName",pluginName_);
         writer.write_member("isEnabled",isEnabled_);
-        writer.write_member("controlValues",controlValues_);
         if (isSplit())
         {
             writer.write_member("topChain",topChain_);
@@ -145,13 +124,13 @@ public:
         }
     }
 
-    DECLARE_JSON_MAP(PedalBoardItem);
+    DECLARE_JSON_MAP(PedalboardItem);
 };
 
 
-class PedalBoard {
+class Pedalboard {
     std::string name_;
-    std::vector<PedalBoardItem> items_;
+    std::vector<PedalboardItem> items_;
     uint64_t nextInstanceId_ = 0;
     uint64_t NextInstanceId() { return ++nextInstanceId_; }
 
@@ -159,8 +138,9 @@ public:
     bool SetControlValue(long pedalItemId, const std::string &symbol, float value);
     bool SetItemEnabled(long pedalItemId, bool enabled);
 
-    PedalBoardItem*GetItem(long pedalItemId);
-    const PedalBoardItem*GetItem(long pedalItemId) const;
+    PedalboardItem*GetItem(long pedalItemId);
+    const PedalboardItem*GetItem(long pedalItemId) const;
+    std::vector<PedalboardItem*>GetAllPlugins();
 
     bool HasItem(long pedalItemid) const { return GetItem(pedalItemid) != nullptr; }
 
@@ -168,13 +148,13 @@ public:
     GETTER_SETTER_VEC(items)
 
 
-    DECLARE_JSON_MAP(PedalBoard);
+    DECLARE_JSON_MAP(Pedalboard);
 
-    PedalBoardItem MakeEmptyItem();
-    PedalBoardItem MakeSplit();
+    PedalboardItem MakeEmptyItem();
+    PedalboardItem MakeSplit();
 
 
-    static PedalBoard MakeDefault();
+    static Pedalboard MakeDefault();
 };
 
 #undef GETTER_SETTER_REF

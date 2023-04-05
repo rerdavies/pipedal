@@ -47,12 +47,9 @@ function peekDialogStack(): string {
     return "";
 }
 
-let ignoreNextPop = false;
-
-function popDialogStack(ignoreNextPop_: boolean): void {
+function popDialogStack(): void {
     if (dialogStack.length !== 0)
     {
-        ignoreNextPop = ignoreNextPop_;
         dialogStack.splice(dialogStack.length-1,1);
     }
 }
@@ -76,27 +73,23 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
     mounted: boolean = false;
 
     hasHooks: boolean = false;
-
     stateWasPopped: boolean = false;
-    handlePopState(e: any): any {
+
+    handlePopState(e: any): any 
+    {
         let shouldClose = (peekDialogStack() === this.props.tag);
         if (shouldClose)
         {
-            if (ignoreNextPop)
-            {
-                ignoreNextPop = false;
-            } else {
-                if (!this.stateWasPopped)
-                {
-                    this.stateWasPopped = true;
 
-                    if (this.props.onClose)
-                    {
-                        popDialogStack(false);
-                        this.props.onClose(e,"backdropClick");
-                    }
+            if (!this.stateWasPopped)
+            {
+                this.stateWasPopped = true;
+                popDialogStack();
+                if (this.props.open) {
+                    this.props.onClose?.(e,"backdropClick");
                 }
             }
+            window.removeEventListener("popstate",this.handlePopState);
             e.stopPropagation();
         }
     }
@@ -111,49 +104,35 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
             {
                 this.stateWasPopped = false;
                 window.addEventListener("popstate",this.handlePopState);
-                // eslint-disable-next-line no-restricted-globals
-                let state = history.state;
-                if (!state)
-                {
-                    state = {};
-                }
-                state[this.props.tag] = true;
-
+                
                 pushDialogStack(this.props.tag);
+                let state: {tag: string} = {tag: this.props.tag};
                 // eslint-disable-next-line no-restricted-globals
                 history.pushState(
                     state,
                     "",
-                    "" //"#" + this.props.tag
+                    "#" + this.props.tag
                 );
             } else {
                 if (!this.stateWasPopped)
                 {
-                    this.stateWasPopped = true;
-                    popDialogStack(true);
                     // eslint-disable-next-line no-restricted-globals
                     history.back();
                 }
-                window.removeEventListener("popstate",this.handlePopState);
             }
         }
     }
 
     componentDidMount()
     {
-        if (super.componentDidMount)
-        {
-            super.componentDidMount();
-        }
+        super.componentDidMount?.();
+
         this.mounted = true;
         this.updateHooks();
     }
     componentWillUnmount()
     {
-        if (super.componentWillUnmount)
-        {
-            super.componentWillUnmount();
-        }
+        super.componentWillUnmount?.();
         this.mounted = false;
         this.updateHooks();
     }
@@ -162,12 +141,15 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
     {
         this.updateHooks();
     }
-
+    myOnClose(event:{}, reason: "backdropClick" | "escapeKeyDown")
+    {
+        if (this.props.onClose) this.props.onClose(event,reason);
+    }
 
     render() {
-        let { tag, ...extra} = this.props;
+        let { tag,onClose, ...extra} = this.props;
         return (
-            <Dialog {...extra}>
+            <Dialog {...extra} onClose={(event,reason)=>{ this.myOnClose(event,reason);}}>
                 {this.props.children}
             </Dialog>
         );

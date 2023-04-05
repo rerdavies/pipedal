@@ -32,48 +32,76 @@
 #include "lv2/urid.lv2/urid.h"
 #include "lv2/atom.lv2/atom.h"
 #include "lv2/worker.lv2/worker.h"
+#include "condition_variable"
 
 #include <map>
 #include <string>
 #include <mutex>
 #include <thread>
 #include "RingBuffer.hpp"
+#include <memory>
 
 
 namespace pipedal {
+
+    class Worker;
+
+    class HostWorkerThread {
+    public:
+        HostWorkerThread();
+        ~HostWorkerThread();
+
+        void Close();
+        LV2_Worker_Status ScheduleWork(Worker*worker, size_t size, const void*data);
+    private:
+        bool closed = false;
+        std::unique_ptr<std::thread> pThread;
+        void ThreadProc() noexcept;
+
+        RingBuffer<false,true> requestRingBuffer;
+        bool exiting = false;
+        std::mutex submitMutex;
+
+        std::vector<uint8_t> dataBuffer;
+
+        
+
+    };
+
 	class Worker {
 
 	private:
+        std::shared_ptr<HostWorkerThread> pHostWorker = nullptr;
         LilvInstance*lilvInstance;
         const LV2_Worker_Interface*workerInterface;
 
-        sem_t requestSemaphore;
+        bool closed = false;
         bool exiting = false;
-        RingBuffer<false,true> requestRingBuffer;
         RingBuffer<true,false> responseRingBuffer;
 
-        char *responseBuffer;
-
-        std::thread* pThread = nullptr;
-
-        void ThreadProc();
-        void StartWorkerThread();
-        void StopWorkerThread();
+        std::vector<uint8_t> responseBuffer;
 
         static LV2_Worker_Status worker_respond_fn(LV2_Worker_Respond_Handle handle, uint32_t size, const void* data);
 
 
-        LV2_Worker_Status WorkerResponse(uint32_t size,const void*data);
+        LV2_Worker_Status WorkerRespond(uint32_t size,const void*data);
 
+        std::mutex outstandingRequestMutex;
+        std::condition_variable cvOutstandingRequests;
+        int64_t outstandingRequests = 0;
+        void WaitForAllResponses();
 	public:
-		Worker(LilvInstance *instance, const LV2_Worker_Interface *iface);
+		Worker(const std::shared_ptr<HostWorkerThread>& pHostWorker,LilvInstance *instance, const LV2_Worker_Interface *iface);
         ~Worker();
+        void Close();
 
         LV2_Worker_Status ScheduleWork(
             uint32_t size,
             const void *data);
 
-        void EmitResponses();
+        void RunBackgroundTask(size_t size, uint8_t*data);
+        
+        bool EmitResponses();
 
 
 	};

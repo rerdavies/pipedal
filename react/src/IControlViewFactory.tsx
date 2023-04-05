@@ -19,13 +19,13 @@
 
 import React from 'react';
 import { PiPedalModel } from "./PiPedalModel";
-import { PedalBoardItem } from './PedalBoard';
+import { PedalboardItem } from './Pedalboard';
 
 
 
 interface IControlViewFactory  {
     uri: string;
-    Create(model: PiPedalModel,pedalBoardItem: PedalBoardItem): React.ReactNode;
+    Create(model: PiPedalModel,pedalboardItem: PedalboardItem): React.ReactNode;
 
 }
 

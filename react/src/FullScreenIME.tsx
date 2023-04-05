@@ -203,7 +203,7 @@ const FullScreenIME =
                             justifyContent: "center", alignItems: "center"
                         }}
                         >
-                            <Typography variant="body2">{this.props.caption}</Typography>
+                            <Typography noWrap variant="body2">{this.props.caption}</Typography>
                             <Input key={value}
                                 type="number"
                                 defaultValue={control.formatShortValue(value)}

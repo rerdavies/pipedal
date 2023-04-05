@@ -162,15 +162,18 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
         }
 
         componentDidMount() {
+            super.componentDidMount?.();
             this.mounted = true;
             this.updateNotifications();
             this.startFossRequest();
         }
         componentWillUnmount() {
+            super.componentWillUnmount?.();
             this.mounted = false;
             this.updateNotifications();
         }
-        componentDidUpdate() {
+        componentDidUpdate(prevProps: Readonly<AboutDialogProps>, prevState: Readonly<AboutDialogState>, snapshot: any): void {
+            super.componentDidUpdate?.(prevProps,prevState,snapshot);
             this.updateNotifications();
         }
 
@@ -196,7 +199,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                                     >
                                         <ArrowBackIcon />
                                     </IconButton>
-                                    <Typography variant="h6" className={classes.dialogTitle}>
+                                    <Typography noWrap variant="h6" className={classes.dialogTitle}>
                                         About
                                     </Typography>
                                 </Toolbar>
@@ -208,28 +211,28 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                         }}
                         >
                             <div style={{ margin: 24 }}>
-                                <Typography display="block" variant="h6" color="textPrimary">
+                                <Typography noWrap display="block" variant="h6" color="textPrimary">
                                     PiPedal <span style={{ fontSize: "0.7em" }}>
                                         {(this.model.serverVersion ? this.model.serverVersion.serverVersion : "")
                                             + (this.model.serverVersion?.debug ? " (Debug)" : "")}
                                     </span>
                                 </Typography>
-                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}  >
+                                <Typography noWrap display="block" variant="body2" style={{ marginBottom: 12 }}  >
                                     Copyright &#169; 2022 Robin Davies.
                                 </Typography>
                                 {this.model.isAndroidHosted() && (
-                                    <Typography display="block" variant="body2" style={{ marginBottom: 0 }}  >
+                                    <Typography noWrap display="block" variant="body2" style={{ marginBottom: 0 }}  >
                                         {this.model.getAndroidHostVersion()}
                                     </Typography>
                                 )}
 
                                 {this.model.isAndroidHosted() && (
-                                    <Typography display="block" variant="body2" style={{ marginBottom: 12 }}  >
+                                    <Typography noWrap display="block" variant="body2" style={{ marginBottom: 12 }}  >
                                         Copyright &#169; 2022 Robin Davies.
                                     </Typography>
                                 )}
                                 <Divider />
-                                <Typography display="block" variant="caption"  >
+                                <Typography noWrap display="block" variant="caption"  >
                                     ADDRESSES
                                 </Typography>
                                 <div style={{marginBottom: 16}}>

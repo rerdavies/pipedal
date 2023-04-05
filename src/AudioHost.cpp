@@ -18,11 +18,13 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "AudioHost.hpp"
+#include "util.hpp"
 
 #include "Lv2Log.hpp"
 
 #include "JackDriver.hpp"
 #include "AlsaDriver.hpp"
+#include "AtomConverter.hpp"
 
 using namespace pipedal;
 
@@ -177,6 +179,11 @@ class AudioHostImpl : public AudioHost, private AudioDriverHost
 {
 private:
     IHost *pHost = nullptr;
+    LV2_Atom_Forge inputWriterForge;
+
+
+    std::mutex atomConverterMutex;
+    AtomConverter atomConverter;
 
     static constexpr size_t DEFERRED_MIDI_BUFFER_SIZE = 1024;
 
@@ -277,9 +284,9 @@ private:
     JackChannelSelection channelSelection;
     bool active = false;
 
-    std::shared_ptr<Lv2PedalBoard> currentPedalBoard;
-    std::vector<std::shared_ptr<Lv2PedalBoard>> activePedalBoards; // pedalboards that have been sent to the audio queue.
-    Lv2PedalBoard *realtimeActivePedalBoard = nullptr;
+    std::shared_ptr<Lv2Pedalboard> currentPedalboard;
+    std::vector<std::shared_ptr<Lv2Pedalboard>> activePedalboards; // pedalboards that have been sent to the audio queue.
+    Lv2Pedalboard *realtimeActivePedalboard = nullptr;
 
     std::vector<uint8_t *> midiLv2Buffers;
 
@@ -297,18 +304,19 @@ private:
         {
             throw std::invalid_argument("Not an Lv2 Object");
         }
-        return pHost->Lv2UriudToString(pAtom->body.otype);
+        return pHost->Lv2UridToString(pAtom->body.otype);
     }
 
-    void WriteAtom(json_writer &writer, LV2_Atom *pAtom);
 
-    std::string AtomToJson(uint8_t *pData)
+    std::string AtomToJson(const LV2_Atom *pAtom)
     {
+        std::lock_guard lock(atomConverterMutex);
+        json_variant vAtom = atomConverter.ToJson(pAtom);
+
         std::stringstream s;
         json_writer writer(s);
-        LV2_Atom *pAtom = (LV2_Atom *)pData;
-
-        WriteAtom(writer, pAtom);
+    
+        writer.write(vAtom);
         return s.str();
     }
 
@@ -325,7 +333,6 @@ private:
             return;
 
         isOpen = false;
-        StopReaderThread();
 
         if (realtimeMonitorPortSubscriptions != nullptr)
         {
@@ -341,9 +348,13 @@ private:
 
         audioDriver->Close();
 
+        StopReaderThread();
+        pHost->GetHostWorkerThread()->Close();
+
+
         // release any pdealboards owned by the process thread.
-        this->activePedalBoards.resize(0);
-        this->realtimeActivePedalBoard = nullptr;
+        this->activePedalboards.resize(0);
+        this->realtimeActivePedalboard = nullptr;
 
         // clean up any realtime buffers that may have been lost in transit.
         // TODO: These should be lists, really. There may be multiple items in flight..
@@ -365,6 +376,7 @@ private:
             delete[] midiLv2Buffers[i];
         }
         midiLv2Buffers.resize(0);
+
     }
 
     void ZeroBuffer(float *buffer, size_t nframes)
@@ -442,7 +454,7 @@ private:
                 portSubscription.samplesToNextCallback += portSubscription.sampleRate;
                 if (!portSubscription.waitingForAck)
                 {
-                    float value = realtimeActivePedalBoard->GetControlOutputValue(
+                    float value = realtimeActivePedalboard->GetControlOutputValue(
                         portSubscription.instanceIndex,
                         portSubscription.portIndex);
                     if (value != portSubscription.lastValue)
@@ -459,7 +471,7 @@ private:
         }
     }
 
-    RealtimeParameterRequest *pParameterRequests = nullptr;
+    RealtimePatchPropertyRequest *pParameterRequests = nullptr;
 
     bool reEntered = false;
     void ProcessInputCommands()
@@ -486,12 +498,12 @@ private:
             {
                 SetControlValueBody body;
                 realtimeReader.readComplete(&body);
-                this->realtimeActivePedalBoard->SetControlValue(body.effectIndex, body.controlIndex, body.value);
+                this->realtimeActivePedalboard->SetControlValue(body.effectIndex, body.controlIndex, body.value);
                 break;
             }
             case RingBufferCommand::ParameterRequest:
             {
-                RealtimeParameterRequest *pRequest = nullptr;
+                RealtimePatchPropertyRequest *pRequest = nullptr;
                 realtimeReader.readComplete(&pRequest);
 
                 // link to the list of parameter requests.
@@ -562,7 +574,7 @@ private:
             {
                 SetBypassBody body;
                 realtimeReader.readComplete(&body);
-                this->realtimeActivePedalBoard->SetBypass(body.effectIndex, body.enabled);
+                this->realtimeActivePedalboard->SetBypass(body.effectIndex, body.enabled);
                 break;
             }
             case RingBufferCommand::ReplaceEffect:
@@ -572,8 +584,8 @@ private:
 
                 if (body.effect != nullptr)
                 {
-                    auto oldValue = this->realtimeActivePedalBoard;
-                    this->realtimeActivePedalBoard = body.effect;
+                    auto oldValue = this->realtimeActivePedalboard;
+                    this->realtimeActivePedalboard = body.effect;
 
                     realtimeWriter.EffectReplaced(oldValue);
 
@@ -612,7 +624,7 @@ private:
     {
         eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
 
-        this->realtimeActivePedalBoard->OnMidiMessage(event.size, event.buffer, this, fnMidiValueChanged);
+        this->realtimeActivePedalboard->OnMidiMessage(event.size, event.buffer, this, fnMidiValueChanged);
         if (listenForMidiEvent)
         {
             if (event.size >= 3)
@@ -756,8 +768,8 @@ private:
 
             bool processed = false;
 
-            Lv2PedalBoard *pedalBoard = this->realtimeActivePedalBoard;
-            if (pedalBoard != nullptr)
+            Lv2Pedalboard *pedalboard = this->realtimeActivePedalboard;
+            if (pedalboard != nullptr)
             {
                 ProcessMidiInput();
                 float *inputBuffers[4];
@@ -789,15 +801,15 @@ private:
 
                 if (buffersValid)
                 {
-                    pedalBoard->ResetAtomBuffers();
-                    pedalBoard->ProcessParameterRequests(pParameterRequests);
+                    pedalboard->ResetAtomBuffers();
+                    pedalboard->ProcessParameterRequests(pParameterRequests);
 
-                    processed = pedalBoard->Run(inputBuffers, outputBuffers, (uint32_t)nframes, &realtimeWriter);
+                    processed = pedalboard->Run(inputBuffers, outputBuffers, (uint32_t)nframes, &realtimeWriter);
                     if (processed)
                     {
                         if (this->realtimeVuBuffers != nullptr)
                         {
-                            pedalBoard->ComputeVus(this->realtimeVuBuffers, (uint32_t)nframes);
+                            pedalboard->ComputeVus(this->realtimeVuBuffers, (uint32_t)nframes);
 
                             vuSamplesRemaining -= nframes;
                             if (vuSamplesRemaining <= 0)
@@ -811,14 +823,10 @@ private:
                             processMonitorPortSubscriptions(nframes);
                         }
                     }
-                    pedalBoard->GatherParameterRequests(pParameterRequests);
+                    pedalboard->GatherPatchProperties(pParameterRequests);
                 }
             }
 
-            // in = jack_port_get_buffer(input_port, nframes);
-            // out = jack_port_get_buffer(output_port, nframes);
-            // memcpy(out, in,
-            //        sizeof(jack_default_audio_sample_t) * nframes);
             if (!processed)
             {
                 ZeroOutputBuffers(nframes);
@@ -841,7 +849,6 @@ private:
             throw;
         }
     }
-
 public:
     AudioHostImpl(IHost *pHost)
         : inputRingBuffer(RING_BUFFER_SIZE),
@@ -852,8 +859,11 @@ public:
           hostWriter(&this->inputRingBuffer),
           eventBufferUrids(pHost),
           pHost(pHost),
-          uris(pHost)
+          uris(pHost),
+          atomConverter(pHost->GetMapFeature())
     {
+        realtimeAtomBuffer.resize(32*1024);
+        lv2_atom_forge_init(&inputWriterForge,pHost->GetMapFeature().GetMap());
 
 #if JACK_HOST
         audioDriver = CreateJackDriver(this);
@@ -869,6 +879,7 @@ public:
 
         delete audioDriver;
     }
+
 
     virtual JackConfiguration GetServerConfiguration()
     {
@@ -893,6 +904,7 @@ public:
         realtimeWriter.AudioStopped();
     }
     std::vector<uint8_t> atomBuffer;
+    std::vector<uint8_t> realtimeAtomBuffer;
 
     bool terminateThread;
     void ThreadProc()
@@ -917,6 +929,7 @@ public:
         {
             Lv2Log::debug("Service thread priority successfully boosted.");
         }
+        SetThreadName("aout");
 #else
         xxx; // TODO!
 #endif
@@ -924,16 +937,16 @@ public:
         try
         {
 
-            struct timespec ts;
-            // ever 30  seconds, timeout check for and log any overruns.
-            int pollRateS = 30;
-            if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
-            {
-                Lv2Log::error("clock_gettime failed!");
-                return;
-            }
-            ts.tv_sec += pollRateS;
             uint64_t lastUnderrunCount = this->underruns;
+
+            using clock = std::chrono::steady_clock;
+            using clock_time = std::chrono::steady_clock::time_point;
+            using clock_duration = clock_time::duration;
+
+            // check for overruns every 30 seconds.
+            clock_duration waitPeriod = 
+                std::chrono::duration_cast<clock_duration>(std::chrono::seconds(30));
+            clock_time waitTime =  std::chrono::steady_clock::now();
 
             while (true)
             {
@@ -941,27 +954,24 @@ public:
                 // wait for an event.
                 // 0 -> ready. -1: timed out. -2: closing.
 
-                int result = hostReader.wait(ts);
-                if (result == -2)
+                auto result = hostReader.wait_until(sizeof(RingBufferCommand), waitTime);
+                if (result == RingBufferStatus::Closed)
                 {
                     return;
                 }
-                else if (result == -1)
+                else if (result == RingBufferStatus::TimedOut)
                 {
                     // timeout.
-                    ts.tv_sec += pollRateS;
-                    uint64_t underruns = this->underruns;
                     if (underruns != lastUnderrunCount)
                     {
                         if (underrunMessagesGiven < 60) // limit how much log file clutter we generate.
                         {
-                            Lv2Log::info("Jack - Underrun count: %lu", (unsigned long)underruns);
+                            Lv2Log::info("Audio underrun count: %lu", (unsigned long)underruns);
                             lastUnderrunCount = underruns;
                             ++underrunMessagesGiven;
                         }
                     }
-                    clock_gettime(CLOCK_REALTIME, &ts);
-                    ts.tv_sec += pollRateS;
+                    waitTime += waitPeriod;
                 }
                 else
                 {
@@ -996,32 +1006,42 @@ public:
                             }
                             else if (command == RingBufferCommand::ParameterRequestComplete)
                             {
-                                RealtimeParameterRequest *pRequest = nullptr;
+                                RealtimePatchPropertyRequest *pRequest = nullptr;
                                 hostReader.read(&pRequest);
 
-                                std::shared_ptr<Lv2PedalBoard> currentpedalBoard;
+                                std::shared_ptr<Lv2Pedalboard> currentpedalboard;  
 
                                 {
                                     std::lock_guard guard(mutex);
-                                    currentPedalBoard = this->currentPedalBoard;
+                                    currentPedalboard = this->currentPedalboard;
                                 }
 
                                 while (pRequest != nullptr)
                                 {
                                     auto pNext = pRequest->pNext;
-                                    if (pRequest->errorMessage == nullptr && pRequest->responseLength != 0)
+                                    if (pRequest->requestType == RealtimePatchPropertyRequest::RequestType::PatchGet)
                                     {
-                                        IEffect *pEffect = currentPedalBoard->GetEffect(pRequest->instanceId);
-                                        if (pEffect == nullptr)
+                                        if (pRequest->errorMessage == nullptr)
                                         {
-                                            pRequest->errorMessage = "Effect no longer available.";
-                                        }
-                                        else
-                                        {
-                                            pRequest->jsonResponse = AtomToJson(pRequest->response);
+                                            if (pRequest->GetSize() != 0) {
+                                                IEffect *pEffect = currentPedalboard->GetEffect(pRequest->instanceId);
+                                                if (pEffect == nullptr)
+                                                {
+                                                    pRequest->errorMessage = "Effect no longer available.";
+                                                }
+                                                else
+                                                {
+                                                    pRequest->jsonResponse = AtomToJson((LV2_Atom*)pRequest->GetBuffer());
+                                                }
+                                            } else {
+                                                pRequest->errorMessage = "Plugin did not respond.";
+                                            }
                                         }
                                     }
-                                    pRequest->onJackRequestComplete(pRequest);
+                                    if (pRequest->onPatchRequestComplete)
+                                    {
+                                        pRequest->onPatchRequestComplete(pRequest);
+                                    }
                                     pRequest = pNext;
                                 }
                             }
@@ -1047,6 +1067,12 @@ public:
                                 }
                                 this->hostWriter.AckVuUpdate(); // please sir, can I have some more?
                             }
+                            else if (command == RingBufferCommand::Lv2StateChanged)
+                            {
+                                uint64_t instanceId;
+                                hostReader.read(&instanceId);
+                                this->pNotifyCallbacks->OnNotifyLv2StateChanged(instanceId);
+                            }
                             else if (command == RingBufferCommand::AtomOutput)
                             {
                                 uint64_t instanceId;
@@ -1059,12 +1085,35 @@ public:
                                 }
                                 hostReader.read(extraBytes, &(atomBuffer[0]));
 
-                                IEffect *pEffect = currentPedalBoard->GetEffect(instanceId);
+                                IEffect *pEffect = currentPedalboard->GetEffect(instanceId);
                                 if (pEffect != nullptr && this->pNotifyCallbacks && listenForAtomOutput)
                                 {
-                                    std::string atomType = GetAtomObjectType(&atomBuffer[0]);
-                                    auto json = AtomToJson(&(atomBuffer[0]));
-                                    this->pNotifyCallbacks->OnNotifyAtomOutput(instanceId, atomType, json);
+                                    LV2_Atom *atom = (LV2_Atom*)&atomBuffer[0];
+                                    if (atom->type == uris.atom_Object)
+                                    {
+                                        LV2_Atom_Object *obj = (LV2_Atom_Object*)atom;
+                                        if (obj->body.otype == uris.patch_Set)
+                                        {
+                                            // Get the property and value of the set message
+                                            const LV2_Atom *property = nullptr;
+                                            const LV2_Atom *value = nullptr;
+
+                                            lv2_atom_object_get(
+                                                obj,
+                                                uris.patch_property, &property,
+                                                uris.patch_value, &value,
+                                                0);
+                                            if (property != nullptr && value != nullptr && property->type == uris.atom_URID)
+                                            {
+                                                LV2_URID propertyUrid = ((LV2_Atom_URID*)property)->body;
+                                                if (pNotifyCallbacks->WantsAtomOutput(instanceId,propertyUrid))
+                                                {
+                                                    auto json = AtomToJson(value);
+                                                    this->pNotifyCallbacks->OnNotifyAtomOutput(instanceId,propertyUrid,json);
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             else if (command == RingBufferCommand::FreeVuSubscriptions)
@@ -1083,7 +1132,7 @@ public:
                             {
                                 EffectReplacedBody body;
                                 hostReader.read(&body);
-                                OnActivePedalBoardReleased(body.oldEffect);
+                                OnActivePedalboardReleased(body.oldEffect);
                             }
                             else if (command == RingBufferCommand::AudioStopped)
                             {
@@ -1218,45 +1267,45 @@ public:
     {
         pNotifyCallbacks->OnNotifyMidiProgramChange(programRequest);
     }
-    void OnActivePedalBoardReleased(Lv2PedalBoard *pPedalBoard)
+    void OnActivePedalboardReleased(Lv2Pedalboard *pPedalboard)
     {
-        if (pPedalBoard)
+        if (pPedalboard)
         {
-            pPedalBoard->Deactivate();
+            pPedalboard->Deactivate();
             std::lock_guard guard(mutex);
 
-            for (auto it = activePedalBoards.begin(); it != activePedalBoards.end(); ++it)
+            for (auto it = activePedalboards.begin(); it != activePedalboards.end(); ++it)
             {
-                if ((*it).get() == pPedalBoard)
+                if ((*it).get() == pPedalboard)
                 {
                     // erase it, relinquishing shared_ptr ownership, usually deleting the object.
-                    activePedalBoards.erase(it);
+                    activePedalboards.erase(it);
                     return;
                 }
             }
         }
     }
 
-    virtual void SetPedalBoard(const std::shared_ptr<Lv2PedalBoard> &pedalBoard)
+    virtual void SetPedalboard(const std::shared_ptr<Lv2Pedalboard> &pedalboard)
     {
         std::lock_guard guard(mutex);
 
-        this->currentPedalBoard = pedalBoard;
+        this->currentPedalboard = pedalboard;
         if (active)
         {
-            pedalBoard->Activate();
-            this->activePedalBoards.push_back(pedalBoard);
-            hostWriter.ReplaceEffect(pedalBoard.get());
+            pedalboard->Activate();
+            this->activePedalboards.push_back(pedalboard);
+            hostWriter.ReplaceEffect(pedalboard.get());
         }
     }
 
     virtual void SetBypass(uint64_t instanceId, bool enabled)
     {
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalBoard)
+        if (active && this->currentPedalboard)
         {
             // use indices not instance ids, so we can just do a straight array index on the audio thread.
-            auto index = currentPedalBoard->GetIndexOfInstanceId(instanceId);
+            auto index = currentPedalboard->GetIndexOfInstanceId(instanceId);
             if (index >= 0)
             {
                 hostWriter.SetBypass((uint32_t)index, enabled);
@@ -1267,15 +1316,15 @@ public:
     virtual void SetPluginPreset(uint64_t instanceId, const std::vector<ControlValue> &values)
     {
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalBoard)
+        if (active && this->currentPedalboard)
         {
-            auto effectIndex = currentPedalBoard->GetIndexOfInstanceId(instanceId);
+            auto effectIndex = currentPedalboard->GetIndexOfInstanceId(instanceId);
             if (effectIndex != -1)
             {
                 for (size_t i = 0; i < values.size(); ++i)
                 {
                     const ControlValue &value = values[i];
-                    int controlIndex = this->currentPedalBoard->GetControlIndex(instanceId, value.key());
+                    int controlIndex = this->currentPedalboard->GetControlIndex(instanceId, value.key());
                     if (controlIndex != -1 && effectIndex != -1)
                     {
                         hostWriter.SetControlValue(effectIndex, controlIndex, value.value());
@@ -1288,11 +1337,11 @@ public:
     void SetControlValue(uint64_t instanceId, const std::string &symbol, float value)
     {
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalBoard)
+        if (active && this->currentPedalboard)
         {
             // use indices not instance ids, so we can just do a straight array index on the audio thread.
-            int controlIndex = this->currentPedalBoard->GetControlIndex(instanceId, symbol);
-            auto effectIndex = currentPedalBoard->GetIndexOfInstanceId(instanceId);
+            int controlIndex = this->currentPedalboard->GetControlIndex(instanceId, symbol);
+            auto effectIndex = currentPedalboard->GetIndexOfInstanceId(instanceId);
 
             if (controlIndex != -1 && effectIndex != -1)
             {
@@ -1301,11 +1350,14 @@ public:
         }
     }
 
+
+
+
     virtual void SetVuSubscriptions(const std::vector<int64_t> &instanceIds)
     {
         std::lock_guard guard(mutex);
 
-        if (active && this->currentPedalBoard)
+        if (active && this->currentPedalboard)
         {
 
             if (instanceIds.size() == 0)
@@ -1319,13 +1371,13 @@ public:
                 for (size_t i = 0; i < instanceIds.size(); ++i)
                 {
                     int64_t instanceId = instanceIds[i];
-                    auto effect = this->currentPedalBoard->GetEffect(instanceId);
+                    auto effect = this->currentPedalboard->GetEffect(instanceId);
                     if (!effect)
                     {
                         throw PiPedalStateException("Effect not found.");
                     }
 
-                    int index = this->currentPedalBoard->GetIndexOfInstanceId(instanceIds[i]);
+                    int index = this->currentPedalboard->GetIndexOfInstanceId(instanceIds[i]);
                     vuConfig->enabledIndexes.push_back(index);
                     VuUpdate v;
                     v.instanceId_ = instanceId;
@@ -1346,8 +1398,8 @@ public:
     {
         RealtimeMonitorPortSubscription result;
         result.subscriptionHandle = subscription.subscriptionHandle;
-        result.instanceIndex = this->currentPedalBoard->GetIndexOfInstanceId(subscription.instanceid);
-        IEffect *pEffect = this->currentPedalBoard->GetEffect(subscription.instanceid);
+        result.instanceIndex = this->currentPedalboard->GetIndexOfInstanceId(subscription.instanceid);
+        IEffect *pEffect = this->currentPedalboard->GetEffect(subscription.instanceid);
 
         result.portIndex = pEffect->GetControlIndex(subscription.key);
         result.sampleRate = (int)(this->GetSampleRate() * subscription.updateInterval);
@@ -1360,7 +1412,7 @@ public:
     {
         if (!active)
             return;
-        if (this->currentPedalBoard == nullptr)
+        if (this->currentPedalboard == nullptr)
             return;
         if (subscriptions.size() == 0)
         {
@@ -1372,7 +1424,7 @@ public:
 
             for (size_t i = 0; i < subscriptions.size(); ++i)
             {
-                if (this->currentPedalBoard->GetEffect(subscriptions[i].instanceid) != nullptr)
+                if (this->currentPedalboard->GetEffect(subscriptions[i].instanceid) != nullptr)
                 {
                     pSubscriptions->subscriptions.push_back(
                         MakeRealtimeSubscription(subscriptions[i]));
@@ -1383,6 +1435,10 @@ public:
     }
 
 private:
+
+    virtual void UpdatePluginStates(Pedalboard& pedalboard);
+    void UpdatePluginState(PedalboardItem &pedalboardItem);
+
     class RestartThread
     {
         AudioHostImpl *this_;
@@ -1478,12 +1534,12 @@ public:
         }
     }
 
-    virtual void getRealtimeParameter(RealtimeParameterRequest *pParameterRequest)
+    virtual void sendRealtimeParameterRequest(RealtimePatchPropertyRequest *pParameterRequest)
     {
         if (!active)
         {
             pParameterRequest->errorMessage = "Not active.";
-            pParameterRequest->onJackRequestComplete(pParameterRequest);
+            pParameterRequest->onPatchRequestComplete(pParameterRequest);
             return;
         }
         this->hostWriter.ParameterRequest(pParameterRequest);
@@ -1560,145 +1616,6 @@ static std::string UriToFieldName(const std::string &uri)
     return uri.substr(pos + 1);
 }
 
-void AudioHostImpl::WriteAtom(json_writer &writer, LV2_Atom *pAtom)
-{
-    if (pAtom->type == uris.atom_Blank)
-    {
-        writer.write_raw("null");
-    }
-    else if (pAtom->type == uris.atom_float)
-    {
-        writer.write(
-            ((LV2_Atom_Float *)pAtom)->body);
-    }
-    else if (pAtom->type == uris.atom_Int)
-    {
-        writer.write(
-            ((LV2_Atom_Int *)pAtom)->body);
-    }
-    else if (pAtom->type == uris.atom_Long)
-    {
-        writer.write(
-            ((LV2_Atom_Long *)pAtom)->body);
-    }
-    else if (pAtom->type == uris.atom_Double)
-    {
-        writer.write(
-            ((LV2_Atom_Double *)pAtom)->body);
-    }
-    else if (pAtom->type == uris.atom_Bool)
-    {
-        writer.write(
-            ((LV2_Atom_Bool *)pAtom)->body);
-    }
-    else if (pAtom->type == uris.atom_String)
-    {
-        const char *p = (((const char *)pAtom) + sizeof(LV2_Atom_String));
-        writer.write(
-            p);
-    }
-    else if (pAtom->type == uris.atom_Vector)
-    {
-        LV2_Atom_Vector *pVector = (LV2_Atom_Vector *)pAtom;
-        writer.start_array();
-        {
-            size_t n = (pAtom->size - sizeof(pVector->body)) / pVector->body.child_size;
-            char *pItems = ((char *)pAtom) + sizeof(LV2_Atom_Vector);
-            if (pVector->body.child_type == uris.atom_float)
-            {
-                float *p = (float *)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0)
-                        writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            }
-            else if (pVector->body.child_type == uris.atom_Int)
-            {
-                int32_t *p = (int32_t *)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0)
-                        writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            }
-            else if (pVector->body.child_type == uris.atom_Long)
-            {
-                int64_t *p = (int64_t *)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0)
-                        writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            }
-            else if (pVector->body.child_type == uris.atom_Double)
-            {
-                double *p = (double *)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0)
-                        writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            }
-            else if (pVector->body.child_type == uris.atom_Bool)
-            {
-                bool *p = (bool *)pItems;
-                for (size_t i = 0; i < n; ++i)
-                {
-                    if (i != 0)
-                        writer.write_raw(",");
-                    writer.write(*p++);
-                }
-            }
-        }
-        writer.end_array();
-    }
-    else if (pAtom->type == uris.atom_Object)
-    {
-        writer.start_object();
-
-        const LV2_Atom_Object *obj = (const LV2_Atom_Object *)pAtom;
-        bool firstMember = true;
-        if (obj->body.id != 0)
-        {
-            std::string id = pHost->Lv2UriudToString(obj->body.id);
-            writer.write_member("id", id.c_str());
-            firstMember = false;
-        }
-
-        if (obj->body.otype != 0)
-        {
-            std::string type = pHost->Lv2UriudToString(obj->body.otype);
-            writer.write_member("lv2Type", type.c_str());
-            if (!firstMember)
-            {
-                writer.write_raw(",");
-            }
-            firstMember = false;
-        }
-
-        LV2_ATOM_OBJECT_FOREACH(obj, prop)
-        {
-            if (!firstMember)
-            {
-                writer.write_raw(",");
-            }
-            firstMember = false;
-            std::string key = pHost->Lv2UriudToString(prop->key);
-            key = UriToFieldName(key);
-            writer.write(key);
-            writer.write_raw(": ");
-            LV2_Atom *value = &(prop->value);
-            WriteAtom(writer, value);
-        }
-        writer.end_object();
-    }
-}
-
 void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding>&bindings) 
 {
     for (auto i = bindings.begin(); i != bindings.end(); ++i)
@@ -1718,6 +1635,30 @@ AudioHost *AudioHost::CreateInstance(IHost *pHost)
 {
     return new AudioHostImpl(pHost);
 }
+
+void AudioHostImpl::UpdatePluginStates(Pedalboard& pedalboard)
+{
+    auto pedalboardItems = pedalboard.GetAllPlugins();
+    for (PedalboardItem* item : pedalboardItems)
+    {
+        if (!item->isSplit())
+        {
+            UpdatePluginState(*item);
+        }
+    }
+
+}
+void AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
+{
+    IEffect*effect = currentPedalboard->GetEffect(pedalboardItem.instanceId());
+    if (effect != nullptr)
+    {
+        effect->GetLv2State(const_cast<Lv2PluginState*>(&pedalboardItem.lv2State()));
+    }
+}
+
+
+
 
 JSON_MAP_BEGIN(JackHostStatus)
 JSON_MAP_REFERENCE(JackHostStatus, active)

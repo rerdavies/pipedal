@@ -94,8 +94,8 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                 let uiControl = this.props.controlInfo.uiControl;
                 let instanceId = this.props.controlInfo.instanceId;
                 if (instanceId === -1) return 0;
-                let pedalBoardItem = this.model.pedalBoard.get()?.getItem(instanceId);
-                let value: number = pedalBoardItem?.getControlValue(uiControl.symbol) ?? 0;
+                let pedalboardItem = this.model.pedalboard.get()?.getItem(instanceId);
+                let value: number = pedalboardItem?.getControlValue(uiControl.symbol) ?? 0;
                 return value;
             }
         }
@@ -105,7 +105,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
             let v = Number.parseFloat(val.toString());
             this.setState({ value: v });
             if (this.props.controlInfo) {
-                this.model.setPedalBoardControlValue(
+                this.model.setPedalboardControl(
                     this.props.controlInfo.instanceId,
                     this.props.controlInfo.uiControl.symbol,
                     v);
@@ -116,7 +116,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
             let v = checked ? 1: 0;
             this.setState({ value: v });
             if (this.props.controlInfo) {
-                this.model.setPedalBoardControlValue(
+                this.model.setPedalboardControl(
                     this.props.controlInfo.instanceId,
                     this.props.controlInfo.uiControl.symbol,
                     v);
@@ -247,7 +247,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                                     onSetValue={(v) => {
                                         this.setState({ value: v });
                                         if (this.props.controlInfo) {
-                                            this.model.setPedalBoardControlValue(
+                                            this.model.setPedalboardControl(
                                                 this.props.controlInfo.instanceId,
                                                 this.props.controlInfo.uiControl.symbol,
                                                 v);

@@ -24,8 +24,13 @@
 
 #pragma once
 
+#ifndef JACK_HOST
 #define JACK_HOST 0
+#endif
+
+#ifndef ALSA_HOST
 #define ALSA_HOST 1
+#endif
 
 #if JACK_HOST && ALSA_HOST
 #error Choose either JACK or ALSA

@@ -26,7 +26,7 @@ import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel,ControlValueChangedHandle } from "./PiPedalModel";
-import { PedalBoardItem } from './PedalBoard';
+import { PedalboardItem } from './Pedalboard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
@@ -37,7 +37,7 @@ const styles = (theme: Theme) => createStyles({
 
 interface ToobToneStackProps extends WithStyles<typeof styles> {
     instanceId: number;
-    item: PedalBoardItem;
+    item: PedalboardItem;
 
 }
 interface ToobToneStackState {
@@ -117,8 +117,8 @@ const ToobToneStackView =
 class ToobToneStackViewFactory implements IControlViewFactory {
     uri: string = "http://two-play.com/plugins/toob-tone-stack";
 
-    Create(model: PiPedalModel, pedalBoardItem: PedalBoardItem): React.ReactNode {
-        return (<ToobToneStackView instanceId={pedalBoardItem.instanceId} item={pedalBoardItem} />);
+    Create(model: PiPedalModel, pedalboardItem: PedalboardItem): React.ReactNode {
+        return (<ToobToneStackView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
     }
 
 

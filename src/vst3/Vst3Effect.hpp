@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 #include <functional>
 #include "json.hpp"
 

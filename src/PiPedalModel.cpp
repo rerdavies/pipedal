@@ -60,10 +60,13 @@ static std::string BytesToHex(const std::vector<uint8_t> &bytes)
 }
 
 PiPedalModel::PiPedalModel()
+    : lv2Host(),
+      atomConverter(lv2Host.GetMapFeature())
 {
-    this->pedalBoard = PedalBoard::MakeDefault();
+    this->pedalboard = Pedalboard::MakeDefault();
 #if JACK_HOST
-    this->jackServerSettings.ReadJackConfiguration();
+    this->jackServerSettings = this->storage.GetJackServerSettings(); // to get onboarding flag.
+    this->jackServerSettings.ReadJackDaemonConfiguration();
 #else
     this->jackServerSettings = this->storage.GetJackServerSettings();
 #endif
@@ -71,7 +74,7 @@ PiPedalModel::PiPedalModel()
 
 void PiPedalModel::Close()
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
     IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -106,7 +109,7 @@ PiPedalModel::~PiPedalModel()
     {
         CurrentPreset currentPreset;
         currentPreset.modified_ = this->hasPresetChanged;
-        currentPreset.preset_ = this->pedalBoard;
+        currentPreset.preset_ = this->pedalboard;
         storage.SaveCurrentPreset(currentPreset);
     }
     catch (...)
@@ -134,10 +137,11 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
     storage.Initialize();
+    lv2Host.SetPluginStoragePath(storage.GetPluginStorageDirectory());
 
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
-    this->jackServerSettings.ReadJackConfiguration();
+    this->jackServerSettings.ReadJackDaemonConfiguration();
 }
 
 void PiPedalModel::LoadLv2PluginInfo()
@@ -184,16 +188,21 @@ void PiPedalModel::Load()
 
     // lv2Host.Load(configuration.GetLv2Path().c_str());
 
-    this->pedalBoard = storage.GetCurrentPreset(); // the current *saved* preset.
+    this->pedalboard = storage.GetCurrentPreset(); // the current *saved* preset.
 
     // the current edited preset, saved only across orderly shutdowns.
     CurrentPreset currentPreset;
-    if (storage.RestoreCurrentPreset(&currentPreset))
+    try {
+        if (storage.RestoreCurrentPreset(&currentPreset))
+        {
+            this->pedalboard = currentPreset.preset_;
+            this->hasPresetChanged = currentPreset.modified_;
+        }
+    } catch (const std::exception &e)
     {
-        this->pedalBoard = currentPreset.preset_;
-        this->hasPresetChanged = currentPreset.modified_;
+        Lv2Log::warning(SS("Failed to load current preset. " << e.what()));
     }
-    UpdateDefaults(&this->pedalBoard);
+    UpdateDefaults(&this->pedalboard);
 
     std::unique_ptr<AudioHost> p{AudioHost::CreateInstance(lv2Host.asIHost())};
     this->audioHost = std::move(p);
@@ -235,16 +244,18 @@ void PiPedalModel::Load()
         try
         {
             audioHost->Open(this->jackServerSettings, selection);
-            try {
-                std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
-                this->lv2PedalBoard = lv2PedalBoard;
-                audioHost->SetPedalBoard(lv2PedalBoard);
+            try
+            {
+                std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard)};
+                this->lv2Pedalboard = lv2Pedalboard;
+                audioHost->SetPedalboard(lv2Pedalboard);
             }
             catch (const std::exception &e)
             {
-                Lv2Log::error("Failed to load initial plugin. (%s)", e.what());
+                Lv2Log::error("Failed to load initial plugin. %s", e.what());
             }
-        } catch (std::exception &e)
+        }
+        catch (std::exception &e)
         {
             Lv2Log::error("Failed to start audio device. %s", e.what());
         }
@@ -269,13 +280,13 @@ IPiPedalModelSubscriber *PiPedalModel::GetNotificationSubscriber(int64_t clientI
 
 void PiPedalModel::AddNotificationSubscription(IPiPedalModelSubscriber *pSubscriber)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     this->subscribers.push_back(pSubscriber);
 }
 void PiPedalModel::RemoveNotificationSubsription(IPiPedalModelSubscriber *pSubscriber)
 {
     {
-        std::lock_guard<std::recursive_mutex> guard(mutex);
+        std::lock_guard<std::recursive_mutex> lock(mutex);
 
         for (auto it = this->subscribers.begin(); it != this->subscribers.end(); ++it)
         {
@@ -304,26 +315,52 @@ void PiPedalModel::RemoveNotificationSubsription(IPiPedalModelSubscriber *pSubsc
 void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
 {
 
-    IEffect* effect = lv2PedalBoard->GetEffect(pedalItemId);
+    IEffect *effect = lv2Pedalboard->GetEffect(pedalItemId);
     if (effect->IsVst3())
     {
-        int index = lv2PedalBoard->GetControlIndex(pedalItemId, symbol);
+        int index = lv2Pedalboard->GetControlIndex(pedalItemId, symbol);
         if (index != -1)
         {
-            effect->SetControl(index,value);;
+            effect->SetControl(index, value);
+            ;
         }
-    } else {
+    }
+    else
+    {
         audioHost->SetControlValue(pedalItemId, symbol, value);
+    }
+}
+
+void PiPedalModel::OnNotifyLv2StateChanged(uint64_t instanceId)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    SetPresetChanged(-1, true);
+
+    {
+        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
+                t[i]->OnLv2StateChanged(instanceId);
+            }
+        }
+        delete[] t;
     }
 }
 
 void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
 {
     {
-        std::lock_guard<std::recursive_mutex> guard(mutex);
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         PreviewControl(clientId, pedalItemId, symbol, value);
-        this->pedalBoard.SetControlValue(pedalItemId, symbol, value);
-        IEffect *pEffect = this->lv2PedalBoard->GetEffect(pedalItemId);
+        this->pedalboard.SetControlValue(pedalItemId, symbol, value);
+        IEffect *pEffect = this->lv2Pedalboard->GetEffect(pedalItemId);
 
         {
 
@@ -379,7 +416,7 @@ void PiPedalModel::FireBanksChanged(int64_t clientId)
     delete[] t;
 }
 
-void PiPedalModel::FirePedalBoardChanged(int64_t clientId)
+void PiPedalModel::FirePedalboardChanged(int64_t clientId)
 {
     // noify subscribers.
     IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -390,54 +427,54 @@ void PiPedalModel::FirePedalBoardChanged(int64_t clientId)
     size_t n = this->subscribers.size();
     for (size_t i = 0; i < n; ++i)
     {
-        t[i]->OnPedalBoardChanged(clientId, this->pedalBoard);
+        t[i]->OnPedalboardChanged(clientId, this->pedalboard);
     }
     delete[] t;
 
     // notify the audio thread.
     if (audioHost->IsOpen())
     {
-        std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
-        this->lv2PedalBoard = lv2PedalBoard;
-        audioHost->SetPedalBoard(lv2PedalBoard);
+        std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard)};
+        this->lv2Pedalboard = lv2Pedalboard;
+        audioHost->SetPedalboard(lv2Pedalboard);
         UpdateRealtimeVuSubscriptions();
         UpdateRealtimeMonitorPortSubscriptions();
     }
 }
-void PiPedalModel::SetPedalBoard(int64_t clientId, PedalBoard &pedalBoard)
+void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
 {
     {
-        std::lock_guard<std::recursive_mutex> guard(mutex);
-        this->pedalBoard = pedalBoard;
-        UpdateDefaults(&this->pedalBoard);
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        this->pedalboard = pedalboard;
+        UpdateDefaults(&this->pedalboard);
 
-        this->FirePedalBoardChanged(clientId);
+        this->FirePedalboardChanged(clientId);
         this->SetPresetChanged(clientId, true);
     }
 }
-void PiPedalModel::UpdateCurrentPedalBoard(int64_t clientId, PedalBoard &pedalBoard)
+void PiPedalModel::UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalboard)
 {
     {
-        std::lock_guard<std::recursive_mutex> guard(mutex);
+        std::lock_guard<std::recursive_mutex> lock(mutex);
 
         // update vst3 presets if neccessary.
         // the pedalboard must be a manipualted instance of the current Lv2Pedalboard.
 
-        UpdateVst3Settings(pedalBoard);
+        UpdateVst3Settings(pedalboard);
 
-        this->pedalBoard = pedalBoard;
-        UpdateDefaults(&this->pedalBoard);
+        this->pedalboard = pedalboard;
+        UpdateDefaults(&this->pedalboard);
 
-        this->FirePedalBoardChanged(clientId);
+        this->FirePedalboardChanged(clientId);
         this->SetPresetChanged(clientId, true);
     }
 }
 
-void PiPedalModel::SetPedalBoardItemEnable(int64_t clientId, int64_t pedalItemId, bool enabled)
+void PiPedalModel::SetPedalboardItemEnable(int64_t clientId, int64_t pedalItemId, bool enabled)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
-        this->pedalBoard.SetItemEnabled(pedalItemId, enabled);
+        this->pedalboard.SetItemEnabled(pedalItemId, enabled);
 
         // Notify clients.
         IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -460,20 +497,20 @@ void PiPedalModel::SetPedalBoardItemEnable(int64_t clientId, int64_t pedalItemId
 
 void PiPedalModel::GetPresets(PresetIndex *pResult)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     this->storage.GetPresetIndex(pResult);
     pResult->presetChanged(this->hasPresetChanged);
 }
 
-PedalBoard PiPedalModel::GetPreset(int64_t instanceId)
+Pedalboard PiPedalModel::GetPreset(int64_t instanceId)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     return this->storage.GetPreset(instanceId);
 }
 void PiPedalModel::GetBank(int64_t instanceId, BankFile *pResult)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     this->storage.GetBankFile(instanceId, pResult);
 }
 
@@ -528,16 +565,16 @@ void PiPedalModel::FirePluginPresetsChanged(const std::string &pluginUri)
     }
 }
 
-void PiPedalModel::UpdateVst3Settings(PedalBoard &pedalBoard)
+void PiPedalModel::UpdateVst3Settings(Pedalboard &pedalboard)
 {
-    // get the vst3 state bundle from lv2Pedalboard for the current pedalBoard.
+    // get the vst3 state bundle from lv2Pedalboard for the current pedalboard.
 #if ENABLE_VST3
-    PedalBoard pb;
-    for (IEffect *effect : lv2PedalBoard->GetEffects())
+    Pedalboard pb;
+    for (IEffect *effect : lv2Pedalboard->GetEffects())
     {
         if (effect->IsVst3())
         {
-            PedalBoardItem *item = pedalBoard.GetItem(effect->GetInstanceId());
+            PedalboardItem *item = pedalboard.GetItem(effect->GetInstanceId());
             if (item)
             {
                 Vst3Effect *vst3Effect = (Vst3Effect *)effect;
@@ -556,8 +593,9 @@ void PiPedalModel::SaveCurrentPreset(int64_t clientId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
-    UpdateVst3Settings(this->pedalBoard);
-    storage.SaveCurrentPreset(this->pedalBoard);
+    UpdateVst3Settings(this->pedalboard);
+    this->audioHost->UpdatePluginStates(this->pedalboard);
+    storage.SaveCurrentPreset(this->pedalboard);
     this->SetPresetChanged(clientId, false);
 }
 
@@ -575,7 +613,7 @@ void PiPedalModel::UpdatePluginPresets(const PluginUiPresets &pluginPresets)
 }
 int64_t PiPedalModel::SavePluginPresetAs(int64_t instanceId, const std::string &name)
 {
-    auto *item = this->pedalBoard.GetItem(instanceId);
+    auto *item = this->pedalboard.GetItem(instanceId);
     if (!item)
     {
         throw PiPedalException("Plugin not found.");
@@ -594,8 +632,8 @@ int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, const std::string &n
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
-    auto pedalboard = this->pedalBoard;
-    UpdateVst3Settings(pedalBoard);
+    auto pedalboard = this->pedalboard;
+    UpdateVst3Settings(pedalboard);
     pedalboard.name(name);
     int64_t result = storage.SaveCurrentPresetAs(pedalboard, name, saveAfterInstanceId);
     FirePresetsChanged(clientId);
@@ -629,10 +667,11 @@ int64_t PiPedalModel::UploadBank(BankFile &bankFile, int64_t uploadAfter)
     return newPreset;
 }
 
-void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request)
+void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
-    try {
+    try
+    {
         PresetIndex index;
         storage.GetPresetIndex(&index);
         auto currentPresetId = storage.GetCurrentPresetId();
@@ -654,21 +693,26 @@ void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&
         {
             if (currentPresetIndex == 0)
             {
-                currentPresetIndex = index.presets().size()-1;
-            } else {
+                currentPresetIndex = index.presets().size() - 1;
+            }
+            else
+            {
                 --currentPresetIndex;
             }
-        } else {
+        }
+        else
+        {
             ++currentPresetIndex;
             if (currentPresetIndex >= index.presets().size())
             {
                 currentPresetIndex = 0;
             }
         }
-        LoadPreset(-1,index.presets()[currentPresetIndex].instanceId());
-    } catch (std::exception&e)
+        LoadPreset(-1, index.presets()[currentPresetIndex].instanceId());
+    }
+    catch (std::exception &e)
     {
-        
+
         Lv2Log::error(e.what());
     }
     if (this->audioHost)
@@ -677,15 +721,16 @@ void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&
     }
 }
 
-
-void PiPedalModel::OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProgramRequest)
+void PiPedalModel::OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
-    try {
+    try
+    {
         if (midiProgramRequest.bank >= 0)
-        {   
+        {
             int64_t bankId = storage.GetBankByMidiBankNumber(midiProgramRequest.bank);
-            if (bankId == -1) throw PiPedalException("Bank not found.");
+            if (bankId == -1)
+                throw PiPedalException("Bank not found.");
             if (bankId != this->storage.GetBanks().selectedBank())
             {
                 storage.LoadBank(bankId);
@@ -693,13 +738,15 @@ void PiPedalModel::OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProg
                 FireBanksChanged(-1);
                 FirePresetsChanged(-1);
             }
-        } 
+        }
         int64_t presetId = storage.GetPresetByProgramNumber(midiProgramRequest.program);
-        if (presetId == -1) throw PiPedalException("No valid preset.");
-        LoadPreset(-1,presetId);
-    } catch (std::exception&e)
+        if (presetId == -1)
+            throw PiPedalException("No valid preset.");
+        LoadPreset(-1, presetId);
+    }
+    catch (std::exception &e)
     {
-        
+
         Lv2Log::error(e.what());
     }
     if (this->audioHost)
@@ -708,19 +755,17 @@ void PiPedalModel::OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProg
     }
 }
 
-
-
 void PiPedalModel::LoadPreset(int64_t clientId, int64_t instanceId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
     if (storage.LoadPreset(instanceId))
     {
-        this->pedalBoard = storage.GetCurrentPreset();
-        UpdateDefaults(&this->pedalBoard);
+        this->pedalboard = storage.GetCurrentPreset();
+        UpdateDefaults(&this->pedalboard);
 
         this->hasPresetChanged = false; // no fire.
-        this->FirePedalBoardChanged(clientId);
+        this->FirePedalboardChanged(clientId);
         this->FirePresetsChanged(clientId); // fire now.
     }
 }
@@ -787,7 +832,7 @@ int64_t PiPedalModel::DeletePreset(int64_t clientId, int64_t instanceId)
 }
 bool PiPedalModel::RenamePreset(int64_t clientId, int64_t instanceId, const std::string &name)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     if (storage.RenamePreset(instanceId, name))
     {
         this->FirePresetsChanged(clientId);
@@ -802,7 +847,7 @@ bool PiPedalModel::RenamePreset(int64_t clientId, int64_t instanceId, const std:
 GovernorSettings PiPedalModel::GetGovernorSettings()
 {
     {
-        std::lock_guard<std::recursive_mutex> guard(mutex);
+        std::lock_guard<std::recursive_mutex> lock(mutex);
         GovernorSettings result;
         result.governor_ = storage.GetGovernorSettings();
         result.governors_ = pipedal::GetAvailableGovernors();
@@ -811,7 +856,7 @@ GovernorSettings PiPedalModel::GetGovernorSettings()
 }
 void PiPedalModel::SetGovernorSettings(const std::string &governor)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     adminClient.SetGovernorSettings(governor);
 
     this->storage.SetGovernorSettings(governor);
@@ -833,7 +878,7 @@ void PiPedalModel::SetGovernorSettings(const std::string &governor)
 
 void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     adminClient.SetWifiConfig(wifiConfigSettings);
 
@@ -897,7 +942,7 @@ void PiPedalModel::UpdateDnsSd()
 }
 void PiPedalModel::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiDirectConfigSettings)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     adminClient.SetWifiDirectConfig(wifiDirectConfigSettings);
 
@@ -926,12 +971,12 @@ void PiPedalModel::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &w
 
 WifiConfigSettings PiPedalModel::GetWifiConfigSettings()
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     return this->storage.GetWifiConfigSettings();
 }
 WifiDirectConfigSettings PiPedalModel::GetWifiDirectConfigSettings()
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     return this->storage.GetWifiDirectConfigSettings();
 }
 
@@ -940,7 +985,7 @@ void PiPedalModel::SetShowStatusMonitor(bool show)
     IPiPedalModelSubscriber **t;
     size_t n;
     {
-        std::lock_guard<std::recursive_mutex> guard(mutex); // copy atomically.
+        std::lock_guard<std::recursive_mutex> lock(mutex); // copy atomically.
         t = new IPiPedalModelSubscriber *[this->subscribers.size()];
         n = this->subscribers.size();
         storage.SetShowStatusMonitor(show);
@@ -960,13 +1005,13 @@ void PiPedalModel::SetShowStatusMonitor(bool show)
 }
 bool PiPedalModel::GetShowStatusMonitor()
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex); // copy atomically.
+    std::lock_guard<std::recursive_mutex> lock(mutex); // copy atomically.
     return storage.GetShowStatusMonitor();
 }
 
 JackConfiguration PiPedalModel::GetJackConfiguration()
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex); // copy atomically.
+    std::lock_guard<std::recursive_mutex> lock(mutex); // copy atomically.
     return this->jackConfiguration;
 }
 
@@ -988,7 +1033,7 @@ void PiPedalModel::RestartAudio()
 
     // do a complete reload.
 
-    this->audioHost->SetPedalBoard(nullptr);
+    this->audioHost->SetPedalboard(nullptr);
 
     this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
 
@@ -999,7 +1044,7 @@ void PiPedalModel::RestartAudio()
     }
     else
     {
-        jackConfiguration.SetErrorStatus("Error");
+        jackConfiguration.setErrorStatus("Error");
     }
 
     FireJackConfigurationChanged(jackConfiguration);
@@ -1021,9 +1066,9 @@ void PiPedalModel::RestartAudio()
 
         this->lv2Host.OnConfigurationChanged(jackConfiguration, channelSelection);
 
-        std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
-        this->lv2PedalBoard = lv2PedalBoard;
-        audioHost->SetPedalBoard(lv2PedalBoard);
+        std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard)};
+        this->lv2Pedalboard = lv2Pedalboard;
+        audioHost->SetPedalboard(lv2Pedalboard);
         this->UpdateRealtimeVuSubscriptions();
         UpdateRealtimeMonitorPortSubscriptions();
     }
@@ -1037,7 +1082,7 @@ void PiPedalModel::RestartAudio()
 void PiPedalModel::SetJackChannelSelection(int64_t clientId, const JackChannelSelection &channelSelection)
 {
     {
-        std::lock_guard<std::recursive_mutex> guard(mutex); // copy atomically.
+        std::lock_guard<std::recursive_mutex> lock(mutex); // copy atomically.
         this->storage.SetJackChannelSelection(channelSelection);
 
         this->lv2Host.OnConfigurationChanged(jackConfiguration, channelSelection);
@@ -1072,7 +1117,7 @@ void PiPedalModel::FireChannelSelectionChanged(int64_t clientId)
 
 JackChannelSelection PiPedalModel::GetJackChannelSelection()
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     JackChannelSelection t = this->storage.GetJackChannelSelection(this->jackConfiguration);
     if (this->jackConfiguration.isValid())
     {
@@ -1083,7 +1128,7 @@ JackChannelSelection PiPedalModel::GetJackChannelSelection()
 
 int64_t PiPedalModel::AddVuSubscription(int64_t instanceId)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     int64_t subscriptionId = ++nextSubscriptionId;
     activeVuSubscriptions.push_back(VuSubscription{subscriptionId, instanceId});
 
@@ -1093,7 +1138,7 @@ int64_t PiPedalModel::AddVuSubscription(int64_t instanceId)
 }
 void PiPedalModel::RemoveVuSubscription(int64_t subscriptionHandle)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto i = activeVuSubscriptions.begin(); i != activeVuSubscriptions.end(); ++i)
     {
         if ((*i).subscriptionHandle == subscriptionHandle)
@@ -1107,8 +1152,8 @@ void PiPedalModel::RemoveVuSubscription(int64_t subscriptionHandle)
 
 void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
-    PedalBoardItem *item = this->pedalBoard.GetItem(instanceId);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    PedalboardItem *item = this->pedalboard.GetItem(instanceId);
     if (item)
     {
         const Lv2PluginInfo *pPluginInfo;
@@ -1126,7 +1171,7 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
             if (portIndex == -1)
             {
                 // bypass!
-                this->pedalBoard.SetItemEnabled(instanceId, value != 0);
+                this->pedalboard.SetItemEnabled(instanceId, value != 0);
                 // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
                 IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
                 for (size_t i = 0; i < subscribers.size(); ++i)
@@ -1152,7 +1197,7 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
                     {
                         std::string symbol = port->symbol();
 
-                        this->pedalBoard.SetControlValue(instanceId, symbol, value);
+                        this->pedalboard.SetControlValue(instanceId, symbol, value);
                         {
 
                             // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
@@ -1177,9 +1222,10 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
         }
     }
 }
+
 void PiPedalModel::OnNotifyVusSubscription(const std::vector<VuUpdate> &updates)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (size_t i = 0; i < updates.size(); ++i)
     {
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
@@ -1204,7 +1250,7 @@ void PiPedalModel::UpdateRealtimeVuSubscriptions()
     for (int i = 0; i < activeVuSubscriptions.size(); ++i)
     {
         auto instanceId = activeVuSubscriptions[i].instanceid;
-        if (pedalBoard.HasItem(instanceId))
+        if (pedalboard.HasItem(instanceId))
         {
             addedInstances.insert(activeVuSubscriptions[i].instanceid);
         }
@@ -1220,7 +1266,7 @@ void PiPedalModel::UpdateRealtimeMonitorPortSubscriptions()
 
 int64_t PiPedalModel::MonitorPort(int64_t instanceId, const std::string &key, float updateInterval, PortMonitorCallback onUpdate)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     int64_t subscriptionId = ++nextSubscriptionId;
     activeMonitorPortSubscriptions.push_back(
         MonitorPortSubscription{subscriptionId, instanceId, key, updateInterval, onUpdate});
@@ -1231,7 +1277,7 @@ int64_t PiPedalModel::MonitorPort(int64_t instanceId, const std::string &key, fl
 }
 void PiPedalModel::UnmonitorPort(int64_t subscriptionHandle)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     for (auto i = activeMonitorPortSubscriptions.begin(); i != activeMonitorPortSubscriptions.end(); ++i)
     {
@@ -1246,7 +1292,7 @@ void PiPedalModel::UnmonitorPort(int64_t subscriptionHandle)
 
 void PiPedalModel::OnNotifyMonitorPort(const MonitorPortUpdate &update)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     for (auto i = activeMonitorPortSubscriptions.begin(); i != activeMonitorPortSubscriptions.end(); ++i)
     {
@@ -1260,18 +1306,24 @@ void PiPedalModel::OnNotifyMonitorPort(const MonitorPortUpdate &update)
     }
 }
 
-void PiPedalModel::GetLv2Parameter(
+void PiPedalModel::SendSetPatchProperty(
     int64_t clientId,
     int64_t instanceId,
-    const std::string uri,
-    std::function<void(const std::string &jsonResjult)> onSuccess,
+    const std::string propertyUri,
+    const json_variant &value,
+    std::function<void()> onSuccess,
     std::function<void(const std::string &error)> onError)
 {
-    std::function<void(RealtimeParameterRequest *)> onRequestComplete{
-        [this](RealtimeParameterRequest *pParameter)
+
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    LV2_Atom *atomValue = atomConverter.ToAtom(value);
+
+    std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
+        [this, onSuccess](RealtimePatchPropertyRequest *pParameter)
         {
             {
-                std::lock_guard<std::recursive_mutex> guard(mutex);
+                std::lock_guard<std::recursive_mutex> lock(mutex);
                 bool cancelled = true;
                 for (auto i = this->outstandingParameterRequests.begin();
                      i != this->outstandingParameterRequests.end(); ++i)
@@ -1287,15 +1339,78 @@ void PiPedalModel::GetLv2Parameter(
                 {
                     if (pParameter->errorMessage != nullptr)
                     {
-                        pParameter->onError(pParameter->errorMessage);
-                    }
-                    else if (pParameter->responseLength == 0)
-                    {
-                        pParameter->onError("No response.");
+                        if (pParameter->onError)
+                        {
+                            pParameter->onError(pParameter->errorMessage);
+                        }
                     }
                     else
                     {
-                        pParameter->onSuccess(pParameter->jsonResponse);
+                        if (pParameter->onSuccess)
+                        {
+                            onSuccess();
+                        }
+                    }
+                }
+                delete pParameter;
+            }
+        }};
+
+    LV2_URID urid = this->lv2Host.GetLv2Urid(propertyUri.c_str());
+
+    RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
+        onRequestComplete,
+        clientId, instanceId, urid, atomValue, nullptr, onError);
+
+    outstandingParameterRequests.push_back(request);
+    this->audioHost->sendRealtimeParameterRequest(request);
+}
+
+void PiPedalModel::SendGetPatchProperty(
+    int64_t clientId,
+    int64_t instanceId,
+    const std::string uri,
+    std::function<void(const std::string &jsonResjult)> onSuccess,
+    std::function<void(const std::string &error)> onError)
+{
+    std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
+        [this](RealtimePatchPropertyRequest *pParameter)
+        {
+            {
+                std::lock_guard<std::recursive_mutex> lock(mutex);
+                bool cancelled = true;
+                for (auto i = this->outstandingParameterRequests.begin();
+                     i != this->outstandingParameterRequests.end(); ++i)
+                {
+                    if ((*i) == pParameter)
+                    {
+                        cancelled = false;
+                        this->outstandingParameterRequests.erase(i);
+                        break;
+                    }
+                }
+                if (!cancelled)
+                {
+                    if (pParameter->errorMessage != nullptr)
+                    {
+                        if (pParameter->onError)
+                        {
+                            pParameter->onError(pParameter->errorMessage);
+                        }
+                    }
+                    else if (pParameter->GetSize() == 0 && pParameter->requestType == RealtimePatchPropertyRequest::RequestType::PatchGet)
+                    {
+                        if (pParameter->onError)
+                        {
+                            pParameter->onError("No response.");
+                        }
+                    }
+                    else
+                    {
+                        if (pParameter->onSuccess)
+                        {
+                            pParameter->onSuccess(pParameter->jsonResponse);
+                        }
                     }
                 }
                 delete pParameter;
@@ -1303,13 +1418,13 @@ void PiPedalModel::GetLv2Parameter(
         }};
 
     LV2_URID urid = this->lv2Host.GetLv2Urid(uri.c_str());
-    RealtimeParameterRequest *request = new RealtimeParameterRequest(
+    RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
         onRequestComplete,
         clientId, instanceId, urid, onSuccess, onError);
 
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     outstandingParameterRequests.push_back(request);
-    this->audioHost->getRealtimeParameter(request);
+    this->audioHost->sendRealtimeParameterRequest(request);
 }
 
 BankIndex PiPedalModel::GetBankIndex() const
@@ -1320,14 +1435,14 @@ BankIndex PiPedalModel::GetBankIndex() const
 
 void PiPedalModel::RenameBank(int64_t clientId, int64_t bankId, const std::string &newName)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     storage.RenameBank(bankId, newName);
     FireBanksChanged(clientId);
 }
 
 int64_t PiPedalModel::SaveBankAs(int64_t clientId, int64_t bankId, const std::string &newName)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     int64_t newId = storage.SaveBankAs(bankId, newName);
     FireBanksChanged(clientId);
     return newId;
@@ -1335,24 +1450,31 @@ int64_t PiPedalModel::SaveBankAs(int64_t clientId, int64_t bankId, const std::st
 
 void PiPedalModel::OpenBank(int64_t clientId, int64_t bankId)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     storage.LoadBank(bankId);
     FireBanksChanged(clientId);
 
     FirePresetsChanged(clientId);
 
-    this->pedalBoard = storage.GetCurrentPreset();
+    this->pedalboard = storage.GetCurrentPreset();
 
-    UpdateDefaults(&this->pedalBoard);
+    UpdateDefaults(&this->pedalboard);
     this->hasPresetChanged = false;
-    this->FirePedalBoardChanged(clientId);
+    this->FirePedalboardChanged(clientId);
 }
 
 JackServerSettings PiPedalModel::GetJackServerSettings()
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     return this->jackServerSettings;
+}
+
+void PiPedalModel::SetOnboarding(bool value)
+{
+    std::unique_lock<std::recursive_mutex> guard(mutex);
+    this->jackServerSettings.SetIsOnboarding(value);
+    SetJackServerSettings(this->jackServerSettings);
 }
 
 void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSettings)
@@ -1396,7 +1518,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
         // save the current (edited) preset now in case the service shutdown isn't clean.
         CurrentPreset currentPreset;
         currentPreset.modified_ = this->hasPresetChanged;
-        currentPreset.preset_ = this->pedalBoard;
+        currentPreset.preset_ = this->pedalboard;
         storage.SaveCurrentPreset(currentPreset);
 
         this->jackConfiguration.SetIsRestarting(true);
@@ -1405,7 +1527,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
             jackServerSettings,
             [this](bool success, const std::string &errorMessage)
             {
-                std::lock_guard<std::recursive_mutex> guard(mutex);
+                std::lock_guard<std::recursive_mutex> lock(mutex);
                 if (!success)
                 {
                     std::stringstream s;
@@ -1428,10 +1550,10 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
                     FireJackConfigurationChanged(this->jackConfiguration);
 
                     // restart the pedalboard on a new instance.
-                    std::shared_ptr<Lv2PedalBoard> lv2PedalBoard{this->lv2Host.CreateLv2PedalBoard(this->pedalBoard)};
-                    this->lv2PedalBoard = lv2PedalBoard;
+                    std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard)};
+                    this->lv2Pedalboard = lv2Pedalboard;
 
-                    audioHost->SetPedalBoard(lv2PedalBoard);
+                    audioHost->SetPedalboard(lv2Pedalboard);
                     UpdateRealtimeVuSubscriptions();
                     UpdateRealtimeMonitorPortSubscriptions();
 #endif
@@ -1441,13 +1563,13 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 #endif
 }
 
-void PiPedalModel::UpdateDefaults(PedalBoardItem *pedalBoardItem)
+void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem)
 {
-    std::shared_ptr<Lv2PluginInfo> t = lv2Host.GetPluginInfo(pedalBoardItem->uri());
+    std::shared_ptr<Lv2PluginInfo> t = lv2Host.GetPluginInfo(pedalboardItem->uri());
     const Lv2PluginInfo *pPlugin = t.get();
     if (pPlugin == nullptr)
     {
-        if (pedalBoardItem->uri() == SPLIT_PEDALBOARD_ITEM_URI)
+        if (pedalboardItem->uri() == SPLIT_PEDALBOARD_ITEM_URI)
         {
             pPlugin = GetSplitterPluginInfo();
         }
@@ -1459,76 +1581,61 @@ void PiPedalModel::UpdateDefaults(PedalBoardItem *pedalBoardItem)
             auto port = pPlugin->ports()[i];
             if (port->is_control_port() && port->is_input())
             {
-                ControlValue *pValue = pedalBoardItem->GetControlValue(port->symbol());
+                ControlValue *pValue = pedalboardItem->GetControlValue(port->symbol());
                 if (pValue == nullptr)
                 {
                     // Missing? Set it to default value.
-                    pedalBoardItem->controlValues().push_back(
+                    pedalboardItem->controlValues().push_back(
                         pipedal::ControlValue(port->symbol().c_str(), port->default_value()));
                 }
             }
         }
-        if (pPlugin->piPedalUI())
-        {
-            auto&piPedalUi = pPlugin->piPedalUI();
-            for (auto &fileProperty : piPedalUi->fileProperties())
-            {
-                PropertyValue *pValue = pedalBoardItem->GetPropertyValue(fileProperty->patchProperty());
-                if (pValue == nullptr)
-                {
-                    // missing? set it to default value
-                    pedalBoardItem->propertyValues().push_back(
-                        PropertyValue(fileProperty->patchProperty(),fileProperty->defaultFile())
-                    );
-                }
-            }
-        }
     }
-    for (size_t i = 0; i < pedalBoardItem->topChain().size(); ++i)
+    for (size_t i = 0; i < pedalboardItem->topChain().size(); ++i)
     {
-        UpdateDefaults(&(pedalBoardItem->topChain()[i]));
+        UpdateDefaults(&(pedalboardItem->topChain()[i]));
     }
-    for (size_t i = 0; i < pedalBoardItem->bottomChain().size(); ++i)
+    for (size_t i = 0; i < pedalboardItem->bottomChain().size(); ++i)
     {
-        UpdateDefaults(&(pedalBoardItem->bottomChain()[i]));
+        UpdateDefaults(&(pedalboardItem->bottomChain()[i]));
     }
 }
-void PiPedalModel::UpdateDefaults(PedalBoard *pedalBoard)
+void PiPedalModel::UpdateDefaults(Pedalboard *pedalboard)
 {
-    for (size_t i = 0; i < pedalBoard->items().size(); ++i)
+    for (size_t i = 0; i < pedalboard->items().size(); ++i)
     {
-        UpdateDefaults(&(pedalBoard->items()[i]));
+        UpdateDefaults(&(pedalboard->items()[i]));
     }
 }
 
 PluginPresets PiPedalModel::GetPluginPresets(const std::string &pluginUri)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     return storage.GetPluginPresets(pluginUri);
 }
 
 PluginUiPresets PiPedalModel::GetPluginUiPresets(const std::string &pluginUri)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     return storage.GetPluginUiPresets(pluginUri);
 }
 
 void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetInstanceId)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
-    PedalBoardItem *pedalBoardItem = this->pedalBoard.GetItem(pluginInstanceId);
-    if (pedalBoardItem != nullptr)
+    PedalboardItem *pedalboardItem = this->pedalboard.GetItem(pluginInstanceId);
+    if (pedalboardItem != nullptr)
     {
-        std::vector<ControlValue> controlValues = storage.GetPluginPresetValues(pedalBoardItem->uri(), presetInstanceId);
+        std::vector<ControlValue> controlValues = storage.GetPluginPresetValues(pedalboardItem->uri(), presetInstanceId);
         audioHost->SetPluginPreset(pluginInstanceId, controlValues);
 
         for (size_t i = 0; i < controlValues.size(); ++i)
         {
             const ControlValue &value = controlValues[i];
-            this->pedalBoard.SetControlValue(pluginInstanceId, value.key(), value.value());
+            this->pedalboard.SetControlValue(pluginInstanceId, value.key(), value.value());
         }
 
         IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -1547,7 +1654,7 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
 
 void PiPedalModel::DeleteAtomOutputListeners(int64_t clientId)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (size_t i = 0; i < atomOutputListeners.size(); ++i)
     {
         if (atomOutputListeners[i].clientId == clientId)
@@ -1561,7 +1668,7 @@ void PiPedalModel::DeleteAtomOutputListeners(int64_t clientId)
 
 void PiPedalModel::DeleteMidiListeners(int64_t clientId)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (size_t i = 0; i < midiEventListeners.size(); ++i)
     {
         if (midiEventListeners[i].clientId == clientId)
@@ -1573,19 +1680,36 @@ void PiPedalModel::DeleteMidiListeners(int64_t clientId)
     audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
 }
 
-void PiPedalModel::OnNotifyAtomOutput(uint64_t instanceId, const std::string &atomType, const std::string &atomJson)
+bool PiPedalModel::WantsAtomOutput(uint64_t instanceId, LV2_URID atomProperty)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    for (const AtomOutputListener &listener : atomOutputListeners)
+    {
+        if (listener.WantsProperty(instanceId, atomProperty))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+void PiPedalModel::OnNotifyAtomOutput(uint64_t instanceId, LV2_URID outputAtomProperty, const std::string &atomJson)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
+    std::string propertyUri;
     for (int i = 0; i < atomOutputListeners.size(); ++i)
     {
         auto &listener = atomOutputListeners[i];
-        if (listener.instanceId == instanceId)
+        if (listener.WantsProperty(instanceId, outputAtomProperty))
         {
             auto subscriber = this->GetNotificationSubscriber(listener.clientId);
             if (subscriber)
             {
-                subscriber->OnNotifyAtomOutput(listener.clientHandle, instanceId, atomType, atomJson);
+                if (propertyUri.length() == 0)
+                {
+                    propertyUri = lv2Host.GetMapFeature().UridToString(outputAtomProperty);
+                }
+                subscriber->OnNotifyAtomOutput(listener.clientHandle, instanceId, propertyUri, atomJson);
             }
             else
             {
@@ -1599,7 +1723,7 @@ void PiPedalModel::OnNotifyAtomOutput(uint64_t instanceId, const std::string &at
 
 void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     for (int i = 0; i < midiEventListeners.size(); ++i)
     {
@@ -1623,23 +1747,15 @@ void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
 
 void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     MidiListener listener{clientId, clientHandle, listenForControlsOnly};
     midiEventListeners.push_back(listener);
     audioHost->SetListenForMidiEvent(true);
 }
 
-void PiPedalModel::ListenForAtomOutputs(int64_t clientId, int64_t clientHandle, uint64_t instanceId)
-{
-    std::lock_guard<std::recursive_mutex> guard(mutex);
-    AtomOutputListener listener{clientId, clientHandle, instanceId};
-    atomOutputListeners.push_back(listener);
-    audioHost->SetListenForAtomOutput(true);
-}
-
 void PiPedalModel::CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (size_t i = 0; i < midiEventListeners.size(); ++i)
     {
         const auto &listener = midiEventListeners[i];
@@ -1654,9 +1770,23 @@ void PiPedalModel::CancelListenForMidiEvent(int64_t clientId, int64_t clientHand
         audioHost->SetListenForMidiEvent(false);
     }
 }
-void PiPedalModel::CancelListenForAtomOutputs(int64_t clientId, int64_t clientHandle)
+
+void PiPedalModel::MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    LV2_URID propertyUrid = 0;
+    if (propertyUri.length() != 0)
+    {
+        propertyUrid = lv2Host.GetMapFeature().GetUrid(propertyUri.c_str());
+    }
+    AtomOutputListener listener{clientId, clientHandle, instanceId, propertyUrid};
+    atomOutputListeners.push_back(listener);
+    audioHost->SetListenForAtomOutput(true);
+}
+
+void PiPedalModel::CancelMonitorPatchProperty(int64_t clientId, int64_t clientHandle)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     for (size_t i = 0; i < atomOutputListeners.size(); ++i)
     {
         const auto &listener = atomOutputListeners[i];
@@ -1689,7 +1819,7 @@ std::map<std::string, bool> PiPedalModel::GetFavorites() const
 }
 void PiPedalModel::SetFavorites(const std::map<std::string, bool> &favorites)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     storage.SetFavorites(favorites);
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
@@ -1705,13 +1835,14 @@ void PiPedalModel::SetFavorites(const std::map<std::string, bool> &favorites)
         t[i]->OnFavoritesChanged(favorites);
     }
 }
-std::vector<MidiBinding> PiPedalModel::GetSystemMidiBidings() {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+std::vector<MidiBinding> PiPedalModel::GetSystemMidiBidings()
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     return this->systemMidiBindings;
 }
 void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
 {
-    std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     this->systemMidiBindings = bindings;
     storage.SetSystemMidiBindings(bindings);
     if (this->audioHost)
@@ -1730,15 +1861,15 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
         t[i]->OnSystemMidiBindingsChanged(bindings);
     }
     delete[] t;
-
-
 }
 
-std::vector<std::string> PiPedalModel::GetFileList(const PiPedalFileProperty&fileProperty)
+std::vector<std::string> PiPedalModel::GetFileList(const UiFileProperty &fileProperty)
 {
-    try {
-        return this->storage.GetFileList(fileProperty);    
-    } catch (const std::exception & e)
+    try
+    {
+        return this->storage.GetFileList(fileProperty);
+    }
+    catch (const std::exception &e)
     {
         Lv2Log::warning("GetFileList() failed:  (%s)", e.what());
         return std::vector<std::string>(); // don't disclose to users what the problem is.

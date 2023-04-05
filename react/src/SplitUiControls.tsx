@@ -18,13 +18,13 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import {UiControl,ScalePoint} from './Lv2Plugin';
-import {PedalBoardSplitItem} from './PedalBoard';
+import {PedalboardSplitItem} from './Pedalboard';
 import Units from './Units'
 
 
 
 export const SplitTypeControl: UiControl = new UiControl().deserialize({
-    symbol: PedalBoardSplitItem.TYPE_KEY,
+    symbol: PedalboardSplitItem.TYPE_KEY,
     name: "Type",
     index: 0,
     min_value: 0,
@@ -47,7 +47,7 @@ export const SplitTypeControl: UiControl = new UiControl().deserialize({
 });
 
 export const SplitAbControl: UiControl = new UiControl().deserialize({
-    symbol: PedalBoardSplitItem.SELECT_KEY,
+    symbol: PedalboardSplitItem.SELECT_KEY,
     name: "Select",
     index: 1,
     min_value: 0,
@@ -70,7 +70,7 @@ export const SplitAbControl: UiControl = new UiControl().deserialize({
 
 
 export const SplitMixControl: UiControl = new UiControl().deserialize({
-    symbol: PedalBoardSplitItem.MIX_KEY,
+    symbol: PedalboardSplitItem.MIX_KEY,
     name: "Mix",
     index: 2,
     min_value: -1,
@@ -87,7 +87,7 @@ export const SplitMixControl: UiControl = new UiControl().deserialize({
 });
 
 export const SplitPanLeftControl: UiControl = new UiControl().deserialize({
-    symbol: PedalBoardSplitItem.PANL_KEY,
+    symbol: PedalboardSplitItem.PANL_KEY,
     name: "Pan Top",
     index: 3,
     min_value: -1,
@@ -104,7 +104,7 @@ export const SplitPanLeftControl: UiControl = new UiControl().deserialize({
 });
 
 export const SplitVolLeftControl: UiControl = new UiControl().deserialize({
-    symbol: PedalBoardSplitItem.VOLL_KEY,
+    symbol: PedalboardSplitItem.VOLL_KEY,
     name: "Vol Top",
     index: 4,
     min_value: -60,
@@ -128,7 +128,7 @@ export const SplitVolLeftControl: UiControl = new UiControl().deserialize({
 
 
 export const SplitPanRightControl: UiControl = new UiControl().deserialize({
-    symbol: PedalBoardSplitItem.PANR_KEY,
+    symbol: PedalboardSplitItem.PANR_KEY,
     name: "Pan Bottom",
     index: 5,
     min_value: -1,
@@ -145,7 +145,7 @@ export const SplitPanRightControl: UiControl = new UiControl().deserialize({
 });
 
 export const SplitVolRightControl: UiControl = new UiControl().deserialize({
-    symbol: PedalBoardSplitItem.VOLR_KEY,
+    symbol: PedalboardSplitItem.VOLR_KEY,
     name: "Vol Bottom",
     index: 6,
     min_value: -60,

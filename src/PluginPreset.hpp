@@ -23,6 +23,8 @@
 #include "PiPedalException.hpp"
 #include <utility>
 #include <map>
+#include <memory>
+#include "StateInterface.hpp"
 
 namespace pipedal {
 
@@ -87,6 +89,7 @@ public:
     uint64_t instanceId_;
     std::string label_;
     std::map<std::string,float> controlValues_;
+    Lv2PluginState state_;
     DECLARE_JSON_MAP(PluginPreset);
 };
 

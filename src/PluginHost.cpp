@@ -18,19 +18,20 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 #include <lilv/lilv.h>
 #include <stdexcept>
 #include <locale>
 #include <string_view>
 #include "Lv2Log.hpp"
 #include <functional>
-#include "PedalBoard.hpp"
+#include "Pedalboard.hpp"
 #include "Lv2Effect.hpp"
-#include "Lv2PedalBoard.hpp"
+#include "Lv2Pedalboard.hpp"
 #include "OptionsFeature.hpp"
 #include "JackConfiguration.hpp"
 #include "lv2/urid.lv2/urid.h"
+#include "lv2/ui.lv2/ui.h"
 #include "lv2.h"
 #include "lv2/atom.lv2/atom.h"
 #include "lv2/time/time.h"
@@ -86,27 +87,37 @@ namespace pipedal
     static const char *LV2_MIDI_EVENT = "http://lv2plug.in/ns/ext/midi#MidiEvent";
     static const char *LV2_DESIGNATION = "http://lv2plug.in/ns/lv2core#Designation";
 
-    class PiPedalHost::Urids
+    class PluginHost::Urids
     {
     public:
         Urids(MapFeature &mapFeature)
         {
             atom_Float = mapFeature.GetUrid(LV2_ATOM__Float);
+            ui__portNotification = mapFeature.GetUrid(LV2_UI__portNotification);
+            ui__plugin = mapFeature.GetUrid(LV2_UI__plugin);
+            ui__protocol = mapFeature.GetUrid(LV2_UI__protocol);
+            ui__floatProtocol = mapFeature.GetUrid(LV2_UI__protocol);
+            ui__peakProtocol = mapFeature.GetUrid(LV2_UI__peakProtocol);
         }
         LV2_URID atom_Float;
+        LV2_URID ui__portNotification;
+        LV2_URID ui__plugin;
+        LV2_URID ui__protocol;
+        LV2_URID ui__floatProtocol;
+        LV2_URID ui__peakProtocol;
     };
 }
 
-void PiPedalHost::SetConfiguration(const PiPedalConfiguration &configuration)
+void PluginHost::SetConfiguration(const PiPedalConfiguration &configuration)
 {
     this->vst3CachePath =
         std::filesystem::path(configuration.GetLocalStoragePath()) / "vst3cache.json";
     this->vst3Enabled = configuration.IsVst3Enabled();
 }
 
-void PiPedalHost::LilvUris::Initialize(LilvWorld *pWorld)
+void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 {
-    rdfsComment = lilv_new_uri(pWorld, PiPedalHost::RDFS_COMMENT_URI);
+    rdfsComment = lilv_new_uri(pWorld, PluginHost::RDFS_COMMENT_URI);
     logarithic_uri = lilv_new_uri(pWorld, LV2_PORT_LOGARITHMIC);
     display_priority_uri = lilv_new_uri(pWorld, LV2_PORT_DISPLAY_PRIORITY);
     range_steps_uri = lilv_new_uri(pWorld, LV2_PORT_RANGE_STEPS);
@@ -126,15 +137,35 @@ void PiPedalHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     lv2Core__name = lilv_new_uri(pWorld, LV2_CORE__name);
     pipedalUI__ui = lilv_new_uri(pWorld, PIPEDAL_UI__ui);
-    pipedalUI__fileProperties = lilv_new_uri(pWorld,PIPEDAL_UI__fileProperties);
+    pipedalUI__fileProperties = lilv_new_uri(pWorld, PIPEDAL_UI__fileProperties);
     pipedalUI__patchProperty = lilv_new_uri(pWorld, PIPEDAL_UI__patchProperty);
-    pipedalUI__directory = lilv_new_uri(pWorld,PIPEDAL_UI__directory);
-    pipedalUI__fileTypes = lilv_new_uri(pWorld,PIPEDAL_UI__fileTypes);
-    pipedalUI__fileProperty = lilv_new_uri(pWorld,PIPEDAL_UI__fileProperty);
+    pipedalUI__directory = lilv_new_uri(pWorld, PIPEDAL_UI__directory);
+    pipedalUI__fileTypes = lilv_new_uri(pWorld, PIPEDAL_UI__fileTypes);
+    pipedalUI__fileProperty = lilv_new_uri(pWorld, PIPEDAL_UI__fileProperty);
     pipedalUI__fileExtension = lilv_new_uri(pWorld, PIPEDAL_UI__fileExtension);
     pipedalUI__outputPorts = lilv_new_uri(pWorld, PIPEDAL_UI__outputPorts);
     pipedalUI__text = lilv_new_uri(pWorld, PIPEDAL_UI__text);
-    pipedalUI__defaultFile = lilv_new_uri(pWorld, PIPEDAL_UI__defaultFile);
+
+
+    ui__portNotification = lilv_new_uri(pWorld, LV2_UI__portNotification);
+    ui__plugin = lilv_new_uri(pWorld, LV2_UI__plugin);
+    ui__protocol = lilv_new_uri(pWorld, LV2_UI__protocol);
+    ui__floatProtocol = lilv_new_uri(pWorld, LV2_UI__protocol);
+    ui__peakProtocol = lilv_new_uri(pWorld, LV2_UI__peakProtocol);
+    ui__portIndex = lilv_new_uri(pWorld,LV2_UI__portIndex);
+    lv2__symbol = lilv_new_uri(pWorld,LV2_CORE__symbol);
+
+
+
+    // ui:portNotification
+    // [
+    //         ui:portIndex 3;
+    //         ui:plugin <http://two-play.com/plugins/toob-convolution-reverb>;
+    //         ui:protocol ui:floatProtocol;
+    //         // pipedal_ui:style pipedal_ui:text ;
+    //         // pipedal_ui:redLevel 0;
+    //         // pipedal_ui:yellowLevel -12;
+    // ]
 
     time_Position = lilv_new_uri(pWorld, LV2_TIME__Position);
     time_barBeat = lilv_new_uri(pWorld, LV2_TIME__barBeat);
@@ -144,7 +175,7 @@ void PiPedalHost::LilvUris::Initialize(LilvWorld *pWorld)
     appliesTo = lilv_new_uri(pWorld, LV2_CORE__appliesTo);
 }
 
-void PiPedalHost::LilvUris::Free()
+void PluginHost::LilvUris::Free()
 {
     rdfsComment.Free();
     logarithic_uri.Free();
@@ -214,45 +245,56 @@ static float nodeAsFloat(const LilvNode *node, float default_ = 0)
     return default_;
 }
 
-PiPedalHost::PiPedalHost()
+void PluginHost::SetPluginStoragePath(const std::filesystem::path &path)
+{
+    mapPathFeature.SetPluginStoragePath(path);
+}
+
+PluginHost::PluginHost()
+    : mapPathFeature("")
 {
     pWorld = nullptr;
 
     LV2_Feature **features = new LV2_Feature *[10];
-    features[0] = const_cast<LV2_Feature *>(mapFeature.GetMapFeature());
-    features[1] = const_cast<LV2_Feature *>(mapFeature.GetUnmapFeature());
+    lv2Features.push_back(mapFeature.GetMapFeature());
+    lv2Features.push_back(mapFeature.GetUnmapFeature());
 
     logFeature.Prepare(&mapFeature);
-    features[2] = const_cast<LV2_Feature *>(logFeature.GetFeature());
+    lv2Features.push_back(logFeature.GetFeature());
     optionsFeature.Prepare(mapFeature, 44100, this->GetMaxAudioBufferSize(), this->GetAtomBufferSize());
-    features[3] = const_cast<LV2_Feature *>(optionsFeature.GetFeature());
-    features[4] = nullptr;
 
-    this->lv2Features = features;
+    mapPathFeature.Prepare(&mapFeature);
+    lv2Features.push_back(mapPathFeature.GetMapPathFeature());
+    lv2Features.push_back(mapPathFeature.GetMakePathFeature());
+    lv2Features.push_back(optionsFeature.GetFeature());
+
+    lv2Features.push_back(nullptr);
+
     this->urids = new Urids(mapFeature);
+
+    pHostWorkerThread = std::make_shared<HostWorkerThread>();
 }
 
-void PiPedalHost::OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings)
+void PluginHost::OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings)
 {
-    this->sampleRate = configuration.GetSampleRate();
+    this->sampleRate = configuration.sampleRate();
     if (configuration.isValid())
     {
         this->numberOfAudioInputChannels = settings.GetInputAudioPorts().size();
         this->numberOfAudioOutputChannels = settings.GetOutputAudioPorts().size();
-        this->maxBufferSize = configuration.GetBlockLength();
-        optionsFeature.Prepare(this->mapFeature, configuration.GetSampleRate(), configuration.GetBlockLength(), GetAtomBufferSize());
+        this->maxBufferSize = configuration.blockLength();
+        optionsFeature.Prepare(this->mapFeature, configuration.sampleRate(), configuration.blockLength(), GetAtomBufferSize());
     }
 }
 
-PiPedalHost::~PiPedalHost()
+PluginHost::~PluginHost()
 {
-    delete[] lv2Features;
     lilvUris.Free();
     free_world();
     delete urids;
 }
 
-void PiPedalHost::free_world()
+void PluginHost::free_world()
 {
     if (pWorld)
     {
@@ -260,7 +302,7 @@ void PiPedalHost::free_world()
         pWorld = nullptr;
     }
 }
-std::shared_ptr<Lv2PluginClass> PiPedalHost::GetPluginClass(const std::string &uri) const
+std::shared_ptr<Lv2PluginClass> PluginHost::GetPluginClass(const std::string &uri) const
 {
     auto it = this->classesMap.find(uri);
     if (it == this->classesMap.end())
@@ -268,7 +310,7 @@ std::shared_ptr<Lv2PluginClass> PiPedalHost::GetPluginClass(const std::string &u
     return (*it).second;
 }
 
-void PiPedalHost::AddJsonClassesToMap(std::shared_ptr<Lv2PluginClass> pluginClass)
+void PluginHost::AddJsonClassesToMap(std::shared_ptr<Lv2PluginClass> pluginClass)
 {
     this->classesMap[pluginClass->uri()] = pluginClass;
     for (int i = 0; i < pluginClass->children_.size(); ++i)
@@ -278,7 +320,7 @@ void PiPedalHost::AddJsonClassesToMap(std::shared_ptr<Lv2PluginClass> pluginClas
         child->parent_ = pluginClass.get();
     }
 }
-void PiPedalHost::LoadPluginClassesFromJson(std::filesystem::path jsonFile)
+void PluginHost::LoadPluginClassesFromJson(std::filesystem::path jsonFile)
 {
     std::ifstream f(jsonFile);
     json_reader reader(f);
@@ -292,7 +334,7 @@ void PiPedalHost::LoadPluginClassesFromJson(std::filesystem::path jsonFile)
     MAP_CHECK();
 }
 
-std::shared_ptr<Lv2PluginClass> PiPedalHost::GetPluginClass(const LilvPluginClass *pClass)
+std::shared_ptr<Lv2PluginClass> PluginHost::GetPluginClass(const LilvPluginClass *pClass)
 {
     MAP_CHECK();
 
@@ -300,7 +342,7 @@ std::shared_ptr<Lv2PluginClass> PiPedalHost::GetPluginClass(const LilvPluginClas
     std::shared_ptr<Lv2PluginClass> pResult = this->classesMap[uri];
     return pResult;
 }
-std::shared_ptr<Lv2PluginClass> PiPedalHost::MakePluginClass(const LilvPluginClass *pClass)
+std::shared_ptr<Lv2PluginClass> PluginHost::MakePluginClass(const LilvPluginClass *pClass)
 {
     std::string uri = nodeAsString(lilv_plugin_class_get_uri(pClass));
     auto t = this->classesMap.find(uri);
@@ -320,7 +362,7 @@ std::shared_ptr<Lv2PluginClass> PiPedalHost::MakePluginClass(const LilvPluginCla
     return result;
 }
 
-void PiPedalHost::LoadPluginClassesFromLilv()
+void PluginHost::LoadPluginClassesFromLilv()
 {
     const auto classes = lilv_world_get_plugin_classes(pWorld);
 
@@ -338,19 +380,19 @@ void PiPedalHost::LoadPluginClassesFromLilv()
 
         if (lv2Class && lv2Class->parent_uri().size() != 0)
         {
-            std::shared_ptr<Lv2PluginClass> parentClass = GetPluginClass(lv2Class->parent_uri());
-            if (parentClass)
-            {
-                Lv2PluginClass *ccClass = const_cast<Lv2PluginClass *>(lv2Class.get());
-                ccClass->set_parent(parentClass);
-                Lv2PluginClass *ccParentClass = parentClass.get();
-                ccParentClass->add_child(lv2Class);
-            }
+                std::shared_ptr<Lv2PluginClass> parentClass = GetPluginClass(lv2Class->parent_uri());
+                if (parentClass)
+                {
+                    Lv2PluginClass *ccClass = const_cast<Lv2PluginClass *>(lv2Class.get());
+                    ccClass->set_parent(parentClass);
+                    Lv2PluginClass *ccParentClass = parentClass.get();
+                    ccParentClass->add_child(lv2Class);
+                }
         }
     }
 }
 
-void PiPedalHost::Load(const char *lv2Path)
+void PluginHost::Load(const char *lv2Path)
 {
 
     this->plugins_.clear();
@@ -388,30 +430,30 @@ void PiPedalHost::Load(const char *lv2Path)
 
         if (pluginInfo->hasCvPorts())
         {
-            Lv2Log::debug("Plugin %s (%s) skipped. (Has CV ports).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
+                Lv2Log::debug("Plugin %s (%s) skipped. (Has CV ports).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
         }
 #if !SUPPORT_MIDI
         else if (pluginInfo->plugin_class() == LV2_MIDI_PLUGIN)
         {
-            Lv2Log::debug("Plugin %s (%s) skipped. (MIDI Plugin).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
+                Lv2Log::debug("Plugin %s (%s) skipped. (MIDI Plugin).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
         }
 #endif
         else if (!pluginInfo->is_valid())
         {
-            auto &ports = pluginInfo->ports();
-            for (int i = 0; i < ports.size(); ++i)
-            {
-                auto &port = ports[i];
-                if (!port->is_valid())
+                auto &ports = pluginInfo->ports();
+                for (int i = 0; i < ports.size(); ++i)
                 {
-                    Lv2Log::debug("Plugin port %s:%s is invalid.", pluginInfo->name().c_str(), port->name().c_str());
+                    auto &port = ports[i];
+                    if (!port->is_valid())
+                    {
+                        Lv2Log::debug("Plugin port %s:%s is invalid.", pluginInfo->name().c_str(), port->name().c_str());
+                    }
                 }
-            }
-            Lv2Log::debug("Plugin %s (%s) skipped. Not valid.", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
+                Lv2Log::debug("Plugin %s (%s) skipped. Not valid.", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
         }
         else
         {
-            this->plugins_.push_back(pluginInfo);
+                this->plugins_.push_back(pluginInfo);
         }
     }
     auto messages = stdoutCapture.GetOutputLines();
@@ -440,28 +482,28 @@ void PiPedalHost::Load(const char *lv2Path)
         if (plugin->is_valid())
         {
 #if SUPPORT_MIDI
-            if (info.audio_inputs() == 0 && !info.has_midi_input())
-            {
-                Lv2Log::debug("Plugin %s (%s) skipped. No inputs.", plugin->name().c_str(), plugin->uri().c_str());
-            }
-            else if (info.audio_outputs() == 0 && !info.has_midi_output())
-            {
-                Lv2Log::debug("Plugin %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
-            }
+                if (info.audio_inputs() == 0 && !info.has_midi_input())
+                {
+                    Lv2Log::debug("Plugin %s (%s) skipped. No inputs.", plugin->name().c_str(), plugin->uri().c_str());
+                }
+                else if (info.audio_outputs() == 0 && !info.has_midi_output())
+                {
+                    Lv2Log::debug("Plugin %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
+                }
 #else
-            if (info.audio_inputs() == 0)
-            {
-                Lv2Log::debug("Plugin %s (%s) skipped. No audio inputs.", plugin->name().c_str(), plugin->uri().c_str());
-            }
-            else if (info.audio_outputs() == 0)
-            {
-                Lv2Log::debug("Plugin %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
-            }
+                if (info.audio_inputs() == 0)
+                {
+                    Lv2Log::debug("Plugin %s (%s) skipped. No audio inputs.", plugin->name().c_str(), plugin->uri().c_str());
+                }
+                else if (info.audio_outputs() == 0)
+                {
+                    Lv2Log::debug("Plugin %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
+                }
 #endif
-            else
-            {
-                ui_plugins_.push_back(std::move(info));
-            }
+                else
+                {
+                    ui_plugins_.push_back(std::move(info));
+                }
         }
     }
 
@@ -476,8 +518,8 @@ void PiPedalHost::Load(const char *lv2Path)
         const auto &vst3PluginList = this->vst3Host->getPluginList();
         for (const auto &vst3Plugin : vst3PluginList)
         {
-            // copy not move!
-            ui_plugins_.push_back(vst3Plugin->pluginInfo_);
+                // copy not move!
+                ui_plugins_.push_back(vst3Plugin->pluginInfo_);
         }
         auto ui_compare = [&collation](
                               Lv2PluginUiInfo &left,
@@ -532,10 +574,10 @@ static std::vector<std::string> nodeAsStringArray(const LilvNodes *nodes)
     return result;
 }
 
-const char *PiPedalHost::RDFS_COMMENT_URI = "http://www.w3.org/2000/01/rdf-schema#"
-                                            "comment";
+const char *PluginHost::RDFS_COMMENT_URI = "http://www.w3.org/2000/01/rdf-schema#"
+                                           "comment";
 
-LilvNode *PiPedalHost::get_comment(const std::string &uri)
+LilvNode *PluginHost::get_comment(const std::string &uri)
 {
     AutoLilvNode uriNode = lilv_new_uri(pWorld, uri.c_str());
     LilvNode *result = lilv_world_get(pWorld, uriNode, lilvUris.rdfsComment, nullptr);
@@ -547,7 +589,7 @@ static bool ports_sort_compare(std::shared_ptr<Lv2PortInfo> &p1, const std::shar
     return p1->index() < p2->index();
 }
 
-bool Lv2PluginInfo::HasFactoryPresets(PiPedalHost *lv2Host, const LilvPlugin *plugin)
+bool Lv2PluginInfo::HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin)
 {
     NodesAutoFree nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris.pset_Preset);
     bool result = false;
@@ -559,8 +601,21 @@ bool Lv2PluginInfo::HasFactoryPresets(PiPedalHost *lv2Host, const LilvPlugin *pl
     return result;
 }
 
-Lv2PluginInfo::Lv2PluginInfo(PiPedalHost *lv2Host, LilvWorld *pWorld, const LilvPlugin *pPlugin)
+Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvPlugin *pPlugin)
 {
+
+    AutoLilvNode bundleUriNode = lilv_plugin_get_bundle_uri(pPlugin);
+    if (!bundleUriNode)
+        throw std::logic_error("Invalid bundle uri.");
+
+    std::string bundleUri = bundleUriNode.AsUri();
+
+    std::string bundlePath = lilv_file_uri_parse(bundleUri.c_str(), nullptr);
+    if (bundlePath.length() == 0)
+        throw std::logic_error("Bundle uri is not a file uri.");
+
+    this->bundle_path_ = bundlePath;
+
     this->has_factory_presets_ = HasFactoryPresets(lv2Host, pPlugin);
 
     this->uri_ = nodeAsString(lilv_plugin_get_uri(pPlugin));
@@ -604,15 +659,15 @@ Lv2PluginInfo::Lv2PluginInfo(PiPedalHost *lv2Host, LilvWorld *pWorld, const Lilv
         std::shared_ptr<Lv2PortInfo> portInfo = std::make_shared<Lv2PortInfo>(lv2Host, pPlugin, pPort);
         if (!portInfo->is_valid())
         {
-            isValid = false;
+                isValid = false;
         }
         const auto &portGroup = portInfo->port_group();
         if (portGroup.size() != 0)
         {
-            if (std::find(portGroups.begin(), portGroups.end(), portGroup) == portGroups.end())
-            {
-                portGroups.push_back(portGroup);
-            }
+                if (std::find(portGroups.begin(), portGroups.end(), portGroup) == portGroups.end())
+                {
+                    portGroups.push_back(portGroup);
+                }
         }
         ports_.push_back(std::move(portInfo));
     }
@@ -626,8 +681,8 @@ Lv2PluginInfo::Lv2PluginInfo(PiPedalHost *lv2Host, LilvWorld *pWorld, const Lilv
     {
         if (!this->IsSupportedFeature(this->required_features_[i]))
         {
-            Lv2Log::debug("%s (%s) requires feature %s.", this->name_.c_str(), this->uri_.c_str(), this->required_features_[i].c_str());
-            isValid = false;
+                Lv2Log::debug("%s (%s) requires feature %s.", this->name_.c_str(), this->uri_.c_str(), this->required_features_[i].c_str());
+                isValid = false;
         }
     }
 
@@ -642,7 +697,7 @@ Lv2PluginInfo::Lv2PluginInfo(PiPedalHost *lv2Host, LilvWorld *pWorld, const Lilv
         nullptr);
     if (pipedalUINode)
     {
-        this->piPedalUI_ = std::make_shared<PiPedalUI>(lv2Host, pipedalUINode);
+        this->piPedalUI_ = std::make_shared<PiPedalUI>(lv2Host, pipedalUINode, std::filesystem::path(bundlePath));
     }
     // xxx lilv_world_get(pWorld,pluginUri,);
     // for (auto&portInfo: ports_)
@@ -666,7 +721,12 @@ std::vector<std::string> supportedFeatures = {
     LV2_BUF_SIZE__fixedBlockLength,
     LV2_BUF_SIZE__powerOf2BlockLength,
     LV2_CORE__isLive,
-    LV2_STATE__loadDefaultState
+    LV2_STATE__loadDefaultState,
+    LV2_STATE__makePath,
+    LV2_STATE__mapPath,
+
+    // UI features that we can ignore, since we won't load their ui.
+    "http://lv2plug.in/ns/extensions/ui#makeResident",
 
 };
 
@@ -675,7 +735,7 @@ bool Lv2PluginInfo::IsSupportedFeature(const std::string &feature) const
     for (int i = 0; i < supportedFeatures.size(); ++i)
     {
         if (supportedFeatures[i] == feature)
-            return true;
+                return true;
     }
     return false;
 }
@@ -683,7 +743,7 @@ Lv2PluginInfo::~Lv2PluginInfo()
 {
 }
 
-bool Lv2PortInfo::is_a(PiPedalHost *lv2Plugins, const char *classUri)
+bool Lv2PortInfo::is_a(PluginHost *lv2Plugins, const char *classUri)
 {
     return classes_.is_a(lv2Plugins, classUri);
 }
@@ -705,7 +765,7 @@ static bool scale_points_sort_compare(const Lv2ScalePoint &v1, const Lv2ScalePoi
 {
     return v1.value() < v2.value();
 }
-Lv2PortInfo::Lv2PortInfo(PiPedalHost *host, const LilvPlugin *plugin, const LilvPort *pPort)
+Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvPort *pPort)
 {
     auto pWorld = host->pWorld;
     index_ = lilv_port_get_index(plugin, pPort);
@@ -720,7 +780,7 @@ Lv2PortInfo::Lv2PortInfo(PiPedalHost *host, const LilvPlugin *plugin, const Lilv
     min_value_ = 0;
     max_value_ = 1;
     default_value_ = 0;
-    lilv_port_get_range(plugin, pPort, &defaultNode.Get(), &minNode.Get(), &maxNode.Get());
+    lilv_port_get_range(plugin, pPort, defaultNode, minNode, maxNode);
     if (defaultNode)
     {
         default_value_ = getFloat(defaultNode);
@@ -748,7 +808,7 @@ Lv2PortInfo::Lv2PortInfo(PiPedalHost *host, const LilvPlugin *plugin, const Lilv
         auto priority_node = lilv_nodes_get_first(priority_nodes);
         if (priority_node)
         {
-            this->display_priority_ = lilv_node_as_int(priority_node);
+                this->display_priority_ = lilv_node_as_int(priority_node);
         }
     }
 
@@ -759,7 +819,7 @@ Lv2PortInfo::Lv2PortInfo(PiPedalHost *host, const LilvPlugin *plugin, const Lilv
         auto range_steps_node = lilv_nodes_get_first(range_steps_nodes);
         if (range_steps_node)
         {
-            this->range_steps_ = lilv_node_as_int(range_steps_node);
+                this->range_steps_ = lilv_node_as_int(range_steps_node);
         }
     }
     this->integer_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.integer_property_uri);
@@ -819,7 +879,7 @@ Lv2PortInfo::Lv2PortInfo(PiPedalHost *host, const LilvPlugin *plugin, const Lilv
                 ((is_input_ || is_output_) && (is_audio_port_ || is_atom_port_ || is_cv_port_));
 }
 
-Lv2PluginClasses PiPedalHost::GetPluginPortClass(const LilvPlugin *lilvPlugin, const LilvPort *lilvPort)
+Lv2PluginClasses PluginHost::GetPluginPortClass(const LilvPlugin *lilvPlugin, const LilvPort *lilvPort)
 {
     std::vector<std::string> result;
     const LilvNodes *nodes = lilv_port_get_classes(lilvPlugin, lilvPort);
@@ -827,9 +887,9 @@ Lv2PluginClasses PiPedalHost::GetPluginPortClass(const LilvPlugin *lilvPlugin, c
     {
         LILV_FOREACH(nodes, iNode, nodes)
         {
-            const LilvNode *node = lilv_nodes_get(nodes, iNode);
-            std::string classUri = nodeAsString(node);
-            result.push_back(classUri);
+                const LilvNode *node = lilv_nodes_get(nodes, iNode);
+                std::string classUri = nodeAsString(node);
+                result.push_back(classUri);
         }
     }
     return Lv2PluginClasses(result);
@@ -851,20 +911,20 @@ bool Lv2PluginClass::is_a(const std::string &classUri) const
     }
     return false;
 }
-bool Lv2PluginClasses::is_a(PiPedalHost *lv2Plugins, const char *classUri) const
+bool Lv2PluginClasses::is_a(PluginHost *lv2Plugins, const char *classUri) const
 {
     std::string classUri_(classUri);
     for (auto i : classes_)
     {
         if (lv2Plugins->is_a(classUri_, i))
         {
-            return true;
+                return true;
         }
     }
     return false;
 }
 
-bool PiPedalHost::is_a(const std::string &class_, const std::string &target_class)
+bool PluginHost::is_a(const std::string &class_, const std::string &target_class)
 {
     if (class_ == target_class)
         return true;
@@ -876,7 +936,7 @@ bool PiPedalHost::is_a(const std::string &class_, const std::string &target_clas
     return false;
 }
 
-Lv2PluginUiInfo::Lv2PluginUiInfo(PiPedalHost *pHost, const Lv2PluginInfo *plugin)
+Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
     : uri_(plugin->uri()),
       name_(plugin->name()),
       author_name_(plugin->author_name()),
@@ -898,38 +958,38 @@ Lv2PluginUiInfo::Lv2PluginUiInfo(PiPedalHost *pHost, const Lv2PluginInfo *plugin
     {
         PLUGIN_MAP_CHECK();
         this->plugin_display_type_ = "Plugin";
-        Lv2Log::error("%s: Unknown plugin type: %s", plugin->uri().c_str(), plugin->plugin_class().c_str());
+        Lv2Log::warning("%s: Unknown plugin type: %s", plugin->uri().c_str(), plugin->plugin_class().c_str());
     }
     for (auto port : plugin->ports())
     {
         if (port->is_input())
         {
-            if (port->is_control_port() && port->is_input())
-            {
-                controls_.push_back(Lv2PluginUiControlPort(plugin, port.get()));
-            }
-            else if (port->is_atom_port())
-            {
-                if (port->supports_midi())
+                if (port->is_control_port() && port->is_input())
                 {
-                    has_midi_input_ = true;
+                    controls_.push_back(Lv2PluginUiControlPort(plugin, port.get()));
                 }
-            }
-            else if (port->is_audio_port())
-            {
-                ++audio_inputs_;
-            }
+                else if (port->is_atom_port())
+                {
+                    if (port->supports_midi())
+                    {
+                        has_midi_input_ = true;
+                    }
+                }
+                else if (port->is_audio_port())
+                {
+                    ++audio_inputs_;
+                }
         }
         else if (port->is_output())
         {
-            if (port->is_atom_port() && port->supports_midi())
-            {
-                this->has_midi_output_ = true;
-            }
-            else if (port->is_audio_port())
-            {
-                ++audio_outputs_;
-            }
+                if (port->is_atom_port() && port->supports_midi())
+                {
+                    this->has_midi_output_ = true;
+                }
+                else if (port->is_audio_port())
+                {
+                    ++audio_outputs_;
+                }
         }
     }
     for (auto &portGroup : plugin->port_groups())
@@ -941,55 +1001,56 @@ Lv2PluginUiInfo::Lv2PluginUiInfo(PiPedalHost *pHost, const Lv2PluginInfo *plugin
     if (piPedalUI)
     {
         this->fileProperties_ = piPedalUI->fileProperties();
+        this->uiPortNotifications_ = piPedalUI->portNotifications();
     }
 }
 
-std::shared_ptr<Lv2PluginClass> PiPedalHost::GetLv2PluginClass() const
+std::shared_ptr<Lv2PluginClass> PluginHost::GetLv2PluginClass() const
 {
     return this->GetPluginClass(LV2_PLUGIN);
 }
 
-std::shared_ptr<Lv2PluginInfo> PiPedalHost::GetPluginInfo(const std::string &uri) const
+std::shared_ptr<Lv2PluginInfo> PluginHost::GetPluginInfo(const std::string &uri) const
 {
     for (auto i = this->plugins_.begin(); i != this->plugins_.end(); ++i)
     {
         if ((*i)->uri() == uri)
         {
-            return (*i);
+                return (*i);
         }
     }
     return nullptr;
 }
 
-Lv2PedalBoard *PiPedalHost::CreateLv2PedalBoard(PedalBoard &pedalBoard)
+Lv2Pedalboard *PluginHost::CreateLv2Pedalboard(Pedalboard &pedalboard)
 {
-    Lv2PedalBoard *pPedalBoard = new Lv2PedalBoard();
+    Lv2Pedalboard *pPedalboard = new Lv2Pedalboard();
     try
     {
-        pPedalBoard->Prepare(this, pedalBoard);
-        return pPedalBoard;
+        pPedalboard->Prepare(this, pedalboard);
+        return pPedalboard;
     }
-    catch (const std::exception &)
+    catch (const std::exception &e)
     {
-        delete pPedalBoard;
+        delete pPedalboard;
         throw;
     }
 }
 
 struct StateCallbackData
 {
-    PiPedalHost *pHost;
+    PluginHost *pHost;
     std::vector<ControlValue> *pResult;
 };
 
-void PiPedalHost::fn_LilvSetPortValueFunc(const char *port_symbol,
-                                          void *user_data,
-                                          const void *value,
-                                          uint32_t size,
-                                          uint32_t type)
+void PluginHost::fn_LilvSetPortValueFunc(const char *port_symbol,
+                                         void *user_data,
+                                         const void *value,
+                                         uint32_t size,
+                                         uint32_t type)
 {
     StateCallbackData *pData = (StateCallbackData *)user_data;
-    PiPedalHost *pHost = pData->pHost;
+    PluginHost *pHost = pData->pHost;
     std::vector<ControlValue> *pResult = pData->pResult;
     LV2_URID valueType = (LV2_URID)type;
     if (valueType != pHost->urids->atom_Float)
@@ -999,15 +1060,15 @@ void PiPedalHost::fn_LilvSetPortValueFunc(const char *port_symbol,
     pResult->push_back(ControlValue(port_symbol, *(float *)value));
 }
 
-std::vector<ControlValue> PiPedalHost::LoadFactoryPluginPreset(
-    PedalBoardItem *pedalBoardItem, const std::string &presetUri)
+std::vector<ControlValue> PluginHost::LoadFactoryPluginPreset(
+    PedalboardItem *pedalboardItem, const std::string &presetUri)
 {
 
     std::vector<ControlValue> result;
 
     const LilvPlugins *plugins = lilv_world_get_all_plugins(this->pWorld);
 
-    AutoLilvNode uriNode = lilv_new_uri(pWorld, pedalBoardItem->uri().c_str());
+    AutoLilvNode uriNode = lilv_new_uri(pWorld, pedalboardItem->uri().c_str());
 
     lilv_world_load_resource(pWorld, uriNode);
 
@@ -1027,27 +1088,27 @@ std::vector<ControlValue> PiPedalHost::LoadFactoryPluginPreset(
         if (presetUri == thisPresetUri)
         {
 
-            /*********************************/
+                /*********************************/
 
-            // AutoLilvNode uriNode = lilv_new_uri(pWorld, presetUri.c_str());
+                // AutoLilvNode uriNode = lilv_new_uri(pWorld, presetUri.c_str());
 
-            auto lilvState = lilv_state_new_from_world(pWorld, GetLv2UridMap(), preset);
+                auto lilvState = lilv_state_new_from_world(pWorld, GetLv2UridMap(), preset);
 
-            if (lilvState == nullptr)
-            {
-                throw PiPedalStateException("Preset not found.");
-            }
+                if (lilvState == nullptr)
+                {
+                    throw PiPedalStateException("Preset not found.");
+                }
 
-            StateCallbackData cbData;
-            cbData.pHost = this;
-            cbData.pResult = &result;
-            auto n = lilv_state_get_num_properties(lilvState);
-            lilv_state_emit_port_values(lilvState, fn_LilvSetPortValueFunc, &cbData);
+                StateCallbackData cbData;
+                cbData.pHost = this;
+                cbData.pResult = &result;
+                auto n = lilv_state_get_num_properties(lilvState);
+                lilv_state_emit_port_values(lilvState, fn_LilvSetPortValueFunc, &cbData);
 
-            lilv_state_free(lilvState);
-            break;
+                lilv_state_free(lilvState);
+                break;
 
-            /*********************************/
+                /*********************************/
         }
     }
     lilv_nodes_free(presets);
@@ -1057,15 +1118,15 @@ std::vector<ControlValue> PiPedalHost::LoadFactoryPluginPreset(
 
 struct PresetCallbackState
 {
-    PiPedalHost *pHost;
+    PluginHost *pHost;
     std::map<std::string, float> *values;
     bool failed = false;
 };
 
-void PiPedalHost::PortValueCallback(const char *symbol, void *user_data, const void *value, uint32_t size, uint32_t type)
+void PluginHost::PortValueCallback(const char *symbol, void *user_data, const void *value, uint32_t size, uint32_t type)
 {
     PresetCallbackState *pState = static_cast<PresetCallbackState *>(user_data);
-    PiPedalHost *pHost = pState->pHost;
+    PluginHost *pHost = pState->pHost;
 
     if (type == pHost->urids->atom_Float)
     {
@@ -1076,7 +1137,7 @@ void PiPedalHost::PortValueCallback(const char *symbol, void *user_data, const v
         pState->failed = true;
     }
 }
-PluginPresets PiPedalHost::GetFactoryPluginPresets(const std::string &pluginUri)
+PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
 {
     const LilvPlugins *plugins = lilv_world_get_all_plugins(this->pWorld);
 
@@ -1102,36 +1163,36 @@ PluginPresets PiPedalHost::GetFactoryPluginPresets(const std::string &pluginUri)
         LilvState *state = lilv_state_new_from_world(pWorld, this->mapFeature.GetMap(), preset);
         if (state != nullptr)
         {
-            std::string label = lilv_state_get_label(state);
-            std::map<std::string, float> controlValues;
-            PresetCallbackState cbData{this, &controlValues, false};
-            lilv_state_emit_port_values(state, PortValueCallback, (void *)&cbData);
-            lilv_state_free(state);
+                std::string label = lilv_state_get_label(state);
+                std::map<std::string, float> controlValues;
+                PresetCallbackState cbData{this, &controlValues, false};
+                lilv_state_emit_port_values(state, PortValueCallback, (void *)&cbData);
+                lilv_state_free(state);
 
-            if (!cbData.failed)
-            {
-                result.presets_.push_back(PluginPreset(result.nextInstanceId_++, std::move(label), std::move(controlValues)));
-            }
+                if (!cbData.failed)
+                {
+                    result.presets_.push_back(PluginPreset(result.nextInstanceId_++, std::move(label), std::move(controlValues)));
+                }
         }
     }
     lilv_nodes_free(presets);
     return result;
 }
 
-IEffect *PiPedalHost::CreateEffect(PedalBoardItem &pedalBoardItem)
+IEffect *PluginHost::CreateEffect(PedalboardItem &pedalboardItem)
 {
-    if (pedalBoardItem.uri().starts_with("vst3:"))
+    if (pedalboardItem.uri().starts_with("vst3:"))
     {
 #if ENABLE_VST3
         try
         {
-            Vst3Effect::Ptr vst3Plugin = this->vst3Host->CreatePlugin(pedalBoardItem, this);
-            return vst3Plugin.release();
+                Vst3Effect::Ptr vst3Plugin = this->vst3Host->CreatePlugin(pedalboardItem, this);
+                return vst3Plugin.release();
         }
         catch (const std::exception &e)
         {
-            Lv2Log::error(std::string("Failed to create VST3 plugin: ") + e.what());
-            throw;
+                Lv2Log::error(std::string("Failed to create VST3 plugin: ") + e.what());
+                throw;
         }
 #else
         Lv2Log::error(std::string("VST3 support not enabled at compile time."));
@@ -1141,15 +1202,15 @@ IEffect *PiPedalHost::CreateEffect(PedalBoardItem &pedalBoardItem)
     }
     else
     {
-        auto info = this->GetPluginInfo(pedalBoardItem.uri());
+        auto info = this->GetPluginInfo(pedalboardItem.uri());
         if (!info)
-            return nullptr;
+                return nullptr;
 
-        return new Lv2Effect(this, info, pedalBoardItem);
+        return new Lv2Effect(this, info, pedalboardItem);
     }
 }
 
-Lv2PortGroup::Lv2PortGroup(PiPedalHost *lv2Host, const std::string &groupUri)
+Lv2PortGroup::Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri)
 {
     LilvWorld *pWorld = lv2Host->pWorld;
 
@@ -1161,11 +1222,15 @@ Lv2PortGroup::Lv2PortGroup(PiPedalHost *lv2Host, const std::string &groupUri)
     name_ = nodeAsString(nameNode);
 }
 
-void PiPedalHostLogError(const std::string&errror)
+std::shared_ptr<HostWorkerThread> PluginHost::GetHostWorkerThread()
 {
-    
+    return pHostWorkerThread;
 }
-        
+
+// void PiPedalHostLogError(const std::string &error)
+// {
+//     Lv2Log::error("%s",error.c_str());
+// }
 
 #define MAP_REF(class, name) \
     json_map::reference(#name, &class ::name##_)
@@ -1231,6 +1296,7 @@ json_map::storage_type<Lv2PortGroup> Lv2PortGroup::jmap{{
 }};
 
 json_map::storage_type<Lv2PluginInfo> Lv2PluginInfo::jmap{{
+    json_map::reference("bundle_path", &Lv2PluginInfo::bundle_path_),
     json_map::reference("uri", &Lv2PluginInfo::uri_),
     json_map::reference("name", &Lv2PluginInfo::name_),
     json_map::reference("plugin_class", &Lv2PluginInfo::plugin_class_),
@@ -1290,20 +1356,22 @@ json_map::storage_type<Lv2PluginUiControlPort> Lv2PluginUiControlPort::jmap{{
 
 }};
 
-json_map::storage_type<Lv2PluginUiInfo> Lv2PluginUiInfo::jmap{{
-    json_map::reference("uri", &Lv2PluginUiInfo::uri_),
-    json_map::reference("name", &Lv2PluginUiInfo::name_),
-    json_map::enum_reference("plugin_type", &Lv2PluginUiInfo::plugin_type_, get_plugin_type_enum_converter()),
-    json_map::reference("plugin_display_type", &Lv2PluginUiInfo::plugin_display_type_),
-    json_map::reference("author_name", &Lv2PluginUiInfo::author_name_),
-    json_map::reference("author_homepage", &Lv2PluginUiInfo::author_homepage_),
-    json_map::reference("audio_inputs", &Lv2PluginUiInfo::audio_inputs_),
-    json_map::reference("audio_outputs", &Lv2PluginUiInfo::audio_outputs_),
-    json_map::reference("description", &Lv2PluginUiInfo::description_),
-    json_map::reference("has_midi_input", &Lv2PluginUiInfo::has_midi_input_),
-    json_map::reference("has_midi_output", &Lv2PluginUiInfo::has_midi_output_),
-    json_map::reference("controls", &Lv2PluginUiInfo::controls_),
-    json_map::reference("port_groups", &Lv2PluginUiInfo::port_groups_),
-    json_map::reference("is_vst3", &Lv2PluginUiInfo::is_vst3_),
-    json_map::reference("fileProperties",&Lv2PluginUiInfo::fileProperties_)
-}};
+json_map::storage_type<Lv2PluginUiInfo>
+    Lv2PluginUiInfo::jmap{
+        {json_map::reference("uri", &Lv2PluginUiInfo::uri_),
+         json_map::reference("name", &Lv2PluginUiInfo::name_),
+         json_map::enum_reference("plugin_type", &Lv2PluginUiInfo::plugin_type_, get_plugin_type_enum_converter()),
+         json_map::reference("plugin_display_type", &Lv2PluginUiInfo::plugin_display_type_),
+         json_map::reference("author_name", &Lv2PluginUiInfo::author_name_),
+         json_map::reference("author_homepage", &Lv2PluginUiInfo::author_homepage_),
+         json_map::reference("audio_inputs", &Lv2PluginUiInfo::audio_inputs_),
+         json_map::reference("audio_outputs", &Lv2PluginUiInfo::audio_outputs_),
+         json_map::reference("description", &Lv2PluginUiInfo::description_),
+         json_map::reference("has_midi_input", &Lv2PluginUiInfo::has_midi_input_),
+         json_map::reference("has_midi_output", &Lv2PluginUiInfo::has_midi_output_),
+         json_map::reference("controls", &Lv2PluginUiInfo::controls_),
+         json_map::reference("port_groups", &Lv2PluginUiInfo::port_groups_),
+         json_map::reference("is_vst3", &Lv2PluginUiInfo::is_vst3_),
+         json_map::reference("fileProperties", &Lv2PluginUiInfo::fileProperties_),
+         json_map::reference("uiPortNotifications", &Lv2PluginUiInfo::uiPortNotifications_),
+    }};

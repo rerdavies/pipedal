@@ -92,8 +92,8 @@ public:
 #endif
 
 
-        oscillator.Init(440,jackConfiguration.GetSampleRate());
-        latencyMonitor.Init(jackConfiguration.GetSampleRate());
+        oscillator.Init(440,jackConfiguration.sampleRate());
+        latencyMonitor.Init(jackConfiguration.sampleRate());
         audioDriver->Open(serverSettings,channelSelection);
 
         inputBuffers = new float*[channelSelection.GetInputAudioPorts().size()];
@@ -107,7 +107,7 @@ public:
             if (testType == TestType::LatencyMonitor)
             {
                 auto latency = this->latencyMonitor.GetLatency();
-                double ms = 1000.0*latency/jackConfiguration.GetSampleRate();
+                double ms = 1000.0*latency/jackConfiguration.sampleRate();
 
                 cout << "Latency: " << latency << " samples " << ms << "ms" << " xruns: " << GetXruns() << " Cpu: " << audioDriver->CpuUse() << "%" << endl;
             }

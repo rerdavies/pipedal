@@ -36,8 +36,8 @@ import Utility from './Utility'
 
 
 import {
-    PedalBoard, PedalBoardItem, PedalBoardSplitItem, SplitType,
-} from './PedalBoard';
+    Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType,
+} from './Pedalboard';
 
 const START_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Start";
 const END_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#End";
@@ -69,7 +69,7 @@ function CalculateConnection(numberOfInputs: number, numberOfOutputs: number)
     return result;
 }
 
-const pedalBoardStyles = (theme: Theme) => createStyles({
+const pedalboardStyles = (theme: Theme) => createStyles({
     scrollContainer: {
     },
 
@@ -177,7 +177,7 @@ const pedalBoardStyles = (theme: Theme) => createStyles({
 
 export type OnSelectHandler = (selectedPedal: number) => void;
 
-interface PedalBoardProps extends WithStyles<typeof pedalBoardStyles> {
+interface PedalboardProps extends WithStyles<typeof pedalboardStyles> {
     theme: Theme;
     selectedId?: number;
     onSelectionChanged?: OnSelectHandler;
@@ -190,14 +190,14 @@ interface LayoutSize {
     height: number;
 }
 
-type PedalBoardState = {
-    pedalBoard?: PedalBoard;
+type PedalboardState = {
+    pedalboard?: Pedalboard;
 };
 
 const EMPTY_PEDALS: PedalLayout[] = [];
 
 
-function makeChain(model: PiPedalModel, uiItems?: PedalBoardItem[]): PedalLayout[] {
+function makeChain(model: PiPedalModel, uiItems?: PedalboardItem[]): PedalLayout[] {
     let result: PedalLayout[] = [];
     if (uiItems) {
         for (let i = 0; i < uiItems.length; ++i) {
@@ -219,7 +219,7 @@ class PedalLayout {
     numberOfInputs: number = 2;
     numberOfOutputs: number = 2;
 
-    pedalItem?: PedalBoardItem;
+    pedalItem?: PedalboardItem;
 
     // Split Layout only.
     topChildren: PedalLayout[] = EMPTY_PEDALS;
@@ -245,7 +245,7 @@ class PedalLayout {
         t.numberOfOutputs = 0;
         return t;
     }
-    constructor(model?: PiPedalModel, pedalItem?: PedalBoardItem) {
+    constructor(model?: PiPedalModel, pedalItem?: PedalboardItem) {
         if (model === undefined && pedalItem === undefined) {
             return;
         }
@@ -255,7 +255,7 @@ class PedalLayout {
         this.pedalItem = pedalItem;
         this.uri = pedalItem.uri;
         if (pedalItem.isSplit()) {
-            let splitter = pedalItem as PedalBoardSplitItem;
+            let splitter = pedalItem as PedalboardSplitItem;
 
             this.pluginType = PluginType.UtilityPlugin;
             this.topChildren = makeChain(model, splitter.topChain);
@@ -350,9 +350,9 @@ class LayoutParams {
 }
 
 
-const PedalBoardView =
-    withStyles(pedalBoardStyles, { withTheme: true })(
-        class extends Component<PedalBoardProps, PedalBoardState>
+const PedalboardView =
+    withStyles(pedalboardStyles, { withTheme: true })(
+        class extends Component<PedalboardProps, PedalboardState>
         {
             model: PiPedalModel;
 
@@ -360,15 +360,15 @@ const PedalBoardView =
             scrollRef: React.RefObject<HTMLDivElement>;
 
 
-            constructor(props: PedalBoardProps) {
+            constructor(props: PedalboardProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
 
                 if (!props.selectedId) props.selectedId = -1;
                 this.state = {
-                    pedalBoard: this.model.pedalBoard.get(),
+                    pedalboard: this.model.pedalboard.get(),
                 };
-                this.onPedalBoardChanged = this.onPedalBoardChanged.bind(this);
+                this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
                 this.frameRef = React.createRef();
                 this.scrollRef = React.createRef();
                 this.handleTouchStart = this.handleTouchStart.bind(this);
@@ -402,11 +402,11 @@ const PedalBoardView =
                     if (item.isSplitter() && item.pedalItem) {
                         if (item.bounds.contains(clientX, clientY)) {
                             if (clientX < item.bounds.x + CELL_WIDTH / 2) {
-                                this.model.movePedalBoardItemBefore(instanceId, item.pedalItem.instanceId);
+                                this.model.movePedalboardItemBefore(instanceId, item.pedalItem.instanceId);
                                 this.setSelection(instanceId);
                                 return;
                             } else if (clientX > item.bounds.right - CELL_WIDTH / 2) {
-                                this.model.movePedalBoardItemAfter(instanceId, item.pedalItem.instanceId);
+                                this.model.movePedalboardItemAfter(instanceId, item.pedalItem.instanceId);
                                 this.setSelection(instanceId);
                                 return;
 
@@ -420,7 +420,7 @@ const PedalBoardView =
                             if (clientX < item.topChildren[0].bounds.x) {
                                 let topPedalItem = item.topChildren[0].pedalItem;
                                 if (topPedalItem) {
-                                    this.model.movePedalBoardItemBefore(instanceId, topPedalItem.instanceId);
+                                    this.model.movePedalboardItemBefore(instanceId, topPedalItem.instanceId);
                                     this.setSelection(instanceId);
                                     return;
                                 }
@@ -428,7 +428,7 @@ const PedalBoardView =
                             let lastTop = item.topChildren[item.topChildren.length - 1];
                             if (clientX >= lastTop.bounds.right && clientX < item.bounds.right - CELL_WIDTH / 2) {
                                 if (lastTop.pedalItem) {
-                                    this.model.movePedalBoardItemAfter(instanceId, lastTop.pedalItem.instanceId);
+                                    this.model.movePedalboardItemAfter(instanceId, lastTop.pedalItem.instanceId);
                                     this.setSelection(instanceId);
                                     return;
                                 }
@@ -441,7 +441,7 @@ const PedalBoardView =
                             if (clientX < item.bottomChildren[0].bounds.x) {
                                 let bottomPedalItem = item.bottomChildren[0].pedalItem;
                                 if (bottomPedalItem) {
-                                    this.model.movePedalBoardItemBefore(instanceId, bottomPedalItem.instanceId);
+                                    this.model.movePedalboardItemBefore(instanceId, bottomPedalItem.instanceId);
                                     this.setSelection(instanceId);
                                     return;
                                 }
@@ -450,7 +450,7 @@ const PedalBoardView =
                             if (clientX >= lastBottom.bounds.right && clientX < item.bounds.right-CELL_WIDTH/2)
                             {
                                 if (lastBottom.pedalItem) {
-                                    this.model.movePedalBoardItemAfter(instanceId, lastBottom.pedalItem.instanceId);
+                                    this.model.movePedalboardItemAfter(instanceId, lastBottom.pedalItem.instanceId);
                                     this.setSelection(instanceId);
                                     return;
                                 }
@@ -461,11 +461,11 @@ const PedalBoardView =
 
                     } else if (item.bounds.contains(clientX, clientY)) {
                         if (item.isStart()) {
-                            this.model.movePedalBoardItemToStart(instanceId);
+                            this.model.movePedalboardItemToStart(instanceId);
                             this.setSelection(instanceId);
                             return;
                         } else if (item.isEnd()) {
-                            this.model.movePedalBoardItemToEnd(instanceId);
+                            this.model.movePedalboardItemToEnd(instanceId);
                             this.setSelection(instanceId);
                             return;
                         } else {
@@ -473,11 +473,11 @@ const PedalBoardView =
                             {
                                 let margin = (CELL_WIDTH - FRAME_SIZE) / 2;
                                 if (clientX < item.bounds.x + margin) {
-                                    this.model.movePedalBoardItemBefore(instanceId, item.pedalItem.instanceId);
+                                    this.model.movePedalboardItemBefore(instanceId, item.pedalItem.instanceId);
                                 } else if (clientX > item.bounds.right - margin) {
-                                    this.model.movePedalBoardItemAfter(instanceId, item.pedalItem.instanceId);
+                                    this.model.movePedalboardItemAfter(instanceId, item.pedalItem.instanceId);
                                 } else {
-                                    this.model.movePedalBoardItem(instanceId, item.pedalItem.instanceId);
+                                    this.model.movePedalboardItem(instanceId, item.pedalItem.instanceId);
                                 }
                                 this.setSelection(instanceId);
                                 return;
@@ -487,23 +487,23 @@ const PedalBoardView =
                     }
                 }
                 // delete the plugin.
-                let newId = this.model.setPedalBoardItemEmpty(instanceId);
+                let newId = this.model.setPedalboardItemEmpty(instanceId);
                 this.setSelection(newId);
 
             }
 
-            onPedalBoardChanged(value?: PedalBoard) {
-                this.setState({ pedalBoard: value });
+            onPedalboardChanged(value?: Pedalboard) {
+                this.setState({ pedalboard: value });
             }
 
             componentDidMount() {
                 this.scrollRef.current!.addEventListener("touchstart",this.handleTouchStart, {passive: false});
-                this.model.pedalBoard.addOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
 
             }
             componentWillUnmount() {
                 this.scrollRef.current!.removeEventListener("touchstart",this.handleTouchStart);
-                this.model.pedalBoard.removeOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
             }
 
             offsetLayout_(layoutItems: PedalLayout[], offset: number): void {
@@ -523,7 +523,7 @@ const PedalBoardView =
                 if (layoutItem.pedalItem === undefined) {
                     throw new Error("Invalid splitter");
                 }
-                let split = layoutItem.pedalItem as PedalBoardSplitItem;
+                let split = layoutItem.pedalItem as PedalboardSplitItem;
                 if (split.getSplitType() === SplitType.Ab) {
                     if (split.isASelected()) {
                         return "img/fx_split_a.svg";
@@ -706,7 +706,7 @@ const PedalBoardView =
                 let yTop = item.topConnectorY;
                 let yBottom = item.bottomConnectorY;
                 //let isStereo = item.stereoOutput;
-                let split = item.pedalItem as PedalBoardSplitItem;
+                let split = item.pedalItem as PedalboardSplitItem;
 
                 let topEnabled = enabled && split.isASelected();
                 let bottomEnabled = enabled && split.isBSelected();
@@ -889,7 +889,7 @@ const PedalBoardView =
                 // actually not here anymore. :-/ It has a reactive definition in MainPage.tsx now.
                 while (el)
                 {
-                    if (el.id === "pedalBoardScroll")
+                    if (el.id === "pedalboardScroll")
                     {
                         return el as HTMLDivElement;
                     }
@@ -930,7 +930,7 @@ const PedalBoardView =
                 for (let i = 0; i < length; ++i) {
                     let item = layoutChain[i];
                     if (item.isSplitter()) {
-                        let splitter = item.pedalItem as PedalBoardSplitItem;
+                        let splitter = item.pedalItem as PedalboardSplitItem;
                         this.renderSplitConnectors(output, item, enabled, i === length - 1 && shortSplitOutput,);
                         this.renderConnectors(output, item.topChildren, enabled && splitter.isASelected(), false);
                         this.renderConnectors(output, item.bottomChildren, enabled && splitter.isBSelected(), false);
@@ -942,15 +942,14 @@ const PedalBoardView =
                 }
             }
             renderConnectorFrame(layoutChain: PedalLayout[], layoutSize: LayoutSize): ReactNode {
-                let output: ReactNode[] = [];
-                this.renderConnectors(output, layoutChain, true, false);
-
+                let outputs: ReactNode[] = [];
+                this.renderConnectors(outputs, layoutChain, true, false);
                 return (
                     <svg width={layoutSize.width} height={layoutSize.height}
                         xmlns="http://www.w3.org/2000/svg" viewBox={"0 0 " + layoutSize.width + " " + layoutSize.height}>
                         <g fill="none">
                             {
-                                output
+                                outputs
                             }
                         </g>
 
@@ -1065,7 +1064,7 @@ const PedalBoardView =
                         let topInputs = item.topChildren[0].numberOfInputs;
                         let bottomInputs = item.bottomChildren[0].numberOfInputs;
 
-                        let splitItem = item.pedalItem as PedalBoardSplitItem;
+                        let splitItem = item.pedalItem as PedalboardSplitItem;
                         if (splitItem.getSplitType() !== SplitType.Lr)
                         {
                             item.numberOfInputs = CalculateConnection(item.numberOfInputs, Math.max(topInputs,bottomInputs));
@@ -1102,7 +1101,7 @@ const PedalBoardView =
                 for (let i = 0; i < layoutChain.length; ++i) {
                     let item = layoutChain[i];
                     if (item.isSplitter()) {
-                        let splitter = item.pedalItem as PedalBoardSplitItem;
+                        let splitter = item.pedalItem as PedalboardSplitItem;
                         item.numberOfInputs = numberOfInputs;
 
                         let chainInputs = numberOfInputs;
@@ -1156,7 +1155,7 @@ const PedalBoardView =
             render() {
                 const { classes } = this.props;
 
-                let layoutChain = makeChain(this.model, this.state.pedalBoard?.items);
+                let layoutChain = makeChain(this.model, this.state.pedalboard?.items);
                 let start = PedalLayout.Start();
                 let end = PedalLayout.End();
                 if (layoutChain.length !== 0)
@@ -1187,4 +1186,4 @@ const PedalBoardView =
         }
     );
 
-export default PedalBoardView
+export default PedalboardView

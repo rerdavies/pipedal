@@ -19,9 +19,9 @@
 
 #pragma once
 #include <mutex>
-#include "PiPedalHost.hpp"
+#include "PluginHost.hpp"
 #include "GovernorSettings.hpp"
-#include "PedalBoard.hpp"
+#include "Pedalboard.hpp"
 #include "Storage.hpp"
 #include "Banks.hpp"
 #include "JackConfiguration.hpp"
@@ -37,6 +37,8 @@
 #include "AdminClient.hpp"
 #include "AvahiService.hpp"
 #include <thread>
+#include "Promise.hpp"
+#include "AtomConverter.hpp"
 
 namespace pipedal
 {
@@ -50,8 +52,9 @@ namespace pipedal
         virtual int64_t GetClientId() = 0;
         virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
         virtual void OnControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value) = 0;
+        virtual void OnLv2StateChanged(int64_t pedalItemId) = 0;
         virtual void OnVst3ControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value, const std::string &state) = 0;
-        virtual void OnPedalBoardChanged(int64_t clientId, const PedalBoard &pedalBoard) = 0;
+        virtual void OnPedalboardChanged(int64_t clientId, const Pedalboard &pedalboard) = 0;
         virtual void OnPresetsChanged(int64_t clientId, const PresetIndex &presets) = 0;
         virtual void OnPluginPresetsChanged(const std::string &pluginUri) = 0;
         virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection) = 0;
@@ -62,19 +65,21 @@ namespace pipedal
         virtual void OnLoadPluginPreset(int64_t instanceId, const std::vector<ControlValue> &controlValues) = 0;
         virtual void OnMidiValueChanged(int64_t instanceId, const std::string &symbol, float value) = 0;
         virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) = 0;
-        virtual void OnNotifyAtomOutput(int64_t clientModel, uint64_t instanceId, const std::string &atomType, const std::string &atomJson) = 0;
+        virtual void OnNotifyAtomOutput(int64_t clientModel, uint64_t instanceId, const std::string &propertyUri, const std::string &atomJson) = 0;
         virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings &wifiConfigSettings) = 0;
         virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings &wifiDirectConfigSettings) = 0;
         virtual void OnGovernorSettingsChanged(const std::string &governor) = 0;
         virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites) = 0;
         virtual void OnShowStatusMonitorChanged(bool show) = 0;
         virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) = 0;
+        virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
         virtual void Close() = 0;
     };
 
     class PiPedalModel : private IAudioHostCallbacks
     {
     private:
+
         std::unique_ptr<std::jthread> pingThread;
 
         std::vector<MidiBinding> systemMidiBindings;
@@ -97,9 +102,14 @@ namespace pipedal
         class AtomOutputListener
         {
         public:
+            bool WantsProperty(uint64_t instanceId,LV2_URID patchProperty) const {
+                if (instanceId != this->instanceId) return false;
+                return this->propertyUrid == 0 || patchProperty == this->propertyUrid;
+            }
             int64_t clientId;
             int64_t clientHandle;
             uint64_t instanceId;
+            LV2_URID propertyUrid;
         };
         void DeleteMidiListeners(int64_t clientId);
         void DeleteAtomOutputListeners(int64_t clientId);
@@ -108,27 +118,29 @@ namespace pipedal
         std::vector<AtomOutputListener> atomOutputListeners;
 
         JackServerSettings jackServerSettings;
-        PiPedalHost lv2Host;
-        PedalBoard pedalBoard;
+        PluginHost lv2Host;
+        AtomConverter atomConverter; // must be AFTER lv2Host!
+
+        Pedalboard pedalboard;
         Storage storage;
         bool hasPresetChanged = false;
 
         std::unique_ptr<AudioHost> audioHost;
         JackConfiguration jackConfiguration;
-        std::shared_ptr<Lv2PedalBoard> lv2PedalBoard;
+        std::shared_ptr<Lv2Pedalboard> lv2Pedalboard;
         std::filesystem::path webRoot;
 
         std::vector<IPiPedalModelSubscriber *> subscribers;
         void SetPresetChanged(int64_t clientId, bool value);
         void FirePresetsChanged(int64_t clientId);
         void FirePluginPresetsChanged(const std::string &pluginUri);
-        void FirePedalBoardChanged(int64_t clientId);
+        void FirePedalboardChanged(int64_t clientId);
         void FireChannelSelectionChanged(int64_t clientId);
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
 
-        void UpdateDefaults(PedalBoardItem *pedalBoardItem);
-        void UpdateDefaults(PedalBoard *pedalBoard);
+        void UpdateDefaults(PedalboardItem *pedalboardItem);
+        void UpdateDefaults(Pedalboard *pedalboard);
 
         class VuSubscription
         {
@@ -147,20 +159,23 @@ namespace pipedal
 
         void RestartAudio();
 
-        std::vector<RealtimeParameterRequest *> outstandingParameterRequests;
+        std::vector<RealtimePatchPropertyRequest *> outstandingParameterRequests;
 
         IPiPedalModelSubscriber *GetNotificationSubscriber(int64_t clientId);
 
     private: // IAudioHostCallbacks
-        virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates);
-        virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update);
-        virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value);
-        virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl);
-        virtual void OnNotifyAtomOutput(uint64_t instanceId, const std::string &atomType, const std::string &atomJson);
-        virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest);
-        virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request);
+        virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;
+        virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) override;
+        virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) override;
+        virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
+        virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) override;
+        virtual bool WantsAtomOutput(uint64_t instanceId,LV2_URID atomProperty) override;
+        virtual void OnNotifyAtomOutput(uint64_t instanceId, LV2_URID outputAtomProperty, const std::string &atomJson) override;
+;
+        virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) override;
+        virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) override;
 
-        void UpdateVst3Settings(PedalBoard &pedalBoard);
+        void UpdateVst3Settings(Pedalboard &pedalboard);
 
         PiPedalConfiguration configuration;
 
@@ -171,6 +186,8 @@ namespace pipedal
         uint16_t GetWebPort() const { return webPort; }
         void Close();
 
+        void SetOnboarding(bool value);
+
         void UpdateDnsSd();
 
         AdminClient &GetAdminClient() { return adminClient; }
@@ -180,11 +197,11 @@ namespace pipedal
         void LoadLv2PluginInfo();
         void Load();
 
-        const PiPedalHost &GetLv2Host() const { return lv2Host; }
-        PedalBoard GetCurrentPedalBoardCopy()
+        const PluginHost &GetLv2Host() const { return lv2Host; }
+        Pedalboard GetCurrentPedalboardCopy()
         {
             std::lock_guard<std::recursive_mutex> guard(mutex);
-            return pedalBoard; // can return a referece because we'd lose  mutex protection
+            return pedalboard; // can return a referece because we'd lose  mutex protection
         }
         PluginUiPresets GetPluginUiPresets(const std::string &pluginUri);
         PluginPresets GetPluginPresets(const std::string &pluginUri);
@@ -194,15 +211,16 @@ namespace pipedal
         void AddNotificationSubscription(IPiPedalModelSubscriber *pSubscriber);
         void RemoveNotificationSubsription(IPiPedalModelSubscriber *pSubscriber);
 
-        void SetPedalBoardItemEnable(int64_t clientId, int64_t instanceId, bool enabled);
+        void SetPedalboardItemEnable(int64_t clientId, int64_t instanceId, bool enabled);
         void SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
         void PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
-        void SetPedalBoard(int64_t clientId, PedalBoard &pedalBoard);
-        void UpdateCurrentPedalBoard(int64_t clientId, PedalBoard &pedalBoard);
+
+        void SetPedalboard(int64_t clientId, Pedalboard &pedalboard);
+        void UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalboard);
 
         void GetPresets(PresetIndex *pResult);
         
-        PedalBoard GetPreset(int64_t instanceId);
+        Pedalboard GetPreset(int64_t instanceId);
         void GetBank(int64_t instanceId, BankFile *pBank);
 
         int64_t UploadBank(BankFile &bankFile, int64_t uploadAfter = -1);
@@ -251,12 +269,21 @@ namespace pipedal
         int64_t MonitorPort(int64_t instanceId, const std::string &key, float updateInterval, PortMonitorCallback onUpdate);
         void UnmonitorPort(int64_t subscriptionHandle);
 
-        void GetLv2Parameter(
+        void SendGetPatchProperty(
             int64_t clientId,
             int64_t instanceId,
             const std::string uri,
             std::function<void(const std::string &jsonResjult)> onSuccess,
             std::function<void(const std::string &error)> onError);
+
+        void SendSetPatchProperty(
+            int64_t clientId,
+            int64_t instanceId,
+            const std::string uri,
+            const json_variant&value,
+            std::function<void()> onSuccess,
+            std::function<void(const std::string &error)> onError);
+            
 
         BankIndex GetBankIndex() const;
         void RenameBank(int64_t clientId, int64_t bankId, const std::string &newName);
@@ -273,8 +300,8 @@ namespace pipedal
         void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
 
-        void ListenForAtomOutputs(int64_t clientId, int64_t clientHandle, uint64_t instanceId);
-        void CancelListenForAtomOutputs(int64_t clientId, int64_t clientHandle);
+        void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId,const std::string&propertyUri);
+        void CancelMonitorPatchProperty(int64_t clientId, int64_t clientHandle);
 
         std::vector<AlsaDeviceInfo> GetAlsaDevices();
         const std::filesystem::path &GetWebRoot() const;
@@ -282,7 +309,7 @@ namespace pipedal
         std::map<std::string, bool> GetFavorites() const;
         void SetFavorites(const std::map<std::string, bool> &favorites);
 
-        std::vector<std::string> GetFileList(const PiPedalFileProperty&fileProperty);
+        std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
     };
 
 } // namespace pipedal.

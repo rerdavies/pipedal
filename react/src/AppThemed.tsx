@@ -398,7 +398,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     }
 
-    handDisplayOnboarding() {
+    handleDisplayOnboarding() {
         this.setState({
             isDrawerOpen: false,
             isSettingsDialogOpen: true,
@@ -502,7 +502,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
         this.model_.errorMessage.addOnChangedHandler(this.errorChangeHandler_);
         this.model_.state.addOnChangedHandler(this.stateChangeHandler_);
-        this.model_.pedalBoard.addOnChangedHandler(this.presetChangedHandler);
+        this.model_.pedalboard.addOnChangedHandler(this.presetChangedHandler);
         this.model_.alertMessage.addOnChangedHandler(this.alertMessageChangedHandler);
         this.model_.banks.addOnChangedHandler(this.banksChangedHandler);
         this.model_.showStatusMonitor.addOnChangedHandler(this.showStatusMonitorHandler);
@@ -529,7 +529,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         super.componentWillUnmount();
         this.model_.errorMessage.removeOnChangedHandler(this.errorChangeHandler_);
         this.model_.state.removeOnChangedHandler(this.stateChangeHandler_);
-        this.model_.pedalBoard.removeOnChangedHandler(this.presetChangedHandler);
+        this.model_.pedalboard.removeOnChangedHandler(this.presetChangedHandler);
         this.model_.banks.removeOnChangedHandler(this.banksChangedHandler);
         this.model_.banks.removeOnChangedHandler(this.showStatusMonitorHandler);
 
@@ -575,7 +575,6 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         this.setState({ errorMessage: message });
     }
 
-    onboardingShown: boolean =  false;
 
     setDisplayState(newState: State): void {
         this.updateOverscroll();
@@ -586,13 +585,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         });
         if (newState === State.Ready)
         {
-            if (!this.onboardingShown)
+            if (this.model_.isOnboarding())
             {
-                this.onboardingShown = true;
-                if (!this.model_.hasConfiguration())
-                {
-                    this.handDisplayOnboarding();
-                }
+                this.handleDisplayOnboarding();
             }
         }
     }
@@ -867,7 +862,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                         <div className={classes.loadingBoxItem}>
                             <CircularProgress color="inherit" className={classes.loadingBoxItem} />
                         </div>
-                        <Typography variant="body2" className={classes.progressText}>
+                        <Typography noWrap variant="body2" className={classes.progressText}>
                             {this.state.displayState === State.ApplyingChanges ? "Applying\u00A0changes..." : "Reconnecting..."}
                         </Typography>
                     </div>
@@ -905,7 +900,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                         <div className={classes.loadingBoxItem}>
                             <CircularProgress color="inherit" className={classes.loadingBoxItem} />
                         </div>
-                        <Typography variant="body2" className={classes.loadingBoxItem}>
+                        <Typography noWrap variant="body2" className={classes.loadingBoxItem}>
                             Loading...
                         </Typography>
                     </div>

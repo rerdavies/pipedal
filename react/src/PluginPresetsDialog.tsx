@@ -259,7 +259,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                                 <img src="img/ic_pluginpreset2.svg" className={classes.itemIcon} alt="" />
                             </div>
                             <div className={classes.itemLabel}>
-                                <Typography>
+                                <Typography> noWrap
                                     {presetEntry.label}
                                 </Typography>
                             </div>
@@ -312,8 +312,8 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
             this.setState({ renameOpen: false });
         }
         getPluginUri() : string {
-            let pedalBoardItem = this.model.pedalBoard.get().getItem(this.props.instanceId);
-            return pedalBoardItem.uri;
+            let pedalboardItem = this.model.pedalboard.get().getItem(this.props.instanceId);
+            return pedalboardItem.uri;
         }
         handleCopy() {
             let item = this.props.presets.getItem(this.state.selectedItem);
@@ -359,7 +359,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                                     >
                                         <ArrowBackIcon />
                                     </IconButton>
-                                    <Typography variant="h6" className={classes.dialogTitle}>
+                                    <Typography noWrap variant="h6" className={classes.dialogTitle}>
                                         {title}
                                     </Typography>
                                     <IconButton color="inherit" onClick={(e) => this.showActionBar(true)} >

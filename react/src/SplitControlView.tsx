@@ -25,8 +25,8 @@ import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { UiPlugin } from './Lv2Plugin';
 import {
-    PedalBoard, PedalBoardSplitItem, ControlValue,
-} from './PedalBoard';
+    Pedalboard, PedalboardSplitItem, ControlValue,
+} from './Pedalboard';
 import PluginControl from './PluginControl';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import VuMeter from './VuMeter';
@@ -97,7 +97,7 @@ const styles = (theme: Theme) => createStyles({
 interface SplitControlViewProps extends WithStyles<typeof styles> {
     theme: Theme;
     instanceId: number;
-    item: PedalBoardSplitItem;
+    item: PedalboardSplitItem;
 }
 type SplitControlViewState = {
     landscapeGrid: boolean;
@@ -117,32 +117,32 @@ const SplitControlView =
                     landscapeGrid: false
 
                 }
-                this.onPedalBoardChanged = this.onPedalBoardChanged.bind(this);
+                this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
                 this.onValueChanged = this.onValueChanged.bind(this);
                 this.onPreviewChange = this.onPreviewChange.bind(this);
             }
 
 
             onPreviewChange(key: string, value: number): void {
-                this.model.previewPedalBoardValue(this.props.instanceId, key, value);
+                this.model.previewPedalboardValue(this.props.instanceId, key, value);
             }
 
             onValueChanged(key: string, value: number): void {
-                this.model.setPedalBoardControlValue(this.props.instanceId, key, value);
+                this.model.setPedalboardControl(this.props.instanceId, key, value);
             }
 
-            onPedalBoardChanged(value?: PedalBoard) {
-                //let item = this.model.pedalBoard.get().maybeGetItem(this.props.instanceId);
-                //this.setState({ pedalBoardItem: item });
+            onPedalboardChanged(value?: Pedalboard) {
+                //let item = this.model.pedalboard.get().maybeGetItem(this.props.instanceId);
+                //this.setState({ pedalboardItem: item });
             }
 
 
             componentDidMount() {
                 super.componentDidMount();
-                this.model.pedalBoard.addOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
             }
             componentWillUnmount() {
-                this.model.pedalBoard.removeOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
                 super.componentWillUnmount();
             }
 
@@ -162,29 +162,29 @@ const SplitControlView =
 
             render(): ReactNode {
                 let classes = this.props.classes;
-                let pedalBoardItem = this.model.pedalBoard.get().getItem(this.props.instanceId);
+                let pedalboardItem = this.model.pedalboard.get().getItem(this.props.instanceId);
 
-                if (!pedalBoardItem)
+                if (!pedalboardItem)
                     return (<div className={classes.frame}></div>);
 
 
                 let gridClass = this.state.landscapeGrid ? classes.landscapeGrid : classes.normalGrid;
                 let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
-                let typeValue = pedalBoardItem.getControl(PedalBoardSplitItem.TYPE_KEY);
-                let mixValue = pedalBoardItem.getControl(PedalBoardSplitItem.MIX_KEY);
-                let selectValue = pedalBoardItem.getControl(PedalBoardSplitItem.SELECT_KEY);
-                let panLValue = pedalBoardItem.getControl(PedalBoardSplitItem.PANL_KEY);
-                let volumeLValue = pedalBoardItem.getControl(PedalBoardSplitItem.VOLL_KEY);
-                let panRValue = pedalBoardItem.getControl(PedalBoardSplitItem.PANR_KEY);
-                let volumeRValue = pedalBoardItem.getControl(PedalBoardSplitItem.VOLR_KEY);
+                let typeValue = pedalboardItem.getControl(PedalboardSplitItem.TYPE_KEY);
+                let mixValue = pedalboardItem.getControl(PedalboardSplitItem.MIX_KEY);
+                let selectValue = pedalboardItem.getControl(PedalboardSplitItem.SELECT_KEY);
+                let panLValue = pedalboardItem.getControl(PedalboardSplitItem.PANL_KEY);
+                let volumeLValue = pedalboardItem.getControl(PedalboardSplitItem.VOLL_KEY);
+                let panRValue = pedalboardItem.getControl(PedalboardSplitItem.PANR_KEY);
+                let volumeRValue = pedalboardItem.getControl(PedalboardSplitItem.VOLR_KEY);
 
                 return (
                     <div className={classes.frame}>
                         <div className={classes.vuMeterL}>
-                            <VuMeter display="input" instanceId={pedalBoardItem.instanceId} />
+                            <VuMeter display="input" instanceId={pedalboardItem.instanceId} />
                         </div>
                         <div className={vuMeterRClass}>
-                            <VuMeter display="output" instanceId={pedalBoardItem.instanceId} />
+                            <VuMeter display="output" instanceId={pedalboardItem.instanceId} />
                         </div>
                         <div className={gridClass}  >
                             <div style={{ flex: "0 0 auto" }}>

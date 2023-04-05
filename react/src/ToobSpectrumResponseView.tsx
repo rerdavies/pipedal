@@ -25,22 +25,30 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 
-import { PiPedalModelFactory, PiPedalModel, State,ListenHandle } from "./PiPedalModel";
+import { PiPedalModelFactory, PiPedalModel, State, ListenHandle } from "./PiPedalModel";
 import { StandardItemSize } from './PluginControlView';
-import Utility from './Utility';
-// import { setInterval,clearInterval } from 'timers'; // no longer requires polyfill (webpack >= 5)
 
 
-const SPECTRUM_RESPONSE_VECTOR_URI = "http://two-play.com/plugins/toob#spectrumResponse";
 
-const PLOT_WIDTH = StandardItemSize.width*3-16;
-const PLOT_HEIGHT = StandardItemSize.height-12;
+
+import SvgPathBuilder from './SvgPathBuilder'
+
+const SPECTRUM_RESPONSE_URI = "http://two-play.com/plugins/toob#spectrumResponse";
+const SPECTRUM_ENABLE_URI = "http://two-play.com/plugins/toob#spectrumEnable";
+
+const PLOT_WIDTH = StandardItemSize.width * 3 - 16;
+const PLOT_HEIGHT = StandardItemSize.height - 12;
 
 const styles = (theme: Theme) => createStyles({
     frame: {
-        width: PLOT_WIDTH, height: PLOT_HEIGHT, background: "#444", 
+        width: PLOT_WIDTH, height: PLOT_HEIGHT, background: "#333",
         borderRadius: 6,
         marginTop: 12, marginLeft: 8, marginRight: 8,
+        overflow: "hidden"
+    },
+    frameShadow: {
+        width: PLOT_WIDTH, height: PLOT_HEIGHT, 
+        borderRadius: 6,
         boxShadow: "1px 4px 8px #000 inset"
     },
 });
@@ -51,6 +59,7 @@ interface ToobSpectrumResponseProps extends WithStyles<typeof styles> {
 }
 interface ToobSpectrumResponseState {
     path: string;
+    holdPath: string;
     minF: number;
     maxF: number;
 }
@@ -72,9 +81,8 @@ const ToobSpectrumResponseView =
                 let minF = 60;
                 let maxF = 18000;
 
-                let plugin = this.model.pedalBoard.get()?.maybeGetItem(this.props.instanceId);
-                if (plugin)
-                {
+                let plugin = this.model.pedalboard.get()?.maybeGetItem(this.props.instanceId);
+                if (plugin) {
                     minF = plugin.getControlValue("minF");
                     maxF = plugin.getControlValue("maxF");
                 }
@@ -82,62 +90,59 @@ const ToobSpectrumResponseView =
 
                 this.state = {
                     path: "",
+                    holdPath: "",
                     minF: minF,
                     maxF: maxF
                 };
 
-                this.onPedalBoardChanged = this.onPedalBoardChanged.bind(this);
+                this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
                 this.onStateChanged = this.onStateChanged.bind(this);
             }
 
-            onStateChanged()
-            {
-                if (this.model.state.get() === State.Ready)
-                {
+            onStateChanged() {
+                if (this.model.state.get() === State.Ready) {
                     this.requestDeferred = false;
                     this.requestOutstanding = false;
 
-                    let plugin = this.model.pedalBoard.get()?.maybeGetItem(this.props.instanceId);
-                    if (plugin)
-                    {
+                    let plugin = this.model.pedalboard.get()?.maybeGetItem(this.props.instanceId);
+                    if (plugin) {
                         let minF = plugin.getControlValue("minF");
                         let maxF = plugin.getControlValue("maxF");
-                        this.setState({minF: minF, maxF: maxF});
+                        this.setState({ minF: minF, maxF: maxF });
                     }
-    
+
                 }
                 this.isReady = this.model.state.get() === State.Ready;
 
-                this.maybeStartClock(); // after a reconnect.
+                this.maybeStartMonitoring(); // after a reconnect.
             }
-            onPedalBoardChanged() 
-            {
-                this.maybeStartClock();
-                let plugin = this.model.pedalBoard.get()?.maybeGetItem(this.props.instanceId);
-                if (plugin)
-                {
+            onPedalboardChanged() {
+                // rebind our monitoring hooks.
+                this.maybeStartMonitoring(false);
+                this.maybeStartMonitoring(true);
+
+                let plugin = this.model.pedalboard.get()?.maybeGetItem(this.props.instanceId);
+                if (plugin) {
                     let minF = plugin.getControlValue("minF");
                     let maxF = plugin.getControlValue("maxF");
-                    this.setState({minF: minF, maxF: maxF});
+                    this.setState({ minF: minF, maxF: maxF });
                 }
             }
 
             mounted: boolean = false;
             isReady: boolean = false;
-            componentDidMount()
-            {
+            componentDidMount() {
                 this.model.state.addOnChangedHandler(this.onStateChanged);
-                this.model.pedalBoard.addOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
                 this.mounted = true;
                 this.isReady = this.model.state.get() === State.Ready;
-                this.maybeStartClock();
+                this.maybeStartMonitoring();
             }
-            componentWillUnmount()
-            {
+            componentWillUnmount() {
                 this.mounted = false;
-                this.maybeStartClock();
+                this.maybeStartMonitoring();
                 this.model.state.removeOnChangedHandler(this.onStateChanged);
-                this.model.pedalBoard.removeOnChangedHandler(this.onPedalBoardChanged);
+                this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
             }
 
             componentDidUpdate() {
@@ -147,77 +152,50 @@ const ToobSpectrumResponseView =
 
             // Size of the SVG element.
             xMin: number = 0;
-            xMax: number = PLOT_WIDTH+4;
+            xMax: number = PLOT_WIDTH + 4;
             yMin: number = 0;
             yMax: number = PLOT_HEIGHT;
 
-            onSpectrumResponseUpdated(svgPath: string) {
-                this.setState({path: svgPath});
+            onSpectrumResponseUpdated(svgPath: string, holdSvgPath: string) {
+                this.setState({ path: svgPath, holdPath: holdSvgPath });
 
             }
 
-            isTicking : boolean = false;
-            hClock?: NodeJS.Timeout;
-            hAtomOutput?: ListenHandle;
+            private isMonitoring: boolean = false;
+            private hClock?: NodeJS.Timeout;
+            private hAtomOutput?: ListenHandle;
 
-            maybeStartClock() {
-                let  shouldTick = this.isReady && this.mounted;
+            private maybeStartMonitoring(wantsMonitoring: boolean = true) {
+                let shouldMonitor = this.isReady && this.mounted && wantsMonitoring;
 
-                if (shouldTick !== this.isTicking)
-                {
-                    this.isTicking = shouldTick;
-                    if (shouldTick)
-                    {
-                        this.hAtomOutput = this.model.listenForAtomOutput(this.props.instanceId,
-                            (instanceId,atomOutput)=> {
-                                this.onSpectrumResponseUpdated(atomOutput.value as string);
-                                if (this.requestDeferred) {
-                                    Utility.delay(30) // take  breath
-                                        .then(
-                                            () => {
-                                                this.requestOutstanding = false;
-                                                this.requestDeferred = false;
-                                                this.requestSpectrum();
-                                            }
-        
-                                        );
-                                } else {
-                                    this.requestOutstanding = false;
+                if (shouldMonitor !== this.isMonitoring) {
+                    this.isMonitoring = shouldMonitor;
+                    if (shouldMonitor) {
+                        this.hAtomOutput = this.model.monitorPatchProperty(
+                            this.props.instanceId,
+                            SPECTRUM_RESPONSE_URI,
+                            (instanceId, propertyUri, json) => {
+                                if (propertyUri === SPECTRUM_RESPONSE_URI && json.otype_ === "Tuple") {
+                                    let values = json.value as string[];
+                                    this.onSpectrumResponseUpdated(values[0], values[1]);
                                 }
-        
-
-                            });
-                        this.hClock = setInterval(()=> {
-                                this.requestSpectrum();
-                            },
-                            1000/15);
+                            }
+                        );
+                        this.model.setPatchProperty(this.props.instanceId, SPECTRUM_ENABLE_URI, true)
+                        .catch((error)=> {});
                     } else {
-                        if (this.hAtomOutput)
-                        {
-                            this.model.cancelListenForAtomOutput(this.hAtomOutput);
+
+                        this.model.setPatchProperty(this.props.instanceId, SPECTRUM_ENABLE_URI, false)
+                        .catch((error)=> {}); // e.g. plugin not found.
+
+
+
+                        if (this.hAtomOutput) {
+                            this.model.cancelMonitorPatchProperty(this.hAtomOutput);
                             this.hAtomOutput = undefined;
-                        }
-                        if (this.hClock)
-                        {
-                            clearInterval(this.hClock);
-                            this.hClock = undefined;
                         }
                     }
                 }
-
-
-            }
-            requestSpectrum() {
-                if (this.requestOutstanding) { // throttling.
-                    this.requestDeferred = true;
-                    return;
-                }
-                this.requestOutstanding = true;
-                this.model.getLv2Parameter<string>(this.props.instanceId, SPECTRUM_RESPONSE_VECTOR_URI)
-                    .then((data) => {
-                    }).catch(error => {
-                        // assume the connection was lost. We'll get saved by a reconnect.
-                    });
             }
 
             numPoints = 200;
@@ -228,22 +206,21 @@ const ToobSpectrumResponseView =
             logMaxF = Math.log(this.maxF);
 
             toX(f: number): number {
-                let width = PLOT_WIDTH-8;
-                return  (Math.log(f)-this.logMinF)*width/(this.logMaxF-this.logMinF);
+                let width = PLOT_WIDTH - 8;
+                return (Math.log(f) - this.logMinF) * width / (this.logMaxF - this.logMinF);
             }
-            grid(): React.ReactNode[] {
-                let result: React.ReactNode[] = [];
-                let width = PLOT_WIDTH-8;
-                let height = PLOT_HEIGHT-8;
 
-                for (let db = -20; db >= -100; db -= 20)
-                {
-                    let y = height*db/-100;
-                    result.push(
-                        (
-                            <line x1={0} y1={y} x2={width} y2={y} key={"db" + db} />
-                        )
-                    );
+            private minorGrid(): string {
+                
+                let ss = new SvgPathBuilder();
+
+                let width = PLOT_WIDTH;
+                let height = PLOT_HEIGHT;
+
+                for (let db = -20; db >= -100; db -= 20) {
+                    let y = height * db / -100;
+                    ss.moveTo(0,y);
+                    ss.lineTo(width,y);
                 }
 
                 let minF = this.state.minF;
@@ -252,54 +229,86 @@ const ToobSpectrumResponseView =
                 this.maxF = maxF;
                 this.logMinF = Math.log(this.minF);
                 this.logMaxF = Math.log(this.maxF);
-    
-                for (let decade = 10; decade < 100000; decade *= 10)
-                {
-                    for (let minorTick = 1; minorTick <= 5; ++ minorTick)
-                    {
-                        let f = decade*minorTick;
-                        if (f > minF && f < maxF)
-                        {
+
+                for (let decade = 10; decade < 100000; decade *= 10) {
+                    for (let minorTick = 1; minorTick <= 5; ++minorTick) {
+                        let f = decade * minorTick;
+                        if (f > minF && f < maxF) {
                             let x = this.toX(f);
-                            if (minorTick === 1)
-                            {
-                                result.push(
-                                    (
-                                        <line x1={x} y1={0} x2={x} y2={height} key={"hgrid"+f} strokeWidth={1}/>
-                                    )
-                                );
+                            if (minorTick === 1) {
+                                ss.moveTo(x,0);
+                                ss.lineTo(x,height);
                             } else {
-                                result.push(
-                                    (
-                                        <line x1={x} y1={0} x2={x} y2={height} key={"hgrid"+f} />
-                                    )
-                                );
+                                ss.moveTo(x,0);
+                                ss.lineTo(x,height);
                             }
-        
+
                         }
 
                     }
                 }
-
-                return result;
+                return ss.toString();
             }
+
+            private majorGrid(): string {
+                
+                let ss = new SvgPathBuilder();
+
+                let height = PLOT_HEIGHT;
+
+                let minF = this.state.minF;
+                let maxF = this.state.maxF;
+                this.minF = minF;
+                this.maxF = maxF;
+                this.logMinF = Math.log(this.minF);
+                this.logMaxF = Math.log(this.maxF);
+
+                for (let decade = 10; decade < 100000; decade *= 10) {
+                    if (decade > minF && decade < maxF)
+                    {
+                        let x = this.toX(decade);
+                        ss.moveTo(x,0);
+                        ss.lineTo(x,height);
+                    }
+                }
+                return  ss.toString();
+            }
+
 
             render() {
                 let classes = this.props.classes;
                 return (
-                    <div className={classes.frame} style={{position: "relative"}} >
-                        <div style={{position: "absolute", left: 4, top: 4}}>
-                            <svg width={PLOT_WIDTH-8} height={PLOT_HEIGHT-8}  stroke="#888" strokeWidth="0.5" opacity="1"
-                                >
-                                {this.grid()}
+                    <div className={classes.frame} style={{ position: "relative" }} >
+                        {/* <div style={{ position: "absolute", left: 0, top: 0 }}>
+                            <svg fill="#660" width={PLOT_WIDTH } height={PLOT_HEIGHT} preserveAspectRatio='none' 
+                                    viewBox={"0 0 " + this.numPoints + " " + 1000} stroke="none" strokeWidth="2.5" opacity="1.0"
+                            >
+                                <path d={this.state.holdPath} />
+                            </svg>
+                        </div> */}
+
+                        <div style={{ position: "absolute", left: 0, top: 0 }}>
+                            <svg fill="#0C4" width={PLOT_WIDTH } height={PLOT_HEIGHT } preserveAspectRatio='none' 
+                                viewBox={"0 0 " + this.numPoints + " " + 1000} stroke="none" strokeWidth="2.5" opacity="1.0"
+                            >
+                                <path d={this.state.path} />
                             </svg>
                         </div>
-                        <div style={{position: "absolute", left: 4, top: 4}}>
-                            <svg width={PLOT_WIDTH-8} height={PLOT_HEIGHT-8} preserveAspectRatio='none' viewBox={"0 0 " + this.numPoints + " " + 1000} stroke="none" fill="#0FC" strokeWidth="2.5" opacity="0.6"
-                                >
-                                <path d={this.state.path}  />
+                        <div style={{ position: "absolute", left: 0, top: 0 }}>
+                            <svg width={PLOT_WIDTH } height={PLOT_HEIGHT} stroke="#FFF" strokeWidth="0.9" opacity="0.3"
+                            >
+                                <path d={this.minorGrid()} />
                             </svg>
                         </div>
+                        <div style={{ position: "absolute", left: 0, top: 0 }}>
+                            <svg width={PLOT_WIDTH} height={PLOT_HEIGHT} stroke="#FFF" strokeWidth="0.9" opacity="0.5"
+                            >
+                                <path d={this.majorGrid()} />
+                            </svg>
+                        </div>
+                        <div className={classes.frameShadow} style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
+                        </div>
+
 
                     </div>);
             }

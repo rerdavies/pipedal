@@ -198,7 +198,7 @@ public:
 
             audioDriver = CreateAlsaDriver(this);
 
-            latencyMonitor.Init(jackConfiguration.GetSampleRate());
+            latencyMonitor.Init(jackConfiguration.sampleRate());
             audioDriver->Open(serverSettings, channelSelection);
 
             inputBuffers = new float *[channelSelection.GetInputAudioPorts().size()];

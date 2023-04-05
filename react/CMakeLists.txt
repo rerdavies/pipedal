@@ -60,9 +60,9 @@ add_custom_command(
     src/PiPedalError.tsx
     src/IControlViewFactory.tsx
     src/Lv2Plugin.tsx
-    src/PedalBoard.tsx
+    src/Pedalboard.tsx
     src/AndroidHost.tsx
-    src/PedalBoardView.tsx
+    src/PedalboardView.tsx
     src/PresetDialog.tsx
     src/AppThemed.tsx
     src/ZoomedDial.tsx

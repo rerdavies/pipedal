@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "PedalBoard.hpp"
+#include "Pedalboard.hpp"
 #include "json.hpp"
 
 namespace pipedal {
@@ -32,21 +32,21 @@ public:
     DECLARE_JSON_MAP(PedalPreset);
 };
 
-class PedalBoardPreset {
+class PedalboardPreset {
     uint64_t instanceId_;
     std::string displayName_;
     std::vector<std::unique_ptr<PedalPreset> > values_;
 public:
-    DECLARE_JSON_MAP(PedalBoardPreset);
+    DECLARE_JSON_MAP(PedalboardPreset);
 };
 
-class PedalBoardPresets {
+class PedalboardPresets {
     long nextInstanceId_ = 0;
 
     long currentPreset_ = 0;
-    std::vector<std::unique_ptr<PedalBoardPreset> > presets_;
+    std::vector<std::unique_ptr<PedalboardPreset> > presets_;
 public:
-    DECLARE_JSON_MAP(PedalBoardPresets);
+    DECLARE_JSON_MAP(PedalboardPresets);
 
 };
 

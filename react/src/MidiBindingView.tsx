@@ -139,8 +139,8 @@ const MidiBindingView =
             render() {
                 let classes = this.props.classes;
                 let midiBinding = this.props.midiBinding;
-                let pedalBoardItem = this.model.pedalBoard.get().getItem(this.props.instanceId);
-                let uiPlugin = this.model.getUiPlugin(pedalBoardItem.uri);
+                let pedalboardItem = this.model.pedalboard.get().getItem(this.props.instanceId);
+                let uiPlugin = this.model.getUiPlugin(pedalboardItem.uri);
                 if (!uiPlugin) {
                     return (<div />);
                 }
@@ -267,7 +267,7 @@ const MidiBindingView =
                             (canTrigger) &&
                             (
                                 <div className={classes.controlDiv2} >
-                                    <Typography style={{paddingTop: 12, paddingBottom: 12}}>(Trigger)</Typography>
+                                    <Typography noWrap style={{paddingTop: 12, paddingBottom: 12}}>(Trigger)</Typography>
                                 </div>
                             )
 
