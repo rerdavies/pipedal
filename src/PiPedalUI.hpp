@@ -57,7 +57,7 @@ namespace pipedal {
 
     class PiPedalFileType {
     private:
-        std::string name_;
+        std::string label_;
         std::string fileExtension_;
     public:
         PiPedalFileType() { }
@@ -65,7 +65,7 @@ namespace pipedal {
 
         static std::vector<PiPedalFileType> GetArray(PluginHost*pHost, const LilvNode*node,const LilvNode*uri);
 
-        const std::string& name() const { return name_;}
+        const std::string& label() const { return label_;}
         const std::string &fileExtension() const { return fileExtension_; }
 
     public:
@@ -94,6 +94,7 @@ namespace pipedal {
     class UiFileProperty {
     private:
         std::string name_;
+        std::int64_t index_ = -1;
         std::string directory_;
         std::vector<PiPedalFileType> fileTypes_;
         std::string patchProperty_;
@@ -101,9 +102,11 @@ namespace pipedal {
         using ptr = std::shared_ptr<UiFileProperty>;
         UiFileProperty() { }
         UiFileProperty(PluginHost*pHost, const LilvNode*node, const std::filesystem::path&resourcePath);
+        UiFileProperty(const std::string&name, const std::string&patchProperty,const std::string &directory);
 
 
         const std::string &name() const { return name_; }
+        int64_t index() const { return index_; }
         const std::string &directory() const { return directory_; }
 
         const std::vector<PiPedalFileType> &fileTypes() const { return fileTypes_; }
@@ -120,9 +123,12 @@ namespace pipedal {
     public:
         using ptr = std::shared_ptr<PiPedalUI>;
         PiPedalUI(PluginHost*pHost, const LilvNode*uiNode, const std::filesystem::path&resourcePath);
+
+        PiPedalUI(std::vector<UiFileProperty::ptr> &&fileProperites);
+
         const std::vector<UiFileProperty::ptr>& fileProperties() const
         {
-            return fileProperites_;
+            return fileProperties_;
         }
 
         const std::vector<UiPortNotification::ptr> &portNotifications() const { return portNotifications_; }
@@ -140,7 +146,7 @@ namespace pipedal {
         }
 
     private:
-        std::vector<UiFileProperty::ptr> fileProperites_;
+        std::vector<UiFileProperty::ptr> fileProperties_;
         std::vector<UiPortNotification::ptr> portNotifications_;
     };
 

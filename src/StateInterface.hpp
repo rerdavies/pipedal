@@ -41,7 +41,12 @@ namespace pipedal
     class Lv2PluginState: public JsonSerializable
     {
     public:
+        bool isValid_ = false;
         std::map<std::string,Lv2PluginStateEntry> values_;
+        void Erase() {
+            isValid_ = false;
+            values_.clear();
+        }
 
         std::string ToString() const;
     private:

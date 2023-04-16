@@ -36,8 +36,12 @@ const LONG_PRESS_TIME_MS = 250;
 
 const styles = (theme: Theme) => createStyles({
     frame: {
-        position: "relative",
-        margin: "12px"
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative"
     }
 });
 
@@ -479,7 +483,7 @@ const Draggable =
 
             render() {
                 return (
-                    <div style={{ transform: "" }}
+                    <div className={this.props.classes.frame} style={{ transform: "" }}
                         onPointerDown={this.onPointerDown}
                         onPointerMove={this.onPointerMove}
                         onPointerCancel={this.onPointerCancel}

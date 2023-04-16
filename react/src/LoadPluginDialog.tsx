@@ -17,7 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import React, { ReactNode, SyntheticEvent, CSSProperties } from 'react';
+import React, { ReactNode, SyntheticEvent, CSSProperties, Fragment, ReactElement } from 'react';
 
 import { PiPedalModel, PiPedalModelFactory, FavoritesList } from './PiPedalModel';
 import { UiPlugin, PluginType } from './Lv2Plugin';
@@ -42,7 +42,6 @@ import SearchFilter from './SearchFilter';
 import { FixedSizeGrid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
 import { WithStyles, withStyles } from '@mui/styles';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -102,10 +101,10 @@ const pluginGridStyles = (theme: Theme) => createStyles({
         height: "100%'"
     },
     content: {
-        marginTop: "8px",
-        marginBottom: "8px",
-        marginLeft: "12px",
-        marginRight: "12px",
+        marginTop: "4px",
+        marginBottom: "4px",
+        marginLeft: "8px",
+        marginRight: "8px",
         width: "100%",
         overflow: "hidden",
         textAlign: "left",
@@ -118,7 +117,7 @@ const pluginGridStyles = (theme: Theme) => createStyles({
     },
     content2: {
         display: "flex", flexDirection: "column", flex: "1 1 auto", width: "100%",
-        paddingLeft: 16, whiteSpace: "nowrap"
+        paddingLeft: 12, whiteSpace: "nowrap", textOverflow: "ellipsis"
 
     },
     favoriteDecoration: {
@@ -134,7 +133,8 @@ const pluginGridStyles = (theme: Theme) => createStyles({
         opacity: "0.6"
     },
     iconBorder: {
-        flex: "0 0 auto"
+        flex: "0 0 auto",
+        paddingTop: "4px"
     },
     label: {
         width: "100%"
@@ -173,14 +173,11 @@ type PluginGridState = {
     grid_cell_columns: number,
     minimumItemWidth: number,
     favoritesList: FavoritesList
+    gridItems: UiPlugin[];
+
 
 }
 
-const Transition = React.forwardRef(function Transition(
-    props: SlideProps, ref: React.Ref<unknown>
-) {
-    return (<Slide direction="up" ref={ref} {...props} />);
-});
 
 export const LoadPluginDialog =
     withStyles(pluginGridStyles, { withTheme: true })(
@@ -210,7 +207,9 @@ export const LoadPluginDialog =
                     grid_cell_width: this.getCellWidth(window.innerWidth),
                     grid_cell_columns: this.getCellColumns(window.innerWidth),
                     minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220,
-                    favoritesList: this.model.favorites.get()
+                    favoritesList: this.model.favorites.get(),
+                    gridItems: this.getFilteredPlugins("", filterType_, this.model.favorites.get())
+
                 };
 
                 this.updateWindowSize = this.updateWindowSize.bind(this);
@@ -219,6 +218,8 @@ export const LoadPluginDialog =
                 this.handleSearchStringReady = this.handleSearchStringReady.bind(this);
                 this.handleKeyPress = this.handleKeyPress.bind(this);
                 this.handleFavoritesChanged = this.handleFavoritesChanged.bind(this);
+
+                this.requestScrollTo();
             }
 
             nominal_column_width: number = 250;
@@ -252,9 +253,9 @@ export const LoadPluginDialog =
 
                                     let newValue = searchInput.value + e.key;
                                     searchInput.value = newValue; // add the key. to the value.
+                                    this.handleSearchStringChanged(newValue);
                                     searchInput.focus();
                                     this.setState({
-                                        search_string: newValue,
                                         search_collapsed: false
                                     })
 
@@ -275,9 +276,12 @@ export const LoadPluginDialog =
             }
 
             handleFavoritesChanged() {
+                let favorites = this.model.favorites.get();
+                this.requestScrollTo();
                 this.setState(
                     {
-                        favoritesList: this.model.favorites.get()
+                        favoritesList: favorites,
+                        gridItems: this.getFilteredPlugins(null, null, favorites)
                     });
             }
             componentDidMount() {
@@ -285,7 +289,12 @@ export const LoadPluginDialog =
                 this.updateWindowSize();
                 window.addEventListener('resize', this.updateWindowSize);
                 this.model.favorites.addOnChangedHandler(this.handleFavoritesChanged);
-                this.setState({ favoritesList: this.model.favorites.get() });
+                let favorites = this.model.favorites.get();
+                this.setState({
+                    favoritesList: favorites,
+                    gridItems: this.getFilteredPlugins(null, null, favorites)
+
+                });
 
             }
             componentWillUnmount() {
@@ -297,7 +306,15 @@ export const LoadPluginDialog =
             componentDidUpdate(oldProps: PluginGridProps) {
                 if (oldProps.open !== this.props.open) {
                     if (this.props.open) {
-                        this.setState({ search_string: "", search_collapsed: true });
+                        // reset state now.
+                        if (this.state.search_string !== "" || !this.state.search_collapsed) {
+                            this.setState({
+                                search_string: "",
+                                search_collapsed: true,
+                                gridItems: this.getFilteredPlugins("", null, null)
+                            });
+                        }
+                        this.requestScrollTo();
                     }
                 }
             }
@@ -308,17 +325,26 @@ export const LoadPluginDialog =
             }
 
             onFilterChange(e: any) {
-                let value = e.target.value as PluginType;
+                let filterValue = e.target.value as PluginType;
 
-                window.localStorage.setItem(FILTER_STORAGE_KEY, value as string);
+                window.localStorage.setItem(FILTER_STORAGE_KEY, filterValue as string);
 
-                this.setState({ filterType: value });
+                this.requestScrollTo();
+                this.setState({
+                    filterType: filterValue,
+                    gridItems: this.getFilteredPlugins(null, filterValue, null)
+                });
             }
             onClearFilter(): void {
                 let value = PluginType.Plugin;
                 window.localStorage.setItem(FILTER_STORAGE_KEY, value as string);
-
-                this.setState({ filterType: value });
+                if (this.state.filterType !== value) {
+                    this.requestScrollTo();
+                    this.setState({
+                        filterType: value,
+                        gridItems: this.getFilteredPlugins(null, value, null)
+                    });
+                }
             }
 
             selectItem(item: number): void {
@@ -389,11 +415,9 @@ export const LoadPluginDialog =
                 // let selectedUri = this.state.selected_uri;
             }
 
-            vst3_indicator(uiPlugin? : UiPlugin)
-            {
-                if (uiPlugin?.is_vst3)
-                {
-                    return (<img alt="vst" src="/img/vst.svg" style={{marginLeft: 8,height: 22, opacity: 0.6,position: "relative",top: -1}} />)
+            vst3_indicator(uiPlugin?: UiPlugin) {
+                if (uiPlugin?.is_vst3) {
+                    return (<img alt="vst" src="/img/vst.svg" style={{ marginLeft: 8, height: 22, opacity: 0.6, position: "relative", top: -1 }} />)
                 }
                 return null;
             }
@@ -404,14 +428,36 @@ export const LoadPluginDialog =
                 }
                 return "";
             }
-            info_string(uiPlugin?: UiPlugin): string {
-                if (uiPlugin === undefined) return "";
-                let result = uiPlugin.name;
-                if (uiPlugin.author_name !== "") {
-                    result += ", " + uiPlugin.author_name;
+            info_string(uiPlugin?: UiPlugin): ReactElement {
+                if (!uiPlugin) {
+                    return (<Fragment />);
+                } else {
+                    let stereoIndicator = this.stereo_indicator(uiPlugin)
+                    if (uiPlugin.author_name !== "") {
+                        if (uiPlugin.author_homepage !== "") {
+                            return (<Fragment>
+                                <div style={{flex: "0 1 auto"}}>
+                                    <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.name + ",\u00A0"}</Typography>
+                                </div>
+                                <div style={{flex: "0 1 auto"}}>
+                                    <a href={uiPlugin.author_homepage} target="_blank" >
+                                        <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.author_name}</Typography>
+                                    </a>
+                                </div>
+                            </Fragment>);
+
+                        } else {
+                            return (<Fragment>
+                                <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.name + ", " + uiPlugin.author_name}</Typography>
+                            </Fragment>);
+                        }
+                    }
+                    return (
+                        <Fragment>
+                            <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin?.name ?? ""}</Typography>
+                        </Fragment>);
+
                 }
-                result += this.stereo_indicator(uiPlugin);
-                return result;
             }
             createFilterChildren(result: ReactNode[], classNode: PluginClass, level: number): void {
                 for (let i = 0; i < classNode.children.length; ++i) {
@@ -432,29 +478,35 @@ export const LoadPluginDialog =
                 return result;
 
             }
-            getFilteredPlugins(): UiPlugin[] {
+            getFilteredPlugins(searchString: string | null, filterType: PluginType | null, favoritesList: FavoritesList | null): UiPlugin[] {
+                if (searchString === null) {
+                    searchString = this.state.search_string;
+                }
+                if (filterType === null) {
+                    filterType = this.state.filterType;
+                }
+                if (favoritesList === null) {
+                    favoritesList = this.state.favoritesList;
+                }
                 let plugins = this.model.ui_plugins.get();
-                let searchString = this.state.search_string;
 
                 let results: { score: number; plugin: UiPlugin }[] = [];
                 let searchFilter = new SearchFilter(searchString);
-                let filterType = this.state.filterType;
                 let rootClass = this.model.plugin_classes.get();
 
 
                 for (let i = 0; i < plugins.length; ++i) {
                     let plugin = plugins[i];
                     if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
-                        let score:number = 0;
-                        if (plugin.is_vst3)
-                        {
-                            score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name,"vst3");
+                        let score: number = 0;
+                        if (plugin.is_vst3) {
+                            score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name, "vst3");
                         } else {
                             score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
                         }
 
                         if (score !== 0) {
-                            if (this.state.favoritesList[plugin.uri]) {
+                            if (favoritesList[plugin.uri]) {
                                 score += 32768;
                             }
                             results.push({ score: score, plugin: plugin });
@@ -476,9 +528,38 @@ export const LoadPluginDialog =
             changedSearchString?: string = undefined;
             hSearchTimeout?: NodeJS.Timeout;
 
+            private scrollToRequested = false;
+            requestScrollTo() {
+                this.scrollToRequested = true;
+            }
+
+            handleScrollToCallback(element: FixedSizeGrid): void {
+                if (element) {
+                    if (this.scrollToRequested) {
+                        this.scrollToRequested = false;
+                        let position = -1;
+                        let gridItems = this.state.gridItems;
+                        for (let i = 0; i < gridItems.length; ++i) {
+                            if (this.state.selected_uri === gridItems[i].uri) {
+                                position = i;
+                                break;
+                            }
+                        }
+                        if (position != -1) {
+                            element.scrollToItem({ rowIndex: Math.floor(position / this.state.grid_cell_columns) });
+                        }
+                    }
+                }
+            }
+
+
             handleSearchStringReady() {
                 if (this.changedSearchString !== undefined) {
-                    this.setState({ search_string: this.changedSearchString });
+                    this.requestScrollTo();
+                    this.setState({
+                        search_string: this.changedSearchString,
+                        gridItems: this.getFilteredPlugins(this.changedSearchString, null, null)
+                    });
                     this.changedSearchString = undefined;
                 }
                 this.hSearchTimeout = undefined;
@@ -498,14 +579,15 @@ export const LoadPluginDialog =
             }
             renderItem(row: number, column: number): React.ReactNode {
                 let item: number = (row) * this.gridColumnCount + (column);
-
-                if (item >= this.gridItems.length) {
+                let gridItems = this.state.gridItems;
+                if (item >= gridItems.length) {
                     return (<div />);
                 }
-                let value = this.gridItems[item];
+                let value = gridItems[item];
 
                 let classes = this.props.classes;
                 let isFavorite: boolean = this.state.favoritesList[value.uri] ?? false;
+
                 return (
                     <div key={value.uri}
                         onDoubleClick={(e) => { this.onDoubleClick(e, value.uri) }}
@@ -520,16 +602,19 @@ export const LoadPluginDialog =
                                     <PluginIcon pluginType={value.plugin_type} pluginUri={value.uri} size={24} />
                                 </div>
                                 <div className={classes.content2}>
-                                    <div className={classes.label} >
-                                        <Typography color="textPrimary" noWrap sx={{ display: "inline" }} >
-                                            {value.name}
-                                            {
-                                                isFavorite && (
-                                                    <StarBorderIcon sx={{ color: "#C80", fontSize: 16 }} />
+                                    <div className={classes.label} style={{ display: "flex", flexFlow: "row nowrap", alignItems: "center" }} >
 
-                                                )
-                                            }
+                                        <Typography color="textPrimary" noWrap sx={{ display: "block", flex: "0 1 auto", }} >
+                                            {value.name}
                                         </Typography>
+                                        {
+                                            isFavorite && (
+                                                <div style={{ flex: "0 0 auto" }}>
+                                                    <StarBorderIcon sx={{ color: "#C80", fontSize: 16, marginRight: "2px" }} />
+                                                </div>
+                                            )
+                                        }
+
                                     </div>
                                     <Typography color="textSecondary" noWrap>
                                         {value.plugin_display_type} {this.stereo_indicator(value)}
@@ -549,7 +634,6 @@ export const LoadPluginDialog =
                 if (!pluginUri) return;
                 this.model.setFavorite(pluginUri, isFavorite);
             }
-            gridItems: UiPlugin[] = [];
             gridColumnCount: number = 1;
 
             render() {
@@ -565,7 +649,6 @@ export const LoadPluginDialog =
                 if (this.state.client_width < 500) {
                     showSearchIcon = this.state.search_collapsed
                 }
-                this.gridItems = this.getFilteredPlugins();
                 let gridColumnCount = this.state.grid_cell_columns;
                 this.gridColumnCount = gridColumnCount;
                 let isFavorite = this.state.favoritesList[this.state.selected_uri ?? ""];
@@ -574,7 +657,7 @@ export const LoadPluginDialog =
                         <Dialog
                             onKeyPress={(e) => { this.handleKeyPress(e); }}
                             fullScreen={true}
-                            TransitionComponent={Transition}
+                            TransitionComponent={undefined}
                             maxWidth={false}
                             open={this.props.open}
                             scroll="body"
@@ -603,13 +686,34 @@ export const LoadPluginDialog =
                                                     this.handleSearchStringChanged(text);
                                                 }}
                                                 onClearFilterClick={() => {
-                                                    this.setState({ search_collapsed: true, search_string: "" });
+                                                    if (this.state.search_string !== "") {
+                                                        this.requestScrollTo();
+                                                        this.setState({
+                                                            search_collapsed: true,
+                                                            search_string: "",
+                                                            gridItems: this.getFilteredPlugins("", null, null)
+                                                        });
+
+                                                    } else {
+                                                        this.setState({ search_collapsed: true });
+                                                    }
                                                 }}
                                                 onClick={() => {
                                                     if (this.state.search_collapsed) {
                                                         this.setState({ search_collapsed: false });
                                                     } else {
-                                                        this.setState({ search_collapsed: true, search_string: "" });
+
+                                                        if (this.state.search_string !== "") {
+                                                            this.requestScrollTo();
+                                                            this.setState({
+                                                                search_collapsed: true,
+                                                                search_string: "",
+                                                                gridItems: this.getFilteredPlugins("", null, null)
+                                                            });
+
+                                                        } else {
+                                                            this.setState({ search_collapsed: true });
+                                                        }
                                                     }
 
                                                 }}
@@ -624,13 +728,13 @@ export const LoadPluginDialog =
                                                 )}
                                             </IconButton>
                                         </div>
-                                        <div style={{ flex: "0 0 160px",marginRight: 24 }} >
+                                        <div style={{ flex: "0 0 160px", marginRight: 24 }} >
 
                                             <TextField select variant="standard"
                                                 defaultValue={this.state.filterType}
                                                 key={this.state.filterType}
                                                 onChange={(e) => { this.onFilterChange(e); }}
-                                                sx={{ minWidth: 160}}
+                                                sx={{ minWidth: 160 }}
                                             >
                                                 {this.createFilterOptions()}
                                             </TextField>
@@ -643,22 +747,33 @@ export const LoadPluginDialog =
                                     flex: "1 1 100px",
                                 }} >
                                     <AutoSizer>
-                                        {(arg: { height: number, width: number }) => {
+                                        {(arg) => {
+                                            if ((!arg.width) || (!arg.height)) {
+                                                return (<div></div>);
+                                            }
+                                            let width = arg.width ?? 1;
+                                            let height = arg.height ?? 1;
+                                            let gridItems = this.state.gridItems;
+
+                                            let scrollRef = (grid: FixedSizeGrid) => { this.handleScrollToCallback(grid); }
+
+
                                             return (
                                                 <FixedSizeGrid
-                                                    width={arg.width}
+                                                    ref={scrollRef}
+                                                    width={width}
                                                     columnCount={this.gridColumnCount}
-                                                    columnWidth={(arg.width - 40) / this.gridColumnCount}
-                                                    height={arg.height}
+                                                    columnWidth={(width - 40) / this.gridColumnCount}
+                                                    height={height}
                                                     rowHeight={64}
                                                     overscanRowCount={10}
-                                                    rowCount={Math.ceil(this.gridItems.length / this.gridColumnCount)}
+                                                    rowCount={Math.ceil(gridItems.length / this.gridColumnCount)}
                                                     itemKey={(args: { columnIndex: number, data: any, rowIndex: number }) => {
                                                         let index = args.columnIndex + this.gridColumnCount * args.rowIndex;
-                                                        if (index >= this.gridItems.length) {
+                                                        if (index >= gridItems.length) {
                                                             return "blank-" + args.columnIndex + "-" + args.rowIndex;
                                                         }
-                                                        let plugin = this.gridItems[index];
+                                                        let plugin = gridItems[index];
                                                         return plugin.uri + "-" + args.rowIndex + "-" + args.columnIndex;
 
                                                     }}
@@ -680,11 +795,9 @@ export const LoadPluginDialog =
                                 {(this.state.client_width >= NARROW_DISPLAY_THRESHOLD) ? (
                                     <DialogActions style={{ flex: "0 0 auto" }} >
                                         <div className={classes.bottom}>
-                                            <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", height: "100%", overflow: "hidden" }} >
+                                            <div style={{ display: "flex", textOverflow: "ellipsis", justifyContent: "start", alignItems: "center", flex: "1 1 auto", height: "100%", overflow: "hidden" }} >
                                                 <PluginInfoDialog plugin_uri={this.state.selected_uri ?? ""} />
-                                                <Typography display='block' variant='body2' color="textPrimary" noWrap >
-                                                    {this.info_string(selectedPlugin)} 
-                                                </Typography>
+                                                {this.info_string(selectedPlugin)}
                                                 {this.vst3_indicator(selectedPlugin)}
                                                 <div style={{
                                                     color: isFavorite ? "#F80" : "#CCC", display: (this.state.selected_uri !== "" ? "block" : "none"),
@@ -708,12 +821,10 @@ export const LoadPluginDialog =
                                         <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", overflow: "hidden" }} >
                                             <PluginInfoDialog plugin_uri={this.state.selected_uri ?? ""} />
                                             <div style={{ width: 1, height: 48 }} />
-                                            <Typography display='block' variant='body2' color="textPrimary" noWrap >
-                                                {this.info_string(selectedPlugin)}
-                                            </Typography>
+                                            {this.info_string(selectedPlugin)}
                                             <div style={{
                                                 color: isFavorite ? "#F80" : "#CCC", display: (this.state.selected_uri ? "block" : "block"),
-                                                position: "relative", top: -5
+                                                position: "relative"
                                             }}>
                                                 <IconButton color="inherit" aria-label="Set as favorite"
                                                     onClick={() => { this.setFavorite(this.state.selected_uri, !isFavorite); }}
@@ -722,11 +833,11 @@ export const LoadPluginDialog =
                                                 </IconButton>
                                             </div>
                                         </div>
-                                        <div className={classes.bottom}>
+                                        <div className={classes.bottom} style={{height: 64}}>
                                             <div style={{ flex: "1 1 1px" }} />
                                             <div style={{ position: "relative", flex: "0 1 auto", display: "flex", alignItems: "center" }}>
-                                                <Button onClick={this.handleCancel} style={{ width: 120, height: 48 }} >Cancel</Button>
-                                                <Button onClick={this.handleOk} color="secondary" disabled={selectedPlugin === null} style={{ width: 120, height: 48 }} >SELECT</Button>
+                                                <Button onClick={this.handleCancel} style={{ height: 48 }} >Cancel</Button>
+                                                <Button onClick={this.handleOk} color="secondary" disabled={selectedPlugin === null} style={{ height: 48 }} >SELECT</Button>
                                             </div>
                                         </div>
                                     </DialogActions>

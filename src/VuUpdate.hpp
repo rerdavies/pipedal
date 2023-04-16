@@ -26,7 +26,7 @@ namespace pipedal
     class VuUpdate
     {
     public:
-        uint64_t instanceId_ = 0;
+        int64_t instanceId_ = 0;
         long sampleTime_ = 0;
         bool isStereoInput_ = false;
         bool isStereoOutput_ = false;
@@ -76,7 +76,6 @@ namespace pipedal
         {
             AccumulateVu(&outputMaxValueL_,outputL,samples);
             AccumulateVu(&outputMaxValueR_,outputR,samples);
-
         }
 
         DECLARE_JSON_MAP(VuUpdate);

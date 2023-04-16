@@ -165,19 +165,6 @@ Pedalboard Pedalboard::MakeDefault()
     // copy insanity. but it happens so rarely.
     Pedalboard result;
 
-    auto split = result.MakeSplit();
-    split.topChain().push_back(result.MakeEmptyItem());
-    split.bottomChain().push_back(result.MakeEmptyItem());
-
-
-    result.items().push_back(result.MakeEmptyItem());
-    result.items().push_back(result.MakeEmptyItem());
-    result.items().push_back(result.MakeEmptyItem());
-
-    result.items().push_back(split);
-
-    result.items().push_back(result.MakeEmptyItem());
-    result.items().push_back(result.MakeEmptyItem());
     result.items().push_back(result.MakeEmptyItem());
     result.name("Default Preset");
 
@@ -218,6 +205,8 @@ JSON_MAP_END()
 
 JSON_MAP_BEGIN(Pedalboard)
     JSON_MAP_REFERENCE(Pedalboard,name)
+    JSON_MAP_REFERENCE(Pedalboard,input_volume_db)
+    JSON_MAP_REFERENCE(Pedalboard,output_volume_db)
     JSON_MAP_REFERENCE(Pedalboard,items)
     JSON_MAP_REFERENCE(Pedalboard,nextInstanceId)
 JSON_MAP_END()

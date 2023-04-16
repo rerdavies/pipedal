@@ -272,7 +272,7 @@ void Vst3Host::Private::UpdateControlInfo(IEditController *controller, Lv2Plugin
 		Steinberg::Vst::ParameterInfo info;
 		tresult tErr = controller->getParameterInfo(param, info);
 
-		Lv2PluginUiControlPort port;
+		Lv2PluginUiPort port;
 		port.index(param);		  // used for LV2 purposes.
 		port.symbol(SS(info.id)); // Used for VST3 purposes. convert to int to specifiy a vst control id.
 

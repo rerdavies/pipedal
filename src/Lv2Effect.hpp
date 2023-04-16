@@ -44,7 +44,6 @@ namespace pipedal
     class Lv2Effect : public IEffect
     {
     private:
-
         std::unique_ptr<StateInterface> stateInterface;
         void RestoreState(const PedalboardItem&pedalboardItem);
 

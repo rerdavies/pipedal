@@ -31,6 +31,7 @@
 #include <atomic>
 #include "Ipv6Helpers.hpp"
 #include "Promise.hpp"
+#include <mutex>
 
 #include "AdminClient.hpp"
 #include "WifiConfigSettings.hpp"
@@ -418,16 +419,45 @@ private:
 
     struct PortMonitorSubscription
     {
+        PortMonitorSubscription(
+            int64_t subscriptionHandle,
+            int64_t instanceId,
+            const std::string& key)
+        :subscriptionHandle(subscriptionHandle),
+        instanceId(instanceId),
+        key(key)
+        {
+
+        }
+        ~PortMonitorSubscription() {
+            Close();
+        }
+        PortMonitorSubscription() {}
+        PortMonitorSubscription(const PortMonitorSubscription&) = delete;
+        PortMonitorSubscription& operator=(const PortMonitorSubscription&) = delete;
+        void Close() {
+            std::lock_guard lock {pmMutex};
+            closed = true;
+        }
+
+
+        std::mutex pmMutex;
+
+        bool closed = false;
         int64_t subscriptionHandle = -1;
         int64_t instanceId = -1;
         std::string key;
 
-        float lastSentValue = 0;
+        static constexpr float INVALID_VALUE = std::numeric_limits<float>::max();
+        float lastValue = INVALID_VALUE;
+        float currentValue = INVALID_VALUE;
+
         bool pendingValue = false;
         bool waitingForAck = false;
     };
 
-    std::vector<PortMonitorSubscription> activePortMonitors;
+    std::mutex activePortMonitorsMutex;
+    std::vector<std::shared_ptr<PortMonitorSubscription>> activePortMonitors;
 
 public:
     virtual int64_t GetClientId() { return clientId; }
@@ -436,7 +466,7 @@ public:
     {
         for (int i = 0; i < this->activePortMonitors.size(); ++i)
         {
-            model.UnmonitorPort(activePortMonitors[i].subscriptionHandle);
+            model.UnmonitorPort(activePortMonitors[i]->subscriptionHandle);
         }
         for (int i = 0; i < this->activeVuSubscriptions.size(); ++i)
         {
@@ -701,22 +731,48 @@ public:
         Reply(replyTo, "error", what);
     }
 
-    PortMonitorSubscription *getPortMonitorSubscription(uint64_t subscriptionId)
+    std::shared_ptr<PortMonitorSubscription> getPortMonitorSubscription(uint64_t subscriptionId)
     {
-        for (int i = 0; i < this->activePortMonitors.size(); ++i)
+        std::shared_ptr<PortMonitorSubscription> result;
         {
-            auto *portMonitor = &activePortMonitors[i];
-            if (portMonitor->subscriptionHandle == subscriptionId)
+            std::lock_guard lock (activePortMonitorsMutex);
+
+            for (int i = 0; i < this->activePortMonitors.size(); ++i)
             {
-                return portMonitor;
+                if (activePortMonitors[i]->subscriptionHandle == subscriptionId)
+                {
+                    result = activePortMonitors[i];
+                    break;
+                }
             }
         }
-        return nullptr;
+        return result;
     }
 
-    void SendMonitorPortMessage(PortMonitorSubscription *subscription, float value)
+    void SendMonitorPortMessage(std::shared_ptr<PortMonitorSubscription> &subscription, float value)
     {
+        // running on RT_output thread, or on Socket thread.
+        {
+            std::lock_guard lock {subscription->pmMutex};
+            if (subscription->closed) return;
+            if (value == subscription->currentValue) 
+                return;
+            if (subscription->waitingForAck)
+            {
+                subscription->pendingValue = true;
+                subscription->currentValue = value;
+                return;
+            }
+            subscription->currentValue = value;
+            subscription->lastValue = value;
+            subscription->waitingForAck = true;
+        }
+        SendMonitorPortMessage_Inner(subscription,value);
+    }
 
+    // post-sync send.
+    void SendMonitorPortMessage_Inner(std::shared_ptr<PortMonitorSubscription> &subscription, float value)
+    {
         auto subscriptionHandle_ = subscription->subscriptionHandle;
         MonitorResultBody body;
         body.subscriptionHandle_ = subscriptionHandle_;
@@ -726,17 +782,30 @@ public:
             body,
             [this, subscriptionHandle_](const bool &result)
             {
-                PortMonitorSubscription *subscription = getPortMonitorSubscription(subscriptionHandle_);
-                if (subscription == nullptr) return;
+                // running on PiPedalSocket thread.
+                std::shared_ptr<PortMonitorSubscription> subscription = getPortMonitorSubscription(subscriptionHandle_);
+                if (!subscription) return;
 
-                if (subscription->pendingValue)
+                float value;
                 {
-                    subscription->pendingValue = false;
-                    SendMonitorPortMessage(subscription, subscription->lastSentValue);
-                }
-                else
-                {
-                    subscription->waitingForAck = false;
+                    std::unique_lock lock {subscription->pmMutex};
+                    if (subscription->closed) return;
+                    if (subscription->pendingValue)
+                    {
+                        value = subscription->currentValue;
+                        subscription->lastValue = value;
+                        subscription->pendingValue = false;
+                        subscription->waitingForAck = true;
+
+                        lock.unlock();
+
+                        SendMonitorPortMessage_Inner(subscription, value);
+                        return;
+                    }
+                    else
+                    {
+                        subscription->waitingForAck = false;
+                    }
                 }
             },
             [](const std::exception &e)
@@ -753,31 +822,19 @@ public:
             body.updateRate_,
             [this](int64_t subscriptionHandle_, float value)
             {
-                PortMonitorSubscription *subscription = getPortMonitorSubscription(subscriptionHandle_);
+                std::shared_ptr<PortMonitorSubscription> subscription = getPortMonitorSubscription(subscriptionHandle_);
 
                 if (subscription)
                 {
-                    if (subscription->waitingForAck)
-                    {
-                        if (subscription->lastSentValue != value)
-                        {
-                            subscription->lastSentValue = value;
-                            subscription->pendingValue = true;
-                        }
-                    }
-                    else
-                    {
-                        subscription->lastSentValue = value;
-
-                        subscription->waitingForAck = true;
-                        SendMonitorPortMessage(subscription, value);
-                    }
+                    SendMonitorPortMessage(subscription, value);
                 }
             }
 
         );
-        activePortMonitors.push_back(
-            PortMonitorSubscription{subscriptionHandle, body.instanceId_, body.key_});
+        {
+            std::lock_guard lock(activePortMonitorsMutex);
+            activePortMonitors.push_back(std::make_shared<PortMonitorSubscription>(subscriptionHandle, body.instanceId_, body.key_));
+        }
 
         this->Reply(replyTo, "monitorPort", subscriptionHandle);
     }
@@ -831,7 +888,37 @@ public:
             ControlChangedBody message;
             pReader->read(&message);
             this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+        } else if (message == "setControl")
+        {
+            ControlChangedBody message;
+            pReader->read(&message);
+            this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+        } 
+        else if (message == "setInputVolume")
+        {
+            float value;
+            pReader->read(&value);
+            this->model.SetInputVolume(value);
         }
+        else if (message == "setOutputVolume")
+        {
+            float value;
+            pReader->read(&value);
+            this->model.SetOutputVolume(value);
+        }
+        else if (message == "previewInputVolume")
+        {
+            float value;
+            pReader->read(&value);
+            this->model.PreviewInputVolume(value);
+        }
+        else if (message == "previewOutputVolume")
+        {
+            float value;
+            pReader->read(&value);
+            this->model.PreviewOutputVolume(value);
+        }
+
         else if (message == "listenForMidiEvent")
         {
             ListenForMidiEventBody body;
@@ -1233,11 +1320,14 @@ public:
             pReader->read(&subscriptionHandle);
             {
                 {
-                    std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
+                    std::lock_guard  guard(activePortMonitorsMutex);
                     for (auto i = this->activePortMonitors.begin(); i != this->activePortMonitors.end(); ++i)
                     {
-                        if ((*i).subscriptionHandle == subscriptionHandle)
+                        if ((*i)->subscriptionHandle == subscriptionHandle)
                         {
+                            auto subscription = (*i);
+                            subscription->Close();
+
                             this->activePortMonitors.erase(i);
                             break;
                         }
@@ -1311,6 +1401,19 @@ public:
             pReader->read(&fileProperty);
             std::vector<std::string> list = this->model.GetFileList(fileProperty);
             this->Reply(replyTo,"requestFileList",list);
+        } 
+        else if (message == "newPreset")
+        {
+            int64_t presetId = this->model.CreateNewPreset();
+            this->Reply(replyTo,"newPreset",presetId);
+        } 
+        else if (message == "deleteUserFile")
+        {
+            std::string fileName;
+            pReader->read(&fileName);
+
+            this->model.DeleteSampleFile(fileName);
+            this->Reply(replyTo,"deleteUserFile",true);
         }
         else if (message == "setOnboarding")
         {
@@ -1517,6 +1620,16 @@ private:
         body.symbol_ = key;
         body.value_ = value;
         Send("onControlChanged", body);
+    }
+    virtual void OnInputVolumeChanged(float value)
+    {
+        ControlChangedBody body;
+        Send("onInputVolumeChanged", value);
+    }
+    virtual void OnOutputVolumeChanged(float value)
+    {
+        ControlChangedBody body;
+        Send("onOutputVolumeChanged", value);
     }
 
     class DeferredValue

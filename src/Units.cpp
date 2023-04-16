@@ -36,32 +36,46 @@ Units UriToUnits(const std::string &uri);
 
 std::map<Units,std::string> unitsToStringMap = 
 {
+    //LV2_UNITS__conversion
+    //LV2_UNITS__name
         CASE(none)
         CASE(unknown)
-
         CASE(bar)
         CASE(beat)
         CASE(bpm)
         CASE(cent)
         CASE(cm)
+        CASE(coef)
         CASE(db)
+        CASE(degree)
+        CASE(frame)
         CASE(hz)
+        CASE(inch)
         CASE(khz)
         CASE(km)
         CASE(m)
         CASE(mhz)
         CASE(midiNote)
+        CASE(mile)
         CASE(min)
+        CASE(mm)
         CASE(ms)
-        CASE(pc)
+        CASE(oct)
         CASE(s)
+        CASE(pc)
         CASE(semitone12TET)
 
 };
 
+static const std::string emptyString;
 const std::string& pipedal::UnitsToString(Units units)
 {
-    return unitsToStringMap[units];
+    if (unitsToStringMap.find(units) != unitsToStringMap.end())
+    {
+        return unitsToStringMap[units];
+    } else {
+        return emptyString;
+    }
 }
 #undef CASE
 
@@ -76,17 +90,24 @@ std::map<std::string,Units> unitMap = {
         CASE(bpm)
         CASE(cent)
         CASE(cm)
+        CASE(coef)
         CASE(db)
+        CASE(degree)
+        CASE(frame)
         CASE(hz)
+        CASE(inch)
         CASE(khz)
         CASE(km)
         CASE(m)
         CASE(mhz)
         CASE(midiNote)
+        CASE(mile)
         CASE(min)
+        CASE(mm)
         CASE(ms)
-        CASE(pc)
+        CASE(oct)
         CASE(s)
+        CASE(pc)
         CASE(semitone12TET)
 };
 #undef CASE
@@ -97,38 +118,52 @@ std::map<std::string,Units> unitMap = {
 
 
 std::map<std::string,Units> uriToUnitsMap = {
+        { "", Units::none,},
         CASE(bar)
         CASE(beat)
         CASE(bpm)
         CASE(cent)
         CASE(cm)
+        CASE(coef)
         CASE(db)
+        CASE(degree)
+        CASE(frame)
         CASE(hz)
+        CASE(inch)
         CASE(khz)
         CASE(km)
         CASE(m)
         CASE(mhz)
         CASE(midiNote)
+        CASE(mile)
         CASE(min)
+        CASE(mm)
         CASE(ms)
-        CASE(pc)
+        CASE(oct)
         CASE(s)
+        CASE(pc)
         CASE(semitone12TET)
 };
+#undef CASE
 
 
 Units pipedal::StringToUnits(const std::string &text)
 {
-    return unitMap[text];
+    if (unitMap.find(text) != unitMap.end()) {
+        return unitMap[text];
+    }
+    return Units::none;
 }
 
 Units pipedal::UriToUnits(const std::string &text)
 {
     if (text.length() == 0) return Units::none;
-    auto result = uriToUnitsMap[text];
-    if (result == Units::none) return Units::unknown;
-    return result;
-
+    if (uriToUnitsMap.contains(text))
+    {
+        auto result = uriToUnitsMap[text];
+        return result;
+    }
+    return Units::unknown;
 }
 
 

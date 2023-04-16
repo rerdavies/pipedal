@@ -264,7 +264,7 @@ std::filesystem::path Storage::GetPluginPresetsDirectory() const
 {
     return this->dataRoot / "plugin_presets";
 }
-std::filesystem::path Storage::GetPluginStorageDirectory() const
+std::filesystem::path Storage::GetPluginAudioFileDirectory() const
 {
     return this->dataRoot / "audio_uploads";
 }
@@ -635,6 +635,29 @@ std::string Storage::GetPresetCopyName(const std::string &name)
         ++copyNumber;
     }
 }
+
+int64_t Storage::CreateNewPreset()
+{
+    Pedalboard newPedalboard = Pedalboard::MakeDefault();
+    std::string name = "New";
+    if (currentBank.hasName(name))
+    {
+        int copyNumber = 2;
+        while (true)
+        {
+            name = SS("New (" << copyNumber << ")");
+            if (!currentBank.hasName(name))
+            {
+                break;
+            }
+            ++copyNumber;
+        }
+    }
+    newPedalboard.name(name);
+    return this->currentBank.addPreset(newPedalboard,-1);
+
+}
+
 int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
 {
     auto &fromItem = this->currentBank.getItem(fromId);
@@ -1189,18 +1212,20 @@ PluginUiPresets Storage::GetPluginUiPresets(const std::string &pluginUri) const
     return result;
 }
 
-std::vector<ControlValue> Storage::GetPluginPresetValues(const std::string &pluginUri, uint64_t instanceId)
+PluginPresetValues Storage::GetPluginPresetValues(const std::string &pluginUri, uint64_t instanceId)
 {
     auto presets = GetPluginPresets(pluginUri);
     for (const auto &preset : presets.presets_)
     {
         if (preset.instanceId_ == instanceId)
         {
-            std::vector<ControlValue> result;
+            PluginPresetValues result;
+
             for (const auto &valuePair : preset.controlValues_)
             {
-                result.push_back(ControlValue(valuePair.first.c_str(), valuePair.second));
+                result.controls.push_back(ControlValue(valuePair.first.c_str(), valuePair.second));
             }
+            result.state = preset.state_;
             return result;
         }
     }
@@ -1208,9 +1233,43 @@ std::vector<ControlValue> Storage::GetPluginPresetValues(const std::string &plug
 }
 
 uint64_t Storage::SavePluginPreset(
+    const std::string &name,
+    const PedalboardItem &pedalboardItem)
+{
+    const std::string&pluginUri = pedalboardItem.uri();
+    auto presets = GetPluginPresets(pluginUri);
+    uint64_t result = -1;
+    bool existing = false;
+    for (size_t i = 0; i < presets.presets_.size(); ++i)
+    {
+        auto &preset = presets.presets_[i];
+        if (preset.label_ == name)
+        {
+            existing = true;
+            result = preset.instanceId_;
+            presets.presets_[i] = PluginPreset(preset.instanceId_,preset.label_,pedalboardItem);
+            break;
+        }
+    }
+    if (!existing)
+    {
+        result = presets.nextInstanceId_++;
+        presets.presets_.push_back(
+            PluginPreset(result,
+                name,
+                pedalboardItem));
+    }
+    this->SavePluginPresets(pluginUri, presets);
+    return result;
+}
+
+uint64_t Storage::SavePluginPreset(
     const std::string &pluginUri,
     const std::string &name,
-    const std::map<std::string, float> &values)
+    float inputVolume,
+    float outputVolume,
+    const std::map<std::string, float> &values,
+    const Lv2PluginState &lv2State)
 {
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
@@ -1220,8 +1279,10 @@ uint64_t Storage::SavePluginPreset(
         auto &preset = presets.presets_[i];
         if (preset.label_ == name)
         {
-            preset.controlValues_ = values;
             existing = true;
+            preset.controlValues_ = values;
+            preset.state_ = lv2State;
+
             result = preset.instanceId_;
             break;
         }
@@ -1233,7 +1294,8 @@ uint64_t Storage::SavePluginPreset(
             PluginPreset(
                 result,
                 name,
-                values));
+                values,
+                lv2State));
     }
     this->SavePluginPresets(pluginUri, presets);
     return result;
@@ -1446,7 +1508,7 @@ std::vector<std::string> Storage::GetFileList(const UiFileProperty &fileProperty
     // if fileProperty has a user-accessible directory, push the entire file path.
     if (fileProperty.directory().size() != 0)
     {
-        std::filesystem::path audioFileDirectory = this->GetPluginStorageDirectory() / fileProperty.directory();
+        std::filesystem::path audioFileDirectory = this->GetPluginAudioFileDirectory() / fileProperty.directory();
         try
         {
             for (auto const &dir_entry : std::filesystem::directory_iterator(audioFileDirectory))
@@ -1472,6 +1534,100 @@ std::vector<std::string> Storage::GetFileList(const UiFileProperty &fileProperty
 
     std::sort(result.begin(), result.end(), lexicographicCompare);
     return result;
+}
+
+bool Storage::IsValidSampleFile(const std::filesystem::path &fileName)
+{
+    if (!fileName.is_absolute())
+    {
+        return false;
+    }
+    std::filesystem::path audioFilePath = this->GetPluginAudioFileDirectory();
+
+    std::filesystem::path parentDirectory = fileName.parent_path();
+    while (true)
+    {
+        if (!parentDirectory.has_parent_path())
+        {
+            return false;
+        }
+        std::string name = parentDirectory.filename().string();
+        if (name == ".." || name == ".")
+            return false;
+
+        if (parentDirectory == audioFilePath)
+            return true;
+        parentDirectory = parentDirectory.parent_path();
+        if (parentDirectory.string().length() < audioFilePath.string().length())
+        {
+            return false;
+        }
+    }
+}
+void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
+{
+    if (!IsValidSampleFile(fileName))
+    {
+        throw std::logic_error("Permission denied.");
+    }
+    if (!std::filesystem::exists(fileName))
+    {
+        throw std::logic_error("File not found.");
+    }
+    try
+    {
+        std::filesystem::remove(fileName);
+    }
+    catch (const std::exception &)
+    {
+        throw std::logic_error("Permission denied.");
+    }
+}
+std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, const std::string &filename)
+{
+    if (!UiFileProperty::IsDirectoryNameValid(directory))
+    {
+        throw std::logic_error("Permission denied.");
+    }
+    std::filesystem::path filePath{filename};
+
+    if (filePath.has_parent_path())
+    {
+        throw std::logic_error("Permission denied.");
+    }
+    std::filesystem::path result = this->GetPluginAudioFileDirectory() / directory / filename;
+    if (!this->IsValidSampleFile(result))
+    {
+        throw std::logic_error("Permission denied.");
+    }
+    return result;
+}
+std::string Storage::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, const std::string &fileBody)
+{
+    std::filesystem::path path;
+    if (directory.length() != 0)
+    {
+        path = this->MakeUserFilePath(directory, filename);
+    }
+    else
+    {
+        if (patchProperty.length() == 0)
+        {
+            throw std::logic_error("Malformed request.");
+        }
+        throw std::logic_error("patchProperty directory not implemented.");
+    }
+    {
+        std::filesystem::create_directories(path.parent_path());
+
+        std::ofstream f(path, std::ios_base::trunc | std::ios_base::binary);
+        if (!f.is_open())
+        {
+            throw std::logic_error(SS("Can't create file " << path << "."));
+        }
+        f.write(fileBody.c_str(), fileBody.length());
+    }
+    return path.string();
 }
 
 JSON_MAP_BEGIN(UserSettings)

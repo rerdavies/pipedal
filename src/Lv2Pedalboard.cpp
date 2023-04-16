@@ -210,6 +210,15 @@ void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard)
 {
     this->pHost = pHost;
 
+    inputVolume.SetSampleRate((float)(this->pHost->GetSampleRate()));
+    outputVolume.SetSampleRate((float)(this->pHost->GetSampleRate()));
+    inputVolume.SetMinDb(-60);
+    outputVolume.SetMinDb(-60);
+    
+    inputVolume.SetTarget(pedalboard.input_volume_db());
+    outputVolume.SetTarget(pedalboard.output_volume_db());
+
+
     for (int i = 0; i < pHost->GetNumberOfInputAudioChannels(); ++i)
     {
         this->pedalboardInputBuffers.push_back(bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize()));
@@ -368,21 +377,32 @@ static void Copy(float *input, float *output, uint32_t samples)
 bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t samples, RealtimeRingBufferWriter*ringBufferWriter)
 {
     this->ringBufferWriter = ringBufferWriter;
-    for (int i = 0; i < this->pedalboardInputBuffers.size(); ++i)
+    for (size_t i = 0; i < this->pedalboardInputBuffers.size(); ++i)
     {
         if (inputBuffers[i] == nullptr)
-            return false;
-        Copy(inputBuffers[i], this->pedalboardInputBuffers[i], samples);
+        {
+            return false; 
+        }
+    }
+    for (size_t i = 0; i < samples; ++i)
+    {
+        float volume = this->inputVolume.Tick();
+        for (int c = 0; c < this->pedalboardInputBuffers.size(); ++c)
+        {
+            this->pedalboardInputBuffers[c][i] = inputBuffers[c][i]*volume;
+        }
     }
     for (int i = 0; i < this->processActions.size(); ++i)
     {
         processActions[i](samples);
     }
-    for (int i = 0; i < this->pedalboardOutputBuffers.size(); ++i)
+    for (size_t i = 0; i < samples; ++i)
     {
-        if (outputBuffers[i] == nullptr)
-            return false;
-        Copy(this->pedalboardOutputBuffers[i], outputBuffers[i], samples);
+        float volume = outputVolume.Tick();
+        for (size_t c = 0; c < this->pedalboardOutputBuffers.size(); ++c)
+        {
+            outputBuffers[c][i] = this->pedalboardOutputBuffers[c][i]*volume;
+        }
     }
     return true;
 }
@@ -404,35 +424,59 @@ void Lv2Pedalboard::SetBypass(int effectIndex, bool enabled)
     effect->SetBypass(enabled);
 }
 
-void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples)
+void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float**inputBuffers, float**outputBuffers)
 {
     for (size_t i = 0; i < vuConfiguration->enabledIndexes.size(); ++i)
     {
         int index = vuConfiguration->enabledIndexes[i];
         VuUpdate *pUpdate = &vuConfiguration->vuUpdateWorkingData[i];
+        if (index == Pedalboard::INPUT_VOLUME_ID)
+        {
+            if (this->pedalboardInputBuffers.size() > 1)
+            {
+                GetInputBuffers();
+                pUpdate->AccumulateInputs(inputBuffers[0],inputBuffers[1],samples);
+                pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]),&(this->pedalboardInputBuffers[1][0]),samples); // after outputVolume applied.
+            } else {
+                pUpdate->AccumulateInputs(inputBuffers[0],samples);
+                pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]),samples); // after input volume applied.
+            }
+        } else if (index == Pedalboard::OUTPUT_VOLUME_ID)
+        {
+            if (this->pedalboardOutputBuffers.size() > 1)
+            {
+                pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]),&(this->pedalboardOutputBuffers[1][0]),samples);
+                pUpdate->AccumulateOutputs(outputBuffers[0],outputBuffers[1],samples);
+            } else {
+                pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]),samples);
+                pUpdate->AccumulateOutputs(outputBuffers[0],samples);
+            }
 
-        auto effect = this->realtimeEffects[index];
+        }
+        else  {
+            auto effect = this->realtimeEffects[index];
 
-        if (effect->GetNumberOfInputAudioPorts() == 1)
-        {
-            pUpdate->AccumulateInputs(effect->GetAudioInputBuffer(0), samples);
-        }
-        else
-        {
-            pUpdate->AccumulateInputs(
-                effect->GetAudioInputBuffer(0),
-                effect->GetAudioInputBuffer(1), samples);
-        }
-        if (effect->GetNumberOfOutputAudioPorts() == 1)
-        {
-            pUpdate->AccumulateOutputs(effect->GetAudioOutputBuffer(0), samples);
-        }
-        else
-        {
-            pUpdate->AccumulateOutputs(
-                effect->GetAudioOutputBuffer(0),
-                effect->GetAudioOutputBuffer(1),
-                samples);
+            if (effect->GetNumberOfInputAudioPorts() == 1)
+            {
+                pUpdate->AccumulateInputs(effect->GetAudioInputBuffer(0), samples);
+            }
+            else
+            {
+                pUpdate->AccumulateInputs(
+                    effect->GetAudioInputBuffer(0),
+                    effect->GetAudioInputBuffer(1), samples);
+            }
+            if (effect->GetNumberOfOutputAudioPorts() == 1)
+            {
+                pUpdate->AccumulateOutputs(effect->GetAudioOutputBuffer(0), samples);
+            }
+            else
+            {
+                pUpdate->AccumulateOutputs(
+                    effect->GetAudioOutputBuffer(0),
+                    effect->GetAudioOutputBuffer(1),
+                    samples);
+            }
         }
     }
 }

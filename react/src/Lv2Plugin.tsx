@@ -167,6 +167,37 @@ export class PiPedalFileProperty {
             return result;
         }
 
+        private static getFileExtension(name: string): string {
+            let pos = name.lastIndexOf('.');
+            let filenamePos = name.lastIndexOf('/') +1;
+            filenamePos = Math.max(name.lastIndexOf('\\')+1);
+            filenamePos = Math.max(name.lastIndexOf(':')+1);
+            if (pos < filenamePos)
+            {
+                return "";
+            }
+
+            if (pos !== -1) {
+                return name.substring(pos);
+            }
+            return "";
+        }
+    
+        wantsFile(filename: string) : boolean {
+            if (this.fileTypes.length === 0) {
+                return true;
+            }
+            let extension = PiPedalFileProperty.getFileExtension(filename);
+            for (let fileType of this.fileTypes)
+            {
+                if (fileType.fileExtension === extension )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         name:   string = "";
         fileTypes: PiPedalFileType[] = [];
         patchProperty: string = "";
@@ -290,7 +321,7 @@ export enum PluginType {
 export enum ControlType {
     Dial,
     OnOffSwitch,
-    Toggle,
+    ABSwitch,
     Select
 }
 
@@ -300,6 +331,7 @@ export class  UiControl implements Deserializable<UiControl> {
         this.symbol = input.symbol;
         this.name = input.name;
         this.index = input.index;
+        this.is_input = input.is_input;
         this.min_value = input.min_value;
         this.max_value = input.max_value;
         this.default_value = input.default_value;
@@ -320,32 +352,54 @@ export class  UiControl implements Deserializable<UiControl> {
         this.is_program_controller = input.is_program_controller? true: false;
         this.custom_units = input.custom_units ?? "";
 
-        this.controlType = ControlType.Dial;
 
         if (this.is_bypass)
         {
             this.not_on_gui = true;
         }
 
+        this.controlType = ControlType.Dial;
 
-        if (this.enumeration_property && this.scale_points.length === 2)
-        {
-            this.controlType = ControlType.Toggle;
-        } else {
-            if (this.min_value === 0 && this.max_value === 1)
-            {
-                if (this.toggled_property || this.integer_property || this.range_steps === 2)
-                {
-                    this.controlType = ControlType.OnOffSwitch;
-                }
-            }
-        }
-        if (this.controlType === ControlType.Dial && this.enumeration_property)
+        if (this.isValidEnumeration())
         {
             this.controlType = ControlType.Select;
+            if (this.scale_points.length === 2)
+            {
+                this.controlType = ControlType.ABSwitch;
+            }
+        } else {
+            if (this.toggled_property || (this.integer_property && this.min_value === 0 && this.max_value === 1))
+            {
+                this.controlType = ControlType.OnOffSwitch;
+            }
         }
         return this;
 
+    }
+    private hasScalePoint(value: number): boolean {
+        for (let scale_point of this.scale_points)
+        {
+            if (scale_point.value === value) return true;
+        }
+        return false;
+    }
+    private isValidEnumeration() : boolean {
+        if (this.enumeration_property) return true;
+        if (this.toggled_property && this.min_value === 0 && this.max_value === 1)
+        {
+            if (this.hasScalePoint(this.min_value) && this.hasScalePoint(this.max_value))
+            {
+                return true;
+            }
+        }
+        if (this.integer_property && this.min_value === 0 && this.max_value === 1)
+        {
+            if (this.hasScalePoint(this.min_value) && this.hasScalePoint(this.max_value))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     controlType: ControlType = ControlType.Dial; // non-serializable.
@@ -361,6 +415,7 @@ export class  UiControl implements Deserializable<UiControl> {
     symbol: string = "";
     name:   string = "";
     index: number = -1;
+    is_input: boolean = true;
     min_value: number = 0;
     max_value: number = 1;
     default_value:number = 0.5;
@@ -406,7 +461,7 @@ export class  UiControl implements Deserializable<UiControl> {
     }
 
     isAbToggle(): boolean {
-        return this.controlType === ControlType.Toggle;
+        return this.controlType === ControlType.ABSwitch;
     }
     isSelect() : boolean {
         return this.controlType === ControlType.Select;
@@ -426,9 +481,6 @@ export class  UiControl implements Deserializable<UiControl> {
         if (range > 1) range = 1;
         if (range < 0) range = 0;
 
-        if (this.range_steps !== 0) {
-            range = Math.round(range*this.range_steps)/this.range_steps;
-        }
 
         return range;
     }
@@ -438,9 +490,7 @@ export class  UiControl implements Deserializable<UiControl> {
         if (range > 1) range = 1;
 
         if (this.toggled_property) return range === 0? 0: 1;
-        if (this.range_steps !== 0) {
-            range = Math.round(range * this.range_steps) / this.range_steps;
-        }
+
         let value = range * (this.max_value - this.min_value) + this.min_value;
         if (this.integer_property || this.enumeration_property) {
             value = Math.round(value);

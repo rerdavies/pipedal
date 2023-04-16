@@ -27,6 +27,8 @@
 
 #include <websocketpp/server.hpp>
 
+#include "WebServerLog.hpp"
+
 using namespace pipedal;
 using namespace std;
 
@@ -36,6 +38,34 @@ using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
 
 const size_t MAX_READ_SIZE = 1 * 1024 * 204;
 using namespace boost;
+
+class CustomPpConfig: public websocketpp::config::asio {
+public:
+    typedef CustomPpConfig type;
+    typedef websocketpp::config::asio base;
+
+
+    static const size_t max_http_body_size = 100000000; //websocketpp::config::asio::max_http_body_size;
+    typedef pipedal_elog elog_type;
+    typedef pipedal_alog alog_type;
+
+
+    struct transport_config : public base::transport_config {
+        typedef type::concurrency_type concurrency_type;
+        typedef type::alog_type alog_type;
+        typedef type::elog_type elog_type;
+        typedef type::request_type request_type;
+        typedef type::response_type response_type;
+        typedef websocketpp::transport::asio::basic_socket::endpoint
+            socket_type;
+    };
+
+    typedef websocketpp::transport::asio::endpoint<transport_config>
+        transport_type;
+
+};
+
+
 
 std::string
 pipedal::last_modified(const std::filesystem::path &path)
@@ -149,7 +179,7 @@ namespace pipedal
         boost::asio::io_context *pIoContext = nullptr;
 
         typedef websocketpp::connection_hdl connection_hdl;
-        typedef websocketpp::server<websocketpp::config::asio> server;
+        typedef websocketpp::server<CustomPpConfig> server;
 
         class HttpRequestImpl : public HttpRequest
         {
@@ -208,11 +238,17 @@ namespace pipedal
 
         private:
             // IWriteCallback
-            virtual void close() { webSocket->close(websocketpp::close::status::normal, ""); }
+            virtual void close() { 
+                webSocket->close(websocketpp::close::status::normal, ""); 
+                webSocket = nullptr;
+            }
 
             virtual void writeCallback(const std::string &text)
             {
-                webSocket->send(text, websocketpp::frame::opcode::text);
+                if (webSocket)
+                {
+                    webSocket->send(text, websocketpp::frame::opcode::text);
+                }
             }
             virtual std::string getFromAddress() const
             {
@@ -222,12 +258,18 @@ namespace pipedal
         public:
             ~WebSocketSession()
             {
+                this->socketHandler = nullptr;
+                webSocket = nullptr;
+                pServer = nullptr;
                 Lv2Log::info("WebSocketSession closed.");
             }
             using ptr = std::shared_ptr<WebSocketSession>;
             WebSocketSession(WebServerImpl *pServer, server::connection_ptr &webSocket)
                 : pServer(pServer),
                   webSocket(webSocket)
+            {
+            }
+            void Open()
             {
                 uri requestUri(webSocket->get_uri()->str().c_str());
                 fromAddress = SS(webSocket->get_socket().remote_endpoint());
@@ -276,48 +318,58 @@ namespace pipedal
 
         std::set<WebSocketSession::ptr, std::owner_less<WebSocketSession::ptr>> m_sessions;
 
-        void on_session_closed(WebSocketSession::ptr session, connection_hdl hConnection)
+        void on_session_closed(WebSocketSession::ptr &session, connection_hdl hConnection)
         {
-            m_sessions.erase(session);
+            m_sessions.erase(session); 
+            session = nullptr; // probably delete here.
             m_connections.erase(hConnection);
         }
 
         void NotFound(server::connection_type &connection, const std::string &filename)
         {
-            // 404 error
-            std::stringstream ss;
+            try {
+                // 404 error
+                std::stringstream ss;
 
-            ss << "<!doctype html><html><head>"
-               << "<title>Error 404 (Resource not found)</title><body>"
-               << "<h1>Error 404</h1>"
-               << "<p>The requested URL " << HtmlHelper::HtmlEncode(filename) << " was not found on this server.</p>"
-               << "</body></head></html>";
+                ss << "<!doctype html><html><head>"
+                << "<title>Error 404 (Resource not found)</title><body>"
+                << "<h1>Error 404</h1>"
+                << "<p>The requested URL " << HtmlHelper::HtmlEncode(filename) << " was not found on this server.</p>"
+                << "</body></head></html>";
 
-            std::string body = ss.str();
-            connection.set_body(body);
-            std::stringstream ssLen;
-            ssLen << body.length();
-            connection.replace_header(HttpField::content_length, ssLen.str());
-            connection.set_status(websocketpp::http::status_code::not_found);
+                std::string body = ss.str();
+                connection.set_body(body);
+                std::stringstream ssLen;
+                ssLen << body.length();
+                connection.replace_header(HttpField::content_length, ssLen.str());
+                connection.set_status(websocketpp::http::status_code::not_found);
+            } catch (const std::exception&)
+            {
+                // ignored. Things weren't going well anyway.
+            } 
             return;
         };
         void ServerError(server::connection_type &connection, const std::string &error)
         {
-            // 404 error
-            std::stringstream ss;
+            try {
+                // 404 error
+                std::stringstream ss;
 
-            ss << "<!doctype html><html><head>"
-               << "<title>Error 500 (Server error)</title><body>"
-               << "<h1>Error 500</h1>"
-               << "<p>" << HtmlHelper::HtmlEncode(error) << "</p>"
-               << "</body></head></html>";
-            std::string body = ss.str();
-            connection.set_body(body);
-            std::stringstream ssLen;
-            ssLen << body.length();
-            connection.replace_header(HttpField::content_length, ssLen.str());
+                ss << "<!doctype html><html><head>"
+                << "<title>Error 500 (Server error)</title><body>"
+                << "<h1>Error 500</h1>"
+                << "<p>" << HtmlHelper::HtmlEncode(error) << "</p>"
+                << "</body></head></html>";
+                std::string body = ss.str();
+                connection.set_body(body);
+                std::stringstream ssLen;
+                ssLen << body.length();
+                connection.replace_header(HttpField::content_length, ssLen.str());
 
-            connection.set_status(websocketpp::http::status_code::internal_server_error);
+                connection.set_status(websocketpp::http::status_code::internal_server_error);
+            } catch (const std::exception&)
+            {
+            }
             return;
         };
 
@@ -564,10 +616,16 @@ namespace pipedal
         {
             m_connections.insert(hdl);
 
-            server::connection_ptr webSocket = m_endpoint.get_con_from_hdl(hdl);
 
-            WebSocketSession::ptr socketSession = std::make_shared<WebSocketSession>(this, webSocket);
-            m_sessions.insert(socketSession);
+            try {
+                server::connection_ptr webSocket = m_endpoint.get_con_from_hdl(hdl);
+                WebSocketSession::ptr socketSession = std::make_shared<WebSocketSession>(this, webSocket);
+                socketSession->Open();
+                m_sessions.insert(socketSession);
+            } catch (const std::exception&e)
+            {
+                Lv2Log::error("Failed to open session: %s", e.what());
+            }
         }
 
         void on_fail(connection_hdl hdl)
@@ -591,7 +649,6 @@ namespace pipedal
                 m_endpoint.set_reuse_addr(true);
 
                 m_endpoint.clear_access_channels(websocketpp::log::alevel::all);
-                // m_endpoint.set_access_channels(websocketpp::log::alevel::access_core);
                 m_endpoint.set_access_channels(websocketpp::log::alevel::fail);
 
                 m_endpoint.init_asio(&ioc);

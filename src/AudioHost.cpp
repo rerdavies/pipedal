@@ -501,6 +501,20 @@ private:
                 this->realtimeActivePedalboard->SetControlValue(body.effectIndex, body.controlIndex, body.value);
                 break;
             }
+            case RingBufferCommand::SetInputVolume:
+            {
+                SetVolumeBody body;
+                realtimeReader.readComplete(&body);
+                this->realtimeActivePedalboard->SetInputVolume(body.value);
+                break;
+            }
+            case RingBufferCommand::SetOutputVolume:
+            {
+                SetVolumeBody body;
+                realtimeReader.readComplete(&body);
+                this->realtimeActivePedalboard->SetOutputVolume(body.value);
+                break;
+            }
             case RingBufferCommand::ParameterRequest:
             {
                 RealtimePatchPropertyRequest *pRequest = nullptr;
@@ -809,7 +823,7 @@ private:
                     {
                         if (this->realtimeVuBuffers != nullptr)
                         {
-                            pedalboard->ComputeVus(this->realtimeVuBuffers, (uint32_t)nframes);
+                            pedalboard->ComputeVus(this->realtimeVuBuffers, (uint32_t)nframes,inputBuffers,outputBuffers);
 
                             vuSamplesRemaining -= nframes;
                             if (vuSamplesRemaining <= 0)
@@ -1332,6 +1346,7 @@ public:
                 }
             }
         }
+
     }
 
     void SetControlValue(uint64_t instanceId, const std::string &symbol, float value)
@@ -1350,8 +1365,23 @@ public:
         }
     }
 
+    virtual void SetInputVolume(float value) {
+        std::lock_guard guard(mutex);
+        if (active && this->currentPedalboard)
+        {
+            hostWriter.SetInputVolume(value);
+        }
 
+    }
 
+    virtual void SetOutputVolume(float value) {
+        std::lock_guard guard(mutex);
+        if (active && this->currentPedalboard)
+        {
+            hostWriter.SetOutputVolume(value);
+        }
+
+    }
 
     virtual void SetVuSubscriptions(const std::vector<int64_t> &instanceIds)
     {
@@ -1372,21 +1402,33 @@ public:
                 {
                     int64_t instanceId = instanceIds[i];
                     auto effect = this->currentPedalboard->GetEffect(instanceId);
-                    if (!effect)
+                    if (effect)
                     {
-                        throw PiPedalStateException("Effect not found.");
+                        int index = this->currentPedalboard->GetIndexOfInstanceId(instanceIds[i]);
+                        vuConfig->enabledIndexes.push_back(index);
+                        VuUpdate v;
+                        v.instanceId_ = instanceId;
+                        // Display mono VUs if a stereo device is being fed identical L/R inputs.
+                        v.isStereoInput_ = effect->GetNumberOfInputAudioPorts() != 1 && effect->GetAudioInputBuffer(0) != effect->GetAudioInputBuffer(1);
+                        v.isStereoOutput_ = effect->GetNumberOfOutputAudioPorts() != 1;
+
+                        vuConfig->vuUpdateWorkingData.push_back(v);
+                        vuConfig->vuUpdateResponseData.push_back(v);
+                    } else if (instanceId == Pedalboard::INPUT_VOLUME_ID || instanceId == Pedalboard::OUTPUT_VOLUME_ID) {
+                        int index = (int)instanceId;
+                        VuUpdate v;
+                        vuConfig->enabledIndexes.push_back(index);
+                        v.instanceId_ = instanceId;
+                        if (instanceId == Pedalboard::INPUT_VOLUME_ID)
+                        {
+                            v.isStereoInput_ = v.isStereoOutput_ = this->pHost->GetNumberOfInputAudioChannels() > 1;
+                        } else {
+                            v.isStereoInput_ = v.isStereoOutput_ =this->pHost->GetNumberOfOutputAudioChannels() > 1;
+                        }
+                        vuConfig->vuUpdateWorkingData.push_back(v);
+                        vuConfig->vuUpdateResponseData.push_back(v);
+
                     }
-
-                    int index = this->currentPedalboard->GetIndexOfInstanceId(instanceIds[i]);
-                    vuConfig->enabledIndexes.push_back(index);
-                    VuUpdate v;
-                    v.instanceId_ = instanceId;
-                    // Display mono VUs if a stereo device is being fed identical L/R inputs.
-                    v.isStereoInput_ = effect->GetNumberOfInputAudioPorts() != 1 && effect->GetAudioInputBuffer(0) != effect->GetAudioInputBuffer(1);
-                    v.isStereoOutput_ = effect->GetNumberOfOutputAudioPorts() != 1;
-
-                    vuConfig->vuUpdateWorkingData.push_back(v);
-                    vuConfig->vuUpdateResponseData.push_back(v);
                 }
 
                 this->hostWriter.SetVuSubscriptions(vuConfig);
@@ -1653,7 +1695,12 @@ void AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
     IEffect*effect = currentPedalboard->GetEffect(pedalboardItem.instanceId());
     if (effect != nullptr)
     {
-        effect->GetLv2State(const_cast<Lv2PluginState*>(&pedalboardItem.lv2State()));
+        try {
+            effect->GetLv2State(const_cast<Lv2PluginState*>(&pedalboardItem.lv2State()));
+        } catch(const std::exception &e)
+        {
+            Lv2Log::warning(SS(pedalboardItem.pluginName() << ": " << e.what()));
+        }
     }
 }
 

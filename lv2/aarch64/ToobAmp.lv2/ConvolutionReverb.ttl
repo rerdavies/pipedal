@@ -1,0 +1,364 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix ui: <http://lv2plug.in/ns/extensions/ui#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+
+@prefix toobConvolutionReverb: <http://two-play.com/plugins/toob-convolution-reverb#> .
+@prefix toobImpulse: <http://two-play.com/impulseFile#> .
+
+toobImpulse:#impulseFile
+        a rdf:property;
+        rdfs:label "File";
+        rdfs:range atom:Path.
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+<http://two-play.com/plugins/toob-convolution-reverb>
+        a lv2:Plugin ,
+                lv2:ReverbPlugin ;
+        doap:name "TooB Convolution Reverb" ,
+                "TooB Convolution Reverb"@en-gb 
+                ;
+        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+         lv2:minorVersion 0 ;
+        lv2:microVersion 14 ;
+        rdfs:comment """
+
+Convolution reverb is a notoriously compute-intensive effect. For best results, use the Max T control to constrain the length of the impulse file to
+under two seconds. 
+
+The Max T control affects how much of the impulse file is used. If the length of the impulse file is longer than the specified time, samples occuring after 
+the specified time are discarded, and the tail of the impulse convolution is fed back into the imput of the convolution. This ensures a smooth reverb tail, 
+and has little effect on the quality of the resulting reverb. If the impulse file is shorter than the specified time, then all samples in the impulse 
+file are used, and no feedback occurs. 
+
+Because reverb impulse files typically include the original sound, you will often get strange comb filter effects if you use the Direct mix control;
+but this varies depending on the impulse file in question. Usually, the Direct mix control should be set to -INF.
+
+The Predelay control determines whether Toob Convolution Reverb will strip leading silence from the impulse data. Turning it on preserves silence in the
+impulse signal; turning it off removes leading silence. If the the Direct mix control is set to -INF dB, there's no real point in 
+delaying the convolution reverb output; you want responses as quickly as possible; the Predelay control should be set to off.
+ The leading silence in impulse files can sometimes be quite significant. 
+
+If the input file has 4 channels, Toob Convolution Reverb assumes the signal is in Ambisonic b-format, and downmixes the channels accordingly. Unfortunately,
+it currently dowmixes the Ambisonic audio to mono. Exepct a stereo version of Toob Convolution Reverb in the near future, which will make better use of
+Ambisonic source material. 
+
+Toob Convolution Reverb comes with a nominal set of reverb impulse files to get you started. You are strongly encouraged to seek out reverb impulse files 
+on the internet. 
+
+Special thanks are extended to the the OpenAir project, wich graciously provided the base set of impulse files distributed with Toob Convolution Reverb under 
+licensing terms that are compatible with the Toob Amp project's licensing terms.
+
+---
+
+Toob Convolution Reverb's impulse files were provided by the OpenAir project.
+https://www.openair.hosted.york.ac.uk, under CC-By-4.0 licenses.
+
+
+
+Arthur Sykes Rymer Auditorium.wav
+
+---------------------------------------
+
+By: www.openairlib.net, University of York
+
+This work is provided under a Creative Commons Attribution 4.0 International License.
+
+https://creativecommons.org/licenses/by/4.0/
+
+Source: https://www.openair.hosted.york.ac.uk/?page_id=425
+
+
+Jack Lyons Hall, University of York.wav
+
+---------------------------------------
+
+By: www.openairlib.net, Audiolab University of York, Alex Duffell, Aishwarya Sridhar, Zhong Li
+
+This work is provided under a Creative Commons Attribution 4.0 International License.
+
+https://creativecommons.org/licenses/by/4.0/
+
+Source: https://www.openair.hosted.york.ac.uk/?page_id=571
+
+
+
+Koli National Park - Winter.wav
+
+---------------------------------------
+
+By: www.openairlib.net, Audio Lab University of York, Andrew Chadwick, Simon Shelley
+
+This work is provided under a Creative Commons Attribution 4.0 International License.
+https://creativecommons.org/licenses/by/4.0/
+
+Source: https://www.openair.hosted.york.ac.uk/?page_id=584
+
+
+
+St. Margaret’s Church.wav
+
+---------------------------------------
+
+By: www.openairlib.net, AudioLab University of York, www.ncem.co.uk
+
+This work is provided under a Creative Commons Attribution 4.0 International License.
+
+https://creativecommons.org/licenses/by/4.0/
+
+Source: https://www.openair.hosted.york.ac.uk/?page_id=702
+
+
+Genesis 6 Studio Live Room.wav
+
+---------------------------------------
+
+By: www.openairlib.net
+
+This work is provided under a Creative Commons Attribution 4.0 International License.
+
+https://creativecommons.org/licenses/by/4.0/
+
+Source: https://www.openair.hosted.york.ac.uk/?page_id=483
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "Convolution Reverb";
+        lv2:requiredFeature urid:map ;
+        lv2:extensionData state:interface;
+
+
+        lv2:optionalFeature lv2:hardRTCapable;
+        patch:readable 
+                toobImpulse:#impulseFile
+                ;
+        patch:writable 
+                toobImpulse:#impulseFile
+                ;
+        lv2:extensionData state:interface,
+                work:interface;
+
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  0;
+                lv2:symbol "time" ;
+                lv2:name "Max T";
+                lv2:default 2.0 ;
+                lv2:minimum 0.1 ;
+                lv2:maximum 6.0 ;    
+
+                lv2:portProperty epp:notAutomatic ;
+                lv2:portProperty epp:expensive ;
+
+                units:unit units:s ;
+
+                rdfs:comment "Maximum length of impulse data to use." ;
+
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  1;
+                lv2:symbol "direct_mix" ;
+                lv2:name "Direct";
+                lv2:default -40.0 ;
+                lv2:minimum -40.0 ;
+                lv2:maximum 20.0 ;    
+                units:unit units:db ;
+
+                lv2:scalePoint [
+                        rdfs:label "-INF" ;
+                        rdf:value -40.0
+                ];
+                rdfs:comment "Direct mix. Set to minimum to disable." ;
+
+        ],          
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                lv2:symbol "reverb_mix" ;
+                lv2:name "Reverb";
+
+                lv2:default -10.0 ;
+                lv2:minimum -40.0 ;
+                lv2:maximum 20.0 ;    
+                units:unit units:db ;
+
+                lv2:scalePoint [
+                        rdfs:label "-INF" ;
+                        rdf:value -40.0
+                ];
+                rdfs:comment "Reverb mix. Set to minimum to disable." ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 3 ;
+                lv2:symbol "predelay" ;
+                lv2:name "Predelay";
+
+                lv2:default 1 ;
+                lv2:minimum 0 ;
+                lv2:maximum 1 ;    
+                
+                lv2:portProperty lv2:enumeration ;
+
+                lv2:scalePoint [
+                        rdfs:label "Remove" ;
+                        rdf:value 0.0;
+                ],
+                [
+                        rdfs:label "Keep" ;
+                        rdf:value 1.0;
+                ];
+                rdfs:comment "Removes leading silence in impulse when set to false." ;
+        ],  
+
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 4 ;
+                lv2:symbol "loading_state" ;
+                lv2:name "Status";
+
+                lv2:portProperty lv2:enumeration ;
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 5.0 ;    
+
+				# NotLoaded = 0,
+				# Idle = 1,
+				# Error = 2,
+				# SentRequest = 3,
+				# GotResponse = 4,
+				# CleaningUp = 5,
+
+                lv2:scalePoint [
+                        rdfs:label "Not loaded" ;
+                        rdf:value 0.0
+                ],[
+                        rdfs:label "Ready" ;
+                        rdf:value 1.0
+                ],[
+                        rdfs:label "Error" ;
+                        rdf:value 2.0
+                ],[
+                        rdfs:label "Loading" ;
+                        rdf:value 3.0
+                ],[
+                        rdfs:label "Loading" ;
+                        rdf:value 4.0
+                ],[
+                        rdfs:label "Loading" ;
+                        rdf:value 5.0
+                ];
+                rdfs:comment "Plugin status." ;
+        ],  
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 5 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 6 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ],
+        [
+                a atom:AtomPort ,
+                  lv2:InputPort;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                atom:supports patch:Message ;
+
+                lv2:index 7 ;
+                lv2:symbol "control" ;
+                lv2:name "Control" ;
+                rdfs:comment "Control" ;
+        ] , [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 8;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Notification" ;
+        ]
+        .
+
+
+<http://two-play.com/plugins/toob-convolution-reverb>  pipedal_ui:ui toobConvolutionReverb:ui .
+
+toobConvolutionReverb:ui 
+        a pipedal_ui:ui ;
+        pipedal_ui:fileProperties 
+        [
+                a pipedal_ui:fileProperty;
+                rdfs:label "Impulse File" ;
+                lv2:index 4 ;
+                pipedal_ui:patchProperty toobImpulse:impulseFile ;
+                pipedal_ui:directory "ReverbImpulseFiles";
+                pipedal_ui:fileTypes 
+                [
+                        a pipedal_ui:fileType;
+                        rdfs:label "WAV File";
+                        pipedal_ui:fileExtension ".wav";
+                ];
+        ];
+        ui:portNotification 
+        [
+                lv2:symbol "loading_state";
+                ui:plugin <http://two-play.com/plugins/toob-convolution-reverb>;
+                ui:protocol ui:floatProtocol;
+                # pipedal_ui:style pipedal_ui:text ;
+                # pipedal_ui:redLevel 0;
+                # pipedal_ui:yellowLevel -12;
+                # ui:portIndex 3;
+
+        ]
+        .

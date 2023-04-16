@@ -25,6 +25,7 @@
 #include <functional>
 #include <lv2/urid.lv2/urid.h>
 #include <functional>
+#include "DbDezipper.hpp"
 
 namespace pipedal {
 
@@ -36,6 +37,9 @@ class RealtimeRingBufferWriter;
 
 class Lv2Pedalboard {
     IHost *pHost = nullptr;
+
+    DbDezipper inputVolume;
+    DbDezipper outputVolume;
 
     BufferPool bufferPool;
     std::vector<float*> pedalboardInputBuffers;
@@ -133,9 +137,11 @@ public:
 
     int GetControlIndex(uint64_t instanceId,const std::string&symbol);
     void SetControlValue(int effectIndex, int portIndex, float value);
+    void SetInputVolume(float value) { this->inputVolume.SetTarget(value);}
+    void SetOutputVolume(float value) { this->outputVolume.SetTarget(value);}
     void SetBypass(int effectIndex,bool enabled);
 
-    void ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples);
+    void ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float**inputBuffers, float**outputBuffers);
 
     float GetControlOutputValue(int effectIndex, int portIndex);
 

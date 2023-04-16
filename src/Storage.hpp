@@ -53,6 +53,12 @@ public:
 };
 
 
+struct PluginPresetValues {
+
+    std::vector<ControlValue> controls;
+    Lv2PluginState state;
+};
+
 // controls user-defined storage. Implmentation hidden to allow to later migration to a database (perhaps)
 
 class Storage {
@@ -100,7 +106,7 @@ public:
     void SetDataRoot(const std::filesystem::path& path);
     void SetConfigRoot(const std::filesystem::path& path);
 
-    std::filesystem::path GetPluginStorageDirectory() const;
+    std::filesystem::path GetPluginAudioFileDirectory() const;
 
     std::vector<std::string> GetPedalboards();
 
@@ -132,6 +138,8 @@ public:
     int64_t DeletePreset(int64_t presetId);
     bool RenamePreset(int64_t presetId, const std::string&name);
     int64_t CopyPreset(int64_t fromId, int64_t toId = -1);
+    int64_t CreateNewPreset();
+
 
     void RenameBank(int64_t bankId, const std::string&newName);
     int64_t SaveBankAs(int64_t bankId, const std::string&newName);
@@ -166,13 +174,29 @@ private:
     void LoadPluginPresetIndex();
     void SavePluginPresetIndex();
     std::filesystem::path GetPluginPresetPath(const std::string &pluginUri) const;
+    bool IsValidSampleFile(const std::filesystem::path&fileName);
+    std::filesystem::path MakeUserFilePath(const std::string &directory, const std::string&filename);
+
 public:
     bool HasPluginPresets(const std::string&pluginUri) const;
     void SavePluginPresets(const std::string&pluginUri, const PluginPresets&presets);
     PluginPresets GetPluginPresets(const std::string&pluginUri) const;
     PluginUiPresets GetPluginUiPresets(const std::string&pluginUri) const;
-    std::vector<ControlValue> GetPluginPresetValues(const std::string&pluginUri, uint64_t instanceId);
-    uint64_t SavePluginPreset(const std::string&pluginUri, const std::string&name, const std::map<std::string,float> & values);
+    PluginPresetValues GetPluginPresetValues(const std::string&pluginUri, uint64_t instanceId);
+
+    uint64_t SavePluginPreset(
+        const std::string&name,
+        const PedalboardItem&pedalboardEntry
+    );
+
+    uint64_t SavePluginPreset(
+        const std::string &pluginUri,
+        const std::string &name,
+        float inputVolume,
+        float outputVolume,
+        const std::map<std::string, float> &values,
+        const Lv2PluginState& lv2State);
+
     void UpdatePluginPresets(const PluginUiPresets &pluginPresets);
     uint64_t CopyPluginPreset(const std::string&pluginUri,uint64_t presetId);
 
@@ -183,7 +207,8 @@ public:
     bool GetShowStatusMonitor() const;
     void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings);
     std::vector<MidiBinding> GetSystemMidiBindings();
-
+    void DeleteSampleFile(const std::filesystem::path &fileName);
+    std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
 };
 
 

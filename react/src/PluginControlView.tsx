@@ -23,7 +23,7 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { UiPlugin, UiControl, PiPedalFileProperty} from './Lv2Plugin';
+import { UiPlugin, UiControl, PiPedalFileProperty,ScalePoint} from './Lv2Plugin';
 import {
     Pedalboard, PedalboardItem, ControlValue
 } from './Pedalboard';
@@ -37,6 +37,8 @@ import FullScreenIME from './FullScreenIME';
 import FilePropertyControl from './FilePropertyControl';
 import FilePropertyDialog from './FilePropertyDialog';
 import JsonAtom from './JsonAtom';
+import PluginOutputControl from './PluginOutputControl';
+import Units from './Units';
 
 
 export const StandardItemSize = { width: 80, height: 110 };
@@ -44,6 +46,37 @@ export const StandardItemSize = { width: 80, height: 110 };
 
 
 const LANDSCAPE_HEIGHT_BREAK = 500;
+
+
+function makeIoPluginInfo(name: string, uri: string) : UiPlugin {
+    let result = new UiPlugin();
+    result.name = name;
+    result.uri = uri;
+    let volumeControl = new UiControl();
+    volumeControl.name = "Volume";
+    volumeControl.symbol = "volume_db";
+    volumeControl.index = 0;
+    volumeControl.is_input = true;
+
+    volumeControl.min_value = -60; 
+    volumeControl.max_value = 30;
+    volumeControl.default_value = 0;
+    volumeControl.units = Units.db;
+    volumeControl.scale_points = [
+        new ScalePoint().deserialize({label: "-INF",value: -60})
+    ];
+    result.controls = [
+        volumeControl
+    ];
+    return result;
+}
+
+let startPluginInfo: UiPlugin = 
+makeIoPluginInfo("Input",Pedalboard.START_PEDALBOARD_ITEM_URI);
+
+let endPluginInfo: UiPlugin = 
+makeIoPluginInfo("Output",Pedalboard.END_PEDALBOARD_ITEM_URI);
+
 
 const styles = (theme: Theme) => createStyles({
     frame: {
@@ -255,6 +288,7 @@ const PluginControlView =
             }
 
 
+
             onWindowSizeChanged(width: number, height: number): void {
                 this.setState({ landscapeGrid: height < LANDSCAPE_HEIGHT_BREAK });
             }
@@ -296,6 +330,13 @@ const PluginControlView =
             }
             makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
                 let symbol = uiControl.symbol;
+                if (!uiControl.is_input)
+                {
+                    return (
+                        <PluginOutputControl instanceId={this.props.instanceId} uiControl={uiControl} />
+                        
+                    );
+                }
 
                 let controlValue: ControlValue | undefined = undefined;
                 for (let i = 0; i < controlValues.length; ++i) {
@@ -435,10 +476,26 @@ const PluginControlView =
                 return result;
             }
 
+            static startPluginInfo: UiPlugin = 
+                makeIoPluginInfo("Input",Pedalboard.START_PEDALBOARD_ITEM_URI);
+
+            static endPluginInfo: UiPlugin = 
+                makeIoPluginInfo("Output",Pedalboard.END_PEDALBOARD_ITEM_URI);
+
 
             render(): ReactNode {
                 let classes = this.props.classes;
-                let pedalboardItem = this.model.pedalboard.get().getItem(this.props.instanceId);
+                let pedalboardItem: PedalboardItem;
+                let pedalboard = this.model.pedalboard.get();
+                if (this.props.instanceId == Pedalboard.START_CONTROL)
+                {
+                    pedalboardItem = pedalboard.makeStartItem();
+                } else if (this.props.instanceId == Pedalboard.END_CONTROL)
+                {
+                    pedalboardItem = pedalboard.makeEndItem();
+                } else {
+                    pedalboardItem = pedalboard.getItem(this.props.instanceId);
+                }
 
                 if (!pedalboardItem)
                     return (<div className={classes.frame} ></div>);
@@ -446,7 +503,18 @@ const PluginControlView =
                 let controlValues = pedalboardItem.controlValues;
 
 
-                let plugin: UiPlugin = nullCast(this.model.getUiPlugin(pedalboardItem.uri));
+                let plugin: UiPlugin;
+                if (pedalboardItem.isStart())
+                {
+                    plugin = startPluginInfo;
+                    controlValues = [new ControlValue("volume_db",pedalboard.input_volume_db)];
+                } else if (pedalboardItem.isEnd())
+                {
+                    plugin = endPluginInfo;
+                    controlValues = [new ControlValue("volume_db",pedalboard.output_volume_db)];
+                } else {
+                    plugin = nullCast(this.model.getUiPlugin(pedalboardItem.uri));
+                }
 
 
                 controlValues = this.filterNotOnGui(controlValues, plugin);

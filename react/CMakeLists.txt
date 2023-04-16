@@ -79,7 +79,7 @@ add_custom_command(
     src/Banks.tsx
     src/PluginPresetsDialog.tsx
     src/BankDialog.tsx
-    src/UploadDialog.tsx
+    src/UploadPresetDialog.tsx
     src/ToobPowerStage2View.tsx
     src/index.tsx
     src/Units.tsx

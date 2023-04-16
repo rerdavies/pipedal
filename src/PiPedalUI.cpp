@@ -39,7 +39,7 @@ PiPedalUI::PiPedalUI(PluginHost *pHost, const LilvNode *uiNode, const std::files
         try
         {
             UiFileProperty::ptr fileUI = std::make_shared<UiFileProperty>(pHost, fileNode, resourcePath);
-            this->fileProperites_.push_back(std::move(fileUI));
+            this->fileProperties_.push_back(std::move(fileUI));
         }
         catch (const std::exception &e)
         {
@@ -69,18 +69,18 @@ PiPedalFileType::PiPedalFileType(PluginHost *pHost, const LilvNode *node)
 {
     auto pWorld = pHost->getWorld();
 
-    AutoLilvNode name = lilv_world_get(
+    AutoLilvNode label = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.lv2Core__name,
+        pHost->lilvUris.rdfs__label,
         nullptr);
-    if (name)
+    if (label)
     {
-        this->name_ = name.AsString();
+        this->label_ = label.AsString();
     }
     else
     {
-        throw std::logic_error("pipedal_ui:fileType is missing name property.");
+        throw std::logic_error("pipedal_ui:fileType is missing label property.");
     }
     AutoLilvNode fileExtension = lilv_world_get(
         pWorld,
@@ -103,7 +103,7 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     AutoLilvNode name = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.lv2Core__name,
+        pHost->lilvUris.lv2core__name,
         nullptr);
     if (name)
     {
@@ -112,6 +112,19 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     else
     {
         this->name_ = "File";
+    }
+    AutoLilvNode index = lilv_world_get(
+        pWorld,
+        node,
+        pHost->lilvUris.lv2core__index,
+        nullptr);
+    if (index)
+    {
+        this->index_ = name.AsInt();
+    }
+    else
+    {
+        this->index_ = -1;
     }
 
     AutoLilvNode directory = lilv_world_get(
@@ -192,11 +205,31 @@ bool UiFileProperty::IsDirectoryNameValid(const std::string &value)
 {
     if (value.length() == 0)
         return false;
-    return IsAlphaNumeric(value);
+    if (value.find_first_of('/') != std::string::npos)
+    {
+        return false;
+    }
+    if (value.find_first_of('\\') != std::string::npos)
+    {
+        return false;
+    }
+    if (value.find_first_of("::") != std::string::npos)
+    {
+        return false;
+    }
+    if (value.find_first_of(":") != std::string::npos)
+    {
+        return false;
+    }
+    return true;
 }
 
 bool UiFileProperty::IsValidExtension(const std::string &extension) const
 {
+    if (fileTypes_.size() == 0)
+    {
+        return true;
+    }
 
     for (auto &fileType : fileTypes_)
     {
@@ -221,39 +254,57 @@ UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
     // ]
     LilvWorld *pWorld = pHost->getWorld();
 
-    AutoLilvNode portIndex = lilv_world_get(pWorld,node,pHost->lilvUris.ui__portIndex,nullptr);
+    AutoLilvNode portIndex = lilv_world_get(pWorld, node, pHost->lilvUris.ui__portIndex, nullptr);
     if (!portIndex)
     {
         this->portIndex_ = -1;
-    } else {
+    }
+    else
+    {
         this->portIndex_ = (uint32_t)lilv_node_as_int(portIndex);
     }
-    AutoLilvNode symbol = lilv_world_get(pWorld,node,pHost->lilvUris.lv2__symbol,nullptr);
+    AutoLilvNode symbol = lilv_world_get(pWorld, node, pHost->lilvUris.lv2__symbol, nullptr);
     if (!symbol)
     {
         this->symbol_ = "";
-    } else {
+    }
+    else
+    {
         this->symbol_ = symbol.AsString();
     }
-    AutoLilvNode plugin = lilv_world_get(pWorld,node,pHost->lilvUris.ui__plugin,nullptr);
+    AutoLilvNode plugin = lilv_world_get(pWorld, node, pHost->lilvUris.ui__plugin, nullptr);
     if (!plugin)
     {
         this->plugin_ = "";
-    } else {
+    }
+    else
+    {
         this->plugin_ = plugin.AsUri();
     }
-    AutoLilvNode protocol = lilv_world_get(pWorld,node,pHost->lilvUris.ui__protocol,nullptr);
+    AutoLilvNode protocol = lilv_world_get(pWorld, node, pHost->lilvUris.ui__protocol, nullptr);
     if (!protocol)
     {
         this->protocol_ = "";
-    } else {
+    }
+    else
+    {
         this->protocol_ = protocol.AsUri();
     }
-    if (this->portIndex_ == -1 &&this->symbol_ == "")
+    if (this->portIndex_ == -1 && this->symbol_ == "")
     {
         pHost->LogWarning("ui:portNotification specifies neither a ui:portIndex nor an lv2:symbol.");
     }
+}
 
+UiFileProperty::UiFileProperty(const std::string &name, const std::string &patchProperty, const std::string &directory)
+    : name_(name),
+      patchProperty_(patchProperty),
+      directory_(directory)
+{
+}
+PiPedalUI::PiPedalUI(std::vector<UiFileProperty::ptr> &&fileProperties)
+{
+    this->fileProperties_ = std::move(fileProperties);
 }
 
 JSON_MAP_BEGIN(UiPortNotification)
@@ -264,12 +315,13 @@ JSON_MAP_REFERENCE(UiPortNotification, protocol)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(PiPedalFileType)
-JSON_MAP_REFERENCE(PiPedalFileType, name)
+JSON_MAP_REFERENCE(PiPedalFileType, label)
 JSON_MAP_REFERENCE(PiPedalFileType, fileExtension)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(UiFileProperty)
 JSON_MAP_REFERENCE(UiFileProperty, name)
+JSON_MAP_REFERENCE(UiFileProperty, index)
 JSON_MAP_REFERENCE(UiFileProperty, directory)
 JSON_MAP_REFERENCE(UiFileProperty, fileTypes)
 JSON_MAP_REFERENCE(UiFileProperty, patchProperty)

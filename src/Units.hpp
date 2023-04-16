@@ -44,7 +44,14 @@ enum class Units  {
     pc,
     s,
     semitone12TET,
-    custom
+    custom,
+    degree,
+    coef,
+    frame,
+    inch,
+    mile,
+    mm,
+    oct,
 
 };
 

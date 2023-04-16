@@ -25,6 +25,7 @@
 #include <map>
 #include <memory>
 #include "StateInterface.hpp"
+#include "Pedalboard.hpp"
 
 namespace pipedal {
 
@@ -69,20 +70,30 @@ public:
 };
 
 
-
 class PluginPreset {
 public:
     PluginPreset() { }
-    PluginPreset(uint64_t instanceId, std::string&&label, std::map<std::string,float> && controlValues)
-    :   instanceId_(instanceId),
-        label_(std::forward<std::string>(label)),
-        controlValues_(std::forward<std::map<std::string,float>>(controlValues))
-    {
+    PluginPreset(uint64_t instanceId, const std::string&label,const PedalboardItem&pedalboardItem)
+    : instanceId_(instanceId)
+    , label_(label)
+    , state_(pedalboardItem.lv2State())
+    { 
+        for (auto & controlValue : pedalboardItem.controlValues())
+        {
+            this->controlValues_[controlValue.key()] = controlValue.value();
+        }
+
     }
-    PluginPreset(uint64_t instanceId, const std::string&label, const std::map<std::string,float> & controlValues)
+    PluginPreset(
+        uint64_t instanceId, 
+        const std::string&label,
+        const std::map<std::string,
+        float> & controlValues,
+        const Lv2PluginState &state)
     :   instanceId_(instanceId),
         label_(label),
-        controlValues_(controlValues)
+        controlValues_((controlValues)),
+        state_(state)
     {
     }
 

@@ -30,35 +30,38 @@ namespace pipedal
 
     enum class RingBufferCommand : int64_t
     {
-        ReplaceEffect = 0,
-        EffectReplaced = 1,
-        SetValue = 2,
-        SetBypass = 3,
-        AudioStopped = 4,
-        SetVuSubscriptions = 5,
-        FreeVuSubscriptions = 6,
-        SendVuUpdate = 7,
-        AckVuUpdate = 8,
+        Invalid = 0,
+        ReplaceEffect,
+        EffectReplaced,
+        SetValue,
+        SetBypass,
+        AudioStopped,
+        SetVuSubscriptions,
+        FreeVuSubscriptions,
+        SendVuUpdate,
+        AckVuUpdate,
 
-        SetMonitorPortSubscription = 9,
-        FreeMonitorPortSubscription = 10,
-        SendMonitorPortUpdate = 11,
-        AckMonitorPortUpdate = 12,
-        ParameterRequest = 13,
-        ParameterRequestComplete = 14,
+        SetMonitorPortSubscription,
+        FreeMonitorPortSubscription,
+        SendMonitorPortUpdate,
+        AckMonitorPortUpdate,
+        ParameterRequest,
+        ParameterRequestComplete,
 
-        MidiValueChanged = 15,
+        MidiValueChanged,
 
-        OnMidiListen = 16,
+        OnMidiListen,
 
-        AtomOutput = 17,
+        AtomOutput,
 
-        MidiProgramChange = 18, // program change requested via midi.
-        AckMidiProgramChange = 19,
+        MidiProgramChange, // program change requested via midi.
+        AckMidiProgramChange,
 
-        NextMidiProgram = 20,
+        NextMidiProgram,
 
-        Lv2StateChanged = 21,
+        Lv2StateChanged,
+        SetInputVolume,
+        SetOutputVolume,
 
     };
 
@@ -152,6 +155,11 @@ namespace pipedal
     public:
         int effectIndex;
         int controlIndex;
+        float value;
+    };
+    class SetVolumeBody
+    {
+    public:
         float value;
     };
 
@@ -369,6 +377,19 @@ namespace pipedal
             body.value = value;
             write(RingBufferCommand::SetValue,body);
         }
+        void SetInputVolume(float value)
+        {
+            SetVolumeBody body;
+            body.value = value;
+            write(RingBufferCommand::SetInputVolume,body);
+        }
+        void SetOutputVolume(float value)
+        {
+            SetVolumeBody body;
+            body.value = value;
+            write(RingBufferCommand::SetOutputVolume,body);
+        }
+
 
         void FreeVuSubscriptions(RealtimeVuBuffers *configuration)
         {

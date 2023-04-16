@@ -38,6 +38,7 @@ import GovernorSettings from './GovernorSettings';
 import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
+import Xxx from './XxxSnippet';
 
 
 export enum State {
@@ -338,153 +339,6 @@ export interface FavoritesList {
     [url: string]: boolean;
 }
 
-// export interface PiPedalModel {
-//     clientId: number;
-//     countryCodes: Object;
-//     debug: boolean;
-//     serverVersion?: PiPedalVersion;
-//     errorMessage: ObservableProperty<string>;
-//     alertMessage: ObservableProperty<string>;
-//     showStatusMonitor: ObservableProperty<boolean>;
-//     setShowStatusMonitor(show: boolean): void;
-//     state: ObservableProperty<State>;
-//     visibilityState: ObservableProperty<VisibilityState>;
-
-//     ui_plugins: ObservableProperty<UiPlugin[]>;
-//     plugin_classes: ObservableProperty<PluginClass>;
-//     jackConfiguration: ObservableProperty<JackConfiguration>;
-//     jackSettings: ObservableProperty<JackChannelSelection>;
-//     banks: ObservableProperty<BankIndex>;
-//     jackServerSettings: ObservableProperty<JackServerSettings>;
-//     wifiConfigSettings: ObservableProperty<WifiConfigSettings>;
-//     wifiDirectConfigSettings: ObservableProperty<WifiDirectConfigSettings>;
-//     governorSettings: ObservableProperty<GovernorSettings>;
-//     favorites: ObservableProperty<FavoritesList>;
-
-//     presets: ObservableProperty<PresetIndex>;
-//     systemMidiBindings: ObservableProperty<MidiBinding[]>;
-
-
-//     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined>;
-
-//     setJackServerSettings(jackServerSettings: JackServerSettings): void;
-//     setMidiBinding(instanceId: number, midiBinding: MidiBinding): void;
-
-
-//     getUiPlugin(uri: string): UiPlugin | null;
-
-//     pedalboard: ObservableProperty<Pedalboard>;
-//     loadPedalboardPlugin(itemId: number, selectedUri: string): number;
-
-//     setPedalboardControl(instanceId: number, key: string, value: number): void;
-//     setPedalboardItemEnabled(instanceId: number, value: boolean): void;
-//     previewPedalboardValue(instanceId: number, key: string, value: number): void;
-//     deletePedalboardPedal(instanceId: number): number | null;
-
-//     movePedalboardItem(fromInstanceId: number, toInstanceId: number): void;
-//     movePedalboardItemToStart(fromInstanceId: number): void;
-//     movePedalboardItemToEnd(fromInstanceId: number): void;
-//     movePedalboardItemBefore(fromInstanceId: number, toInstanceId: number): void;
-//     movePedalboardItemAfter(fromInstanceId: number, toInstanceId: number): void;
-
-//     addPedalboardItem(instanceId: number, append: boolean): number;
-//     addPedalboardSplitItem(instanceId: number, append: boolean): number;
-//     setPedalboardItemEmpty(instanceId: number): number;
-
-//     saveCurrentPreset(): void;
-//     saveCurrentPresetAs(newName: string): void;
-
-//     saveCurrentPluginPresetAs(pluginInstanceId: number, newName: string): void;
-
-//     loadPreset(instanceId: number): void;
-//     updatePresets(presets: PresetIndex): Promise<void>;
-//     deletePresetItem(instanceId: number): Promise<number>;
-//     renamePresetItem(instanceId: number, name: string): Promise<void>;
-//     copyPreset(fromId: number, toId: number): Promise<number>;
-//     duplicatePreset(instanceId: number): Promise<number>;
-
-//     moveBank(from: number, to: number): Promise<void>;
-//     deleteBankItem(instanceId: number): Promise<number>;
-
-
-//     showAlert(message: string): void;
-
-//     setJackSettings(jackSettings: JackChannelSelection): void;
-
-//     svgImgUrl(svgImage: string): string;
-
-//     removeVuSubscription(handle: VuSubscriptionHandle): void;
-//     addVuSubscription(instanceId: number, vuChangedHandler: VuChangedHandler): VuSubscriptionHandle;
-
-//     monitorPort(instanceid: number, key: string, updateRateSeconds: number, onUpdated: (value: number) => void): MonitorPortHandle;
-//     unmonitorPort(handle: MonitorPortHandle): void;
-
-//     getPatchProperty<Type = any>(instanceId: number, uri: string): Promise<Type>;
-//     setPatchProperty(instanceId: number, uri: string, value: any): Promise<boolean>;
-
-//     renameBank(instanceId: number, newName: string): Promise<void>;
-//     saveBankAs(instanceId: number, newName: string): Promise<number>;
-//     openBank(bankId: number): Promise<void>;
-
-//     getJackStatus(): Promise<JackHostStatus>;
-
-//     getPluginPresets(uri: string): Promise<PluginUiPresets>;
-//     loadPluginPreset(pluginInstanceId: number, presetInstanceId: number): void;
-//     updatePluginPresets(uri: string, presets: PluginUiPresets): Promise<void>;
-//     duplicatePluginPreset(uri: string, instanceId: number): Promise<number>;
-
-//     setSystemMidiBinding(instanceId: number, midiBinding: MidiBinding): void;
-
-//     shutdown(): Promise<void>;
-//     restart(): Promise<void>;
-
-//     listenForMidiEvent(listenForControlsOnly: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle;
-//     cancelListenForMidiEvent(listenHandle: ListenHandle): void;
-
-//     addControlValueChangeListener(instanceId: number, onValueChanged: ControlValueChangedHandler): ControlValueChangedHandle
-//     removeControlValueChangeListener(handle: ControlValueChangedHandle): void;
-
-//     addPluginPresetsChangedListener(onPluginPresetsChanged: PluginPresetsChangedHandler): PluginPresetsChangedHandle;
-//     removePluginPresetsChangedListener(handle: PluginPresetsChangedHandle): void;
-
-//     listenForAtomOutput(instanceId: number, onComplete: (instanceId: number, atomOutput: any) => void): ListenHandle;
-//     cancelListenForAtomOutput(listenHandle: ListenHandle): void;
-
-
-
-//     download(targetType: string, isntanceId: number | string): void;
-
-//     uploadPreset(uploadPage: string, file: File, uploadAfter: number): Promise<number>;
-//     uploadBank(file: File, uploadAfter: number): Promise<number>;
-
-//     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void>;
-//     setWifiDirectConfigSettings(wifiDirectConfigSettings: WifiDirectConfigSettings): Promise<void>;
-//     setGovernorSettings(governor: string): Promise<void>;
-
-//     getWifiChannels(countryIso3661: string): Promise<WifiChannel[]>;
-
-//     getAlsaDevices(): Promise<AlsaDeviceInfo[]>;
-
-//     zoomUiControl(sourceElement: HTMLElement, instanceId: number, uiControl: UiControl): void;
-
-//     onPreviousZoomedControl(): void;
-//     onNextZoomedControl(): void;
-//     clearZoomedControl(): void;
-
-//     setFavorite(pluginUrl: string, isFavorite: boolean): void;
-
-//     isAndroidHosted(): boolean;
-//     showAndroidDonationActivity(): void;
-//     getAndroidHostVersion(): string;
-//     chooseNewDevice(): void;
-
-//     isOnboarding(): boolean;
-//     setOnboarding(value: boolean): void;
-
-
-
-//     requestFileList(piPedalFileProperty: PiPedalFileProperty): Promise<string[]>;
-// };
 
 export class PiPedalModel //implements PiPedalModel 
 {
@@ -608,6 +462,14 @@ export class PiPedalModel //implements PiPedalModel
                 controlChangedBody.value,
                 false // do NOT notify the server of the change.
             );
+        }
+        else if (message === "onOutputVolumeChanged") {
+            let value = body as number;
+            this._setOutputVolume(value,false);
+        }
+        else if (message === "onInputVolumeChanged") {
+            let value = body as number;
+            this._setInputVolume(value,false);
         } else if (message === "onLv2StateChanged") {
             let instanceId = body as number;
             this.onLv2StateChanged(instanceId);
@@ -755,6 +617,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
+
     requestPluginClasses(): Promise<boolean> {
         const myRequest = new Request(this.varRequest('plugin_classes.json'));
         return fetch(myRequest)
@@ -881,7 +744,8 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
-    maxUploadSize: number = 512 * 1024;
+    maxFileUploadSize: number = 100000000;
+    maxPresetUploadSize: number = 512 * 1024;
     debug: boolean = false;
 
 
@@ -895,7 +759,7 @@ export class PiPedalModel //implements PiPedalModel
             )
             .then(data => {
                 if (data.max_upload_size) {
-                    this.maxUploadSize = data.max_upload_size;
+                    this.maxPresetUploadSize = data.max_upload_size;
                 }
                 if (data.fakeAndroid) {
                     this.androidHost = new FakeAndroidHost();
@@ -1295,13 +1159,93 @@ export class PiPedalModel //implements PiPedalModel
         };
         this.webSocket?.send("setPatchProperty", body);
     }
+
+    setInputVolume(volume_db: number) : void {
+        this._setInputVolume(volume_db,true);
+    }
+    previewInputVolume(volume_db: number) : void {
+        nullCast(this.webSocket).send("previewInputVolume",volume_db);
+
+    }
+    previewOutputVolume(volume_db: number) : void {
+        nullCast(this.webSocket).send("previewOutputVolume",volume_db);
+
+    }
+
+    private _setInputVolume(volume_db: number, notifyServer: boolean) : void {
+        let  changed: boolean = false;
+
+        let pedalboard = this.pedalboard.get();
+        if (pedalboard.input_volume_db != volume_db)
+        {
+            let newPedalboard = pedalboard.clone();
+            newPedalboard.input_volume_db = volume_db;
+            this.pedalboard.set(newPedalboard);
+            changed = true;
+        }
+        if (changed)
+        {
+            if (notifyServer) {
+                nullCast(this.webSocket).send("setInputVolume",volume_db);
+            }
+
+            for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
+                let item = this._controlValueChangeItems[i];
+                if (Pedalboard.START_CONTROL === item.instanceId) {
+                    item.onValueChanged("volume_db", volume_db);
+                }
+            }
+        }
+    }
+
+    setOutputVolume(volume_db: number, notifyServer: boolean) : void 
+    {
+        this._setOutputVolume(volume_db,true);
+    }
+
+    private _setOutputVolume(volume_db: number, notifyServer: boolean) : void {
+        let  changed: boolean = false;
+
+        let pedalboard = this.pedalboard.get();
+        if (pedalboard.output_volume_db != volume_db)
+        {
+            let newPedalboard = pedalboard.clone();
+            newPedalboard.output_volume_db = volume_db;
+            this.pedalboard.set(newPedalboard);
+            changed = true;
+        }
+        if (changed)
+        {
+            if (notifyServer) {
+                nullCast(this.webSocket).send("setOutputVolume",volume_db);
+            }
+            for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
+                let item = this._controlValueChangeItems[i];
+                if (Pedalboard.END_CONTROL === item.instanceId) {
+                    item.onValueChanged("volume_db", volume_db);
+                }
+            }
+        }
+    }
+
+
     private _setPedalboardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalboard = pedalboard.clone();
 
+        if (instanceId === Pedalboard.START_CONTROL && key == "volume_db")
+        {
+            this._setInputVolume(value,notifyServer);
+            return;
+        } else if (instanceId === Pedalboard.END_CONTROL)
+        {
+            this._setOutputVolume(value,notifyServer);
+            return;
+        } 
         let item = newPedalboard.getItem(instanceId);
         let changed = item.setControlValue(key, value);
+
         if (changed) {
             this.pedalboard.set(newPedalboard);
             if (notifyServer) {
@@ -1427,6 +1371,16 @@ export class PiPedalModel //implements PiPedalModel
         // mouse is down. Don't update EVERYBODY, but we must change 
         // the control on the running audio plugin.
         // TODO: respect "expensive" port attribute.
+        if (instanceId === Pedalboard.START_CONTROL && key == "volume_db")
+        {
+            this.previewInputVolume(value);
+            return;
+        } else if (instanceId === Pedalboard.END_CONTROL)
+        {
+            this.previewOutputVolume(value);
+            return;
+        } 
+        
         this._setServerControl("previewControl", instanceId, key, value);
     }
 
@@ -1641,6 +1595,12 @@ export class PiPedalModel //implements PiPedalModel
         return nullCast(this.webSocket)
             .request<string[]>('requestFileList', piPedalFileProperty);
     }
+
+    deleteUserFile(fileName: string) : Promise<boolean>
+    {
+        return nullCast(this.webSocket).request<boolean>('deleteUserFile',fileName)
+    }
+
 
     saveCurrentPluginPresetAs(pluginInstanceId: number, newName: string): Promise<number> {
         // default behaviour is to save after the currently selected preset.
@@ -2101,10 +2061,66 @@ export class PiPedalModel //implements PiPedalModel
         window.open(url, "_blank");
     }
 
+    uploadFile(uploadPage: string, file: File, contentType: string = "application/octet-stream",  abortController?: AbortController): Promise<string> {
+        let result = new Promise<string>((resolve, reject) => {
+            try {
+                if (file.size > this.maxFileUploadSize) {
+                    reject("File is too large.");
+                }
+                let url = this.varServerUrl + uploadPage;
+                let parsedUrl = new URL(url);
+                let fileNameOnly = file.name.split('/').pop()?.split('\\')?.pop();
+                let query = parsedUrl.search;
+                if (query.length === 0)
+                {
+                    query += '?';
+                } else {
+                    query += '&';
+                }
+                if (!fileNameOnly)
+                {
+                    reject("Invalid filename.");
+                }
+                query += "filename=" + encodeURIComponent(fileNameOnly??"");
+                parsedUrl.search = query;
+                url = parsedUrl.toString();
+                fetch(
+                    url,
+                    {
+                        method: "POST",
+                        body: file,
+                        headers: {
+                            'Content-Type': contentType,
+                        },
+                        signal: abortController?.signal
+                    }
+                )
+                    .then((response: Response) => {
+                        if (!response.ok) {
+                            reject("Upload failed. " + response.statusText);
+                            return;
+                        } else {
+                            return response.json(); 
+                        }
+                    })
+                    .then((json) => {
+                        resolve(json as string);
+                    })
+                    .catch((error) => {
+                        reject("Upload failed. " + error);
+                    })
+                    ;
+            } catch (error) {
+                reject("Upload failed. " + error);
+            }
+        });
+        return result;
+    }
+
     uploadPreset(uploadPage: string, file: File, uploadAfter: number): Promise<number> {
         let result = new Promise<number>((resolve, reject) => {
             try {
-                if (file.size > this.maxUploadSize) {
+                if (file.size > this.maxPresetUploadSize) {
                     reject("File is too large.");
                 }
                 let url = this.varServerUrl + uploadPage;
@@ -2146,7 +2162,7 @@ export class PiPedalModel //implements PiPedalModel
         let result = new Promise<number>((resolve, reject) => {
             try {
                 console.log("File: " + file.name + " Size: " + file.size);
-                if (file.size > this.maxUploadSize) {
+                if (file.size > this.maxPresetUploadSize) {
                     reject("File is too large.");
                 }
                 let url = this.varServerUrl + "uploadBank";
@@ -2387,6 +2403,11 @@ export class PiPedalModel //implements PiPedalModel
 
         ++ix;
         if (ix >= uiPlugin.controls.length) return;
+        while (!uiPlugin.controls[ix].is_input)
+        {
+            ++ix;
+            if (ix >= uiPlugin.controls.length) return;
+        }
 
         this.zoomUiControl(currentUiControl.source, currentUiControl.instanceId, uiPlugin.controls[ix]);
     }
@@ -2416,6 +2437,11 @@ export class PiPedalModel //implements PiPedalModel
 
         --ix;
         if (ix < 0) return;
+        while (!uiPlugin.controls[ix].is_input)
+        {
+            --ix;
+            if (ix < 0) return;
+        }
 
         this.zoomUiControl(currentUiControl.source, currentUiControl.instanceId, uiPlugin.controls[ix]);
     }
@@ -2471,6 +2497,11 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
 
+    // returns the ID of the new preset.
+    newPresetItem(createAfter: number): Promise<number>
+    {
+        return nullCast(this.webSocket).request<number>("newPreset");
+    }
 
 };
 

@@ -665,7 +665,6 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                     size="large">
                                     <MenuButton />
                                 </IconButton>
-                                <div style={{ flex: "1 1 1px" }} />
                                 <div style={{ flex: "0 1 400px", minWidth: 100 }}>
                                     <PresetSelector />
                                 </div>

@@ -21,7 +21,7 @@ import React from 'react';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 
 
-import {PedalboardItem, PedalboardSplitItem} from './Pedalboard';
+import { PedalboardItem, PedalboardSplitItem } from './Pedalboard';
 import PluginControlView from './PluginControlView';
 import SplitControlView from './SplitControlView';
 import Typography from '@mui/material/Typography';
@@ -29,10 +29,10 @@ import IControlViewFactory from './IControlViewFactory';
 import ToobInputStageViewFactory from './ToobInputStageView';
 import ToobToneStackViewFactory from './ToobToneStackView';
 import ToobCabSimViewFactory from './ToobCabSimView';
-import ToobPowerStage2Factory  from './ToobPowerStage2View';
+import ToobPowerStage2Factory from './ToobPowerStage2View';
 import ToobSpectrumAnalyzerViewFactory from './ToobSpectrumAnalyzerView';
 import ToobMLViewFactory from './ToobMLView';
-import {ToobTunerViewFactory,GxTunerViewFactory} from './GxTunerView';
+import { ToobTunerViewFactory, GxTunerViewFactory } from './GxTunerView';
 
 
 let pluginFactories: IControlViewFactory[] = [
@@ -47,32 +47,32 @@ let pluginFactories: IControlViewFactory[] = [
 ];
 
 
-export function GetControlView(pedalboardItem?: PedalboardItem| null): React.ReactNode
-{
+export function GetControlView(pedalboardItem?: PedalboardItem | null): React.ReactNode {
     let model: PiPedalModel = PiPedalModelFactory.getInstance();
 
     if (!pedalboardItem) {
-        return (<div/>);
+        return (<div />);
     }
-    if (pedalboardItem.isSplit())
-    {
+    if (pedalboardItem.isStart() || pedalboardItem.isEnd()) {
+        return (
+            <PluginControlView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />
+        );
+    }
+    if (pedalboardItem.isSplit()) {
         return (
             <SplitControlView item={pedalboardItem as PedalboardSplitItem} instanceId={pedalboardItem!.instanceId}
             />
         );
     } else {
-        for (let i = 0; i < pluginFactories.length; ++i)
-        {
+        for (let i = 0; i < pluginFactories.length; ++i) {
             let factory = pluginFactories[i];
-            if (factory.uri === pedalboardItem.uri)
-            {
-                return factory.Create(model,pedalboardItem);
+            if (factory.uri === pedalboardItem.uri) {
+                return factory.Create(model, pedalboardItem);
             }
         }
         let uiPlugin = model.getUiPlugin(pedalboardItem.uri);
-        if (!uiPlugin)
-        {
-            <div style={{paddingLeft: 40, paddingRight: 40}}>
+        if (!uiPlugin) {
+            <div style={{ paddingLeft: 40, paddingRight: 40 }}>
                 <Typography color="error" variant="h6" >Missing plugin.</Typography>
                 <Typography>The plugin '{pedalboardItem.pluginName}' ({pedalboardItem.uri}) is not currently installed.</Typography>
             </div>

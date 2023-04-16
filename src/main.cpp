@@ -141,6 +141,9 @@ public:
         else if (segment == "uploadBank")
         {
             return true;
+        } else if (segment == "uploadUserFile")
+        {
+            return true;
         }
         return false;
     }
@@ -402,6 +405,37 @@ public:
                 res.setContentLength(result.length());
 
                 res.setBody(result);
+            } else if (segment == "uploadUserFile")
+            {
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+
+                const std::string &fileBody = req.body();
+                const std::string &directory = request_uri.query("directory");
+                const std::string &filename = request_uri.query("filename");
+                const std::string &patchProperty = request_uri.query("property");
+
+
+                if (patchProperty.length() == 0 && directory.length() == 0)
+                {
+                    throw PiPedalException("Malformed request.");
+
+                }
+
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+
+                std::string outputFileName = std::filesystem::path(directory) / filename;
+
+                std::string path = this->model->UploadUserFile(directory,patchProperty,filename,fileBody);
+
+                std::stringstream ss;
+                json_writer writer(ss);
+                writer.write(outputFileName);
+                std::string response = ss.str();
+
+                res.setContentLength(response.length());
+                res.setBody(response);
             }
             else
             {
@@ -698,6 +732,21 @@ int main(int argc, char *argv[])
             model.GetAlsaDevices();
         }
 
+        // only accept signals on the main thread.
+        int sig;
+        sigset_t sigSet;
+        int s;
+        sigemptyset(&sigSet);
+        sigaddset(&sigSet, SIGINT);
+        sigaddset(&sigSet, SIGTERM);
+        sigaddset(&sigSet, SIGUSR1);
+
+        s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
+        if (s != 0)
+        {
+            throw std::logic_error("pthread_sigmask failed.");
+        }
+
 #if JACK_HOST
         if (systemd)
         {
@@ -767,28 +816,6 @@ int main(int argc, char *argv[])
 
 
             {
-                int sig;
-                sigset_t sigSet;
-                int s;
-                sigemptyset(&sigSet);
-                sigaddset(&sigSet, SIGINT);
-                sigaddset(&sigSet, SIGTERM);
-                sigaddset(&sigSet, SIGUSR1);
-
-                s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
-                if (s != 0)
-                {
-                    throw std::logic_error("pthread_sigmask failed.");
-                }
-                if (s != 0)
-                {
-                    throwSystemError(s);
-                }
-
-                //signal(SIGINT, sig_handler);
-                //signal(SIGTERM, sig_handler);
-                //signal(SIGUSR1, sig_handler);
-
                 sigwait(&sigSet,&sig);
                 
                 if (systemd)

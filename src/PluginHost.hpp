@@ -206,6 +206,7 @@ namespace pipedal
         bool is_audio_port_ = false;
         bool is_atom_port_ = false;
         bool is_cv_port_ = false;
+        bool connection_optional_ = false;
 
         bool is_valid_ = false;
         bool supports_midi_ = false;
@@ -275,6 +276,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(is_control_port);
         LV2_PROPERTY_GETSET_SCALAR(is_audio_port);
         LV2_PROPERTY_GETSET_SCALAR(is_atom_port);
+        LV2_PROPERTY_GETSET_SCALAR(connection_optional);
         LV2_PROPERTY_GETSET_SCALAR(is_cv_port);
         LV2_PROPERTY_GETSET_SCALAR(is_valid);
         LV2_PROPERTY_GETSET_SCALAR(supports_midi);
@@ -338,6 +340,8 @@ namespace pipedal
         Lv2PluginInfo() {}
 
     private:
+        std::shared_ptr<PiPedalUI> FindWritablePathProperties(PluginHost *lv2Host,const LilvPlugin*pPlugin);
+
         bool HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin);
         std::string bundle_path_;
         std::string uri_;
@@ -467,14 +471,20 @@ namespace pipedal
         static json_map::storage_type<Lv2PluginUiPortGroup> jmap;
     };
 
-    class Lv2PluginUiControlPort
+    class Lv2PluginUiPort
     {
     public:
-        Lv2PluginUiControlPort()
+        Lv2PluginUiPort()
         {
         }
-        Lv2PluginUiControlPort(const Lv2PluginInfo *pPlugin, const Lv2PortInfo *pPort)
-            : symbol_(pPort->symbol()), index_(pPort->index()), name_(pPort->name()), min_value_(pPort->min_value()), max_value_(pPort->max_value()), default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()), is_logarithmic_(pPort->is_logarithmic()), integer_property_(pPort->integer_property()), enumeration_property_(pPort->enumeration_property()), toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()), comment_(pPort->comment()), units_(pPort->units())
+        Lv2PluginUiPort(const Lv2PluginInfo *pPlugin, const Lv2PortInfo *pPort)
+            : symbol_(pPort->symbol()), index_(pPort->index()),
+            is_input_(pPort->is_input()), name_(pPort->name()), min_value_(pPort->min_value()), max_value_(pPort->max_value()), 
+            default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()), 
+            is_logarithmic_(pPort->is_logarithmic()), integer_property_(pPort->integer_property()), enumeration_property_(pPort->enumeration_property()), 
+            toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()), 
+            comment_(pPort->comment()), units_(pPort->units()),
+            connection_optional_(pPort->connection_optional())
         {
             // Use symbols to index port groups, instead of uris.
             // symbols are guaranteed to be unique.
@@ -489,31 +499,40 @@ namespace pipedal
                     break;
                 }
             }
+            is_bypass_ = name_ == "bypass"
+                || name_ == "Bypass"
+                || symbol_ == "bypass"
+                || symbol_ == "Bypass";
         }
 
     private:
         std::string symbol_;
         int index_;
         std::string name_;
+        bool is_input_ = true;
         float min_value_ = 0, max_value_ = 1, default_value_ = 0;
-        int range_steps_ = 0;
-        int display_priority_ = -1;
         bool is_logarithmic_ = false;
+        int display_priority_ = -1;
+
+        int range_steps_ = 0;
         bool integer_property_ = false;
         bool enumeration_property_ = false;
-        bool toggled_property_ = false;
         bool not_on_gui_ = false;
+        bool toggled_property_ = false;
         std::vector<Lv2ScalePoint> scale_points_;
         std::string port_group_;
+
         Units units_ = Units::none;
         std::string comment_;
         bool is_bypass_ = false;
         bool is_program_controller_ = false;
         std::string custom_units_;
+        bool connection_optional_ = false;
 
     public:
         LV2_PROPERTY_GETSET(symbol);
         LV2_PROPERTY_GETSET_SCALAR(index);
+        LV2_PROPERTY_GETSET_SCALAR(is_input);
         LV2_PROPERTY_GETSET(name);
         LV2_PROPERTY_GETSET(port_group);
         LV2_PROPERTY_GETSET_SCALAR(min_value);
@@ -532,9 +551,10 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(is_bypass);
         LV2_PROPERTY_GETSET_SCALAR(is_program_controller);
         LV2_PROPERTY_GETSET(custom_units);
+        LV2_PROPERTY_GETSET(connection_optional);
 
     public:
-        static json_map::storage_type<Lv2PluginUiControlPort> jmap;
+        static json_map::storage_type<Lv2PluginUiPort> jmap;
     };
 
     class Lv2PluginUiInfo
@@ -557,7 +577,7 @@ namespace pipedal
         std::string description_;
         bool is_vst3_ = false;
 
-        std::vector<Lv2PluginUiControlPort> controls_;
+        std::vector<Lv2PluginUiPort> controls_;
         std::vector<Lv2PluginUiPortGroup> port_groups_;
         std::vector<UiFileProperty::ptr> fileProperties_;
         std::vector<UiPortNotification::ptr> uiPortNotifications_;
@@ -601,7 +621,8 @@ namespace pipedal
 #endif
         friend class pipedal::AutoLilvNode;
         friend class pipedal::PiPedalUI;
-        static const char *RDFS_COMMENT_URI;
+        static const char *RDFS__comment;
+        static const char *RDFS__range;
 
     public:
         class LilvUris
@@ -610,25 +631,31 @@ namespace pipedal
             void Initialize(LilvWorld *pWorld);
             void Free();
 
-            AutoLilvNode rdfsComment;
-            AutoLilvNode logarithic_uri;
-            AutoLilvNode display_priority_uri;
-            AutoLilvNode range_steps_uri;
+            AutoLilvNode rdfs__Comment;
+            AutoLilvNode rdfs__range;
+            AutoLilvNode port_logarithmic;
+            AutoLilvNode port__display_priority;
+            AutoLilvNode port_range_steps;
             AutoLilvNode integer_property_uri;
             AutoLilvNode enumeration_property_uri;
-            AutoLilvNode toggle_property_uri;
-            AutoLilvNode not_on_gui_property_uri;
-            AutoLilvNode midiEventNode;
-            AutoLilvNode designationNode;
-            AutoLilvNode portGroupUri;
-            AutoLilvNode unitsUri;
-            AutoLilvNode bufferType_uri;
-            AutoLilvNode pset_Preset;
-            AutoLilvNode rdfs_label;
-            AutoLilvNode symbolUri;
-            AutoLilvNode nameUri;
+            AutoLilvNode core__toggled;
+            AutoLilvNode core__connectionOptional;
+            AutoLilvNode portprops__not_on_gui_property_uri;
+            AutoLilvNode midi__event;
+            AutoLilvNode core__designation;
+            AutoLilvNode portgroups__group;
+            AutoLilvNode units__unit;
+            AutoLilvNode invada_units__unit; // typo in invada plugins.
+            AutoLilvNode invada_portprops__logarithmic; // typo in invada plugins.
 
-            AutoLilvNode lv2Core__name;
+            AutoLilvNode atom__bufferType;
+            AutoLilvNode atom__Path;
+            AutoLilvNode presets__preset;
+            AutoLilvNode rdfs__label;
+            AutoLilvNode lv2core__symbol;
+            AutoLilvNode lv2core__name;
+            AutoLilvNode lv2core__index;
+            AutoLilvNode lv2core__Parameter;
             AutoLilvNode pipedalUI__ui;
             AutoLilvNode pipedalUI__fileProperties;
             AutoLilvNode pipedalUI__directory;
@@ -657,6 +684,10 @@ namespace pipedal
             AutoLilvNode ui__peakProtocol;
             AutoLilvNode ui__portIndex;
             AutoLilvNode lv2__symbol;
+
+            AutoLilvNode patch__writable;
+            AutoLilvNode patch__readable;
+
         };
         LilvUris lilvUris;
 

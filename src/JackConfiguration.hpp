@@ -55,6 +55,7 @@ namespace pipedal
         void JackInitialize(); // from jack server instance.
         ~JackConfiguration();
         bool isValid() const { return isValid_;}
+        void isValid(bool value) { isValid_ = value; }
         bool isOnboarding() const { return isOnboarding_;}
         void isOnboarding(bool value) { isOnboarding_ = value; }
         bool isRestarting() const { return isRestarting_; }

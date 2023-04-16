@@ -38,7 +38,7 @@
 	a foaf:Person ;
 	foaf:name "Robin Davies" ;
 	foaf:mbox <mailto:rerdavies@gmail.com> ;
-	foaf:homepage <http://two-play.com/> .
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
 
 <http://two-play.com/plugins/toob-tone-stack>
         a lv2:Plugin ,
@@ -49,7 +49,7 @@
         doap:license <https://two-play.com/TooB/licenses/isc> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 13 ;
+        lv2:microVersion 14 ;
         rdfs:comment """
 The TooB Tone Stack emulates the tone controls of either a 59' Bassman or a JCM8000 guitar amplifier.
 

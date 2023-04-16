@@ -148,7 +148,16 @@ void Lv2Effect::RestoreState(const PedalboardItem&pedalboardItem)
     // Restore state if present.
     if (this->stateInterface)
     {
-        this->stateInterface->Restore(pedalboardItem.lv2State());
+        try {
+            if (pedalboardItem.lv2State().isValid_)
+            {
+                this->stateInterface->Restore(pedalboardItem.lv2State());
+            }
+        } catch (const std::exception &e)
+        {
+            std::string name = pedalboardItem.pluginName();
+            Lv2Log::warning(SS(name << ": " << e.what()));
+        }
     }
 }
 
@@ -613,7 +622,7 @@ void Lv2Effect::GatherPatchProperties(RealtimePatchPropertyRequest *pRequest)
         LV2_ATOM_SEQUENCE_FOREACH(controlInput, ev)
         {
 
-            // frame_offset = ev->time.frames;  // not really interested.
+            auto frame_offset = ev->time.frames;  // not really interested.
 
             if (lv2_atom_forge_is_object_type(&this->outputForgeRt, ev->body.type))
             {
@@ -649,9 +658,21 @@ void Lv2Effect::GatherPatchProperties(RealtimePatchPropertyRequest *pRequest)
 bool Lv2Effect::GetLv2State(Lv2PluginState*state)
 {
     if (!this->stateInterface) return false;
-
-    *state = this->stateInterface->Save();
-    return true;
+    try {
+        if (this->stateInterface == nullptr)
+        {
+            state->Erase();
+            return false;
+        }
+        *state = this->stateInterface->Save();
+        state->isValid_ = true;
+        return true;
+    }
+    catch (const std::exception&e)
+    {
+        state->Erase();
+        throw;
+    }
 }
 
 

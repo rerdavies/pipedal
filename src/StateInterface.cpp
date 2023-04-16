@@ -153,7 +153,7 @@ void StateInterface::Restore(const Lv2PluginState &state)
     }
     catch (const std::exception &e)
     {
-        throw std::logic_error(SS("State save failed. " << e.what()));
+        throw std::logic_error(SS("State restore failed. " << e.what()));
     }
 }
 /*static*/ const void *StateInterface::FnStateRetreiveFunction(
@@ -199,10 +199,18 @@ const void *StateInterface::StateRetrieveFunction(
 
 void Lv2PluginState::write_json(json_writer &writer) const 
 {
+    writer.start_array();
+    writer.write(isValid_);
+    writer.write_raw(",");
     writer.write(values_);
+    writer.end_array();
 }
 void Lv2PluginState::read_json(json_reader &reader) {
+    reader.consume('[');
+    reader.read(&isValid_);
+    reader.consume(',');
     reader.read(&values_);
+    reader.consume(']');
 }
 
 

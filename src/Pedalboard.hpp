@@ -90,7 +90,7 @@ public:
     ControlValue*GetControlValue(const std::string&symbol);
     
     bool hasLv2State() const {
-        return lv2State_.values_.size() != 0;
+        return lv2State_.isValid_ != 0;
     }
     GETTER_SETTER(instanceId)
     GETTER_SETTER_REF(uri)
@@ -130,11 +130,16 @@ public:
 
 class Pedalboard {
     std::string name_;
+    float input_volume_db_ = 0;
+    float output_volume_db_ = 0;
+
     std::vector<PedalboardItem> items_;
     uint64_t nextInstanceId_ = 0;
     uint64_t NextInstanceId() { return ++nextInstanceId_; }
 
 public:
+    static constexpr int64_t INPUT_VOLUME_ID = -2; // synthetic PedalboardItem for input volume.
+    static constexpr int64_t OUTPUT_VOLUME_ID = -3; // synthetic PedalboardItem for output volume.
     bool SetControlValue(long pedalItemId, const std::string &symbol, float value);
     bool SetItemEnabled(long pedalItemId, bool enabled);
 
@@ -146,6 +151,8 @@ public:
 
     GETTER_SETTER_REF(name)
     GETTER_SETTER_VEC(items)
+    GETTER_SETTER(input_volume_db)
+    GETTER_SETTER(output_volume_db)
 
 
     DECLARE_JSON_MAP(Pedalboard);

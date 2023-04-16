@@ -137,7 +137,7 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
     storage.Initialize();
-    lv2Host.SetPluginStoragePath(storage.GetPluginStorageDirectory());
+    lv2Host.SetPluginStoragePath(storage.GetPluginAudioFileDirectory());
 
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
@@ -233,7 +233,30 @@ void PiPedalModel::Load()
     this->jackConfiguration = this->jackConfiguration.JackInitialize();
 #else
     this->jackServerSettings = storage.GetJackServerSettings();
-    this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
+    if (jackServerSettings.IsValid())
+    {
+        this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
+        if (jackServerSettings.IsValid())
+        {
+            for (size_t retry = 0; retry < 5; ++retry)
+            {
+                // retry until the device comes online.
+                sleep(3);
+                Lv2Log::info("Retrying AlsaInitialize");
+                jackConfiguration.isValid(true);
+                this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
+                if (jackConfiguration.isValid())
+                {
+                    Lv2Log::info("Retry succeeded.");
+                    break;
+
+                }
+            }
+
+        }
+    } else {
+        this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
+    }
 #endif
     if (this->jackConfiguration.isValid())
     {
@@ -312,9 +335,12 @@ void PiPedalModel::RemoveNotificationSubsription(IPiPedalModelSubscriber *pSubsc
     }
 }
 
+
+        
+
+
 void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
 {
-
     IEffect *effect = lv2Pedalboard->GetEffect(pedalItemId);
     if (effect->IsVst3())
     {
@@ -352,6 +378,67 @@ void PiPedalModel::OnNotifyLv2StateChanged(uint64_t instanceId)
         }
         delete[] t;
     }
+}
+
+void PiPedalModel::SetInputVolume(float value)
+{
+    PreviewInputVolume(value);
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+
+        this->pedalboard.input_volume_db(value);
+        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
+                t[i]->OnInputVolumeChanged(value);
+            }
+        }
+        delete[] t;
+
+        this->SetPresetChanged(-1, true);
+    }
+
+}
+void PiPedalModel::SetOutputVolume(float value)
+{
+    PreviewOutputVolume(value);
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        this->pedalboard.output_volume_db(value);
+        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
+                t[i]->OnOutputVolumeChanged(value);
+            }
+        }
+        delete[] t;
+
+        this->SetPresetChanged(-1, true);
+    }
+
+}
+void PiPedalModel::PreviewInputVolume(float value)
+{
+    audioHost->SetInputVolume(value);
+}
+void PiPedalModel::PreviewOutputVolume(float value)
+{
+    audioHost->SetOutputVolume(value);
+
 }
 
 void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
@@ -613,17 +700,12 @@ void PiPedalModel::UpdatePluginPresets(const PluginUiPresets &pluginPresets)
 }
 int64_t PiPedalModel::SavePluginPresetAs(int64_t instanceId, const std::string &name)
 {
-    auto *item = this->pedalboard.GetItem(instanceId);
+    PedalboardItem *item = this->pedalboard.GetItem(instanceId);
     if (!item)
     {
         throw PiPedalException("Plugin not found.");
     }
-    std::map<std::string, float> values;
-    for (const auto &controlValue : item->controlValues())
-    {
-        values[controlValue.key()] = controlValue.value();
-    }
-    uint64_t presetId = storage.SavePluginPreset(item->uri(), name, values);
+    uint64_t presetId = storage.SavePluginPreset(name, *item);
     FirePluginPresetsChanged(item->uri());
     return presetId;
 }
@@ -1250,7 +1332,7 @@ void PiPedalModel::UpdateRealtimeVuSubscriptions()
     for (int i = 0; i < activeVuSubscriptions.size(); ++i)
     {
         auto instanceId = activeVuSubscriptions[i].instanceid;
-        if (pedalboard.HasItem(instanceId))
+        if (pedalboard.HasItem(instanceId) || instanceId == Pedalboard::INPUT_VOLUME_ID || instanceId == Pedalboard::OUTPUT_VOLUME_ID)
         {
             addedInstances.insert(activeVuSubscriptions[i].instanceid);
         }
@@ -1629,26 +1711,34 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
     PedalboardItem *pedalboardItem = this->pedalboard.GetItem(pluginInstanceId);
     if (pedalboardItem != nullptr)
     {
-        std::vector<ControlValue> controlValues = storage.GetPluginPresetValues(pedalboardItem->uri(), presetInstanceId);
-        audioHost->SetPluginPreset(pluginInstanceId, controlValues);
+        PluginPresetValues presetValues = storage.GetPluginPresetValues(pedalboardItem->uri(), presetInstanceId);
+        // if the plugin has state, we have to rebuild the pedalboard, since setting state is not thread-safe.
 
-        for (size_t i = 0; i < controlValues.size(); ++i)
+        for (auto&control :  presetValues.controls)
         {
-            const ControlValue &value = controlValues[i];
-            this->pedalboard.SetControlValue(pluginInstanceId, value.key(), value.value());
+            this->pedalboard.SetControlValue(pluginInstanceId, control.key(), control.value());
         }
 
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        if (!presetValues.state.isValid_)
         {
-            t[i] = this->subscribers[i];
+            audioHost->SetPluginPreset(pluginInstanceId, presetValues.controls);
+
+            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+            for (size_t i = 0; i < subscribers.size(); ++i)
+            {
+                t[i] = this->subscribers[i];
+            }
+            size_t n = this->subscribers.size();
+            for (size_t i = 0; i < n; ++i)
+            {
+                t[i]->OnLoadPluginPreset(pluginInstanceId, presetValues.controls);
+            }
+            delete[] t;
+        } else {
+            pedalboardItem->lv2State(presetValues.state);
+            FirePedalboardChanged(-1); // does a complete reload of both client and audio server.
         }
-        size_t n = this->subscribers.size();
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->OnLoadPluginPreset(pluginInstanceId, controlValues);
-        }
-        delete[] t;
+        this->SetPresetChanged(-1, true);
     }
 }
 
@@ -1875,3 +1965,25 @@ std::vector<std::string> PiPedalModel::GetFileList(const UiFileProperty &filePro
         return std::vector<std::string>(); // don't disclose to users what the problem is.
     }
 }
+
+void PiPedalModel::DeleteSampleFile(const std::filesystem::path &fileName)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    storage.DeleteSampleFile(fileName);
+}
+
+
+std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody)
+{
+    return storage.UploadUserFile(directory,patchProperty,filename,fileBody);
+}
+
+uint64_t PiPedalModel::CreateNewPreset()
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    return storage.CreateNewPreset();
+}
+
+
+        

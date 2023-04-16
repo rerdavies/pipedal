@@ -43,12 +43,17 @@ float AutoLilvNode::AsFloat(float defaultValue)
     }
     return defaultValue;
 }
-int AutoLilvNode::AsInt(int defaultValue)
+int32_t AutoLilvNode::AsInt(int defaultValue)
 {
     if (node == nullptr)
         return defaultValue;
     if (lilv_node_is_int(node))
         return lilv_node_as_int(node);
+    if (lilv_node_is_float(node))
+    {
+        return (int32_t)lilv_node_as_float(node);
+    }
+
     return defaultValue;
 }
 bool AutoLilvNode::AsBool(bool defaultValue)

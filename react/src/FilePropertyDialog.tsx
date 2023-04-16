@@ -29,14 +29,16 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import DialogActions from '@mui/material/DialogActions';
 import DialogTitle from '@mui/material/DialogTitle';
-import DeleteIcon from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
+import OldDeleteIcon from './OldDeleteIcon';
 
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { PiPedalFileProperty } from './Lv2Plugin';
 import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
 import DialogEx from './DialogEx';
+import UploadFileDialog from './UploadFileDialog';
+import OkCancelDialog from './OkCancelDialog';
 
 export interface FilePropertyDialogProps {
     open: boolean,
@@ -51,6 +53,8 @@ export interface FilePropertyDialogState {
     selectedFile: string;
     hasSelection: boolean;
     files: string[];
+    openUploadFileDialog: boolean;
+    openConfirmDeleteDialog: boolean;
 };
 
 export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePropertyDialogProps, FilePropertyDialogState> {
@@ -66,7 +70,9 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
             fullScreen: false,
             selectedFile: props.selectedFile,
             hasSelection: false,
-            files: []
+            files: [],
+            openUploadFileDialog: false,
+            openConfirmDeleteDialog: false
         };
 
         this.requestFiles();
@@ -74,32 +80,22 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
     private mounted: boolean = false;
     private model: PiPedalModel;
 
-    private lastFileProperty: PiPedalFileProperty  = new PiPedalFileProperty();
-
     private requestFiles() {
-        if (!this.props.open) 
-        {
+        if (!this.props.open) {
             return;
         }
-        if (this.props.fileProperty.directory === "")
-        {
+        if (this.props.fileProperty.directory === "") {
             return;
         }
-        if (this.lastFileProperty === this.props.fileProperty)
-        {
-            return;
-        }
-        this.lastFileProperty = this.props.fileProperty;
 
         this.model.requestFileList(this.props.fileProperty)
-        .then((files) => {
-            if (this.mounted)
-            {
-                this.setState({files: files,hasSelection: this.isFileInList(files,this.state.selectedFile)});
-            }
-        }).catch((error)=>{
-            this.model.showAlert(error.toString())
-        });
+            .then((files) => {
+                if (this.mounted) {
+                    this.setState({ files: files, hasSelection: this.isFileInList(files, this.state.selectedFile) });
+                }
+            }).catch((error) => {
+                this.model.showAlert(error.toString())
+            });
     }
 
     onWindowSizeChanged(width: number, height: number): void {
@@ -116,11 +112,17 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
         this.mounted = false;
     }
     componentDidUpdate(prevProps: Readonly<FilePropertyDialogProps>, prevState: Readonly<FilePropertyDialogState>, snapshot?: any): void {
-        super.componentDidUpdate?.(prevProps,prevState,snapshot);
-        if (prevProps.fileProperty !== this.props.fileProperty)
+        super.componentDidUpdate?.(prevProps, prevState, snapshot);
+        if (prevProps.open !== this.props.open)
         {
+            if (this.props.open)
+            {
+                this.requestFiles()
+            }
+        } else if (prevProps.fileProperty !== this.props.fileProperty) {
             this.requestFiles()
         }
+
     }
 
     private fileNameOnly(path: string): string {
@@ -139,7 +141,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
 
     }
 
-    private isFileInList(files: string[],file: string) {
+    private isFileInList(files: string[], file: string) {
 
         let hasSelection = false;
         for (var listFile of files) {
@@ -152,7 +154,52 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
     }
 
     onSelect(selectedFile: string) {
-        this.setState({ selectedFile: selectedFile, hasSelection: this.isFileInList(this.state.files,selectedFile) })
+        this.setState({ selectedFile: selectedFile, hasSelection: this.isFileInList(this.state.files, selectedFile) })
+    }
+
+    handleDelete() {
+        this.setState({openConfirmDeleteDialog: true});
+    }
+    handleConfirmDelete()
+    {
+        this.setState({openConfirmDeleteDialog: false});
+        if (this.state.hasSelection)
+        {
+            let selectedFile = this.state.selectedFile;
+            let position = -1;
+            for (let i = 0; i < this.state.files.length;++i)
+            {
+                let file = this.state.files[i];
+                if (file === selectedFile)
+                {
+                    position = i;
+                }
+            }
+            let newSelection = "";
+            if (position >= 0 && position < this.state.files.length-1)
+            {
+                newSelection = this.state.files[position+1];
+            } else if (position === this.state.files.length-1)
+            {
+                if (position !== 0) {
+                    newSelection = this.state.files[position-1];
+                }
+
+            }
+
+            this.model.deleteUserFile(this.state.selectedFile)
+            .then(
+                ()=> {
+                    this.setState({selectedFile: newSelection,hasSelection: newSelection !== ""});
+                    this.requestFiles();
+                }
+            ).catch(
+                (e: any)=>
+                {
+                    this.model.showAlert(e + "");
+                }
+            );
+        }
     }
 
     mapKey: number = 0;
@@ -160,63 +207,90 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
         this.mapKey = 0;
         return this.props.open &&
             (
-            <DialogEx onClose={() => this.props.onCancel()} open={this.props.open} tag="FilePropertyDialog" fullWidth maxWidth="xl" style={{ height: "90%" }}
-                PaperProps={{ style: { minHeight: "90%", maxHeight: "90%", overflowY: "visible" } }}
-            >
-                <DialogTitle >
-                    <div>
-                        <IconButton edge="start" color="inherit" onClick={()=> {this.props.onCancel();}} aria-label="back"
-                        >
-                            <ArrowBackIcon fontSize="small" style={{opacity: "0.6"}} />
-                        </IconButton>
-                    <Typography display="inline" >{this.props.fileProperty.name}</Typography>
-                    </div>
-                </DialogTitle>
-                <div style={{ flex: "0 0 auto", height: "1px", background: "rgba(0,0,0,0.2" }}>&nbsp;</div>
-                <div style={{ flex: "1 1 auto", height: "300", display: "flex", flexFlow: "row nowrap", overflowX: "auto", overflowY: "visible" }}>
-                    <div style={{ flex: "1 1 100%", display: "flex", flexFlow: "column wrap", justifyContent: "start", alignItems: "flex-start",paddingLeft: 16,paddingTop:16 }}>
-                        {
-                            this.state.files.map(
-                                (value: string, index: number) => {
-                                    let selected = value === this.state.selectedFile;
-                                    let selectBg = selected ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.0)";
-                                    return (
-                                        <ButtonBase key={ this.mapKey++ }
-                                            style={{ width: "320px", flex: "0 0 48px", position: "relative"}}
-                                            onClick={() => this.onSelect(value)}
-                                        >
-                                            <div style={{ position: "absolute", background: selectBg, width: "100%", height: "100%", borderRadius: 4 }} />
-                                            <div style={{ display: "flex", flexFlow: "row nowrap", justifyContent: "start", alignItems: "center", width: "100%", height: "100%" }}>
-                                                <AudioFileIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
-                                                <Typography noWrap style={{ flex: "1 1 auto", textAlign: "left" }}>{this.fileNameOnly(value)}</Typography>
-                                            </div>
-                                        </ButtonBase>
-                                    );
-                                }
-                            )
-                        }
+                <DialogEx onClose={() => this.props.onCancel()} open={this.props.open} tag="FilePropertyDialog" fullWidth maxWidth="xl" style={{ height: "90%" }}
+                    PaperProps={{ style: { minHeight: "90%", maxHeight: "90%", overflowY: "visible" } }}
+                >
+                    <DialogTitle >
+                        <div>
+                            <IconButton edge="start" color="inherit" onClick={() => { this.props.onCancel(); }} aria-label="back"
+                            >
+                                <ArrowBackIcon fontSize="small" style={{ opacity: "0.6" }} />
+                            </IconButton>
+                            <Typography display="inline" >{this.props.fileProperty.name}</Typography>
                         </div>
-                </div>
-                <div style={{ flex: "0 0 auto", height: "1px", background: "rgba(0,0,0,0.2" }}>&nbsp;</div>
-                <DialogActions style={{ justifyContent: "stretch" }}>
-                    <div style={{ display: "flex", width: "100%", flexFlow: "row nowrap" }}>
-                        <Button style={{ flex: "0 0 auto" }} startIcon={<FileUploadIcon />}>
-                            <input hidden accept="audio/x-wav" name="Upload Impuse File" type="file" multiple />
-                            Upload
-                        </Button>
-                        <IconButton style={{visibility: (this.state.hasSelection? "visible": "hidden")}} aria-label="delete selected file" component="label" color="primary" >
-                            <DeleteIcon fontSize='small' />
-                        </IconButton>
-                        <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
-                        <Button onClick={() => {this.props.onCancel();}} aria-label="cancel">
-                            Cancel
-                        </Button>
-                        <Button style={{ flex: "0 0 auto" }} onClick={() => {this.props.onOk(this.props.fileProperty,this.state.selectedFile);}} color="secondary" disabled={!this.state.hasSelection} aria-label="select">  
-                            Select
-                        </Button>
+                    </DialogTitle>
+                    <div style={{ flex: "0 0 auto", height: "1px", background: "rgba(0,0,0,0.2" }}>&nbsp;</div>
+                    <div style={{ flex: "1 1 auto", height: "300", display: "flex", flexFlow: "row nowrap", overflowX: "auto", overflowY: "visible" }}>
+                        <div style={{ flex: "1 1 100%", display: "flex", flexFlow: "column wrap", justifyContent: "start", alignItems: "flex-start", paddingLeft: 16, paddingTop: 16 }}>
+                            {
+                                this.state.files.map(
+                                    (value: string, index: number) => {
+                                        let selected = value === this.state.selectedFile;
+                                        let selectBg = selected ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.0)";
+                                        return (
+                                            <ButtonBase key={this.mapKey++}
+                                                style={{ width: "320px", flex: "0 0 48px", position: "relative" }}
+                                                onClick={() => this.onSelect(value)}
+                                            >
+                                                <div style={{ position: "absolute", background: selectBg, width: "100%", height: "100%", borderRadius: 4 }} />
+                                                <div style={{ display: "flex", flexFlow: "row nowrap", justifyContent: "start", alignItems: "center", width: "100%", height: "100%" }}>
+                                                    <AudioFileIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
+                                                    <Typography noWrap style={{ flex: "1 1 auto", textAlign: "left" }}>{this.fileNameOnly(value)}</Typography>
+                                                </div>
+                                            </ButtonBase>
+                                        );
+                                    }
+                                )
+                            }
+                        </div>
                     </div>
-                </DialogActions>
-            </DialogEx>
-        );
+                    <div style={{ flex: "0 0 auto", height: "1px", background: "rgba(0,0,0,0.2" }}>&nbsp;</div>
+                    <DialogActions style={{ justifyContent: "stretch" }}>
+                        <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                            <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                onClick={()=> this.handleDelete()} >
+                                <OldDeleteIcon fontSize='small' />
+                            </IconButton>
+
+                            <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
+                            onClick={()=> { this.setState({openUploadFileDialog: true})}}
+                            >
+                                <div>Upload</div>
+                            </Button>
+                            <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+
+                            <Button onClick={() => { this.props.onCancel(); }} aria-label="cancel">
+                                Cancel
+                            </Button>
+                            <Button style={{ flex: "0 0 auto" }} onClick={() => { this.props.onOk(this.props.fileProperty, this.state.selectedFile); }} color="secondary" disabled={!this.state.hasSelection} aria-label="select">
+                                Select
+                            </Button>
+                        </div>
+                    </DialogActions>
+                    <UploadFileDialog
+                        open={this.state.openUploadFileDialog}
+                        onClose=
+                        {
+                            () => {
+                                this.setState({ openUploadFileDialog: false });
+                            }
+                        }
+                        uploadPage={  "uploadUserFile?directory="+ encodeURIComponent(this.props.fileProperty.directory)}
+                        onUploaded={()=> { this.requestFiles();}}
+                        fileProperty={this.props.fileProperty}
+
+
+                    />
+                    <OkCancelDialog open={this.state.openConfirmDeleteDialog}
+                        text="Are you sure you want to delete the selected file?"
+                        okButtonText="Delete"
+                        onOk={()=>this.handleConfirmDelete()}
+                        onClose={()=>{
+                            this.setState({openConfirmDeleteDialog: false});
+                        }}
+
+                    />
+                </DialogEx>
+            );
     }
 }

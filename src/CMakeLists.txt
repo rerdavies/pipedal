@@ -141,6 +141,9 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    DbDezipper.hpp DbDezipper.cpp
+    WebServerLog.hpp
+    
     util.hpp util.cpp
     PiPedalUI.hpp
     PiPedalUI.cpp

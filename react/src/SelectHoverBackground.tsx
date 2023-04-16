@@ -17,7 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { Component, SyntheticEvent } from 'react';
+import React,{ Component, SyntheticEvent } from 'react';
 import { Theme } from '@mui/material/styles';
 
 
@@ -54,11 +54,12 @@ const styles = ({ palette }: Theme) => createStyles({
 interface HoverProps extends WithStyles<typeof styles> {
     selected: boolean;
     showHover?: boolean;
+    borderRadius?: number;
     theme: Theme;
+    children?: React.ReactNode;
 }
 
 interface HoverState {
-    hovering: boolean;
 }
 
 
@@ -69,44 +70,53 @@ export const SelectHoverBackground =
             constructor(props: HoverProps) {
                 super(props);
                 this.state = {
-                    hovering: false
                 };
+                this.selfRef = React.createRef<HTMLDivElement>();
+                this.hoverElementRef = React.createRef<HTMLDivElement>();
 
-                this.handleMouseEnter = this.handleMouseEnter.bind(this);
+                this.handleMouseOver = this.handleMouseOver.bind(this);
                 this.handleMouseLeave = this.handleMouseLeave.bind(this);
 
             }
 
-            handleMouseEnter(e: SyntheticEvent): void {
-                if (this.props.showHover??true)
-                {
-                    this.setHovering(true);
+            handleMouseOver(e: SyntheticEvent): void {
+                console.log("onMouseOver")
+                if (this.props.showHover ?? true) {
+                    if (this.hoverElementRef.current)
+                    {
+                        this.hoverElementRef.current.style.display = "block";
+                    } else {
+                        console.log("No hoverElementRef")
+                    }
                 }
 
             }
             handleMouseLeave(e: SyntheticEvent): void {
-                if (this.props.showHover??true)
-                {
-                    this.setHovering(false);
-                }
-
-            }
-
-
-            setHovering(value: boolean): void {
-                if (this.state.hovering !== value) {
-                    this.setState({ hovering: value });
+                if (this.props.showHover ?? true) {
+                    if (this.hoverElementRef.current)
+                    {
+                        this.hoverElementRef.current.style.display = "none";
+                    } else {
+                        console.log("No hoverElementRef")
+                    }
                 }
             }
+
+
+            private selfRef: React.RefObject<HTMLDivElement>;
+            private hoverElementRef: React.RefObject<HTMLDivElement>;
+
             render() {
                 let classes = this.props.classes;
                 let isSelected = this.props.selected;
-                let hovering = this.state.hovering && (this.props.showHover??true);
-                return (<div className={classes.frame}
-                    onMouseEnter={(e) => { this.handleMouseEnter(e); }} onMouseLeave={(e) => { this.handleMouseLeave(e) }}
+                return (<div className={classes.frame} ref={this.selfRef}
+                    onMouseOver={(e) => { this.handleMouseOver(e); }} onMouseLeave={(e) => { this.handleMouseLeave(e) }}
                 >
-                    <div className={classes.selected} style={{ display: (isSelected ? "block" : "none") }} />
-                    <div className={classes.hover} style={{ display: (hovering  ? "block" : "none") }} />
+                    <div className={classes.selected} style={{ display: (isSelected ? "block" : "none"), borderRadius: this.props.borderRadius }} />
+                    <div ref={this.hoverElementRef} className={classes.hover} style={{ display: "none", borderRadius: this.props.borderRadius }} />
+                    {
+                        this.props.children
+                    }
                 </div>);
 
             }

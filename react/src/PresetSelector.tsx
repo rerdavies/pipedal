@@ -36,7 +36,7 @@ import Fade from '@mui/material/Fade';
 import Divider from '@mui/material/Divider';
 import RenameDialog from './RenameDialog'
 import Select from '@mui/material/Select';
-import UploadDialog from './UploadDialog';
+import UploadPresetDialog from './UploadPresetDialog';
 
 
 interface PresetSelectorProps extends WithStyles<typeof styles> {
@@ -55,7 +55,7 @@ interface PresetSelectorState {
     renameDialogDefaultName: string;
     renameDialogActionName: string;
     renameDialogOnOk?: (name: string) => void;
-    openUploadDialog: boolean;
+    openUploadPresetDialog: boolean;
 
 }
 
@@ -100,7 +100,7 @@ const PresetSelector =
                     renameDialogDefaultName: "",
                     renameDialogActionName: "",
                     renameDialogOnOk: undefined,
-                    openUploadDialog: false
+                    openUploadPresetDialog: false
 
 
                 };
@@ -127,7 +127,7 @@ const PresetSelector =
                 this.handlePresetsMenuClose();
                 e.preventDefault();
 
-                this.setState({ openUploadDialog: true });
+                this.setState({ openUploadPresetDialog: true });
 
             }
 
@@ -151,7 +151,7 @@ const PresetSelector =
                         return this.model.saveCurrentPresetAs(newName);
                     })
                     .then((newInstanceId) => {
-                        
+
                     })
                     .catch((error) => {
                         this.showError(error);
@@ -178,6 +178,22 @@ const PresetSelector =
                         this.showError(error);
                     })
                     ;
+            }
+            handlePresetsMenuNew(e: SyntheticEvent): void {
+                this.handlePresetsMenuClose();
+                e.stopPropagation();
+
+                let currentPresets = this.model.presets.get();
+                let item = currentPresets.getItem(currentPresets.selectedInstanceId);
+                if (item == null) return;
+                let name = item.name;
+                this.model.newPresetItem(currentPresets.selectedInstanceId)
+                    .then((instanceId) => {
+                        this.model.loadPreset(instanceId);
+                    })
+                    .catch((error) => {
+                        this.showError(error);
+                    });
             }
 
             showError(error: string) {
@@ -282,13 +298,24 @@ const PresetSelector =
                 let presets = this.state.presets;
                 let classes = this.props.classes;
                 return (
-                    <div style={{ marginLeft: 12, display: "flex", flexDirection: "row",
-                     justifyContent: "left", flexWrap: "nowrap", alignItems: "center", height: "100%", position: "relative" }}>
+                    <div style={{
+                        marginLeft: 12, display: "flex", flexDirection: "row",
+                        justifyContent: "left", flexWrap: "nowrap", alignItems: "center", height: "100%", position: "relative"
+                    }}>
+                        <div style={{ flex: "0 0 auto" }}>
+                            <IconButton
+                                style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0 }}
+                                onClick={(e) => { this.handleSave(); }}
+                                size="large">
+                                <SaveIconOutline style={{ opacity: 0.75 }} />
+                            </IconButton>
+                        </div>
+
                         <div style={{ flex: "1 1 auto", minWidth: 60, maxWidth: 300, position: "relative", paddingRight: 12 }} >
                             {true ? (
                                 <Select variant="standard"
                                     className={classes.select}
-                                    style={{ width: "100%", position: "relative", top: 0}} disabled={!this.state.enabled}
+                                    style={{ width: "100%", position: "relative", top: 0 }} disabled={!this.state.enabled}
                                     onChange={(e, extra) => this.handleChange(e, extra)}
                                     onClose={(e) => this.handleSelectClose(e)}
                                     displayEmpty
@@ -333,14 +360,6 @@ const PresetSelector =
                         </div>
                         <div style={{ flex: "0 0 auto" }}>
                             <IconButton
-                                style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0 }}
-                                onClick={(e) => { this.handleSave(); }}
-                                size="large">
-                                <SaveIconOutline style={{ opacity: 0.75 }} />
-                            </IconButton>
-                        </div>
-                        <div style={{ flex: "0 0 auto" }}>
-                            <IconButton
                                 style={{ flex: "0 0 auto" }}
                                 onClick={(e) => this.handlePresetMenuClick(e)}
                                 size="large">
@@ -356,6 +375,7 @@ const PresetSelector =
                                 <MenuItem onClick={(e) => this.handlePresetsMenuSave(e)}>Save preset</MenuItem>
                                 <MenuItem onClick={(e) => this.handlePresetsMenuSaveAs(e)}>Save preset as...</MenuItem>
                                 <MenuItem onClick={(e) => this.handlePresetsMenuRename(e)}>Rename...</MenuItem>
+                                <MenuItem onClick={(e) => this.handlePresetsMenuNew(e)}>New...</MenuItem>
                                 <Divider />
                                 <MenuItem onClick={(e) => { this.handleDownloadPreset(e); }} >Download preset</MenuItem>
                                 <MenuItem onClick={(e) => { this.handleUploadPreset(e) }}>Upload preset</MenuItem>
@@ -369,14 +389,14 @@ const PresetSelector =
                             acceptActionName={this.state.renameDialogActionName}
                             onClose={() => this.handleRenameDialogClose()}
                             onOk={(name: string) => this.handleRenameDialogOk(name)} />
-                        <UploadDialog 
+                        <UploadPresetDialog
                             title='Upload preset'
                             extension='.piPreset'
                             uploadPage='uploadPreset'
                             onUploaded={(instanceId) => { this.model.loadPreset(instanceId); }}
-                            open={this.state.openUploadDialog}
+                            open={this.state.openUploadPresetDialog}
                             uploadAfter={-1}
-                            onClose={() => { this.setState({ openUploadDialog: false }) }} />
+                            onClose={() => { this.setState({ openUploadPresetDialog: false }) }} />
 
                     </div>
                 );

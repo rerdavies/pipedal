@@ -45,6 +45,7 @@ import PluginInfoDialog from './PluginInfoDialog';
 import { GetControlView } from './ControlViewFactory';
 import MidiBindingsDialog from './MidiBindingsDialog';
 import PluginPresetSelector from './PluginPresetSelector';
+import SaveIconOutline from '@mui/icons-material/Save';
 
 
 const SPLIT_CONTROLBAR_THRESHHOLD = 650;
@@ -75,7 +76,7 @@ const styles = ({ palette }: Theme) => createStyles({
         flex: "0 0 auto", width: "100%", height: 48
     },
     splitControlBar: {
-        flex: "0 0 48px", width: "100%", paddingLeft: 24, paddingRight: 16, paddingBottom: 16
+        flex: "0 0 64px", width: "100%", paddingLeft: 24, paddingRight: 16, paddingBottom: 16
     },
     controlContent: {
         flex: "1 1 auto", width: "100%", overflowY: "auto", minHeight: 240
@@ -83,8 +84,8 @@ const styles = ({ palette }: Theme) => createStyles({
     controlContentSmall: {
         flex: "0 0 162px", width: "100%", height: 162, overflowY: "hidden",
     },
-    title: { fontSize: "1.1em", fontWeight: 700, marginRight: 8 },
-    author: { fontWeight: 500, marginRight: 8 }
+    title: { fontSize: "1.1em", fontWeight: 700, marginRight: 8, textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.75 },
+    author: { fontWeight: 500, marginRight: 8, textOverflow: "ellipsis", whiteSpace: "nowrap",opacity: 0.75 }
 });
 
 
@@ -103,7 +104,7 @@ interface MainState {
     horizontalScrollLayout: boolean;
     showMidiBindingsDialog: boolean;
     screenHeight: number;
-    
+
 }
 
 
@@ -128,7 +129,7 @@ export const MainPage =
                     horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
                     showMidiBindingsDialog: false,
                     screenHeight: this.windowSize.height
-                    
+
                 };
                 this.onSelectionChanged = this.onSelectionChanged.bind(this);
                 this.onPedalDoubleClick = this.onPedalDoubleClick.bind(this);
@@ -193,16 +194,17 @@ export const MainPage =
             }
             onPedalboardChanged(value: Pedalboard) {
                 let selectedItem = -1;
-                if (value.hasItem(this.state.selectedPedal))
-                {
+                if (this.state.selectedPedal == Pedalboard.START_CONTROL || this.state.selectedPedal == Pedalboard.END_CONTROL) {
+                    selectedItem = this.state.selectedPedal;
+                } else if (value.hasItem(this.state.selectedPedal)) {
                     selectedItem = this.state.selectedPedal;
                 } else {
                     selectedItem = value.getFirstSelectableItem();
                 }
-                this.setState({ 
+                this.setState({
                     pedalboard: value,
                     selectedPedal: selectedItem
-                 });
+                });
             }
             onDeletePedal(instanceId: number): void {
                 let result = this.model.deletePedalboardPedal(instanceId);
@@ -274,6 +276,15 @@ export const MainPage =
 
                 let pedalboard = this.model.pedalboard.get();
                 if (!pedalboard) return null;
+
+                if (selectedId === Pedalboard.START_CONTROL) // synthetic input volume item.
+                {
+                    return pedalboard.makeStartItem();
+                } else if (selectedId === Pedalboard.END_CONTROL) // synthetic output volume.
+                {
+                    return pedalboard.makeEndItem();
+                }
+
                 let it = pedalboard.itemsGenerator();
                 if (!selectedId) return null;
                 while (true) {
@@ -297,7 +308,7 @@ export const MainPage =
             }
             getSelectedUri(): string {
                 let pedalboardItem = this.getSelectedPedalboardItem();
-                if (pedalboardItem == null) return "";
+                if (pedalboardItem === null) return "";
                 return pedalboardItem.uri;
             }
             titleBar(pedalboardItem: PedalboardItem | null): React.ReactNode {
@@ -311,7 +322,13 @@ export const MainPage =
                         title = "";
                     } else if (pedalboardItem.isSplit()) {
                         title = "Split";
-                    } else {
+                    } else if (pedalboardItem.isSyntheticItem()) {
+                        title = pedalboardItem.pluginName ?? "#error";
+                        author = "";
+                        presetsUri = "";
+                        pluginUri = "";
+                    }
+                    else {
                         let uiPlugin = this.model.getUiPlugin(pedalboardItem.uri);
                         if (!uiPlugin) {
                             missing = true;
@@ -327,46 +344,41 @@ export const MainPage =
                     }
                 }
                 let classes = this.props.classes;
-                if (missing)
-                {
+                if (missing) {
                     return (
-                    <div style={{
-                        flex: "1 0 auto", overflow: "hidden", marginRight: 8,
-                        display: "flex", flexDirection: "row", flexWrap: "nowrap",
-                        alignItems: "center"
-                    }}>
-                        <div style={{ flex: "0 1 auto" }}>
-                            <span style={{ whiteSpace: "nowrap", color: "#800000" }}>
-                                <span className={classes.title}>{title}</span>
-                            </span>
+                        <div style={{
+                            flex: "1 0 auto", overflow: "hidden", marginRight: 8, minWidth: 0,
+                            display: "flex", flexDirection: "row", height: 48, flexWrap: "nowrap",
+                            alignItems: "center"
+                        }}>
+                            <div style={{ flex: "0 1 auto",minWidth: 0 }}>
+                                <span style={{ color: "#800000" }}>
+                                    <span className={classes.title}>{title}</span>
+                                </span>
+                            </div>
                         </div>
-                    </div>
                     );
-                
+
                 } else {
-                return (
-                    <div style={{
-                        flex: "1 0 auto", overflow: "hidden", marginRight: 8,
-                        display: "flex", flexDirection: "row", flexWrap: "nowrap",
-                        alignItems: "center"
-                    }}>
-                        <div style={{ flex: "0 1 auto" }}>
-                            <span style={{ whiteSpace: "nowrap" }}>
+                    return (
+                        <div style={{
+                            flex: "1 1 auto", minWidth: 0,overflow: "hidden", marginRight: 8,
+                            display: "flex", flexDirection: "row", height: 48, flexWrap: "nowrap",
+                            alignItems: "center"
+                        }}>
+                            <div style={{ flex: "0 1 auto", minWidth: 0,overflow: "hidden",textOverflow: "ellipsis" }}>
                                 <span className={classes.title}>{title}</span>
-                            </span>
-                            <span style={{ whiteSpace: "nowrap" }}>
                                 <span className={classes.author}>{author}</span>
-                            </span>
+                            </div>
+                            <div style={{ flex: "0 0 auto", verticalAlign: "center" }}>
+                                <PluginInfoDialog plugin_uri={pluginUri} />
+                            </div>
+                            <div style={{ flex: "0 0 auto" }}>
+                                <PluginPresetSelector pluginUri={presetsUri} instanceId={pedalboardItem?.instanceId ?? 0}
+                                />
+                            </div>
                         </div>
-                        <div style={{ flex: "0 0 auto", verticalAlign: "center"  }}>
-                            <PluginInfoDialog plugin_uri={pluginUri} />
-                        </div>
-                        <div style={{ flex: "0 0 auto" }}>
-                            <PluginPresetSelector pluginUri={presetsUri} instanceId={pedalboardItem?.instanceId ?? 0}
-                            />
-                        </div>
-                    </div>
-                );
+                    );
                 }
             }
 
@@ -379,7 +391,9 @@ export const MainPage =
                 let bypassVisible = false;
                 let bypassChecked = false;
                 let canDelete = false;
-                let canAdd = false;
+                let canInsert = false;
+                let canAppend = false;
+                let canLoad = true;
                 let instanceId = -1;
                 let missing = false;
                 let pluginUri = "#error";
@@ -388,13 +402,26 @@ export const MainPage =
                     canDelete = pedalboard.canDeleteItem(pedalboardItem.instanceId);
                     instanceId = pedalboardItem.instanceId;
                     if (pedalboardItem.isEmpty()) {
-                        canAdd = true;
+                        canInsert = true;
+                        canAppend = true;
+
+                    } else if (pedalboardItem.isStart()) {
+                        canAppend = true;
+                        canDelete = false;
+                        canLoad = false;
+                    } else if (pedalboardItem.isEnd()) {
+                        canInsert = true;
+                        canDelete = false;
+                        canLoad = false;
                     } else if (pedalboardItem.isSplit()) {
-                        canAdd = true;
+                        canInsert = true;
+                        canAppend = true;
+                        canLoad = false;
                     } else {
                         pluginUri = pedalboardItem.uri;
                         uiPlugin = this.model.getUiPlugin(pluginUri);
-                        canAdd = true;
+                        canInsert = true;
+                        canAppend = true;
                         if (uiPlugin) {
                             bypassVisible = true;
                             bypassChecked = pedalboardItem.isEnabled;
@@ -418,7 +445,7 @@ export const MainPage =
                         <div className={classes.separator} />
                         <div className={classes.controlToolBar}>
                             <div style={{
-                                display: "flex", flexFlow: "row nowrap", alignItems: "center", justifyContent: "center",
+                                display: "flex", flexFlow: "row nowrap", alignItems: "center", justifyContent: "center", minWidth: 0,
                                 width: "100%", height: 48, paddingLeft: 16, paddingRight: 16
                             }} >
                                 <div style={{ flex: "0 0 auto", width: 80 }} >
@@ -432,7 +459,7 @@ export const MainPage =
                                 <div style={{ flex: "1 1 1px" }}>
 
                                 </div>
-                                <div style={{ flex: "0 0 auto", display: canAdd ? "block" : "none", paddingRight: 8 }}>
+                                <div style={{ flex: "0 0 auto", display: (canInsert || canAppend) ? "block" : "none", paddingRight: 8 }}>
                                     <IconButton onClick={(e) => { this.onAddClick(e) }} size="large">
                                         <AddIcon />
                                     </IconButton>
@@ -444,11 +471,11 @@ export const MainPage =
                                         onClose={() => this.handleAddClose()}
                                         TransitionComponent={Fade}
                                     >
-                                        <MenuItem onClick={() => this.onInsertPedal(instanceId)}>Insert pedal</MenuItem>
-                                        <MenuItem onClick={() => this.onAppendPedal(instanceId)}>Append pedal</MenuItem>
+                                        {canInsert && (<MenuItem onClick={() => this.onInsertPedal(instanceId)}>Insert pedal</MenuItem>)}
+                                        {canAppend && (<MenuItem onClick={() => this.onAppendPedal(instanceId)}>Append pedal</MenuItem>)}
                                         <Divider />
-                                        <MenuItem onClick={() => this.onInsertSplit(instanceId)}>Insert split</MenuItem>
-                                        <MenuItem onClick={() => this.onAppendSplit(instanceId)}>Append split</MenuItem>
+                                        {canInsert && (<MenuItem onClick={() => this.onInsertSplit(instanceId)}>Insert split</MenuItem>)}
+                                        {canAppend && (<MenuItem onClick={() => this.onAppendSplit(instanceId)}>Append split</MenuItem>)}
                                     </Menu>
                                 </div>
                                 <div style={{ flex: "0 0 auto", display: canDelete ? "block" : "none", paddingRight: 8 }}>
@@ -464,9 +491,9 @@ export const MainPage =
                                         color="primary"
                                         size="small"
                                         onClick={this.onLoadClick}
-                                        disabled={this.state.selectedPedal === -1 || (this.getSelectedPedalboardItem()?.isSplit() ?? true)}
+                                        disabled={this.state.selectedPedal === -1 || (!canLoad) || (this.getSelectedPedalboardItem()?.isSplit() ?? true)}
                                         startIcon={<InputIcon />}
-                                        style={{ borderRadius: 24, paddingLeft: 18, paddingRight: 18, textTransform: "none"}}
+                                        style={{ textTransform: "none" }}
                                     >
                                         Load
                                     </Button>
@@ -493,19 +520,19 @@ export const MainPage =
                         <div className={horizontalScrollLayout ? classes.controlContentSmall : classes.controlContent}>
                             {
                                 missing ? (
-                                    <div style={{marginLeft: 100,marginTop: 20}}>
+                                    <div style={{ marginLeft: 100, marginTop: 20 }}>
                                         <Typography variant="body1" paragraph={true}>Error: Plugin is not installed.</Typography>
-                                        <Typography noWrap variant="body2"  paragraph={true}>{pluginUri}</Typography>
+                                        <Typography noWrap variant="body2" paragraph={true}>{pluginUri}</Typography>
                                     </div>
 
-                                ): 
-                                (
-                                      GetControlView(pedalboardItem)
-                                )
+                                ) :
+                                    (
+                                        GetControlView(pedalboardItem)
+                                    )
                             }
                         </div>
                         <MidiBindingsDialog open={this.state.showMidiBindingsDialog}
-                            onClose={()=> this.setState({showMidiBindingsDialog: false} ) }
+                            onClose={() => this.setState({ showMidiBindingsDialog: false })}
                         />
                         {
                             (this.state.loadDialogOpen) && (

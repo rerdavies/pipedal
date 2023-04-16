@@ -7,6 +7,11 @@
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToneStack.ttl> .
 
+<http://two-play.com/plugins/toob-convolution-reverb> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ConvolutionReverb.ttl> .
+
+
 <http://two-play.com/plugins/toob-ml> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobML.ttl> .

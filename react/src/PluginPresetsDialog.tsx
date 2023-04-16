@@ -33,7 +33,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Fade from '@mui/material/Fade';
-import UploadDialog from './UploadDialog';
+import UploadPresetDialog from './UploadPresetDialog';
 import {PluginUiPresets,PluginUiPreset} from './PluginPreset';
 
 import SelectHoverBackground from './SelectHoverBackground';
@@ -67,7 +67,7 @@ interface PluginPresetsDialogState {
     renameOpen: boolean;
 
     moreMenuAnchorEl: HTMLElement | null;
-    openUploadDialog: boolean;
+    openUploadPresetDialog: boolean;
 
 
 };
@@ -138,7 +138,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                 selectedItem: -1,
                 renameOpen: false,
                 moreMenuAnchorEl: null,
-                openUploadDialog: false
+                openUploadPresetDialog: false
 
             };
 
@@ -165,7 +165,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
         }
         handleUploadPresets() {
             this.handleMoreClose();
-            this.setState({ openUploadDialog: true });
+            this.setState({ openUploadPresetDialog: true });
 
         }
         handleMoreClose(): void {
@@ -466,14 +466,14 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                             </DraggableGrid>
                         </div>
                     </div>
-                    <UploadDialog 
+                    <UploadPresetDialog 
                             title="Upload Plugin Presets"
                             extension='.piPluginPresets'
                             uploadPage='uploadPluginPresets'
                             onUploaded={(instanceId) => {} }
                             uploadAfter={this.state.selectedItem} 
-                            open={this.state.openUploadDialog} 
-                            onClose={() => { this.setState({ openUploadDialog: false }) }} />
+                            open={this.state.openUploadPresetDialog} 
+                            onClose={() => { this.setState({ openUploadPresetDialog: false }) }} />
 
                 </DialogEx>
 

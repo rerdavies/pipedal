@@ -52,6 +52,9 @@ namespace pipedal
         virtual int64_t GetClientId() = 0;
         virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
         virtual void OnControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value) = 0;
+        virtual void OnInputVolumeChanged(float value) = 0;
+        virtual void OnOutputVolumeChanged(float value) = 0;
+
         virtual void OnLv2StateChanged(int64_t pedalItemId) = 0;
         virtual void OnVst3ControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value, const std::string &state) = 0;
         virtual void OnPedalboardChanged(int64_t clientId, const Pedalboard &pedalboard) = 0;
@@ -215,6 +218,13 @@ namespace pipedal
         void SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
         void PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
 
+        void SetInputVolume(float value);
+        void SetOutputVolume(float value);
+        void PreviewInputVolume(float value);
+        void PreviewOutputVolume(float value);
+        
+
+
         void SetPedalboard(int64_t clientId, Pedalboard &pedalboard);
         void UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalboard);
 
@@ -310,6 +320,10 @@ namespace pipedal
         void SetFavorites(const std::map<std::string, bool> &favorites);
 
         std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
+
+        void DeleteSampleFile(const std::filesystem::path &fileName);
+        std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
+        uint64_t CreateNewPreset();
     };
 
 } // namespace pipedal.

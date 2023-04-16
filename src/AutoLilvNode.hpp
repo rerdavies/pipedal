@@ -37,9 +37,9 @@ namespace pipedal
         {
         }
         AutoLilvNode(const LilvNode *node)
-            : node(const_cast<LilvNode*>(node))
+            : node(const_cast<LilvNode *>(node))
         {
-              isConst = true;
+            isConst = true;
         }
         AutoLilvNode(LilvNode *node)
             : node(node)
@@ -66,15 +66,17 @@ namespace pipedal
             return *this;
         }
 
-        operator LilvNode**() { 
+        operator LilvNode **()
+        {
             Free();
             this->isConst = false;
             return &node;
         }
-        operator const LilvNode**()  { 
+        operator const LilvNode **()
+        {
             Free();
             this->isConst = true;
-            return (const LilvNode**)&node;
+            return (const LilvNode **)&node;
         }
         AutoLilvNode &operator=(AutoLilvNode &&other)
         {
@@ -83,7 +85,7 @@ namespace pipedal
         }
 
         float AsFloat(float defaultValue = 0);
-        int AsInt(int defaultValue = 0);
+        int32_t AsInt(int defaultValue = 0);
         bool AsBool(bool defaultValue = false);
         std::string AsUri();
         std::string AsString();
@@ -99,4 +101,71 @@ namespace pipedal
         LilvNode *node = nullptr;
         bool isConst = true;
     };
-};
+
+    class AutoLilvNodes
+    {
+
+    public:
+        AutoLilvNodes()
+        {
+        }
+        AutoLilvNodes(const LilvNodes *nodes)
+            : nodes(const_cast<LilvNodes *>(nodes))
+        {
+            isConst = true;
+        }
+        AutoLilvNodes(LilvNodes *nodes)
+            : nodes(nodes)
+        {
+            isConst = false;
+        }
+
+        ~AutoLilvNodes() { Free(); }
+
+        operator const LilvNodes *()
+        {
+            return this->nodes;
+        }
+        operator bool()
+        {
+            return this->nodes != nullptr;
+        }
+        const LilvNodes *Get() { return nodes; }
+
+        AutoLilvNodes &operator=(LilvNodes *node)
+        {
+            Free();
+            this->nodes = nodes;
+            return *this;
+        }
+
+        operator LilvNodes **()
+        {
+            Free();
+            this->isConst = false;
+            return &nodes;
+        }
+        operator const LilvNodes **()
+        {
+            Free();
+            this->isConst = true;
+            return (const LilvNodes **)&nodes;
+        }
+        AutoLilvNodes &operator=(AutoLilvNodes &&other)
+        {
+            std::swap(this->nodes, other.nodes);
+            return *this;
+        }
+
+        void Free()
+        {
+            if (nodes != nullptr && !isConst)
+                lilv_nodes_free(nodes);
+            nodes = nullptr;
+        }
+
+    private:
+        LilvNodes *nodes = nullptr;
+        bool isConst = true;
+    };
+}

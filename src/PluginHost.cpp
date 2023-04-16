@@ -66,26 +66,31 @@ using namespace pipedal;
 
 namespace pipedal
 {
-    static const char *LV2_AUDIO_PORT = P_LV2_CORE_URI "AudioPort";
-    static const char *LV2_PLUGIN = P_LV2_CORE_URI "Plugin";
-    static const char *LV2_CONTROL_PORT = P_LV2_CORE_URI "ControlPort";
-    static const char *LV2_INPUT_PORT = P_LV2_CORE_URI "InputPort";
-    static const char *LV2_OUTPUT_PORT = P_LV2_CORE_URI "OutputPort";
-    static const char *LV2_INTEGER = P_LV2_CORE_URI "integer";
-    static const char *LV2_ENUMERATION = P_LV2_CORE_URI "enumeration";
-    static const char *LV2_PORT_LOGARITHMIC = P_LV2_PPROPS "logarithmic";
-    static const char *LV2_PORT_RANGE_STEPS = P_LV2_PPROPS "rangeSteps";
-    static const char *LV2_PORT_TRIGGER = P_LV2_PPROPS "trigger";
-    static const char *LV2_PORT_DISPLAY_PRIORITY = P_LV2_PPROPS "displayPriority";
+
+    // in ttl files, but not header files.
+
     static const char *LV2_MIDI_PLUGIN = "http://lv2plug.in/ns/lv2core#MIDIPlugin";
 
-    static const char *LV2_ATOM_PORT = "http://lv2plug.in/ns/ext/atom#AtomPort";
-    static const char *LV2_ATOM_SEQUENCE = "http://lv2plug.in/ns/ext/atom#Sequence";
-    static const char *LV2_ATOM_SOUND = "http://lv2plug.in/ns/ext/atom#Sound";
-    static const char *LV2_ATOM_VECTOR = "http://lv2plug.in/ns/ext/atom#Vector";
-    static const char *LV2_ATOM_STRING = "http://lv2plug.in/ns/ext/atom#String";
-    static const char *LV2_MIDI_EVENT = "http://lv2plug.in/ns/ext/midi#MidiEvent";
-    static const char *LV2_DESIGNATION = "http://lv2plug.in/ns/lv2core#Designation";
+    // static const char *LV2_AUDIO_PORT = P_LV2_CORE_URI "AudioPort";
+    // static const char *LV2_PLUGIN = P_LV2_CORE_URI "Plugin";
+    // static const char *LV2_CONTROL_PORT = P_LV2_CORE_URI "ControlPort";
+    // static const char *LV2_INPUT_PORT = P_LV2_CORE_URI "InputPort";
+    // static const char *LV2_OUTPUT_PORT = P_LV2_CORE_URI "OutputPort";
+    // static const char *LV2_INTEGER = P_LV2_CORE_URI "integer";
+    // static const char *LV2_ENUMERATION = P_LV2_CORE_URI "enumeration";
+    // static const char *LV2_PORT_LOGARITHMIC = P_LV2_PPROPS "logarithmic";
+    // static const char *LV2_PORT_RANGE_STEPS = P_LV2_PPROPS "rangeSteps";
+    // static const char *LV2_PORT_TRIGGER = P_LV2_PPROPS "trigger";
+    // static const char *LV2_PORT_DISPLAY_PRIORITY = P_LV2_PPROPS "displayPriority";
+    
+
+    // static const char *LV2_ATOM_PORT = "http://lv2plug.in/ns/ext/atom#AtomPort";
+    // static const char *LV2_ATOM_SEQUENCE = "http://lv2plug.in/ns/ext/atom#Sequence";
+    // static const char *LV2_ATOM_SOUND = "http://lv2plug.in/ns/ext/atom#Sound";
+    // static const char *LV2_ATOM_VECTOR = "http://lv2plug.in/ns/ext/atom#Vector";
+    // static const char *LV2_ATOM_STRING = "http://lv2plug.in/ns/ext/atom#String";
+    // static const char *LV2_MIDI_EVENT = "http://lv2plug.in/ns/ext/midi#MidiEvent";
+    // static const char *LV2_DESIGNATION = "http://lv2plug.in/ns/lv2core#Designation";
 
     class PluginHost::Urids
     {
@@ -117,25 +122,35 @@ void PluginHost::SetConfiguration(const PiPedalConfiguration &configuration)
 
 void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 {
-    rdfsComment = lilv_new_uri(pWorld, PluginHost::RDFS_COMMENT_URI);
-    logarithic_uri = lilv_new_uri(pWorld, LV2_PORT_LOGARITHMIC);
-    display_priority_uri = lilv_new_uri(pWorld, LV2_PORT_DISPLAY_PRIORITY);
-    range_steps_uri = lilv_new_uri(pWorld, LV2_PORT_RANGE_STEPS);
-    integer_property_uri = lilv_new_uri(pWorld, LV2_INTEGER);
-    enumeration_property_uri = lilv_new_uri(pWorld, LV2_ENUMERATION);
-    toggle_property_uri = lilv_new_uri(pWorld, LV2_CORE__toggled);
-    not_on_gui_property_uri = lilv_new_uri(pWorld, LV2_PORT_PROPS__notOnGUI);
-    midiEventNode = lilv_new_uri(pWorld, LV2_MIDI_EVENT);
-    designationNode = lilv_new_uri(pWorld, LV2_DESIGNATION);
-    portGroupUri = lilv_new_uri(pWorld, LV2_PORT_GROUPS__group);
-    unitsUri = lilv_new_uri(pWorld, LV2_UNITS__unit);
-    bufferType_uri = lilv_new_uri(pWorld, LV2_ATOM__bufferType);
-    pset_Preset = lilv_new_uri(pWorld, LV2_PRESETS__Preset);
-    rdfs_label = lilv_new_uri(pWorld, LILV_NS_RDFS "label");
-    symbolUri = lilv_new_uri(pWorld, LV2_CORE__symbol);
-    nameUri = lilv_new_uri(pWorld, LV2_CORE__name);
+    rdfs__Comment = lilv_new_uri(pWorld, PluginHost::RDFS__comment);
+    rdfs__range = lilv_new_uri(pWorld,PluginHost::RDFS__range);
+    port_logarithmic = lilv_new_uri(pWorld, LV2_PORT_PROPS__logarithmic);
+    port__display_priority = lilv_new_uri(pWorld, LV2_PORT_PROPS__displayPriority);
+    port_range_steps = lilv_new_uri(pWorld, LV2_PORT_PROPS__rangeSteps);
+    integer_property_uri = lilv_new_uri(pWorld, LV2_CORE__integer);
+    enumeration_property_uri = lilv_new_uri(pWorld, LV2_CORE__enumeration);
+    core__toggled = lilv_new_uri(pWorld, LV2_CORE__toggled);
+    core__connectionOptional = lilv_new_uri(pWorld,LV2_CORE__connectionOptional);
+    portprops__not_on_gui_property_uri = lilv_new_uri(pWorld, LV2_PORT_PROPS__notOnGUI);
+    midi__event = lilv_new_uri(pWorld, LV2_MIDI__MidiEvent);
+    core__designation = lilv_new_uri(pWorld, LV2_CORE__designation);
+    portgroups__group = lilv_new_uri(pWorld, LV2_PORT_GROUPS__group);
+    units__unit = lilv_new_uri(pWorld, LV2_UNITS__unit);
 
-    lv2Core__name = lilv_new_uri(pWorld, LV2_CORE__name);
+    invada_units__unit = lilv_new_uri(pWorld, "http://lv2plug.in/ns/extension/units#unit"); // a typo in invada plugin ttl files.
+    invada_portprops__logarithmic = lilv_new_uri(pWorld, "http://lv2plug.in/ns/dev/extportinfo#logarithmic"); // a typo in invada plugin ttl files.
+
+    atom__bufferType = lilv_new_uri(pWorld, LV2_ATOM__bufferType);
+    atom__Path = lilv_new_uri(pWorld, LV2_ATOM__Path);
+    presets__preset = lilv_new_uri(pWorld, LV2_PRESETS__Preset);
+    rdfs__label = lilv_new_uri(pWorld, LILV_NS_RDFS "label");
+
+    lv2core__symbol = lilv_new_uri(pWorld, LV2_CORE__symbol);
+    lv2core__name = lilv_new_uri(pWorld, LV2_CORE__name);
+    lv2core__index = lilv_new_uri(pWorld, LV2_CORE__index);
+    lv2core__Parameter = lilv_new_uri(pWorld,LV2_CORE_PREFIX "Parameter");
+
+
     pipedalUI__ui = lilv_new_uri(pWorld, PIPEDAL_UI__ui);
     pipedalUI__fileProperties = lilv_new_uri(pWorld, PIPEDAL_UI__fileProperties);
     pipedalUI__patchProperty = lilv_new_uri(pWorld, PIPEDAL_UI__patchProperty);
@@ -173,27 +188,30 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     time_speed = lilv_new_uri(pWorld, LV2_TIME__speed);
 
     appliesTo = lilv_new_uri(pWorld, LV2_CORE__appliesTo);
+
+    patch__writable = lilv_new_uri(pWorld,LV2_PATCH__writable);
+    patch__readable = lilv_new_uri(pWorld,LV2_PATCH__readable);
 }
 
 void PluginHost::LilvUris::Free()
 {
-    rdfsComment.Free();
-    logarithic_uri.Free();
-    display_priority_uri.Free();
-    range_steps_uri.Free();
+    rdfs__Comment.Free();
+    port_logarithmic.Free();
+    port__display_priority.Free();
+    port_range_steps.Free();
     integer_property_uri.Free();
     enumeration_property_uri.Free();
-    toggle_property_uri.Free();
-    not_on_gui_property_uri.Free();
-    midiEventNode.Free();
-    designationNode.Free();
-    portGroupUri.Free();
-    unitsUri.Free();
-    bufferType_uri.Free();
-    pset_Preset.Free();
-    rdfs_label.Free();
-    symbolUri.Free();
-    nameUri.Free();
+    core__toggled.Free();
+    portprops__not_on_gui_property_uri.Free();
+    midi__event.Free();
+    core__designation.Free();
+    portgroups__group.Free();
+    units__unit.Free();
+    atom__bufferType.Free();
+    presets__preset.Free();
+    rdfs__label.Free();
+    lv2core__symbol.Free();
+    lv2core__name.Free();
 
     time_Position.Free();
     time_barBeat.Free();
@@ -574,13 +592,18 @@ static std::vector<std::string> nodeAsStringArray(const LilvNodes *nodes)
     return result;
 }
 
-const char *PluginHost::RDFS_COMMENT_URI = "http://www.w3.org/2000/01/rdf-schema#"
+const char *PluginHost::RDFS__comment = "http://www.w3.org/2000/01/rdf-schema#"
                                            "comment";
+
+const char *PluginHost::RDFS__range = "http://www.w3.org/2000/01/rdf-schema#"
+                                           "range";
+
+
 
 LilvNode *PluginHost::get_comment(const std::string &uri)
 {
     AutoLilvNode uriNode = lilv_new_uri(pWorld, uri.c_str());
-    LilvNode *result = lilv_world_get(pWorld, uriNode, lilvUris.rdfsComment, nullptr);
+    LilvNode *result = lilv_world_get(pWorld, uriNode, lilvUris.rdfs__Comment, nullptr);
     return result;
 }
 
@@ -591,7 +614,7 @@ static bool ports_sort_compare(std::shared_ptr<Lv2PortInfo> &p1, const std::shar
 
 bool Lv2PluginInfo::HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin)
 {
-    NodesAutoFree nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris.pset_Preset);
+    NodesAutoFree nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris.presets__preset);
     bool result = false;
     LILV_FOREACH(nodes, iNode, nodes)
     {
@@ -601,9 +624,65 @@ bool Lv2PluginInfo::HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plu
     return result;
 }
 
+std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host,const LilvPlugin*pPlugin)
+{
+    // example: 
+
+    // <http://github.com/mikeoliphant/neural-amp-modeler-lv2#model>
+    //     a lv2:Parameter;
+    //     rdfs:label "Model";
+    //     rdfs:range atom:Path.
+    // ... 
+	//          patch:writable <http://github.com/mikeoliphant/neural-amp-modeler-lv2#model>;
+
+    LilvWorld* pWorld = lv2Host->getWorld();
+    AutoLilvNode pluginUri = lilv_plugin_get_uri(pPlugin);
+    AutoLilvNodes patchWritables = lilv_world_find_nodes(pWorld,pluginUri,lv2Host->lilvUris.patch__writable,nullptr);
+
+    std::vector<UiFileProperty::ptr> fileProperties;
+
+    LILV_FOREACH(nodes, iNode, patchWritables)
+    {
+        AutoLilvNode propertyUri = lilv_nodes_get(patchWritables, iNode);
+        if (propertyUri)
+        {
+                // isA lv2:Parameter?
+            if (lilv_world_ask(pWorld,propertyUri,lv2Host->lilvUris.isA,lv2Host->lilvUris.lv2core__Parameter))
+            {
+                //  rfs:range atom:Path?
+                if (lilv_world_ask(pWorld,propertyUri,lv2Host->lilvUris.rdfs__range,lv2Host->lilvUris.atom__Path))
+                {
+                    AutoLilvNode label = lilv_world_get(pWorld,propertyUri,lv2Host->lilvUris.rdfs__label,nullptr);
+                    std::string strLabel = label.AsString();
+                    if (strLabel.length() != 0)
+                    {
+                        std::filesystem::path path = this->bundle_path();
+                        path = path.parent_path();
+                        std::string lv2DirectoryName = path.filename().string();
+                        // we have a valid path property!
+                        fileProperties.push_back(
+                            std::make_shared<UiFileProperty>(
+                                strLabel,propertyUri.AsUri(),lv2DirectoryName)
+                            );
+
+                    }
+                }
+
+            }
+        }
+
+    }
+    if (fileProperties.size() != 0)
+    {
+        return std::make_shared<PiPedalUI>(std::move(fileProperties));
+    }
+
+    return std::shared_ptr<PiPedalUI>();
+
+}
+
 Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvPlugin *pPlugin)
 {
-
     AutoLilvNode bundleUriNode = lilv_plugin_get_bundle_uri(pPlugin);
     if (!bundleUriNode)
         throw std::logic_error("Invalid bundle uri.");
@@ -698,15 +777,39 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     if (pipedalUINode)
     {
         this->piPedalUI_ = std::make_shared<PiPedalUI>(lv2Host, pipedalUINode, std::filesystem::path(bundlePath));
+    } else {
+        // look for 
+        this->piPedalUI_ = FindWritablePathProperties(lv2Host,pPlugin);
     }
-    // xxx lilv_world_get(pWorld,pluginUri,);
-    // for (auto&portInfo: ports_)
-    // {
-    //     if (portInfo->is_control_port() && portInfo->is_output())
-    //     {
-    //         std::cout << "Dbg: " << "Has an output control port. " << this->uri_ << std::endl;
-    //     }
-    // }
+
+    int nInputs = 0;
+    for (size_t i = 0; i < ports_.size(); ++i)
+    {
+        auto port = ports_[i];
+        if (port->is_audio_port() && port->is_input())
+        {
+            if (nInputs >= 2 && !port->connection_optional())
+            {
+                isValid = false;
+                break;
+            }
+            ++nInputs;
+        }
+    }
+    int nOutputs = 0;
+    for (size_t i = 0; i < ports_.size(); ++i)
+    {
+        auto port = ports_[i];
+        if (port->is_audio_port() && port->is_output())
+        {
+            if (nOutputs >= 2 && !port->connection_optional())
+            {
+                isValid = false;
+                break;
+            }
+            ++nOutputs;
+        }
+    }
 
     this->is_valid_ = isValid;
 }
@@ -724,9 +827,11 @@ std::vector<std::string> supportedFeatures = {
     LV2_STATE__loadDefaultState,
     LV2_STATE__makePath,
     LV2_STATE__mapPath,
+    LV2_CORE__inPlaceBroken,
 
     // UI features that we can ignore, since we won't load their ui.
     "http://lv2plug.in/ns/extensions/ui#makeResident",
+    "http://lv2plug.in/ns/ext/port-props#supportsStrictBounds"
 
 };
 
@@ -798,9 +903,12 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     if (default_value_ < min_value_)
         default_value_ = min_value_;
 
-    this->is_logarithmic_ = lilv_port_has_property(plugin, pPort, host->lilvUris.logarithic_uri);
+    this->is_logarithmic_ = lilv_port_has_property(plugin, pPort, host->lilvUris.port_logarithmic);
 
-    NodesAutoFree priority_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.display_priority_uri);
+    // typo in invada plugins.
+    this->is_logarithmic_ |= lilv_port_has_property(plugin, pPort, host->lilvUris.invada_portprops__logarithmic);
+
+    NodesAutoFree priority_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.port__display_priority);
 
     this->display_priority_ = -1;
     if (priority_nodes)
@@ -812,7 +920,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
         }
     }
 
-    NodesAutoFree range_steps_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.range_steps_uri);
+    NodesAutoFree range_steps_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.port_range_steps);
     this->range_steps_ = 0;
     if (range_steps_nodes)
     {
@@ -826,9 +934,9 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
 
     this->enumeration_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.enumeration_property_uri);
 
-    this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.toggle_property_uri);
-
-    this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris.not_on_gui_property_uri);
+    this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.core__toggled);
+    this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris.portprops__not_on_gui_property_uri);
+    this->connection_optional_ = lilv_port_has_property(plugin,pPort,host->lilvUris.core__connectionOptional);
 
     LilvScalePoints *pScalePoints = lilv_port_get_scale_points(plugin, pPort);
     LILV_FOREACH(scale_points, iSP, pScalePoints)
@@ -844,30 +952,50 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
 
     std::sort(scale_points_.begin(), scale_points_.end(), scale_points_sort_compare);
 
-    is_input_ = is_a(host, LV2_INPUT_PORT);
-    is_output_ = is_a(host, LV2_OUTPUT_PORT);
+    is_input_ = is_a(host, LV2_CORE__InputPort);
+    is_output_ = is_a(host, LV2_CORE__OutputPort);
 
     is_control_port_ = is_a(host, LV2_CORE__ControlPort);
     is_audio_port_ = is_a(host, LV2_CORE__AudioPort);
-    is_atom_port_ = is_a(host, LV2_ATOM_PORT);
+    is_atom_port_ = is_a(host, LV2_ATOM__AtomPort);
     is_cv_port_ = is_a(host, LV2_CORE__CVPort);
 
-    supports_midi_ = lilv_port_supports_event(plugin, pPort, host->lilvUris.midiEventNode);
+    supports_midi_ = lilv_port_supports_event(plugin, pPort, host->lilvUris.midi__event);
     supports_time_position_ = lilv_port_supports_event(plugin, pPort, host->lilvUris.time_Position);
 
-    AutoLilvNode designationValue = lilv_port_get(plugin, pPort, host->lilvUris.designationNode);
+    AutoLilvNode designationValue = lilv_port_get(plugin, pPort, host->lilvUris.core__designation);
     designation_ = nodeAsString(designationValue);
 
-    AutoLilvNode portGroup_value = lilv_port_get(plugin, pPort, host->lilvUris.portGroupUri);
+    AutoLilvNode portGroup_value = lilv_port_get(plugin, pPort, host->lilvUris.portgroups__group);
     port_group_ = nodeAsString(portGroup_value);
 
-    AutoLilvNode unitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris.unitsUri);
-    this->units_ = UriToUnits(nodeAsString(unitsValueUri));
+    AutoLilvNode unitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris.units__unit);
+    if (unitsValueUri)
+    {
+        this->units_ = UriToUnits(nodeAsString(unitsValueUri));
+    } else {
+        // invada plugins use the wrong URI.
+        AutoLilvNode invadaUnitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris.invada_units__unit);
+        if (invadaUnitsValueUri)
+        {
+            std::string uri = nodeAsString(invadaUnitsValueUri);
+            static const char*INCORRECT_URI = "http://lv2plug.in/ns/extension/units#";
+            static const char*CORRECT_URI =   "http://lv2plug.in/ns/extensions/units#";
+            if (uri.starts_with(INCORRECT_URI))
+            {
+                uri = uri.replace(0,strlen(INCORRECT_URI),CORRECT_URI);
+            }
+            this->units_ = UriToUnits(uri);
+        } else {
+            this->units(Units::none);
+        }
 
-    AutoLilvNode commentNode = lilv_port_get(plugin, pPort, host->lilvUris.rdfsComment);
+    }
+
+    AutoLilvNode commentNode = lilv_port_get(plugin, pPort, host->lilvUris.rdfs__Comment);
     this->comment_ = nodeAsString(commentNode);
 
-    AutoLilvNode bufferType = lilv_port_get(plugin, pPort, host->lilvUris.bufferType_uri);
+    AutoLilvNode bufferType = lilv_port_get(plugin, pPort, host->lilvUris.atom__bufferType);
 
     this->buffer_type_ = "";
     if (bufferType)
@@ -962,11 +1090,12 @@ Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
     }
     for (auto port : plugin->ports())
     {
+        
         if (port->is_input())
         {
-                if (port->is_control_port() && port->is_input())
+                if (port->is_control_port())
                 {
-                    controls_.push_back(Lv2PluginUiControlPort(plugin, port.get()));
+                    controls_.push_back(Lv2PluginUiPort(plugin, port.get()));
                 }
                 else if (port->is_atom_port())
                 {
@@ -982,7 +1111,11 @@ Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
         }
         else if (port->is_output())
         {
-                if (port->is_atom_port() && port->supports_midi())
+                if (port->is_control_port())
+                {
+                    controls_.push_back(Lv2PluginUiPort(plugin, port.get()));
+                }
+                else if (port->is_atom_port() && port->supports_midi())
                 {
                     this->has_midi_output_ = true;
                 }
@@ -1007,7 +1140,7 @@ Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
 
 std::shared_ptr<Lv2PluginClass> PluginHost::GetLv2PluginClass() const
 {
-    return this->GetPluginClass(LV2_PLUGIN);
+    return this->GetPluginClass(LV2_CORE__Plugin);
 }
 
 std::shared_ptr<Lv2PluginInfo> PluginHost::GetPluginInfo(const std::string &uri) const
@@ -1078,7 +1211,7 @@ std::vector<ControlValue> PluginHost::LoadFactoryPluginPreset(
         throw PiPedalStateException("No such plugin.");
     }
 
-    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris.pset_Preset);
+    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris.presets__preset);
     LILV_FOREACH(nodes, i, presets)
     {
         const LilvNode *preset = lilv_nodes_get(presets, i);
@@ -1154,7 +1287,7 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
     PluginPresets result;
     result.pluginUri_ = pluginUri;
 
-    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris.pset_Preset);
+    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris.presets__preset);
     LILV_FOREACH(nodes, i, presets)
     {
         const LilvNode *preset = lilv_nodes_get(presets, i);
@@ -1171,7 +1304,7 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
 
                 if (!cbData.failed)
                 {
-                    result.presets_.push_back(PluginPreset(result.nextInstanceId_++, std::move(label), std::move(controlValues)));
+                    result.presets_.push_back(PluginPreset(result.nextInstanceId_++, label, controlValues,Lv2PluginState()));
                 }
         }
     }
@@ -1216,9 +1349,9 @@ Lv2PortGroup::Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri)
 
     this->uri_ = groupUri;
     AutoLilvNode uri = lilv_new_uri(pWorld, groupUri.c_str());
-    LilvNode *symbolNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris.symbolUri, nullptr);
+    LilvNode *symbolNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris.lv2core__symbol, nullptr);
     symbol_ = nodeAsString(symbolNode);
-    LilvNode *nameNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris.nameUri, nullptr);
+    LilvNode *nameNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris.lv2core__name, nullptr);
     name_ = nodeAsString(nameNode);
 }
 
@@ -1269,6 +1402,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      json_map::reference("is_audio_port", &Lv2PortInfo::is_audio_port_),
      json_map::reference("is_atom_port", &Lv2PortInfo::is_audio_port_),
      json_map::reference("is_cv_port", &Lv2PortInfo::is_cv_port_),
+     json_map::reference("connection_optional", &Lv2PortInfo::connection_optional_),
 
      json_map::reference("is_valid", &Lv2PortInfo::is_valid_),
 
@@ -1330,29 +1464,31 @@ json_map::storage_type<Lv2PluginUiPortGroup> Lv2PluginUiPortGroup::jmap{{
     MAP_REF(Lv2PluginUiPortGroup, program_list_id),
 }};
 
-json_map::storage_type<Lv2PluginUiControlPort> Lv2PluginUiControlPort::jmap{{
-    json_map::reference("symbol", &Lv2PluginUiControlPort::symbol_),
-    json_map::reference("name", &Lv2PluginUiControlPort::name_),
-    MAP_REF(Lv2PluginUiControlPort, index),
-    MAP_REF(Lv2PluginUiControlPort, min_value),
-    MAP_REF(Lv2PluginUiControlPort, max_value),
-    MAP_REF(Lv2PluginUiControlPort, default_value),
-    MAP_REF(Lv2PluginUiControlPort, is_logarithmic),
-    MAP_REF(Lv2PluginUiControlPort, display_priority),
+json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
+    json_map::reference("symbol", &Lv2PluginUiPort::symbol_),
+    json_map::reference("name", &Lv2PluginUiPort::name_),
+    MAP_REF(Lv2PluginUiPort, index),
+    MAP_REF(Lv2PluginUiPort, is_input),
+    MAP_REF(Lv2PluginUiPort, min_value),
+    MAP_REF(Lv2PluginUiPort, max_value),
+    MAP_REF(Lv2PluginUiPort, default_value),
+    MAP_REF(Lv2PluginUiPort, is_logarithmic),
+    MAP_REF(Lv2PluginUiPort, display_priority),
 
-    MAP_REF(Lv2PluginUiControlPort, range_steps),
-    MAP_REF(Lv2PluginUiControlPort, integer_property),
-    MAP_REF(Lv2PluginUiControlPort, enumeration_property),
-    MAP_REF(Lv2PluginUiControlPort, not_on_gui),
-    MAP_REF(Lv2PluginUiControlPort, toggled_property),
-    MAP_REF(Lv2PluginUiControlPort, scale_points),
-    MAP_REF(Lv2PluginUiControlPort, port_group),
+    MAP_REF(Lv2PluginUiPort, range_steps),
+    MAP_REF(Lv2PluginUiPort, integer_property),
+    MAP_REF(Lv2PluginUiPort, enumeration_property),
+    MAP_REF(Lv2PluginUiPort, not_on_gui),
+    MAP_REF(Lv2PluginUiPort, toggled_property),
+    MAP_REF(Lv2PluginUiPort, scale_points),
+    MAP_REF(Lv2PluginUiPort, port_group),
 
-    json_map::enum_reference("units", &Lv2PluginUiControlPort::units_, get_units_enum_converter()),
-    MAP_REF(Lv2PluginUiControlPort, comment),
-    MAP_REF(Lv2PluginUiControlPort, is_bypass),
-    MAP_REF(Lv2PluginUiControlPort, is_program_controller),
-    MAP_REF(Lv2PluginUiControlPort, custom_units),
+    json_map::enum_reference("units", &Lv2PluginUiPort::units_, get_units_enum_converter()),
+    MAP_REF(Lv2PluginUiPort, comment),
+    MAP_REF(Lv2PluginUiPort, is_bypass),
+    MAP_REF(Lv2PluginUiPort, is_program_controller),
+    MAP_REF(Lv2PluginUiPort, custom_units),
+    MAP_REF(Lv2PluginUiPort, connection_optional),
 
 }};
 
