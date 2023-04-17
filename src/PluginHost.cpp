@@ -554,33 +554,6 @@ void PluginHost::Load(const char *lv2Path)
 #endif
 };
 
-class NodesAutoFree
-{
-    LilvNodes *nodes;
-
-    // const LilvNode* returns must not be freed, by convention.
-    NodesAutoFree(const LilvNodes *nodes)
-    {
-    }
-
-public:
-    NodesAutoFree(LilvNodes *nodes)
-    {
-        this->nodes = nodes;
-    }
-    operator const LilvNodes *()
-    {
-        return this->nodes;
-    }
-    operator bool()
-    {
-        return this->nodes != nullptr;
-    }
-    ~NodesAutoFree()
-    {
-        lilv_nodes_free(this->nodes);
-    }
-};
 
 static std::vector<std::string> nodeAsStringArray(const LilvNodes *nodes)
 {
@@ -614,7 +587,7 @@ static bool ports_sort_compare(std::shared_ptr<Lv2PortInfo> &p1, const std::shar
 
 bool Lv2PluginInfo::HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin)
 {
-    NodesAutoFree nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris.presets__preset);
+    AutoLilvNodes nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris.presets__preset);
     bool result = false;
     LILV_FOREACH(nodes, iNode, nodes)
     {
@@ -711,16 +684,16 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     const LilvPluginClass *pClass = lilv_plugin_get_class(pPlugin);
     this->plugin_class_ = nodeAsString(lilv_plugin_class_get_uri(pClass));
 
-    NodesAutoFree required_features = lilv_plugin_get_required_features(pPlugin);
+    AutoLilvNodes required_features = lilv_plugin_get_required_features(pPlugin);
     this->required_features_ = nodeAsStringArray(required_features);
 
-    NodesAutoFree supported_features = lilv_plugin_get_supported_features(pPlugin);
+    AutoLilvNodes supported_features = lilv_plugin_get_supported_features(pPlugin);
     this->supported_features_ = nodeAsStringArray(supported_features);
 
-    NodesAutoFree optional_features = lilv_plugin_get_optional_features(pPlugin);
+    AutoLilvNodes optional_features = lilv_plugin_get_optional_features(pPlugin);
     this->optional_features_ = nodeAsStringArray(optional_features);
 
-    NodesAutoFree extensions = lilv_plugin_get_extension_data(pPlugin);
+    AutoLilvNodes extensions = lilv_plugin_get_extension_data(pPlugin);
     this->extensions_ = nodeAsStringArray(extensions);
 
     AutoLilvNode comment = lv2Host->get_comment(this->uri_);
@@ -827,6 +800,7 @@ std::vector<std::string> supportedFeatures = {
     LV2_STATE__loadDefaultState,
     LV2_STATE__makePath,
     LV2_STATE__mapPath,
+    LV2_STATE__freePath,
     LV2_CORE__inPlaceBroken,
 
     // UI features that we can ignore, since we won't load their ui.
@@ -908,7 +882,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     // typo in invada plugins.
     this->is_logarithmic_ |= lilv_port_has_property(plugin, pPort, host->lilvUris.invada_portprops__logarithmic);
 
-    NodesAutoFree priority_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.port__display_priority);
+    AutoLilvNodes priority_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.port__display_priority);
 
     this->display_priority_ = -1;
     if (priority_nodes)
@@ -920,7 +894,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
         }
     }
 
-    NodesAutoFree range_steps_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.port_range_steps);
+    AutoLilvNodes range_steps_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.port_range_steps);
     this->range_steps_ = 0;
     if (range_steps_nodes)
     {
@@ -1458,6 +1432,7 @@ json_map::storage_type<Lv2PluginClass> Lv2PluginClass::jmap{{
 }};
 
 json_map::storage_type<Lv2PluginUiPortGroup> Lv2PluginUiPortGroup::jmap{{
+    MAP_REF(Lv2PluginUiPortGroup, uri),
     MAP_REF(Lv2PluginUiPortGroup, symbol),
     MAP_REF(Lv2PluginUiPortGroup, name),
     MAP_REF(Lv2PluginUiPortGroup, parent_group),

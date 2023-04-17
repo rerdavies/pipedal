@@ -207,7 +207,7 @@ const FilePropertyControl =
                             <Typography variant="caption" display="block" noWrap style={{
                                 width: "100%",
                                 textAlign: "start"
-                            }}> {fileProperty.name}</Typography>
+                            }}> {fileProperty.label}</Typography>
                         </div>
                         {/* CONTROL SECTION */}
 

@@ -17,6 +17,7 @@
     "@types/react-dom": "^17.0.8",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-remark": "^2.1.0",
     "react-scripts": "5.0.0",
     "react-virtualized-auto-sizer": "^1.0.6",
     "react-window": "^1.8.6",
@@ -33,7 +34,12 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "eqeqeq": 2,
+      "no-unused-expressions": 2,
+      "@typescript-eslint/no-unused-vars": 2
+    }
   },
   "browserslist": {
     "production": [

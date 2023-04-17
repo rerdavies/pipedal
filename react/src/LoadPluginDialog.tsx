@@ -432,7 +432,7 @@ export const LoadPluginDialog =
                 if (!uiPlugin) {
                     return (<Fragment />);
                 } else {
-                    let stereoIndicator = this.stereo_indicator(uiPlugin)
+                    let stereoIndicator = "\u00A0" + this.stereo_indicator(uiPlugin)
                     if (uiPlugin.author_name !== "") {
                         if (uiPlugin.author_homepage !== "") {
                             return (<Fragment>
@@ -440,21 +440,24 @@ export const LoadPluginDialog =
                                     <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.name + ",\u00A0"}</Typography>
                                 </div>
                                 <div style={{flex: "0 1 auto"}}>
-                                    <a href={uiPlugin.author_homepage} target="_blank" >
+                                    <a href={uiPlugin.author_homepage} target="_blank" rel="noopener noreferrer" >
                                         <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.author_name}</Typography>
                                     </a>
+                                </div>
+                                <div style={{flex: "0 0 auto"}}>
+                                    <Typography variant='body2' color="textSecondary" noWrap>{stereoIndicator}</Typography>
                                 </div>
                             </Fragment>);
 
                         } else {
                             return (<Fragment>
-                                <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.name + ", " + uiPlugin.author_name}</Typography>
+                                <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.name + ", " + uiPlugin.author_name + stereoIndicator}</Typography>
                             </Fragment>);
                         }
                     }
                     return (
                         <Fragment>
-                            <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin?.name ?? ""}</Typography>
+                            <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin?.name ?? "" + stereoIndicator}</Typography>
                         </Fragment>);
 
                 }
@@ -545,7 +548,7 @@ export const LoadPluginDialog =
                                 break;
                             }
                         }
-                        if (position != -1) {
+                        if (position !== -1) {
                             element.scrollToItem({ rowIndex: Math.floor(position / this.state.grid_cell_columns) });
                         }
                     }

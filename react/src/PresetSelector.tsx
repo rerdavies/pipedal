@@ -186,7 +186,6 @@ const PresetSelector =
                 let currentPresets = this.model.presets.get();
                 let item = currentPresets.getItem(currentPresets.selectedInstanceId);
                 if (item == null) return;
-                let name = item.name;
                 this.model.newPresetItem(currentPresets.selectedInstanceId)
                     .then((instanceId) => {
                         this.model.loadPreset(instanceId);

@@ -35,10 +35,15 @@ import { PiPedalModelFactory } from "./PiPedalModel";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { UiPlugin, UiControl } from './Lv2Plugin';
 import PluginIcon from './PluginIcon';
+import { Remark } from 'react-remark';
 
+ /* eslint-disable */
+let myTheme: Theme| undefined = undefined;
 
 const styles = (theme: Theme) =>
-    createStyles({
+{
+    myTheme = theme;
+    return createStyles({
         root: {
             margin: 0,
             padding: theme.spacing(2),
@@ -50,7 +55,7 @@ const styles = (theme: Theme) =>
             color: theme.palette.grey[500],
         },
     });
-
+};
 export interface PluginInfoDialogTitleProps extends WithStyles<typeof styles> {
     id: string;
     children: React.ReactNode;
@@ -116,23 +121,23 @@ function ioDescription(plugin: UiPlugin): string {
 
 }
 
-function makeParagraphs(description: string) {
-    description = description.replaceAll('\r', '');
-    description = description.replaceAll('\n\n', '\r');
-    description = description.replaceAll('\n', ' ');
+// function makeParagraphs(description: string) {
+//     description = description.replaceAll('\r', '');
+//     description = description.replaceAll('\n\n', '\r');
+//     description = description.replaceAll('\n', ' ');
 
-    let paragraphs: string[] = description.split('\r');
-    return (
-        <div style={{ paddingLeft: "24px" }}>
-            {paragraphs.map((para) => (
-                <Typography variant="body2" paragraph >
-                    {para}
-                </Typography>
-            ))}
-        </div>
+//     let paragraphs: string[] = description.split('\r');
+//     return (
+//         <div style={{ paddingLeft: "24px" }}>
+//             {paragraphs.map((para) => (
+//                 <Typography variant="body2" paragraph >
+//                     {para}
+//                 </Typography>
+//             ))}
+//         </div>
 
-    );
-}
+//     );
+// }
 function makeControls(controls: UiControl[]) {
     let hasComments = false;
 
@@ -146,7 +151,7 @@ function makeControls(controls: UiControl[]) {
         let trs: React.ReactElement[] = [];
         for (let i = 0; i < controls.length; ++i) {
             let control = controls[i];
-
+            if (!(control.not_on_gui) && control.is_input)
             trs.push((
                 <tr>
                     <td style={{ verticalAlign: "top" }}>
@@ -246,37 +251,66 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                         </div>
                     </MuiDialogTitle>
                     <PluginInfoDialogContent dividers style={{ width: "100%", maxHeight: "80%", overflowX: "hidden" }}>
-                        <div style={{ width: "100%",display: "flex", flexFlow: "row", justifyItems: "stretch", flexWrap: "nowrap" }} >
-                            <div style={{ flex: "1 1 100%" }}>
-                                <Typography gutterBottom >
+                        <div style={{ width: "100%", display: "flex", flexFlow: "row", justifyItems: "stretch", flexWrap: "nowrap" }} >
+                            <div style={{ flex: "1 1 auto", whiteSpace: "nowrap",minWidth: "auto" }}>
+                                <Typography gutterBottom variant="body2" >
                                     Author:&nbsp;
                                     {(plugin.author_homepage !== "")
-                                        ? <a href={plugin.author_homepage} target="_blank" rel="noreferrer">{plugin.author_name}</a>
-                                        : (
-                                            plugin.author_name
+                                        ? (<a href={plugin.author_homepage} target="_blank" rel="noopener noreferrer">
+                                                {plugin.author_name}
+                                        </a>
                                         )
+                                        : (
+                                            <span>{plugin.author_name}</span>
+                                        )
+                                        
                                     }
                                 </Typography>
                             </div>
                             <div style={{ flex: "0 0 auto" }}>
-                                <Typography gutterBottom >
+                                <Typography gutterBottom variant="body2" >
                                     {ioDescription(plugin)}
                                 </Typography>
                             </div>
 
                         </div>
-                        <Typography variant="body1" gutterBottom style={{ paddingTop: "1em" }}>
+                        <Typography variant="body2" gutterBottom style={{ paddingTop: "1em" }}>
                             Controls:
                         </Typography>
                         {
                             makeControls(plugin.controls)
                         }
-                        <Typography gutterBottom style={{ paddingTop: "1em" }}>
+                        <Typography gutterBottom variant="body2" style={{ paddingTop: "1em" }}>
                             Description:
                         </Typography>
-                        {
-                            (plugin.description !== "") && makeParagraphs(plugin.description)
-                        }
+                        <div style={{ marginLeft: 24, marginTop: 16 }}>
+                            <Remark 
+                                rehypeReactOptions={{
+                                    components: {
+                                        p: (props: any) => {
+                                            // return (
+                                            //     <p className="MuiTypography-root MuiTypography-body2" {...props} />
+                                            // );
+                                            return (
+                                                <Typography variant="body2" paragraph={true} {...props} />
+                                            );
+                                    
+                                        },
+                                        code: (props: any) => {
+                                            return (<code style={{fontSize: 14}} {...props} />);
+                                        },
+                                        a: (props: any) => {
+                                            return (
+                                                <a target="_blank" {...props} />
+                                            );
+
+                                        }
+                                    },
+                                }}
+                            >
+                                {plugin.description}
+                            </Remark>
+                        </div>
                     </PluginInfoDialogContent>
                     <PluginInfoDialogActions>
                         <Button autoFocus onClick={handleClose} color="primary" style={{ width: "130px" }}>

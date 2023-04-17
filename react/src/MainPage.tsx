@@ -45,7 +45,7 @@ import PluginInfoDialog from './PluginInfoDialog';
 import { GetControlView } from './ControlViewFactory';
 import MidiBindingsDialog from './MidiBindingsDialog';
 import PluginPresetSelector from './PluginPresetSelector';
-import SaveIconOutline from '@mui/icons-material/Save';
+
 
 
 const SPLIT_CONTROLBAR_THRESHHOLD = 650;
@@ -194,7 +194,7 @@ export const MainPage =
             }
             onPedalboardChanged(value: Pedalboard) {
                 let selectedItem = -1;
-                if (this.state.selectedPedal == Pedalboard.START_CONTROL || this.state.selectedPedal == Pedalboard.END_CONTROL) {
+                if (this.state.selectedPedal === Pedalboard.START_CONTROL || this.state.selectedPedal === Pedalboard.END_CONTROL) {
                     selectedItem = this.state.selectedPedal;
                 } else if (value.hasItem(this.state.selectedPedal)) {
                     selectedItem = this.state.selectedPedal;

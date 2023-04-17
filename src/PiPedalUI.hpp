@@ -93,11 +93,12 @@ namespace pipedal {
     };
     class UiFileProperty {
     private:
-        std::string name_;
+        std::string label_;
         std::int64_t index_ = -1;
         std::string directory_;
         std::vector<PiPedalFileType> fileTypes_;
         std::string patchProperty_;
+        std::string portGroup_;
     public:
         using ptr = std::shared_ptr<UiFileProperty>;
         UiFileProperty() { }
@@ -105,9 +106,10 @@ namespace pipedal {
         UiFileProperty(const std::string&name, const std::string&patchProperty,const std::string &directory);
 
 
-        const std::string &name() const { return name_; }
+        const std::string &label() const { return label_; }
         int64_t index() const { return index_; }
         const std::string &directory() const { return directory_; }
+        const std::string&portGroup() const { return portGroup_; }
 
         const std::vector<PiPedalFileType> &fileTypes() const { return fileTypes_; }
 

@@ -23,7 +23,7 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { UiPlugin, UiControl, PiPedalFileProperty,ScalePoint} from './Lv2Plugin';
+import { UiPlugin, UiControl, PiPedalFileProperty, ScalePoint } from './Lv2Plugin';
 import {
     Pedalboard, PedalboardItem, ControlValue
 } from './Pedalboard';
@@ -48,7 +48,7 @@ export const StandardItemSize = { width: 80, height: 110 };
 const LANDSCAPE_HEIGHT_BREAK = 500;
 
 
-function makeIoPluginInfo(name: string, uri: string) : UiPlugin {
+function makeIoPluginInfo(name: string, uri: string): UiPlugin {
     let result = new UiPlugin();
     result.name = name;
     result.uri = uri;
@@ -58,12 +58,12 @@ function makeIoPluginInfo(name: string, uri: string) : UiPlugin {
     volumeControl.index = 0;
     volumeControl.is_input = true;
 
-    volumeControl.min_value = -60; 
+    volumeControl.min_value = -60;
     volumeControl.max_value = 30;
     volumeControl.default_value = 0;
     volumeControl.units = Units.db;
     volumeControl.scale_points = [
-        new ScalePoint().deserialize({label: "-INF",value: -60})
+        new ScalePoint().deserialize({ label: "-INF", value: -60 })
     ];
     result.controls = [
         volumeControl
@@ -71,11 +71,11 @@ function makeIoPluginInfo(name: string, uri: string) : UiPlugin {
     return result;
 }
 
-let startPluginInfo: UiPlugin = 
-makeIoPluginInfo("Input",Pedalboard.START_PEDALBOARD_ITEM_URI);
+let startPluginInfo: UiPlugin =
+    makeIoPluginInfo("Input", Pedalboard.START_PEDALBOARD_ITEM_URI);
 
-let endPluginInfo: UiPlugin = 
-makeIoPluginInfo("Output",Pedalboard.END_PEDALBOARD_ITEM_URI);
+let endPluginInfo: UiPlugin =
+    makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
 
 
 const styles = (theme: Theme) => createStyles({
@@ -181,6 +181,7 @@ const styles = (theme: Theme) => createStyles({
         borderRadius: 8,
         elevation: 12,
         display: "flex",
+        textOverflow: "ellipsis",
         flexDirection: "row", flexWrap: "nowrap",
         flex: "0 0 auto"
     },
@@ -188,9 +189,12 @@ const styles = (theme: Theme) => createStyles({
         position: "absolute",
         top: -15,
         background: "white",
+        textOverflow: "ellipsis",
+        minWidth: 0,
         marginLeft: 20,
         paddingLeft: 8,
-        paddingRight: 8
+        paddingRight: 8,
+        margin_right: 28
     },
     portGroupControls: {
         display: "flex",
@@ -203,11 +207,13 @@ const styles = (theme: Theme) => createStyles({
 });
 
 export class ControlGroup {
-    constructor(name: string, controls: ReactNode[]) {
+    constructor(name: string, indexes: number[], controls: ReactNode[]) {
         this.name = name;
+        this.indexes = indexes;
         this.controls = controls;
     }
     name: string;
+    indexes: number[];
     controls: React.ReactNode[];
 }
 
@@ -320,21 +326,20 @@ const PluginControlView =
             makeFilePropertyUI(fileProperty: PiPedalFileProperty): ReactNode {
                 return ((
 
-                    <FilePropertyControl instanceId={this.props.instanceId} 
+                    <FilePropertyControl instanceId={this.props.instanceId}
                         fileProperty={fileProperty}
-                        onFileClick={(fileProperty,selectedFile) => {
-                            this.setState({showFileDialog: true,dialogFileProperty: fileProperty,dialogFileValue: selectedFile});
+                        onFileClick={(fileProperty, selectedFile) => {
+                            this.setState({ showFileDialog: true, dialogFileProperty: fileProperty, dialogFileValue: selectedFile });
                         }}
                     />
                 ));
             }
             makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
                 let symbol = uiControl.symbol;
-                if (!uiControl.is_input)
-                {
+                if (!uiControl.is_input) {
                     return (
                         <PluginOutputControl instanceId={this.props.instanceId} uiControl={uiControl} />
-                        
+
                     );
                 }
 
@@ -362,40 +367,82 @@ const PluginControlView =
 
             getStandardControlNodes(plugin: UiPlugin, controlValues: ControlValue[]): ControlNodes {
                 let result: ControlNodes = [];
+                let portGroupMap: { [id: string]: ControlGroup } = {};
 
                 for (let i = 0; i < plugin.controls.length; ++i) {
                     let pluginControl = plugin.controls[i];
                     if (!pluginControl.not_on_gui) {
-                        if (pluginControl.port_group !== "") {
-                            let portGroup = pluginControl.port_group;
+                        if (pluginControl.port_group !== "" && plugin.getPortGroupBySymbol(pluginControl.port_group)) {
+                            let portGroup = nullCast(plugin.getPortGroupBySymbol(pluginControl.port_group));
+
                             let groupControls: ReactNode[] = [];
+                            let indexes: number[] = [];
                             groupControls.push(
                                 this.makeStandardControl(pluginControl, controlValues)
                             );
-                            while (i + 1 < plugin.controls.length && plugin.controls[i + 1].port_group === portGroup) {
+                            indexes.push(pluginControl.index);
+                            while (i + 1 < plugin.controls.length && plugin.controls[i + 1].port_group === pluginControl.port_group) {
                                 ++i;
                                 pluginControl = plugin.controls[i];
                                 if (!pluginControl.not_on_gui) {
                                     groupControls.push(
-                                        this.makeStandardControl(pluginControl,controlValues)
+                                        this.makeStandardControl(pluginControl, controlValues)
                                     )
+                                    indexes.push(pluginControl.index);
                                 }
                             }
+                            let controlGroup = new ControlGroup(portGroup.name, indexes, groupControls);
                             result.push(
-                                new ControlGroup(plugin.getPortGroup(portGroup).name, groupControls)
+                                controlGroup
                             )
+                            portGroupMap[pluginControl.port_group] = controlGroup;
                         } else {
                             result.push(
-                                this.makeStandardControl(pluginControl,controlValues)
+                                this.makeStandardControl(pluginControl, controlValues)
                             );
                         }
                     }
                 }
                 for (let i = 0; i < plugin.fileProperties.length; ++i) {
                     let fileProperty = plugin.fileProperties[i];
-                    result.push(
-                        this.makeFilePropertyUI(fileProperty)
-                    );
+                    let filePropertyUi = this.makeFilePropertyUI(fileProperty);
+
+                    if (fileProperty.portGroup !== "" && plugin.getPortGroupByUri(fileProperty.portGroup)) {
+                        let portGroup = nullCast(plugin.getPortGroupByUri(fileProperty.portGroup));
+                        let controlGroup = portGroupMap[portGroup.symbol];
+                        if (controlGroup) {
+                            let insertPosition = controlGroup.indexes.length;
+                            if (fileProperty.index !== -1) {
+                                for (let i = 0; i < controlGroup.controls.length; ++i) {
+                                    if (controlGroup.indexes[i] >= fileProperty.index) {
+                                        insertPosition = i;
+                                        break;
+                                    }
+                                }
+                            }
+                            let index = fileProperty.index !== -1 ? fileProperty.index : 100;
+                            controlGroup.controls.splice(insertPosition, 0, filePropertyUi);
+                            controlGroup.indexes.splice(insertPosition, 0, index);
+
+                        } else {
+                            let index = fileProperty.index !== -1 ? fileProperty.index : 100;
+                            let controlGroup = new ControlGroup(
+                                portGroup.name,
+                                [index],
+                                [filePropertyUi]);
+                            result.push(
+                                controlGroup
+                            );
+                            portGroupMap[portGroup.symbol] = controlGroup;
+
+                        }
+                    } else if (fileProperty.index !== -1) {
+                        result.splice(fileProperty.index, 0, filePropertyUi);
+                    } else {
+                        result.push(
+                            filePropertyUi
+                        );
+                    }
                 }
                 return result;
             }
@@ -454,7 +501,7 @@ const PluginControlView =
                         result.push((
                             <div className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
                                 <div className={classes.portGroupTitle}>
-                                    <Typography noWrap variant="caption">{controlGroup.name}</Typography>
+                                    <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
                                 </div>
                                 <div className={classes.portGroupControls} >
                                     {
@@ -476,22 +523,20 @@ const PluginControlView =
                 return result;
             }
 
-            static startPluginInfo: UiPlugin = 
-                makeIoPluginInfo("Input",Pedalboard.START_PEDALBOARD_ITEM_URI);
+            static startPluginInfo: UiPlugin =
+                makeIoPluginInfo("Input", Pedalboard.START_PEDALBOARD_ITEM_URI);
 
-            static endPluginInfo: UiPlugin = 
-                makeIoPluginInfo("Output",Pedalboard.END_PEDALBOARD_ITEM_URI);
+            static endPluginInfo: UiPlugin =
+                makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
 
 
             render(): ReactNode {
                 let classes = this.props.classes;
                 let pedalboardItem: PedalboardItem;
                 let pedalboard = this.model.pedalboard.get();
-                if (this.props.instanceId == Pedalboard.START_CONTROL)
-                {
+                if (this.props.instanceId === Pedalboard.START_CONTROL) {
                     pedalboardItem = pedalboard.makeStartItem();
-                } else if (this.props.instanceId == Pedalboard.END_CONTROL)
-                {
+                } else if (this.props.instanceId === Pedalboard.END_CONTROL) {
                     pedalboardItem = pedalboard.makeEndItem();
                 } else {
                     pedalboardItem = pedalboard.getItem(this.props.instanceId);
@@ -504,14 +549,12 @@ const PluginControlView =
 
 
                 let plugin: UiPlugin;
-                if (pedalboardItem.isStart())
-                {
+                if (pedalboardItem.isStart()) {
                     plugin = startPluginInfo;
-                    controlValues = [new ControlValue("volume_db",pedalboard.input_volume_db)];
-                } else if (pedalboardItem.isEnd())
-                {
+                    controlValues = [new ControlValue("volume_db", pedalboard.input_volume_db)];
+                } else if (pedalboardItem.isEnd()) {
                     plugin = endPluginInfo;
-                    controlValues = [new ControlValue("volume_db",pedalboard.output_volume_db)];
+                    controlValues = [new ControlValue("volume_db", pedalboard.output_volume_db)];
                 } else {
                     plugin = nullCast(this.model.getUiPlugin(pedalboardItem.uri));
                 }
@@ -553,27 +596,27 @@ const PluginControlView =
                                 )
                             }
                         </div>
-                        <FilePropertyDialog open={this.state.showFileDialog} 
-                            fileProperty={this.state.dialogFileProperty} 
-                            selectedFile={this.state.dialogFileValue}  
-                            onCancel={()=> { this.setState({ showFileDialog: false});}}
-                            onOk={(fileProperty,selectedFile)=> { 
+                        <FilePropertyDialog open={this.state.showFileDialog}
+                            fileProperty={this.state.dialogFileProperty}
+                            selectedFile={this.state.dialogFileValue}
+                            onCancel={() => { this.setState({ showFileDialog: false }); }}
+                            onOk={(fileProperty, selectedFile) => {
 
                                 this.model.setPatchProperty(
                                     this.props.instanceId,
                                     fileProperty.patchProperty,
                                     JsonAtom.Path(selectedFile)
                                 )
-                                .then( () => {
+                                    .then(() => {
 
-                                })
-                                .catch((error) => 
-                                {
-                                    this.model.showAlert("setPatchProperty failed: " +error);
-                                });
-                                this.setState({ showFileDialog: false});}
+                                    })
+                                    .catch((error) => {
+                                        this.model.showAlert("setPatchProperty failed: " + error);
+                                    });
+                                this.setState({ showFileDialog: false });
                             }
-                            />
+                            }
+                        />
                         <FullScreenIME uiControl={this.state.imeUiControl} value={this.state.imeValue}
 
                             onChange={(key, value) => this.onImeValueChange(key, value)}

@@ -96,7 +96,7 @@ const SearchControl = withStyles(styles, { withTheme: true })(
                     )
 
                     }
-                    <Input style={{
+                    <Input spellCheck={false} style={{
                         flex: "1 1", visibility: (this.props.collapsed ?? false) ? "collapse" : "visible", marginRight: 12, height: 32,
                     }}
                         inputRef={this.getInputRef()}

@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-import {PiPedalArgumentError} from "./PiPedalError";
+
 import Units from './Units';
 
 interface Deserializable<T> {
@@ -83,6 +83,7 @@ export class  Port implements Deserializable<Port> {
 
 export class PortGroup {
     deserialize(input: any): PortGroup {
+        this.uri = input.uri;
         this.symbol = input.symbol;
         this.name = input.name;
         this.parent_group = input.parent_group;
@@ -99,6 +100,7 @@ export class PortGroup {
         return result;
     }
 
+    uri: string = "";
     symbol: string = "";
     name: string = "";
     parent_group: string = "";
@@ -151,10 +153,12 @@ export class UiPropertyNotification {
 export class PiPedalFileProperty {
         deserialize(input: any): PiPedalFileProperty
         {
-            this.name = input.name;
+            this.label = input.label;
             this.fileTypes = PiPedalFileType.deserialize_array(input.fileTypes);
             this.patchProperty = input.patchProperty;
             this.directory = input.directory;
+            this.index = input.index;
+            this.portGroup = input.portGroup;
             return this;
         }
         static deserialize_array(input: any): PiPedalFileProperty[]
@@ -198,10 +202,12 @@ export class PiPedalFileProperty {
             return false;
         }
 
-        name:   string = "";
+        label:   string = "";
         fileTypes: PiPedalFileType[] = [];
         patchProperty: string = "";
         directory: string = "";
+        index: number = -1;
+        portGroup: string = "";
 
 };
 export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
@@ -635,9 +641,22 @@ export class UiPlugin implements Deserializable<UiPlugin> {
             }
         } 
         return undefined;
+    }
+    
+    getPortGroupByUri(uri: string) :PortGroup | null
+    {
+        for (let i = 0; i < this.port_groups.length; ++i)
+        {
+            let port_group = this.port_groups[i];
+            if (port_group.uri === uri)
+            {
+                return port_group;
+            }
+        }
+        return null;
 
     }
-    getPortGroup(symbol: string): PortGroup
+    getPortGroupBySymbol(symbol: string): PortGroup | null
     {
         for (let i = 0; i < this.port_groups.length; ++i)
         {
@@ -647,7 +666,7 @@ export class UiPlugin implements Deserializable<UiPlugin> {
                 return port_group;
             }
         }
-        throw new PiPedalArgumentError("Port group not found.");
+        return null;
     }
 
     uri:                 string = "";

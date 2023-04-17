@@ -100,18 +100,18 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
 {
     auto pWorld = pHost->getWorld();
 
-    AutoLilvNode name = lilv_world_get(
+    AutoLilvNode label = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.lv2core__name,
+        pHost->lilvUris.rdfs__label,
         nullptr);
-    if (name)
+    if (label)
     {
-        this->name_ = name.AsString();
+        this->label_ = label.AsString();
     }
     else
     {
-        this->name_ = "File";
+        this->label_ = "File";
     }
     AutoLilvNode index = lilv_world_get(
         pWorld,
@@ -120,7 +120,7 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
         nullptr);
     if (index)
     {
-        this->index_ = name.AsInt();
+        this->index_ = index.AsInt(-1);
     }
     else
     {
@@ -157,6 +157,12 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     else
     {
         throw std::logic_error("PiPedal FileProperty is missing pipedalui:patchProperty value.");
+    }
+
+    AutoLilvNode portGroup = lilv_world_get(pWorld,node,pHost->lilvUris.portgroups__group,nullptr);
+    if (portGroup)
+    {
+        this->portGroup_ = portGroup.AsUri();
     }
 
     this->fileTypes_ = PiPedalFileType::GetArray(pHost, node, pHost->lilvUris.pipedalUI__fileTypes);
@@ -297,7 +303,7 @@ UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
 }
 
 UiFileProperty::UiFileProperty(const std::string &name, const std::string &patchProperty, const std::string &directory)
-    : name_(name),
+    : label_(name),
       patchProperty_(patchProperty),
       directory_(directory)
 {
@@ -320,9 +326,10 @@ JSON_MAP_REFERENCE(PiPedalFileType, fileExtension)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(UiFileProperty)
-JSON_MAP_REFERENCE(UiFileProperty, name)
+JSON_MAP_REFERENCE(UiFileProperty, label)
 JSON_MAP_REFERENCE(UiFileProperty, index)
 JSON_MAP_REFERENCE(UiFileProperty, directory)
-JSON_MAP_REFERENCE(UiFileProperty, fileTypes)
 JSON_MAP_REFERENCE(UiFileProperty, patchProperty)
+JSON_MAP_REFERENCE(UiFileProperty, fileTypes)
+JSON_MAP_REFERENCE(UiFileProperty, portGroup)
 JSON_MAP_END()

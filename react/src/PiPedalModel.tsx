@@ -38,7 +38,6 @@ import GovernorSettings from './GovernorSettings';
 import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
-import Xxx from './XxxSnippet';
 
 
 export enum State {
@@ -1176,7 +1175,7 @@ export class PiPedalModel //implements PiPedalModel
         let  changed: boolean = false;
 
         let pedalboard = this.pedalboard.get();
-        if (pedalboard.input_volume_db != volume_db)
+        if (pedalboard.input_volume_db !== volume_db)
         {
             let newPedalboard = pedalboard.clone();
             newPedalboard.input_volume_db = volume_db;
@@ -1207,7 +1206,7 @@ export class PiPedalModel //implements PiPedalModel
         let  changed: boolean = false;
 
         let pedalboard = this.pedalboard.get();
-        if (pedalboard.output_volume_db != volume_db)
+        if (pedalboard.output_volume_db !== volume_db)
         {
             let newPedalboard = pedalboard.clone();
             newPedalboard.output_volume_db = volume_db;
@@ -1234,7 +1233,7 @@ export class PiPedalModel //implements PiPedalModel
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalboard = pedalboard.clone();
 
-        if (instanceId === Pedalboard.START_CONTROL && key == "volume_db")
+        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db")
         {
             this._setInputVolume(value,notifyServer);
             return;
@@ -1371,7 +1370,7 @@ export class PiPedalModel //implements PiPedalModel
         // mouse is down. Don't update EVERYBODY, but we must change 
         // the control on the running audio plugin.
         // TODO: respect "expensive" port attribute.
-        if (instanceId === Pedalboard.START_CONTROL && key == "volume_db")
+        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db")
         {
             this.previewInputVolume(value);
             return;
@@ -1391,7 +1390,7 @@ export class PiPedalModel //implements PiPedalModel
         this.updateVst3State(newPedalboard);
 
         let result = newPedalboard.deleteItem(instanceId);
-        if (result != null) {
+        if (result !== null) {
             this.pedalboard.set(newPedalboard);
             this.updateServerPedalboard();
         }

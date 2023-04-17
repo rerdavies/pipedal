@@ -340,7 +340,7 @@ namespace pipedal
         Lv2PluginInfo() {}
 
     private:
-        std::shared_ptr<PiPedalUI> FindWritablePathProperties(PluginHost *lv2Host,const LilvPlugin*pPlugin);
+        std::shared_ptr<PiPedalUI> FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin *pPlugin);
 
         bool HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin);
         std::string bundle_path_;
@@ -443,12 +443,15 @@ namespace pipedal
     class Lv2PluginUiPortGroup
     {
     private:
+        std::string uri_;
         std::string symbol_;
         std::string name_;
 
         std::string parent_group_;
         int32_t program_list_id_ = -1; // used by VST3.
     public:
+        LV2_PROPERTY_GETSET(uri)
+
         LV2_PROPERTY_GETSET(symbol)
         LV2_PROPERTY_GETSET(name)
         LV2_PROPERTY_GETSET(parent_group)
@@ -457,7 +460,9 @@ namespace pipedal
     public:
         Lv2PluginUiPortGroup() {}
         Lv2PluginUiPortGroup(Lv2PortGroup *pPortGroup)
-            : symbol_(pPortGroup->symbol()), name_(pPortGroup->name())
+            : symbol_(pPortGroup->symbol())
+            , name_(pPortGroup->name())
+            , uri_(pPortGroup->uri())
         {
         }
         Lv2PluginUiPortGroup(
@@ -479,30 +484,34 @@ namespace pipedal
         }
         Lv2PluginUiPort(const Lv2PluginInfo *pPlugin, const Lv2PortInfo *pPort)
             : symbol_(pPort->symbol()), index_(pPort->index()),
-            is_input_(pPort->is_input()), name_(pPort->name()), min_value_(pPort->min_value()), max_value_(pPort->max_value()), 
-            default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()), 
-            is_logarithmic_(pPort->is_logarithmic()), integer_property_(pPort->integer_property()), enumeration_property_(pPort->enumeration_property()), 
-            toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()), 
-            comment_(pPort->comment()), units_(pPort->units()),
-            connection_optional_(pPort->connection_optional())
+              is_input_(pPort->is_input()), name_(pPort->name()), min_value_(pPort->min_value()), max_value_(pPort->max_value()),
+              default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()),
+              is_logarithmic_(pPort->is_logarithmic()), integer_property_(pPort->integer_property()), enumeration_property_(pPort->enumeration_property()),
+              toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()),
+              comment_(pPort->comment()), units_(pPort->units()),
+              connection_optional_(pPort->connection_optional())
         {
             // Use symbols to index port groups, instead of uris.
             // symbols are guaranteed to be unique.
-            auto &portGroup = pPort->port_group();
-            for (int i = 0; i < pPlugin->port_groups().size(); ++i)
+            const auto &portGroup = pPort->port_group();
+            if (portGroup.length() != 0)
             {
-
-                auto &p = pPlugin->port_groups()[i];
-                if (p->uri() == portGroup)
+                for (int i = 0; i < pPlugin->port_groups().size(); ++i)
                 {
-                    this->port_group_ = p->symbol();
-                    break;
+
+                    auto &p = pPlugin->port_groups()[i];
+                    if (p->symbol().length() == 0)
+                    {
+                        // supposed to be mandatory; but make up a synthetic symbol.
+                    }
+                    if (p->uri() == portGroup)
+                    {
+                        this->port_group_ = p->symbol();
+                        break;
+                    }
                 }
             }
-            is_bypass_ = name_ == "bypass"
-                || name_ == "Bypass"
-                || symbol_ == "bypass"
-                || symbol_ == "Bypass";
+            is_bypass_ = name_ == "bypass" || name_ == "Bypass" || symbol_ == "bypass" || symbol_ == "Bypass";
         }
 
     private:
@@ -645,7 +654,7 @@ namespace pipedal
             AutoLilvNode core__designation;
             AutoLilvNode portgroups__group;
             AutoLilvNode units__unit;
-            AutoLilvNode invada_units__unit; // typo in invada plugins.
+            AutoLilvNode invada_units__unit;            // typo in invada plugins.
             AutoLilvNode invada_portprops__logarithmic; // typo in invada plugins.
 
             AutoLilvNode atom__bufferType;
@@ -687,7 +696,6 @@ namespace pipedal
 
             AutoLilvNode patch__writable;
             AutoLilvNode patch__readable;
-
         };
         LilvUris lilvUris;
 

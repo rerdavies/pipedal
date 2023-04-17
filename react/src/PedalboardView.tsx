@@ -66,6 +66,7 @@ const TERMINAL_ICON_URL = "img/fx_terminal.svg";
 
 function CalculateConnection(numberOfInputs: number, numberOfOutputs: number)
 {
+
     let result = Math.min(numberOfInputs, numberOfOutputs);
     if (result > 2) result = 2;
     return result;

@@ -153,8 +153,11 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
         return hasSelection;
     }
 
-    onSelect(selectedFile: string) {
+    onSelectValue(selectedFile: string) {
         this.setState({ selectedFile: selectedFile, hasSelection: this.isFileInList(this.state.files, selectedFile) })
+    }
+    onDoubleClickValue(selectedFile: string) {
+        this.props.onOk(this.props.fileProperty,selectedFile);
     }
 
     handleDelete() {
@@ -216,7 +219,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
                             >
                                 <ArrowBackIcon fontSize="small" style={{ opacity: "0.6" }} />
                             </IconButton>
-                            <Typography display="inline" >{this.props.fileProperty.name}</Typography>
+                            <Typography display="inline" >{this.props.fileProperty.label}</Typography>
                         </div>
                     </DialogTitle>
                     <div style={{ flex: "0 0 auto", height: "1px", background: "rgba(0,0,0,0.2" }}>&nbsp;</div>
@@ -230,7 +233,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
                                         return (
                                             <ButtonBase key={this.mapKey++}
                                                 style={{ width: "320px", flex: "0 0 48px", position: "relative" }}
-                                                onClick={() => this.onSelect(value)}
+                                                onClick={() => this.onSelectValue(value)} onDoubleClick={()=> {this.onDoubleClickValue(value);}}
                                             >
                                                 <div style={{ position: "absolute", background: selectBg, width: "100%", height: "100%", borderRadius: 4 }} />
                                                 <div style={{ display: "flex", flexFlow: "row nowrap", justifyContent: "start", alignItems: "center", width: "100%", height: "100%" }}>
