@@ -45,8 +45,8 @@ jobs:
       env:
          CC:   gcc-10
          CXX:  g++-10
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      # Execute CMake BuiltTest test
-      #run: ctest -C ${{env.BUILD_TYPE}} -R BuildTest
+    #- name: Test
+    #  working-directory: ${{github.workspace}}/build
+    #  # Execute CMake BuiltTest test
+    #  run: ctest -C ${{env.BUILD_TYPE}} -R BuildTest
       
