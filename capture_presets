@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+# Copy current pipedal presets to provisioning directories.
+rm -rf default_presets/plugin_presets
+rm -rf default_presets/presets
+mkdir default_presets/plugin_presets
+mkdir default_presets/presets
+cp -r /var/pipedal/plugin_presets default_presets/plugin_presets/
+cp -r /var/pipedal/presets default_presets/presets/

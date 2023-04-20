@@ -46,6 +46,8 @@ std::vector<float *> Lv2Pedalboard::AllocateAudioBuffers(int nChannels)
     return result;
 }
 
+
+
 int Lv2Pedalboard::GetControlIndex(uint64_t instanceId, const std::string &symbol)
 {
     for (int i = 0; i < realtimeEffects.size(); ++i)
@@ -60,7 +62,9 @@ int Lv2Pedalboard::GetControlIndex(uint64_t instanceId, const std::string &symbo
 }
 std::vector<float *> Lv2Pedalboard::PrepareItems(
     std::vector<PedalboardItem> &items,
-    std::vector<float *> inputBuffers)
+    std::vector<float *> inputBuffers,
+    Lv2PedalboardErrorList&errorList
+    )
 {
     for (int i = 0; i < items.size(); ++i)
     {
@@ -84,8 +88,8 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                 this->processActions.push_back(preMixAction);
 
-                std::vector<float *> topResult = PrepareItems(item.topChain(), topInputs);
-                std::vector<float *> bottomResult = PrepareItems(item.bottomChain(), bottomInputs);
+                std::vector<float *> topResult = PrepareItems(item.topChain(), topInputs,errorList);
+                std::vector<float *> bottomResult = PrepareItems(item.bottomChain(), bottomInputs,errorList);
 
                 this->processActions.push_back(
                     [pSplit](uint32_t frames)
@@ -112,6 +116,12 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                 } catch (const std::exception &e)
                 {
                     Lv2Log::warning(SS(e.what()));
+                }
+                if (pLv2Effect->HasErrorMessage())
+                {
+                    std::string error  = pLv2Effect->TakeErrorMessage();
+                    Lv2Log::error(error);
+                    errorList.push_back({item.instanceId(), error});
                 }
 
                 if (pLv2Effect)
@@ -206,7 +216,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
     return inputBuffers;
 }
 
-void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard)
+void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList)
 {
     this->pHost = pHost;
 
@@ -224,7 +234,7 @@ void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard)
         this->pedalboardInputBuffers.push_back(bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize()));
     }
 
-    auto outputs = PrepareItems(pedalboard.items(), this->pedalboardInputBuffers);
+    auto outputs = PrepareItems(pedalboard.items(), this->pedalboardInputBuffers,errorList);
     int nOutputs = pHost->GetNumberOfOutputAudioChannels();
     if (nOutputs == 1)
     {
@@ -395,6 +405,14 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
     for (int i = 0; i < this->processActions.size(); ++i)
     {
         processActions[i](samples);
+    }
+    for (size_t i = 0; i < this->effects.size(); ++i)
+    {
+        IEffect* effect = effects[i].get();
+        if (effect->HasErrorMessage())
+        {
+            ringBufferWriter->WriteLv2ErrorMessage(effect->GetInstanceId(),effect->TakeErrorMessage());
+        }
     }
     for (size_t i = 0; i < samples; ++i)
     {

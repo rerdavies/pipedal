@@ -349,7 +349,6 @@ private:
         audioDriver->Close();
 
         StopReaderThread();
-        pHost->GetHostWorkerThread()->Close();
 
 
         // release any pdealboards owned by the process thread.
@@ -1164,6 +1163,21 @@ public:
                                 RealtimeNextMidiProgramRequest request;
                                 hostReader.read(&request);
                                 pNotifyCallbacks->OnNotifyNextMidiProgram(request);
+                            } else if (command == RingBufferCommand::Lv2ErrorMessage)
+                            {
+                                size_t size;
+                                int64_t instanceId;
+                                hostReader.read(&instanceId);
+                                hostReader.read(&size);
+                                if (this->atomBuffer.size() < size+1)
+                                {
+                                    this->atomBuffer.resize(size+1);
+                                }
+                                hostReader.read(size, &(atomBuffer[0]));
+                                char *p = (char*)&(atomBuffer[0]);
+                                p[size] = 0;
+                                std::string message(p);
+                                pNotifyCallbacks->OnNotifyLv2RealtimeError(instanceId,message);
                             }
                             else
                             {
@@ -1243,6 +1257,10 @@ public:
 
         this->inputRingBuffer.reset();
         this->outputRingBuffer.reset();
+        this->hostReader.Reset();
+        this->hostWriter.Reset();
+        this->realtimeReader.Reset();
+        this->realtimeWriter.Reset();
 
         this->channelSelection = channelSelection;
 

@@ -35,6 +35,16 @@ class RealtimeVuBuffers;
 class RealtimePatchPropertyRequest;
 class RealtimeRingBufferWriter;
 
+struct Lv2PedalboardError {
+    int64_t intanceId;
+    std::string message;
+};
+
+class Lv2PedalboardErrorList: public std::vector<Lv2PedalboardError> // (forward declaration issues with a using statement)
+{
+
+};
+
 class Lv2Pedalboard {
     IHost *pHost = nullptr;
 
@@ -86,7 +96,8 @@ class Lv2Pedalboard {
 
     std::vector<float*> PrepareItems(
         std::vector<PedalboardItem> & items,
-        std::vector<float*> inputBuffers
+        std::vector<float*> inputBuffers,
+        Lv2PedalboardErrorList &errorList
         );
 
     void PrepareMidiMap(const Pedalboard&pedalboard);
@@ -99,7 +110,7 @@ public:
     Lv2Pedalboard() { }
     ~Lv2Pedalboard() { }
 
-    void Prepare(IHost *pHost,Pedalboard&pedalboard);
+    void Prepare(IHost *pHost,Pedalboard&pedalboard, Lv2PedalboardErrorList &errorList);
 
     std::vector<IEffect* > GetEffects() { return realtimeEffects; }
 

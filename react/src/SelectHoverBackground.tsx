@@ -80,13 +80,10 @@ export const SelectHoverBackground =
             }
 
             handleMouseOver(e: SyntheticEvent): void {
-                console.log("onMouseOver")
                 if (this.props.showHover ?? true) {
                     if (this.hoverElementRef.current)
                     {
                         this.hoverElementRef.current.style.display = "block";
-                    } else {
-                        console.log("No hoverElementRef")
                     }
                 }
 
@@ -96,9 +93,7 @@ export const SelectHoverBackground =
                     if (this.hoverElementRef.current)
                     {
                         this.hoverElementRef.current.style.display = "none";
-                    } else {
-                        console.log("No hoverElementRef")
-                    }
+                    } 
                 }
             }
 

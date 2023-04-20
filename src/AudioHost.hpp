@@ -154,6 +154,7 @@ public:
 
     virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProgramRequest) = 0;
     virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) = 0;
+    virtual void OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) = 0;
 
 };
 
@@ -195,6 +196,7 @@ public:
     virtual void SetListenForAtomOutput(bool listen) = 0;
 
     virtual void UpdatePluginStates(Pedalboard& pedalboard) = 0;
+    virtual void UpdatePluginState(PedalboardItem& pedalboardItem) = 0;
 
 
     virtual void Open(const JackServerSettings&jackServerSettings,const JackChannelSelection & channelSelection) = 0;

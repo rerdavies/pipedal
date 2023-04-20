@@ -50,29 +50,38 @@ int LogFeature::vprintf(LV2_URID type,const char*fmt, va_list va)
 {
 	std::lock_guard<std::mutex> guard(logMutex);
 
-	const char* prefix = "";
-	char buffer[1024];
-	int result = vsnprintf(buffer, sizeof(buffer), fmt, va);
+	int result = 0;
+	if (this->logMessageListener)
+	{
+		const char* prefix = "";
+		char buffer[1024];
+		strcpy(buffer,messagePrefix.c_str());
+		char *p = buffer+messagePrefix.length();
 
-	if (type == uris.ridError)
-	{
-		Lv2Log::error(buffer);
+
+		result = vsnprintf(p, sizeof(buffer)-messagePrefix.length(), fmt, va);
+		buffer[sizeof(buffer)-1] = '\0';
+
+		if (type == uris.ridError)
+		{
+			logMessageListener->OnLogError(buffer);
+		}
+		else if (type == uris.ridWarning)
+		{
+			logMessageListener->OnLogWarning(buffer);
+		}
+		else if (type == uris.ridNote)
+		{
+			logMessageListener->OnLogInfo(buffer);
+		}
+		else if (type == uris.ridTrace)
+		{
+			logMessageListener->OnLogDebug(buffer);
+		}
+		else {
+			logMessageListener->OnLogInfo(buffer);
+		}
 	}
-	else if (type == uris.ridWarning)
-	{
-		Lv2Log::warning(buffer);
-	}
-	else if (type == uris.ridNote)
-	{
-		Lv2Log::info(buffer);
-	}
-	else if (type == uris.ridTrace)
-	{
-        Lv2Log::debug(buffer);
-	}
-    else {
-        Lv2Log::info(buffer);
-    }
     return result;
 }
 
@@ -85,9 +94,11 @@ LogFeature::LogFeature()
 	log.printf = printfFn;
 	log.vprintf = vprintfFn;
 }
-void LogFeature::Prepare(MapFeature*map)
+void LogFeature::Prepare(MapFeature*map, const std::string &messagePrefix, LogMessageListener*listener)
 {
 	uris.Map(map);
+	this->messagePrefix = messagePrefix;
+	this->logMessageListener = listener;
 
 }
 

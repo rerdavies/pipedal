@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+# Set presets and plugin presets to default.
+rm -rf /var/pipedal/plugin_presets
+rm -rf /var/pipedal/presets
+mkdir /var/pipedal/plugin_presets
+mkdir /var/pipedal/presets
+cp -r default_presets/plugin_presets /var/pipedal/plugin_presets/
+cp -r default_presets/presets /var/pipedal/presets/

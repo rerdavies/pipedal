@@ -76,6 +76,7 @@ namespace pipedal
         virtual void OnShowStatusMonitorChanged(bool show) = 0;
         virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) = 0;
         virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
+        virtual void OnErrorMessage(const std::string&message) = 0;
         virtual void Close() = 0;
     };
 
@@ -137,7 +138,7 @@ namespace pipedal
         void SetPresetChanged(int64_t clientId, bool value);
         void FirePresetsChanged(int64_t clientId);
         void FirePluginPresetsChanged(const std::string &pluginUri);
-        void FirePedalboardChanged(int64_t clientId);
+        void FirePedalboardChanged(int64_t clientId, bool reloadAudioThread = true);
         void FireChannelSelectionChanged(int64_t clientId);
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
@@ -177,6 +178,8 @@ namespace pipedal
 ;
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) override;
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) override;
+        virtual void OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) override;
+
 
         void UpdateVst3Settings(Pedalboard &pedalboard);
 
@@ -324,6 +327,8 @@ namespace pipedal
         void DeleteSampleFile(const std::filesystem::path &fileName);
         std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
         uint64_t CreateNewPreset();
+
+        bool LoadCurrentPedalboard();
     };
 
 } // namespace pipedal.

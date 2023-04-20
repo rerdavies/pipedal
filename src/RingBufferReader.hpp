@@ -62,6 +62,8 @@ namespace pipedal
         Lv2StateChanged,
         SetInputVolume,
         SetOutputVolume,
+        Lv2ErrorMessage,
+
 
     };
 
@@ -192,7 +194,7 @@ namespace pipedal
             : ringBuffer(ringBuffer)
         {
         }
-
+        void Reset() { ringBuffer->reset(); }
         // 0 -> ready. -1: timed out. -2: closing.
         template <class Rep, class Period> 
         RingBufferStatus wait_for(const std::chrono::duration<Rep,Period>& timeout) {
@@ -287,6 +289,7 @@ namespace pipedal
         {
         }
 
+        void Reset() { ringBuffer->reset(); }
         template <typename T>
         void write(RingBufferCommand command, const T &value)
         {
@@ -463,6 +466,12 @@ namespace pipedal
         void EffectReplaced(Lv2Pedalboard *pedalboard)
         {
             write(RingBufferCommand::EffectReplaced, pedalboard);
+        }
+
+        void WriteLv2ErrorMessage(int64_t instanceId, const char*message)
+        {
+            size_t length = strlen(message);
+            write(RingBufferCommand::Lv2ErrorMessage,instanceId,length,(uint8_t*)message);
         }
     };
 

@@ -158,6 +158,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     pipedalUI__fileTypes = lilv_new_uri(pWorld, PIPEDAL_UI__fileTypes);
     pipedalUI__fileProperty = lilv_new_uri(pWorld, PIPEDAL_UI__fileProperty);
     pipedalUI__fileExtension = lilv_new_uri(pWorld, PIPEDAL_UI__fileExtension);
+    pipedalUI__mimeType = lilv_new_uri(pWorld, PIPEDAL_UI__mimeType);
     pipedalUI__outputPorts = lilv_new_uri(pWorld, PIPEDAL_UI__outputPorts);
     pipedalUI__text = lilv_new_uri(pWorld, PIPEDAL_UI__text);
 
@@ -191,35 +192,13 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     patch__writable = lilv_new_uri(pWorld,LV2_PATCH__writable);
     patch__readable = lilv_new_uri(pWorld,LV2_PATCH__readable);
+
+    dc__format = lilv_new_uri(pWorld, "http://purl.org/dc/terms/format");
+
 }
 
 void PluginHost::LilvUris::Free()
 {
-    rdfs__Comment.Free();
-    port_logarithmic.Free();
-    port__display_priority.Free();
-    port_range_steps.Free();
-    integer_property_uri.Free();
-    enumeration_property_uri.Free();
-    core__toggled.Free();
-    portprops__not_on_gui_property_uri.Free();
-    midi__event.Free();
-    core__designation.Free();
-    portgroups__group.Free();
-    units__unit.Free();
-    atom__bufferType.Free();
-    presets__preset.Free();
-    rdfs__label.Free();
-    lv2core__symbol.Free();
-    lv2core__name.Free();
-
-    time_Position.Free();
-    time_barBeat.Free();
-    time_beatsPerMinute.Free();
-    time_speed.Free();
-
-    appliesTo.Free();
-    isA.Free();
 }
 
 static std::string nodeAsString(const LilvNode *node)
@@ -273,17 +252,15 @@ PluginHost::PluginHost()
 {
     pWorld = nullptr;
 
-    LV2_Feature **features = new LV2_Feature *[10];
     lv2Features.push_back(mapFeature.GetMapFeature());
     lv2Features.push_back(mapFeature.GetUnmapFeature());
 
-    logFeature.Prepare(&mapFeature);
-    lv2Features.push_back(logFeature.GetFeature());
     optionsFeature.Prepare(mapFeature, 44100, this->GetMaxAudioBufferSize(), this->GetAtomBufferSize());
 
     mapPathFeature.Prepare(&mapFeature);
     lv2Features.push_back(mapPathFeature.GetMapPathFeature());
     lv2Features.push_back(mapPathFeature.GetMakePathFeature());
+    lv2Features.push_back(mapPathFeature.GetFreePathFeature());
     lv2Features.push_back(optionsFeature.GetFeature());
 
     lv2Features.push_back(nullptr);
@@ -633,9 +610,26 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
                         path = path.parent_path();
                         std::string lv2DirectoryName = path.filename().string();
                         // we have a valid path property!
+
+
+                        auto  fileProperty =
+                                std::make_shared<UiFileProperty>(
+                                strLabel,propertyUri.AsUri(),lv2DirectoryName);
+
+
+                        AutoLilvNodes dc_types = lilv_world_find_nodes(pWorld,propertyUri,lv2Host->lilvUris.dc__format,nullptr);
+                        LILV_FOREACH(nodes, i, dc_types)
+                        {
+                            AutoLilvNode dc_type = lilv_nodes_get(dc_types,i);
+                            std::string fileType = dc_type.AsString();
+                            std::string label = "";
+                            fileProperty->fileTypes().push_back(UiFileType(label,fileType));
+                        }
+
+
+
                         fileProperties.push_back(
-                            std::make_shared<UiFileProperty>(
-                                strLabel,propertyUri.AsUri(),lv2DirectoryName)
+                            fileProperty
                             );
 
                     }
@@ -1129,12 +1123,12 @@ std::shared_ptr<Lv2PluginInfo> PluginHost::GetPluginInfo(const std::string &uri)
     return nullptr;
 }
 
-Lv2Pedalboard *PluginHost::CreateLv2Pedalboard(Pedalboard &pedalboard)
+Lv2Pedalboard *PluginHost::CreateLv2Pedalboard(Pedalboard &pedalboard, Lv2PedalboardErrorList &errorMessages)
 {
     Lv2Pedalboard *pPedalboard = new Lv2Pedalboard();
     try
     {
-        pPedalboard->Prepare(this, pedalboard);
+        pPedalboard->Prepare(this, pedalboard,errorMessages);
         return pPedalboard;
     }
     catch (const std::exception &e)

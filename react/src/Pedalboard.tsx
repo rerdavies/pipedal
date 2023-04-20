@@ -67,6 +67,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
 
         this.controlValues = ControlValue.deserializeArray(input.controlValues);
         this.vstState = input.vstState ?? "";
+        this.stateUpdateCount = input.stateUpdateCount;
         this.lv2State = input.lv2State;
         return this;
     }
@@ -195,6 +196,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     controlValues: ControlValue[] = ControlValue.EmptyArray;
     midiBindings: MidiBinding[] = [];
     vstState: string = "";
+    stateUpdateCount: number = 0;
     lv2State: [boolean,any] = [false,{}]
 };
 

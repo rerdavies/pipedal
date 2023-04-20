@@ -72,7 +72,8 @@
 
             "args": [
                 //"[Dev]"  -- all dev-machine tests.
-                "[json_variants]"  // subtest of your choice, or none to run all of the tests.
+                //"[json_variants]"  // subtest of your choice, or none to run all of the tests.
+                "[inverting_mutex_test]"
             ],
 
             "stopAtEntry": false,

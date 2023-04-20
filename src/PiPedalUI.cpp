@@ -25,6 +25,7 @@
 #include "PiPedalUI.hpp"
 #include "PluginHost.hpp"
 #include "ss.hpp"
+#include "MimeTypes.hpp"
 
 using namespace pipedal;
 
@@ -65,7 +66,7 @@ PiPedalUI::PiPedalUI(PluginHost *pHost, const LilvNode *uiNode, const std::files
     lilv_nodes_free(fileNodes);
 }
 
-PiPedalFileType::PiPedalFileType(PluginHost *pHost, const LilvNode *node)
+UiFileType::UiFileType(PluginHost *pHost, const LilvNode *node)
 {
     auto pWorld = pHost->getWorld();
 
@@ -93,7 +94,28 @@ PiPedalFileType::PiPedalFileType(PluginHost *pHost, const LilvNode *node)
     }
     else
     {
-        throw std::logic_error("pipedal_ui:fileType is missing fileExtension property.");
+        this->fileExtension_ = "";
+    }
+    AutoLilvNode mimeType = lilv_world_get(
+        pWorld,
+        node,
+        pHost->lilvUris.pipedalUI__mimeType,
+        nullptr);
+    if (mimeType)
+    {
+        this->mimeType_ = mimeType.AsString();
+    }
+    if (fileExtension_ == "")
+    {
+        fileExtension_ = MimeTypes::ExtensionFromMimeType(mimeType_);
+    }
+    if (mimeType_ == "")
+    {
+        mimeType_ = MimeTypes::MimeTypeFromExtension(fileExtension_);
+        if (mimeType_ == "")
+        {
+            mimeType_ = "application/octet-stream";
+        }
     }
 }
 UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const std::filesystem::path &resourcePath)
@@ -165,12 +187,12 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
         this->portGroup_ = portGroup.AsUri();
     }
 
-    this->fileTypes_ = PiPedalFileType::GetArray(pHost, node, pHost->lilvUris.pipedalUI__fileTypes);
+    this->fileTypes_ = UiFileType::GetArray(pHost, node, pHost->lilvUris.pipedalUI__fileTypes);
 }
 
-std::vector<PiPedalFileType> PiPedalFileType::GetArray(PluginHost *pHost, const LilvNode *node, const LilvNode *uri)
+std::vector<UiFileType> UiFileType::GetArray(PluginHost *pHost, const LilvNode *node, const LilvNode *uri)
 {
-    std::vector<PiPedalFileType> result;
+    std::vector<UiFileType> result;
     LilvWorld *pWorld = pHost->getWorld();
 
     LilvNodes *fileTypeNodes = lilv_world_find_nodes(pWorld, node, pHost->lilvUris.pipedalUI__fileTypes, nullptr);
@@ -179,7 +201,7 @@ std::vector<PiPedalFileType> PiPedalFileType::GetArray(PluginHost *pHost, const 
         const LilvNode *fileTypeNode = lilv_nodes_get(fileTypeNodes, i);
         try
         {
-            PiPedalFileType fileType = PiPedalFileType(pHost, fileTypeNode);
+            UiFileType fileType = UiFileType(pHost, fileTypeNode);
             result.push_back(std::move(fileType));
         }
         catch (const std::exception &e)
@@ -313,6 +335,28 @@ PiPedalUI::PiPedalUI(std::vector<UiFileProperty::ptr> &&fileProperties)
     this->fileProperties_ = std::move(fileProperties);
 }
 
+UiFileType::UiFileType(const std::string&label, const std::string &fileType) 
+: label_(label)
+, fileExtension_(fileType)
+{
+    if (fileType.starts_with('.'))
+    {
+        fileExtension_ = fileType;
+        mimeType_ = MimeTypes::MimeTypeFromExtension(fileType);
+        if (mimeType_ == "")
+        {
+            mimeType_ = "application/octet-stream";
+        }
+    } else {
+        fileExtension_ = MimeTypes::ExtensionFromMimeType(fileType); // (may be blank, esp. for audio/* and video/*.
+        mimeType_ = fileType;
+    }
+    if (mimeType_ == "*")
+    {
+        mimeType_ = "application/octet-stream";
+    }
+}
+
 JSON_MAP_BEGIN(UiPortNotification)
 JSON_MAP_REFERENCE(UiPortNotification, portIndex)
 JSON_MAP_REFERENCE(UiPortNotification, symbol)
@@ -320,9 +364,10 @@ JSON_MAP_REFERENCE(UiPortNotification, plugin)
 JSON_MAP_REFERENCE(UiPortNotification, protocol)
 JSON_MAP_END()
 
-JSON_MAP_BEGIN(PiPedalFileType)
-JSON_MAP_REFERENCE(PiPedalFileType, label)
-JSON_MAP_REFERENCE(PiPedalFileType, fileExtension)
+JSON_MAP_BEGIN(UiFileType)
+JSON_MAP_REFERENCE(UiFileType, label)
+JSON_MAP_REFERENCE(UiFileType, mimeType)
+JSON_MAP_REFERENCE(UiFileType, fileExtension)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(UiFileProperty)

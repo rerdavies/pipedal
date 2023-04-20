@@ -49,5 +49,6 @@ namespace pipedal {
         virtual std::shared_ptr<HostWorkerThread> GetHostWorkerThread() = 0;
 
         virtual IEffect *CreateEffect(PedalboardItem &pedalboard) = 0;
+
     };
 }

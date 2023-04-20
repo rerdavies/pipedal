@@ -23,10 +23,8 @@
 #include <memory>
 #include "json.hpp"
 #include "PluginType.hpp"
-#include "Pedalboard.hpp"
 #include <lilv/lilv.h>
 #include "MapFeature.hpp"
-#include "LogFeature.hpp"
 #include "OptionsFeature.hpp"
 #include <filesystem>
 #include <cmath>
@@ -49,6 +47,7 @@ namespace pipedal
     // forward declarations
     class Lv2Effect;
     class Lv2Pedalboard;
+    class Lv2PedalboardErrorList;
     class PluginHost;
     class JackConfiguration;
     class JackChannelSelection;
@@ -674,6 +673,7 @@ namespace pipedal
 
             AutoLilvNode pipedalUI__fileTypes;
             AutoLilvNode pipedalUI__fileExtension;
+            AutoLilvNode pipedalUI__mimeType;
 
             AutoLilvNode pipedalUI__outputPorts;
             AutoLilvNode pipedalUI__text;
@@ -696,6 +696,8 @@ namespace pipedal
 
             AutoLilvNode patch__writable;
             AutoLilvNode patch__readable;
+
+            AutoLilvNode dc__format;
         };
         LilvUris lilvUris;
 
@@ -715,7 +717,6 @@ namespace pipedal
 
         std::vector<const LV2_Feature *> lv2Features;
         MapFeature mapFeature;
-        LogFeature logFeature;
         OptionsFeature optionsFeature;
         MapPathFeature mapPathFeature;
 
@@ -747,19 +748,19 @@ namespace pipedal
     public:
         void LogError(const std::string &message)
         {
-            logFeature.LogError("%s", message.c_str());
+            Lv2Log::error(message);
         }
         void LogWarning(const std::string &message)
         {
-            logFeature.LogWarning("%s", message.c_str());
+            Lv2Log::warning(message);
         }
         void LogNote(const std::string &message)
         {
-            logFeature.LogNote("%s", message.c_str());
+            Lv2Log::info(message);
         }
         void LogTrace(const std::string &message)
         {
-            logFeature.LogTrace("%s", message.c_str());
+            Lv2Log::debug(message);
         }
         virtual LilvWorld *getWorld()
         {
@@ -801,7 +802,7 @@ namespace pipedal
 
         IHost *asIHost() { return this; }
 
-        virtual Lv2Pedalboard *CreateLv2Pedalboard(Pedalboard &pedalboard);
+        virtual Lv2Pedalboard *CreateLv2Pedalboard(Pedalboard &pedalboard,Lv2PedalboardErrorList &errorList);
 
         void setSampleRate(double sampleRate)
         {

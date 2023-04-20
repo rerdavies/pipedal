@@ -85,6 +85,7 @@ class PedalboardItem: public JsonMemberWritable {
     std::vector<PedalboardItem> bottomChain_;
     std::vector<MidiBinding> midiBindings_;
     std::string vstState_;
+    uint32_t stateUpdateCount_ = 0;
     Lv2PluginState lv2State_;
 public:
     ControlValue*GetControlValue(const std::string&symbol);
@@ -101,6 +102,7 @@ public:
     GETTER_SETTER_VEC(topChain)
     GETTER_SETTER_VEC(bottomChain)
     GETTER_SETTER_VEC(midiBindings)
+    GETTER_SETTER(stateUpdateCount)
     GETTER_SETTER_REF(lv2State)
 
 

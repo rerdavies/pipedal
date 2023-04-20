@@ -36,15 +36,30 @@ MapPathFeature::MapPathFeature(const std::filesystem::path &storagePath)
     lv2_state_make_path.handle = (LV2_State_Make_Path_Handle*)this;
     lv2_state_make_path.path = FnAbsolutePath;
 
+    lv2_state_free_path.handle = (LV2_State_Free_Path_Handle*)this;
+    lv2_state_free_path.free_path = FnFreePath;
+
     mapPathFeature.URI = LV2_STATE__mapPath;
     mapPathFeature.data = (void*)&lv2_state_map_path;
     makePathFeature.URI = LV2_STATE__makePath;
     makePathFeature.data = (void*)&lv2_state_make_path;
+    freePathFeature.URI = LV2_STATE__freePath;
+    freePathFeature.data = (void*)&lv2_state_free_path;
 }
 
 void MapPathFeature::Prepare(MapFeature* map)
 {
 
+}
+
+void MapPathFeature::FreePath(char *path)
+{
+    free(path);
+}
+
+void MapPathFeature::FnFreePath(LV2_State_Free_Path_Handle handle, char* path)
+{
+    ((MapPathFeature*)handle)->FreePath(path);
 }
 
 
@@ -57,6 +72,10 @@ void MapPathFeature::Prepare(MapFeature* map)
 
 char *MapPathFeature::AbsolutePath(const char *abstract_path)
 {
+    if (strlen(abstract_path) == 0)
+    {
+        return strdup("");
+    }
     std::filesystem::path t (abstract_path);
     if (t.is_absolute()) {
         return strdup(abstract_path);
@@ -75,6 +94,10 @@ char *MapPathFeature::FnAbstractPath(
 
 char *MapPathFeature::AbstractPath(const char *absolute_path)
 {
+    if (strlen(absolute_path) == 0)
+    {
+        return strdup("");
+    }
     if (strncmp(storagePath.c_str(),absolute_path,storagePath.length()) == 0)
     {
         const char*result = absolute_path + storagePath.length();

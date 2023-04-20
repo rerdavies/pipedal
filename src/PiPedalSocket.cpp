@@ -1498,6 +1498,10 @@ private:
         Send("onLv2StateChanged",instanceId);
 
     }
+    virtual void OnErrorMessage(const std::string&message)
+    {
+        Send("onErrorMessage",message);
+    }
     virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
     {
         PatchPropertyChangedBody body;

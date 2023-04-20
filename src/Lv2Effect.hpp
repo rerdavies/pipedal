@@ -34,6 +34,7 @@
 #include "lv2/atom.lv2/forge.h"
 #include "AtomBuffer.hpp"
 #include "StateInterface.hpp"
+#include "LogFeature.hpp"
 
 
 namespace pipedal
@@ -41,12 +42,19 @@ namespace pipedal
 
     class RealtimeRingBufferWriter;    
 
-    class Lv2Effect : public IEffect
+    class Lv2Effect : public IEffect, private LogFeature::LogMessageListener
     {
     private:
+        virtual void OnLogError(const char*message);
+        virtual void OnLogWarning(const char*message);
+        virtual void OnLogInfo(const char*message);
+        virtual void OnLogDebug(const char*message);
+
+    private:
+        
         std::unique_ptr<StateInterface> stateInterface;
         void RestoreState(const PedalboardItem&pedalboardItem);
-
+        LogFeature logFeature;
         std::map<std::string,AtomBuffer> patchPropertyPrototypes;
 
         IHost *pHost = nullptr;
@@ -74,7 +82,7 @@ namespace pipedal
 
         std::vector<char *> inputAtomBuffers;
         std::vector<char *> outputAtomBuffers;
-        std::vector<LV2_Feature *> features;
+        std::vector<const LV2_Feature *> features;
         LV2_Feature *work_schedule_feature = nullptr;
 
         virtual std::string GetUri() const { return info->uri(); }
@@ -169,6 +177,7 @@ namespace pipedal
         void BypassTo(float value);
 
     public:
+
         virtual bool GetLv2State(Lv2PluginState*state);
         virtual void RequestPatchProperty(LV2_URID uridUri);
         virtual void SetPatchProperty(LV2_URID uridUri,size_t size, LV2_Atom*value);
@@ -187,7 +196,8 @@ namespace pipedal
 
         }
 
-
+        bool hasErrorMessage = false;
+        char errorMessage[1024];
     public:
         Lv2Effect(
             IHost *pHost,
@@ -195,7 +205,8 @@ namespace pipedal
             const PedalboardItem &pedalboardItem);
         ~Lv2Effect();
 
-
+        bool HasErrorMessage() const { return this->hasErrorMessage; }
+        const char*TakeErrorMessage() { this->hasErrorMessage = false; return this->errorMessage; }
 
         virtual void ResetAtomBuffers();
         virtual uint64_t GetInstanceId() const { return instanceId; }

@@ -259,7 +259,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                                 <img src="img/ic_pluginpreset2.svg" className={classes.itemIcon} alt="" />
                             </div>
                             <div className={classes.itemLabel}>
-                                <Typography> noWrap
+                                <Typography noWrap> 
                                     {presetEntry.label}
                                 </Typography>
                             </div>

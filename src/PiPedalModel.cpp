@@ -236,7 +236,7 @@ void PiPedalModel::Load()
     if (jackServerSettings.IsValid())
     {
         this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
-        if (jackServerSettings.IsValid())
+        if (!jackServerSettings.IsValid())
         {
             for (size_t retry = 0; retry < 5; ++retry)
             {
@@ -267,11 +267,11 @@ void PiPedalModel::Load()
         try
         {
             audioHost->Open(this->jackServerSettings, selection);
+            bool loadedSuccessfully = false;
             try
             {
-                std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard)};
-                this->lv2Pedalboard = lv2Pedalboard;
-                audioHost->SetPedalboard(lv2Pedalboard);
+                LoadCurrentPedalboard();
+                loadedSuccessfully = true;
             }
             catch (const std::exception &e)
             {
@@ -360,8 +360,15 @@ void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const s
 void PiPedalModel::OnNotifyLv2StateChanged(uint64_t instanceId)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    SetPresetChanged(-1, true);
-
+    PedalboardItem *item = pedalboard.GetItem(instanceId);
+    if (item != nullptr)
+    {
+        item->stateUpdateCount(item->stateUpdateCount()+1);
+        
+        this->audioHost->UpdatePluginState(*item);
+        this->FirePedalboardChanged(-1,false);
+        this->SetPresetChanged(-1, true);   
+    }
     {
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
         IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -503,7 +510,7 @@ void PiPedalModel::FireBanksChanged(int64_t clientId)
     delete[] t;
 }
 
-void PiPedalModel::FirePedalboardChanged(int64_t clientId)
+void PiPedalModel::FirePedalboardChanged(int64_t clientId,bool loadAudioThread)
 {
     // noify subscribers.
     IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -518,14 +525,16 @@ void PiPedalModel::FirePedalboardChanged(int64_t clientId)
     }
     delete[] t;
 
-    // notify the audio thread.
-    if (audioHost->IsOpen())
+    if (loadAudioThread)
     {
-        std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard)};
-        this->lv2Pedalboard = lv2Pedalboard;
-        audioHost->SetPedalboard(lv2Pedalboard);
-        UpdateRealtimeVuSubscriptions();
-        UpdateRealtimeMonitorPortSubscriptions();
+        // notify the audio thread.
+        if (audioHost->IsOpen())
+        {
+            LoadCurrentPedalboard();
+
+            UpdateRealtimeVuSubscriptions();
+            UpdateRealtimeMonitorPortSubscriptions();
+        }
     }
 }
 void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
@@ -1148,9 +1157,10 @@ void PiPedalModel::RestartAudio()
 
         this->lv2Host.OnConfigurationChanged(jackConfiguration, channelSelection);
 
-        std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard)};
-        this->lv2Pedalboard = lv2Pedalboard;
-        audioHost->SetPedalboard(lv2Pedalboard);
+        std::vector<std::string> errorMessages;
+
+        LoadCurrentPedalboard();
+
         this->UpdateRealtimeVuSubscriptions();
         UpdateRealtimeMonitorPortSubscriptions();
     }
@@ -1711,6 +1721,8 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
     PedalboardItem *pedalboardItem = this->pedalboard.GetItem(pluginInstanceId);
     if (pedalboardItem != nullptr)
     {
+        int32_t oldStateUpdateCount = pedalboardItem->stateUpdateCount();
+
         PluginPresetValues presetValues = storage.GetPluginPresetValues(pedalboardItem->uri(), presetInstanceId);
         // if the plugin has state, we have to rebuild the pedalboard, since setting state is not thread-safe.
 
@@ -1736,6 +1748,7 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
             delete[] t;
         } else {
             pedalboardItem->lv2State(presetValues.state);
+            pedalboardItem->stateUpdateCount(oldStateUpdateCount+1);
             FirePedalboardChanged(-1); // does a complete reload of both client and audio server.
         }
         this->SetPresetChanged(-1, true);
@@ -1985,5 +1998,34 @@ uint64_t PiPedalModel::CreateNewPreset()
     return storage.CreateNewPreset();
 }
 
+bool PiPedalModel::LoadCurrentPedalboard()
+{
+    Lv2PedalboardErrorList errorMessages;
+    std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard,errorMessages)};
+    this->lv2Pedalboard = lv2Pedalboard;
+    // apply the error messages to the lv2Pedalboard.
+    // return true if the error messages have changed.
+    audioHost->SetPedalboard(lv2Pedalboard);
+    return true;
+}
 
-        
+void PiPedalModel::OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) 
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    // Notify clients.
+    size_t n = subscribers.size();
+    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[n];
+    for (size_t i = 0; i < n; ++i)
+    {
+        t[i] = this->subscribers[i];
+    }
+    for (size_t i = 0; i < n; ++i)
+    {
+        t[i]->OnErrorMessage(error);
+    }
+    delete[] t;
+
+}
+
+

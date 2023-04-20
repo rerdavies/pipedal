@@ -40,6 +40,7 @@
 #include <thread>
 #include "RingBuffer.hpp"
 #include <memory>
+#include "inverting_mutex.hpp"
 
 
 namespace pipedal {
@@ -60,7 +61,7 @@ namespace pipedal {
 
         RingBuffer<false,true> requestRingBuffer;
         bool exiting = false;
-        std::mutex submitMutex;
+        inverting_mutex submitMutex;
 
         std::vector<uint8_t> dataBuffer;
 
@@ -86,9 +87,10 @@ namespace pipedal {
 
         LV2_Worker_Status WorkerRespond(uint32_t size,const void*data);
 
-        std::mutex outstandingRequestMutex;
+        inverting_mutex outstandingRequestMutex;
         std::condition_variable cvOutstandingRequests;
         int64_t outstandingRequests = 0;
+        int64_t outstandingResponses = 0;
         void WaitForAllResponses();
 	public:
 		Worker(const std::shared_ptr<HostWorkerThread>& pHostWorker,LilvInstance *instance, const LV2_Worker_Interface *iface);

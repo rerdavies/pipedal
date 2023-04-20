@@ -837,9 +837,11 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 >
                     <DialogContent>
                         <DialogContentText id="alert-dialog-description">
-                            {
-                                this.model_.alertMessage.get()
-                            }
+                            <Typography variant="body2">
+                                {
+                                    this.state.alertDialogMessage
+                                }
+                            </Typography>
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions>

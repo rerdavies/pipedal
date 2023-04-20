@@ -141,6 +141,8 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    MimeTypes.cpp MimeTypes.hpp
+    inverting_mutex.hpp
     DbDezipper.hpp DbDezipper.cpp
     WebServerLog.hpp
     
@@ -277,6 +279,8 @@ target_link_libraries(pipedald PRIVATE
 
 #################################
 add_executable(pipedaltest testMain.cpp
+
+    InvertingMutexTest.cpp
     jsonTest.cpp
     json_variant.cpp
     json_variant.hpp

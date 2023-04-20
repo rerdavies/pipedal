@@ -32,16 +32,25 @@ namespace pipedal
         void SetPluginStoragePath(const std::filesystem::path&path) { storagePath = path;}
         const LV2_Feature*GetMapPathFeature() { return &mapPathFeature;}
         const LV2_Feature*GetMakePathFeature() { return &makePathFeature;}
+        const LV2_Feature*GetFreePathFeature() { return &freePathFeature;}
     private:
         char *AbsolutePath(const char *abstract_path);
         static char *FnAbsolutePath(LV2_State_Map_Path_Handle handle,
                                     const char *abstract_path);
+
+        
         LV2_State_Map_Path lv2_state_map_path;
 
         LV2_State_Make_Path lv2_state_make_path;
 
+        LV2_State_Free_Path lv2_state_free_path;
+
+        void FreePath(char *path);
+        static void FnFreePath(LV2_State_Free_Path_Handle handle, char* path);
+
         LV2_Feature mapPathFeature;
         LV2_Feature makePathFeature;
+        LV2_Feature freePathFeature;
 
         char *AbstractPath(const char *abstract_path);
         static char * FnAbstractPath(

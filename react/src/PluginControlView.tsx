@@ -23,7 +23,7 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { UiPlugin, UiControl, PiPedalFileProperty, ScalePoint } from './Lv2Plugin';
+import { UiPlugin, UiControl, UiFileProperty, ScalePoint } from './Lv2Plugin';
 import {
     Pedalboard, PedalboardItem, ControlValue
 } from './Pedalboard';
@@ -239,7 +239,7 @@ type PluginControlViewState = {
     imeCaption: string;
     imeInitialHeight: number;
     showFileDialog: boolean,
-    dialogFileProperty: PiPedalFileProperty,
+    dialogFileProperty: UiFileProperty,
     dialogFileValue: string
 };
 
@@ -260,7 +260,7 @@ const PluginControlView =
                     imeCaption: "",
                     imeInitialHeight: 0,
                     showFileDialog: false,
-                    dialogFileProperty: new PiPedalFileProperty(),
+                    dialogFileProperty: new UiFileProperty(),
                     dialogFileValue: ""
 
                 }
@@ -323,10 +323,10 @@ const PluginControlView =
                 });
             }
 
-            makeFilePropertyUI(fileProperty: PiPedalFileProperty): ReactNode {
+            makeFilePropertyUI(fileProperty: UiFileProperty): ReactNode {
                 return ((
 
-                    <FilePropertyControl instanceId={this.props.instanceId}
+                    <FilePropertyControl pedalboardItem={this.props.item}
                         fileProperty={fileProperty}
                         onFileClick={(fileProperty, selectedFile) => {
                             this.setState({ showFileDialog: true, dialogFileProperty: fileProperty, dialogFileValue: selectedFile });

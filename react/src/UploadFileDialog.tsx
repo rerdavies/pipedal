@@ -27,7 +27,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import Typography from '@mui/material/Typography';
-import { PiPedalFileProperty } from './Lv2Plugin';
+import { UiFileProperty,UiFileType } from './Lv2Plugin';
 import SvgIcon from '@mui/material/SvgIcon';
 import ErrorIcon from '@mui/icons-material/Error';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -45,7 +45,7 @@ export interface UploadFileDialogProps {
     onClose: () => void,
     onUploaded: (fileName: string) => void,
     uploadPage: string,
-    fileProperty: PiPedalFileProperty
+    fileProperty: UiFileProperty
 
 };
 
@@ -204,6 +204,10 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
                 this.updateUploadDisplayList();
                 try {
                     upload.abortController = new AbortController();
+                    if (!this.wantsFile(this.uploadList[i].file))
+                    {
+                        throw new Error("Invalid file type.");
+                    }
                     let filename = await this.model.uploadFile(this.props.uploadPage, this.uploadList[i].file, "application/octet-stream", upload.abortController);
                     this.props.onUploaded(filename);
                     upload.status = FileUploadStatus.Uploaded;
@@ -262,7 +266,12 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
         e.currentTarget.style.background = "#D8D8D8";
     }
 
-    handleButtonSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    private static IsAndroid() : boolean
+    {
+        return /Android/i.test(navigator.userAgent);
+    }
+
+    handleButtonSelect(e: any) {
         if (e.currentTarget.files) {
             this.uploadFiles(e.currentTarget.files);
         }
@@ -290,20 +299,13 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
         }
     }
     makeBrowserAcceptList() {
-        let fileTypes = this.props.fileProperty.fileTypes;
-        let result = "";
-        for (let i = 0; i < fileTypes.length; ++i) {
-            if (result.length !== 0) {
-                result += ',';
-            }
-            result += fileTypes[i].fileExtension;
-        }
+        let result = UiFileType.MergeMimeTypes(this.props.fileProperty.fileTypes);
         return result;
     }
 
     render() {
 
-
+        let isAndroid = UploadFileDialog.IsAndroid();
         return (
             <DialogEx tag="UploadFileDialog" open={this.props.open} fullWidth onClose={() => this.handleClose()}
                 fullScreen={this.state.fullScreen}
@@ -321,7 +323,7 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
                 <DialogContent style={{ paddingBottom: 0 }}>
                     <div style={{
                         width: "100%", height: 140, marginBottom: 0,
-                        border: "2px dashed #CCC",
+                        border: (isAndroid? "2px solid #CCC" :"2px dashed #CCC"),
                         borderRadius: "10px",
                         fontFamily: "Roboto",
                         padding: 0
@@ -334,7 +336,8 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
                         }}
                     >
                         {!this.hasFileList() && (
-                            <Typography noWrap color="textSecondary" align="center" display="block" variant="caption" style={{ width: "100%", marginTop: 20, verticalAlign: "middle" }} >Drop files here</Typography>
+                            <Typography noWrap color="textSecondary" align="center" display="block" variant="caption" style={{ width: "100%", marginTop: 20, verticalAlign: "middle" }} >
+                                { isAndroid? "Select files": "Drop files here" }</Typography>
                         )}
                         {this.hasFileList() && (
                             <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
@@ -381,15 +384,15 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
 
                 <DialogActions >
                     <Button
-                        component="label" color="primary" style={{ marginLeft: 16, width: 120, flex: "0 0 auto" }}
+                        component="label" color="primary" style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", marginLeft: 16, width: 120, flex: "0 0 auto" }}
                     >
-                        Select Files
+                        Select&nbsp;Files
                         <input
                             type="file"
                             hidden
                             accept={this.makeBrowserAcceptList()}
                             multiple
-                            onChange={(e) => this.handleButtonSelect(e)}
+                            onInput={(e) => this.handleButtonSelect(e)}
                         />
                     </Button>
                     <div style={{ flex: "1 1 20px" }} />

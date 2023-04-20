@@ -44,8 +44,8 @@ namespace pipedal
         bool mlocked = false;
         size_t ringBufferSize;
         size_t ringBufferMask;
-        volatile int64_t readPosition = 0;  // volatile = ordering barrier wrt writePosition
-        volatile int64_t writePosition = 0; // volatile = ordering barrier wrt/ readPosition
+        int64_t readPosition = 0;  // volatile = ordering barrier wrt writePosition
+        int64_t writePosition = 0; // volatile = ordering barrier wrt/ readPosition
         std::mutex mutex;
         std::mutex writeMutex;
 
@@ -85,6 +85,7 @@ namespace pipedal
         {
             this->readPosition = 0;
             this->writePosition = 0;
+            this->is_open = true;
             cvRead.notify_all();
         }
         void close()

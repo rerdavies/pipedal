@@ -59,5 +59,8 @@ namespace pipedal {
 
         virtual bool IsVst3() const = 0;
         virtual bool GetLv2State(Lv2PluginState*state) = 0;
+        
+        virtual bool HasErrorMessage() const = 0;
+        virtual const char*TakeErrorMessage()  = 0;
     };
 } //namespace

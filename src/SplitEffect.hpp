@@ -296,7 +296,8 @@ namespace pipedal
         virtual std::string AtomToJson(uint8_t *pAtom) { return ""; }
         virtual std::string GetAtomObjectType(uint8_t*pData) { return "not implemented";}
         virtual bool GetLv2State(Lv2PluginState*state) { return false; }
-
+        virtual bool HasErrorMessage() const { return false; }
+        const char* TakeErrorMessage() { return ""; }
         virtual bool IsVst3() const { return false; }
 
     public:

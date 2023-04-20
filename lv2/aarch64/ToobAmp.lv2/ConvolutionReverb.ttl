@@ -25,10 +25,10 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 
-@prefix toobConvolutionReverb: <http://two-play.com/plugins/toob-convolution-reverb#> .
-@prefix toobImpulse: <http://two-play.com/impulseFile#> .
-
-toobImpulse:#impulseFile
+@prefix toobcr: <http://two-play.com/plugins/toob-convolution-reverb#> .
+@prefix toobimpulse: <http://two-play.com/plugins/toob-impulse#> .
+                      
+toobimpulse:impulseFile
         a rdf:property;
         rdfs:label "File";
         rdfs:range atom:Path.
@@ -154,16 +154,17 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
 
         mod:brand "TooB";
         mod:label "Convolution Reverb";
-        lv2:requiredFeature urid:map ;
+        lv2:requiredFeature urid:map, state:makePath, state:mapPath ;
+        lv2:optionalFeature state::freePath;
         lv2:extensionData state:interface;
 
 
         lv2:optionalFeature lv2:hardRTCapable;
         patch:readable 
-                toobImpulse:#impulseFile
+                toobimpulse:impulseFile
                 ;
         patch:writable 
-                toobImpulse:#impulseFile
+                toobimpulse:impulseFile
                 ;
         lv2:extensionData state:interface,
                 work:interface;
@@ -225,12 +226,54 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                         rdf:value -40.0
                 ];
                 rdfs:comment "Reverb mix. Set to minimum to disable." ;
+        ],
+                [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 3 ;
+                lv2:portProperty epp:notOnGUI;
+
+                lv2:symbol "reverb_mix2" ;
+                lv2:name "IR Mix";
+
+                lv2:default -10.0 ;
+                lv2:minimum -40.0 ;
+                lv2:maximum 20.0 ;    
+                units:unit units:db ;
+
+                lv2:scalePoint [
+                        rdfs:label "-INF" ;
+                        rdf:value -40.0
+                ];
+                rdfs:comment "Reverb mix. Set to minimum to disable." ;
         ],  
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 3 ;
+                lv2:index 4 ;
+                lv2:portProperty epp:notOnGUI;
+                lv2:symbol "reverb_mix3" ;
+                lv2:name "IR Mix";
+
+                lv2:default -10.0 ;
+                lv2:minimum -40.0 ;
+                lv2:maximum 20.0 ;    
+                units:unit units:db ;
+
+                lv2:scalePoint [
+                        rdfs:label "-INF" ;
+                        rdf:value -40.0
+                ];
+                rdfs:comment "Reverb mix. Set to minimum to disable." ;
+        ],  
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 5 ;
                 lv2:symbol "predelay" ;
                 lv2:name "Predelay";
 
@@ -255,7 +298,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 a lv2:OutputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 4 ;
+                lv2:index 6 ;
                 lv2:symbol "loading_state" ;
                 lv2:name "Status";
 
@@ -295,14 +338,14 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 5 ;
+                lv2:index 7 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 6 ;
+                lv2:index 8 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ],
@@ -314,7 +357,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 lv2:designation lv2:control ;
                 atom:supports patch:Message ;
 
-                lv2:index 7 ;
+                lv2:index 9 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Control" ;
@@ -324,7 +367,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 atom:bufferType atom:Sequence ;
                 atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 8;
+                lv2:index 10;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Notification" ;
@@ -332,23 +375,28 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
         .
 
 
-<http://two-play.com/plugins/toob-convolution-reverb>  pipedal_ui:ui toobConvolutionReverb:ui .
+<http://two-play.com/plugins/toob-convolution-reverb>  pipedal_ui:ui toobcr:ui .
 
-toobConvolutionReverb:ui 
+toobcr:ui 
         a pipedal_ui:ui ;
         pipedal_ui:fileProperties 
         [
                 a pipedal_ui:fileProperty;
                 rdfs:label "Impulse File" ;
                 lv2:index 4 ;
-                pipedal_ui:patchProperty toobImpulse:impulseFile ;
+                pipedal_ui:patchProperty toobimpulse:impulseFile ;
                 pipedal_ui:directory "ReverbImpulseFiles";
                 pipedal_ui:fileTypes 
                 [
                         a pipedal_ui:fileType;
                         rdfs:label "WAV File";
-                        pipedal_ui:fileExtension ".wav";
-                ];
+                        pipedal_ui:mimeType "audio/wav";
+                ],
+                [
+                        a pipedal_ui:fileType;
+                        rdfs:label "FLAC File";
+                        pipedal_ui:mimeType "audio/flac";
+                ]                ;
         ];
         ui:portNotification 
         [

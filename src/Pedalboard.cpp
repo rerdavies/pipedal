@@ -199,6 +199,7 @@ JSON_MAP_BEGIN(PedalboardItem)
     JSON_MAP_REFERENCE_CONDITIONAL(PedalboardItem,topChain,IsPedalboardSplitItem)
     JSON_MAP_REFERENCE_CONDITIONAL(PedalboardItem,bottomChain,&IsPedalboardSplitItem)
     JSON_MAP_REFERENCE(PedalboardItem,midiBindings)
+    JSON_MAP_REFERENCE(PedalboardItem,stateUpdateCount)
     JSON_MAP_REFERENCE(PedalboardItem,lv2State)
 JSON_MAP_END()
 

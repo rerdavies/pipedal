@@ -45,6 +45,7 @@
 
 #define PIPEDAL_UI__fileType  PIPEDAL_UI_PREFIX "fileType"
 #define PIPEDAL_UI__fileExtension  PIPEDAL_UI_PREFIX "fileExtension"
+#define PIPEDAL_UI__mimeType  PIPEDAL_UI_PREFIX "mimeType"
 
 #define PIPEDAL_UI__outputPorts  PIPEDAL_UI_PREFIX "outputPorts"
 #define PIPEDAL_UI__text  PIPEDAL_UI_PREFIX "text"
@@ -55,21 +56,25 @@ namespace pipedal {
 
     class PluginHost;
 
-    class PiPedalFileType {
+    class UiFileType {
     private:
         std::string label_;
+        std::string mimeType_;
         std::string fileExtension_;
     public:
-        PiPedalFileType() { }
-        PiPedalFileType(PluginHost*pHost, const LilvNode*node);
+        UiFileType() { }
+        UiFileType(PluginHost*pHost, const LilvNode*node);
+        UiFileType(const std::string&label, const std::string &fileType);
 
-        static std::vector<PiPedalFileType> GetArray(PluginHost*pHost, const LilvNode*node,const LilvNode*uri);
+
+        static std::vector<UiFileType> GetArray(PluginHost*pHost, const LilvNode*node,const LilvNode*uri);
 
         const std::string& label() const { return label_;}
         const std::string &fileExtension() const { return fileExtension_; }
+        const std::string &mimeType() const { return mimeType_; }
 
     public:
-        DECLARE_JSON_MAP(PiPedalFileType);
+        DECLARE_JSON_MAP(UiFileType);
 
     };
 
@@ -96,7 +101,7 @@ namespace pipedal {
         std::string label_;
         std::int64_t index_ = -1;
         std::string directory_;
-        std::vector<PiPedalFileType> fileTypes_;
+        std::vector<UiFileType> fileTypes_;
         std::string patchProperty_;
         std::string portGroup_;
     public:
@@ -111,7 +116,8 @@ namespace pipedal {
         const std::string &directory() const { return directory_; }
         const std::string&portGroup() const { return portGroup_; }
 
-        const std::vector<PiPedalFileType> &fileTypes() const { return fileTypes_; }
+        const std::vector<UiFileType> &fileTypes() const { return fileTypes_; }
+        std::vector<UiFileType> &fileTypes() { return fileTypes_; }
 
         const std::string &patchProperty() const { return patchProperty_; }
         bool IsValidExtension(const std::string&extension) const;

@@ -35,8 +35,17 @@
 
 namespace pipedal {
 	class LogFeature {
-
+	public:
+		class LogMessageListener {
+		public:
+			virtual void OnLogError(const char*message) = 0;
+			virtual void OnLogWarning(const char*message) = 0;
+			virtual void OnLogInfo(const char*message) = 0;
+			virtual void OnLogDebug(const char*message) = 0;
+		};
 	private:
+		LogMessageListener *logMessageListener = nullptr;
+		std::string messagePrefix;
 		LV2_URID nextAtom = 0;
 		LV2_Feature feature;
 		LV2_Log_Log log;
@@ -59,7 +68,8 @@ namespace pipedal {
 
 	public:
 		LogFeature();
-		void Prepare(MapFeature* map);
+		void Prepare(MapFeature* map, const std::string &messagePrefix, LogMessageListener*listener);
+
 
 		void LogError(const char*fmt,...);
 		void LogWarning(const char*fmt,...);
@@ -82,6 +92,7 @@ namespace pipedal {
 			va_list        ap);
 
 		int vprintf(LV2_URID type, const char* fmt, va_list va);
+
 
 
 	};

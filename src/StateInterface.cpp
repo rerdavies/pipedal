@@ -255,11 +255,12 @@ void Lv2PluginStateEntry::read_json(json_reader &reader)
     {
         std::string v;
         reader.read_member("value",&v);
-        value_.resize(v.length());
+        value_.resize(v.length()+1);
         for (size_t i = 0; i < v.length(); ++i)
         {
             value_[i] = (uint8_t)v[i];
         }
+        value_[v.length()] = 0;
     } else if (atomType_ == LV2_ATOM__Float)
     {
         float v;

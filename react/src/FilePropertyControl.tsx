@@ -27,15 +27,12 @@ import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
-import { PiPedalFileProperty } from './Lv2Plugin';
+import { UiFileProperty } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, ListenHandle, StateChangedHandle } from './PiPedalModel';
 import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-
-
-
-
+import {PedalboardItem} from './Pedalboard';
 
 
 export const StandardItemSize = { width: 80, height: 140 }
@@ -73,13 +70,14 @@ const styles = (theme: Theme) => createStyles({
 
 
 export interface FilePropertyControlProps extends WithStyles<typeof styles> {
-    instanceId: number;
-    fileProperty: PiPedalFileProperty;
-    onFileClick: (fileProperty: PiPedalFileProperty, value: string) => void;
+    fileProperty: UiFileProperty;
+    pedalboardItem: PedalboardItem;
+    onFileClick: (fileProperty: UiFileProperty, value: string) => void;
     theme: Theme;
 }
 type FilePropertyControlState = {
     error: boolean;
+    hasValue: boolean;
     value: string;
 };
 
@@ -96,6 +94,7 @@ const FilePropertyControl =
 
                 this.state = {
                     error: false,
+                    hasValue: false,
                     value: "",
                 };
                 this.model = PiPedalModelFactory.getInstance();
@@ -108,12 +107,12 @@ const FilePropertyControl =
 
             refreshPatchProperty()
             {
-                this.model.getPatchProperty(this.props.instanceId, this.props.fileProperty.patchProperty)
+                this.model.getPatchProperty(this.props.pedalboardItem.instanceId, this.props.fileProperty.patchProperty)
                     .then(
                         (json: any) => {
                             if (json && json.otype_ === "Path") {
                                 let path = json.value as string;
-                                this.setState({ value: path });
+                                this.setState({ value: path, hasValue: true });
                             }
                         }
                     )
@@ -138,7 +137,7 @@ const FilePropertyControl =
                 }
                 this.refreshPatchProperty();
                 this.stateChangedHandle = this.model.addLv2StateChangedListener(
-                    this.props.instanceId,
+                    this.props.pedalboardItem.instanceId,
                     () => {
                         this.refreshPatchProperty();
                     });
@@ -149,19 +148,25 @@ const FilePropertyControl =
                     this.model.removeLv2StateChangedListener(this.stateChangedHandle);
                 }
             }
+            private mounted: boolean = false;
             componentDidMount() {
+                this.mounted = true;
                 this.subscribeToPropertyGet();
             }
             componentWillUnmount() {
                 this.unsubscribeToPropertyGet();
+                this.mounted = false;
             }
             componentDidUpdate(prevProps: Readonly<FilePropertyControlProps>, prevState: Readonly<FilePropertyControlState>, snapshot?: any): void {
                 if (prevProps.fileProperty.patchProperty !== this.props.fileProperty.patchProperty
-                    || prevProps.instanceId !== this.props.instanceId) {
-                    this.setState({ value: "" });
+                    || prevProps.pedalboardItem.instanceId !== this.props.pedalboardItem.instanceId
+                    || prevProps.pedalboardItem.stateUpdateCount !== this.props.pedalboardItem.stateUpdateCount
+
+                    ) {
                     this.unsubscribeToPropertyGet();
                     this.subscribeToPropertyGet();
                 }
+
             }
 
 
@@ -193,9 +198,15 @@ const FilePropertyControl =
                 //let classes = this.props.classes;
                 let fileProperty = this.props.fileProperty;
 
-                let value = this.fileNameOnly(this.state.value);
-                if (!value || value.length === 0) {
-                    value = "\u00A0";
+                let value = "\u00A0";
+                if (this.state.hasValue)
+                {
+                    if (this.state.value.length === 0)
+                    {
+                        value = "<none>";
+                    } else {
+                        value = this.fileNameOnly(this.state.value);
+                    }
                 }
 
                 let item_width = 264;

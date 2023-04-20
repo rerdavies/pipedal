@@ -107,23 +107,78 @@ export class PortGroup {
     program_list_id: number = -1;
 };
 
-export class PiPedalFileType {
-    deserialize(input: any): PiPedalFileType {
+export class UiFileType {
+    deserialize(input: any): UiFileType {
         this.name = input.name;
         this.fileExtension = input.fileExtension;
+        this.mimeType = input.mimeType;
         return this;
     }
-    static deserialize_array(input: any): PiPedalFileType[]
+    static deserialize_array(input: any): UiFileType[]
     {
-        let result: PiPedalFileType[] = [];
+        let result: UiFileType[] = [];
         for (let i = 0; i < input.length; ++i)
         {
-            result[i] = new PiPedalFileType().deserialize(input[i]);
+            result[i] = new UiFileType().deserialize(input[i]);
+        }
+        return result;
+    }
+
+    private static IsAndroid() : boolean
+    {
+        return /Android/i.test(navigator.userAgent);
+    }
+    static MergeMimeTypes(fileTypes: UiFileType[]): string
+    {
+        if (fileTypes.length === 0) { 
+            return "";
+        }
+        let result = fileTypes[0].mimeType;
+        for (let i = 1; i < fileTypes.length; ++i)
+        {
+            let fileType = fileTypes[i];
+            if (fileType.mimeType !== result)
+            {
+                if (result.startsWith("audio/") && fileType.mimeType.startsWith("audio/"))
+                {
+                    result = "audio/*";
+                } else if (result.startsWith("video/") && fileType.mimeType.startsWith("video/"))
+                {
+                    result = "video/*";
+                } else if (result.startsWith("text/") && fileType.mimeType.startsWith("text/"))
+                {
+                    result = "text/*";
+                } else {
+                    result = "application/octet-stream";
+                }
+            }
+        }
+        if (this.IsAndroid())
+        {
+            if (result.startsWith("audio/")) result = "audio/*";
+            if (result.startsWith("video/")) result = "video/*";
+            if (result.startsWith("text/")) result = "text/*";
+        } else {
+            // chrome desktop thinks "application/octet-stream" is .exe, .com, or .bat.
+            // Feed it file extensions isntead.
+            if (result = "application/octet-stream")
+            {
+                result = "";
+                for (let i = 0; i < fileTypes.length; ++i)
+                {
+                    if (i !== 0)
+                    {
+                        result += ',';
+                    }
+                    result += fileTypes[i].fileExtension;
+                }
+            }
         }
         return result;
     }
     name: string = "";
     fileExtension: string = "";
+    mimeType: string = "";
 }
 
 export class UiPropertyNotification {
@@ -150,23 +205,23 @@ export class UiPropertyNotification {
     protocol: string = "";
 
 };
-export class PiPedalFileProperty {
-        deserialize(input: any): PiPedalFileProperty
+export class UiFileProperty {
+        deserialize(input: any): UiFileProperty
         {
             this.label = input.label;
-            this.fileTypes = PiPedalFileType.deserialize_array(input.fileTypes);
+            this.fileTypes = UiFileType.deserialize_array(input.fileTypes);
             this.patchProperty = input.patchProperty;
             this.directory = input.directory;
             this.index = input.index;
             this.portGroup = input.portGroup;
             return this;
         }
-        static deserialize_array(input: any): PiPedalFileProperty[]
+        static deserialize_array(input: any): UiFileProperty[]
         {
-            let result: PiPedalFileProperty[] = [];
+            let result: UiFileProperty[] = [];
             for (let i = 0; i < input.length; ++i)
             {
-                result[i] = new PiPedalFileProperty().deserialize(input[i]);
+                result[i] = new UiFileProperty().deserialize(input[i]);
             }
             return result;
         }
@@ -191,7 +246,7 @@ export class PiPedalFileProperty {
             if (this.fileTypes.length === 0) {
                 return true;
             }
-            let extension = PiPedalFileProperty.getFileExtension(filename);
+            let extension = UiFileProperty.getFileExtension(filename);
             for (let fileType of this.fileTypes)
             {
                 if (fileType.fileExtension === extension )
@@ -203,7 +258,7 @@ export class PiPedalFileProperty {
         }
 
         label:   string = "";
-        fileTypes: PiPedalFileType[] = [];
+        fileTypes: UiFileType[] = [];
         patchProperty: string = "";
         directory: string = "";
         index: number = -1;
@@ -226,7 +281,7 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
         this.port_groups = PortGroup.deserialize_array(input.port_groups);
         if (input.fileProperties)
         {
-            this.fileProperties = PiPedalFileProperty.deserialize_array(input.fileProperties)
+            this.fileProperties = UiFileProperty.deserialize_array(input.fileProperties)
         } else {
             this.fileProperties = [];
         }
@@ -251,7 +306,7 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
     comment:            string = "";
     ports:              Port[] = Port.EmptyPorts;
     port_groups:        PortGroup[] = [];
-    fileProperties:            PiPedalFileProperty[] = [];
+    fileProperties:            UiFileProperty[] = [];
     uiPortNotifications: UiPropertyNotification[] = [];
 }
 
@@ -508,7 +563,7 @@ export class  UiControl implements Deserializable<UiControl> {
     }
 
     formatDisplayValue(value: number): string {
-        if (this.integer_property || this.enumeration_property) {
+        if (this.integer_property) {
             value = Math.round(value);
         }
 
@@ -614,7 +669,7 @@ export class UiPlugin implements Deserializable<UiPlugin> {
         this.port_groups = PortGroup.deserialize_array(input.port_groups);
         if (input.fileProperties)
         {
-            this.fileProperties = PiPedalFileProperty.deserialize_array(input.fileProperties)
+            this.fileProperties = UiFileProperty.deserialize_array(input.fileProperties)
         } else {
             this.fileProperties = [];
         }
@@ -682,7 +737,7 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     description: string  = "";
     controls:            UiControl[] = [];
     port_groups:         PortGroup[] = [];
-    fileProperties:             PiPedalFileProperty[] = [];
+    fileProperties:             UiFileProperty[] = [];
     is_vst3 :            boolean = false;
 }
 

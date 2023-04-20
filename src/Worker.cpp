@@ -82,15 +82,16 @@ LV2_Worker_Status Worker::WorkerRespond(uint32_t size, const void *data)
 {
     {
         std::lock_guard lock(outstandingRequestMutex);
-        ++outstandingRequests;
+        ++outstandingResponses;
     }
     LV2_Worker_Status status;
     if (responseRingBuffer.writeSpace() < sizeof(size) + size)
     {
         {
+            Lv2Log::warning(SS("LV2 Worker response too large: " << size << " bytes."));
             std::lock_guard lock(outstandingRequestMutex);
-            --outstandingRequests;
-            cvOutstandingRequests.notify_all();
+            --outstandingResponses;
+            // no need to notify, because outstandingRequests will be decremented after return.
         }
         return LV2_WORKER_ERR_NO_SPACE;
     }
@@ -123,7 +124,7 @@ bool Worker::EmitResponses()
         responseRingBuffer.read(sizeof(size), (uint8_t *)&size);
         if (size > responseBuffer.size())
         {
-            responseBuffer.resize(size);
+            responseBuffer.resize(size); // allocation on the RT thread! But it's rare, and we have no choice.
         }
         uint8_t *pResponse = &(responseBuffer[0]);
 
@@ -132,29 +133,34 @@ bool Worker::EmitResponses()
         workerInterface->work_response(lilvInstance->lv2_handle, size, pResponse);
         {
             std::lock_guard lock(outstandingRequestMutex);
-            --outstandingRequests;
+            --outstandingResponses;
+            cvOutstandingRequests.notify_all(); // must be done WITH the lock, since we may be destructed after the mutex is released.
         }
-        cvOutstandingRequests.notify_all();
     }
     return emitted;
 }
 
 void Worker::WaitForAllResponses()
 {
+    using Clock = std::chrono::steady_clock;
+    auto startTime = Clock::now();
     while (true)
     {
+        // can't do condition_variable::wait_until due to OS restrictions.
+        // instead, sleep briefly, waiting for wait tasks to complete.
         bool gotResponse = EmitResponses();
         {
             std::unique_lock lock(outstandingRequestMutex);
-            if (outstandingRequests == 0)
+            if (outstandingRequests == 0 && outstandingResponses == 0)
             {
                 break;
             }
-            if (!gotResponse)
-            {
-                cvOutstandingRequests.wait(lock);
-            }
         }
+        std::chrono::seconds waitDuration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now()-startTime);
+        if (waitDuration.count() > 5) {
+            throw std::logic_error("Timed out waiting for a Worker task to complete.");
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(15));
     }
 }
 
@@ -165,10 +171,6 @@ LV2_Worker_Status Worker::ScheduleWork(
     {
         std::lock_guard lock(outstandingRequestMutex);
         ++outstandingRequests;
-        if (exiting)
-        {
-            return LV2_WORKER_ERR_NO_SPACE;
-        }
     }
     LV2_Worker_Status status = this->pHostWorker->ScheduleWork(this, size, data);
     if (status != LV2_Worker_Status::LV2_WORKER_SUCCESS)
@@ -176,8 +178,9 @@ LV2_Worker_Status Worker::ScheduleWork(
         {
             std::lock_guard lock(outstandingRequestMutex);
             --outstandingRequests;
+            cvOutstandingRequests.notify_all(); // must be done WITH the lock!
+            return status; 
         }
-        cvOutstandingRequests.notify_all();
     }
     return status;
 }
@@ -308,11 +311,14 @@ LV2_Worker_Status HostWorkerThread::ScheduleWork(Worker *worker, size_t size, co
 void Worker::RunBackgroundTask(size_t size, uint8_t *data)
 {
     workerInterface->work(lilvInstance->lv2_handle, worker_respond_fn, (LV2_Handle)this, size, data);
-
-    bool notify = false;
     {
-        std::lock_guard lock(outstandingRequestMutex);
-        --outstandingRequests;
+        std::lock_guard lock { this->outstandingRequestMutex};
+        --this->outstandingRequests;
+        if (this->outstandingRequests == 0)
+        {
+            this->cvOutstandingRequests.notify_all();
+        }
+
     }
-    cvOutstandingRequests.notify_all();
+
 }

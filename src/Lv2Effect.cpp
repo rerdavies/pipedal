@@ -54,6 +54,7 @@ Lv2Effect::Lv2Effect(
 {
     auto pWorld = pHost_->getWorld();
 
+    logFeature.Prepare(&(pHost_->GetMapFeature()),info_->name() + ": ",this);
     this->bypassStartingSamples = (uint32_t)(pHost->GetSampleRate() * BYPASS_TIME_S);
 
     this->bypass = pedalboardItem.isEnabled();
@@ -70,6 +71,8 @@ Lv2Effect::Lv2Effect(
     lilv_node_free(uriNode);
 
     LV2_Feature *const *features = pHost_->GetLv2Features();
+
+    this->features.push_back(logFeature.GetFeature());
 
     for (auto p = features; *p != nullptr; ++p)
     {
@@ -92,7 +95,7 @@ Lv2Effect::Lv2Effect(
     }
     this->features.push_back(nullptr);
 
-    LV2_Feature **myFeatures = &this->features[0];
+    const LV2_Feature **myFeatures = &this->features[0];
 
     LilvInstance *pInstance = nullptr;
     try {
@@ -675,5 +678,29 @@ bool Lv2Effect::GetLv2State(Lv2PluginState*state)
     }
 }
 
+
+void Lv2Effect::OnLogError(const char*message)
+{
+    // only errors get transmitted to the client.
+    strncpy(this->errorMessage,message,sizeof(errorMessage));
+    errorMessage[sizeof(errorMessage)-1] = '\0';
+    this->hasErrorMessage = true;
+}
+
+void Lv2Effect::OnLogWarning(const char*message)
+{
+    Lv2Log::warning(message);
+
+}
+void Lv2Effect::OnLogInfo(const char*message)
+{
+    Lv2Log::info(message);
+
+}
+void Lv2Effect::OnLogDebug(const char*message)
+{
+    Lv2Log::debug(message);
+
+}
 
 

@@ -17,7 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { UiPlugin, UiControl, PluginType, PiPedalFileProperty } from './Lv2Plugin';
+import { UiPlugin, UiControl, PluginType, UiFileProperty } from './Lv2Plugin';
 
 import { PiPedalArgumentError, PiPedalStateError } from './PiPedalError';
 
@@ -588,6 +588,10 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onSystemMidiBindingsChanged") {
             let bindings = MidiBinding.deserialize_array(body);
             this.systemMidiBindings.set(bindings);
+        } else if (message === "onErrorMessage")
+        {
+            this.showAlert(body as string);
+
         } else {
             throw new PiPedalStateError("Unrecognized message received from server: " + message);
         }
@@ -1054,6 +1058,8 @@ export class PiPedalModel //implements PiPedalModel
 
 
     handleOnLoadPluginPreset(instanceId: number, controlValues: ControlValue[]) {
+        // note that plugins with state are dealt with server-side.
+        // if we made it here, we can just load the controls.
         let pedalboard = this.pedalboard.get();
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalboard = pedalboard.clone();
@@ -1342,13 +1348,15 @@ export class PiPedalModel //implements PiPedalModel
         while (true) {
             let v = it.next();
             if (v.done) break;
-            let item = v.value;
+            let item = v.value; 
             if (item.instanceId === itemId) {
+                item.deserialize(new PedalboardItem()); // skeezy way to re-initialize.
                 item.instanceId = ++newPedalboard.nextInstanceId;
                 item.uri = selectedUri;
                 item.pluginName = plugin.name;
                 item.controlValues = this.getDefaultValues(item.uri);
                 item.isEnabled = true;
+                // lv2State: not valid. vstState : not valid.
                 this.pedalboard.set(newPedalboard);
                 this.updateServerPedalboard()
                 return item.instanceId;
@@ -1590,7 +1598,7 @@ export class PiPedalModel //implements PiPedalModel
             });
     }
 
-    requestFileList(piPedalFileProperty: PiPedalFileProperty): Promise<string[]> {
+    requestFileList(piPedalFileProperty: UiFileProperty): Promise<string[]> {
         return nullCast(this.webSocket)
             .request<string[]>('requestFileList', piPedalFileProperty);
     }
