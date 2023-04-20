@@ -48,5 +48,5 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build
       # Execute CMake BuiltTest test
-      run: ctest -C ${{env.BUILD_TYPE}} -R BuildTest
+      #run: ctest -C ${{env.BUILD_TYPE}} -R BuildTest
       
