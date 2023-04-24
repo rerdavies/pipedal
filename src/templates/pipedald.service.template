@@ -3,7 +3,6 @@ Description=${DESCRIPTION}
 After=network.target
 After=sound.target
 After=local-fs.target
-After=avahi-daemon
 
 
 

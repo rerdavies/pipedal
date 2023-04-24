@@ -1,6 +1,6 @@
 # Release Notes
 
-## PiPedal 1.1.20
+## PiPedal 1.1.21
 
 Features:
 

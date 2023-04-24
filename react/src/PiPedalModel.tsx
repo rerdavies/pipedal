@@ -957,8 +957,8 @@ export class PiPedalModel //implements PiPedalModel
 
     }
     enterBackgroundState() {
-        // on Android, delay entering background state by 3 seconds,
-        // so that screen-flips don't trigger disconnects.
+        // on Android, delay entering background state by 180 seconds,
+        // since background management is more complicated. e.g. screen flips, and system upload dialogs.
 
         if (this.isAndroidHosted()) {
             if (this.backgroundStateTimeout) {
@@ -967,7 +967,7 @@ export class PiPedalModel //implements PiPedalModel
             this.backgroundStateTimeout = setTimeout(() => {
                 this.backgroundStateTimeout = undefined;
                 this.enterBackgroundState_();
-            }, 3000);
+            }, 180000);
         } else {
             this.enterBackgroundState_();
         }

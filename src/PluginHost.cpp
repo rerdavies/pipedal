@@ -71,26 +71,6 @@ namespace pipedal
 
     static const char *LV2_MIDI_PLUGIN = "http://lv2plug.in/ns/lv2core#MIDIPlugin";
 
-    // static const char *LV2_AUDIO_PORT = P_LV2_CORE_URI "AudioPort";
-    // static const char *LV2_PLUGIN = P_LV2_CORE_URI "Plugin";
-    // static const char *LV2_CONTROL_PORT = P_LV2_CORE_URI "ControlPort";
-    // static const char *LV2_INPUT_PORT = P_LV2_CORE_URI "InputPort";
-    // static const char *LV2_OUTPUT_PORT = P_LV2_CORE_URI "OutputPort";
-    // static const char *LV2_INTEGER = P_LV2_CORE_URI "integer";
-    // static const char *LV2_ENUMERATION = P_LV2_CORE_URI "enumeration";
-    // static const char *LV2_PORT_LOGARITHMIC = P_LV2_PPROPS "logarithmic";
-    // static const char *LV2_PORT_RANGE_STEPS = P_LV2_PPROPS "rangeSteps";
-    // static const char *LV2_PORT_TRIGGER = P_LV2_PPROPS "trigger";
-    // static const char *LV2_PORT_DISPLAY_PRIORITY = P_LV2_PPROPS "displayPriority";
-    
-
-    // static const char *LV2_ATOM_PORT = "http://lv2plug.in/ns/ext/atom#AtomPort";
-    // static const char *LV2_ATOM_SEQUENCE = "http://lv2plug.in/ns/ext/atom#Sequence";
-    // static const char *LV2_ATOM_SOUND = "http://lv2plug.in/ns/ext/atom#Sound";
-    // static const char *LV2_ATOM_VECTOR = "http://lv2plug.in/ns/ext/atom#Vector";
-    // static const char *LV2_ATOM_STRING = "http://lv2plug.in/ns/ext/atom#String";
-    // static const char *LV2_MIDI_EVENT = "http://lv2plug.in/ns/ext/midi#MidiEvent";
-    // static const char *LV2_DESIGNATION = "http://lv2plug.in/ns/lv2core#Designation";
 
     class PluginHost::Urids
     {

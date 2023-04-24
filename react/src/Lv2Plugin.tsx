@@ -161,7 +161,7 @@ export class UiFileType {
         } else {
             // chrome desktop thinks "application/octet-stream" is .exe, .com, or .bat.
             // Feed it file extensions isntead.
-            if (result = "application/octet-stream")
+            if (result === "application/octet-stream")
             {
                 result = "";
                 for (let i = 0; i < fileTypes.length; ++i)

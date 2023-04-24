@@ -825,11 +825,13 @@ int main(int argc, char *argv[])
             }
         }
 
-        Lv2Log::info("Shutting down gracefully.");
+        Lv2Log::info("Closing audio session.");
         model.Close();
+        
         Lv2Log::info("Stopping web server.");
         server->ShutDown(5000);
         server->Join();
+
         Lv2Log::info("Shutdown complete.");
     }
     catch (const std::exception &e)
