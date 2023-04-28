@@ -7,10 +7,10 @@ The procedure for enabling realtime scheduling varies between Linux distribution
 
 Most modern distributions have the RTKIT DBus service, which allow programs to request realtime priority. But the restrictions imposed by the RTKIT 
 DBus service prevent the TooB plugins from running. RTKIT does have configuration options, but the procedure for configuring RTKIT is unusually difficult. 
-If TooB plugins exceed the limits imposed by RTKIT (or if the RTKIT service doesn't exist), the easiest solution is to grant realtime scheduling permissions to 
-the current user. In truth, you want to make these changes, since they will increase amount of CPU time available to all audio plugins by 500%! (Just one of the reasons you should not be running pro-audio applications with RTKIT).
+The easiest solution is to grant realtime scheduling permissions to 
+the current user using the RLIMIT subsystem. In truth, you want to make these changes anyway, since they will increase amount of CPU time available to all audio plugins by 500%! (Just one of the reasons you should not be running pro-audio applications with RTKIT).
 
-The native Linux scheduler calls require the user to have appropriate permissions. To grant permissions for the TooB plugins, make the following
+The native Linux scheduler calls require the user to have appropriate permissions. To grant permissions to the TooB plugins, make the following
 modifications to your system.
 
 On many Linux distros, any user of the audio group is granted realtime scheduling permissions. Check for files in the `/etc/limits.d/` directory named nn-audio.conf.
@@ -34,3 +34,4 @@ or add the following line to grant realtime scheduling permissions for all users
 
 Once you have made the change, reboot to make the change take effect.
 
+A more detailed discussion of why these changes need to be made can be found [here](https://github.com/rerdavies/pipedal/discussions/99), if you're interested.
