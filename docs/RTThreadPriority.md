@@ -1,5 +1,7 @@
 ### Enabling Realtime Scheduling
 
+_Note that running the plugins with PiPedal does not require this change. The Pipedal package installer grants real-time scheduling permission to the pipedald daemon at install time._
+
 The TooB Convolution Reverb and TooB Cab IR effects require realtime scheduling to be enabled for the current user 
 in order process convolution data on background threads while audio is running in realtime.
 
