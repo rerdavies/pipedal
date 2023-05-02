@@ -29,7 +29,7 @@
 @prefix toobimpulse: <http://two-play.com/plugins/toob-impulse#> .
                       
 toobimpulse:impulseFile
-        a rdf:property;
+        a lv2:Parameter;
         rdfs:label "File";
         rdfs:range atom:Path.
 
@@ -154,8 +154,8 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
 
         mod:brand "TooB";
         mod:label "Convolution Reverb";
-        lv2:requiredFeature urid:map, state:makePath, state:mapPath ;
-        lv2:optionalFeature state::freePath;
+        lv2:requiredFeature urid:map;
+        lv2:optionalFeature state::freePath, state:makePath, state:mapPath, work:schedule ;
         lv2:extensionData state:interface;
 
 
@@ -177,9 +177,11 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 lv2:index  0;
                 lv2:symbol "time" ;
                 lv2:name "Max T";
-                lv2:default 2.0 ;
+                lv2:portProperty epp:logarithmic;
+
+                lv2:default 1.5 ;
                 lv2:minimum 0.1 ;
-                lv2:maximum 6.0 ;    
+                lv2:maximum 10.0 ;    
 
                 lv2:portProperty epp:notAutomatic ;
                 lv2:portProperty epp:expensive ;

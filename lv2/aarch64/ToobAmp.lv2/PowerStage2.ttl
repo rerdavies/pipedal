@@ -73,7 +73,6 @@ pstage:stage3
         mod:label "Power Stage";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
-        lv2:extensionData state:interface;
         patch:readable 
                 <http://two-play.com/plugins/toob-power-stage-2#uiState>;
 

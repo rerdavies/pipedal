@@ -69,7 +69,7 @@ use the following plugins in the following order.
         mod:label "Tone Stack";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
-        lv2:extensionData state:interface;
+        
         patch:readable 
                 <http://two-play.com/plugins/toob#frequencyResponseVector>
                 ;

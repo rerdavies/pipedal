@@ -65,7 +65,7 @@ inputStage:filterGroup
         mod:label "Input Stage";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
-        lv2:extensionData state:interface;
+        
         patch:readable 
                 <http://two-play.com/plugins/toob#frequencyResponseVector>, 
                 <http://two-play.com/plugins/toob-input_stage#uiState>;

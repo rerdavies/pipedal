@@ -9,6 +9,6 @@ Package: pipedal
 Pre-Depends: hostapd;authbind;dnsmasq
 Priority: optional
 Section: sound
-Version: 1.1.21
+Version: 1.1.22
 Installed-Size: 15147
 

@@ -56,7 +56,6 @@
         mod:label "Cab Simulator";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
-        lv2:extensionData state:interface;
         patch:readable 
                 <http://two-play.com/plugins/toob#frequencyResponseVector>, 
                 <http://two-play.com/plugins/toob-cab-sim#uiState>;
