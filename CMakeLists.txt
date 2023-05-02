@@ -72,9 +72,10 @@ install(CODE
 ]]
 )
 
-install(
-    CODE "execute_process(COMMAND ${CMAKE_INSTALL_PREFIX}/bin/pipedalconfig --install)"
-)
+# Should be done by install.sh instead of here so that we can build the package without root permissions.
+# install(
+#     CODE "execute_process(COMMAND ${CMAKE_INSTALL_PREFIX}/bin/pipedalconfig --install)"
+# )
 
 
 set(CPACK_GENERATOR "DEB")
