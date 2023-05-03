@@ -781,6 +781,49 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
          << "\n";
 }
 
+static std::string GetCurrentWebServicePort()
+{
+    std::filesystem::path servicePath = GetServiceFileName(NATIVE_SERVICE);
+    try
+    {
+        if (std::filesystem::exists(servicePath))
+        {
+            {
+                ifstream f(servicePath);
+                if (!f.is_open())
+                {
+                    throw PiPedalException(SS("Can't open " << servicePath));
+                }
+                while (true)
+                {
+                    std::string line;
+                    if (f.eof())
+                        break;
+                    std::getline(f, line);
+                    if (line.starts_with("ExecStart="))
+                    {
+                        auto startPos = line.find("-port ");
+                        if (startPos != std::string::npos)
+                        {
+                            startPos = startPos+6;
+                            auto endPos = line.find(" -systemd");
+                            if (endPos != std::string::npos)
+                            {
+                                std::string result = line.substr(startPos,endPos-startPos);
+                                return result;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch (const std::exception &/*ignored*/)
+    {
+    }
+    return "";
+}
+
 static void PrintHelp()
 {
     PrettyPrinter pp;
@@ -930,6 +973,7 @@ int main(int argc, char **argv)
     bool enable = false, disable = false, restart = false;
     bool enable_ap = false, disable_ap = false;
     bool enable_p2p = false, disable_p2p = false;
+    bool get_current_port = false;
     bool nopkexec = false;
     bool excludeShutdownService = false;
     std::string prefixOption;
@@ -952,19 +996,25 @@ int main(int argc, char **argv)
     parser.AddOption("--enable-p2p", &enable_p2p);
     parser.AddOption("--disable-p2p", &disable_p2p);
 
+    parser.AddOption("--get-current-port", &get_current_port); // private. For debug use only.
+
     parser.AddOption("--excludeShutdownService", &excludeShutdownService); // private (unstable) option used by shutdown service.
     try
     {
         parser.Parse(argc, (const char **)argv);
 
-        int actionCount = install + uninstall + stop + start + enable + disable + enable_ap + disable_ap + restart + enable_p2p + disable_p2p;
+        int actionCount = get_current_port + install + uninstall + stop + start + enable + disable + enable_ap + disable_ap + restart + enable_p2p + disable_p2p;
         if (actionCount > 1)
         {
             throw PiPedalException("Please provide only one action.");
         }
-        if (actionCount == 0)
+        if (argc == 1 )
         {
             help = true;
+        } else if (actionCount == 0)
+        {
+
+            throw PiPedalException("No action provided.");
         }
         if ((!enable_p2p) && (!enable_ap))
         {
@@ -991,6 +1041,11 @@ int main(int argc, char **argv)
     {
         PrintHelp();
         return EXIT_SUCCESS;
+    }
+    if (get_current_port)
+    {
+        std::cout << "current port: " << GetCurrentWebServicePort() << std::endl;
+        return 0;
     }
     if (portOption.size() != 0 && !install)
     {
@@ -1044,7 +1099,11 @@ int main(int argc, char **argv)
 
             if (portOption == "")
             {
-                portOption = "80";
+                portOption = GetCurrentWebServicePort();
+                if (portOption == "")
+                {
+                    portOption = "80";
+                }
             }
             if (portOption.find(':') == string::npos)
             {

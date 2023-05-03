@@ -223,7 +223,8 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
-                "--uninstall"
+                "--get-current-port"
+                // "--uninstall"
                 //"--enable-p2p" , "--nopkexec"
                 //,"CA", "PiPedalTest","12345678","1"
             ],
