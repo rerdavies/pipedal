@@ -17,7 +17,7 @@ Run the following command:
 gxplugins_1.0_arm64.deb is provided under the terms of the [GNU General Public License v3.0](GPLv3.md).
 
 © 2017-2023 Hermann Meyer <brummer@web.de>  
-© 2019 Olivier Humbert <trebmuh@tuxfamily.org>
+© 2019 Olivier Humbert <trebmuh@tuxfamily.org>  
 © GxPlugins contributors.
 
 Compiled from source at https://github.com/brummer10/GxPlugins.lv2
