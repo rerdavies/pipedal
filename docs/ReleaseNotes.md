@@ -1,5 +1,9 @@
 # Release Notes
 
+## PiPedal 1.1.24
+
+- Reduce TooB Convolution Reverb and Toob Cab IR CPU use by 90%.
+
 ## PiPedal 1.1.23
 
 Features:

@@ -1,7 +1,7 @@
 
 
 <img src="GithubBanner.png" width="100%"/>
-<a href="Installing.html"><i>v1.1.23</i></a>
+<a href="Installing.html"><i>v1.1.24</i></a>
 
 &nbsp;
 
