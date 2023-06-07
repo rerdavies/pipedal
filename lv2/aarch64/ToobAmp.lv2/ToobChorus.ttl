@@ -41,7 +41,7 @@
          lv2:minorVersion 0 ;
         lv2:microVersion 14 ;
         rdfs:comment """
-Emulation of Boss CE-2 Chorus.
+Emulation of a Boss CE-2 Chorus.
 
 """ ;
 
@@ -72,7 +72,7 @@ Emulation of Boss CE-2 Chorus.
                 lv2:default 0.5 ;
                 lv2:minimum 0.0 ;
                 lv2:maximum 1.0 ;
-        ],  
+        ],
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
@@ -86,6 +86,13 @@ Emulation of Boss CE-2 Chorus.
                 lv2:index 3 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 4 ;
+                lv2:symbol "outr" ;
+                lv2:name "OutR"
         ]
         .
 

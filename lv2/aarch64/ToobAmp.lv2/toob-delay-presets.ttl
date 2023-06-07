@@ -1,0 +1,35 @@
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix tpset: <http://two-play.com/plugins/preset#> .
+
+tpset:toob-delay-preset-0
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-delay> ;
+    rdfs:label "Classic" ;
+    lv2:port [
+        lv2:symbol "delay" ;
+        pset:value     340.0 ;
+    ] , [
+        lv2:symbol "feedback" ;
+        pset:value 39.1667 ;
+    ] , [
+        lv2:symbol "level" ;
+        pset:value      27.0 ;
+    ] .
+
+tpset:toob-delay-preset-1
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-delay> ;
+    rdfs:label "Slapback" ;
+    lv2:port [
+        lv2:symbol "delay" ;
+        pset:value 94.6447 ;
+    ] , [
+        lv2:symbol "feedback" ;
+        pset:value 39.1667 ;
+    ] , [
+        lv2:symbol "level" ;
+        pset:value      42.0 ;
+    ] .
+

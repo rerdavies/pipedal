@@ -188,7 +188,7 @@ private:
     static constexpr size_t DEFERRED_MIDI_BUFFER_SIZE = 1024;
 
     uint8_t deferredMidiMessages[DEFERRED_MIDI_BUFFER_SIZE];
-    size_t deferredMidiMessageCount;
+    size_t deferredMidiMessageCount = 0;
     bool midiProgramChangePending = false;
     int selectedBank = -1;
     int64_t midiProgramChangeId = 0;

@@ -97,8 +97,23 @@ public:
     {
     }
 
+    static PluginPreset MakeLilvPreset(
+        uint64_t instanceId,
+        const std::string&label,
+        const std::map<std::string,float> & controlValues,
+        const char*presetUri
+    ) {
+        PluginPreset preset;
+        preset.instanceId_ = instanceId;
+        preset.label_ = label;
+        preset.lilvPresetUri_ = presetUri;
+        preset.controlValues_ = controlValues;
+        return preset;
+    }   
+
     uint64_t instanceId_;
     std::string label_;
+    std::string lilvPresetUri_;
     std::map<std::string,float> controlValues_;
     Lv2PluginState state_;
     DECLARE_JSON_MAP(PluginPreset);

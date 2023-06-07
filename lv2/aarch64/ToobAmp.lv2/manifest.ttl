@@ -1,6 +1,7 @@
 @prefix lv2:  <http://lv2plug.in/ns/lv2core#>  .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>  .
-@prefix modgui: <http://moddevices.com/ns/modgui#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix tpset: <http://two-play.com/plugins/preset#> .
 
 
 <http://two-play.com/plugins/toob-tone-stack> a lv2:Plugin ;
@@ -10,6 +11,11 @@
 <http://two-play.com/plugins/toob-convolution-reverb> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ConvolutionReverb.ttl> .
+
+<http://two-play.com/plugins/toob-convolution-reverb-stereo> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ConvolutionReverbStereo.ttl> .
+
 
 <http://two-play.com/plugins/toob-cab-ir> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
@@ -54,234 +60,136 @@
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobChorus.ttl> .
 
+<http://two-play.com/plugins/toob-flanger> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobFlanger.ttl> .
+
+<http://two-play.com/plugins/toob-flanger-stereo> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobFlangerStereo.ttl> .
+
+
+tpset:toob-flanger-preset-0
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger> ;
+    rdfs:seeAlso <toob-flanger-presets.ttl> .
+
+tpset:toob-flanger-preset-1
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger> ;
+    rdfs:seeAlso <toob-flanger-presets.ttl> .
+
+tpset:toob-flanger-preset-2
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger> ;
+    rdfs:seeAlso <toob-flanger-presets.ttl> .
+
+tpset:toob-flanger-preset-3
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger> ;
+    rdfs:seeAlso <toob-flanger-presets.ttl> .
+
+tpset:toob-flanger-stereo-preset-0
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger-stereo> ;
+    rdfs:seeAlso <toob-flanger-stereo-presets.ttl> .
+
+tpset:toob-flanger-stereo-preset-1
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger-stereo> ;
+    rdfs:seeAlso <toob-flanger-stereo-presets.ttl> .
+
+tpset:toob-flanger-stereo-preset-2
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger-stereo> ;
+    rdfs:seeAlso <toob-flanger-stereo-presets.ttl> .
+
+tpset:toob-flanger-stereo-preset-3
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger-stereo> ;
+    rdfs:seeAlso <toob-flanger-stereo-presets.ttl> .
 
 
 
-# <http://two-play.com/plugins/toob-power-stage>
-#     modgui:gui [
-#         modgui:resourcesDirectory <modgui> ;
-#         modgui:iconTemplate <modgui/icon-toob-power-stage.html> ;
-#         modgui:stylesheet <modgui/stylesheet-toob.css> ;
-#         modgui:screenshot <modgui/screenshot-toob-power-stage.png> ;
-#         modgui:thumbnail <modgui/thumbnail-toob-power-stage.png> ;
-#         modgui:javascript <modgui/script-toob-power-stage.js> ;
+tpset:toob-delay-preset-0
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-delay> ;
+    rdfs:seeAlso <toob-delay-presets.ttl> .
 
-#         modgui:brand "TooB" ;
-#         modgui:label "TooB Power Stage" ;
+tpset:toob-delay-preset-1
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-delay> ;
+    rdfs:seeAlso <toob-delay-presets.ttl> .
 
-#         modgui:monitoredOutputs [ lv2:symbol "notify"] ;
-#         modgui:port [
-#             lv2:index 0 ;
-#             lv2:symbol "trim1" ;
-#             lv2:name "TRIM" ;
-#         ] , [
-#             lv2:index 1 ;
-#             lv2:symbol "gain1" ;
-#             lv2:name "GAIN" ;
-#         ] , [
-#             lv2:index 2 ;
-#             lv2:symbol "locut1" ;
-#             lv2:name "LO CUT" ;
-#         ] , [
-#             lv2:index 3 ;
-#             lv2:symbol "hicut1" ;
-#             lv2:name "HI CUT" ;
-#         ], [
-#             lv2:index 22 ;
-#             lv2:symbol "shape1" ;
-#             lv2:name "SHAPE1" ;
-#         ], [
-#             lv2:index 4 ;
-#             lv2:symbol "gain2_enable" ;
-#             lv2:name "Ena" ;
-#         ] , [
-#             lv2:index 5 ;
-#             lv2:symbol "trim2" ;
-#             lv2:name "TRIM" ;
-#         ] , [
-#             lv2:index 6 ;
-#             lv2:symbol "gain2" ;
-#             lv2:name "GAIN" ;
-#         ] , [
-#             lv2:index 7 ;
-#             lv2:symbol "locut2" ;
-#             lv2:name "LO CUT" ;
-#         ] , [
-#             lv2:index 8 ;
-#             lv2:symbol "hicut2" ;
-#             lv2:name "HI CUT" ;
-#         ], [
-#             lv2:index 23 ;
-#             lv2:symbol "shape2" ;
-#             lv2:name "SHAPE2" ;
-#         ] , [
-#             lv2:index 9 ;
-#             lv2:symbol "gain3_enable" ;
-#             lv2:name "Ena" ;
-#         ] , 
-#         [
-#             lv2:index 10 ;
-#             lv2:symbol "trim3" ;
-#             lv2:name "TRIM" ;
-#         ] , [
-#             lv2:index 11 ;
-#             lv2:symbol "gain3" ;
-#             lv2:name "GAIN" ;
-#         ] , [
-#             lv2:index 12 ;
-#             lv2:symbol "locut3" ;
-#             lv2:name "LO CUT" ;
-#         ] , [
-#             lv2:index 13 ;
-#             lv2:symbol "hicut3" ;
-#             lv2:name "HI CUT" ;
-#         ] , [
-#             lv2:index 24 ;
-#             lv2:symbol "shape3" ;
-#             lv2:name "SHAPE3" ;
-#         ], [
-#             lv2:index 14 ;
-#             lv2:symbol "sag" ;
-#             lv2:name "SAG" ;
-#         ] , [
-#             lv2:index 15 ;
-#             lv2:symbol "sagd" ;
-#             lv2:name "SAGD" ;
-#         ], [
-#             lv2:index 16 ;
-#             lv2:symbol "master" ;
-#             lv2:name "MASTER" ;
-#         ], 
-#         [
-#             a lv2:InputPort ,
-#             lv2:ControlPort ;
+tpset:toob-ml-preset-0
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-ml> ;
+    rdfs:seeAlso <toob-ml-presets.ttl> .
 
-#             lv2:index 21 ;
-#             lv2:symbol "sagf" ;
-#             lv2:name "SagF";
-#         ]
-#         ;
-#     ] .        
+tpset:toob-ml-preset-1
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-ml> ;
+    rdfs:seeAlso <toob-ml-presets.ttl> .
 
-# <http://two-play.com/plugins/toob-input_stage>
-#     modgui:gui [
-#         modgui:resourcesDirectory <modgui> ;
-#         modgui:javascript <modgui/script-toob-input-stage.js> ;
-#         modgui:iconTemplate <modgui/icon-toob-input-stage.html> ;
-#         modgui:stylesheet <modgui/stylesheet-toob.css> ;
-#         modgui:screenshot <modgui/screenshot-toob-input-stage.png> ;
-#         modgui:thumbnail <modgui/thumbnail-toob-input-stage.png> ;
+tpset:toob-ml-preset-2
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-ml> ;
+    rdfs:seeAlso <toob-ml-presets.ttl> .
 
-#         modgui:brand "TooB" ;
-#         modgui:label "TooB Input Stage" ;
+tpset:toob-freeverb-preset-0
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-freeverb> ;
+    rdfs:seeAlso <toob-freeverb-presets.ttl> .
 
-#         modgui:monitoredOutputs [ lv2:symbol "notify"] ;
-#         modgui:port [
-#             lv2:index 0 ;
-#             lv2:symbol "trim" ;
-#             lv2:name "Trim" ;
-#         ] , [
-#             lv2:index 1 ;
-#             lv2:symbol "locut" ;
-#             lv2:name "Lo Cut" ;
-#         ] , [
-#             lv2:index 2 ;
-#             lv2:symbol "bright" ;
-#             lv2:name "Bright" ;
-#         ] , [
-#             lv2:index 3 ;
-#             lv2:symbol "brightf" ;
-#             lv2:name "Bright F" ;
-#         ] , [
-#             lv2:index 4 ;
-#             lv2:symbol "hicut" ;
-#             lv2:name "Hi Cut" ;
-#         ] , [
-#             lv2:index 5 ;
-#             lv2:symbol "gate_t" ;
-#             lv2:name "Gate T" ;
-#         ] , [
-#             lv2:index 6 ;
-#             lv2:symbol "boost" ;
-#             lv2:name "Boost" ;
-#         ] 
-#         ;
-#     ] .
+tpset:toob-freeverb-preset-1
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-freeverb> ;
+    rdfs:seeAlso <toob-freeverb-presets.ttl> .
 
-# <http://two-play.com/plugins/toob-cab-sim>
-#     modgui:gui [
-#         modgui:resourcesDirectory <modgui> ;
-#         modgui:javascript <modgui/script-toob-cab-sim.js> ;
-#         modgui:iconTemplate <modgui/icon-toob-cab-sim.html> ;
-#         modgui:stylesheet <modgui/stylesheet-toob.css> ;
-#         modgui:screenshot <modgui/screenshot-toob-cab-sim.png> ;
-#         modgui:thumbnail <modgui/thumbnail-toob-cab-sim.png> ;
+tpset:toob-freeverb-preset-2
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-freeverb> ;
+    rdfs:seeAlso <toob-freeverb-presets.ttl> .
 
-#         modgui:brand "TooB" ;
-#         modgui:label "TooB Cab Simulator" ;
+###
+tpset:toob-convolution-reverb-stereo-preset-0
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb-stereo> ;
+    rdfs:seeAlso <toob-convolution-reverb-stereo-presets.ttl> .
 
-#         modgui:monitoredOutputs [ lv2:symbol "notify"] ;
-#         modgui:port [
-#             lv2:index 0 ;
-#             lv2:symbol "locut" ;
-#             lv2:name "Lo Cut" ;
-#         ] , [
-#             lv2:index 1 ;
-#             lv2:symbol "bright" ;
-#             lv2:name "Bright" ;
-#         ] , [
-#             lv2:index 2 ;
-#             lv2:symbol "brightf" ;
-#             lv2:name "F" ;
-#         ] , [
-#             lv2:index 3 ;
-#             lv2:symbol "hicut" ;
-#             lv2:name "Hi Cut" ;
-#         ], [
-#             lv2:index 4 ;
-#             lv2:symbol "comb" ;
-#             lv2:name "Comb" ;
-#         ], [
-#             lv2:index 5 ;
-#             lv2:symbol "combf" ;
-#             lv2:name "F" ;
-#         ], [
-#             lv2:index 6 ;
-#             lv2:symbol "trim" ;
-#             lv2:name "Trim" ;
-#         ] 
-#         ;
-#     ] .            
+tpset:toob-convolution-reverb-stereo-preset-1
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb-stereo> ;
+    rdfs:seeAlso <toob-convolution-reverb-stereo-presets.ttl> .
 
-# <http://two-play.com/plugins/toob-tone-stack>
-#     modgui:gui [
-#         modgui:resourcesDirectory <modgui> ;
-#         modgui:javascript <modgui/script-toob-tone-stack.js> ;
-#         modgui:iconTemplate <modgui/icon-toob-tone-stack.html> ;
-#         modgui:stylesheet <modgui/stylesheet-toob.css> ;
-#         modgui:screenshot <modgui/screenshot-toob-tone-stack.png> ;
-#         modgui:thumbnail <modgui/thumbnail-toob-tone-stack.png> ;
+tpset:toob-convolution-reverb-stereo-preset-2
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb-stereo> ;
+    rdfs:seeAlso <toob-convolution-reverb-stereo-presets.ttl> .
 
-#         modgui:brand "TooB" ;
-#         modgui:label "TooB Tone Stack" ;
+tpset:toob-convolution-reverb-stereo-preset-3
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb-stereo> ;
+    rdfs:seeAlso <toob-convolution-reverb-stereo-presets.ttl> .
 
-#         modgui:monitoredOutputs [ lv2:symbol "notify"] ;
-#         modgui:port [
-#             lv2:index 0 ;
-#             lv2:symbol "bass" ;
-#             lv2:name "Bass" ;
-#         ] , [
-#             lv2:index 1 ;
-#             lv2:symbol "mid" ;
-#             lv2:name "Mid" ;
-#         ], [
-#             lv2:index 2 ;
-#             lv2:symbol "treble" ;
-#             lv2:name "Treble" ;
-#         ] , [
-#             lv2:index 3 ;
-#             lv2:symbol "ampmodel" ;
-#             lv2:name "Amp Model" ;
-#         ] 
-#         ;
-#     ] .            
+###
+tpset:toob-convolution-reverb-preset-0
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
+    rdfs:seeAlso <toob-convolution-reverb-presets.ttl> .
+
+tpset:toob-convolution-reverb-preset-1
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
+    rdfs:seeAlso <toob-convolution-reverb-presets.ttl> .
+
+tpset:toob-convolution-reverb-preset-2
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
+    rdfs:seeAlso <toob-convolution-reverb-presets.ttl> .
+
+tpset:toob-convolution-reverb-preset-3
+    a pset:Preset ;
+    lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
+    rdfs:seeAlso <toob-convolution-reverb-presets.ttl> .
+

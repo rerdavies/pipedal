@@ -1,1 +1,0 @@
-cmake --install /home/patch/src/pipedal/build --prefix /usr/local --config Debug 

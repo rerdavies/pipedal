@@ -63,6 +63,14 @@ namespace pipedal
         {
             Free();
             this->node = node;
+            this->isConst = false;
+            return *this;
+        }
+        AutoLilvNode &operator=(const LilvNode *node)
+        {
+            Free();
+            this->node = const_cast<LilvNode*>(node);
+            this->isConst = true;
             return *this;
         }
 

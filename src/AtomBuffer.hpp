@@ -25,7 +25,7 @@
 #pragma once
 
 #include <vector>
-#include "lv2/atom.lv2/atom.h"
+#include "lv2/atom/atom.h"
 
 namespace pipedal
 {

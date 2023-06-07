@@ -1,7 +1,7 @@
 
 <img src='docs/GithubBanner.png' width="100%" /><br/>
 
-Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.1.24</a> 
+Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.1.25</a> 
 
 Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 

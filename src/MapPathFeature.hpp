@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
-#include "lv2/state.lv2/state.h"
+#include "lv2/state/state.h"
 #include <filesystem>
 #include "MapFeature.hpp"
 

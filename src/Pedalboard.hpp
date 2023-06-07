@@ -87,6 +87,7 @@ class PedalboardItem: public JsonMemberWritable {
     std::string vstState_;
     uint32_t stateUpdateCount_ = 0;
     Lv2PluginState lv2State_;
+    std::string lilvPresetUri_;
 public:
     ControlValue*GetControlValue(const std::string&symbol);
     
@@ -104,6 +105,8 @@ public:
     GETTER_SETTER_VEC(midiBindings)
     GETTER_SETTER(stateUpdateCount)
     GETTER_SETTER_REF(lv2State)
+    Lv2PluginState&lv2State() { return lv2State_; } // non-const version.
+    GETTER_SETTER_REF(lilvPresetUri)
 
 
     bool isSplit() const
@@ -142,14 +145,14 @@ class Pedalboard {
 public:
     static constexpr int64_t INPUT_VOLUME_ID = -2; // synthetic PedalboardItem for input volume.
     static constexpr int64_t OUTPUT_VOLUME_ID = -3; // synthetic PedalboardItem for output volume.
-    bool SetControlValue(long pedalItemId, const std::string &symbol, float value);
-    bool SetItemEnabled(long pedalItemId, bool enabled);
+    bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
+    bool SetItemEnabled(int64_t pedalItemId, bool enabled);
 
-    PedalboardItem*GetItem(long pedalItemId);
-    const PedalboardItem*GetItem(long pedalItemId) const;
+    PedalboardItem*GetItem(int64_t pedalItemId);
+    const PedalboardItem*GetItem(int64_t pedalItemId) const;
     std::vector<PedalboardItem*>GetAllPlugins();
 
-    bool HasItem(long pedalItemid) const { return GetItem(pedalItemid) != nullptr; }
+    bool HasItem(int64_t pedalItemid) const { return GetItem(pedalItemid) != nullptr; }
 
     GETTER_SETTER_REF(name)
     GETTER_SETTER_VEC(items)

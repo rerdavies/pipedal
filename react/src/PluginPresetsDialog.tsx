@@ -85,7 +85,8 @@ const styles = (theme: Theme) => createStyles({
     },
     dialogTitle: {
         marginLeft: theme.spacing(2),
-        flex: 1,
+        textOverflow: "ellipsis",
+        flex: "1 1",
     },
     itemFrame: {
         display: "flex",
@@ -382,7 +383,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                                         </IconButton>
 
                                     )}
-                                    <Typography variant="h6" className={classes.dialogTitle}>
+                                    <Typography noWrap variant="h6" className={classes.dialogTitle}>
                                         { title }
                                     </Typography>
                                     {(this.props.presets.getItem(this.state.selectedItem) != null)

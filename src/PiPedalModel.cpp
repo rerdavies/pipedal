@@ -452,9 +452,23 @@ void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::
 {
     {
         std::lock_guard<std::recursive_mutex> lock(mutex);
+
+        if (!this->pedalboard.SetControlValue(pedalItemId, symbol, value))
+        {
+            return;
+        }
+
+
+        PedalboardItem*item = pedalboard.GetItem(pedalItemId);
+
+        // change of split type requires rebuild of the effect
+        // since it can change the number of output channels.
+        if (item != nullptr && item->isSplit() && symbol == "splitType")
+        {
+            this->FirePedalboardChanged(clientId);
+            return;
+        } 
         PreviewControl(clientId, pedalItemId, symbol, value);
-        this->pedalboard.SetControlValue(pedalItemId, symbol, value);
-        IEffect *pEffect = this->lv2Pedalboard->GetEffect(pedalItemId);
 
         {
 
@@ -512,6 +526,17 @@ void PiPedalModel::FireBanksChanged(int64_t clientId)
 
 void PiPedalModel::FirePedalboardChanged(int64_t clientId,bool loadAudioThread)
 {
+    if (loadAudioThread)
+    {
+        // notify the audio thread.
+        if (audioHost->IsOpen())
+        {
+            LoadCurrentPedalboard();
+
+            UpdateRealtimeVuSubscriptions();
+            UpdateRealtimeMonitorPortSubscriptions();
+        }
+    }
     // noify subscribers.
     IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
     for (size_t i = 0; i < subscribers.size(); ++i)
@@ -525,17 +550,6 @@ void PiPedalModel::FirePedalboardChanged(int64_t clientId,bool loadAudioThread)
     }
     delete[] t;
 
-    if (loadAudioThread)
-    {
-        // notify the audio thread.
-        if (audioHost->IsOpen())
-        {
-            LoadCurrentPedalboard();
-
-            UpdateRealtimeVuSubscriptions();
-            UpdateRealtimeMonitorPortSubscriptions();
-        }
-    }
 }
 void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
 {
@@ -1725,13 +1739,18 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
 
         PluginPresetValues presetValues = storage.GetPluginPresetValues(pedalboardItem->uri(), presetInstanceId);
         // if the plugin has state, we have to rebuild the pedalboard, since setting state is not thread-safe.
+        // Same goes if lilvPresetUri is not empty.
+
+        // lilvPresetUri: use lilv to load the preset from the RDF model. Occurs when using a factory preset 
+        // that has state:state, because lilv doesn't allow us to read this data, but does load it.
+        // This is a transient condition.
 
         for (auto&control :  presetValues.controls)
         {
             this->pedalboard.SetControlValue(pluginInstanceId, control.key(), control.value());
         }
 
-        if (!presetValues.state.isValid_)
+        if ((!presetValues.state.isValid_) && presetValues.lilvPresetUri.empty())
         {
             audioHost->SetPluginPreset(pluginInstanceId, presetValues.controls);
 
@@ -1748,6 +1767,7 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
             delete[] t;
         } else {
             pedalboardItem->lv2State(presetValues.state);
+            pedalboardItem->lilvPresetUri(presetValues.lilvPresetUri);
             pedalboardItem->stateUpdateCount(oldStateUpdateCount+1);
             FirePedalboardChanged(-1); // does a complete reload of both client and audio server.
         }
@@ -2003,8 +2023,9 @@ bool PiPedalModel::LoadCurrentPedalboard()
     Lv2PedalboardErrorList errorMessages;
     std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard,errorMessages)};
     this->lv2Pedalboard = lv2Pedalboard;
+
     // apply the error messages to the lv2Pedalboard.
-    // return true if the error messages have changed.
+    // return true if the error messages have changed
     audioHost->SetPedalboard(lv2Pedalboard);
     return true;
 }

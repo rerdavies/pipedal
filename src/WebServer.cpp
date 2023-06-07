@@ -261,7 +261,7 @@ namespace pipedal
                 this->socketHandler = nullptr;
                 webSocket = nullptr;
                 pServer = nullptr;
-                Lv2Log::info("WebSocketSession closed.");
+                Lv2Log::info(SS("WebSocketSession closed. " << fromAddress));
             }
             using ptr = std::shared_ptr<WebSocketSession>;
             WebSocketSession(WebServerImpl *pServer, server::connection_ptr &webSocket)

@@ -1513,6 +1513,15 @@ export class PiPedalModel //implements PiPedalModel
     }
     addPedalboardItem(instanceId: number, append: boolean): number {
         let pedalboard = this.pedalboard.get();
+        if (instanceId === Pedalboard.START_CONTROL && append)
+        {
+            instanceId = pedalboard.items[0].instanceId;
+            append = false;
+        } else if (instanceId === Pedalboard.END_CONTROL && !append)
+        {
+            instanceId = pedalboard.items[pedalboard.items.length-1].instanceId;
+            append = true;
+        }
         let newPedalboard = pedalboard.clone();
         this.updateVst3State(newPedalboard);
 
@@ -1529,6 +1538,18 @@ export class PiPedalModel //implements PiPedalModel
     }
     addPedalboardSplitItem(instanceId: number, append: boolean): number {
         let pedalboard = this.pedalboard.get();
+        
+        if (instanceId === Pedalboard.START_CONTROL && append)
+        {
+            instanceId = pedalboard.items[0].instanceId;
+            append = false;
+        } else if (instanceId === Pedalboard.END_CONTROL && !append)
+        {
+            instanceId = pedalboard.items[pedalboard.items.length-1].instanceId;
+            append = true;
+        }
+
+
         let newPedalboard = pedalboard.clone();
         this.updateVst3State(newPedalboard);
 

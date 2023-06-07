@@ -26,6 +26,8 @@
 #include <thread>
 
 #include <unistd.h> // for gettid()
+#include <codecvt>
+#include <sstream>
 
 using namespace pipedal;
 
@@ -39,4 +41,62 @@ void pipedal::SetThreadName(const std::string &name)
     }
     pthread_t pid = pthread_self();
     pthread_setname_np(pid,threadName.c_str());
+}
+
+
+static const uint8_t utf8extraBytes[256] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
+};
+
+constexpr char32_t ILLEGAL_CHAR32 = U'⊗';
+static const uint8_t utf8Offset[] = { 0,0b11000000, 0b11100000,0b11110000,0b11111000,0b11111100};
+
+std::u32string pipedal::ToUtf32(const std::string &s)
+{
+    std::basic_stringstream<char32_t> result;
+
+    auto p = s.begin();
+    auto end = s.end();
+
+    while (p != end)
+    {
+        uint8_t c = (uint8_t)(*p++);
+        if (c < 0x80)
+        {
+            result << (char32_t)c;
+        } else {
+            auto extraBytes = utf8extraBytes[c];
+            if (extraBytes == 0)
+            {
+                result << ILLEGAL_CHAR32;
+            } else if (p+extraBytes > end)
+            {
+                result << ILLEGAL_CHAR32;
+                break;
+            } else {
+                char32_t cResult = c -= utf8Offset[extraBytes];
+                while (extraBytes != 0)
+                {
+                    c = *p++;
+                    --extraBytes;
+                    if (c < 0x80 || c >= 0xC0)
+                    {
+                        result << ILLEGAL_CHAR32;
+                        p += extraBytes;
+                        break;
+                    }
+                    cResult = (cResult << 6) + (c & 0x3F);
+                }
+                result << cResult;
+            }
+        }
+    }
+    return result.str();
 }

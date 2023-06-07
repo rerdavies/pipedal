@@ -70,6 +70,10 @@ public:
     {
         set(text);
     }
+    uri(const std::string&text)
+    {
+        set(text.c_str());
+    }
     void set(const char*text);
     void set(const char*start, const char*end);
 private:

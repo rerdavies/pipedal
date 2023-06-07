@@ -23,7 +23,7 @@
 #include "Lv2Log.hpp"
 #include "VuUpdate.hpp"
 #include "AudioHost.hpp"
-#include "lv2/atom.lv2/atom.h"
+#include "lv2/atom/atom.h"
 #include <chrono>
 namespace pipedal
 {

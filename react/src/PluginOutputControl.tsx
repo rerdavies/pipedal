@@ -24,7 +24,7 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { UiControl } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
-import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle,State } from './PiPedalModel';
 
 
 
@@ -87,6 +87,16 @@ const PluginOutputControl =
                     value: 0
                 };
                 this.model = PiPedalModelFactory.getInstance();
+                this.onConnectionStateChanged = this.onConnectionStateChanged.bind(this);
+            }
+
+            private onConnectionStateChanged(state: State)
+            {
+                if (state === State.Ready)
+                {
+                    this.unsubscribe();
+                    this.subscribe();
+                }
             }
 
             private mounted: boolean = false;
@@ -95,13 +105,24 @@ const PluginOutputControl =
                     super.componentWillUnmount();
                 }
                 this.mounted = false;
+                this.model.state.removeOnChangedHandler(this.onConnectionStateChanged);
                 this.unsubscribe();
             }
             componentDidMount(): void {
                 this.mounted = true;
                 this.subscribe();
+                this.model.state.addOnChangedHandler(this.onConnectionStateChanged);
+
                 if (super.componentDidMount) {
                     super.componentDidMount();
+                }
+            }
+
+            componentDidUpdate(prevProps: Readonly<PluginOutputControlProps>, prevState: Readonly<PluginOutputControlState>, snapshot?: any): void {
+                if (prevProps.instanceId !== this.props.instanceId)
+                {
+                    this.unsubscribe();
+                    this.subscribe();
                 }
             }
 
@@ -207,7 +228,7 @@ const PluginOutputControl =
                             <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "center", alignItems: "center", flexFlow: "row nowrap" }}>
                                 <div style={{ width: 6, height: 48, background: "#000",  }}>
                                     <div style={{ height: 46, overflow: "hidden", position: "absolute", margin: 1 }}>
-                                        <div ref={this.vuRef} style={{ width: 4, height: 44, background: "#0C0", }} />
+                                        <div ref={this.vuRef} style={{ width: 4, height: 48, background: "#0C0", }} />
                                     </div>
                                 </div>
 

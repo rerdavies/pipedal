@@ -27,8 +27,8 @@
 #include "json.hpp"
 #include "json_variant.hpp"
 #include "AtomConverter.hpp"
-#include "lv2/atom.lv2/util.h"
-#include "lv2/patch.lv2/patch.h"
+#include "lv2/atom/util.h"
+#include "lv2/patch/patch.h"
 #include "MapFeature.hpp"
 #include <cstring>
 

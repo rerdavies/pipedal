@@ -121,6 +121,7 @@ Lv2PluginState StateInterface::Save()
                 features);
         CheckState(status);
         CheckState(callState.status);
+        callState.state.isValid_ = true;
     }
     catch (const std::exception &e)
     {
@@ -130,6 +131,10 @@ Lv2PluginState StateInterface::Save()
     return std::move(callState.state);
 }
 
+void StateInterface::RestoreState(LilvState*pLv2State)
+{
+    lilv_state_restore(pLv2State,this->pInstance,nullptr,nullptr,LV2_STATE_IS_POD,&(features[0]));
+}
 void StateInterface::Restore(const Lv2PluginState &state)
 {
     RestoreCallState callState;

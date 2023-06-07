@@ -214,7 +214,7 @@ class PiPedalSocket {
     enterBackgroundState()
     {
         this.isBackground = true;
-        this.socket?.close();
+        this.close();
 
     }
     exitBackgroundState()
@@ -261,7 +261,7 @@ class PiPedalSocket {
                 this.socket.onerror = null;
                 this.socket.onmessage = null;
                 this.socket.onopen = null;
-                this.socket?.close();
+                this.socket.close();
             }
         } catch  (ignored)
         {

@@ -1131,11 +1131,9 @@ const PedalboardView =
                             } else {
                                 item.numberOfOutputs = bottomOutputs;
                             }
-                        } else if (splitter.getSplitType() === SplitType.Lr) {
-                            item.numberOfOutputs = (topOutputs !== 0 && bottomOutputs !== 0) ? 2: 0;
                         } else {
-                            item.numberOfOutputs = CalculateConnection(topOutputs,bottomOutputs);
-                        }
+                            item.numberOfOutputs = (topOutputs >= 1 || bottomOutputs >= 1) ? 2: 1;
+                        } 
                     } else if (item.isStart())
                     {
                         item.numberOfOutputs = Math.min(PiPedalModelFactory.getInstance().jackSettings.get().inputAudioPorts.length,2);

@@ -42,9 +42,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <stdint.h>
 #include <cassert>
 #include <lv2.h>
-#include <lv2/atom.lv2/atom.h>
-#include <lv2/midi.lv2/midi.h>
-#include <lv2/urid.lv2/urid.h>
+#include <lv2/atom/atom.h>
+#include <lv2/midi/midi.h>
+#include <lv2/urid/urid.h>
 #include <cstring>
 
 namespace pipedal

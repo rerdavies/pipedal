@@ -314,132 +314,39 @@ namespace pipedal
         }
 
 
+        static constexpr int SPLIT_TYPE_CTL = 0;
+        static constexpr int SELECT_CTL = 1;
+        static constexpr int MIX_CTL = 2;
+        static constexpr int PANL_CTL = 3;
+        static constexpr int VOLL_CTL = 4;
+        static constexpr int PANR_CTL = 5;
+        static constexpr int VOLR_CTL = 6;
+
+
         virtual uint64_t GetInstanceId() const
         {
             return instanceId;
         }
-        void Activate()
-        {
-            activated = true;
-            updateMixFunction();
-            snapToMixTarget();
+        void Activate();
+        void Deactivate();
 
-            mixBottomInputs.clear();
-            mixTopInputs.clear();
-
-            if (outputBuffers.size() == 1)
-            {
-                mixTopInputs.push_back(this->topOutputs[0]);
-                mixBottomInputs.push_back(this->bottomOutputs[0]);
-            }
-            else
-            {
-                if (this->topOutputs.size() == 1)
-                {
-                    mixTopInputs.push_back(topOutputs[0]);
-                    mixTopInputs.push_back(topOutputs[0]);
-                }
-                else
-                {
-                    mixTopInputs.push_back(topOutputs[0]);
-                    mixTopInputs.push_back(topOutputs[1]);
-                }
-                if (this->bottomOutputs.size() == 1)
-                {
-                    mixBottomInputs.push_back(bottomOutputs[0]);
-                    mixBottomInputs.push_back(bottomOutputs[0]);
-                }
-                else
-                {
-                    mixBottomInputs.push_back(bottomOutputs[0]);
-                    mixBottomInputs.push_back(bottomOutputs[1]);
-                }
-            }
-        }
-        void Deactivate()
-        {
-            activated = false;
-        }
-
-        void SetChainBuffers(
+       void SetChainBuffers(
             const std::vector<float *> &topInputs,
             const std::vector<float *> &bottomInputs,
             const std::vector<float *> &topOutputs,
-            const std::vector<float *> &bottomOutputs)
-        {
-            this->topInputs = topInputs;
-            this->bottomInputs = bottomInputs;
-            this->topOutputs = topOutputs;
-            this->bottomOutputs = bottomOutputs;
+            const std::vector<float *> &bottomOutputs,
+            bool forceStereoOutput);
 
-            numberOfOutputPorts = topOutputs.size() > 1 || bottomOutputs.size() > 1 ? 2 : 1;
-            outputBuffers.resize(numberOfOutputPorts);
-        }
         virtual void ResetAtomBuffers() {}
-        virtual int GetControlIndex(const std::string &symbol) const
-        {
-            if (symbol == "splitType")
-                return 0;
-            if (symbol == "select")
-                return 1;
-            if (symbol == "mix")
-                return 2;
-            return -1;
-        }
 
-        void snapToMixTarget()
-        {
-            this->blendLTop = targetBlendLTop;
-            this->blendRTop = targetBlendRTop;
-            this->blendRBottom = targetBlendRBottom;
-            this->blendLBottom = targetBlendLBottom;
-            this->blendFadeSamples = 0;
-            this->blendDxLTop = 0;
-            this->blendDxRTop = 0;
-            this->blendDxLBottom = 0;
-            this->blendDxRBottom = 0;
-        }
-        void mixToTarget()
-        {
-            uint32_t transitionSamples = (uint32_t)(this->sampleRate * MIX_TRANSITION_TIME_S);
-            if (transitionSamples < 1)
-                transitionSamples = 1;
-            double dxScale = 1.0 / transitionSamples;
-            this->blendFadeSamples = transitionSamples;
-            this->blendDxLTop = dxScale * (this->targetBlendLTop - this->blendLTop);
-            this->blendDxRTop = dxScale * (this->targetBlendRTop - this->blendRTop);
-            this->blendDxLBottom = dxScale * (this->targetBlendLBottom - this->blendLBottom);
-            this->blendDxRBottom = dxScale * (this->targetBlendRBottom - this->blendRBottom);
-        }
 
-        void mixTo(float value)
-        {
-            float blend = (value + 1) * 0.5f;
-            this->targetBlendRTop = this->targetBlendLTop = 1 - blend;
-            this->targetBlendLBottom = this->targetBlendLBottom = blend;
-            mixToTarget();
-        }
-        void mixTo(float panL, float volL, float panR, float volR)
-        {
-            float aTop = (volL <= SPLIT_DB_MIN) ? 0 : db2a(volL);
-            float aBottom = (volL <= SPLIT_DB_MIN) ? 0 : db2a(volR);
-            if (this->outputBuffers.size() == 1)
-            {
-                // ignore pan. The R values actually have no effect.
-                this->targetBlendLTop = this->targetBlendRTop = aTop;
-                this->targetBlendLBottom = this->targetBlendRBottom = aBottom;
-            }
-            else
-            {
-                float blendTop = (panL + 1) * 0.5;
-                float blendBottom = (panR + 1) * 0.5;
-                this->targetBlendLTop = (1 - blendTop) * aTop;
-                this->targetBlendRTop = (blendTop)*aTop;
-                this->targetBlendLBottom = (1 - blendBottom) * aBottom;
-                this->targetBlendRBottom = (blendBottom)*aBottom;
-            }
-            mixToTarget();
-        }
+        virtual int GetControlIndex(const std::string &symbol) const;
+        void snapToMixTarget();
+
+        void mixToTarget();
+        void mixTo(float value);
+        void mixTo(float panL, float volL, float panR, float volR);
+
         virtual void SetBypass(bool enabled)
         {
             throw PiPedalArgumentException("Not implmented. Should not have been called.");
@@ -448,102 +355,9 @@ namespace pipedal
         virtual float GetOutputControlValue(int index) const {
             return GetControlValue(index);
         }
+        virtual float GetControlValue(int portIndex) const;
+        virtual void SetControl(int index, float value);
 
-        virtual float GetControlValue(int portIndex) const
-        {
-            switch (portIndex)
-            {
-            case -1:  /* (bypass) */
-                return 1;
-            case 0:
-            {
-                return (int)(this->splitType);
-            }
-            case 1:
-            {
-                return selectA ? 0 : 1;
-            }
-            case 2:
-                return mix;
-            case 3:
-                return this->panL;
-            case 4:
-                return this->volL;
-            case 5:
-                return this->panR;
-            case 6:
-                return this->volR;
-            default:
-                throw PiPedalArgumentException("Invalid argument");
-            }
-        }
-        virtual void SetControl(int index, float value)
-        {
-            switch (index)
-            {
-            case -1: /* (bypass) */
-                return; // no can bypass.
-            case 0:
-            {
-                SplitType t = valueToSplitType(value);
-                if (splitType != t)
-                {
-                    splitType = t;
-                    updateMixFunction();
-                }
-                break;
-            }
-            case 1:
-            {
-                bool t = value == 0;
-                if (selectA != t)
-                {
-                    selectA = t;
-
-                    if (splitType == SplitType::Ab)
-                    {
-                        mixTo(selectA ? -1 : 1);
-                    }
-                }
-                break;
-            }
-            case 2:
-                mix = value;
-                if (splitType == SplitType::Mix)
-                {
-                    mixTo(value);
-                }
-                break;
-            case 3:
-                panL = value;
-                if (splitType == SplitType::Lr)
-                {
-                    mixTo(panL, volL, panR, volR);
-                }
-                break;
-            case 4:
-                volL = value;
-                if (splitType == SplitType::Lr)
-                {
-                    mixTo(panL, volL, panR, volR);
-                }
-                break;
-            case 5:
-                panR = value;
-                if (splitType == SplitType::Lr)
-                {
-                    mixTo(panL, volL, panR, volR);
-                }
-                break;
-            case 6:
-                volR = value;
-                if (splitType == SplitType::Lr)
-                {
-                    mixTo(panL, volL, panR, volR);
-                }
-                break;
-            }
-        }
 
         virtual int GetNumberOfOutputAudioPorts() const
         {

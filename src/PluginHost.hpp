@@ -31,7 +31,7 @@
 #include <string>
 #include "IHost.hpp"
 
-#include "lv2.h"
+//#include "lv2.h"
 #include "Units.hpp"
 #include "PluginPreset.hpp"
 
@@ -659,6 +659,7 @@ namespace pipedal
             AutoLilvNode atom__bufferType;
             AutoLilvNode atom__Path;
             AutoLilvNode presets__preset;
+            AutoLilvNode state__state;
             AutoLilvNode rdfs__label;
             AutoLilvNode lv2core__symbol;
             AutoLilvNode lv2core__name;
@@ -693,6 +694,7 @@ namespace pipedal
             AutoLilvNode ui__peakProtocol;
             AutoLilvNode ui__portIndex;
             AutoLilvNode lv2__symbol;
+            AutoLilvNode lv2__port;
 
             AutoLilvNode patch__writable;
             AutoLilvNode patch__readable;
@@ -788,6 +790,13 @@ namespace pipedal
             return this->mapFeature.GetMap();
         }
         static void PortValueCallback(const char *symbol, void *user_data, const void *value, uint32_t size, uint32_t type);
+        static void StateRestoreCallback(
+            const char* port_symbol,
+            void*       user_data,
+            const void* value,
+            uint32_t    size,
+            uint32_t    type);
+
 
         virtual IEffect *CreateEffect(PedalboardItem &pedalboardItem);
         void LoadPluginClassesFromLilv();

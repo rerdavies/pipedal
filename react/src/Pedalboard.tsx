@@ -69,6 +69,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
         this.vstState = input.vstState ?? "";
         this.stateUpdateCount = input.stateUpdateCount;
         this.lv2State = input.lv2State;
+        this.lilvPresetUri = input.lilvPresetUri;
         return this;
     }
     deserialize(input: any): PedalboardItem {
@@ -197,7 +198,8 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     midiBindings: MidiBinding[] = [];
     vstState: string = "";
     stateUpdateCount: number = 0;
-    lv2State: [boolean,any] = [false,{}]
+    lv2State: [boolean,any] = [false,{}];
+    lilvPresetUri: string = "";
 };
 
 

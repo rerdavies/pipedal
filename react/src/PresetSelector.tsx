@@ -318,7 +318,7 @@ const PresetSelector =
                                     onChange={(e, extra) => this.handleChange(e, extra)}
                                     onClose={(e) => this.handleSelectClose(e)}
                                     displayEmpty
-                                    value={presets.selectedInstanceId}
+                                    value={presets.selectedInstanceId === 0? '' : presets.selectedInstanceId}
                                     inputProps={{
                                         classes: { icon: classes.icon },
                                         'aria-label': "Select preset"

@@ -1,0 +1,50 @@
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix tpset: <http://two-play.com/plugins/preset#> .
+
+tpset:toob-freeverb-preset-0
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-freeverb> ;
+    rdfs:label "Room" ;
+    lv2:port [
+        lv2:symbol "damping" ;
+        pset:value 0.9851851 ;
+    ] , [
+        lv2:symbol "dryWet" ;
+        pset:value 0.6537038 ;
+    ] , [
+        lv2:symbol "roomSize" ;
+        pset:value 0.3 ;
+    ] .
+
+tpset:toob-freeverb-preset-1
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-freeverb> ;
+    rdfs:label "Cathedral" ;
+    lv2:port [
+        lv2:symbol "damping" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "dryWet" ;
+        pset:value 0.564815 ;
+    ] , [
+        lv2:symbol "roomSize" ;
+        pset:value 0.8555557 ;
+    ] .
+
+tpset:toob-freeverb-preset-2
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-freeverb> ;
+    rdfs:label "Hall" ;
+    lv2:port [
+        lv2:symbol "damping" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "dryWet" ;
+        pset:value 0.6740743 ;
+    ] , [
+        lv2:symbol "roomSize" ;
+        pset:value 0.6333336 ;
+    ] .
+

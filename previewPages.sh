@@ -1,0 +1,6 @@
+#!/bin/bash
+# preview gihub.io site.
+# requires installation of jeckyll. See github docs pages.
+
+cd docs
+bundle exec jekyll serve

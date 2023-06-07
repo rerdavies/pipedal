@@ -167,7 +167,7 @@ public:
         PluginPresets pluginPresets = model->GetPluginPresets(pluginUri);
 
         std::stringstream s;
-        json_writer writer(s);
+        json_writer writer(s,false);
         writer.write(pluginPresets);
         *pContent = s.str();
     }
@@ -184,7 +184,7 @@ public:
         file.selectedPreset(newInstanceId);
 
         std::stringstream s;
-        json_writer writer(s);
+        json_writer writer(s,false);
         writer.write(file);
         *pContent = s.str();
         *pName = pedalboard.name();
@@ -597,12 +597,12 @@ int main(int argc, char *argv[])
 
     if (help)
     {
-        std::cout << "Usage: pipedal <doc_root> [<web_root>] [options...]\n\n"
+        std::cout << "Usage: pipedald <doc_root> [<web_root>] [options...]\n\n"
                   << "Options:\n"
-                  << "   -systemd: Log to systemd journals, wait for jack service.\n"
+                  << "   -systemd: Log to systemd journals instead of to the console.\n"
                   << "   -port: Port to listen on e.g. 0.0.0.0:80\n"
                   << "Example:\n"
-                  << "    pipedal /etc/pipedal/config /etc/pipedal/react -port 0.0.0.0:80 \n"
+                  << "    pipedald /etc/pipedal/config /etc/pipedal/react -port 0.0.0.0:80 \n"
                      "\n"
                      "Description:\n\n"
                      "    Configuration is read from <doc_root>/config.json\n"
@@ -611,7 +611,7 @@ int main(int argc, char *argv[])
                      "\n"
                      "    While debugging, bind the port to 0.0.0.0:8080, and connect to the default React\n"
                      "    server that's provided when you run 'npm run start' in 'react/src'. By default, the\n"
-                     "    React app will connect to the socket server on 0.0.0.0:8080.\n\n";
+                     "    React debug server will connect to the socket server on 0.0.0.0:8080.\n\n";
         return error ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 

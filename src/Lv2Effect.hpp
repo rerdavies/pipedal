@@ -27,11 +27,11 @@
 
 #include "IEffect.hpp"
 #include "Worker.hpp"
-#include "lv2/patch.lv2/patch.h"
-#include "lv2/log.lv2/log.h"
-#include "lv2/log.lv2/logger.h"
+#include "lv2/patch/patch.h"
+#include "lv2/log/log.h"
+#include "lv2/log/logger.h"
 #include "lv2/lv2plug.in/ns/extensions/units/units.h"
-#include "lv2/atom.lv2/forge.h"
+#include "lv2/atom/forge.h"
 #include "AtomBuffer.hpp"
 #include "StateInterface.hpp"
 #include "LogFeature.hpp"
@@ -202,7 +202,7 @@ namespace pipedal
         Lv2Effect(
             IHost *pHost,
             const std::shared_ptr<Lv2PluginInfo> &info,
-            const PedalboardItem &pedalboardItem);
+            PedalboardItem &pedalboardItem);
         ~Lv2Effect();
 
         bool HasErrorMessage() const { return this->hasErrorMessage; }

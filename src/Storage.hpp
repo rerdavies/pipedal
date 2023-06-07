@@ -57,6 +57,7 @@ struct PluginPresetValues {
 
     std::vector<ControlValue> controls;
     Lv2PluginState state;
+    std::string lilvPresetUri;
 };
 
 // controls user-defined storage. Implmentation hidden to allow to later migration to a database (perhaps)
@@ -173,6 +174,7 @@ private:
     bool pluginPresetIndexChanged = false;
     void LoadPluginPresetIndex();
     void SavePluginPresetIndex();
+
     std::filesystem::path GetPluginPresetPath(const std::string &pluginUri) const;
     bool IsValidSampleFile(const std::filesystem::path&fileName);
     std::filesystem::path MakeUserFilePath(const std::string &directory, const std::string&filename);
@@ -181,6 +183,8 @@ public:
     bool HasPluginPresets(const std::string&pluginUri) const;
     void SavePluginPresets(const std::string&pluginUri, const PluginPresets&presets);
     PluginPresets GetPluginPresets(const std::string&pluginUri) const;
+    const PluginPresetIndex& GetPluginPresetIndex();
+
     PluginUiPresets GetPluginUiPresets(const std::string&pluginUri) const;
     PluginPresetValues GetPluginPresetValues(const std::string&pluginUri, uint64_t instanceId);
 

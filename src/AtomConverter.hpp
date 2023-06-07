@@ -27,8 +27,8 @@
 #include <cstddef>
 #include <vector>
 #include "MapFeature.hpp"
-#include "lv2/atom.lv2/atom.h"
-#include "lv2/atom.lv2/forge.h"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/forge.h"
 #include "json_variant.hpp"
 
 namespace pipedal

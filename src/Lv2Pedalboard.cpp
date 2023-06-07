@@ -21,7 +21,6 @@
 #include "Lv2Pedalboard.hpp"
 #include "Lv2Effect.hpp"
 
-
 #include "SplitEffect.hpp"
 #include "RingBufferReader.hpp"
 #include "VuUpdate.hpp"
@@ -46,8 +45,6 @@ std::vector<float *> Lv2Pedalboard::AllocateAudioBuffers(int nChannels)
     return result;
 }
 
-
-
 int Lv2Pedalboard::GetControlIndex(uint64_t instanceId, const std::string &symbol)
 {
     for (int i = 0; i < realtimeEffects.size(); ++i)
@@ -63,8 +60,7 @@ int Lv2Pedalboard::GetControlIndex(uint64_t instanceId, const std::string &symbo
 std::vector<float *> Lv2Pedalboard::PrepareItems(
     std::vector<PedalboardItem> &items,
     std::vector<float *> inputBuffers,
-    Lv2PedalboardErrorList&errorList
-    )
+    Lv2PedalboardErrorList &errorList)
 {
     for (int i = 0; i < items.size(); ++i)
     {
@@ -88,14 +84,17 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                 this->processActions.push_back(preMixAction);
 
-                std::vector<float *> topResult = PrepareItems(item.topChain(), topInputs,errorList);
-                std::vector<float *> bottomResult = PrepareItems(item.bottomChain(), bottomInputs,errorList);
+                std::vector<float *> topResult = PrepareItems(item.topChain(), topInputs, errorList);
+                std::vector<float *> bottomResult = PrepareItems(item.bottomChain(), bottomInputs, errorList);
 
                 this->processActions.push_back(
                     [pSplit](uint32_t frames)
                     { pSplit->PostMix(frames); });
+                auto controlValue = item.GetControlValue("splitType");
+                // if split is L/R, always output stereo.
 
-                pSplit->SetChainBuffers(topInputs, bottomInputs, topResult, bottomResult);
+                bool forceStereo = (controlValue != nullptr && controlValue->value() == 2);
+                pSplit->SetChainBuffers(topInputs, bottomInputs, topResult, bottomResult,forceStereo);
 
                 for (int i = 0; i < item.controlValues().size(); ++i)
                 {
@@ -110,22 +109,25 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
             else
             {
 
-                IEffect* pLv2Effect = nullptr;
-                try {
-                    pLv2Effect  = this->pHost->CreateEffect(item);
-                } catch (const std::exception &e)
+                IEffect *pLv2Effect = nullptr;
+                try
+                {
+                    pLv2Effect = this->pHost->CreateEffect(item);
+                }
+                catch (const std::exception &e)
                 {
                     Lv2Log::warning(SS(e.what()));
-                }
-                if (pLv2Effect->HasErrorMessage())
-                {
-                    std::string error  = pLv2Effect->TakeErrorMessage();
-                    Lv2Log::error(error);
-                    errorList.push_back({item.instanceId(), error});
                 }
 
                 if (pLv2Effect)
                 {
+                    if (pLv2Effect->HasErrorMessage())
+                    {
+                        std::string error = pLv2Effect->TakeErrorMessage();
+                        Lv2Log::error(error);
+                        errorList.push_back({item.instanceId(), error});
+                    }
+
                     pEffect = pLv2Effect;
 
                     uint64_t instanceId = pEffect->GetInstanceId();
@@ -161,9 +163,9 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                     }
 
                     this->processActions.push_back(
-                        [pLv2Effect,this](uint32_t frames)
+                        [pLv2Effect, this](uint32_t frames)
                         {
-                            pLv2Effect->Run(frames,this->ringBufferWriter);
+                            pLv2Effect->Run(frames, this->ringBufferWriter);
                         });
                 }
             }
@@ -224,17 +226,16 @@ void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardE
     outputVolume.SetSampleRate((float)(this->pHost->GetSampleRate()));
     inputVolume.SetMinDb(-60);
     outputVolume.SetMinDb(-60);
-    
+
     inputVolume.SetTarget(pedalboard.input_volume_db());
     outputVolume.SetTarget(pedalboard.output_volume_db());
-
 
     for (int i = 0; i < pHost->GetNumberOfInputAudioChannels(); ++i)
     {
         this->pedalboardInputBuffers.push_back(bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize()));
     }
 
-    auto outputs = PrepareItems(pedalboard.items(), this->pedalboardInputBuffers,errorList);
+    auto outputs = PrepareItems(pedalboard.items(), this->pedalboardInputBuffers, errorList);
     int nOutputs = pHost->GetNumberOfOutputAudioChannels();
     if (nOutputs == 1)
     {
@@ -265,7 +266,9 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
         if (pluginInfo == nullptr && pedalboardItem.uri() == SPLIT_PEDALBOARD_ITEM_URI)
         {
             pPluginInfo = GetSplitterPluginInfo();
-        } else {
+        }
+        else
+        {
             pPluginInfo = pluginInfo.get();
         }
 
@@ -277,24 +280,26 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
             {
                 auto &binding = pedalboardItem.midiBindings()[bindingIndex];
                 {
-                    const Lv2PortInfo*pPortInfo;
+                    const Lv2PortInfo *pPortInfo;
                     int controlIndex;
                     if (binding.symbol() == "__bypass")
                     {
                         pPortInfo = GetBypassPortInfo();
                         controlIndex = -1;
-                    } else {
-                        try {
+                    }
+                    else
+                    {
+                        try
+                        {
                             pPortInfo = &pluginInfo->getPort(binding.symbol());
                             controlIndex = this->GetControlIndex(pedalboardItem.instanceId(), binding.symbol());
-                        } catch (const std::exception&ignored)
+                        }
+                        catch (const std::exception &ignored)
                         {
                             continue;
                         }
-                        
-
                     }
-                    
+
                     MidiMapping mapping;
                     mapping.pluginInfo = pluginInfo; // for lifetime management. <shrugs> We're holding internal pointers to this. May save us in a disorderly shutdown.
                     mapping.pPortInfo = pPortInfo;
@@ -384,14 +389,14 @@ static void Copy(float *input, float *output, uint32_t samples)
         output[i] = input[i];
     }
 }
-bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t samples, RealtimeRingBufferWriter*ringBufferWriter)
+bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t samples, RealtimeRingBufferWriter *ringBufferWriter)
 {
     this->ringBufferWriter = ringBufferWriter;
     for (size_t i = 0; i < this->pedalboardInputBuffers.size(); ++i)
     {
         if (inputBuffers[i] == nullptr)
         {
-            return false; 
+            return false;
         }
     }
     for (size_t i = 0; i < samples; ++i)
@@ -399,7 +404,7 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
         float volume = this->inputVolume.Tick();
         for (int c = 0; c < this->pedalboardInputBuffers.size(); ++c)
         {
-            this->pedalboardInputBuffers[c][i] = inputBuffers[c][i]*volume;
+            this->pedalboardInputBuffers[c][i] = inputBuffers[c][i] * volume;
         }
     }
     for (int i = 0; i < this->processActions.size(); ++i)
@@ -408,10 +413,10 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
     }
     for (size_t i = 0; i < this->effects.size(); ++i)
     {
-        IEffect* effect = effects[i].get();
+        IEffect *effect = effects[i].get();
         if (effect->HasErrorMessage())
         {
-            ringBufferWriter->WriteLv2ErrorMessage(effect->GetInstanceId(),effect->TakeErrorMessage());
+            ringBufferWriter->WriteLv2ErrorMessage(effect->GetInstanceId(), effect->TakeErrorMessage());
         }
     }
     for (size_t i = 0; i < samples; ++i)
@@ -419,7 +424,7 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
         float volume = outputVolume.Tick();
         for (size_t c = 0; c < this->pedalboardOutputBuffers.size(); ++c)
         {
-            outputBuffers[c][i] = this->pedalboardOutputBuffers[c][i]*volume;
+            outputBuffers[c][i] = this->pedalboardOutputBuffers[c][i] * volume;
         }
     }
     return true;
@@ -442,7 +447,7 @@ void Lv2Pedalboard::SetBypass(int effectIndex, bool enabled)
     effect->SetBypass(enabled);
 }
 
-void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float**inputBuffers, float**outputBuffers)
+void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float **inputBuffers, float **outputBuffers)
 {
     for (size_t i = 0; i < vuConfiguration->enabledIndexes.size(); ++i)
     {
@@ -453,25 +458,30 @@ void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samp
             if (this->pedalboardInputBuffers.size() > 1)
             {
                 GetInputBuffers();
-                pUpdate->AccumulateInputs(inputBuffers[0],inputBuffers[1],samples);
-                pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]),&(this->pedalboardInputBuffers[1][0]),samples); // after outputVolume applied.
-            } else {
-                pUpdate->AccumulateInputs(inputBuffers[0],samples);
-                pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]),samples); // after input volume applied.
+                pUpdate->AccumulateInputs(inputBuffers[0], inputBuffers[1], samples);
+                pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]), &(this->pedalboardInputBuffers[1][0]), samples); // after outputVolume applied.
             }
-        } else if (index == Pedalboard::OUTPUT_VOLUME_ID)
+            else
+            {
+                pUpdate->AccumulateInputs(inputBuffers[0], samples);
+                pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]), samples); // after input volume applied.
+            }
+        }
+        else if (index == Pedalboard::OUTPUT_VOLUME_ID)
         {
             if (this->pedalboardOutputBuffers.size() > 1)
             {
-                pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]),&(this->pedalboardOutputBuffers[1][0]),samples);
-                pUpdate->AccumulateOutputs(outputBuffers[0],outputBuffers[1],samples);
-            } else {
-                pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]),samples);
-                pUpdate->AccumulateOutputs(outputBuffers[0],samples);
+                pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]), &(this->pedalboardOutputBuffers[1][0]), samples);
+                pUpdate->AccumulateOutputs(outputBuffers[0], outputBuffers[1], samples);
             }
-
+            else
+            {
+                pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]), samples);
+                pUpdate->AccumulateOutputs(outputBuffers[0], samples);
+            }
         }
-        else  {
+        else
+        {
             auto effect = this->realtimeEffects[index];
 
             if (effect->GetNumberOfInputAudioPorts() == 1)
@@ -516,22 +526,25 @@ void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pPara
         if (pEffect == nullptr)
         {
             pParameterRequests->errorMessage = "No such effect.";
-
-        } else if (pEffect->IsVst3())
+        }
+        else if (pEffect->IsVst3())
         {
             pParameterRequests->errorMessage = "Not supported for VST3 plugins";
-        } else {
-            Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect*>(pEffect);
+        }
+        else
+        {
+            Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect *>(pEffect);
 
             if (pParameterRequests->requestType == RealtimePatchPropertyRequest::RequestType::PatchGet)
             {
                 pLv2Effect->RequestPatchProperty(pParameterRequests->uridUri);
-            } else if (pParameterRequests->requestType == RealtimePatchPropertyRequest::RequestType::PatchSet) {
+            }
+            else if (pParameterRequests->requestType == RealtimePatchPropertyRequest::RequestType::PatchSet)
+            {
                 pLv2Effect->SetPatchProperty(
                     pParameterRequests->uridUri,
                     pParameterRequests->GetSize(),
-                    (LV2_Atom*)pParameterRequests->GetBuffer()
-                );
+                    (LV2_Atom *)pParameterRequests->GetBuffer());
             }
         }
         pParameterRequests = pParameterRequests->pNext;
@@ -548,13 +561,14 @@ void Lv2Pedalboard::GatherPatchProperties(RealtimePatchPropertyRequest *pParamet
             if (effect == nullptr)
             {
                 pParameterRequests->errorMessage = "No such effect.";
-            } else if (effect->IsVst3())
+            }
+            else if (effect->IsVst3())
             {
                 pParameterRequests->errorMessage = "Not supported for VST3";
             }
             else
             {
-                Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect*>(effect);
+                Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect *>(effect);
                 pLv2Effect->GatherPatchProperties(pParameterRequests);
             }
         }

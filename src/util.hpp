@@ -29,4 +29,7 @@ namespace pipedal {
         return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
     }
     void SetThreadName(const std::string &name);
+
+    std::u32string ToUtf32(const std::string &s);
+
 }

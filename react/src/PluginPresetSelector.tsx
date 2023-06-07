@@ -96,6 +96,19 @@ const PluginPresetSelector =
             {
                 this.handlePresetsMenuClose();
                 this.model.loadPluginPreset(this.props.instanceId,instanceId);
+                let presetName = this.getPresetName(instanceId);
+                this.setState({saveAsName: presetName});
+            }
+            getPresetName(instanceId: number)
+            {
+                for (let preset of this.state.presets.presets)
+                {
+                    if (preset.instanceId === instanceId)
+                    {
+                        return preset.label;
+                    }
+                }
+                return "";
             }
 
             handlePresetMenuClick(e: SyntheticEvent): void {

@@ -28,7 +28,7 @@
 #include <sstream>
 #include "json.hpp"
 #include "ss.hpp"
-#include "lv2/atom.lv2/util.h"
+#include "lv2/atom/util.h"
 
 using namespace pipedal;
 

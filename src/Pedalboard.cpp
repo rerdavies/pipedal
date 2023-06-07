@@ -24,7 +24,7 @@
 using namespace pipedal;
 
 
-static const PedalboardItem* GetItem_(const std::vector<PedalboardItem>&items,long pedalboardItemId)
+static const PedalboardItem* GetItem_(const std::vector<PedalboardItem>&items,int64_t pedalboardItemId)
 {
     for (size_t i = 0; i < items.size(); ++i)
     {
@@ -64,11 +64,11 @@ std::vector<PedalboardItem*> Pedalboard::GetAllPlugins()
 }
 
 
-const PedalboardItem*Pedalboard::GetItem(long pedalItemId) const
+const PedalboardItem*Pedalboard::GetItem(int64_t pedalItemId) const
 {
     return GetItem_(this->items(),pedalItemId);
 }
-PedalboardItem*Pedalboard::GetItem(long pedalItemId)
+PedalboardItem*Pedalboard::GetItem(int64_t pedalItemId)
  {
      return const_cast<PedalboardItem*>(GetItem_(this->items(),pedalItemId));
  }
@@ -86,7 +86,7 @@ ControlValue* PedalboardItem::GetControlValue(const std::string&symbol)
     return nullptr;
 }
 
-bool Pedalboard::SetItemEnabled(long pedalItemId, bool enabled)
+bool Pedalboard::SetItemEnabled(int64_t pedalItemId, bool enabled)
 {
     PedalboardItem*item = GetItem(pedalItemId);
     if (!item) return false;
@@ -100,7 +100,7 @@ bool Pedalboard::SetItemEnabled(long pedalItemId, bool enabled)
 }
 
 
-bool Pedalboard::SetControlValue(long pedalItemId, const std::string &symbol, float value)
+bool Pedalboard::SetControlValue(int64_t pedalItemId, const std::string &symbol, float value)
 {
     PedalboardItem*item = GetItem(pedalItemId);
     if (!item) return false;
@@ -201,6 +201,7 @@ JSON_MAP_BEGIN(PedalboardItem)
     JSON_MAP_REFERENCE(PedalboardItem,midiBindings)
     JSON_MAP_REFERENCE(PedalboardItem,stateUpdateCount)
     JSON_MAP_REFERENCE(PedalboardItem,lv2State)
+    JSON_MAP_REFERENCE(PedalboardItem,lilvPresetUri)
 JSON_MAP_END()
 
 

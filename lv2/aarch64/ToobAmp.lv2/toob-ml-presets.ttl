@@ -1,0 +1,86 @@
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix tpset: <http://two-play.com/plugins/preset#> .
+
+tpset:toob-ml-preset-0
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-ml> ;
+    rdfs:label "Fender Clean" ;
+    lv2:port [
+        lv2:symbol "bass" ;
+        pset:value 0.783333 ;
+    ] , [
+        lv2:symbol "gain" ;
+        pset:value       0.0 ;
+    ] , [
+        lv2:symbol "master" ;
+        pset:value     1.5 ;
+    ] , [
+        lv2:symbol "mid" ;
+        pset:value     0.5 ;
+    ] , [
+        lv2:symbol "model" ;
+        pset:value       8.0 ;
+    ] , [
+        lv2:symbol "treble" ;
+        pset:value    0.55 ;
+    ] , [
+        lv2:symbol "trim" ;
+        pset:value      -3.0 ;
+    ] .
+
+tpset:toob-ml-preset-1
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-ml> ;
+    rdfs:label "Mesa Crunch" ;
+    lv2:port [
+        lv2:symbol "bass" ;
+        pset:value    0.65 ;
+    ] , [
+        lv2:symbol "gain" ;
+        pset:value       0.0 ;
+    ] , [
+        lv2:symbol "master" ;
+        pset:value     1.5 ;
+    ] , [
+        lv2:symbol "mid" ;
+        pset:value     0.5 ;
+    ] , [
+        lv2:symbol "model" ;
+        pset:value      17.0 ;
+    ] , [
+        lv2:symbol "treble" ;
+        pset:value    0.55 ;
+    ] , [
+        lv2:symbol "trim" ;
+        pset:value      -3.0 ;
+    ] .
+
+tpset:toob-ml-preset-2
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-ml> ;
+    rdfs:label "Sparkling Clean" ;
+    lv2:port [
+        lv2:symbol "bass" ;
+        pset:value    0.65 ;
+    ] , [
+        lv2:symbol "gain" ;
+        pset:value       0.0 ;
+    ] , [
+        lv2:symbol "master" ;
+        pset:value     1.5 ;
+    ] , [
+        lv2:symbol "mid" ;
+        pset:value     0.5 ;
+    ] , [
+        lv2:symbol "model" ;
+        pset:value      19.0 ;
+    ] , [
+        lv2:symbol "treble" ;
+        pset:value    0.55 ;
+    ] , [
+        lv2:symbol "trim" ;
+        pset:value      -3.0 ;
+    ] .
+

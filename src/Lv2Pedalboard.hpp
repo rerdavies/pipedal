@@ -23,7 +23,7 @@
 #include "Lv2Effect.hpp"
 #include "BufferPool.hpp"
 #include <functional>
-#include <lv2/urid.lv2/urid.h>
+#include <lv2/urid/urid.h>
 #include <functional>
 #include "DbDezipper.hpp"
 

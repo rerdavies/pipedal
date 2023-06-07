@@ -139,7 +139,7 @@ const appStyles = (theme: Theme) => createStyles({
     loadingBox: {
         position: "relative",
         top: "20%",
-        width: "120px",
+        width: "240px",
         color: "#888",
         marginLeft: "auto",
         marginRight: "auto",

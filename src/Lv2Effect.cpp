@@ -22,22 +22,22 @@
 #include "PiPedalException.hpp"
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include <lilv/lilv.h>
-#include "lv2/atom.lv2/atom.h"
-#include "lv2/atom.lv2/util.h"
-#include "lv2.h"
-#include "lv2/log.lv2/log.h"
-#include "lv2/log.lv2/logger.h"
-#include "lv2/midi.lv2/midi.h"
-#include "lv2/urid.lv2/urid.h"
-#include "lv2/log.lv2/logger.h"
-#include "lv2/uri-map.lv2/uri-map.h"
-#include "lv2/atom.lv2/forge.h"
-#include "lv2/state.lv2/state.h"
-#include "lv2/worker.lv2/worker.h"
-#include "lv2/patch.lv2/patch.h"
-#include "lv2/parameters.lv2/parameters.h"
-#include "lv2/units.lv2/units.h"
-#include "lv2/atom.lv2/util.h"
+#include "lv2/atom/atom.h"
+#include "lv2/atom/util.h"
+//#include "lv2.h"
+#include "lv2/log/log.h"
+#include "lv2/log/logger.h"
+#include "lv2/midi/midi.h"
+#include "lv2/urid/urid.h"
+#include "lv2/log/logger.h"
+#include "lv2/uri-map/uri-map.h"
+#include "lv2/atom/forge.h"
+#include "lv2/state/state.h"
+#include "lv2/worker/worker.h"
+#include "lv2/patch/patch.h"
+#include "lv2/parameters/parameters.h"
+#include "lv2/units/units.h"
+#include "lv2/atom/util.h"
 #include "AudioHost.hpp"
 #include <exception>
 #include "RingBufferReader.hpp"
@@ -49,7 +49,7 @@ const float BYPASS_TIME_S = 0.1f;
 Lv2Effect::Lv2Effect(
     IHost *pHost_,
     const std::shared_ptr<Lv2PluginInfo> &info_,
-    const PedalboardItem &pedalboardItem)
+    PedalboardItem &pedalboardItem)
     : pHost(pHost_), pInstance(nullptr), info(info_), urids(pHost)
 {
     auto pWorld = pHost_->getWorld();
@@ -144,7 +144,26 @@ Lv2Effect::Lv2Effect(
     PreparePortIndices();
     ConnectControlPorts();
 
-    RestoreState(pedalboardItem);
+    if (!pedalboardItem.lilvPresetUri().empty())
+    {
+        AutoLilvNode presetNode = lilv_new_uri(pWorld,pedalboardItem.lilvPresetUri().c_str());
+        lilv_world_load_resource(pWorld,presetNode);
+        LilvState*pState = lilv_state_new_from_world(pWorld,pHost->GetMapFeature().GetMap(),presetNode);
+        if (pState)
+        {
+            if (this->stateInterface)
+            {
+                this->stateInterface->RestoreState(pState);
+            }
+            lilv_state_free(pState);
+        }
+        // now that we've loaded the preset, clear the uri, and save new state
+        // Why? because lilv doesn't provide facilities for reading state.
+        pedalboardItem.lv2State(this->stateInterface->Save());
+        pedalboardItem.lilvPresetUri("");
+    } else {
+        RestoreState(pedalboardItem);
+    }
 }
 void Lv2Effect::RestoreState(const PedalboardItem&pedalboardItem)
 {
@@ -412,6 +431,9 @@ void Lv2Effect::Run(uint32_t samples,RealtimeRingBufferWriter *realtimeRingBuffe
                 {
                     CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[0], samples);
                     CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[1], samples);
+                } else {
+                    CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[0], samples);
+                    CopyBuffer(this->inputAudioBuffers[1], this->outputAudioBuffers[1], samples);
                 }
             }
         } // else leave the output alone.
@@ -667,6 +689,7 @@ bool Lv2Effect::GetLv2State(Lv2PluginState*state)
             state->Erase();
             return false;
         }
+        
         *state = this->stateInterface->Save();
         state->isValid_ = true;
         return true;

@@ -1,0 +1,77 @@
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix tpset: <http://two-play.com/plugins/preset#> .
+
+tpset:toob-flanger-stereo-preset-0
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger-stereo> ;
+    rdfs:label "Vibe" ;
+    lv2:port [
+        lv2:symbol "depth" ;
+        pset:value 0.341667 ;
+    ] , [
+        lv2:symbol "manual" ;
+        pset:value     0.3 ;
+    ] , [
+        lv2:symbol "rate" ;
+        pset:value 0.991667 ;
+    ] , [
+        lv2:symbol "res" ;
+        pset:value    0.35 ;
+    ] .
+
+tpset:toob-flanger-stereo-preset-1
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger-stereo> ;
+    rdfs:label "Default" ;
+    lv2:port [
+        lv2:symbol "depth" ;
+        pset:value     0.5 ;
+    ] , [
+        lv2:symbol "manual" ;
+        pset:value     0.5 ;
+    ] , [
+        lv2:symbol "rate" ;
+        pset:value     0.5 ;
+    ] , [
+        lv2:symbol "res" ;
+        pset:value     0.5 ;
+    ] .
+
+tpset:toob-flanger-stereo-preset-2
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger-stereo> ;
+    rdfs:label "Chorus" ;
+    lv2:port [
+        lv2:symbol "depth" ;
+        pset:value 0.158333 ;
+    ] , [
+        lv2:symbol "manual" ;
+        pset:value       0.0 ;
+    ] , [
+        lv2:symbol "rate" ;
+        pset:value   0.925 ;
+    ] , [
+        lv2:symbol "res" ;
+        pset:value       0.0 ;
+    ] .
+
+tpset:toob-flanger-stereo-preset-3
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-flanger-stereo> ;
+    rdfs:label "Rotary" ;
+    lv2:port [
+        lv2:symbol "depth" ;
+        pset:value   0.675 ;
+    ] , [
+        lv2:symbol "manual" ;
+        pset:value       0.0 ;
+    ] , [
+        lv2:symbol "rate" ;
+        pset:value 0.966667 ;
+    ] , [
+        lv2:symbol "res" ;
+        pset:value       0.0 ;
+    ] .
+

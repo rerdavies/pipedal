@@ -80,8 +80,8 @@ endif()
 
 
 # Use LV2 headers from the /usr/lib directory.
-set (LV2DEV_INCLUDE_DIRS /usr/lib)
-
+#set (LV2DEV_INCLUDE_DIRS /usr/lib)
+set (LV2DEV_INCLUDE_DIRS )
 
 pkg_check_modules(JACK "jack")
 if(!JACK_FOUND)
@@ -284,6 +284,10 @@ add_executable(pipedaltest testMain.cpp
     jsonTest.cpp
     json_variant.cpp
     json_variant.hpp
+
+    utilTest.cpp
+    util.cpp
+    util.hpp
     
     AlsaDriverTest.cpp
     AvahiServiceTest.cpp
@@ -565,6 +569,7 @@ add_test(NAME DevTest COMMAND pipedaltest "[Dev]")
 #################################
 
 
+
 add_executable(pipedalconfig 
     PrettyPrinter.hpp
     ServiceConfiguration.cpp ServiceConfiguration.hpp
@@ -615,6 +620,20 @@ add_executable(pipedal_latency_test
 target_link_libraries(pipedal_latency_test PRIVATE pthread  asound 
     )
  
+
+add_executable(capturepresets
+    CapturePresetsMain.cpp
+    Storage.cpp
+    Storage.hpp
+    CommandLineParser.hpp
+) 
+
+target_include_directories(capturepresets PRIVATE ${PIPEDAL_INCLUDES})
+
+target_link_libraries(capturepresets ${PIPEDAL_LIBS})
+
+
+
 add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     UnixSocket.cpp UnixSocket.hpp
     ServiceConfiguration.cpp ServiceConfiguration.hpp
