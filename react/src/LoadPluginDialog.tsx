@@ -750,7 +750,7 @@ export const LoadPluginDialog =
                                     flex: "1 1 100px",
                                 }} >
                                     <AutoSizer>
-                                        {(arg) => {
+                                        {(arg: any) => {
                                             if ((!arg.width) || (!arg.height)) {
                                                 return (<div></div>);
                                             }
