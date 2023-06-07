@@ -2,6 +2,11 @@
 
 ## PiPedal 1.1.25
 
+- New TooB BF-2 Flanger plugin
+- New TooB Stereo Convolution Reverb
+
+## PiPedal 1.1.24
+
 - Reduce TooB Convolution Reverb and Toob Cab IR CPU use by 90%.
 
 ## PiPedal 1.1.23
