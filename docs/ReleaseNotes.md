@@ -1,5 +1,9 @@
 # Release Notes
 
+## PiPedal 1.1.26
+- Revised file browser protocol for NAM and MOD plugin compatibility.
+- Revised resource file publication extension.
+
 ## PiPedal 1.1.25
 
 - New TooB BF-2 Flanger plugin

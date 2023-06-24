@@ -1,13 +1,13 @@
 
 
 <img src="GithubBanner.png" width="100%"/>
-<a href="Installing.html"><i>v1.1.25</i></a>
+<a href="Installing.html"><i>v1.1.26</i></a>
 
 &nbsp;
 
 To download PiPedal, click [here](download.md).
 
-> NEW version 1.1.25 release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+> NEW version 1.1.26 release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.

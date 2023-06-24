@@ -4,14 +4,14 @@
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Ubuntu or Raspberry Pi OS (64-bit)](https://github.com/rerdavies/pipedal/releases/download/v1.1.25/pipedal_1.1.25_arm64.deb) v1.1.25
+- [Ubuntu or Raspberry Pi OS (64-bit)](https://github.com/rerdavies/pipedal/releases/download/v1.1.26/pipedal_1.1.26_arm64.deb) v1.1.26
 
 Install the package by running 
 
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_1.1.25_arm64.deb
+  sudo apt-get install ./pipedal_1.1.26_arm64.deb
 ```
 
 Follow the instructions in [_Configuring PiPedal After Installation_](https://rerdavies.github.io/pipedal/Configuring.html) to complete the installation.
