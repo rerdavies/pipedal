@@ -28,7 +28,7 @@ tpset:toob-convolution-reverb-stereo-preset-0
         pset:value 1.0 ;
     ] ;
     state:state [
-        <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/St. Margaret\u0027s Church.wav" ;
+        <http://two-play.com/plugins/toob-impulse#impulseFile> <impulseFiles/reverb/St.%20Margaret\u0027s%20Church.wav> ;
     ] .
 
 tpset:toob-convolution-reverb-stereo-preset-1
@@ -55,7 +55,7 @@ tpset:toob-convolution-reverb-stereo-preset-1
         pset:value 1.0 ;
     ] ;
     state:state [
-        <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Jack Lyons Hall, University of York.wav" ;
+        <http://two-play.com/plugins/toob-impulse#impulseFile> <impulseFiles/reverb/Jack%20Lyons%20Hall,%20University%20of%20York.wav> ;
     ] .
 
 tpset:toob-convolution-reverb-stereo-preset-2
@@ -82,7 +82,7 @@ tpset:toob-convolution-reverb-stereo-preset-2
         pset:value 1.0 ;
     ] ;
     state:state [
-        <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Arthur Sykes Rymer Auditorium.wav" ;
+        <http://two-play.com/plugins/toob-impulse#impulseFile> <impulseFiles/reverb/Arthur%20Sykes%20Rymer%20Auditorium.wav> ;
     ] .
 
 tpset:toob-convolution-reverb-stereo-preset-3
@@ -95,7 +95,7 @@ tpset:toob-convolution-reverb-stereo-preset-3
     ] , [
         lv2:symbol "loading_state" ;
         pset:value 0.0 ;
-    ] , [
+    
         lv2:symbol "predelay" ;
         pset:value 0.0 ;
     ] , [
@@ -109,6 +109,6 @@ tpset:toob-convolution-reverb-stereo-preset-3
         pset:value 1.0 ;
     ] ;
     state:state [
-        <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Genesis 6 Studio Live Room.wav" ;
+        <http://two-play.com/plugins/toob-impulse#impulseFile> <impulseFiles/reverb/Genesis%206%20Studio%20Live%20Room.wav> ;
     ] .
 

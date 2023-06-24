@@ -32,6 +32,7 @@
 #include "CpuGovernor.hpp"
 #include "RingBufferReader.hpp"
 #include "PiPedalUI.hpp"
+#include "atom_object.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -192,13 +193,15 @@ void PiPedalModel::Load()
 
     // the current edited preset, saved only across orderly shutdowns.
     CurrentPreset currentPreset;
-    try {
+    try
+    {
         if (storage.RestoreCurrentPreset(&currentPreset))
         {
             this->pedalboard = currentPreset.preset_;
             this->hasPresetChanged = currentPreset.modified_;
         }
-    } catch (const std::exception &e)
+    }
+    catch (const std::exception &e)
     {
         Lv2Log::warning(SS("Failed to load current preset. " << e.what()));
     }
@@ -249,12 +252,12 @@ void PiPedalModel::Load()
                 {
                     Lv2Log::info("Retry succeeded.");
                     break;
-
                 }
             }
-
         }
-    } else {
+    }
+    else
+    {
         this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
     }
 #endif
@@ -335,10 +338,6 @@ void PiPedalModel::RemoveNotificationSubsription(IPiPedalModelSubscriber *pSubsc
     }
 }
 
-
-        
-
-
 void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
 {
     IEffect *effect = lv2Pedalboard->GetEffect(pedalItemId);
@@ -348,7 +347,6 @@ void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const s
         if (index != -1)
         {
             effect->SetControl(index, value);
-            ;
         }
     }
     else
@@ -359,31 +357,40 @@ void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const s
 
 void PiPedalModel::OnNotifyLv2StateChanged(uint64_t instanceId)
 {
+    // a sent PATCH_Set, or an explicit state changed notification.
+    OnNotifyMaybeLv2StateChanged(instanceId);
+    this->SetPresetChanged(-1, true);
+}
+
+void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
+{
+    // one or more received PATCH_Sets, which MAY change the state.
     std::lock_guard<std::recursive_mutex> lock(mutex);
     PedalboardItem *item = pedalboard.GetItem(instanceId);
     if (item != nullptr)
     {
-        item->stateUpdateCount(item->stateUpdateCount()+1);
-        
-        this->audioHost->UpdatePluginState(*item);
-        this->FirePedalboardChanged(-1,false);
-        this->SetPresetChanged(-1, true);   
-    }
-    {
-        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+
+        bool changed = this->audioHost->UpdatePluginState(*item);
+        if (changed)
         {
-            t[i] = this->subscribers[i];
-        }
-        size_t n = this->subscribers.size();
-        {
-            for (size_t i = 0; i < n; ++i)
+
+            item->stateUpdateCount(item->stateUpdateCount() + 1);
+
+
+            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+            for (size_t i = 0; i < subscribers.size(); ++i)
             {
-                t[i]->OnLv2StateChanged(instanceId);
+                t[i] = this->subscribers[i];
             }
+            size_t n = this->subscribers.size();
+            {
+                for (size_t i = 0; i < n; ++i)
+                {
+                    t[i]->OnLv2StateChanged(instanceId);
+                }
+            }
+            delete[] t;
         }
-        delete[] t;
     }
 }
 
@@ -411,7 +418,6 @@ void PiPedalModel::SetInputVolume(float value)
 
         this->SetPresetChanged(-1, true);
     }
-
 }
 void PiPedalModel::SetOutputVolume(float value)
 {
@@ -436,7 +442,6 @@ void PiPedalModel::SetOutputVolume(float value)
 
         this->SetPresetChanged(-1, true);
     }
-
 }
 void PiPedalModel::PreviewInputVolume(float value)
 {
@@ -445,7 +450,6 @@ void PiPedalModel::PreviewInputVolume(float value)
 void PiPedalModel::PreviewOutputVolume(float value)
 {
     audioHost->SetOutputVolume(value);
-
 }
 
 void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
@@ -458,8 +462,7 @@ void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::
             return;
         }
 
-
-        PedalboardItem*item = pedalboard.GetItem(pedalItemId);
+        PedalboardItem *item = pedalboard.GetItem(pedalItemId);
 
         // change of split type requires rebuild of the effect
         // since it can change the number of output channels.
@@ -467,7 +470,7 @@ void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::
         {
             this->FirePedalboardChanged(clientId);
             return;
-        } 
+        }
         PreviewControl(clientId, pedalItemId, symbol, value);
 
         {
@@ -524,7 +527,7 @@ void PiPedalModel::FireBanksChanged(int64_t clientId)
     delete[] t;
 }
 
-void PiPedalModel::FirePedalboardChanged(int64_t clientId,bool loadAudioThread)
+void PiPedalModel::FirePedalboardChanged(int64_t clientId, bool loadAudioThread)
 {
     if (loadAudioThread)
     {
@@ -549,7 +552,6 @@ void PiPedalModel::FirePedalboardChanged(int64_t clientId,bool loadAudioThread)
         t[i]->OnPedalboardChanged(clientId, this->pedalboard);
     }
     delete[] t;
-
 }
 void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
 {
@@ -1741,11 +1743,11 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
         // if the plugin has state, we have to rebuild the pedalboard, since setting state is not thread-safe.
         // Same goes if lilvPresetUri is not empty.
 
-        // lilvPresetUri: use lilv to load the preset from the RDF model. Occurs when using a factory preset 
+        // lilvPresetUri: use lilv to load the preset from the RDF model. Occurs when using a factory preset
         // that has state:state, because lilv doesn't allow us to read this data, but does load it.
         // This is a transient condition.
 
-        for (auto&control :  presetValues.controls)
+        for (auto &control : presetValues.controls)
         {
             this->pedalboard.SetControlValue(pluginInstanceId, control.key(), control.value());
         }
@@ -1765,10 +1767,12 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
                 t[i]->OnLoadPluginPreset(pluginInstanceId, presetValues.controls);
             }
             delete[] t;
-        } else {
+        }
+        else
+        {
             pedalboardItem->lv2State(presetValues.state);
             pedalboardItem->lilvPresetUri(presetValues.lilvPresetUri);
-            pedalboardItem->stateUpdateCount(oldStateUpdateCount+1);
+            pedalboardItem->stateUpdateCount(oldStateUpdateCount + 1);
             FirePedalboardChanged(-1); // does a complete reload of both client and audio server.
         }
         this->SetPresetChanged(-1, true);
@@ -1803,36 +1807,46 @@ void PiPedalModel::DeleteMidiListeners(int64_t clientId)
     audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
 }
 
-bool PiPedalModel::WantsAtomOutput(uint64_t instanceId, LV2_URID atomProperty)
-{
-    std::lock_guard<std::recursive_mutex> lock(mutex);
-    for (const AtomOutputListener &listener : atomOutputListeners)
-    {
-        if (listener.WantsProperty(instanceId, atomProperty))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-void PiPedalModel::OnNotifyAtomOutput(uint64_t instanceId, LV2_URID outputAtomProperty, const std::string &atomJson)
+
+void PiPedalModel::OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom*atomValue)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
-    std::string propertyUri;
+    std::string propertyUri = lv2Host.GetMapFeature().UridToString(patchSetProperty);
+
+    {
+        PedalboardItem *item = pedalboard.GetItem((int64_t)instanceId);
+        if (item == nullptr) return;
+        atom_object atomObject { atomValue };
+        
+        PedalboardItem::PropertyMap& properties = item->PatchProperties();
+        if (properties.contains(propertyUri))
+        {
+            if (properties[propertyUri] == atomObject)
+            {
+                return;
+            }
+        }
+        properties[propertyUri] = std::move(atomObject);
+    }
+
+    bool hasAtomJson = false;
+    std::string atomJson;
+
     for (int i = 0; i < atomOutputListeners.size(); ++i)
     {
         auto &listener = atomOutputListeners[i];
-        if (listener.WantsProperty(instanceId, outputAtomProperty))
+        if (listener.WantsProperty(instanceId, patchSetProperty))
         {
             auto subscriber = this->GetNotificationSubscriber(listener.clientId);
             if (subscriber)
             {
-                if (propertyUri.length() == 0)
+                if (!hasAtomJson)
                 {
-                    propertyUri = lv2Host.GetMapFeature().UridToString(outputAtomProperty);
+                    atomJson = this->audioHost->AtomToJson(atomValue);
+                    hasAtomJson = true;
                 }
-                subscriber->OnNotifyAtomOutput(listener.clientHandle, instanceId, propertyUri, atomJson);
+                subscriber->OnNotifyPatchProperty(listener.clientHandle, instanceId, propertyUri, atomJson);
             }
             else
             {
@@ -1905,6 +1919,24 @@ void PiPedalModel::MonitorPatchProperty(int64_t clientId, int64_t clientHandle, 
     AtomOutputListener listener{clientId, clientHandle, instanceId, propertyUrid};
     atomOutputListeners.push_back(listener);
     audioHost->SetListenForAtomOutput(true);
+
+    PedalboardItem*item = this->pedalboard.GetItem(instanceId );
+    if (item)
+    {
+        auto& map = item->PatchProperties();
+        if (map.contains(propertyUri))
+        {
+            const auto&value = map[propertyUri];
+            std::string json = this->audioHost->AtomToJson(value.get());
+            for (auto &subscriber: this->subscribers)
+            {
+                if (subscriber->GetClientId() == clientId)
+                {
+                    subscriber->OnNotifyPatchProperty(clientHandle,instanceId,propertyUri,json);
+                }
+            }
+        }
+    }
 }
 
 void PiPedalModel::CancelMonitorPatchProperty(int64_t clientId, int64_t clientHandle)
@@ -2005,10 +2037,9 @@ void PiPedalModel::DeleteSampleFile(const std::filesystem::path &fileName)
     storage.DeleteSampleFile(fileName);
 }
 
-
-std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody)
+std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, const std::string &fileBody)
 {
-    return storage.UploadUserFile(directory,patchProperty,filename,fileBody);
+    return storage.UploadUserFile(directory, patchProperty, filename, fileBody);
 }
 
 uint64_t PiPedalModel::CreateNewPreset()
@@ -2021,7 +2052,7 @@ uint64_t PiPedalModel::CreateNewPreset()
 bool PiPedalModel::LoadCurrentPedalboard()
 {
     Lv2PedalboardErrorList errorMessages;
-    std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard,errorMessages)};
+    std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->lv2Host.CreateLv2Pedalboard(this->pedalboard, errorMessages)};
     this->lv2Pedalboard = lv2Pedalboard;
 
     // apply the error messages to the lv2Pedalboard.
@@ -2030,7 +2061,7 @@ bool PiPedalModel::LoadCurrentPedalboard()
     return true;
 }
 
-void PiPedalModel::OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) 
+void PiPedalModel::OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
@@ -2046,7 +2077,4 @@ void PiPedalModel::OnNotifyLv2RealtimeError(int64_t instanceId,const std::string
         t[i]->OnErrorMessage(error);
     }
     delete[] t;
-
 }
-
-

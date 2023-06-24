@@ -23,6 +23,7 @@
 #include "json_variant.hpp"
 #include "MidiBinding.hpp"
 #include "StateInterface.hpp"
+#include "atom_object.hpp"
 
 namespace pipedal {
 
@@ -76,6 +77,8 @@ public:
 };
 
 class PedalboardItem: public JsonMemberWritable {
+public:
+    using PropertyMap = std::map<std::string,atom_object>;
     int64_t instanceId_ = 0;
     std::string uri_;
     std::string pluginName_;
@@ -88,6 +91,9 @@ class PedalboardItem: public JsonMemberWritable {
     uint32_t stateUpdateCount_ = 0;
     Lv2PluginState lv2State_;
     std::string lilvPresetUri_;
+
+    // non persistent state.
+    PropertyMap patchProperties;
 public:
     ControlValue*GetControlValue(const std::string&symbol);
     
@@ -108,6 +114,7 @@ public:
     Lv2PluginState&lv2State() { return lv2State_; } // non-const version.
     GETTER_SETTER_REF(lilvPresetUri)
 
+    PropertyMap&PatchProperties() { return patchProperties; }
 
     bool isSplit() const
     {

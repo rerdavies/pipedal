@@ -805,6 +805,8 @@ namespace pipedal
     public:
         PluginHost();
         void SetPluginStoragePath(const std::filesystem::path &path);
+        virtual std::string GetPluginStoragePath() const;
+
         void SetConfiguration(const PiPedalConfiguration &configuration);
 
         virtual ~PluginHost();

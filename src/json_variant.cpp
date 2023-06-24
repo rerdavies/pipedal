@@ -30,6 +30,7 @@
 
 using namespace pipedal;
 
+
 json_variant::~json_variant()
 {
     free();

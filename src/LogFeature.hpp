@@ -43,6 +43,7 @@ namespace pipedal {
 			virtual void OnLogInfo(const char*message) = 0;
 			virtual void OnLogDebug(const char*message) = 0;
 		};
+		const LV2_Log_Log*GetLog() const { return &log;}
 	private:
 		LogMessageListener *logMessageListener = nullptr;
 		std::string messagePrefix;

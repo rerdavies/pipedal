@@ -141,6 +141,9 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    atom_object.hpp atom_object.cpp
+    FileBrowserFiles.h
+    FileBrowserFilesFeature.hpp FileBrowserFilesFeature.cpp
     MimeTypes.cpp MimeTypes.hpp
     inverting_mutex.hpp
     DbDezipper.hpp DbDezipper.cpp

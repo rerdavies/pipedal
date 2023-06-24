@@ -50,5 +50,7 @@ namespace pipedal {
 
         virtual IEffect *CreateEffect(PedalboardItem &pedalboard) = 0;
 
+        virtual std::string GetPluginStoragePath() const = 0;
+
     };
 }

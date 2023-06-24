@@ -227,6 +227,11 @@ void PluginHost::SetPluginStoragePath(const std::filesystem::path &path)
     mapPathFeature.SetPluginStoragePath(path);
 }
 
+std::string PluginHost::GetPluginStoragePath() const
+{
+    return mapPathFeature.GetPluginStoragePath();
+}
+
 PluginHost::PluginHost()
     : mapPathFeature("")
 {

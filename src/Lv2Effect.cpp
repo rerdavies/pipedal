@@ -24,7 +24,7 @@
 #include <lilv/lilv.h>
 #include "lv2/atom/atom.h"
 #include "lv2/atom/util.h"
-//#include "lv2.h"
+// #include "lv2.h"
 #include "lv2/log/log.h"
 #include "lv2/log/logger.h"
 #include "lv2/midi/midi.h"
@@ -54,7 +54,8 @@ Lv2Effect::Lv2Effect(
 {
     auto pWorld = pHost_->getWorld();
 
-    logFeature.Prepare(&(pHost_->GetMapFeature()),info_->name() + ": ",this);
+    logFeature.Prepare(&pHost_->GetMapFeature(), info_->name() + ": ", this);
+
     this->bypassStartingSamples = (uint32_t)(pHost->GetSampleRate() * BYPASS_TIME_S);
 
     this->bypass = pedalboardItem.isEnabled();
@@ -69,6 +70,19 @@ Lv2Effect::Lv2Effect(
     auto uriNode = lilv_new_uri(pWorld, pedalboardItem.uri().c_str());
     const LilvPlugin *pPlugin = lilv_plugins_get_by_uri(plugins, uriNode);
     lilv_node_free(uriNode);
+    {
+        AutoLilvNode bundleUri = lilv_plugin_get_bundle_uri(pPlugin);
+        char *bundleUriString = lilv_file_uri_parse(bundleUri.AsUri().c_str(), nullptr);
+
+        std::string storagePath = pHost_->GetPluginStoragePath();
+
+        fileBrowserFilesFeature.Initialize(
+            pHost_->GetMapFeature().GetMap(),
+            logFeature.GetLog(),
+            bundleUriString,
+            storagePath);
+        lilv_free(bundleUriString);
+    }
 
     LV2_Feature *const *features = pHost_->GetLv2Features();
 
@@ -79,10 +93,11 @@ Lv2Effect::Lv2Effect(
         this->features.push_back(*p);
     }
 
+    this->features.push_back(this->fileBrowserFilesFeature.GetFeature());
+
     this->work_schedule_feature = nullptr;
-    if (true) //info_->hasExtension(LV2_WORKER__interface))
+    if (true) // info_->hasExtension(LV2_WORKER__interface))
     {
-        // insane implementation. :-(
         LV2_Worker_Schedule *schedule = (LV2_Worker_Schedule *)malloc(sizeof(LV2_Worker_Schedule));
         schedule->handle = this;
         schedule->schedule_work = worker_schedule_fn;
@@ -98,13 +113,14 @@ Lv2Effect::Lv2Effect(
     const LV2_Feature **myFeatures = &this->features[0];
 
     LilvInstance *pInstance = nullptr;
-    try {
+    try
+    {
         pInstance = lilv_plugin_instantiate(pPlugin, pHost->GetSampleRate(), myFeatures);
-    } catch (const std::exception &e)
+    }
+    catch (const std::exception &e)
     {
         this->pInstance = nullptr;
         throw PiPedalException(SS("Plugin threw an exception: " << e.what() << " '" << info_->name() << "'"));
-
     }
     this->pInstance = pInstance;
     if (this->pInstance == nullptr)
@@ -114,17 +130,18 @@ Lv2Effect::Lv2Effect(
 
     const LV2_Worker_Interface *worker_interface =
         (const LV2_Worker_Interface *)lilv_instance_get_extension_data(pInstance,
-                                                                        LV2_WORKER__interface);
-    if (worker_interface) {
+                                                                       LV2_WORKER__interface);
+    if (worker_interface)
+    {
         this->worker = std::make_unique<Worker>(pHost->GetHostWorkerThread(), pInstance, worker_interface);
     }
-    const LV2_State_Interface*state_interface = 
+    const LV2_State_Interface *state_interface =
         (const LV2_State_Interface *)lilv_instance_get_extension_data(pInstance,
-                                                                        LV2_STATE__interface);
+                                                                      LV2_STATE__interface);
 
     if (state_interface)
     {
-        this->stateInterface = std::make_unique<StateInterface>(pHost,pInstance,state_interface);
+        this->stateInterface = std::make_unique<StateInterface>(pHost, &(this->features[0]), pInstance, state_interface);
     }
 
     this->instanceId = pedalboardItem.instanceId();
@@ -146,9 +163,9 @@ Lv2Effect::Lv2Effect(
 
     if (!pedalboardItem.lilvPresetUri().empty())
     {
-        AutoLilvNode presetNode = lilv_new_uri(pWorld,pedalboardItem.lilvPresetUri().c_str());
-        lilv_world_load_resource(pWorld,presetNode);
-        LilvState*pState = lilv_state_new_from_world(pWorld,pHost->GetMapFeature().GetMap(),presetNode);
+        AutoLilvNode presetNode = lilv_new_uri(pWorld, pedalboardItem.lilvPresetUri().c_str());
+        lilv_world_load_resource(pWorld, presetNode);
+        LilvState *pState = lilv_state_new_from_world(pWorld, pHost->GetMapFeature().GetMap(), presetNode);
         if (pState)
         {
             if (this->stateInterface)
@@ -161,21 +178,29 @@ Lv2Effect::Lv2Effect(
         // Why? because lilv doesn't provide facilities for reading state.
         pedalboardItem.lv2State(this->stateInterface->Save());
         pedalboardItem.lilvPresetUri("");
-    } else {
+    }
+    else
+    {
         RestoreState(pedalboardItem);
     }
 }
-void Lv2Effect::RestoreState(const PedalboardItem&pedalboardItem)
+void Lv2Effect::RestoreState(PedalboardItem &pedalboardItem)
 {
     // Restore state if present.
     if (this->stateInterface)
     {
-        try {
+        try
+        {
             if (pedalboardItem.lv2State().isValid_)
             {
                 this->stateInterface->Restore(pedalboardItem.lv2State());
+            } else {
+                // set the state to default state.
+                auto savedState = this->stateInterface->Save();
+                pedalboardItem.lv2State(savedState);
             }
-        } catch (const std::exception &e)
+        }
+        catch (const std::exception &e)
         {
             std::string name = pedalboardItem.pluginName();
             Lv2Log::warning(SS(name << ": " << e.what()));
@@ -331,10 +356,7 @@ void Lv2Effect::Activate()
     this->AssignUnconnectedPorts();
     lilv_instance_activate(pInstance);
     this->BypassTo(this->bypass ? 1.0f : 0.0f);
-
-
 }
-
 
 void Lv2Effect::AssignUnconnectedPorts()
 {
@@ -400,7 +422,7 @@ static inline void CopyBuffer(float *input, float *output, uint32_t frames)
     }
 }
 
-void Lv2Effect::Run(uint32_t samples,RealtimeRingBufferWriter *realtimeRingBufferWriter)
+void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter)
 {
     // close off the atom input frame.
     if (this->inputAtomBuffers.size() != 0)
@@ -408,12 +430,14 @@ void Lv2Effect::Run(uint32_t samples,RealtimeRingBufferWriter *realtimeRingBuffe
         lv2_atom_forge_pop(&this->inputForgeRt, &input_frame);
     }
 
+    lilv_instance_run(pInstance, samples);
+
     if (worker)
     {
         // relay worker response
         worker->EmitResponses();
     }
-    lilv_instance_run(pInstance, samples);
+
 
     // do soft bypass.
     if (this->bypassSamplesRemaining == 0)
@@ -431,7 +455,9 @@ void Lv2Effect::Run(uint32_t samples,RealtimeRingBufferWriter *realtimeRingBuffe
                 {
                     CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[0], samples);
                     CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[1], samples);
-                } else {
+                }
+                else
+                {
                     CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[0], samples);
                     CopyBuffer(this->inputAudioBuffers[1], this->outputAudioBuffers[1], samples);
                 }
@@ -499,9 +525,8 @@ void Lv2Effect::Run(uint32_t samples,RealtimeRingBufferWriter *realtimeRingBuffe
             this->currentBypassDx = currentBypassDx;
             this->bypassSamplesRemaining = bypassSamplesRemaining;
         }
-        
     }
-    RelayPatchSetMessages(this->instanceId,realtimeRingBufferWriter);
+    RelayPatchSetMessages(this->instanceId, realtimeRingBufferWriter);
 }
 
 LV2_Worker_Status Lv2Effect::worker_schedule_fn(LV2_Worker_Schedule_Handle handle,
@@ -585,7 +610,7 @@ void Lv2Effect::RequestPatchProperty(LV2_URID uridUri)
     lv2_atom_forge_urid(&inputForgeRt, uridUri);
     lv2_atom_forge_pop(&inputForgeRt, &objectFrame);
 }
-void Lv2Effect::SetPatchProperty(LV2_URID uridUri,size_t size, LV2_Atom*value)
+void Lv2Effect::SetPatchProperty(LV2_URID uridUri, size_t size, LV2_Atom *value)
 {
     lv2_atom_forge_frame_time(&inputForgeRt, 0);
 
@@ -596,22 +621,22 @@ void Lv2Effect::SetPatchProperty(LV2_URID uridUri,size_t size, LV2_Atom*value)
         lv2_atom_forge_key(&inputForgeRt, urids.patch__property);
         lv2_atom_forge_urid(&inputForgeRt, uridUri);
         lv2_atom_forge_key(&inputForgeRt, urids.patch__value);
-        lv2_atom_forge_write(&inputForgeRt,value,size);
+        lv2_atom_forge_write(&inputForgeRt, value, size);
     }
 
     lv2_atom_forge_pop(&inputForgeRt, &objectFrame);
+    this->requestStateChangedNotification = true;
 }
 
-
-void Lv2Effect::RelayPatchSetMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter)
+void Lv2Effect::RelayPatchSetMessages(uint64_t instanceId, RealtimeRingBufferWriter *realtimeRingBufferWriter)
 {
-    LV2_Atom_Sequence*controlOutput = (LV2_Atom_Sequence*)GetAtomOutputBuffer();
+    LV2_Atom_Sequence *controlOutput = (LV2_Atom_Sequence *)GetAtomOutputBuffer();
     if (controlOutput == nullptr)
     {
         return;
     }
 
-    bool stateChanged = false;
+    bool maybeStateChanged = false;
     LV2_ATOM_SEQUENCE_FOREACH(controlOutput, ev)
     {
 
@@ -622,16 +647,22 @@ void Lv2Effect::RelayPatchSetMessages(uint64_t instanceId,RealtimeRingBufferWrit
             const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
             if (obj->body.otype == urids.state__StateChanged)
             {
-                stateChanged = true;
-            } else if (obj->body.otype == urids.patch__Set) // patch_Set is handled elsewhere.
+                requestStateChangedNotification = true;
+            }
+            else if (obj->body.otype == urids.patch__Set) // patch_Set is handled elsewhere.
             {
-                realtimeRingBufferWriter->AtomOutput(instanceId,obj->atom.size +sizeof(obj->atom),(uint8_t*)obj);
+                maybeStateChanged = true;
+                realtimeRingBufferWriter->AtomOutput(instanceId, obj->atom.size + sizeof(obj->atom), (uint8_t *)obj);
             }
         }
-        if (stateChanged)
-        {
-            realtimeRingBufferWriter->Lv2StateChanged(instanceId);
-        }
+    }
+    if (this->requestStateChangedNotification)
+    {
+        requestStateChangedNotification = false;
+        realtimeRingBufferWriter->Lv2StateChanged(instanceId);
+    } else if (maybeStateChanged)
+    {
+        realtimeRingBufferWriter->MaybeLv2StateChanged(instanceId);
     }
 }
 
@@ -639,15 +670,15 @@ void Lv2Effect::GatherPatchProperties(RealtimePatchPropertyRequest *pRequest)
 {
     if (pRequest->requestType == RealtimePatchPropertyRequest::RequestType::PatchGet)
     {
-        LV2_Atom_Sequence*controlInput = (LV2_Atom_Sequence*)GetAtomOutputBuffer();
-        if (controlInput == nullptr) 
+        LV2_Atom_Sequence *controlInput = (LV2_Atom_Sequence *)GetAtomOutputBuffer();
+        if (controlInput == nullptr)
         {
             return;
         }
         LV2_ATOM_SEQUENCE_FOREACH(controlInput, ev)
         {
 
-            auto frame_offset = ev->time.frames;  // not really interested.
+            auto frame_offset = ev->time.frames; // not really interested.
 
             if (lv2_atom_forge_is_object_type(&this->outputForgeRt, ev->body.type))
             {
@@ -671,7 +702,7 @@ void Lv2Effect::GatherPatchProperties(RealtimePatchPropertyRequest *pRequest)
                         {
                             int atom_size = value->size + sizeof(LV2_Atom);
                             pRequest->SetSize(atom_size);
-                            memcpy(pRequest->GetBuffer(),value,atom_size);
+                            memcpy(pRequest->GetBuffer(), value, atom_size);
                             break;
                         }
                     }
@@ -680,50 +711,49 @@ void Lv2Effect::GatherPatchProperties(RealtimePatchPropertyRequest *pRequest)
         }
     }
 }
-bool Lv2Effect::GetLv2State(Lv2PluginState*state)
+bool Lv2Effect::GetLv2State(Lv2PluginState *state)
 {
-    if (!this->stateInterface) return false;
-    try {
+    if (!this->stateInterface)
+        return false;
+    try
+    {
         if (this->stateInterface == nullptr)
         {
             state->Erase();
             return false;
         }
-        
+
         *state = this->stateInterface->Save();
         state->isValid_ = true;
         return true;
     }
-    catch (const std::exception&e)
+    catch (const std::exception &e)
     {
         state->Erase();
         throw;
     }
 }
 
-
-void Lv2Effect::OnLogError(const char*message)
+void Lv2Effect::OnLogError(const char *message)
 {
     // only errors get transmitted to the client.
-    strncpy(this->errorMessage,message,sizeof(errorMessage));
-    errorMessage[sizeof(errorMessage)-1] = '\0';
+    strncpy(this->errorMessage, message, sizeof(errorMessage));
+    errorMessage[sizeof(errorMessage) - 1] = '\0';
     this->hasErrorMessage = true;
 }
 
-void Lv2Effect::OnLogWarning(const char*message)
+void Lv2Effect::OnLogWarning(const char *message)
 {
     Lv2Log::warning(message);
-
 }
-void Lv2Effect::OnLogInfo(const char*message)
+void Lv2Effect::OnLogInfo(const char *message)
 {
     Lv2Log::info(message);
-
 }
-void Lv2Effect::OnLogDebug(const char*message)
+void Lv2Effect::OnLogDebug(const char *message)
 {
     Lv2Log::debug(message);
-
 }
 
-
+bool Lv2Effect::GetRequestStateChangedNotification() const{ return requestStateChangedNotification; }
+void Lv2Effect::SetRequestStateChangedNotification(bool value) { requestStateChangedNotification = value; }

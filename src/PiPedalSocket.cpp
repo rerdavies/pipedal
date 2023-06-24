@@ -1502,15 +1502,15 @@ private:
     {
         Send("onErrorMessage",message);
     }
-    virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
-    {
-        PatchPropertyChangedBody body;
-        body.clientId_ = clientId;
-        body.instanceId_ = instanceId;
-        body.propertyUri_ = propertyUri;
-        body.value_ = value;
-        Send("onPatchPropertyChanged",body);
-    }
+    // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
+    // {
+    //     PatchPropertyChangedBody body;
+    //     body.clientId_ = clientId;
+    //     body.instanceId_ = instanceId;
+    //     body.propertyUri_ = propertyUri;
+    //     body.value_ = value;
+    //     Send("onPatchPropertyChanged",body);
+    // }
 
     virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) {
         Send("onSystemMidiBindingsChanged",bindings);
@@ -1712,7 +1712,7 @@ private:
             {
                 PendingNotifyAtomOutput t = pendingNotifyAtomOutputs[0];
                 pendingNotifyAtomOutputs.erase(pendingNotifyAtomOutputs.begin());
-                OnNotifyAtomOutput(
+                OnNotifyPatchProperty(
                     t.clientHandle,
                     t.instanceId,
                     t.propertyUri,
@@ -1721,7 +1721,7 @@ private:
         }
     }
 
-    virtual void OnNotifyAtomOutput(int64_t clientHandle, uint64_t instanceId, const std::string &atomProperty, const std::string &atomJson)
+    virtual void OnNotifyPatchProperty(int64_t clientHandle, uint64_t instanceId, const std::string &atomProperty, const std::string &atomJson)
     {
         NotifyAtomOutputBody body;
         body.clientHandle_ = clientHandle;

@@ -308,7 +308,7 @@ private:
     }
 
 
-    std::string AtomToJson(const LV2_Atom *pAtom)
+    virtual std::string AtomToJson(const LV2_Atom *pAtom) override
     {
         std::lock_guard lock(atomConverterMutex);
         json_variant vAtom = atomConverter.ToJson(pAtom);
@@ -365,7 +365,7 @@ private:
         if (realtimeMonitorPortSubscriptions != nullptr)
         {
             delete realtimeMonitorPortSubscriptions;
-            realtimeVuBuffers = nullptr;
+            realtimeMonitorPortSubscriptions = nullptr;
         }
         this->inputRingBuffer.reset();
         this->outputRingBuffer.reset();
@@ -1086,6 +1086,12 @@ public:
                                 hostReader.read(&instanceId);
                                 this->pNotifyCallbacks->OnNotifyLv2StateChanged(instanceId);
                             }
+                            else if (command == RingBufferCommand::MaybeLv2StateChanged)
+                            {
+                                uint64_t instanceId;
+                                hostReader.read(&instanceId);
+                                this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
+                            }
                             else if (command == RingBufferCommand::AtomOutput)
                             {
                                 uint64_t instanceId;
@@ -1099,7 +1105,7 @@ public:
                                 hostReader.read(extraBytes, &(atomBuffer[0]));
 
                                 IEffect *pEffect = currentPedalboard->GetEffect(instanceId);
-                                if (pEffect != nullptr && this->pNotifyCallbacks && listenForAtomOutput)
+                                if (pEffect != nullptr && this->pNotifyCallbacks)
                                 {
                                     LV2_Atom *atom = (LV2_Atom*)&atomBuffer[0];
                                     if (atom->type == uris.atom_Object)
@@ -1107,6 +1113,7 @@ public:
                                         LV2_Atom_Object *obj = (LV2_Atom_Object*)atom;
                                         if (obj->body.otype == uris.patch_Set)
                                         {
+                                            
                                             // Get the property and value of the set message
                                             const LV2_Atom *property = nullptr;
                                             const LV2_Atom *value = nullptr;
@@ -1119,11 +1126,8 @@ public:
                                             if (property != nullptr && value != nullptr && property->type == uris.atom_URID)
                                             {
                                                 LV2_URID propertyUrid = ((LV2_Atom_URID*)property)->body;
-                                                if (pNotifyCallbacks->WantsAtomOutput(instanceId,propertyUrid))
-                                                {
-                                                    auto json = AtomToJson(value);
-                                                    this->pNotifyCallbacks->OnNotifyAtomOutput(instanceId,propertyUrid,json);
-                                                }
+                                                this->pNotifyCallbacks->OnPatchSetReply(instanceId,propertyUrid,value);
+                                                this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
                                             }
                                         }
                                     }
@@ -1496,8 +1500,8 @@ public:
 
 private:
 
-    virtual void UpdatePluginStates(Pedalboard& pedalboard);
-    void UpdatePluginState(PedalboardItem &pedalboardItem);
+    virtual bool UpdatePluginStates(Pedalboard& pedalboard) override;
+    virtual bool UpdatePluginState(PedalboardItem &pedalboardItem) override;
 
     class RestartThread
     {
@@ -1696,30 +1700,47 @@ AudioHost *AudioHost::CreateInstance(IHost *pHost)
     return new AudioHostImpl(pHost);
 }
 
-void AudioHostImpl::UpdatePluginStates(Pedalboard& pedalboard)
+bool AudioHostImpl::UpdatePluginStates(Pedalboard& pedalboard)
 {
+    bool changed = false;
     auto pedalboardItems = pedalboard.GetAllPlugins();
     for (PedalboardItem* item : pedalboardItems)
     {
         if (!item->isSplit())
         {
-            UpdatePluginState(*item);
+            if (UpdatePluginState(*item))
+            {
+                changed = true;
+            }
         }
     }
+    return true;
 
 }
-void AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
+bool AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
 {
     IEffect*effect = currentPedalboard->GetEffect(pedalboardItem.instanceId());
     if (effect != nullptr)
     {
         try {
-            effect->GetLv2State(const_cast<Lv2PluginState*>(&pedalboardItem.lv2State()));
+            Lv2PluginState state;
+            if (!effect->GetLv2State(&state))
+            {
+                return false;
+            }
+            if (state != pedalboardItem.lv2State())
+            {
+                pedalboardItem.lv2State(state);
+                return true;
+            }
+            return false;
         } catch(const std::exception &e)
         {
             Lv2Log::warning(SS(pedalboardItem.pluginName() << ": " << e.what()));
+            return false;
         }
     }
+    return false;
 }
 
 

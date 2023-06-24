@@ -497,6 +497,10 @@ namespace pipedal
                 PostMixStereo(frames);
             }
         }
+
+        virtual bool GetRequestStateChangedNotification() const  { return false; }
+        virtual void SetRequestStateChangedNotification(bool value) {}
+
     };
 
 } // namespace

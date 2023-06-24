@@ -545,6 +545,7 @@ void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pPara
                     pParameterRequests->uridUri,
                     pParameterRequests->GetSize(),
                     (LV2_Atom *)pParameterRequests->GetBuffer());
+                pLv2Effect->SetRequestStateChangedNotification(true);
             }
         }
         pParameterRequests = pParameterRequests->pNext;

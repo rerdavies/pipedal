@@ -197,7 +197,7 @@ void Storage::MaybeCopyDefaultPresets()
     }
 
     // Obsolete: TooB effects now have correct preset declarations.
-    //auto pluginDirectory = this->GetPluginPresetsDirectory();
+    // auto pluginDirectory = this->GetPluginPresetsDirectory();
     // if (!std::filesystem::exists(pluginDirectory / "index.json"))
     // {
     //     CopyDirectory(this->configRoot / "default_presets" / "plugin_presets",
@@ -351,7 +351,7 @@ void Storage::SavePluginPresetIndex()
             throw PiPedalException(SS("Can't write to " << path));
         }
 
-        json_writer writer(os,false);
+        json_writer writer(os, false);
         writer.write(this->pluginPresetIndex);
     }
 }
@@ -360,7 +360,7 @@ void Storage::SaveBankIndex()
 {
     std::ofstream os;
     os.open(GetIndexFileName(), std::ios_base::trunc);
-    json_writer writer(os,false);
+    json_writer writer(os, false);
     writer.write(this->bankIndex);
 }
 
@@ -435,7 +435,7 @@ void Storage::SaveBankFile(const std::string &name, const BankFile &bankFile)
     {
         std::ofstream s;
         s.open(fileName, std::ios_base::trunc);
-        json_writer writer(s,false);
+        json_writer writer(s, false);
         writer.write(bankFile);
         if (std::filesystem::exists(backupFile))
         {
@@ -655,8 +655,7 @@ int64_t Storage::CreateNewPreset()
         }
     }
     newPedalboard.name(name);
-    return this->currentBank.addPreset(newPedalboard,-1);
-
+    return this->currentBank.addPreset(newPedalboard, -1);
 }
 
 int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
@@ -722,7 +721,7 @@ void Storage::SaveChannelSelection()
     try
     {
         std::ofstream s(fileName);
-        json_writer writer(s,false);
+        json_writer writer(s, false);
         writer.write(this->jackChannelSelection);
     }
     catch (const std::exception &e)
@@ -911,7 +910,7 @@ int64_t Storage::UploadBank(BankFile &bankFile, int64_t uploadAfter)
     {
         throw PiPedalException("Can't write to bank file.");
     }
-    json_writer writer(f,false);
+    json_writer writer(f, false);
     writer.write(bankFile);
 
     lastBank = this->bankIndex.addBank(lastBank, bankFile.name());
@@ -933,7 +932,7 @@ void Storage::SaveUserSettings()
         {
             throw PiPedalException("Unable to write to " + ((std::string)path));
         }
-        json_writer writer(f,false);
+        json_writer writer(f, false);
         writer.write(userSettings);
     }
 }
@@ -969,7 +968,7 @@ void Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings
         {
             throw PiPedalException("Unable to write to " + ((std::string)path));
         }
-        json_writer writer(f,false);
+        json_writer writer(f, false);
         writer.write(&copyToSave);
     }
 
@@ -1078,7 +1077,7 @@ void Storage::SaveCurrentPreset(const CurrentPreset &currentPreset)
         std::filesystem::path path = GetCurrentPresetPath();
 
         std::ofstream f(path);
-        json_writer writer(f,false);
+        json_writer writer(f, false);
         writer.write(currentPreset);
     }
     catch (std::exception &)
@@ -1158,7 +1157,7 @@ void Storage::SavePluginPresets(const std::string &pluginUri, const PluginPreset
         {
             throw PiPedalException(SS("Can't write to " << path));
         }
-        json_writer writer(os,false);
+        json_writer writer(os, false);
         writer.write(presets);
     }
     if (std::filesystem::exists(path))
@@ -1238,7 +1237,7 @@ uint64_t Storage::SavePluginPreset(
     const std::string &name,
     const PedalboardItem &pedalboardItem)
 {
-    const std::string&pluginUri = pedalboardItem.uri();
+    const std::string &pluginUri = pedalboardItem.uri();
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
     bool existing = false;
@@ -1249,7 +1248,7 @@ uint64_t Storage::SavePluginPreset(
         {
             existing = true;
             result = preset.instanceId_;
-            presets.presets_[i] = PluginPreset(preset.instanceId_,preset.label_,pedalboardItem);
+            presets.presets_[i] = PluginPreset(preset.instanceId_, preset.label_, pedalboardItem);
             break;
         }
     }
@@ -1258,8 +1257,8 @@ uint64_t Storage::SavePluginPreset(
         result = presets.nextInstanceId_++;
         presets.presets_.push_back(
             PluginPreset(result,
-                name,
-                pedalboardItem));
+                         name,
+                         pedalboardItem));
     }
     this->SavePluginPresets(pluginUri, presets);
     return result;
@@ -1400,7 +1399,7 @@ void Storage::SetFavorites(const std::map<std::string, bool> &favorites)
     f.open(fileName);
     if (f.is_open())
     {
-        json_writer writer(f,false);
+        json_writer writer(f, false);
         writer.write(favorites);
     }
 }
@@ -1429,7 +1428,7 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
     f.open(fileName);
     if (f.is_open())
     {
-        json_writer writer(f,false);
+        json_writer writer(f, false);
         writer.write(jackConfiguration);
     }
 #if JACK_HOST
@@ -1444,7 +1443,7 @@ void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
     f.open(fileName);
     if (f.is_open())
     {
-        json_writer writer(f,false);
+        json_writer writer(f, false);
         writer.write(bindings);
     }
 }
@@ -1518,10 +1517,14 @@ std::vector<std::string> Storage::GetFileList(const UiFileProperty &fileProperty
                 if (dir_entry.is_regular_file())
                 {
                     auto &path = dir_entry.path();
-                    if (fileProperty.IsValidExtension(path.extension().string()))
+                    auto name = path.filename().string();
+                    if (name.length() > 0 && name[0] != '.') // don't show hidden files.
                     {
-                        // a relative path!
-                        result.push_back(path);
+                        if (fileProperty.IsValidExtension(path.extension().string()))
+                        {
+                            // a relative path!
+                            result.push_back(path);
+                        }
                     }
                 }
             }
@@ -1612,6 +1615,7 @@ std::string Storage::UploadUserFile(const std::string &directory, const std::str
         path = this->MakeUserFilePath(directory, filename);
     }
     else
+    
     {
         if (patchProperty.length() == 0)
         {
@@ -1632,9 +1636,9 @@ std::string Storage::UploadUserFile(const std::string &directory, const std::str
     return path.string();
 }
 
-const PluginPresetIndex& Storage::GetPluginPresetIndex()
-{ 
-    return pluginPresetIndex; 
+const PluginPresetIndex &Storage::GetPluginPresetIndex()
+{
+    return pluginPresetIndex;
 }
 
 JSON_MAP_BEGIN(UserSettings)

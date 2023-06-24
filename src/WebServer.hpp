@@ -62,6 +62,7 @@ public:
     constexpr static const char* access_control_request_headers = "Access-Control-Request-Headers";
     constexpr static const char* origin = "Origin";
     constexpr static const char* date = "Date";
+    constexpr static const char* referer = "Referer";
 };
 
 

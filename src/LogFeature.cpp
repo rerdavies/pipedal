@@ -61,6 +61,13 @@ int LogFeature::vprintf(LV2_URID type,const char*fmt, va_list va)
 
 		result = vsnprintf(p, sizeof(buffer)-messagePrefix.length(), fmt, va);
 		buffer[sizeof(buffer)-1] = '\0';
+		
+		// strip trailing \n
+		size_t len = strlen(buffer);
+		if (len != 0 && buffer[len-1] == '\n')
+		{
+			buffer[len-1] = '\0';
+		}
 
 		if (type == uris.ridError)
 		{

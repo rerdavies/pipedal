@@ -44,6 +44,9 @@ namespace pipedal {
         virtual float *GetAudioOutputBuffer(int index) const = 0;
         virtual void ResetAtomBuffers() = 0;
 
+        virtual bool GetRequestStateChangedNotification() const = 0;
+        virtual void SetRequestStateChangedNotification(bool value) = 0;
+
         //virtual std::string AtomToJson(uint8_t*pAtom) = 0;
         //virtual std::string GetAtomObjectType(uint8_t*pData) = 0;
 

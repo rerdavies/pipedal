@@ -692,10 +692,9 @@ int main(int argc, char *argv[])
         auto serverSettings = model.GetJackServerSettings();
 
 
-        if (true || systemd)
         {
-            // IF running as a service, wait for selected audio device to be initialized.
-            // It may take some time for ALSA to publish all available devices.
+            // Wait for selected audio device to be initialized.
+            // It may take some time for ALSA to publish all available devices when rebooting.
 
             if (serverSettings.IsValid())
             {
@@ -718,6 +717,10 @@ int main(int argc, char *argv[])
                         }
                         if (g_SigBreak)
                             exit(1);
+                        if (systemd)
+                        {
+                            break;
+                        }
                     }
                     if (found)
                     {

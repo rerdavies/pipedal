@@ -34,6 +34,8 @@ namespace pipedal
         std::int32_t flags_ = 0;
         std::string atomType_;
         std::vector<uint8_t> value_;
+
+        bool operator==(const Lv2PluginStateEntry&other) const;
     private:
         virtual void write_json(json_writer &writer) const;
         virtual void read_json(json_reader &reader);
@@ -48,6 +50,10 @@ namespace pipedal
             isValid_ = false;
             values_.clear();
         }
+        bool IsEqual(const Lv2PluginState&other) const ;
+
+        bool operator==(const Lv2PluginState&other) const { return IsEqual(other); }
+        bool operator!=(const Lv2PluginState&other) const { return !IsEqual(other); }
 
         std::string ToString() const;
     private:
@@ -61,7 +67,11 @@ namespace pipedal
     class StateInterface
     {
     public:
-        StateInterface(IHost *host, LilvInstance *pInstance, const LV2_State_Interface *pluginStateInterface);
+        StateInterface(
+            IHost *host,
+            const LV2_Feature** features, 
+            LilvInstance *pInstance, 
+            const LV2_State_Interface *pluginStateInterface);
 
     public:
         Lv2PluginState Save();

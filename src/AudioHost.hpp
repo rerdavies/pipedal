@@ -145,12 +145,17 @@ public:
 class IAudioHostCallbacks {
 public:
     virtual void OnNotifyLv2StateChanged(uint64_t instanceId) = 0;
+    virtual void OnNotifyMaybeLv2StateChanged(uint64_t instanceId) = 0;
     virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> & updates) = 0;
     virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
     virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;
     virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) = 0;
-    virtual bool WantsAtomOutput(uint64_t instanceId,LV2_URID patchSetProperty) = 0;
-    virtual void OnNotifyAtomOutput(uint64_t instanceId, LV2_URID patchSetProperty, const std::string&atomJson) = 0;
+
+
+    virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom*atomValue) = 0;
+
+    //virtual bool WantsAtomOutput(uint64_t instanceId,LV2_URID patchSetProperty) = 0;
+    //virtual void OnNotifyPatchProperty(uint64_t instanceId, LV2_URID patchSetProperty, const std::string&atomJson) = 0;
 
     virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProgramRequest) = 0;
     virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) = 0;
@@ -195,9 +200,10 @@ public:
     virtual void SetListenForMidiEvent(bool listen) = 0;
     virtual void SetListenForAtomOutput(bool listen) = 0;
 
-    virtual void UpdatePluginStates(Pedalboard& pedalboard) = 0;
-    virtual void UpdatePluginState(PedalboardItem& pedalboardItem) = 0;
+    virtual bool UpdatePluginStates(Pedalboard& pedalboard) = 0;
+    virtual bool UpdatePluginState(PedalboardItem& pedalboardItem) = 0;
 
+    virtual std::string AtomToJson(const LV2_Atom*atom) = 0;
 
     virtual void Open(const JackServerSettings&jackServerSettings,const JackChannelSelection & channelSelection) = 0;
     virtual void Close() = 0;

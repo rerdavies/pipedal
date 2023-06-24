@@ -30,6 +30,7 @@
 #include "lv2/atom/atom.h"
 #include "lv2/atom/forge.h"
 #include "json_variant.hpp"
+#include "atom_object.hpp"
 
 namespace pipedal
 {

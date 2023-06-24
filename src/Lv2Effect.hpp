@@ -24,6 +24,7 @@
 #include "Pedalboard.hpp"
 #include <lilv/lilv.h>
 #include "BufferPool.hpp"
+#include "FileBrowserFilesFeature.hpp"
 
 #include "IEffect.hpp"
 #include "Worker.hpp"
@@ -51,9 +52,9 @@ namespace pipedal
         virtual void OnLogDebug(const char*message);
 
     private:
-        
+        FileBrowserFilesFeature fileBrowserFilesFeature;
         std::unique_ptr<StateInterface> stateInterface;
-        void RestoreState(const PedalboardItem&pedalboardItem);
+        void RestoreState(PedalboardItem&pedalboardItem);
         LogFeature logFeature;
         std::map<std::string,AtomBuffer> patchPropertyPrototypes;
 
@@ -174,6 +175,8 @@ namespace pipedal
         double currentBypassDx = 0;
         uint32_t bypassSamplesRemaining = 0;
 
+        bool requestStateChangedNotification = false;
+
         void BypassTo(float value);
 
     public:
@@ -181,6 +184,9 @@ namespace pipedal
         virtual bool GetLv2State(Lv2PluginState*state);
         virtual void RequestPatchProperty(LV2_URID uridUri);
         virtual void SetPatchProperty(LV2_URID uridUri,size_t size, LV2_Atom*value);
+        virtual bool GetRequestStateChangedNotification() const;
+        virtual void SetRequestStateChangedNotification(bool value);
+
         virtual void GatherPatchProperties(RealtimePatchPropertyRequest*pRequest);
         virtual bool IsVst3() const { return false; }
         virtual void RelayPatchSetMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter);

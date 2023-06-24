@@ -147,12 +147,15 @@ mime_type(const std::filesystem::path &path)
     auto const ext = path.extension();
     try
     {
-        return extensionsToMimeType.at(ext);
+        if (extensionsToMimeType.find(ext) != extensionsToMimeType.end())
+        {
+            return extensionsToMimeType.at(ext);
+        }
     }
     catch (const std::exception &)
     {
-        return "application/octet-stream";
     }
+    return "application/octet-stream";
 }
 
 std::string GetFromAddress(const tcp::socket &socket)
@@ -436,12 +439,17 @@ namespace pipedal
             auto &request = con->get_request();
 
             std::string origin = con->get_request_header(HttpField::origin);
+            if (origin.size() == 0)
+            {
+                origin = "*";
+            }
 
             if (logHttpRequests)
             {
                 tcp::endpoint fromAddress = con->get_socket().remote_endpoint();
                 stringstream ss;
                 ss << "http - " << fromAddress << "; " << request.get_method() << "; " << con->get_uri()->str();
+                Lv2Log::info(ss.str());
             }
             std::shared_ptr<websocketpp::uri> connectionUri = con->get_uri();
 
@@ -507,7 +515,6 @@ namespace pipedal
                             res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));
                             res.set(HttpField::access_control_allow_origin, origin);
 
-                            res.set(HttpField::cache_control, "max-age: 31104000"); // cache for a year.
 
                             requestHandler->get_response(fromAddress,requestUri, req, res, ec);
                             res.keepAlive(req.keepAlive());
@@ -599,6 +606,11 @@ namespace pipedal
                             std::istreambuf_iterator<char>());
 
             res.set("Content-Type", mimeType);
+
+            if (mimeType.starts_with("image/") || mimeType.starts_with("font/"))
+            {
+                res.set(HttpField::cache_control, "public, max-age=864000"); // cache for a ten days.
+            }
 
             res.set(HttpField::access_control_allow_origin, origin);
             res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));

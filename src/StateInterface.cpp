@@ -22,6 +22,7 @@
 #include "Base64.hpp"
 #include "json.hpp"
 #include <sstream>
+#include <string.h>
 
 using namespace pipedal;
 
@@ -281,18 +282,21 @@ void Lv2PluginStateEntry::read_json(json_reader &reader)
     reader.end_object();
 }
 
-StateInterface::StateInterface(IHost *host, LilvInstance *pInstance, const LV2_State_Interface *pluginStateInterface)
+StateInterface::StateInterface(
+    IHost *host,
+    const LV2_Feature** features, 
+    LilvInstance *pInstance,
+    const LV2_State_Interface *pluginStateInterface)
     : map(host->GetMapFeature()),
         pInstance(pInstance),
         pluginStateInterface(pluginStateInterface)
 {
-    auto hostFeatures = host->GetLv2Features();
-    while (*hostFeatures != nullptr)
+    while (*features != nullptr)
     {
-        features.push_back((LV2_Feature*)(*hostFeatures));
-        ++hostFeatures;
+        this->features.push_back((LV2_Feature*)(*features));
+        ++features;
     }
-    features.push_back(nullptr);
+    this->features.push_back(nullptr);
 }
 
 std::string Lv2PluginState::ToString() const {
@@ -300,4 +304,16 @@ std::string Lv2PluginState::ToString() const {
     json_writer writer(ss);
     writer.write(*this);
     return ss.str();
+}
+
+
+bool Lv2PluginStateEntry::operator==(const Lv2PluginStateEntry&other) const
+{
+    return this->atomType_ == other.atomType_ && this->value_ == other.value_;
+}
+
+bool Lv2PluginState::IsEqual(const Lv2PluginState&other) const
+{
+    if (other.isValid_ != this->isValid_) return false;
+    return (other.values_ == this->values_);
 }

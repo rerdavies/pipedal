@@ -68,14 +68,14 @@ namespace pipedal
         virtual void OnLoadPluginPreset(int64_t instanceId, const std::vector<ControlValue> &controlValues) = 0;
         virtual void OnMidiValueChanged(int64_t instanceId, const std::string &symbol, float value) = 0;
         virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) = 0;
-        virtual void OnNotifyAtomOutput(int64_t clientModel, uint64_t instanceId, const std::string &propertyUri, const std::string &atomJson) = 0;
+        virtual void OnNotifyPatchProperty(int64_t clientModel, uint64_t instanceId, const std::string &propertyUri, const std::string &atomJson) = 0;
         virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings &wifiConfigSettings) = 0;
         virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings &wifiDirectConfigSettings) = 0;
         virtual void OnGovernorSettingsChanged(const std::string &governor) = 0;
         virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites) = 0;
         virtual void OnShowStatusMonitorChanged(bool show) = 0;
         virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) = 0;
-        virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
+        //virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
         virtual void OnErrorMessage(const std::string&message) = 0;
         virtual void Close() = 0;
     };
@@ -169,13 +169,17 @@ namespace pipedal
 
     private: // IAudioHostCallbacks
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;
+        virtual void OnNotifyMaybeLv2StateChanged(uint64_t instanceId) override;
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) override;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) override;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
         virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) override;
-        virtual bool WantsAtomOutput(uint64_t instanceId,LV2_URID atomProperty) override;
-        virtual void OnNotifyAtomOutput(uint64_t instanceId, LV2_URID outputAtomProperty, const std::string &atomJson) override;
-;
+        virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom*atomValue) override;
+
+        void OnNotifyPatchProperty(uint64_t instanceId, LV2_URID outputAtomProperty, const std::string &atomJson);
+
+
+
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) override;
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) override;
         virtual void OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) override;
@@ -184,6 +188,7 @@ namespace pipedal
         void UpdateVst3Settings(Pedalboard &pedalboard);
 
         PiPedalConfiguration configuration;
+
 
     public:
         PiPedalModel();

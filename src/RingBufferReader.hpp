@@ -60,6 +60,7 @@ namespace pipedal
         NextMidiProgram,
 
         Lv2StateChanged,
+        MaybeLv2StateChanged,
         SetInputVolume,
         SetOutputVolume,
         Lv2ErrorMessage,
@@ -321,6 +322,10 @@ namespace pipedal
         void Lv2StateChanged(uint64_t instanceId)
         {
             write(RingBufferCommand::Lv2StateChanged,instanceId);
+        }
+        void MaybeLv2StateChanged(uint64_t instanceId)
+        {
+            write(RingBufferCommand::MaybeLv2StateChanged,instanceId);
         }
         void AtomOutput(uint64_t instanceId, size_t bytes, uint8_t*data)
         {

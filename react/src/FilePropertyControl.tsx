@@ -29,7 +29,7 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { UiFileProperty } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
-import { PiPedalModel, PiPedalModelFactory, ListenHandle, StateChangedHandle } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, ListenHandle} from './PiPedalModel';
 import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import {PedalboardItem} from './Pedalboard';
@@ -98,63 +98,42 @@ const FilePropertyControl =
                     value: "",
                 };
                 this.model = PiPedalModelFactory.getInstance();
-                if (this.props.fileProperty.patchProperty !== "") {
-                    this.subscribeToPropertyGet();
-                }
             }
 
             private propertyGetHandle?: ListenHandle;
 
-            refreshPatchProperty()
-            {
-                this.model.getPatchProperty(this.props.pedalboardItem.instanceId, this.props.fileProperty.patchProperty)
-                    .then(
-                        (json: any) => {
-                            if (json && json.otype_ === "Path") {
-                                let path = json.value as string;
-                                this.setState({ value: path, hasValue: true });
-                            }
-                        }
-                    )
-                    .catch(
-                        (error: Error) => {
-                            this.model.showAlert(error.toString());
-                        }
-                    );
+            monitorPropertyHandle?: ListenHandle;
 
-            }
-
-            stateChangedHandle?: StateChangedHandle;
-
-            subscribeToPropertyGet() {
+            subscribeToPatchProperty() {
                 // this.propertyGetHandle = this.model.listenForAtomOutput(this.props.instanceId,(instanceId,atomOutput)=>{
                 //     // PARSE THE OBJECT!
                 //     // this.setState({value: atomOutput?.value as string});
                 // });
-                if (this.stateChangedHandle)
-                {
-                    this.model.removeLv2StateChangedListener(this.stateChangedHandle);
-                }
-                this.refreshPatchProperty();
-                this.stateChangedHandle = this.model.addLv2StateChangedListener(
-                    this.props.pedalboardItem.instanceId,
-                    () => {
-                        this.refreshPatchProperty();
-                    });
+                this.unsubscribeToPatchProperty();
+                this.monitorPropertyHandle = this.model.monitorPatchProperty(this.props.pedalboardItem.instanceId,
+                    this.props.fileProperty.patchProperty,
+                    (instanceId,property,propertyValue) => {
+                        if (propertyValue.otype_ === "Path")
+                        {
+                            this.setState({value: propertyValue.value as string,hasValue: true});
+                        }
+                    }
+                    );
             }
-            unsubscribeToPropertyGet() {
-                if (this.stateChangedHandle)
+            unsubscribeToPatchProperty() {
+                if (this.monitorPropertyHandle !== undefined)
                 {
-                    this.model.removeLv2StateChangedListener(this.stateChangedHandle);
+                    this.model.cancelMonitorPatchProperty(this.monitorPropertyHandle);
+                    this.monitorPropertyHandle = undefined;
                 }
             }
             private mounted: boolean = false;
             componentDidMount() {
                 this.mounted = true;
-                this.subscribeToPropertyGet();
+                this.subscribeToPatchProperty();
             }
             componentWillUnmount() {
-                this.unsubscribeToPropertyGet();
+                this.unsubscribeToPatchProperty();
                 this.mounted = false;
             }
             componentDidUpdate(prevProps: Readonly<FilePropertyControlProps>, prevState: Readonly<FilePropertyControlState>, snapshot?: any): void {
@@ -163,8 +142,8 @@ const FilePropertyControl =
                     || prevProps.pedalboardItem.stateUpdateCount !== this.props.pedalboardItem.stateUpdateCount
 
                     ) {
-                    this.unsubscribeToPropertyGet();
-                    this.subscribeToPropertyGet();
+                    this.unsubscribeToPatchProperty();
+                    this.subscribeToPatchProperty();
                 }
 
             }

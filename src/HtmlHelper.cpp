@@ -52,10 +52,10 @@ std::string HtmlHelper::timeToHttpDate(time_t time)
     }
     char szBuffer[sizeof("Mon, 01 Jan 1970 00:00:00 GMT+")];
     snprintf(szBuffer,sizeof(szBuffer), FORMAT, 
-        INVARIANT_MONTHS[gmTm.tm_wday],
+        INVARIANT_WEEK_DAYS[gmTm.tm_wday],
         gmTm.tm_mday,
         INVARIANT_MONTHS[gmTm.tm_mon],
-        gmTm.tm_year,
+        gmTm.tm_year+1900,
         gmTm.tm_hour,
         gmTm.tm_min,
         gmTm.tm_sec);

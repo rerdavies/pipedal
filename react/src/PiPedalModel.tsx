@@ -554,7 +554,7 @@ export class PiPedalModel //implements PiPedalModel
             let atomJson = body.atomJson as any;
             this.handleNotifyPatchProperty(clientHandle, instanceId, propertyUri, atomJson);
             if (header.replyTo) {
-                this.webSocket?.reply(header.replyTo, "onNotifyAtomOut", true);
+                this.webSocket?.reply(header.replyTo, "onNotifyPatchProperty", true);
             }
         } else if (message === "onJackServerSettingsChanged") {
             let jackServerSettings = new JackServerSettings().deserialize(body);

@@ -29,7 +29,8 @@ namespace pipedal
     public:
         MapPathFeature(const std::filesystem::path &storagePath);
 		void Prepare(MapFeature* map);
-        void SetPluginStoragePath(const std::filesystem::path&path) { storagePath = path;}
+        void SetPluginStoragePath(const std::string&path) { storagePath = path;}
+        const std::string&GetPluginStoragePath() const { return storagePath; }
         const LV2_Feature*GetMapPathFeature() { return &mapPathFeature;}
         const LV2_Feature*GetMakePathFeature() { return &makePathFeature;}
         const LV2_Feature*GetFreePathFeature() { return &freePathFeature;}
