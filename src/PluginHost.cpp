@@ -393,6 +393,8 @@ void PluginHost::Load(const char *lv2Path)
 
         lilv_world_load_all(pWorld);
     }
+    // LilvNode*lv2_path = lilv_new_file_uri(pWorld,NULL,lv2Path);
+    // lilv_world_set_option(world,LILV_OPTION_LV2_PATH,lv)
 
     lilvUris.Initialize(pWorld);
 

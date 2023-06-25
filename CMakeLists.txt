@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.1.26
+    VERSION 1.1.27
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
-set (DISPLAY_VERSION "v1.1.26")
+set (DISPLAY_VERSION "v1.1.27")
 
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
@@ -87,7 +87,7 @@ set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
 #set(CPACK_DEBIAN_PACKAGE_DEPENDS "jackd2, hostapd, dnsmasq" )
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "hostapd, dnsmasq, authbind" )
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, hostapd, dnsmasq, authbind" )
 #set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
