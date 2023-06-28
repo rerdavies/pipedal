@@ -60,10 +60,20 @@ import { BankIndex, BankIndexEntry } from './Banks';
 import RenameDialog from './RenameDialog';
 import JackStatusView from './JackStatusView';
 import { Theme } from '@mui/material/styles';
+import isDarkMode from './DarkMode';
+
 
 
 
 const appStyles = (theme: Theme) => createStyles({
+    menuIcon: {
+        fill: "green"
+    },
+    appBar: {
+    },
+    listSubheader: {
+        backgroundImage: "linear-gradient(255,255,255,0.15),rgba(255,255,255,0.15)"
+    },
     loadingContent: {
         display: "block",
         position: "absolute",
@@ -72,7 +82,7 @@ const appStyles = (theme: Theme) => createStyles({
         top: "0px",
         width: "100%",
         height: "100%",
-        background: "#DDD",
+        background: isDarkMode() ? "#222": "#DDD",
         opacity: "0.95",
         justifyContent: "center",
         textAlign: "center",
@@ -91,13 +101,13 @@ const appStyles = (theme: Theme) => createStyles({
         top: "0px",
         width: "100%",
         height: "100%",
-        color: "#444",
+        color: isDarkMode() ? "#CCC": "#444",
         zIndex: 2000
     },
     errorContentMask: {
         position: "absolute", left: 0, top: 0,
         width: "100%", height: "100%",
-        background: "#BBB",
+        background: isDarkMode()? "#121212": "#BBB",
         opacity: 0.95,
         zIndex: 1999
     },
@@ -131,7 +141,7 @@ const appStyles = (theme: Theme) => createStyles({
 
     },
     errorMessage: {
-        color: '#000',
+        color: theme.palette.text.secondary,
         textAlign: "left",
         zIndex: 2010
 
@@ -140,7 +150,7 @@ const appStyles = (theme: Theme) => createStyles({
         position: "relative",
         top: "20%",
         width: "240px",
-        color: "#888",
+        color: isDarkMode() ? theme.palette.text.secondary : "#888",
         marginLeft: "auto",
         marginRight: "auto",
         // border: "3px solid #888",
@@ -167,7 +177,7 @@ const appStyles = (theme: Theme) => createStyles({
 
     toolBarSpacer:
     {
-        position: "relative", flex: "0 0 auto"
+        position: "relative", flex: "0 0 auto",
     },
 
 
@@ -190,7 +200,7 @@ const appStyles = (theme: Theme) => createStyles({
     },
 
     heroContent: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: isDarkMode()? theme.palette.background.default: "#FFFFFF",
         position: "relative",
         height: "100%",
         width: "100%"
@@ -198,7 +208,6 @@ const appStyles = (theme: Theme) => createStyles({
 
     drawerItem: {
         width: 350,
-        background: "#FF8080"
     },
     drawerItemFullWidth: {
         width: 'auto',
@@ -657,7 +666,7 @@ render() {
             <CssBaseline />
             {(!this.state.tinyToolBar) ?
                 (
-                    <AppBar position="absolute" style={{ background: "white" }}>
+                    <AppBar className="appBar" position="absolute" >
                         <Toolbar variant="dense"   >
                             <IconButton
                                 edge="start"
@@ -714,9 +723,10 @@ render() {
                 )}
             <TemporaryDrawer position='left' title="PiPedal"
                 is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
-                <List subheader={
-                    <ListSubheader component="div" id="nested-list-subheader">Banks</ListSubheader>
-                }>
+                <ListSubheader className="listSubheader" component="div" id="xnested-list-subheader" style={{background: "rgba(12,12,12,0.0)"}}>
+                    <Typography variant="caption" style={{position: "relative", top: 15}}>Banks</Typography></ListSubheader>
+
+                <List >
                     {
                         shortBankList.map((bank) => {
                             return (
@@ -746,18 +756,26 @@ render() {
                 <Divider />
                 <List>
                     <ListItem button key='RenameBank' onClick={() => { this.handleDrawerRenameBank() }}>
-                        <ListItemIcon><img src="img/drive_file_rename_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} /></ListItemIcon>
+                        <ListItemIcon>
+                            <img className='menuIcon' 
+                                src={isDarkMode()? "img/drive_file_rename_outline_white_24dp.svg" :"img/drive_file_rename_outline_black_24dp.svg"} 
+                                alt="" style={{ opacity: 0.6 }} />
+                        </ListItemIcon>
                         <ListItemText primary='Rename Bank' />
                     </ListItem>
                     <ListItem button key='SaveBank' onClick={() => { this.handleDrawerSaveBankAs() }} >
                         <ListItemIcon>
-                            <img src="img/save_bank_as.svg" alt="" style={{ opacity: 0.6 }} />
+                            <img className='menuIcon' 
+                                src={isDarkMode()? "img/save_bank_as_white.svg" :"img/save_bank_as.svg"} 
+                                alt="" style={{ opacity: 0.6 }} />
                         </ListItemIcon>
                         <ListItemText primary='Save As New Bank' />
                     </ListItem>
                     <ListItem button key='CreateBank' onClick={() => { this.handleDrawerManageBanks(); }}>
                         <ListItemIcon>
-                            <img src="img/edit_banks.svg" alt="" style={{ opacity: 0.6 }} />
+                            <img className='menuIcon' 
+                                src={isDarkMode()? "img/edit_banks_white.svg" :"img/edit_banks.svg"} 
+                                alt="" style={{ opacity: 0.6 }} />
                         </ListItemIcon>
                         <ListItemText primary='Manage Banks...' />
                     </ListItem>
@@ -766,19 +784,23 @@ render() {
                 <List>
                     <ListItem button key='Settings' onClick={() => { this.handleDrawerSettingsClick() }}>
                         <ListItemIcon>
-                            <img src="img/settings_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
+                            <img className='menuIcon' 
+                            src={isDarkMode()? "img/settings_white_24dp.svg" :"img/settings_black_24dp.svg"} 
+                             alt="" style={{ opacity: 0.6 }} />
                         </ListItemIcon>
                         <ListItemText primary='Settings' />
                     </ListItem>
                     <ListItem button key='About' onClick={() => { this.handleDrawerAboutClick() }}>
                         <ListItemIcon>
-                            <img src="img/help_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
+                            <img className='menuIcon' 
+                                src= {isDarkMode() ? "img/help_outline_white_24dp.svg": "img/help_outline_black_24dp.svg"}
+                                 alt="" style={{ opacity: 0.6 }} />
                         </ListItemIcon>
                         <ListItemText primary='About' />
                     </ListItem>
                     <ListItem button key='Donations' onClick={() => { this.handleDrawerDonationClick() }}>
                         <ListItemIcon>
-                            <VolunteerActivismIcon />
+                            <VolunteerActivismIcon style={{ opacity: 0.6 }}/>
                         </ListItemIcon>
                         <ListItemText primary='Donations' />
                     </ListItem>
@@ -786,7 +808,8 @@ render() {
 
             </TemporaryDrawer>
             {!this.state.tinyToolBar && (
-                <Toolbar className={classes.toolBarSpacer} variant="dense" />
+                <Toolbar className={classes.toolBarSpacer} variant="dense"  
+                />
             )}
             <main className={classes.mainFrame} >
                 <div className={classes.mainSizingPosition}>
@@ -807,7 +830,7 @@ render() {
             <RenameDialog
                 open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
                 defaultName={this.model_.banks.get().getSelectedEntryName()}
-                acceptActionName={"Rename"}
+                acceptActionName={this.state.renameBankDialogOpen ? "Rename": "Save as"}
                 onClose={() => {
                     this.setState({
                         renameBankDialogOpen: false,

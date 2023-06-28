@@ -98,6 +98,11 @@ const styles = (theme: Theme) => createStyles({
         marginLeft: theme.spacing(2),
         flex: 1,
     },
+    cpuStatusColor: {
+        color: theme.palette.text.secondary,
+        opacity: 0.7
+
+    },
     sectionHead: {
         marginLeft: 24,
         marginRight: 24,
@@ -567,15 +572,15 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     </Typography>
                                     {(!isConfigValid) ?
                                         (
-                                            <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                            <div className={classes.cpuStatusColor} style={{ paddingLeft: 48, position: "relative", top: -12 }}>
                                                 <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
                                                 {(!this.props.onboarding) && (
-                                                    <Typography display="block" variant="caption" color="textSecondary">Governor: </Typography>
+                                                    <Typography display="block" variant="caption" color="inherit">Governor: </Typography>
                                                 )}
                                             </div>
                                         ) :
                                         (
-                                            <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                            <div className={classes.cpuStatusColor} style={{ paddingLeft: 48, position: "relative", top: -12 }}>
                                                 {JackHostStatus.getDisplayView("", this.state.jackStatus)}
                                                 { (!this.props.onboarding) && JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
                                             </div>

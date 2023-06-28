@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { SyntheticEvent,Component } from 'react';
+import isDarkMode from './DarkMode';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, PresetIndexEntry, PresetIndex } from './PiPedalModel';
@@ -83,6 +84,9 @@ const styles = (theme: Theme) => createStyles({
     dialogTitle: {
         marginLeft: theme.spacing(2),
         flex: 1,
+    },
+    itemBackground: {
+        background: theme.palette.background.paper
     },
     itemFrame: {
         display: "flex",
@@ -241,7 +245,7 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
             let classes = this.props.classes;
             let selectedItem = this.isEditMode() ? this.state.selectedItem : this.state.presets.selectedInstanceId;
             return (
-                <div key={presetEntry.instanceId} style={{ background: "white" }} >
+                <div key={presetEntry.instanceId} className="itemBackground">
 
                     <ButtonBase style={{ width: "100%", height: 48 }}
                         onClick={() => this.handleItemClick(presetEntry.instanceId)}
@@ -249,7 +253,9 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
                         <SelectHoverBackground selected={presetEntry.instanceId === selectedItem} showHover={true} />
                         <div className={classes.itemFrame}>
                             <div className={classes.iconFrame}>
-                                <img src="img/ic_presets.svg" className={classes.itemIcon} alt="" />
+                                <img 
+                                    src={isDarkMode()? "img/ic_presets_white.svg": "img/ic_presets.svg"}
+                                 className={classes.itemIcon} alt="" />
                             </div>
                             <div className={classes.itemLabel}>
                                 <Typography>
@@ -402,7 +408,9 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
                                                 >
                                                     <MenuItem onClick={() => { this.handleDownloadPreset(); }} >
                                                         <ListItemIcon>
-                                                            <img src="img/file_download_black_24dp.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
+                                                            <img src=
+                                                                {isDarkMode()? "img/file_download_white_24dp.svg":"img/file_download_black_24dp.svg"}
+                                                                 style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
                                                         </ListItemIcon>
                                                         <ListItemText>
                                                             Download preset
@@ -411,7 +419,8 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
                                                     </MenuItem>
                                                     <MenuItem onClick={() => { this.handleUploadPreset() }}>
                                                         <ListItemIcon>
-                                                            <img src="img/file_upload_black_24dp.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
+                                                            <img src={ isDarkMode()? "img/file_upload_white_24dp.svg": "img/file_upload_black_24dp.svg"}
+                                                             style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
                                                         </ListItemIcon>
                                                         <ListItemText>
                                                             Upload preset

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="48px"
+	 height="48px" viewBox="0 0 48 48" enable-background="new 0 0 48 48" xml:space="preserve">
+<g id="x">
+</g>
+<g id="Layer_1" display="none">
+	<path display="inline" d="M47,41c0,3.313-2.688,6-6,6H7c-3.313,0-6-2.688-6-6V7c0-3.313,2.687-6,6-6h34c3.313,0,6,2.687,6,6V41z"/>
+	<g display="inline">
+		<line fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" x1="11.5" y1="29" x2="11.5" y2="38.5"/>
+		<circle fill="#FFFFFF" cx="11.5" cy="13.5" r="2.5"/>
+		<circle fill="#FFFFFF" cx="11.5" cy="20.5" r="2.5"/>
+	</g>
+	<g display="inline">
+		<line fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" x1="21.5" y1="29" x2="21.5" y2="38.5"/>
+		<circle fill="#FFFFFF" cx="21.5" cy="13.5" r="2.5"/>
+		<circle fill="#FFFFFF" cx="21.5" cy="20.5" r="2.5"/>
+	</g>
+	<g display="inline">
+		<line fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" x1="31.5" y1="29" x2="31.5" y2="38.5"/>
+		<circle fill="#FFFFFF" cx="31.5" cy="13.5" r="2.5"/>
+		<circle fill="#FFFFFF" cx="31.5" cy="20.5" r="2.5"/>
+	</g>
+</g>
+<g id="Compound">
+	<path d="M41,1H7C3.687,1,1,3.687,1,7v34c0,3.313,2.687,6,6,6h34c3.313,0,6-2.688,6-6V7C47,3.687,44.313,1,41,1z M14,38.5
+		c0,1.381-1.119,2.5-2.5,2.5S9,39.881,9,38.5V29c0-1.381,1.119-2.5,2.5-2.5S14,27.619,14,29V38.5z M11.5,23
+		C10.119,23,9,21.88,9,20.5s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5S12.881,23,11.5,23z M11.5,16C10.119,16,9,14.88,9,13.5
+		s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5S12.881,16,11.5,16z M24,38.5c0,1.381-1.119,2.5-2.5,2.5S19,39.881,19,38.5V29
+		c0-1.381,1.119-2.5,2.5-2.5S24,27.619,24,29V38.5z M21.5,23c-1.381,0-2.5-1.12-2.5-2.5s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5
+		S22.881,23,21.5,23z M21.5,16c-1.381,0-2.5-1.12-2.5-2.5s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5S22.881,16,21.5,16z M34,38.5
+		c0,1.381-1.119,2.5-2.5,2.5S29,39.881,29,38.5V29c0-1.381,1.119-2.5,2.5-2.5S34,27.619,34,29V38.5z M31.5,23
+		c-1.381,0-2.5-1.12-2.5-2.5s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5S32.881,23,31.5,23z M31.5,16c-1.381,0-2.5-1.12-2.5-2.5
+		s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5S32.881,16,31.5,16z"/>
+</g>
+</svg>

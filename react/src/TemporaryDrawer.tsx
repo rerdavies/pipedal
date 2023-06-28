@@ -22,11 +22,11 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import createStyles from '@mui/styles/createStyles';
 
-import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/Toolbar';
 import Drawer from '@mui/material/Drawer';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Theme } from '@mui/material/styles';
+import isDarkMode from './DarkMode';
 
 
 const drawerStyles = (theme: Theme) => {
@@ -40,7 +40,7 @@ const drawerStyles = (theme: Theme) => {
 
     drawer_header: {
         color: theme.palette.primary.main,
-        background: 'white',
+        background: (isDarkMode()? theme.palette.background.default: 'white'),
 
     }
 })};
@@ -98,13 +98,13 @@ export const TemporaryDrawer = withStyles(drawerStyles)(
                                 onClick={() => { this.fireClose(); }}
                                 onKeyDown={() => { this.fireClose(); }}
                             >
-                                <Toolbar className={classes.drawer_header} 
-                                    style={{backgroundImage: 'url("img/ic_drawer_2.png")', border: "red solid", borderWidth: "0px 0px 3px 0px" }} 
-                                >
-                                    <IconButton style={{ marginLeft: -24  }} >
+                                <div style={{ display: "flex", flexFlow: "row nowrap", justifyContent: "flex-start", alignItems: "center", width: "100%"}}>
+
+                                    <IconButton style={{ flex: "0 0 auto" }} >
                                         <ArrowBackIcon style={{ fill: '#666' }} />
                                     </IconButton>
-                                </Toolbar>
+                                    <img src="img/Pi-Logo-3.png" alt="" style={{height: 36}} />
+                                </div>
                                 {this.props.children}
                             </div>
                         </Drawer>

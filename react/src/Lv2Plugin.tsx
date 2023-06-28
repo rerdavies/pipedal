@@ -375,7 +375,19 @@ export enum PluginType {
     WaveshaperPlugin = "WaveshaperPlugin",
 
         // psuedo plugin type for the Amps node of the filter dialog.
-    PiPedalAmpsNode = "PiPedalAmpsNode"
+    PiPedalAmpsNode = "PiPedalAmpsNode",
+
+    // pseudo plugin types for splitter.
+    SplitA = "SplitA",
+    SplitB = "SplitB",   //"img/fx_split_b.svg";
+    SplitMix = "SplitMix", //SplitMix; //"img/fx_dial.svg";
+    SplitLR = "SplitLR", //"img/fx_dial.svg";
+
+
+
+    // psuedo plugin type for misc icons.
+    ErrorPlugin = "ErrorPlugin",
+    Terminal = "Terminal", //"img/fx_terminal.svg"; 
 
 }
 

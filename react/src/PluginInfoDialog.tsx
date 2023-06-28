@@ -235,7 +235,7 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                     <MuiDialogTitle >
                         <div style={{ display: "flex", flexDirection: "row", alignItems: "start", flexWrap: "nowrap" }}>
                             <div style={{ flex: "0 0 auto", marginRight: 16 }}>
-                                <PluginIcon pluginType={plugin.plugin_type} pluginUri={plugin.uri} offsetY={3} />
+                                <PluginIcon pluginType={plugin.plugin_type} offsetY={3} />
                             </div>
                             <div style={{ flex: "1 1 auto" }}>
                                 <Typography variant="h6">{plugin.name}</Typography>

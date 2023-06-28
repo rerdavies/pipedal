@@ -78,6 +78,9 @@ const styles = (theme: Theme) => createStyles({
         position: 'relative',
         top: 0, left: 0
     },
+    itemBackground: {
+        background: theme.palette.background.paper
+    },
     dialogActionBar: {
         position: 'relative',
         top: 0, left: 0,
@@ -249,7 +252,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
             let classes = this.props.classes;
             let selectedItem = this.state.selectedItem;
             return (
-                <div key={presetEntry.instanceId} style={{ background: "white" }} >
+                <div key={presetEntry.instanceId} className="backgroundItem"  >
 
                     <ButtonBase style={{ width: "100%", height: 48 }}
                         onClick={() => this.handleItemClick(presetEntry.instanceId)}

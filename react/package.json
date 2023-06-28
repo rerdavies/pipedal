@@ -22,7 +22,10 @@
     "react-virtualized-auto-sizer": "^1.0.6",
     "react-window": "^1.8.6",
     "typescript": "^4.3.4",
-    "web-vitals": "^1.1.2"
+    "web-vitals": "^1.1.2",
+
+    "@babel/plugin-proposal-private-property-in-object": "^9.7.2" 
+
   },
   "scripts": {
     "start": "react-scripts start",

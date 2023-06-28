@@ -21,6 +21,7 @@ import React from 'react';
 import { ThemeProvider, createTheme, StyledEngineProvider, Theme } from '@mui/material/styles';
 
 import AppThemed from "./AppThemed";
+import isDarkMode from './DarkMode';
 
 
 
@@ -33,16 +34,31 @@ declare module '@mui/styles/defaultTheme' {
 
 
 
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: "#6750A4"   // #5B5690  #60529A  #5C5694
-        },
-        secondary: {
-            main: "#FF6060"
+const theme = createTheme(
+    isDarkMode() ?
+        {
+        palette: {
+            mode: 'dark',
+            primary: {
+                main: "#6750A4"   // #5B5690  #60529A  #5C5694
+            },
+            secondary: {
+                main: "#FF6060"
+            }
         }
     }
-});
+        :
+        {
+        palette: {
+            primary: {
+                main: "#6750A4"   // #5B5690  #60529A  #5C5694
+            },
+            secondary: {
+                main: "#FF6060"
+            }
+        }
+    }
+);
 
 
 
