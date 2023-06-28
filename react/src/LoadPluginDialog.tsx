@@ -86,7 +86,7 @@ const pluginGridStyles = (theme: Theme) => createStyles({
         justifyContent: "space-between",
         paddingLeft: "24px",
         paddingRight: "48px",
-        background: theme.palette.background.paper,
+        
     },
     paper: {
         position: "relative",

@@ -45,6 +45,8 @@ import PluginInfoDialog from './PluginInfoDialog';
 import { GetControlView } from './ControlViewFactory';
 import MidiBindingsDialog from './MidiBindingsDialog';
 import PluginPresetSelector from './PluginPresetSelector';
+import {ReactComponent as OldDeleteIcon} from "./svg/old_delete_outline_24dp.svg";
+import {ReactComponent as MidiIcon} from "./svg/ic_midi.svg";
 
 
 
@@ -461,7 +463,7 @@ export const MainPage =
                                 </div>
                                 <div style={{ flex: "0 0 auto", display: (canInsert || canAppend) ? "block" : "none", paddingRight: 8 }}>
                                     <IconButton onClick={(e) => { this.onAddClick(e) }} size="large">
-                                        <AddIcon />
+                                        <AddIcon style={{opacity: 0.6}} />
                                     </IconButton>
                                     <Menu
                                         id="add-menu"
@@ -482,7 +484,7 @@ export const MainPage =
                                     <IconButton
                                         onClick={() => { this.onDeletePedal(pedalboardItem?.instanceId ?? -1) }}
                                         size="large">
-                                        <img src="/img/old_delete_outline_black_24dp.svg" alt="Delete" style={{ width: 24, height: 24, opacity: 0.6 }} />
+                                        <OldDeleteIcon style={{height: 24, width: 24,fill: this.props.theme.palette.text.primary, opacity: 0.6}} />
                                     </IconButton>
                                 </div>
                                 <div style={{ flex: "0 0 auto" }}>
@@ -502,7 +504,7 @@ export const MainPage =
                                     <IconButton
                                         onClick={(e) => { this.handleMidiConfiguration(instanceId); }}
                                         size="large">
-                                        <img src="img/ic_midi.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="Midi configuration" />
+                                        <MidiIcon style={{height: 24, width: 24,fill: this.props.theme.palette.text.primary, opacity: 0.6}} />
                                     </IconButton>
 
                                 </div>

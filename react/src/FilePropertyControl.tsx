@@ -33,6 +33,7 @@ import { PiPedalModel, PiPedalModelFactory, ListenHandle} from './PiPedalModel';
 import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import {PedalboardItem} from './Pedalboard';
+import isDarkMode from './DarkMode';
 
 
 export const StandardItemSize = { width: 80, height: 140 }
@@ -204,14 +205,16 @@ const FilePropertyControl =
                         <div style={{ flex: "0 0 auto", width: "100%" }}>
 
                             <ButtonBase style={{ width: "100%", borderRadius: "4px 4px 0px 0px", overflow: "hidden", marginTop: 8 }} onClick={() => { this.onFileClick() }} >
-                                <div style={{ width: "100%", background: "rgba(0,0,0,0.07)", borderRadius: "4px 4px 0px 0px" }}>
+                                <div style={{ width: "100%", background: 
+                                        isDarkMode()? "rgba(255,255,255,0.03)": "rgba(0,0,0,0.07)", 
+                                        borderRadius: "4px 4px 0px 0px" }}>
                                     <div style={{ display: "flex", alignItems: "center", flexFlow: "row nowrap" }}>
                                         <Typography noWrap={true} style={{ flex: "1 1 100%", textAlign: "start", verticalAlign: "center", paddingTop: 4, paddingBottom: 4, paddingLeft: 4 }}
                                             variant='caption'
                                         >{value}</Typography>
                                         <MoreHorizIcon style={{ flex: "0 0 auto", width: "16px", height: "16px", verticalAlign: "center", opacity: 0.5, marginRight: 4 }} />
                                     </div>
-                                    <div style={{ height: "1px", width: "100%", background: "black" }}>&nbsp;</div>
+                                    <div style={{ height: "1px", width: "100%", background: this.props.theme.palette.text.secondary }}>&nbsp;</div>
                                 </div>
                             </ButtonBase>
                         </div>

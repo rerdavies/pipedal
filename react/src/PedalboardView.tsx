@@ -33,6 +33,7 @@ import Draggable from './Draggable'
 import Rect from './Rect';
 import {PiPedalStateError} from './PiPedalError';
 import Utility from './Utility';
+import isDarkMode from './DarkMode';
 
 import {
     Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType
@@ -45,8 +46,9 @@ const END_CONTROL = Pedalboard.END_CONTROL;
 const START_PEDALBOARD_ITEM_URI = Pedalboard.START_PEDALBOARD_ITEM_URI;
 const END_PEDALBOARD_ITEM_URI = Pedalboard.END_PEDALBOARD_ITEM_URI;
 
-const ENABLED_CONNECTOR_COLOR = "#666";
-const DISABLED_CONNECTOR_COLOR = "#CCC";
+const ENABLED_CONNECTOR_COLOR = isDarkMode() ? "#CCC": "#666";
+const DISABLED_CONNECTOR_COLOR = isDarkMode() ? "#666": "#CCC";
+
 
 
 const CELL_WIDTH: number = 96;
@@ -130,14 +132,14 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         alignItems: "center",
         justifyContent: "center",
         
-        background: theme.palette.background.paper,
+        background: theme.palette.background.default,
         marginLeft: (CELL_WIDTH - FRAME_SIZE) / 2,
         marginRight: (CELL_WIDTH - FRAME_SIZE) / 2,
         marginTop: (CELL_HEIGHT - FRAME_SIZE) / 2,
         marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
-        border: "1pt #666 solid",
+        border: isDarkMode()? "1pt #AAA solid": "1pt #666 solid",
         borderRadius: 6
     },
     borderlessIconFrame: {
