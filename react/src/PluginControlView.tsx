@@ -39,7 +39,6 @@ import FilePropertyDialog from './FilePropertyDialog';
 import JsonAtom from './JsonAtom';
 import PluginOutputControl from './PluginOutputControl';
 import Units from './Units';
-import isDarkMode from './DarkMode';
 
 
 export const StandardItemSize = { width: 80, height: 110 };
@@ -79,7 +78,6 @@ let endPluginInfo: UiPlugin =
     makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
 
 
-const darkBackgroundColor = "#181818";
 
 const styles = (theme: Theme) => createStyles({
     frame: {
@@ -99,7 +97,7 @@ const styles = (theme: Theme) => createStyles({
         paddingRight: 4,
         paddingBottom: 24,
         left: 0,
-        background: isDarkMode() ? darkBackgroundColor: theme.palette.background.default,
+        background: theme.mainBackground,
         zIndex: 3
 
     },
@@ -109,7 +107,7 @@ const styles = (theme: Theme) => createStyles({
         marginRight: 22,
         paddingLeft: 4,
         paddingBottom: 24,
-        background: isDarkMode() ? darkBackgroundColor: theme.palette.background.default,
+        background: theme.mainBackground,
         zIndex: 3
 
     },
@@ -119,7 +117,7 @@ const styles = (theme: Theme) => createStyles({
         paddingRight: 22,
         paddingLeft: 12,
         paddingBottom: 24,
-        background: isDarkMode() ? darkBackgroundColor: theme.palette.background.default,
+        background: theme.mainBackground,
         zIndex: 3
 
     },
@@ -191,7 +189,7 @@ const styles = (theme: Theme) => createStyles({
     portGroupTitle: {
         position: "absolute",
         top: -15,
-        background: isDarkMode() ? darkBackgroundColor: theme.palette.background.default,
+        background: theme.mainBackground,
         textOverflow: "ellipsis",
         minWidth: 0,
         marginLeft: 20,

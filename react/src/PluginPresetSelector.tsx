@@ -67,7 +67,7 @@ const styles = (theme: Theme) => createStyles({
         width: 24, height: 24, opacity: 0.6,fill: theme.palette.text.primary
     },
     pluginMenuIcon: {
-        width: 24, height: 24, opacity: 0.6,fill: theme.palette.text.primary, marginRight: 4
+        width: 24, height: 24, opacity: 0.6,fill: theme.palette.text.primary,marginRight: 4
     }
 
 });

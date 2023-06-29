@@ -228,7 +228,7 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                 style={{ display: (props.plugin_uri !== "") ? "inline-flex" : "none" }}
                 onClick={handleClickOpen}
                 size="large">
-                <InfoOutlinedIcon />
+                <InfoOutlinedIcon style={{opacity: 0.6}} />
             </IconButton>
             {open && (
                 <Dialog onClose={handleClose} open={open} fullWidth >

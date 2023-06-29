@@ -52,7 +52,7 @@ const styles = (theme: Theme) => createStyles({
         paddingLeft: 12,
         paddingRight: 12,
         left: 0,
-        background: "white",
+        background: theme.mainBackground,
         zIndex: 3
 
     },
@@ -61,7 +61,7 @@ const styles = (theme: Theme) => createStyles({
         right: 0,
         marginRight: 22,
         paddingLeft: 12,
-        background: "white",
+        background: theme.mainBackground,
         zIndex: 3
 
     },
@@ -70,7 +70,7 @@ const styles = (theme: Theme) => createStyles({
         right: 0,
         paddingRight: 22,
         paddingLeft: 12,
-        background: "white",
+        background: theme.mainBackground,
         zIndex: 3
 
     },

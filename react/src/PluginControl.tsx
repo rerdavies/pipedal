@@ -72,7 +72,7 @@ const styles = (theme: Theme) => createStyles({
         right: 0,
         bottom: 4,
         textAlign: "center",
-        background: theme.palette.background.paper,
+        background: theme.mainBackground,
         color: theme.palette.text.secondary,
         // zIndex: -1,
     }

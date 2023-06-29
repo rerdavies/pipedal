@@ -23,6 +23,16 @@ import { ThemeProvider, createTheme, StyledEngineProvider, Theme } from '@mui/ma
 import AppThemed from "./AppThemed";
 import isDarkMode from './DarkMode';
 
+declare module '@mui/material/styles' {
+    interface Theme {
+      mainBackground: string;
+    }
+    interface ThemeOptions {
+        mainBackground?: string;
+    }
+
+}
+
 
 
 
@@ -44,8 +54,9 @@ const theme = createTheme(
             },
             secondary: {
                 main: "#FF6060"
-            }
-        }
+            },
+        },
+        mainBackground: "#222"
     }
         :
         {
@@ -56,7 +67,10 @@ const theme = createTheme(
             secondary: {
                 main: "#FF6060"
             }
-        }
+
+        },
+        mainBackground: "#FFFFFF"
+
     }
 );
 

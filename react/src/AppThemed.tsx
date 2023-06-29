@@ -200,7 +200,7 @@ const appStyles = (theme: Theme) => createStyles({
     },
 
     heroContent: {
-        backgroundColor: isDarkMode()? "#222": "#FFFFFF",
+        backgroundColor: theme.mainBackground,
         position: "relative",
         height: "100%",
         width: "100%"

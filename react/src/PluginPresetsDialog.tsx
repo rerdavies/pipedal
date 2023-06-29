@@ -45,6 +45,10 @@ import RenameDialog from './RenameDialog';
 import Slide, {SlideProps} from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
 import { WithStyles, withStyles} from '@mui/styles';
+import {ReactComponent as PluginPresetIcon} from "./svg/ic_pluginpreset2.svg";
+
+import { ReactComponent as DownloadIcon} from './svg/file_download_black_24dp.svg';
+import { ReactComponent as UploadIcon} from './svg/file_upload_black_24dp.svg';
 
 
 
@@ -74,6 +78,9 @@ interface PluginPresetsDialogState {
 
 
 const styles = (theme: Theme) => createStyles({
+    listIcon: {
+        width: 24, height: 24, opacity: 0.6,fill: theme.palette.text.primary
+    },
     dialogAppBar: {
         position: 'relative',
         top: 0, left: 0
@@ -107,7 +114,8 @@ const styles = (theme: Theme) => createStyles({
 
     },
     itemIcon: {
-        width: 24, height: 24, margin: 12, opacity: 0.6
+        width: 24, height: 24, margin: 12, opacity: 0.6,
+        fill: theme.palette.text.primary
     },
     itemLabel: {
         flex: "1 1 1px",
@@ -260,7 +268,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                         <SelectHoverBackground selected={presetEntry.instanceId === selectedItem} showHover={true} />
                         <div className={classes.itemFrame}>
                             <div className={classes.iconFrame}>
-                                <img src="img/ic_pluginpreset2.svg" className={classes.itemIcon} alt="" />
+                                <PluginPresetIcon className={classes.itemIcon}  />
                             </div>
                             <div className={classes.itemLabel}>
                                 <Typography noWrap> 
@@ -427,7 +435,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                                                         disabled={this.props.presets.presets.length === 0}
                                                     >
                                                         <ListItemIcon>
-                                                            <img src="img/file_download_black_24dp.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
+                                                            <DownloadIcon className={classes.listIcon} />
                                                         </ListItemIcon>
                                                         <ListItemText>
                                                             Download presets
@@ -436,7 +444,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                                                     </MenuItem>
                                                     <MenuItem onClick={() => { this.handleUploadPresets() }}>
                                                         <ListItemIcon>
-                                                            <img src="img/file_upload_black_24dp.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
+                                                            <UploadIcon className={classes.listIcon} />
                                                         </ListItemIcon>
                                                         <ListItemText>
                                                             Upload presets
