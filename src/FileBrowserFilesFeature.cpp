@@ -237,7 +237,7 @@ char *FileBrowserFilesFeature::MapPath(const char *path,const char*resourcePathB
     } catch (const std::exception&e)
     {
         LogError(e.what());
-        return "";
+        return strdup("");
     }
 
 }
