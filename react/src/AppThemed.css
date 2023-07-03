@@ -16,8 +16,3 @@ div {
     min-width: 0;
   }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-    color-scheme: dark;
-    }
-}

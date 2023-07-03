@@ -26,14 +26,16 @@
 #include "PluginHost.hpp"
 #include "ss.hpp"
 #include "MimeTypes.hpp"
+#include "AutoLilvNode.hpp"
 
 using namespace pipedal;
+
 
 PiPedalUI::PiPedalUI(PluginHost *pHost, const LilvNode *uiNode, const std::filesystem::path &resourcePath)
 {
     auto pWorld = pHost->getWorld();
 
-    LilvNodes *fileNodes = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris.pipedalUI__fileProperties, nullptr);
+    AutoLilvNodes  fileNodes = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris.pipedalUI__fileProperties, nullptr);
     LILV_FOREACH(nodes, i, fileNodes)
     {
         const LilvNode *fileNode = lilv_nodes_get(fileNodes, i);
@@ -47,8 +49,23 @@ PiPedalUI::PiPedalUI(PluginHost *pHost, const LilvNode *uiNode, const std::files
             pHost->LogWarning(SS("Failed to read pipedalui::fileProperties. " << e.what()));
         }
     }
+    AutoLilvNodes  frequencyPlotNodes = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris.pipedalUI__frequencyPlot, nullptr);
+    LILV_FOREACH(nodes, i, frequencyPlotNodes)
+    {
+        const LilvNode *frequencyPlotNode = lilv_nodes_get(frequencyPlotNodes, i);
+        try
+        {
+            UiFrequencyPlot::ptr frequencyPlotUI =
+                std::make_shared<UiFrequencyPlot>(pHost, frequencyPlotNode, resourcePath);
+            this->frequencyPlots_.push_back(std::move(frequencyPlotUI));
+        }
+        catch (const std::exception &e)
+        {
+            pHost->LogWarning(SS("Failed to read pipedalui::frequencyPlots. " << e.what()));
+        }
+    }
 
-    LilvNodes *portNotifications = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris.ui__portNotification, nullptr);
+    AutoLilvNodes portNotifications = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris.ui__portNotification, nullptr);
     LILV_FOREACH(nodes, i, portNotifications)
     {
         const LilvNode *portNotificationNode = lilv_nodes_get(portNotifications, i);
@@ -62,8 +79,6 @@ PiPedalUI::PiPedalUI(PluginHost *pHost, const LilvNode *uiNode, const std::files
             pHost->LogWarning(SS("Failed to read ui:portNotifications. " << e.what()));
         }
     }
-
-    lilv_nodes_free(fileNodes);
 }
 
 UiFileType::UiFileType(PluginHost *pHost, const LilvNode *node)
@@ -330,7 +345,15 @@ UiFileProperty::UiFileProperty(const std::string &name, const std::string &patch
       directory_(directory)
 {
 }
-PiPedalUI::PiPedalUI(std::vector<UiFileProperty::ptr> &&fileProperties)
+PiPedalUI::PiPedalUI(
+    std::vector<UiFileProperty::ptr> &&fileProperties, 
+    std::vector<UiFrequencyPlot::ptr>&& frequencyPlots)
+{
+    this->fileProperties_ = std::move(fileProperties);
+    this->frequencyPlots_ = std::move(frequencyPlots);
+}
+PiPedalUI::PiPedalUI(
+    std::vector<UiFileProperty::ptr> &&fileProperties)
 {
     this->fileProperties_ = std::move(fileProperties);
 }
@@ -357,6 +380,66 @@ UiFileType::UiFileType(const std::string&label, const std::string &fileType)
     }
 }
 
+static float GetFloat(LilvWorld *pWorld,const LilvNode*node,const LilvNode*property,float defaultValue)
+{
+    AutoLilvNode value = lilv_world_get(
+        pWorld,
+        node,
+        property,
+        nullptr);
+    return value.AsFloat(defaultValue);
+}
+
+
+UiFrequencyPlot::UiFrequencyPlot(PluginHost*pHost, const LilvNode*node,
+    const std::filesystem::path&resourcePath)
+{
+    auto pWorld = pHost->getWorld();
+
+    AutoLilvNode patchProperty = lilv_world_get(
+        pWorld,
+        node,
+        pHost->lilvUris.pipedalUI__patchProperty,
+        nullptr);
+    if (patchProperty)
+    {
+        this->patchProperty_ = patchProperty.AsUri();
+    }
+    else
+    {
+        throw std::logic_error("PiPedal FileProperty is missing pipedalui:patchProperty value.");
+    }
+
+
+    AutoLilvNode index = lilv_world_get(
+        pWorld,
+        node,
+        pHost->lilvUris.lv2core__index,
+        nullptr);
+    if (index)
+    {
+        this->index_ = index.AsInt(-1);
+    }
+    else
+    {
+        this->index_ = -1;
+    }
+
+    AutoLilvNode portGroup = lilv_world_get(pWorld,node,pHost->lilvUris.portgroups__group,nullptr);
+    if (portGroup)
+    {
+        this->portGroup_ = portGroup.AsUri();
+    }
+    this->xLeft_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__xLeft,100);
+    this->xRight_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__xRight,22000);
+    this->yTop_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__yTop,5);
+    this->yBottom_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__yBottom,-35);
+    this->xLog_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__xLog,-35);
+    this->width_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__width,60);
+}
+
+
+
 JSON_MAP_BEGIN(UiPortNotification)
 JSON_MAP_REFERENCE(UiPortNotification, portIndex)
 JSON_MAP_REFERENCE(UiPortNotification, symbol)
@@ -377,4 +460,17 @@ JSON_MAP_REFERENCE(UiFileProperty, directory)
 JSON_MAP_REFERENCE(UiFileProperty, patchProperty)
 JSON_MAP_REFERENCE(UiFileProperty, fileTypes)
 JSON_MAP_REFERENCE(UiFileProperty, portGroup)
+JSON_MAP_END()
+
+JSON_MAP_BEGIN(UiFrequencyPlot)
+JSON_MAP_REFERENCE(UiFrequencyPlot, patchProperty)
+JSON_MAP_REFERENCE(UiFrequencyPlot, index)
+JSON_MAP_REFERENCE(UiFrequencyPlot, portGroup)
+JSON_MAP_REFERENCE(UiFrequencyPlot, xLeft)
+JSON_MAP_REFERENCE(UiFrequencyPlot, xRight)
+JSON_MAP_REFERENCE(UiFrequencyPlot, xLog)
+JSON_MAP_REFERENCE(UiFrequencyPlot, yTop)
+JSON_MAP_REFERENCE(UiFrequencyPlot, yBottom)
+JSON_MAP_REFERENCE(UiFrequencyPlot, width)
+
 JSON_MAP_END()

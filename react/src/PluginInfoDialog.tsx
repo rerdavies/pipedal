@@ -54,6 +54,10 @@ const styles = (theme: Theme) =>
             top: theme.spacing(1),
             color: theme.palette.grey[500],
         },
+        icon: {
+            fill: theme.palette.text.primary,
+            opacity: 0.6
+        }
     });
 };
 export interface PluginInfoDialogTitleProps extends WithStyles<typeof styles> {
@@ -228,7 +232,7 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                 style={{ display: (props.plugin_uri !== "") ? "inline-flex" : "none" }}
                 onClick={handleClickOpen}
                 size="large">
-                <InfoOutlinedIcon style={{opacity: 0.6}} />
+                <InfoOutlinedIcon className={classes.icon} color='inherit' />
             </IconButton>
             {open && (
                 <Dialog onClose={handleClose} open={open} fullWidth >

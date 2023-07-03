@@ -346,6 +346,8 @@ namespace pipedal
         std::string uri_;
         std::string name_;
         std::string plugin_class_;
+        std::string brand_;
+        std::string label_;        
         std::vector<std::string> supported_features_;
         std::vector<std::string> required_features_;
         std::vector<std::string> optional_features_;
@@ -367,6 +369,8 @@ namespace pipedal
         LV2_PROPERTY_GETSET(bundle_path)
         LV2_PROPERTY_GETSET(uri)
         LV2_PROPERTY_GETSET(name)
+        LV2_PROPERTY_GETSET(brand)
+        LV2_PROPERTY_GETSET(label)
         LV2_PROPERTY_GETSET(plugin_class)
         LV2_PROPERTY_GETSET(supported_features)
         LV2_PROPERTY_GETSET(required_features)
@@ -574,6 +578,8 @@ namespace pipedal
     private:
         std::string uri_;
         std::string name_;
+        std::string brand_;
+        std::string label_;
         std::string author_name_;
         std::string author_homepage_;
         PluginType plugin_type_;
@@ -588,11 +594,14 @@ namespace pipedal
         std::vector<Lv2PluginUiPort> controls_;
         std::vector<Lv2PluginUiPortGroup> port_groups_;
         std::vector<UiFileProperty::ptr> fileProperties_;
+        std::vector<UiFrequencyPlot::ptr> frequencyPlots_;
         std::vector<UiPortNotification::ptr> uiPortNotifications_;
 
     public:
         LV2_PROPERTY_GETSET(uri)
         LV2_PROPERTY_GETSET(name)
+        LV2_PROPERTY_GETSET(brand)
+        LV2_PROPERTY_GETSET(label)
         LV2_PROPERTY_GETSET(author_name)
         LV2_PROPERTY_GETSET(author_homepage)
         LV2_PROPERTY_GETSET_SCALAR(plugin_type)
@@ -606,6 +615,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(port_groups)
         LV2_PROPERTY_GETSET_SCALAR(is_vst3)
         LV2_PROPERTY_GETSET(fileProperties)
+        LV2_PROPERTY_GETSET(frequencyPlots)
         LV2_PROPERTY_GETSET(uiPortNotifications)
 
         static json_map::storage_type<Lv2PluginUiInfo> jmap;
@@ -676,6 +686,15 @@ namespace pipedal
             AutoLilvNode pipedalUI__fileExtension;
             AutoLilvNode pipedalUI__mimeType;
 
+            AutoLilvNode pipedalUI__frequencyPlot;
+            AutoLilvNode pipedalUI__xLeft;
+            AutoLilvNode pipedalUI__xRight;
+            AutoLilvNode pipedalUI__xLog;
+            AutoLilvNode pipedalUI__yTop;
+            AutoLilvNode pipedalUI__yBottom;
+            AutoLilvNode pipedalUI__width;
+
+
             AutoLilvNode pipedalUI__outputPorts;
             AutoLilvNode pipedalUI__text;
 
@@ -696,8 +715,13 @@ namespace pipedal
             AutoLilvNode lv2__symbol;
             AutoLilvNode lv2__port;
 
+            AutoLilvNode ui__FrequencyPlot;
+
             AutoLilvNode patch__writable;
             AutoLilvNode patch__readable;
+
+            AutoLilvNode mod__brand;
+            AutoLilvNode mod__label;
 
             AutoLilvNode dc__format;
         };

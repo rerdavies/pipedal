@@ -25,10 +25,12 @@ import isDarkMode from './DarkMode';
 
 declare module '@mui/material/styles' {
     interface Theme {
-      mainBackground: string;
+      mainBackground: React.CSSProperties['color'];
+      toolbarColor: React.CSSProperties['color'];
     }
     interface ThemeOptions {
-        mainBackground?: string;
+        mainBackground?: React.CSSProperties['color'];
+        toolbarColor?: React.CSSProperties['color'];
     }
 
 }
@@ -50,13 +52,14 @@ const theme = createTheme(
         palette: {
             mode: 'dark',
             primary: {
-                main: "#6750A4"   // #5B5690  #60529A  #5C5694
+                main: '#A770E4'// #6750A4"   // #5B5690  #60529A  #5C5694
             },
             secondary: {
                 main: "#FF6060"
             },
         },
-        mainBackground: "#222"
+        mainBackground: "#222",
+        toolbarColor: '#FFFFFF'
     }
         :
         {
@@ -69,7 +72,9 @@ const theme = createTheme(
             }
 
         },
-        mainBackground: "#FFFFFF"
+        mainBackground: "#FFFFFF",
+        toolbarColor: '#FFFFFF'
+
 
     }
 );

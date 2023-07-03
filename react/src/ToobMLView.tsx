@@ -109,7 +109,7 @@ const ToobMLView =
             {
                 let group = controls[4] as ControlGroup;
                 group.controls.splice(0,0,
-                    ( <ToobFrequencyResponseView instanceId={this.props.instanceId} minDb={-20} maxDb={20} />)
+                    ( <ToobFrequencyResponseView instanceId={this.props.instanceId} />)
                     );
 
                 let gainControl: React.ReactElement = controls[2] as React.ReactElement;

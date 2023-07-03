@@ -25,6 +25,7 @@ import withStyles from '@mui/styles/withStyles';
 import { UiControl } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle,State } from './PiPedalModel';
+import isDarkMode from './DarkMode';
 
 
 
@@ -77,11 +78,13 @@ const PluginOutputControl =
 
             private model: PiPedalModel;
             private vuRef: React.RefObject<HTMLDivElement>;
+            private lampRef: React.RefObject<HTMLDivElement>;
 
 
             constructor(props: PluginOutputControlProps) {
                 super(props);
                 this.vuRef = React.createRef<HTMLDivElement>();
+                this.lampRef = React.createRef<HTMLDivElement>();
                 this.state = {
                     hasValue: false,
                     value: 0
@@ -130,6 +133,12 @@ const PluginOutputControl =
             private animationHandle: number | undefined = undefined;
             
             private updateValue(value: number) {
+                if (this.lampRef.current)
+                {
+                    let control = this.props.uiControl;
+                    let range = (value-control.min_value)/(control.max_value-control.min_value);
+                    this.lampRef.current.style.opacity = range +"";
+                }
                 if (this.vuRef.current) {
                     let control = this.props.uiControl;
                     let range = (value-control.min_value)/(control.max_value-control.min_value);
@@ -240,6 +249,38 @@ const PluginOutputControl =
                             </div>
                         </div >
 
+                    );
+                } else if (control.toggled_property && control.scale_points.length === 0) {
+                    item_width = undefined;
+                    let attachedLamp = control.name === "" || control.name === "\u00A0" ;
+                    return (
+                        <div style={{ display: "flex", flexDirection: "column", width: item_width, 
+                                marginTop: 8, marginBottom: 8, marginRight: 8,marginLeft: (attachedLamp? 0: 8), height: 98 
+                            }}>
+                            {/* TITLE SECTION */}
+                            <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                                <Typography variant="caption" display="block" style={{
+                                    width: "100%",
+                                    textAlign: "center"
+                                }}> {control.name === "" ? "\u00A0": control.name}</Typography>
+                            </div>
+                            {/* CONTROL SECTION */}
+
+                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "left", alignItems: "start", flexFlow: "row nowrap" }}>
+                                <div style={{ width: 12, height: 12, background: isDarkMode()? "#111" : "#444", borderRadius: 5, position: "relative" }}>
+                                    <div ref={this.lampRef} style={{ width: 8, height: 8, 
+                                        background: (isDarkMode()? "radial-gradient(circle at center, #F00 0, #F00 20%, #333 100%)"
+                                                       : "radial-gradient(circle at center, #F44 0, #F44 40%, #644 100%)"),
+                                        opacity: 0, borderRadius: 3,margin: 2,position: "absolute" }} />
+                                </div>
+
+                            </div>
+
+                            {/* LABEL/EDIT SECTION*, strictly a placeholder for visual alignment purposes.*/}
+                            <div style={{ flex: "0 0 auto", position: "relative", width: 30, height: 27 }}>
+                                &nbsp;
+                            </div>
+                        </div >
                     );
                 } else {
                     return (

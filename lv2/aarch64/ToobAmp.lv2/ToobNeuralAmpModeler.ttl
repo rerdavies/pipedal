@@ -1,0 +1,310 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix ui: <http://lv2plug.in/ns/extensions/ui#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix toobNam: <http://two-play.com/plugins/toob-nam#> .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+
+toobNam:modelFile
+        a lv2:Parameter;
+        rdfs:label "Model";
+        rdfs:range atom:Path.
+
+toobNam:eqGroup
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Tone" ;
+    lv2:symbol "eqGroup" .
+
+
+<http://two-play.com/plugins/toob-nam>
+        a lv2:Plugin ,
+                lv2:AmplifierPlugin ;
+        doap:name "TooB Neural Amp Modeler" ,
+                "TooB Neural Amp Modeler"@en-gb 
+                ;
+        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+         lv2:minorVersion 0 ;
+        lv2:microVersion 16 ;
+        rdfs:comment """
+A port of Steven Atkinson's Neural Amp Modeler to LV2. 
+
+TooB Neural Amp Modeler uses uplodable .nam model files. Download .nam files from http://tonehunt.org, and then upload them to TooB Neural Amp Modeler.
+
+https://tonehunt.org provides a huge selection of downloadable amp model files. 
+
+TooB Neural Amp Modeler supports a much wider range of amp models than ToobML, but usually uses much more CPU. 
+You will need at least a Pi 4 to use Toob Neural Amp Modeler. If you are having trouble with CPU usage, tonehunt.org 
+does contain some smaller amp models. Search for the "feather" tag to find models that use less CPU.
+
+If you are interested in building your own amp models, please visit https://www.neuralampmodeler.com/
+
+TooB Neural Amp Modeler uses code from the NeuralAmp Modeler Core project. The TooB Team wishes to express gratitude to Steven Atkinson for
+making this extraordinary technology available as open-source code.
+
+Code from the the NeuralAmpModelerCore project (https://github.com/sdatkinson/NeuralAmpModelerCore) is provided under the following license.
+
+MIT License
+
+Copyright (c) 2023 Steven Atkinson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "TooB NAM";
+        lv2:optionalFeature lv2:hardRTCapable;
+
+        patch:readable 
+                toobNam:modelFile;
+        patch:writable 
+                toobNam:modelFile;
+
+        lv2:extensionData state:interface,
+                work:interface;
+
+
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  0;
+                lv2:symbol "inputGain" ;
+                lv2:name "Input Gain";
+                lv2:default 0.0 ;
+                lv2:minimum -20.0;
+                lv2:maximum 20.0;
+                units:unit units:db;
+                rdfs:comment "Input gain";
+
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  1;
+                lv2:symbol "outputGain" ;
+                lv2:name "Output Gain";
+                lv2:default 0.0 ;
+                lv2:minimum -40.0;
+                lv2:maximum 40.0;
+                units:unit units:db;
+                rdfs:comment "Output gain";
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  2;
+                lv2:symbol "gate" ;
+                lv2:name "Noise Gate";
+                lv2:default -80.0 ;
+                lv2:minimum -100.0;
+                lv2:maximum 0.0;
+                rdfs:comment "Noise gate threshold. Set to minimum to disable.";
+                units:unit units:db;
+                lv2:scalePoint [
+                        rdfs:label "Off" ;
+                        rdf:value -100.0
+                ];
+
+
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  3;
+                lv2:symbol "gateOut" ;
+                lv2:name "\u00A0";
+                lv2:default 0.0;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                rdfs:comment "Gate Status";
+                lv2:portProperty lv2:toggled;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  4;
+                lv2:symbol "bass" ;
+                lv2:name "Bass";
+                lv2:default 5.0;
+                lv2:minimum 0.0;
+                lv2:maximum 10.0;
+                rdfs:comment "Bass";
+                pg:group toobNam:eqGroup ;
+
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  5;
+                lv2:symbol "mid" ;
+                lv2:name "Mid";
+                lv2:default 5.0;
+                lv2:minimum 0.0;
+                lv2:maximum 10.0;
+                rdfs:comment "Mid";
+                pg:group toobNam:eqGroup ;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  6;
+                lv2:symbol "treble" ;
+                lv2:name "Treble";
+                lv2:default 5.0;
+                lv2:minimum 0.0;
+                lv2:maximum 10.0;
+                rdfs:comment "Bass";
+                pg:group toobNam:eqGroup ;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 7 ;
+                lv2:symbol "toneStack" ;
+                lv2:name "Type";
+                lv2:default 0.0 ;
+                lv2:minimum 2.0 ;
+                lv2:maximum 3.0; 
+                lv2:portProperty lv2:enumeration ;
+
+                 lv2:scalePoint [
+                        rdfs:label "Bassman" ;
+                        rdf:value 0.0
+                ] , [
+                        rdfs:label "JCM8000" ;
+                        rdf:value 1.0
+                ], [
+                        rdfs:label "Baxandall" ;
+                        rdf:value 2.0
+                ],[
+                        rdfs:label "Bypass" ;
+                        rdf:value 3.0
+                ];   
+                pg:group toobNam:eqGroup ;
+
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 8 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 9 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ],
+        [
+                a atom:AtomPort ,
+                  lv2:InputPort;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                atom:supports patch:Message ;
+
+                lv2:index 10 ;
+                lv2:symbol "control" ;
+                lv2:name "Control" ;
+                rdfs:comment "Control" ;
+        ] , [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 11;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Notification" ;
+        ]
+        .
+
+<http://two-play.com/plugins/toob-nam>  pipedal_ui:ui toobNam:ui .
+
+
+toobNam:ui 
+        a pipedal_ui:ui ;
+        pipedal_ui:fileProperties 
+        [
+                a pipedal_ui:fileProperty;
+                rdfs:label "Model (*.nam)" ;
+                pipedal_ui:directory "NeuralAmpModels";
+                lv2:index 8 ;
+                pipedal_ui:patchProperty toobNam:modelFile ;
+                pipedal_ui:fileTypes 
+                [
+                        a pipedal_ui:fileType;
+                        rdfs:label ".nam file";
+                        pipedal_ui:fileExtension ".nam";
+                        pipedal_ui:mimeType "application/octet-stream";
+                ];
+        ];
+        pipedal_ui:frequencyPlot 
+        [
+                pipedal_ui:patchProperty toobNam:FrequencyResponse;
+                lv2:index 7 ;
+                pg:group toobNam:eqGroup ;
+                
+                pipedal_ui:width: 60;
+        ]
+
+        .
+

@@ -298,7 +298,7 @@ class PedalLayout {
             if (uiPlugin != null) {
                 this.pluginType = uiPlugin.plugin_type;
                 this.iconUrl = SelectIconUri(uiPlugin.plugin_type);
-                this.name = uiPlugin.name;
+                this.name = uiPlugin.label;
                 this.numberOfInputs = Math.max(uiPlugin.audio_inputs,2);
                 this.numberOfOutputs = Math.max(uiPlugin.audio_outputs,2);
             } else {
@@ -679,7 +679,7 @@ const PedalboardView =
                 event.preventDefault();
                 event.stopPropagation();
 
-                if (!Utility.isTouchDevice()) {
+                if (!Utility.needsZoomedControls()) {
                     if (this.props.onDoubleClick && instanceId) {
                         this.props.onDoubleClick(instanceId);
                     }
@@ -1014,7 +1014,7 @@ const PedalboardView =
                                     }}>
                                         <Typography variant="caption" display="block" noWrap={true}
                                             style={{ width: CELL_WIDTH - 4, textAlign: "center", flex: "0 1 auto" }}
-                                        >{item.pedalItem?.pluginName}</Typography>
+                                        >{item.name}</Typography>
                                     </div>
                                 )
                                 result.push(<div key={this.renderKey++} className={classes.pedalItem} style={{ left: item.bounds.x, top: item.bounds.y }} >

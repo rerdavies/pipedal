@@ -41,11 +41,11 @@ const Utility = class {
     static isLandscape(): boolean {
         return window.innerWidth > window.innerHeight;
     }
-    static isTouchDevice(): boolean {
+    static needsZoomedControls(): boolean {
         if (!this.isLandscape()) return false;
 
         if (window.innerHeight > 500) return false;
-
+        if (window.innerHeight > 300) return true;
         return (('ontouchstart' in window) &&
         ((navigator.maxTouchPoints??0) > 0) );
     }

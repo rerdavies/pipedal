@@ -137,7 +137,7 @@ const PluginControl =
                 this.onInputKeyPress = this.onInputKeyPress.bind(this);
             }
             isTouchDevice(): boolean {
-                return Utility.isTouchDevice();
+                return Utility.needsZoomedControls();
             }
 
             showZoomedControl()
@@ -547,7 +547,7 @@ const PluginControl =
                     );
                 } else {
                     return (
-                        <Select variant="standard"
+                        <Select variant="standard" 
                             ref={this.selectRef}
                             value={control.clampSelectValue(value)}
                             onChange={this.onSelectChanged}
@@ -556,7 +556,7 @@ const PluginControl =
                                 id: 'id' + control.symbol,
                                 style: { fontSize: FONT_SIZE }
                             }}
-                            style={{ marginLeft: 4, marginRight: 4, width: 140 }}
+                            style={{ marginLeft: 4, marginRight: 4, width: 140,fontSize: 14 }}
                         >
                             {control.scale_points.map((scale_point: ScalePoint) => (
                                 <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>

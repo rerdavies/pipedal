@@ -991,7 +991,7 @@ int main(int argc, char **argv)
     parser.AddOption("--help", &help);
     parser.AddOption("--prefix", &prefixOption);
     parser.AddOption("--port", &portOption);
-    parser.AddOption("--enable-ap", &enable_ap);
+    parser.AddOption("--enable-legacy-ap", &enable_ap);
     parser.AddOption("--disable-ap", &disable_ap);
     parser.AddOption("--enable-p2p", &enable_p2p);
     parser.AddOption("--disable-p2p", &disable_p2p);

@@ -48,7 +48,7 @@ The core implementation is taken from the The Synthesis Toolkit in C++ (STK), ht
 """ ;
 
         mod:brand "TooB";
-        mod:label "Freeverb";
+        mod:label "TooB Freeverb";
         lv2:optionalFeature lv2:hardRTCapable;
 
         lv2:port

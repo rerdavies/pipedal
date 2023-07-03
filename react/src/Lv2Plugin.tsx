@@ -205,6 +205,42 @@ export class UiPropertyNotification {
     protocol: string = "";
 
 };
+
+export class UiFrequencyPlot {
+    deserialize(input: any): UiFrequencyPlot
+    {
+        this.patchProperty = input.patchProperty;
+        this.index = input.index;
+        this.portGroup = input.portGroup;
+        this.xLeft = input.xLeft;
+        this.xRight = input.xRight;
+        this.xLog = input.xLog;
+        this.yTop = input.yTop;
+        this.yBottom = input.yBottom;
+        this.width = input.width;
+        return this;
+    }
+    static deserialize_array(input: any): UiFrequencyPlot[]
+    {
+        let result: UiFrequencyPlot[] = [];
+        for (let i = 0; i < input.length; ++i)
+        {
+            result[i] = new UiFrequencyPlot().deserialize(input[i]);
+        }
+        return result;
+    }
+
+    patchProperty: string = "";
+    index: number = -1;
+    portGroup: string = "";
+    xLeft: number = -1;
+    xRight: number = -1;
+    xLog: boolean = true;
+    yTop: number = -1;
+    yBottom: number = -1;
+    width: number = -1;
+
+};
 export class UiFileProperty {
         deserialize(input: any): UiFileProperty
         {
@@ -253,6 +289,10 @@ export class UiFileProperty {
                 {
                     return true;
                 }
+                if (fileType.fileExtension === "*" || fileType.fileExtension === "")
+                {
+                    return true;
+                }
             }
             return false;
         }
@@ -270,6 +310,8 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
     {
         this.uri = input.uri;
         this.name = input.name;
+        this.brand = input.name? input.name: "";
+        this.label = input.label? input.label: this.name;
         this.plugin_class = input.plugin_class;
         this.supported_features = input.supported_features;
         this.required_features = input.required_features;
@@ -285,6 +327,13 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
         } else {
             this.fileProperties = [];
         }
+        if (input.frequencyPlots)
+        {
+            this.frequencyPlots = UiFrequencyPlot.deserialize_array(input.frequencyPlots)
+        } else {
+            this.frequencyPlots = [];
+        }
+
         if (input.uiPortNotifications)
         {
             this.uiPortNotifications = UiPropertyNotification.deserialize_array(input.uiPortNotifications);
@@ -297,6 +346,8 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
 
     uri:                string = "";
     name:               string = "";
+    brand:              string = "";
+    label:              string = "";
     plugin_class:       string = "";
     supported_features: string[] = Lv2Plugin.EmptyFeatures;
     required_features:  string[] = Lv2Plugin.EmptyFeatures;
@@ -306,7 +357,8 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
     comment:            string = "";
     ports:              Port[] = Port.EmptyPorts;
     port_groups:        PortGroup[] = [];
-    fileProperties:            UiFileProperty[] = [];
+    fileProperties:     UiFileProperty[] = [];
+    frequencyPlots:     UiFrequencyPlot[] = [];
     uiPortNotifications: UiPropertyNotification[] = [];
 }
 
@@ -668,6 +720,8 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     {
         this.uri = input.uri;
         this.name = input.name;
+        this.brand = input.brand ? input.brand: "";
+        this.label = input.label? input.label: this.name;
         this.plugin_type = input.plugin_type as PluginType;
         this.plugin_display_type = input.plugin_display_type;
         this.author_name = input.author_name;
@@ -684,6 +738,12 @@ export class UiPlugin implements Deserializable<UiPlugin> {
             this.fileProperties = UiFileProperty.deserialize_array(input.fileProperties)
         } else {
             this.fileProperties = [];
+        }
+        if (input.frequencyPlots)
+        {
+            this.frequencyPlots = UiFrequencyPlot.deserialize_array(input.frequencyPlots)
+        } else {
+            this.frequencyPlots = [];
         }
 
         this.is_vst3 = input.is_vst3;
@@ -738,6 +798,8 @@ export class UiPlugin implements Deserializable<UiPlugin> {
 
     uri:                 string = "";
     name:                string = "";
+    brand:               string = "";
+    label:               string = "";
     plugin_type:         PluginType = PluginType.InvalidPlugin;
     plugin_display_type: string = "";
     author_name:         string = "";
@@ -749,7 +811,8 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     description: string  = "";
     controls:            UiControl[] = [];
     port_groups:         PortGroup[] = [];
-    fileProperties:             UiFileProperty[] = [];
+    fileProperties:      UiFileProperty[] = [];
+    frequencyPlots:      UiFrequencyPlot[] = [];
     is_vst3 :            boolean = false;
 }
 

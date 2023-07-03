@@ -602,7 +602,7 @@ export const LoadPluginDialog =
                             <SelectHoverBackground selected={value.uri === this.state.selected_uri} showHover={true} />
                             <div className={classes.content}>
                                 <div className={classes.iconBorder} >
-                                    <PluginIcon pluginType={value.plugin_type} size={24} />
+                                    <PluginIcon pluginType={value.plugin_type} size={24} opacity={0.6} />
                                 </div>
                                 <div className={classes.content2}>
                                     <div className={classes.label} style={{ display: "flex", flexFlow: "row nowrap", alignItems: "center" }} >

@@ -21,6 +21,7 @@ add_custom_command(
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/react
 
     DEPENDS 
+    src/SelectThemeDialog.tsx
     src/OkCancelDialog.tsx
     src/PluginControl.tsx
     src/reportWebVitals.ts
@@ -133,9 +134,9 @@ add_custom_command(
     public/img/fx_distortion.svg
     public/img/Pi-Logo-3.png
     public/img/fx_oscillator.svg
-    public/img/save_bank_as_white.svg
-    public/img/edit_banks_white.svg
-    public/img/settings_black_24dp.svg
+    src/svg/ic_save_bank_as.svg
+    src/svg/ic_edit_banks.svg
+    src/svg/ic_settings.svg
     public/img/fx_filter.svg
     public/img/delete_outline_black_24dp.svg
     public/img/fx_function.svg
@@ -150,7 +151,7 @@ add_custom_command(
     public/img/cc-by.png
     public/img/fx_split_a.svg
     public/img/fx_utility.svg
-    public/img/help_outline_white_24dp.svg
+    src/svg/ic_help_outline.svg
     public/img/ic_navigate_before.svg
     public/img/ic_drawer_2.svg
     public/img/fx_parametric_eq.svg
@@ -161,10 +162,8 @@ add_custom_command(
     public/img/fx_analyzer.svg
     public/img/fx_delay.svg
     public/img/fx_spectral.svg
-    public/img/edit_banks.svg
     public/img/fx_chorus.svg
     public/img/fx_simulator.svg
-    public/img/drive_file_rename_outline_black_24dp.svg
     public/img/fx_mixer.svg
     public/img/fx_eq.svg
     public/img/fx_modulator.svg
@@ -173,7 +172,6 @@ add_custom_command(
     public/img/fx_phaser.svg
     public/img/ic_drawer.svg
     public/img/fx_amplifier.svg
-    public/img/save_bank_as.svg
     public/img/fx_lr.svg
     public/img/fx_instrument.svg
     public/img/Pi-Logo-3.svg
@@ -183,14 +181,11 @@ add_custom_command(
     public/img/fx_empty.svg
     public/img/fx_dial.svg
     public/img/ic_logo.svg
-    public/img/help_outline_black_24dp.svg
     public/img/fx_flanger2.svg
     public/img/old_delete_outline_white_24dp.svg
     public/img/fx_split_b.svg
     public/img/fx_spatial.svg
     public/img/fx_converter.svg
-    public/img/settings_white_24dp.svg
-    public/img/drive_file_rename_outline_white_24dp.svg
     public/img/vst.svg
     public/img/vst.png
     public/sample_lv2_plugins.json

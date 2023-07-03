@@ -62,14 +62,27 @@ import JackStatusView from './JackStatusView';
 import { Theme } from '@mui/material/styles';
 import isDarkMode from './DarkMode';
 
-
+import {ReactComponent as RenameOutlineIcon} from './svg/drive_file_rename_outline_black_24dp.svg';
+import {ReactComponent as SaveBankAsIcon} from './svg/ic_save_bank_as.svg';
+import {ReactComponent as EditBanksIcon} from './svg/ic_edit_banks.svg';
+import {ReactComponent as SettingsIcon} from './svg/ic_settings.svg';
+import {ReactComponent as HelpOutlineIcon} from './svg/ic_help_outline.svg';
 
 
 const appStyles = (theme: Theme) => createStyles({
-    menuIcon: {
-        fill: "green"
+    "&": { // :root
+        colorScheme: (isDarkMode()? "dark": "light")
     },
-    appBar: {
+    menuListItem: {
+        color: "#FE8!important" as any, //theme.palette.text.primary,
+        fill: "#FE8!important" as any, //theme.palette.text.primary,
+    },
+    menuIcon: {
+        fill: (theme.palette.text.primary + "!important") as any, //theme.palette.text.primary,
+        opacity: 0.6
+    },
+    toolBar: {
+        color: "white"
     },
     listSubheader: {
         backgroundImage: "linear-gradient(255,255,255,0.15),rgba(255,255,255,0.15)"
@@ -499,7 +512,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     private unmountListener(e: Event) {
         e.preventDefault();
-        if (this.model_.state.get() === State.Ready && !this.model_.isAndroidHosted()) {
+        if ((!this.model_.reloadRequested) && this.model_.state.get() === State.Ready && !this.model_.isAndroidHosted()) {
             (e as any).returnValue = "Are you sure you want to leave this page?";
             return "Are you sure you want to leave this page?";
         }
@@ -652,6 +665,7 @@ render() {
 
     return (
         <div style={{
+            colorScheme: isDarkMode() ? "dark": "light", // affects scrollbar color
             minHeight: 345, minWidth: 390,
             position: "absolute", width: "100%", height: "100%", background: "#F88", userSelect: "none",
             display: "flex", flexDirection: "column", flexWrap: "nowrap",
@@ -666,14 +680,15 @@ render() {
             <CssBaseline />
             {(!this.state.tinyToolBar) ?
                 (
-                    <AppBar className="appBar" position="absolute" >
-                        <Toolbar variant="dense"   >
+                    <AppBar position="absolute"  >
+                        <Toolbar variant="dense" className={classes.toolBar}  >
                             <IconButton
                                 edge="start"
                                 aria-label="menu"
+                                color="inherit"
                                 onClick={() => { this.showDrawer() }}
                                 size="large">
-                                <MenuButton />
+                                <MenuButton style={{opacity: 0.75}} />
                             </IconButton>
                             <div style={{ flex: "0 1 400px", minWidth: 100 }}>
                                 <PresetSelector />
@@ -683,11 +698,12 @@ render() {
                                 <IconButton
                                     aria-label="menu"
                                     onClick={() => { this.toggleFullScreen(); }}
+                                    color="inherit"
                                     size="large">
                                     {this.state.isFullScreen ? (
-                                        <FullscreenExitIcon />
+                                        <FullscreenExitIcon style={{opacity: 0.75}} />
                                     ) : (
-                                        <FullscreenIcon />
+                                        <FullscreenIcon style={{opacity: 0.75}} />
 
                                     )}
 
@@ -701,6 +717,7 @@ render() {
                             style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
                             aria-label="menu"
                             onClick={() => { this.showDrawer() }}
+                            color="inherit"
                             size="large">
                             <MenuButton />
                         </IconButton>
@@ -708,6 +725,7 @@ render() {
                             <IconButton
                                 style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
                                 aria-label="menu"
+                                color="inherit"
                                 onClick={() => { this.toggleFullScreen(); }}
                                 size="large">
                                 {this.state.isFullScreen ? (
@@ -756,26 +774,20 @@ render() {
                 <Divider />
                 <List>
                     <ListItem button key='RenameBank' onClick={() => { this.handleDrawerRenameBank() }}>
-                        <ListItemIcon>
-                            <img className='menuIcon' 
-                                src={isDarkMode()? "img/drive_file_rename_outline_white_24dp.svg" :"img/drive_file_rename_outline_black_24dp.svg"} 
-                                alt="" style={{ opacity: 0.6 }} />
+                        <ListItemIcon >
+                            <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
                         </ListItemIcon>
                         <ListItemText primary='Rename Bank' />
                     </ListItem>
                     <ListItem button key='SaveBank' onClick={() => { this.handleDrawerSaveBankAs() }} >
                         <ListItemIcon>
-                            <img className='menuIcon' 
-                                src={isDarkMode()? "img/save_bank_as_white.svg" :"img/save_bank_as.svg"} 
-                                alt="" style={{ opacity: 0.6 }} />
+                            <SaveBankAsIcon color="inherit" className={classes.menuIcon}/>
                         </ListItemIcon>
                         <ListItemText primary='Save As New Bank' />
                     </ListItem>
-                    <ListItem button key='CreateBank' onClick={() => { this.handleDrawerManageBanks(); }}>
+                    <ListItem button key='EditBanks' onClick={() => { this.handleDrawerManageBanks(); }}>
                         <ListItemIcon>
-                            <img className='menuIcon' 
-                                src={isDarkMode()? "img/edit_banks_white.svg" :"img/edit_banks.svg"} 
-                                alt="" style={{ opacity: 0.6 }} />
+                            <EditBanksIcon color="inherit" className={classes.menuIcon}/>
                         </ListItemIcon>
                         <ListItemText primary='Manage Banks...' />
                     </ListItem>
@@ -784,23 +796,19 @@ render() {
                 <List>
                     <ListItem button key='Settings' onClick={() => { this.handleDrawerSettingsClick() }}>
                         <ListItemIcon>
-                            <img className='menuIcon' 
-                            src={isDarkMode()? "img/settings_white_24dp.svg" :"img/settings_black_24dp.svg"} 
-                             alt="" style={{ opacity: 0.6 }} />
+                            <SettingsIcon color="inherit" className={classes.menuIcon}/>
                         </ListItemIcon>
                         <ListItemText primary='Settings' />
                     </ListItem>
                     <ListItem button key='About' onClick={() => { this.handleDrawerAboutClick() }}>
                         <ListItemIcon>
-                            <img className='menuIcon' 
-                                src= {isDarkMode() ? "img/help_outline_white_24dp.svg": "img/help_outline_black_24dp.svg"}
-                                 alt="" style={{ opacity: 0.6 }} />
+                            <HelpOutlineIcon color="inherit" className={classes.menuIcon}/>
                         </ListItemIcon>
                         <ListItemText primary='About' />
                     </ListItem>
                     <ListItem button key='Donations' onClick={() => { this.handleDrawerDonationClick() }}>
-                        <ListItemIcon>
-                            <VolunteerActivismIcon style={{ opacity: 0.6 }}/>
+                        <ListItemIcon >
+                            <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
                         </ListItemIcon>
                         <ListItemText primary='Donations' />
                     </ListItem>

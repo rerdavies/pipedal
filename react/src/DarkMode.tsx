@@ -19,8 +19,10 @@
 
 
 export default function isDarkMode(): boolean {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return true;
-    }
-    return false;
+    let value = localStorage.getItem("darkMode");
+    return value === "true";
+}
+
+export function setDarkMode(value: boolean): void {
+    localStorage.setItem("darkMode",value? "true": "false");
 }

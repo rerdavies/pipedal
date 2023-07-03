@@ -58,7 +58,7 @@ interface PresetSelectorState {
 }
 
 
-const selectColor = isDarkMode()? "#888": "black";
+const selectColor = isDarkMode()? "#888": "#FFFFFF";
 
 const styles = (theme: Theme) => createStyles({
     select: { // fu fu fu.Overrides for white selector on dark background.
@@ -301,17 +301,17 @@ const PresetSelector =
                     }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <IconButton
-                                style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0 }}
+                                style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0, color: "#FFFFFF" }}
                                 onClick={(e) => { this.handleSave(); }}
                                 size="large">
-                                <SaveIconOutline style={{ opacity: 0.75 }} />
+                                <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />
                             </IconButton>
                         </div>
 
                         <div style={{ flex: "1 1 auto", minWidth: 60, maxWidth: 300, position: "relative", paddingRight: 12 }} >
                             <Select variant="standard"
                                 className={classes.select}
-                                style={{ width: "100%", position: "relative", top: 0 }} disabled={!this.state.enabled}
+                                style={{ width: "100%", position: "relative", top: 0, color: "#FFFFFF" }} disabled={!this.state.enabled}
                                 onChange={(e, extra) => this.handleChange(e, extra)}
                                 onClose={(e) => this.handleSelectClose(e)}
                                 displayEmpty
@@ -336,12 +336,13 @@ const PresetSelector =
                                 }
                             </Select>
                         </div>
-                        <div style={{ flex: "0 0 auto" }}>
+                        <div style={{ flex: "0 0 auto"}}>
                             <IconButton
-                                style={{ flex: "0 0 auto" }}
+                                style={{ flex: "0 0 auto",  color: "#FFFFFF" }}
                                 onClick={(e) => this.handlePresetMenuClick(e)}
-                                size="large">
-                                <MoreVertIcon style={{ opacity: 0.75 }} />
+                                size="large"
+                                >
+                                <MoreVertIcon style={{ opacity: 0.75 }} color="inherit" />
                             </IconButton>
                             <Menu
                                 id="edit-presets-menu"

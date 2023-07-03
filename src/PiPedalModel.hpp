@@ -55,7 +55,7 @@ namespace pipedal
         virtual void OnInputVolumeChanged(float value) = 0;
         virtual void OnOutputVolumeChanged(float value) = 0;
 
-        virtual void OnLv2StateChanged(int64_t pedalItemId) = 0;
+        virtual void OnLv2StateChanged(int64_t pedalItemId,const Lv2PluginState&newState ) = 0;
         virtual void OnVst3ControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value, const std::string &state) = 0;
         virtual void OnPedalboardChanged(int64_t clientId, const Pedalboard &pedalboard) = 0;
         virtual void OnPresetsChanged(int64_t clientId, const PresetIndex &presets) = 0;

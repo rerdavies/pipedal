@@ -62,7 +62,7 @@ inputStage:filterGroup
         lv2:microVersion 16 ;
 
         mod:brand "TooB";
-        mod:label "Input Stage";
+        mod:label "TooB Input";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
         

@@ -145,6 +145,14 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     pipedalUI__outputPorts = lilv_new_uri(pWorld, PIPEDAL_UI__outputPorts);
     pipedalUI__text = lilv_new_uri(pWorld, PIPEDAL_UI__text);
 
+    pipedalUI__frequencyPlot = lilv_new_uri(pWorld, PIPEDAL_UI__frequencyPlot);
+    pipedalUI__xLeft = lilv_new_uri(pWorld, PIPEDAL_UI__xLeft);
+    pipedalUI__xRight = lilv_new_uri(pWorld, PIPEDAL_UI__xRight);
+    pipedalUI__yTop = lilv_new_uri(pWorld, PIPEDAL_UI__yTop);
+    pipedalUI__yBottom = lilv_new_uri(pWorld, PIPEDAL_UI__yBottom);
+    pipedalUI__xLog = lilv_new_uri(pWorld, PIPEDAL_UI__xLog);
+    pipedalUI__width = lilv_new_uri(pWorld, PIPEDAL_UI__width);
+
     ui__portNotification = lilv_new_uri(pWorld, LV2_UI__portNotification);
     ui__plugin = lilv_new_uri(pWorld, LV2_UI__plugin);
     ui__protocol = lilv_new_uri(pWorld, LV2_UI__protocol);
@@ -154,6 +162,9 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     lv2__symbol = lilv_new_uri(pWorld, LV2_CORE__symbol);
     lv2__port = lilv_new_uri(pWorld, LV2_CORE__port);
 
+    #define MOD_PREFIX "http://moddevices.com/ns/mod#"
+    mod__label = lilv_new_uri(pWorld,MOD_PREFIX "label");
+    mod__brand = lilv_new_uri(pWorld,MOD_PREFIX "brand");
     // ui:portNotification
     // [
     //         ui:portIndex 3;
@@ -639,10 +650,24 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
 
     this->has_factory_presets_ = HasFactoryPresets(lv2Host, pPlugin);
 
+    AutoLilvNode plugUri = lilv_plugin_get_uri(pPlugin);
     this->uri_ = nodeAsString(lilv_plugin_get_uri(pPlugin));
 
     AutoLilvNode name = (lilv_plugin_get_name(pPlugin));
     this->name_ = nodeAsString(name);
+
+    AutoLilvNode brand = lilv_world_get(pWorld,plugUri,lv2Host->lilvUris.mod__brand, nullptr);
+    this->brand_ = nodeAsString(brand);
+
+    AutoLilvNode label = lilv_world_get(pWorld,plugUri,lv2Host->lilvUris.mod__label, nullptr);
+    this->label_ = nodeAsString(label);
+    if (label_.length() == 0)
+    {
+        this->label_ = name;
+    } else {
+        std::cout << this->label_ << std::endl;
+    }
+
 
     AutoLilvNode author_name = (lilv_plugin_get_author_name(pPlugin));
     this->author_name_ = nodeAsString(author_name);
@@ -1015,6 +1040,8 @@ bool PluginHost::is_a(const std::string &class_, const std::string &target_class
 Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
     : uri_(plugin->uri()),
       name_(plugin->name()),
+      brand_(plugin->brand()),
+      label_(plugin->label()),
       author_name_(plugin->author_name()),
       author_homepage_(plugin->author_homepage()),
       plugin_type_(uri_to_plugin_type(plugin->plugin_class())),
@@ -1082,6 +1109,7 @@ Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
     if (piPedalUI)
     {
         this->fileProperties_ = piPedalUI->fileProperties();
+        this->frequencyPlots_ = piPedalUI->frequencyPlots();
         this->uiPortNotifications_ = piPedalUI->portNotifications();
     }
 }
@@ -1401,6 +1429,8 @@ json_map::storage_type<Lv2PluginInfo> Lv2PluginInfo::jmap{{
     json_map::reference("bundle_path", &Lv2PluginInfo::bundle_path_),
     json_map::reference("uri", &Lv2PluginInfo::uri_),
     json_map::reference("name", &Lv2PluginInfo::name_),
+    json_map::reference("brand", &Lv2PluginInfo::brand_),
+    json_map::reference("label", &Lv2PluginInfo::label_),
     json_map::reference("plugin_class", &Lv2PluginInfo::plugin_class_),
     json_map::reference("supported_features", &Lv2PluginInfo::supported_features_),
     json_map::reference("required_features", &Lv2PluginInfo::required_features_),
@@ -1466,6 +1496,8 @@ json_map::storage_type<Lv2PluginUiInfo>
         {
             json_map::reference("uri", &Lv2PluginUiInfo::uri_),
             json_map::reference("name", &Lv2PluginUiInfo::name_),
+            json_map::reference("brand", &Lv2PluginUiInfo::brand_),
+            json_map::reference("label", &Lv2PluginUiInfo::label_),
             json_map::enum_reference("plugin_type", &Lv2PluginUiInfo::plugin_type_, get_plugin_type_enum_converter()),
             json_map::reference("plugin_display_type", &Lv2PluginUiInfo::plugin_display_type_),
             json_map::reference("author_name", &Lv2PluginUiInfo::author_name_),
@@ -1479,5 +1511,6 @@ json_map::storage_type<Lv2PluginUiInfo>
             json_map::reference("port_groups", &Lv2PluginUiInfo::port_groups_),
             json_map::reference("is_vst3", &Lv2PluginUiInfo::is_vst3_),
             json_map::reference("fileProperties", &Lv2PluginUiInfo::fileProperties_),
+            json_map::reference("frequencyPlots", &Lv2PluginUiInfo::frequencyPlots_),
             json_map::reference("uiPortNotifications", &Lv2PluginUiInfo::uiPortNotifications_),
         }};

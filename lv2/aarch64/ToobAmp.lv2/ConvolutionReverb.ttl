@@ -152,7 +152,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
 """ ;
 
         mod:brand "TooB";
-        mod:label "Convolution Reverb";
+        mod:label "TooB CReverb";
         lv2:requiredFeature urid:map;
         lv2:optionalFeature state::freePath, state:makePath, state:mapPath, work:schedule ;
         lv2:extensionData state:interface;

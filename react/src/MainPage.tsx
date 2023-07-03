@@ -47,7 +47,7 @@ import MidiBindingsDialog from './MidiBindingsDialog';
 import PluginPresetSelector from './PluginPresetSelector';
 import {ReactComponent as OldDeleteIcon} from "./svg/old_delete_outline_24dp.svg";
 import {ReactComponent as MidiIcon} from "./svg/ic_midi.svg";
-
+import isDarkMode from './DarkMode';
 
 
 const SPLIT_CONTROLBAR_THRESHHOLD = 650;
@@ -463,7 +463,7 @@ export const MainPage =
                                 </div>
                                 <div style={{ flex: "0 0 auto", display: (canInsert || canAppend) ? "block" : "none", paddingRight: 8 }}>
                                     <IconButton onClick={(e) => { this.onAddClick(e) }} size="large">
-                                        <AddIcon style={{opacity: 0.6}} />
+                                        <AddIcon style={{height: 24, width: 24,fill: this.props.theme.palette.text.primary, opacity: 0.6}} />
                                     </IconButton>
                                     <Menu
                                         id="add-menu"
@@ -495,7 +495,8 @@ export const MainPage =
                                         onClick={this.onLoadClick}
                                         disabled={this.state.selectedPedal === -1 || (!canLoad) || (this.getSelectedPedalboardItem()?.isSplit() ?? true)}
                                         startIcon={<InputIcon />}
-                                        style={{ textTransform: "none" }}
+                                        style={{ textTransform: "none", 
+                                            background: (isDarkMode() ? "#6750A4": undefined) }}
                                     >
                                         Load
                                     </Button>
