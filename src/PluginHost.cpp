@@ -663,11 +663,8 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     this->label_ = nodeAsString(label);
     if (label_.length() == 0)
     {
-        this->label_ = name;
-    } else {
-        std::cout << this->label_ << std::endl;
-    }
-
+        this->label_ = this->name_;
+    } 
 
     AutoLilvNode author_name = (lilv_plugin_get_author_name(pPlugin));
     this->author_name_ = nodeAsString(author_name);

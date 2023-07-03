@@ -724,7 +724,7 @@ namespace pipedal
             }
             catch (websocketpp::exception const &e)
             {
-                std::cout << e.what() << std::endl;
+                Lv2Log::info("%s",e.what());
             }
             if (this->signalOnDone != -1)
             {
