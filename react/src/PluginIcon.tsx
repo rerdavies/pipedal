@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Copyright (c) 2022 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -25,21 +26,149 @@ import { PiPedalModelFactory } from "./PiPedalModel";
 import { PluginType } from './Lv2Plugin';
 
 
+import { ReactComponent as FxSimulatorIcon } from './svg/fx_simulator.svg';
+import { ReactComponent as FxPhaserIcon } from './svg/fx_phaser.svg';
+import { ReactComponent as FxFilterIcon } from './svg/fx_filter.svg';
+import { ReactComponent as FxDelayIcon } from './svg/fx_delay.svg';
+
+import { ReactComponent as FxAmplifierIcon } from './svg/fx_amplifier.svg';
+import { ReactComponent as FxChorusIcon } from './svg/fx_chorus.svg';
+import { ReactComponent as FxModulatorIcon } from './svg/fx_modulator.svg';
+import { ReactComponent as FxReverbIcon } from './svg/fx_reverb.svg';
+import { ReactComponent as FxDistortionIcon } from './svg/fx_distortion.svg';
+import { ReactComponent as FxFlangerIcon } from './svg/fx_flanger.svg';
+import { ReactComponent as FxFilterHpIcon } from './svg/fx_filter_hp.svg';
+import { ReactComponent as FxParametricEqIcon } from './svg/fx_parametric_eq.svg';
+import { ReactComponent as FxEqIcon } from './svg/fx_eq.svg';
+import { ReactComponent as FxUtilityIcon } from './svg/fx_utility.svg';
+import { ReactComponent as FxCompressorIcon } from './svg/fx_compressor.svg';
+import { ReactComponent as FxLimiterIcon } from './svg/fx_limiter.svg';
+import { ReactComponent as FxConstantIcon } from './svg/fx_constant.svg';
+import { ReactComponent as FxFunctionIcon } from './svg/fx_function.svg';
+import { ReactComponent as FxGateIcon } from './svg/fx_gate.svg';
+import { ReactComponent as FxConverterIcon } from './svg/fx_converter.svg';
+import { ReactComponent as FxGeneratorIcon } from './svg/fx_generator.svg';
+import { ReactComponent as FxOscillatorIcon } from './svg/fx_oscillator.svg';
+import { ReactComponent as FxInstrumentIcon } from './svg/fx_instrument.svg';
+import { ReactComponent as FxMixerIcon } from './svg/fx_mixer.svg';
+import { ReactComponent as FxPitchIcon } from './svg/fx_pitch.svg';
+import { ReactComponent as FxSpatialIcon } from './svg/fx_spatial.svg';
+import { ReactComponent as FxSpectralIcon } from './svg/fx_spectral.svg';
+import { ReactComponent as FxAnalyzerIcon } from './svg/fx_analyzer.svg';
+import { ReactComponent as FxPluginIcon } from './svg/fx_plugin.svg';
+import { ReactComponent as SplitAIcon } from './svg/fx_split_a.svg';
+import { ReactComponent as SplitBIcon } from './svg/fx_split_b.svg';
+import { ReactComponent as SplitMixIcon } from './svg/fx_dial.svg';
+import { ReactComponent as SplitLrIcon } from './svg/fx_lr.svg';
+import { ReactComponent as FxEmptyIcon } from './svg/fx_empty.svg';
+
+import { ReactComponent as FxTerminalIcon } from './svg/fx_terminal.svg';
+
+
 const styles = (theme: Theme) =>
     createStyles({
         icon: {
             width: "24px",
             height: "24px",
             margin: "0px",
-            opacity: "0.6"
+            opacity: "0.6",
+            color: theme.palette.text.primary,
+            fill: theme.palette.text.primary
         },
     });
 
 export interface PluginIconProps extends WithStyles<typeof styles> {
     size?: number;
+    opacity?: number;
     offsetY?: number;
     pluginType: PluginType;
-    pluginUri: string;
+}
+
+export function SelectSvgIcon(plugin_type: PluginType, className: string, size: number = 24, opacity: number = 1.0) {
+    let myStyle = { width: size, height: size, opacity: opacity };
+    switch (plugin_type) {
+        case PluginType.PhaserPlugin:
+            return <FxPhaserIcon className={className} style={myStyle} />;
+        case PluginType.FilterPlugin:
+            return <FxFilterIcon className={className} style={myStyle} />;
+        case PluginType.DelayPlugin:
+            return <FxDelayIcon className={className} style={myStyle} />;
+        case PluginType.SimulatorPlugin:
+            return <FxSimulatorIcon className={className} style={myStyle} />;
+        case PluginType.AmplifierPlugin:
+            return <FxAmplifierIcon className={className} style={myStyle} />;
+        case PluginType.ChorusPlugin:
+            return <FxChorusIcon className={className} style={myStyle} />;
+        case PluginType.ModulatorPlugin:
+        case PluginType.CombPlugin:
+            return <FxModulatorIcon className={className} style={myStyle} />;
+        case PluginType.ReverbPlugin:
+            return <FxReverbIcon className={className} style={myStyle} />;
+        case PluginType.DistortionPlugin:
+            return <FxDistortionIcon className={className} style={myStyle} />;
+        case PluginType.FlangerPlugin:
+            return <FxFlangerIcon className={className} style={myStyle} />;
+        case PluginType.LowpassPlugin:
+            return <FxFilterIcon className={className} style={myStyle} />;
+        case PluginType.HighpassPlugin:
+            return <FxFilterHpIcon className={className} style={myStyle} />;
+        case PluginType.ParaEQPlugin:
+            return <FxParametricEqIcon className={className} style={myStyle} />;
+        case PluginType.MultiEQPlugin:
+        case PluginType.EQPlugin:
+            return <FxEqIcon className={className} style={myStyle} />;
+        case PluginType.UtilityPlugin:
+            return <FxUtilityIcon className={className} style={myStyle} />;
+        case PluginType.CompressorPlugin:
+        case PluginType.DynamicsPlugin:
+        case PluginType.ExpanderPlugin:
+            return <FxCompressorIcon className={className} style={myStyle} />;
+
+        case PluginType.LimiterPlugin:
+            return <FxLimiterIcon className={className} style={myStyle} />;
+        case PluginType.ConstantPlugin:
+            return <FxConstantIcon className={className} style={myStyle} />;
+        case PluginType.FunctionPlugin:
+        case PluginType.WaveshaperPlugin:
+            return <FxFunctionIcon className={className} style={myStyle} />;
+        case PluginType.GatePlugin:
+            return <FxGateIcon className={className} style={myStyle} />;
+        case PluginType.ConverterPlugin:
+            return <FxConverterIcon className={className} style={myStyle} />;
+        case PluginType.GeneratorPlugin:
+            return <FxGeneratorIcon className={className} style={myStyle} />;
+        case PluginType.OscillatorPlugin:
+            return <FxOscillatorIcon className={className} style={myStyle} />;
+        case PluginType.InstrumentPlugin:
+            return <FxInstrumentIcon className={className} style={myStyle} />;
+        case PluginType.MixerPlugin:
+            return <FxMixerIcon className={className} style={myStyle} />;
+        case PluginType.PitchPlugin:
+            return <FxPitchIcon className={className} style={myStyle} />;
+        case PluginType.SpatialPlugin:
+            return <FxSpatialIcon className={className} style={myStyle} />;
+        case PluginType.SpectralPlugin:
+            return <FxSpectralIcon className={className} style={myStyle} />;
+        case PluginType.AnalyserPlugin:
+            return <FxAnalyzerIcon className={className} style={myStyle} />;
+        case PluginType.SplitA:
+            return <SplitAIcon className={className} style={myStyle} />;
+        case PluginType.SplitB:
+            return <SplitBIcon className={className} style={myStyle} />;
+        case PluginType.SplitMix:
+            return <SplitMixIcon className={className} style={myStyle} />;
+        case PluginType.SplitLR:
+            return <SplitLrIcon className={className} style={myStyle} />;
+
+        case PluginType.None:
+            return <FxEmptyIcon className={className} style={myStyle} />;
+        case PluginType.Terminal:
+            return <FxTerminalIcon className={className} style={myStyle} />;
+
+            default:
+                case PluginType.Plugin:
+            return <FxPluginIcon className={className} style={myStyle} />;
+    }
 }
 export function SelectBaseIcon(plugin_type: PluginType): string {
     switch (plugin_type) {
@@ -66,7 +195,7 @@ export function SelectBaseIcon(plugin_type: PluginType): string {
             return "fx_flanger.svg";
         case PluginType.LowpassPlugin:
             return "fx_filter.svg";
-        case PluginType.HighpassPlugin:            
+        case PluginType.HighpassPlugin:
             return "fx_filter_hp.svg";
         case PluginType.ParaEQPlugin:
             return "fx_parametric_eq.svg";
@@ -141,20 +270,26 @@ function hashString(str: string): number {
     return hash;
 }
 
-export function SelectIcon(plugin_type: PluginType, itemUri: string) {
+export function SelectIconUri(plugin_type: PluginType) {
     let icon = SelectBaseIcon(plugin_type);
     return PiPedalModelFactory.getInstance().svgImgUrl(icon);
 }
 
 const PluginIcon = withStyles(styles)((props: PluginIconProps) => {
-    const { classes, pluginUri, pluginType } = props;
+    const { classes, pluginType, opacity } = props;
 
     let size: number = 24;
     if (props.size) size = props.size;
     let topVal: number = (props.offsetY ?? 0);
 
+    let svgIcon = SelectSvgIcon(pluginType, classes.icon, size, opacity);
+    if (svgIcon) {
+        return svgIcon;
+    }
+
+    // colored icons that don't have dark/light variants.
     return (
-        <img src={SelectIcon(pluginType, pluginUri)} className={classes.icon} style={{ width: size, height: size, color: "#F88", position: "relative", top: topVal }} alt={pluginType as string}
+        <img src={SelectIconUri(pluginType)} className={classes.icon} style={{ width: size, height: size, position: "relative", top: topVal, opacity: " " }} alt=''
         />);
 
     // let maskText = "url(" + SelectIcon(pluginType, pluginUri) + ") no-repeat center";

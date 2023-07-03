@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="48px"
+	 height="48px" viewBox="0 0 48 48" enable-background="new 0 0 48 48" xml:space="preserve">
+<g id="Layer_1" display="none">
+	<path display="inline" d="M47,41c0,3.313-2.688,6-6,6H7c-3.313,0-6-2.688-6-6V7c0-3.313,2.687-6,6-6h34c3.313,0,6,2.687,6,6V41z"/>
+	<polyline id="Limiter_Path" fill="none" stroke="#FFFFFF" stroke-width="5" points="5.5,53.25 24,12.5 65.5,12.5 	"/>
+	<path id="Compressor_Path" display="inline" fill="none" stroke="#FFFFFF" stroke-width="5" d="M8.5,53.25
+		c0,0,15.445-34.126,16.146-35.565c1.929-3.964,2.947-5.192,8.477-5.186c1.39,0.001,35.378,0,35.378,0"/>
+</g>
+<g id="Composed">
+	<g>
+		<path d="M8.585,47c4.368-9.646,13.269-29.291,13.813-30.409C24.576,12.113,26.345,10,33.088,10c0.013,0,0.024,0,0.037,0
+			C33.703,10,39.93,10,47,10V7c0-3.313-2.688-6-6-6H7C3.687,1,1,3.687,1,7v34c0,3.313,2.687,6,6,6H8.585z"/>
+		<path d="M33.119,15c-0.021,0-0.043,0-0.063,0c-4.323,0-4.574,0.515-6.162,3.779C26.449,19.691,19.506,35.006,14.074,47H41
+			c3.313,0,6-2.688,6-6V15C39.928,15,33.698,15,33.119,15z"/>
+	</g>
+</g>
+</svg>

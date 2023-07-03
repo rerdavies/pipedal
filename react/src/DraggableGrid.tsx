@@ -21,6 +21,7 @@ import { Theme } from '@mui/material/styles';
 import createStyles from '@mui/styles/createStyles';
 import { Property } from "csstype";
 import { nullCast} from './Utility'
+import isDarkMode from './DarkMode';
 
 const SELECT_SCALE = 1.0;
 
@@ -714,7 +715,7 @@ const DraggableGrid =
                     this.savedIndex = gridElement.style.zIndex;
                     gridElement.style.zIndex = "3";
                     this.savedBackground = gridElement.style.background;
-                    gridElement.style.background = "#EEE";
+                    gridElement.style.background = isDarkMode()? "333": "#EEE";
                     gridElement.style.opacity = "0.8";
                 }
             }

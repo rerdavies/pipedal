@@ -1,5 +1,18 @@
 # Release Notes
 
+## PiPedal 1.1.28
+
+New in this release.
+
+- TooB Neural Amp Modeler - an LV2 port of  Steven Atkinson's astounding Neural Amp Modeler. Donwload model files from [ToneHunt.org](https://tonehunt.org). CPU is very high -- it runs on a Raspberry Pi 4 with just enough CPU left over for a couple of extra effects; but the results are worth it. TooB ML provides Neural Net modelled guitar amps with more modest CPU use (but considerably less flexibility).
+
+- Dark mode. Go to the settings dialog to turn on Dark Mode. 
+
+Bug fixes:
+
+- Plugin information is updated in the web app after reconnecting, in order to pick up new plugins that may have been detected while the web server was being restarted.
+
+
 ## PiPedal 1.1.27
 
 - Add missing lv2-dev dependency.

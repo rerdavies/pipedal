@@ -36,15 +36,15 @@ const styles = ({ palette }: Theme) => createStyles({
         position: "absolute",
         width: "100%",
         height: "100%",
-        background: "#000000",
-        opacity: 0.1
+        background: palette.action.hover,
+        //opacity: palette.action.hoverOpacity
     },
     selected: {
         position: "absolute",
         width: "100%",
         height: "100%",
-        background: palette.action.active,
-        opacity: 0.3
+        background: palette.action.selected,
+        //opacity: palette.action.selectedOpacity
     }
 
 });

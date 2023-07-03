@@ -19,10 +19,11 @@
 
 import React from 'react';
 import Typography from '@mui/material/Typography';
+import isDarkMode from './DarkMode';
 
 
-const RED_COLOR = "#C00";
-const GREEN_COLOR = "#666";
+const RED_COLOR = isDarkMode()? "#F88":"#C00";
+const GREEN_COLOR = isDarkMode()? "rgba(255,255,255,0.7)": "#666";
 
 
 
@@ -85,13 +86,13 @@ export default class JackHostStatus {
     static getCpuInfo(label: string, status?: JackHostStatus): React.ReactNode {
         if (!status) {
             return (<div style={{ whiteSpace: "nowrap" }}>
-                <Typography variant="caption" color="textSecondary">{label}</Typography>
+                <Typography variant="caption" color="inherit">{label}</Typography>
                 <Typography variant="caption">&nbsp;</Typography>
             </div>);
         }
         return (<div style={{ whiteSpace: "nowrap" }}>
-            <Typography variant="caption" color="textSecondary">{label}</Typography>
-            <Typography variant="caption" color="textSecondary">
+            <Typography variant="caption" color="inherit">{label}</Typography>
+            <Typography variant="caption" color="inherit">
                 {
                     (status.cpuFreqMax === status.cpuFreqMin)?
                     (
@@ -110,14 +111,14 @@ export default class JackHostStatus {
     static getDisplayView(label: string, status?: JackHostStatus): React.ReactNode {
         if (!status) {
             return (<div style={{ whiteSpace: "nowrap" }}>
-                <Typography variant="caption" color="textSecondary">{label}</Typography>
+                <Typography variant="caption" color="inherit">{label}</Typography>
                 <Typography variant="caption">&nbsp;</Typography>
             </div>);
         }
         if (status.restarting) {
             return (
                 <div style={{ whiteSpace: "nowrap" }}>
-                    <Typography variant="caption" color="textSecondary">{label}</Typography>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
                     <span style={{ color: RED_COLOR }}>
                         <Typography variant="caption" color="inherit">Restarting&nbsp;&nbsp;</Typography>
                     </span>
@@ -135,7 +136,7 @@ export default class JackHostStatus {
         } else if (!status.active) {
             return (
                 <div style={{ whiteSpace: "nowrap" }}>
-                    <Typography variant="caption" color="textSecondary">{label}</Typography>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
 
                     <span style={{ color: RED_COLOR }}>
                         <Typography variant="caption" color="inherit">{status.errorMessage === "" ? "Stopped" : status.errorMessage}&nbsp;&nbsp;</Typography>
@@ -154,7 +155,7 @@ export default class JackHostStatus {
             let underrunError = status.msSinceLastUnderrun < 15 * 1000;
             return (
                 <div style={{ whiteSpace: "nowrap" }}>
-                    <Typography variant="caption" color="textSecondary">{label}</Typography>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
                     <span style={{ color: underrunError ? RED_COLOR : GREEN_COLOR }}>
                         <Typography variant="caption" color="inherit">
                             XRuns:&nbsp;{status.underruns + ""}&nbsp;&nbsp;

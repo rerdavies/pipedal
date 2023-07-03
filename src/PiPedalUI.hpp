@@ -50,11 +50,19 @@
 #define PIPEDAL_UI__outputPorts  PIPEDAL_UI_PREFIX "outputPorts"
 #define PIPEDAL_UI__text  PIPEDAL_UI_PREFIX "text"
 
+#define PIPEDAL_UI__frequencyPlot PIPEDAL_UI_PREFIX "frequencyPlot"
+#define PIPEDAL_UI__xLeft PIPEDAL_UI_PREFIX "xLeft"
+#define PIPEDAL_UI__xRight PIPEDAL_UI_PREFIX "xRight"
+#define PIPEDAL_UI__xLog PIPEDAL_UI_PREFIX "xLog"
+#define PIPEDAL_UI__yTop PIPEDAL_UI_PREFIX "yTop"
+#define PIPEDAL_UI__yBottom PIPEDAL_UI_PREFIX "yBottom"
+#define PIPEDAL_UI__width PIPEDAL_UI_PREFIX "width"
 
 
 namespace pipedal {
 
     class PluginHost;
+
 
     class UiFileType {
     private:
@@ -126,17 +134,54 @@ namespace pipedal {
     public:
         DECLARE_JSON_MAP(UiFileProperty);
     };
+    class UiFrequencyPlot {
+    private:
+        std::string patchProperty_;
+        std::int64_t index_ = -1;
+        std::string portGroup_;
+        float xLeft_ = 100;
+        float xRight_ = 22000;
+        float yTop_ = 5;
+        float yBottom_ = -30;
+        bool xLog_ = true;
+        float width_ = 60;
+    public:
+        using ptr = std::shared_ptr<UiFrequencyPlot>;
+        UiFrequencyPlot() { }
+        UiFrequencyPlot(PluginHost*pHost, const LilvNode*node,
+          const std::filesystem::path&resourcePath);
+
+        const std::string &patchProperty() const { return patchProperty_; }
+        int64_t index() const { return index_; }
+        const std::string&portGroup() const { return portGroup_; }
+        float xLeft() const { return xLeft_; }
+        float xRight() const { return xRight_; }
+        float xLog() const { return xLog_; }
+        float yTop() const { return yTop_; }
+        float yBottom() const { return yBottom_; }
+        float width() const { return width_; }
+
+    public:
+        DECLARE_JSON_MAP(UiFrequencyPlot);
+    };
 
     class PiPedalUI {
     public:
         using ptr = std::shared_ptr<PiPedalUI>;
         PiPedalUI(PluginHost*pHost, const LilvNode*uiNode, const std::filesystem::path&resourcePath);
-
-        PiPedalUI(std::vector<UiFileProperty::ptr> &&fileProperites);
+        PiPedalUI(
+            std::vector<UiFileProperty::ptr> &&fileProperties,
+            std::vector<UiFrequencyPlot::ptr> &&frequencyPlots);
+        PiPedalUI(
+            std::vector<UiFileProperty::ptr> &&fileProperties);
 
         const std::vector<UiFileProperty::ptr>& fileProperties() const
         {
             return fileProperties_;
+        }
+        const std::vector<UiFrequencyPlot::ptr>& frequencyPlots() const
+        {
+            return frequencyPlots_;
         }
 
         const std::vector<UiPortNotification::ptr> &portNotifications() const { return portNotifications_; }
@@ -155,6 +200,7 @@ namespace pipedal {
 
     private:
         std::vector<UiFileProperty::ptr> fileProperties_;
+        std::vector<UiFrequencyPlot::ptr> frequencyPlots_;
         std::vector<UiPortNotification::ptr> portNotifications_;
     };
 

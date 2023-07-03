@@ -57,6 +57,21 @@ JSON_MAP_REFERENCE(GetPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, propertyUri)
 JSON_MAP_END()
 
+
+class Lv2StateChangedBody {
+public:
+    uint64_t instanceId_;
+    Lv2PluginState state_;
+    DECLARE_JSON_MAP(Lv2StateChangedBody);
+};
+
+JSON_MAP_BEGIN(Lv2StateChangedBody)
+JSON_MAP_REFERENCE(Lv2StateChangedBody, instanceId)
+JSON_MAP_REFERENCE(Lv2StateChangedBody, state)
+JSON_MAP_END()
+
+
+
 class SetPatchPropertyBody {
 public:
     uint64_t instanceId_;
@@ -1493,9 +1508,10 @@ protected:
     }
 
 private:
-    virtual void OnLv2StateChanged(int64_t instanceId)
+    virtual void OnLv2StateChanged(int64_t instanceId, const Lv2PluginState &state)
     {
-        Send("onLv2StateChanged",instanceId);
+        Lv2StateChangedBody message { (uint64_t)instanceId, state};
+        Send("onLv2StateChanged",message);
 
     }
     virtual void OnErrorMessage(const std::string&message)

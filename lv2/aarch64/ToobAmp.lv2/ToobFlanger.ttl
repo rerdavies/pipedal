@@ -49,7 +49,7 @@ Emulation of a Boss BF-2 Flanger*.
 """ ;
 
         mod:brand "TooB";
-        mod:label "BF-2 Flanger";
+        mod:label "TooB BF-2";
         lv2:optionalFeature lv2:hardRTCapable;
 
         lv2:port

@@ -52,7 +52,7 @@ should use the monophonic version of this effect.
 """ ;
 
         mod:brand "TooB";
-        mod:label "BF-2 Stereo Flanger";
+        mod:label "TooB BF-2 Stereo";
         lv2:optionalFeature lv2:hardRTCapable;
 
         lv2:port

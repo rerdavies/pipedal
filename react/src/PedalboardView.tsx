@@ -26,13 +26,15 @@ import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { PluginType } from './Lv2Plugin';
 import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
-import { SelectIcon } from './PluginIcon';
+import PluginIcon, {SelectIconUri} from './PluginIcon';
 import { SelectHoverBackground } from './SelectHoverBackground';
 import SvgPathBuilder from './SvgPathBuilder';
 import Draggable from './Draggable'
 import Rect from './Rect';
 import {PiPedalStateError} from './PiPedalError';
-import Utility from './Utility'
+import Utility from './Utility';
+import isDarkMode from './DarkMode';
+
 import {
     Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType
 } from './Pedalboard';
@@ -44,8 +46,9 @@ const END_CONTROL = Pedalboard.END_CONTROL;
 const START_PEDALBOARD_ITEM_URI = Pedalboard.START_PEDALBOARD_ITEM_URI;
 const END_PEDALBOARD_ITEM_URI = Pedalboard.END_PEDALBOARD_ITEM_URI;
 
-const ENABLED_CONNECTOR_COLOR = "#666";
-const DISABLED_CONNECTOR_COLOR = "#CCC";
+const ENABLED_CONNECTOR_COLOR = isDarkMode() ? "#CCC": "#666";
+const DISABLED_CONNECTOR_COLOR = isDarkMode() ? "#666": "#CCC";
+
 
 
 const CELL_WIDTH: number = 96;
@@ -129,14 +132,14 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         alignItems: "center",
         justifyContent: "center",
         
-        background: theme.palette.background.paper,
+        background: theme.palette.background.default,
         marginLeft: (CELL_WIDTH - FRAME_SIZE) / 2,
         marginRight: (CELL_WIDTH - FRAME_SIZE) / 2,
         marginTop: (CELL_HEIGHT - FRAME_SIZE) / 2,
         marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
-        border: "1pt #666 solid",
+        border: isDarkMode()? "1pt #AAA solid": "1pt #666 solid",
         borderRadius: 6
     },
     borderlessIconFrame: {
@@ -237,6 +240,7 @@ class PedalLayout {
     static Start(): PedalLayout {
         let t: PedalLayout = new PedalLayout();
         t.uri = START_PEDALBOARD_ITEM_URI;
+        t.pluginType = PluginType.Terminal;
         t.iconUrl = TERMINAL_ICON_URL;
         t.numberOfInputs = 0;
         t.numberOfOutputs = 2;
@@ -244,7 +248,7 @@ class PedalLayout {
     }
     static End(): PedalLayout {
         let t: PedalLayout = new PedalLayout();
-        t.pluginType = PluginType.UtilityPlugin;
+        t.pluginType = PluginType.Terminal;
         t.uri = END_PEDALBOARD_ITEM_URI;
         t.iconUrl = TERMINAL_ICON_URL;
         t.numberOfInputs = 2;
@@ -272,7 +276,7 @@ class PedalLayout {
 
         } else if (pedalItem.isEmpty()) {
 
-            this.pluginType = PluginType.UtilityPlugin;
+            this.pluginType = PluginType.None;
             this.iconUrl = EMPTY_ICON_URL;
             this.numberOfInputs = 2;
             this.numberOfOutputs = 2;
@@ -293,13 +297,13 @@ class PedalLayout {
             let uiPlugin = model.getUiPlugin(pedalItem.uri);
             if (uiPlugin != null) {
                 this.pluginType = uiPlugin.plugin_type;
-                this.iconUrl = SelectIcon(uiPlugin.plugin_type,uiPlugin.uri);
-                this.name = uiPlugin.name;
+                this.iconUrl = SelectIconUri(uiPlugin.plugin_type);
+                this.name = uiPlugin.label;
                 this.numberOfInputs = Math.max(uiPlugin.audio_inputs,2);
                 this.numberOfOutputs = Math.max(uiPlugin.audio_outputs,2);
             } else {
                 // default to empty plugin.
-                this.pluginType = PluginType.UtilityPlugin;
+                this.pluginType = PluginType.ErrorPlugin;
                 this.name = pedalItem.pluginName??"#error";
                 this.iconUrl = ERROR_ICON_URL;
                 this.numberOfInputs = 2;
@@ -525,22 +529,22 @@ const PedalboardView =
                 }
             }
 
-            getSplitterIcon(layoutItem: PedalLayout) {
+            getSplitterIcon(layoutItem: PedalLayout): PluginType {
                 if (layoutItem.pedalItem === undefined) {
                     throw new Error("Invalid splitter");
                 }
                 let split = layoutItem.pedalItem as PedalboardSplitItem;
                 if (split.getSplitType() === SplitType.Ab) {
                     if (split.isASelected()) {
-                        return "img/fx_split_a.svg";
+                        return PluginType.SplitA;
                     } else {
-                        return "img/fx_split_b.svg";
+                        return PluginType.SplitB;
 
                     }
                 } else if (split.getSplitType() === SplitType.Mix) {
-                    return "img/fx_dial.svg";
+                    return PluginType.SplitMix; //"img/fx_dial.svg";
                 } else {
-                    return "img/fx_lr.svg";
+                    return PluginType.SplitLR; //"img/fx_lr.svg";
                 }
             }
 
@@ -675,7 +679,7 @@ const PedalboardView =
                 event.preventDefault();
                 event.stopPropagation();
 
-                if (!Utility.isTouchDevice()) {
+                if (!Utility.needsZoomedControls()) {
                     if (this.props.onDoubleClick && instanceId) {
                         this.props.onDoubleClick(instanceId);
                     }
@@ -903,7 +907,7 @@ const PedalboardView =
                 throw new PiPedalStateError("scroll container not found.");
             }
 
-            pedalButton(instanceId: number, iconUrl: string, draggable: boolean, enabled: boolean,hasBorder: boolean = true): ReactNode {
+            pedalButton(instanceId: number, iconType: PluginType, draggable: boolean, enabled: boolean,hasBorder: boolean = true): ReactNode {
                 let classes = this.props.classes;
                 return (
                     <div className={hasBorder? classes.iconFrame : classes.borderlessIconFrame} onContextMenu={(e) => { e.preventDefault(); }}>
@@ -917,8 +921,7 @@ const PedalboardView =
                                 <Draggable  draggable={draggable} getScrollContainer={() => this.getScrollContainer()}
                                     onDragEnd={(x, y) => { this.onDragEnd(instanceId, x, y) }}
                                 >
-                                    <img src={iconUrl} className={classes.pedalIcon} alt="Pedal" draggable={false} 
-                                    style={{opacity: enabled? 0.99: 0.6}} />
+                                    <PluginIcon pluginType={iconType} size={24} opacity={enabled? 0.99:0.6} />                                    
                                 </Draggable>
                             </SelectHoverBackground>
                         </ButtonBase>
@@ -982,7 +985,7 @@ const PedalboardView =
                             result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
                                 <div className={classes.splitStart} >
 
-                                    {this.pedalButton(START_CONTROL, item.iconUrl, false,true,false)}
+                                    {this.pedalButton(START_CONTROL, item.pluginType,false,true,false)}
                                 </div>
                             </div>);
                             break;
@@ -990,7 +993,7 @@ const PedalboardView =
                             result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
                                 <div className={classes.splitStart} >
 
-                                    {this.pedalButton(END_CONTROL, item.iconUrl, false,true,false)}
+                                    {this.pedalButton(END_CONTROL, item.pluginType, false,true,false)}
                                 </div>
                             </div>);
                             break;
@@ -1011,11 +1014,11 @@ const PedalboardView =
                                     }}>
                                         <Typography variant="caption" display="block" noWrap={true}
                                             style={{ width: CELL_WIDTH - 4, textAlign: "center", flex: "0 1 auto" }}
-                                        >{item.pedalItem?.pluginName}</Typography>
+                                        >{item.name}</Typography>
                                     </div>
                                 )
                                 result.push(<div key={this.renderKey++} className={classes.pedalItem} style={{ left: item.bounds.x, top: item.bounds.y }} >
-                                    {this.pedalButton(item.pedalItem?.instanceId ?? -1, item.iconUrl, !item.isEmpty(), item.pedalItem?.isEnabled ?? false)}
+                                    {this.pedalButton(item.pedalItem?.instanceId ?? -1, item.pluginType, !item.isEmpty(), item.pedalItem?.isEnabled ?? false)}
 
                                 </div>);
 

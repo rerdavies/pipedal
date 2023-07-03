@@ -107,7 +107,7 @@ PiPedalVersion::PiPedalVersion(PiPedalModel&model)
     std::string p2pAddr = GetInterfaceIpv4Address("p2p-wlan0-0");
     if (p2pAddr.length() != 0)
     {
-        this->webAddresses_.push_back(MakeWebAddress(p2pAddr,port));
+        this->webAddresses_.push_back(MakeWebAddress(p2pAddr,port) + " (WiFi Direct)");
 
     }
 

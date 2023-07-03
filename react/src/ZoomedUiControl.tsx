@@ -215,8 +215,8 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                     onClose={() => { this.props.onDialogClose() }}
                     onAbort={() => { this.props.onDialogClose() }}
                 >
-                    <div style={{
-                        width: 380, height: 300, background: "FFFF",
+                    <div  style={{
+                        width: 380, height: 300,
                         display: "flex", flexFlow: "row", alignItems: "center", alignContent: " center", justifyContent: "center"
                     }}>
                         <IconButton sx={{ height: "100%", width: 48, borderRadius: "0% 50% 50% 0%" }} onClick={
@@ -227,7 +227,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                             <NavigateBeforeIcon />
                         </IconButton>
                         <div style={{
-                            width: 200, flexGrow: 1, height: 300, background: "#FFF",
+                            width: 200, flexGrow: 1, height: 300, 
                             display: "flex", flexFlow: "column", alignItems: "center", alignContent: "center", justifyContent: "center"
 
                         }}

@@ -19,11 +19,8 @@
 
 import { SyntheticEvent, Component } from 'react';
 import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, PresetIndex } from './PiPedalModel';
 import SaveIconOutline from '@mui/icons-material/Save';
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import ButtonBase from "@mui/material/ButtonBase";
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
@@ -37,6 +34,7 @@ import Divider from '@mui/material/Divider';
 import RenameDialog from './RenameDialog'
 import Select from '@mui/material/Select';
 import UploadPresetDialog from './UploadPresetDialog';
+import isDarkMode from './DarkMode';
 
 
 interface PresetSelectorProps extends WithStyles<typeof styles> {
@@ -60,7 +58,7 @@ interface PresetSelectorState {
 }
 
 
-const selectColor = "black";
+const selectColor = isDarkMode()? "#888": "#FFFFFF";
 
 const styles = (theme: Theme) => createStyles({
     select: { // fu fu fu.Overrides for white selector on dark background.
@@ -303,66 +301,48 @@ const PresetSelector =
                     }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <IconButton
-                                style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0 }}
+                                style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0, color: "#FFFFFF" }}
                                 onClick={(e) => { this.handleSave(); }}
                                 size="large">
-                                <SaveIconOutline style={{ opacity: 0.75 }} />
+                                <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />
                             </IconButton>
                         </div>
 
                         <div style={{ flex: "1 1 auto", minWidth: 60, maxWidth: 300, position: "relative", paddingRight: 12 }} >
-                            {true ? (
-                                <Select variant="standard"
-                                    className={classes.select}
-                                    style={{ width: "100%", position: "relative", top: 0 }} disabled={!this.state.enabled}
-                                    onChange={(e, extra) => this.handleChange(e, extra)}
-                                    onClose={(e) => this.handleSelectClose(e)}
-                                    displayEmpty
-                                    value={presets.selectedInstanceId === 0? '' : presets.selectedInstanceId}
-                                    inputProps={{
-                                        classes: { icon: classes.icon },
-                                        'aria-label': "Select preset"
-                                    }
-                                    }
-                                >
-                                    {
-                                        presets.presets.map((preset) => {
-                                            return (
-                                                <MenuItem key={preset.instanceId} value={preset.instanceId} >
-                                                    {(presets.presetChanged && preset.instanceId === presets.selectedInstanceId)
-                                                        ? (preset.name + "*")
-                                                        : (preset.name)
-                                                    }
-                                                </MenuItem>
-                                            );
-                                        })
-                                    }
-                                </Select>
-                            ) : (
-                                <ButtonBase style={{ width: "100%", textAlign: "left", borderBottom: "1px white solid", position: "relative", top: 2 }} disabled={!this.state.enabled}
-                                    onClick={(e) => { this.showPresetDialog(true); }}
-                                >
-                                    <div style={{ width: "100%", textAlign: "left", display: "flex", flexWrap: "nowrap", flexDirection: "row", overflow: "hidden" }}>
-                                        <div style={{ flex: "0 1 auto", paddingLeft: 8, overflow: "hidden" }}>
-                                            <Typography noWrap  >
-                                                {this.state.presets.getSelectedText()}
-                                            </Typography>
-                                        </div>
-                                        <div style={{ flex: "1 1 1px" }} />
-                                        <div style={{ flex: "0 0 auto" }}>
-                                            <ArrowDropDownIcon style={{ opacity: 0.75 }} />
-                                        </div>
-
-                                    </div>
-                                </ButtonBase>
-                            )}
+                            <Select variant="standard"
+                                className={classes.select}
+                                style={{ width: "100%", position: "relative", top: 0, color: "#FFFFFF" }} disabled={!this.state.enabled}
+                                onChange={(e, extra) => this.handleChange(e, extra)}
+                                onClose={(e) => this.handleSelectClose(e)}
+                                displayEmpty
+                                value={presets.selectedInstanceId === 0? '' : presets.selectedInstanceId}
+                                inputProps={{
+                                    classes: { icon: classes.icon },
+                                    'aria-label': "Select preset"
+                                }
+                                }
+                            >
+                                {
+                                    presets.presets.map((preset) => {
+                                        return (
+                                            <MenuItem key={preset.instanceId} value={preset.instanceId} >
+                                                {(presets.presetChanged && preset.instanceId === presets.selectedInstanceId)
+                                                    ? (preset.name + "*")
+                                                    : (preset.name)
+                                                }
+                                            </MenuItem>
+                                        );
+                                    })
+                                }
+                            </Select>
                         </div>
-                        <div style={{ flex: "0 0 auto" }}>
+                        <div style={{ flex: "0 0 auto"}}>
                             <IconButton
-                                style={{ flex: "0 0 auto" }}
+                                style={{ flex: "0 0 auto",  color: "#FFFFFF" }}
                                 onClick={(e) => this.handlePresetMenuClick(e)}
-                                size="large">
-                                <MoreVertIcon style={{ opacity: 0.75 }} />
+                                size="large"
+                                >
+                                <MoreVertIcon style={{ opacity: 0.75 }} color="inherit" />
                             </IconButton>
                             <Menu
                                 id="edit-presets-menu"

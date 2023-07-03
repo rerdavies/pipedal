@@ -378,6 +378,8 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
 
 
             IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+
+            Lv2PluginState newState = item->lv2State();
             for (size_t i = 0; i < subscribers.size(); ++i)
             {
                 t[i] = this->subscribers[i];
@@ -386,7 +388,7 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
             {
                 for (size_t i = 0; i < n; ++i)
                 {
-                    t[i]->OnLv2StateChanged(instanceId);
+                    t[i]->OnLv2StateChanged(instanceId,newState);
                 }
             }
             delete[] t;

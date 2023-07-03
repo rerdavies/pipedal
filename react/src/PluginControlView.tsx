@@ -23,7 +23,7 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { UiPlugin, UiControl, UiFileProperty, ScalePoint } from './Lv2Plugin';
+import { UiPlugin, UiControl, UiFileProperty,UiFrequencyPlot, ScalePoint } from './Lv2Plugin';
 import {
     Pedalboard, PedalboardItem, ControlValue
 } from './Pedalboard';
@@ -39,6 +39,7 @@ import FilePropertyDialog from './FilePropertyDialog';
 import JsonAtom from './JsonAtom';
 import PluginOutputControl from './PluginOutputControl';
 import Units from './Units';
+import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
 
 export const StandardItemSize = { width: 80, height: 110 };
@@ -78,6 +79,7 @@ let endPluginInfo: UiPlugin =
     makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
 
 
+
 const styles = (theme: Theme) => createStyles({
     frame: {
         display: "block",
@@ -96,7 +98,7 @@ const styles = (theme: Theme) => createStyles({
         paddingRight: 4,
         paddingBottom: 24,
         left: 0,
-        background: "white",
+        background: theme.mainBackground,
         zIndex: 3
 
     },
@@ -106,7 +108,7 @@ const styles = (theme: Theme) => createStyles({
         marginRight: 22,
         paddingLeft: 4,
         paddingBottom: 24,
-        background: "white",
+        background: theme.mainBackground,
         zIndex: 3
 
     },
@@ -116,7 +118,7 @@ const styles = (theme: Theme) => createStyles({
         paddingRight: 22,
         paddingLeft: 12,
         paddingBottom: 24,
-        background: "white",
+        background: theme.mainBackground,
         zIndex: 3
 
     },
@@ -188,7 +190,7 @@ const styles = (theme: Theme) => createStyles({
     portGroupTitle: {
         position: "absolute",
         top: -15,
-        background: "white",
+        background: theme.mainBackground,
         textOverflow: "ellipsis",
         minWidth: 0,
         marginLeft: 20,
@@ -334,6 +336,14 @@ const PluginControlView =
                     />
                 ));
             }
+            makeFrequencyPlotUI(frequencyPlot: UiFrequencyPlot): ReactNode {
+                return ((
+                    <ToobFrequencyResponseView instanceId={this.props.instanceId}
+                        propertyName={frequencyPlot.patchProperty}
+                        width={frequencyPlot.width}
+                    />
+                ));
+            }
             makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
                 let symbol = uiControl.symbol;
                 if (!uiControl.is_input) {
@@ -444,6 +454,48 @@ const PluginControlView =
                         );
                     }
                 }
+                for (let i = 0; i < plugin.frequencyPlots.length; ++i) {
+                    let frequencyPlot = plugin.frequencyPlots[i];
+                    let frequencyPlotUi = this.makeFrequencyPlotUI(frequencyPlot);
+
+                    if (frequencyPlot.portGroup !== "" && plugin.getPortGroupByUri(frequencyPlot.portGroup)) {
+                        let portGroup = nullCast(plugin.getPortGroupByUri(frequencyPlot.portGroup));
+                        let controlGroup = portGroupMap[portGroup.symbol];
+                        if (controlGroup) {
+                            let insertPosition = controlGroup.indexes.length;
+                            if (frequencyPlot.index !== -1) {
+                                for (let i = 0; i < controlGroup.controls.length; ++i) {
+                                    if (controlGroup.indexes[i] >= frequencyPlot.index) {
+                                        insertPosition = i;
+                                        break;
+                                    }
+                                }
+                            }
+                            let index = frequencyPlot.index !== -1 ? frequencyPlot.index : 100;
+                            controlGroup.controls.splice(insertPosition, 0, frequencyPlotUi);
+                            controlGroup.indexes.splice(insertPosition, 0, index);
+
+                        } else {
+                            let index = frequencyPlot.index !== -1 ? frequencyPlot.index : 100;
+                            let controlGroup = new ControlGroup(
+                                portGroup.name,
+                                [index],
+                                [frequencyPlotUi]);
+                            result.push(
+                                controlGroup
+                            );
+                            portGroupMap[portGroup.symbol] = controlGroup;
+
+                        }
+                    } else if (frequencyPlot.index !== -1) {
+                        result.splice(frequencyPlot.index, 0, frequencyPlotUi);
+                    } else {
+                        result.push(
+                            frequencyPlotUi
+                        );
+                    }
+                }
+
                 return result;
             }
 

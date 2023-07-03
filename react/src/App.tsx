@@ -21,6 +21,19 @@ import React from 'react';
 import { ThemeProvider, createTheme, StyledEngineProvider, Theme } from '@mui/material/styles';
 
 import AppThemed from "./AppThemed";
+import isDarkMode from './DarkMode';
+
+declare module '@mui/material/styles' {
+    interface Theme {
+      mainBackground: React.CSSProperties['color'];
+      toolbarColor: React.CSSProperties['color'];
+    }
+    interface ThemeOptions {
+        mainBackground?: React.CSSProperties['color'];
+        toolbarColor?: React.CSSProperties['color'];
+    }
+
+}
 
 
 
@@ -33,16 +46,38 @@ declare module '@mui/styles/defaultTheme' {
 
 
 
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: "#6750A4"   // #5B5690  #60529A  #5C5694
+const theme = createTheme(
+    isDarkMode() ?
+        {
+        palette: {
+            mode: 'dark',
+            primary: {
+                main: '#A770E4'// #6750A4"   // #5B5690  #60529A  #5C5694
+            },
+            secondary: {
+                main: "#FF6060"
+            },
         },
-        secondary: {
-            main: "#FF6060"
-        }
+        mainBackground: "#222",
+        toolbarColor: '#FFFFFF'
     }
-});
+        :
+        {
+        palette: {
+            primary: {
+                main: "#6750A4"   // #5B5690  #60529A  #5C5694
+            },
+            secondary: {
+                main: "#FF6060"
+            }
+
+        },
+        mainBackground: "#FFFFFF",
+        toolbarColor: '#FFFFFF'
+
+
+    }
+);
 
 
 

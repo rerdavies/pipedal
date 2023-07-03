@@ -54,6 +54,10 @@ const styles = (theme: Theme) =>
             top: theme.spacing(1),
             color: theme.palette.grey[500],
         },
+        icon: {
+            fill: theme.palette.text.primary,
+            opacity: 0.6
+        }
     });
 };
 export interface PluginInfoDialogTitleProps extends WithStyles<typeof styles> {
@@ -228,14 +232,14 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                 style={{ display: (props.plugin_uri !== "") ? "inline-flex" : "none" }}
                 onClick={handleClickOpen}
                 size="large">
-                <InfoOutlinedIcon />
+                <InfoOutlinedIcon className={classes.icon} color='inherit' />
             </IconButton>
             {open && (
                 <Dialog onClose={handleClose} open={open} fullWidth >
                     <MuiDialogTitle >
                         <div style={{ display: "flex", flexDirection: "row", alignItems: "start", flexWrap: "nowrap" }}>
                             <div style={{ flex: "0 0 auto", marginRight: 16 }}>
-                                <PluginIcon pluginType={plugin.plugin_type} pluginUri={plugin.uri} offsetY={3} />
+                                <PluginIcon pluginType={plugin.plugin_type} offsetY={3} />
                             </div>
                             <div style={{ flex: "1 1 auto" }}>
                                 <Typography variant="h6">{plugin.name}</Typography>

@@ -23,7 +23,7 @@ import OkCancelDialog from './OkCancelDialog';
 import ListSelectDialog from './ListSelectDialog';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, State, ColorTheme } from './PiPedalModel';
 import ButtonBase from "@mui/material/ButtonBase";
 import AppBar from '@mui/material/AppBar';
 import Button from '@mui/material/Button';
@@ -45,6 +45,7 @@ import DialogEx from './DialogEx'
 import GovernorSettings from './GovernorSettings';
 import { AlsaMidiDeviceInfo } from './AlsaMidiDeviceInfo';
 import SystemMidiBindingsDialog from './SystemMidiBindingsDialog';
+import SelectThemeDialog from './SelectThemeDialog';
 
 import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
@@ -79,6 +80,7 @@ interface SettingsDialogState {
     showInputSelectDialog: boolean;
     showOutputSelectDialog: boolean;
     showMidiSelectDialog: boolean;
+    showThemeSelectDialog: boolean;
     showJackServerSettingsDialog: boolean;
     shuttingDown: boolean;
     restarting: boolean;
@@ -97,6 +99,11 @@ const styles = (theme: Theme) => createStyles({
     dialogTitle: {
         marginLeft: theme.spacing(2),
         flex: 1,
+    },
+    cpuStatusColor: {
+        color: theme.palette.text.secondary,
+        opacity: 0.7
+
     },
     sectionHead: {
         marginLeft: 24,
@@ -179,6 +186,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 showInputSelectDialog: false,
                 showOutputSelectDialog: false,
                 showMidiSelectDialog: false,
+                showThemeSelectDialog: false,
                 showJackServerSettingsDialog: false,
                 shuttingDown: false,
                 restarting: false,
@@ -379,6 +387,11 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 showMidiSelectDialog: true
             })
         }
+        handleThemeSelection() {
+            this.setState({
+                showThemeSelectDialog: true
+            });
+        }
         handleMidiMessageSettings() {
             this.setState({
                 showSystemMidiBindingsDialog: true
@@ -548,36 +561,36 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         }}
                         >
                             <div >
-                                {this.props.onboarding && 
-                                (
-                                    <div>
-                                        <Typography display="block" variant="body1" color="textSecondary" style={{paddingLeft: 24,paddingBottom: 8 }}>
-                                            Select and configure an audio device. You may optionally configure MIDI inputs, and set up a Wi-Fi Direct Hotspot now as well.
-                                        </Typography>
-                                        <Typography display="block" variant="body1" color="textSecondary" style={{paddingLeft: 24,paddingBottom: 8 }}>
-                                            Access and modify these settings later by selecting the <i>Settings</i> menu item on the main menu.
-                                        </Typography>
-                                        <Divider />
-                                    </div>
-                                )}
+                                {this.props.onboarding &&
+                                    (
+                                        <div>
+                                            <Typography display="block" variant="body1" color="textSecondary" style={{ paddingLeft: 24, paddingBottom: 8 }}>
+                                                Select and configure an audio device. You may optionally configure MIDI inputs, and set up a Wi-Fi Direct Hotspot now as well.
+                                            </Typography>
+                                            <Typography display="block" variant="body1" color="textSecondary" style={{ paddingLeft: 24, paddingBottom: 8 }}>
+                                                Access and modify these settings later by selecting the <i>Settings</i> menu item on the main menu.
+                                            </Typography>
+                                            <Divider />
+                                        </div>
+                                    )}
 
                                 <div>
                                     <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
-                                            STATUS
+                                        STATUS
                                     </Typography>
                                     {(!isConfigValid) ?
                                         (
-                                            <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                            <div className={classes.cpuStatusColor} style={{ paddingLeft: 48, position: "relative", top: -12 }}>
                                                 <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
                                                 {(!this.props.onboarding) && (
-                                                    <Typography display="block" variant="caption" color="textSecondary">Governor: </Typography>
+                                                    <Typography display="block" variant="caption" color="inherit">Governor: </Typography>
                                                 )}
                                             </div>
                                         ) :
                                         (
-                                            <div style={{ paddingLeft: 48, position: "relative", top: -12 }}>
+                                            <div className={classes.cpuStatusColor} style={{ paddingLeft: 48, position: "relative", top: -12 }}>
                                                 {JackHostStatus.getDisplayView("", this.state.jackStatus)}
-                                                { (!this.props.onboarding) && JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
+                                                {(!this.props.onboarding) && JackHostStatus.getCpuInfo("Governor:\u00A0", this.state.jackStatus)}
                                             </div>
                                         )
                                     }
@@ -652,7 +665,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         <SelectHoverBackground selected={false} showHover={true} />
                                         <div style={{ width: "100%" }}>
                                             <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>System MIDI Bindings</Typography>
-                                            
+
                                         </div>
                                     </ButtonBase>
 
@@ -708,7 +721,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     </div>
                                 </ButtonBase>
                             </div>
-                            { (!this.props.onboarding) ? (
+                            {(!this.props.onboarding) ? (
                                 <div >
                                     <Divider />
                                     <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">SYSTEM</Typography>
@@ -730,7 +743,23 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     <ButtonBase
                                         className={classes.setting}
-                                        onClick={() => { this.setState({ showStatusMonitorDialog: true }); }}  >
+                                        onClick={() => { this.handleThemeSelection(); }}  >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                Color Theme</Typography>
+                                            <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>
+                                                { this.model.getTheme() === ColorTheme.Dark ? "Dark" :"Light"}
+                                            </Typography>
+                                        </div>
+                                    </ButtonBase>
+
+
+                                    <ButtonBase
+                                        className={classes.setting}
+                                        onClick={() => { 
+                                            this.model.setShowStatusMonitor(!this.state.showStatusMonitor)
+                                         }}  >
                                         <SelectHoverBackground selected={false} showHover={true} />
                                         <div style={{ width: "100%" }}>
                                             <div style={{
@@ -741,6 +770,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                                     <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
                                                         Show status monitor on main screen.</Typography>
                                                 </div>
+
                                                 <div style={{ flex: "0 0 auto" }}>
                                                     <Switch
                                                         checked={this.state.showStatusMonitor}
@@ -782,16 +812,18 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         </div >
                                     </ButtonBase>
                                 </div>
-                            ): (
+                            ) : (
                                 <div>
-                                    <Divider/>
-                                    <div style={{display: "grid", placeContent: "end", maxWidth: 550, marginLeft: 16,marginRight: 16,
-                                    marginTop: 16,marginBottom: 16}}>
-                                        <Button variant="outlined" onClick={()=> {this.onOnboardingContinue()}} disabled={this.state.continueDisabled} style={{width: 120}}>Continue</Button>      
+                                    <Divider />
+                                    <div style={{
+                                        display: "grid", placeContent: "end", maxWidth: 550, marginLeft: 16, marginRight: 16,
+                                        marginTop: 16, marginBottom: 16
+                                    }}>
+                                        <Button variant="outlined" onClick={() => { this.onOnboardingContinue() }} disabled={this.state.continueDisabled} style={{ width: 120 }}>Continue</Button>
                                     </div>
                                 </div>
                             )
-                        }
+                            }
 
 
 
@@ -844,6 +876,20 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                         )
                     }
+                    {
+                        (this.state.showThemeSelectDialog) &&
+                        (
+                            <SelectThemeDialog open={this.state.showThemeSelectDialog}
+                                onClose={()=> { this.setState({showThemeSelectDialog: false});} }
+                                onOk={(selectedTheme: ColorTheme) => {
+                                    this.model.setTheme(selectedTheme);
+                                    this.setState({showThemeSelectDialog: false}); 
+                                }}
+                                defaultTheme={this.model.getTheme()}
+                            />
+
+                        )
+                    }
                     <WifiConfigDialog wifiConfigSettings={this.state.wifiConfigSettings} open={this.state.showWifiConfigDialog}
                         onClose={() => this.setState({ showWifiConfigDialog: false })}
                         onOk={(wifiConfigSettings) => this.handleApplyWifiConfig(wifiConfigSettings)}
@@ -864,8 +910,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     />
                     <SystemMidiBindingsDialog
                         open={this.state.showSystemMidiBindingsDialog}
-                        onClose={()=> { this.setState({showSystemMidiBindingsDialog: false});}}
-                        />
+                        onClose={() => { this.setState({ showSystemMidiBindingsDialog: false }); }}
+                    />
                 </DialogEx >
 
             );

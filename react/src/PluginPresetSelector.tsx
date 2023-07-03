@@ -33,6 +33,8 @@ import {PluginUiPresets} from './PluginPreset';
 
 import Divider from "@mui/material/Divider";
 
+import {ReactComponent as PluginPresetsIcon} from "./svg/ic_pluginpreset.svg";
+import {ReactComponent as PluginPresetIcon} from "./svg/ic_pluginpreset2.svg";
 
 interface PluginPresetSelectorProps extends WithStyles<typeof styles> {
     pluginUri?: string;
@@ -60,6 +62,12 @@ interface PluginPresetSelectorState {
 const styles = (theme: Theme) => createStyles({
     itemIcon: {
         width: 24, height: 24, marginRight: "4px", opacity: 0.6
+    },
+    pluginIcon: {
+        width: 24, height: 24, opacity: 0.6,fill: theme.palette.text.primary
+    },
+    pluginMenuIcon: {
+        width: 24, height: 24, opacity: 0.6,fill: theme.palette.text.primary,marginRight: 4
     }
 
 });
@@ -285,7 +293,7 @@ const PluginPresetSelector =
                 return (
                     <div >
                         <IconButton onClick={(e)=> this.handlePresetMenuClick(e)} size="large">
-                            <img src="img/ic_pluginpreset.svg" style={{ width: 24, height: 24,opacity: 0.6 }} alt="Plugin Presets" />
+                            <PluginPresetsIcon className={classes.pluginIcon}/>
                         </IconButton>
                         <Menu
                             id="edit-plugin-presets-menu"
@@ -310,7 +318,9 @@ const PluginPresetSelector =
                                 this.state.presets.presets.map((preset) => {
                                     return (<MenuItem key={preset.instanceId}
                                         onClick={(e) => this.handleLoadPluginPreset(preset.instanceId)}
-                                        ><img src="img/ic_pluginpreset2.svg" className={classes.itemIcon} alt="" />
+                                        >
+                                        <PluginPresetIcon className={classes.pluginMenuIcon}/>
+
                                         {preset.label}</MenuItem>);
                                 })
                             }

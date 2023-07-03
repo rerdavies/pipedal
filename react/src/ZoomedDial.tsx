@@ -22,6 +22,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import createStyles from '@mui/styles/createStyles';
 import { PiPedalModel, PiPedalModelFactory, ZoomedControlInfo } from './PiPedalModel';
+import {ReactComponent as DialIcon} from './svg/fx_dial.svg';
 
 const SELECTED_OPACITY = 0.8;
 const DEFAULT_OPACITY = 0.6;
@@ -34,6 +35,12 @@ const DEAD_ZONE_SIZE = 5;
 
 
 const styles = (theme: Theme) => createStyles({
+    dialIcon: {
+        overscrollBehavior: "none", touchAction: "none", 
+        fill: theme.palette.text.primary,
+        opacity: DEFAULT_OPACITY,
+
+    }
 });
 
 
@@ -56,7 +63,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
     class extends React.Component<ZoomedDialProps, ZoomedDialState> {
 
         model: PiPedalModel = PiPedalModelFactory.getInstance();
-        imgRef: React.RefObject<HTMLImageElement> = React.createRef();
+        imgRef: React.RefObject<SVGSVGElement> = React.createRef();
 
         constructor(props: ZoomedDialProps) {
             super(props);
@@ -75,7 +82,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
         }
 
-        onPointerUp(e: PointerEvent<HTMLImageElement>) {
+        onPointerUp(e: PointerEvent<SVGSVGElement>) {
 
             if (this.isCapturedPointer(e)) {
                 --this.pointersDown;
@@ -94,7 +101,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
         }
 
 
-        releaseCapture(e: PointerEvent<HTMLImageElement>)
+        releaseCapture(e: PointerEvent<SVGSVGElement>)
         {
             let img = this.imgRef.current;
             
@@ -118,7 +125,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
         }
 
 
-        onPointerLostCapture(e: PointerEvent<HTMLImageElement>) {
+        onPointerLostCapture(e: PointerEvent<SVGSVGElement>) {
             if (this.isCapturedPointer(e)) {
                 --this.pointersDown;
                 
@@ -128,10 +135,10 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
         }
 
-        onTouchStart(e: TouchEvent<HTMLImageElement>) {
+        onTouchStart(e: TouchEvent<SVGSVGElement>) {
             //must be defined to get onTouchMove
         }
-        onTouchMove(e: TouchEvent<HTMLImageElement>) {
+        onTouchMove(e: TouchEvent<SVGSVGElement>) {
             // e.preventDefault();
             e.stopPropagation(); // cancels scroll!!!
 
@@ -150,7 +157,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
         currentAngle: number = 0;
         lastPointerAngle: number = 0;
 
-        isValidPointer(e: PointerEvent<HTMLImageElement>): boolean {
+        isValidPointer(e: PointerEvent<SVGSVGElement>): boolean {
             if (e.pointerType === "mouse") {
                 return e.button === 0;
             } else if (e.pointerType === "pen") {
@@ -202,7 +209,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
             return 0;
         }
 
-        pointerToAngle(e: PointerEvent<HTMLImageElement>): number {
+        pointerToAngle(e: PointerEvent<SVGSVGElement>): number {
 
             if (this.imgRef.current) {
                 let img = this.imgRef.current;
@@ -220,10 +227,10 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
             }
             return NaN;
         }
-        captureElement?: HTMLElement;
+        captureElement?: SVGSVGElement;
         pointersDown: number = 0;
 
-        onPointerDown(e: PointerEvent<HTMLImageElement>): void {
+        onPointerDown(e: PointerEvent<SVGSVGElement>): void {
             if (!this.mouseDown && this.isValidPointer(e)) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -262,7 +269,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
             }
         }
 
-        isCapturedPointer(e: PointerEvent<HTMLImageElement>): boolean {
+        isCapturedPointer(e: PointerEvent<SVGSVGElement>): boolean {
             return this.mouseDown
                 && e.pointerId === this.pointerId
                 && e.pointerType === this.pointerType;
@@ -271,7 +278,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
 
 
-        onPointerMove(e: PointerEvent<HTMLImageElement>): void {
+        onPointerMove(e: PointerEvent<SVGSVGElement>): void {
             if (this.isCapturedPointer(e)) {
                 e.preventDefault();
                 this.updateAngle(e)
@@ -286,7 +293,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
 
         }
-        updateAngle(e: PointerEvent<HTMLImageElement>): void {
+        updateAngle(e: PointerEvent<SVGSVGElement>): void {
             let angle: number = this.pointerToAngle(e);
             if (!isNaN(angle)) {
                 if (!isNaN(this.lastPointerAngle)) {
@@ -352,14 +359,13 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
 
         render() {
+            let classes = this.props.classes;
             return (
-                <img  ref={this.imgRef} src="img/fx_dial.svg" alt=""
+                <DialIcon ref={this.imgRef} className={classes.dialIcon}
                     style={{
-                        overscrollBehavior: "none", touchAction: "none", 
-                        width: this.props.size, height: this.props.size, opacity: DEFAULT_OPACITY,
-                         transform: this.getDefaultRotationTransform()
+                         transform: this.getDefaultRotationTransform(),
+                         width: this.props.size, height: this.props.size, 
                     }}
-                    draggable="true"
                     onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
                     onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
                     onPointerMoveCapture={this.onPointerMove} onDrag={this.onDrag}

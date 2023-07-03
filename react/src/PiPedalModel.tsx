@@ -38,7 +38,12 @@ import GovernorSettings from './GovernorSettings';
 import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
+import isDarkMode, {setDarkMode} from './DarkMode';
 
+export enum ColorTheme {
+    Light,
+    Dark
+};
 
 export enum State {
     Loading,
@@ -470,8 +475,11 @@ export class PiPedalModel //implements PiPedalModel
             let value = body as number;
             this._setInputVolume(value,false);
         } else if (message === "onLv2StateChanged") {
-            let instanceId = body as number;
-            this.onLv2StateChanged(instanceId);
+
+            let instanceId = body.instanceId as number;
+            let state = body.state as [boolean,any];
+
+            this.onLv2StateChanged(instanceId,state);
         } else if (message === "onVst3ControlChanged") {
             let controlChangedBody = body as Vst3ControlChangedBody;
             this._setVst3PedalboardControlValue(
@@ -665,6 +673,10 @@ export class PiPedalModel //implements PiPedalModel
         this.getWebSocket().request<number>("hello")
             .then(clientId => {
                 this.clientId = clientId;
+                return this.getWebSocket().request<any>("plugins");
+            })
+            .then(data => {
+                this.ui_plugins.set(UiPlugin.deserialize_array(data));
                 return this.getWebSocket().request<Pedalboard>("currentPedalboard");
             })
             .then(data => {
@@ -1116,7 +1128,9 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
 
-    private onLv2StateChanged(instanceId: number): void {
+    private onLv2StateChanged(instanceId: number, state: [boolean,any]): void {
+        let item = this.pedalboard.get().getItem(instanceId);
+        item.lv2State = state;
         for (let item of this.stateChangedListeners) {
             if (item.instanceId === instanceId) {
                 item.onStateChanged(instanceId);
@@ -2530,6 +2544,27 @@ export class PiPedalModel //implements PiPedalModel
     {
         return nullCast(this.webSocket).request<number>("newPreset");
     }
+
+    getTheme(): ColorTheme {
+        return isDarkMode() ? ColorTheme.Dark: ColorTheme.Light;
+    }
+
+    setTheme(value: ColorTheme) {
+        if (this.getTheme() !== value)
+        {
+            setDarkMode(value === ColorTheme.Dark);
+            this.reloadPage();
+        }
+    }
+
+    reloadRequested: boolean = false;
+
+    reloadPage() {
+        this.reloadRequested = true;
+        // eslint-disable-next-line no-restricted-globals
+        location.reload();
+    }
+
 
 };
 

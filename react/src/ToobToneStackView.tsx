@@ -92,7 +92,7 @@ const ToobToneStackView =
                 {
                     controls.splice(0,0,
                         ( <ToobFrequencyResponseView instanceId={this.props.instanceId} 
-                            minDb={-20} maxDb={20} />)
+                            />)
                         );
                 } else {
                     controls.splice(0,0,

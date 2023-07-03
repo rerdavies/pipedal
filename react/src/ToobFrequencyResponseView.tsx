@@ -25,11 +25,11 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 
 import { PiPedalModelFactory, PiPedalModel, State } from "./PiPedalModel";
-import { StandardItemSize } from './PluginControlView';
 import Utility from './Utility';
 import SvgPathBuilder from './SvgPathBuilder';
 
 
+const StandardItemSize = { width: 80, height: 110 };
 
 const FREQUENCY_RESPONSE_VECTOR_URI = "http://two-play.com/plugins/toob#frequencyResponseVector";
 
@@ -47,13 +47,15 @@ const styles = (theme: Theme) => createStyles({
 
 interface ToobFrequencyResponseProps extends WithStyles<typeof styles> {
     instanceId: number;
-    maxDb?: number;
-    minDb?: number;
-    minFrequency?: number;
-    maxFrequency?: number;
+    propertyName?: string;
+    width?: number;
 
 }
 interface ToobFrequencyResponseState {
+    minDb: number;
+    maxDb: number;
+    minF: number;
+    maxF: number;
     path: string;
 }
 
@@ -70,7 +72,11 @@ const ToobFrequencyResponseView =
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
-                    path: ""
+                    path: "",
+                    minDb: -30,
+                    maxDb: 5,
+                    minF: 30,
+                    maxF: 20000
                 };
 
                 this.pathRef = React.createRef();
@@ -146,24 +152,61 @@ const ToobFrequencyResponseView =
             onFrequencyResponseUpdated(data: number[]) {
                 if (!this.mounted) return;
                 let pathBuilder = new SvgPathBuilder();
+               
+                let minF = data[0];
+                let maxF = data[1];
+                let dbMin = data[2];
+                let dbMax = data[3];
+                let logMin = Math.log(minF);
+                let logMax = Math.log(maxF);
+
+                let toX_ = (frequency: number): number => {
+                    var logV = Math.log(frequency);
+                    return (this.xMax - this.xMin) * (logV - logMin) / (logMax - logMin) + this.xMin;
+    
+                };
+                let toY_ = (value: number): number => {
+   
+                    var db;
+                    if (value < this.MIN_DB_AF) {
+                        db = -192.0;
+                    } else {
+                        db = 20 * Math.log10(value);
+                    }
+                    var y = (db - dbMin) / (dbMax - dbMin) * (this.yMax - this.yMin) + this.yMin;
+                    return y;
+                };
+    
+
+                
                 if (data.length > 2) {
-                    pathBuilder.moveTo(this.toX(data[0]), this.toY(data[1]))
-                    for (let i = 2; i < data.length; i += 2) {
-                        pathBuilder.lineTo(this.toX(data[i]), this.toY(data[i + 1]));
+                    pathBuilder.moveTo(toX_(data[4]), toY_(data[5]))
+                    for (let i = 6; i < data.length; i += 2) {
+                        pathBuilder.lineTo(toX_(data[i]), toY_(data[i + 1]));
                     }
                 }
                 this.currentPath = pathBuilder.toString();
-                this.setState({ path: this.currentPath });
+                this.setState({ 
+                    minF: data[0],
+                    maxF: data[1],
+                    maxDb: data[2],
+                    minDb: data[3],
+                    path: this.currentPath 
+                });
 
             }
 
+            private getPropertyUri()
+            {
+                return this.props.propertyName? this.props.propertyName: FREQUENCY_RESPONSE_VECTOR_URI;
+            }
             updateAllWaveShapes() {
                 if (this.requestOutstanding) { // throttling.
                     this.requestDeferred = true;
                     return;
                 }
                 this.requestOutstanding = true;
-                this.model.getPatchProperty<any>(this.props.instanceId, FREQUENCY_RESPONSE_VECTOR_URI)
+                this.model.getPatchProperty<any>(this.props.instanceId, this.getPropertyUri())
                     .then((json) => {
                         if (json && json.otype_ === "Vector" && json.vtype_ === "Float") {
                             this.onFrequencyResponseUpdated(json.value as number[]);
@@ -237,11 +280,11 @@ const ToobFrequencyResponseView =
 
             render() {
                 // deliberately reversed to flip up and down.
-                this.dbMax = this.props.minDb ?? this.dbMinDefault;
-                this.dbMin = this.props.maxDb ?? this.dbMaxDefault;
+                this.dbMax = this.state.minDb;
+                this.dbMin = this.state.maxDb;
 
-                this.fMin = this.props.minFrequency ?? 30;
-                this.fMax = this.props.maxFrequency ?? 20000;
+                this.fMin = this.state.minF;
+                this.fMax = this.state.maxF;
                 this.logMin = Math.log(this.fMin);
                 this.logMax = Math.log(this.fMax);
 

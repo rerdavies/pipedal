@@ -24,6 +24,7 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { MonitorPortHandle, PiPedalModel, State, PiPedalModelFactory } from "./PiPedalModel";
 import SvgPathBuilder from './SvgPathBuilder'
+import isDarkMode from './DarkMode';
 
 //const char* model[] = {"12-TET","19-TET","24-TET", "31-TET", "53-TET"};
 // set_adjustment(ui->widget[2]->adj,440.0, 440.0, 427.0, 453.0, 0.1, CL_CONTINUOS);
@@ -386,15 +387,19 @@ const GxTunerControl =
             }
 
             render() {
-
+                let textColor = isDarkMode() ? "#999": "#444";
                 return (<div ref={this.refRoot} style={{width: DIAL_WIDTH, height: DIAL_HEIGHT, fontSize: "2em", fontWeight: 700, position: "relative",
-                    boxShadow: "1px 5px 6px #888 inset",
+                    boxShadow: isDarkMode() ? 
+                        "5px 5px 6px rgba(0,0,0,0.8) inset":
+                        "1px 5px 6px #888 inset",
+                    background: isDarkMode()? "rgba(255,255,255,0.07)" : "",
+                
                      fontFamily: "arial,roboto,helvetica,sans"}}>
                          <div style={{position: "absolute", left: 0, bottom: 5, width: "50%",textAlign: "right"}}>
-                             <span style={{ marginRight: 20, color: "#444", textAlign: "right" }}>{this.state.pitchInfo.name}</span>
+                             <span style={{ marginRight: 20, color: textColor, textAlign: "right" }}>{this.state.pitchInfo.name}</span>
                          </div>
                          <div style={{position: "absolute", right: 0, bottom: 5, width: "50%",textAlign: "left"}}>
-                             <span style={{ marginLeft: 20, color: "#444", textAlign: "left" }}>{this.state.pitchInfo.fractionText}</span>
+                             <span style={{ marginLeft: 20, color: textColor, textAlign: "left" }}>{this.state.pitchInfo.fractionText}</span>
                          </div>
 
                     { this.renderDial(this.state.pitchInfo) }

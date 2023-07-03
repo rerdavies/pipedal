@@ -53,7 +53,7 @@
         rdfs:comment "TooB amplifier cabinet simulator." ;
 
         mod:brand "TooB";
-        mod:label "Cab Simulator";
+        mod:label "TooB CabSim";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
         patch:readable 

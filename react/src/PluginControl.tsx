@@ -1,4 +1,4 @@
- // Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -30,7 +30,7 @@ import Switch from '@mui/material/Switch';
 import Utility, {nullCast} from './Utility';
 import MenuItem from '@mui/material/MenuItem';
 import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
-
+import {ReactComponent as DialIcon} from './svg/fx_dial.svg';
 
 const MIN_ANGLE = -135;
 const MAX_ANGLE = 135;
@@ -72,8 +72,8 @@ const styles = (theme: Theme) => createStyles({
         right: 0,
         bottom: 4,
         textAlign: "center",
-        background: "white",
-        color: "#666",
+        background: theme.mainBackground,
+        color: theme.palette.text.secondary,
         // zIndex: -1,
     }
 });
@@ -98,7 +98,7 @@ const PluginControl =
         {
 
             frameRef: React.RefObject<HTMLDivElement>;
-            imgRef: React.RefObject<HTMLImageElement>;
+            imgRef: React.RefObject<SVGSVGElement>;
             inputRef: React.RefObject<HTMLInputElement>;
             selectRef: React.RefObject<HTMLSelectElement>;
 
@@ -137,7 +137,7 @@ const PluginControl =
                 this.onInputKeyPress = this.onInputKeyPress.bind(this);
             }
             isTouchDevice(): boolean {
-                return Utility.isTouchDevice();
+                return Utility.needsZoomedControls();
             }
 
             showZoomedControl()
@@ -243,7 +243,7 @@ const PluginControl =
                 e.preventDefault();
             }
 
-            isValidPointer(e: PointerEvent<HTMLImageElement>): boolean {
+            isValidPointer(e: PointerEvent<SVGSVGElement>): boolean {
                 if (e.pointerType === "mouse") {
                     return e.button === 0;
                 } else if (e.pointerType === "pen") {
@@ -257,9 +257,9 @@ const PluginControl =
             touchDown: boolean = false;
             touchIdentifier: number = -1;
 
-            onTouchStart(e: TouchEvent<HTMLImageElement>) {
+            onTouchStart(e: TouchEvent<SVGSVGElement>) {
             }
-            onTouchMove(e: TouchEvent<HTMLImageElement>) {
+            onTouchMove(e: TouchEvent<SVGSVGElement>) {
                 // e.preventDefault();
                 e.stopPropagation(); // cancels scroll!!!
 
@@ -282,7 +282,7 @@ const PluginControl =
             pointerId: number = 0;
             pointerType: string = "";
 
-            isCapturedPointer(e: PointerEvent<HTMLImageElement>): boolean {
+            isCapturedPointer(e: PointerEvent<SVGSVGElement>): boolean {
                 return this.mouseDown
                     && e.pointerId === this.pointerId
                     && e.pointerType === this.pointerType;
@@ -294,9 +294,9 @@ const PluginControl =
             dRange: number = 0;
 
             pointersDown: number = 0;
-            captureElement?: HTMLElement = undefined;
+            captureElement?: SVGSVGElement = undefined;
 
-            onPointerDown(e: PointerEvent<HTMLImageElement>): void {
+            onPointerDown(e: PointerEvent<SVGSVGElement>): void {
                 if (!this.mouseDown && this.isValidPointer(e)) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -351,7 +351,7 @@ const PluginControl =
 
             }
 
-            onPointerLostCapture(e: PointerEvent<HTMLImageElement>) {
+            onPointerLostCapture(e: PointerEvent<SVGSVGElement>) {
                 if (this.isCapturedPointer(e)) {
                     --this.pointersDown;
                     
@@ -361,7 +361,7 @@ const PluginControl =
 
             }
 
-            updateRange(e: PointerEvent<HTMLImageElement>): number {
+            updateRange(e: PointerEvent<SVGSVGElement>): number {
 
                 let ultraHigh = false;
                 let high = false;
@@ -396,7 +396,7 @@ const PluginControl =
                 this.lastX = e.clientX;
                 return this.dRange;
             }
-            onPointerUp(e: PointerEvent<HTMLImageElement>) {
+            onPointerUp(e: PointerEvent<SVGSVGElement>) {
 
                 if (this.isCapturedPointer(e)) {
                     --this.pointersDown;
@@ -414,7 +414,7 @@ const PluginControl =
                 }
             }
 
-            releaseCapture(e: PointerEvent<HTMLImageElement>)
+            releaseCapture(e: PointerEvent<SVGSVGElement>)
             {
                 let img = this.imgRef.current;
                 
@@ -437,7 +437,7 @@ const PluginControl =
 
             }
 
-            onPointerMove(e: PointerEvent<HTMLImageElement>): void {
+            onPointerMove(e: PointerEvent<SVGSVGElement>): void {
                 if (this.isCapturedPointer(e)) {
                     e.preventDefault();
                     let dRange = this.updateRange(e)
@@ -547,7 +547,7 @@ const PluginControl =
                     );
                 } else {
                     return (
-                        <Select variant="standard"
+                        <Select variant="standard" 
                             ref={this.selectRef}
                             value={control.clampSelectValue(value)}
                             onChange={this.onSelectChanged}
@@ -556,7 +556,7 @@ const PluginControl =
                                 id: 'id' + control.symbol,
                                 style: { fontSize: FONT_SIZE }
                             }}
-                            style={{ marginLeft: 4, marginRight: 4, width: 140 }}
+                            style={{ marginLeft: 4, marginRight: 4, width: 140,fontSize: 14 }}
                         >
                             {control.scale_points.map((scale_point: ScalePoint) => (
                                 <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>
@@ -651,6 +651,7 @@ const PluginControl =
                     return (<div>#Error</div>);
 
                 }
+                let dialColor = this.props.theme.palette.text.primary;
                 let control: UiControl = t;
                 this.uiControl = control;
                 let value = this.props.value;
@@ -684,13 +685,12 @@ const PluginControl =
                                 this.makeSelect(control, value)
                             ) : (
                                 <div style={{ flex: "0 1 auto" }}>
-                                    <img ref={this.imgRef} src="img/fx_dial.svg"
-                                        style={{ overscrollBehavior: "none", touchAction: "none",
+                                    <DialIcon ref={this.imgRef} 
+                                        style={{ overscrollBehavior: "none", touchAction: "none", fill: dialColor,
                                          width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform() }}
-                                        draggable="true"
                                         onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
                                         onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp} onPointerMoveCapture={this.onPointerMove} onDrag={this.onDrag}
-                                        alt={control.name}
+                                        
                                     />
                                 </div>
                             )
@@ -736,7 +736,7 @@ const PluginControl =
                 );
             }
             /*
-            isSamePointer(PointerEvent<HTMLImageElement> e): boolean
+            isSamePointer(PointerEvent<SVGSVGElement> e): boolean
             {
                 return e.pointerId === this.pointerId
                     && e.pointerType === this.pointerType;

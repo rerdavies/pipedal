@@ -46,6 +46,8 @@ import MenuItem from '@mui/material/MenuItem';
 import DialogEx from './DialogEx';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+import { ReactComponent as DownloadIcon} from './svg/file_download_black_24dp.svg';
+import { ReactComponent as UploadIcon} from './svg/file_upload_black_24dp.svg';
 
 interface BankDialogProps extends WithStyles<typeof styles> {
     show: boolean;
@@ -70,6 +72,10 @@ interface BankDialogState {
 
 
 const styles = (theme: Theme) => createStyles({
+    listIcon: {
+        width: 24, height: 24, 
+        opacity: 0.6, fill: theme.palette.text.primary 
+    },
     dialogAppBar: {
         position: 'relative',
         top: 0, left: 0
@@ -476,7 +482,8 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                                 >
                                                     <MenuItem onClick={() => { this.handleDownloadBank(); }} >
                                                         <ListItemIcon>
-                                                            <img src="img/file_download_black_24dp.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
+                                                            <DownloadIcon className="listIcon"
+                                                                />
                                                         </ListItemIcon>
                                                         <ListItemText>
                                                             Download bank
@@ -488,7 +495,8 @@ const BankDialog = withStyles(styles, { withTheme: true })(
 
 
                                                             <ListItemIcon>
-                                                                <img src="img/file_upload_black_24dp.svg" style={{ width: 24, height: 24, opacity: 0.6 }} alt="" />
+                                                            <UploadIcon className="listIcon"
+                                                                />
                                                             </ListItemIcon>
                                                             <ListItemText>
                                                                 Upload bank

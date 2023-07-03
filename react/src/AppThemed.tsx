@@ -60,10 +60,33 @@ import { BankIndex, BankIndexEntry } from './Banks';
 import RenameDialog from './RenameDialog';
 import JackStatusView from './JackStatusView';
 import { Theme } from '@mui/material/styles';
+import isDarkMode from './DarkMode';
 
+import {ReactComponent as RenameOutlineIcon} from './svg/drive_file_rename_outline_black_24dp.svg';
+import {ReactComponent as SaveBankAsIcon} from './svg/ic_save_bank_as.svg';
+import {ReactComponent as EditBanksIcon} from './svg/ic_edit_banks.svg';
+import {ReactComponent as SettingsIcon} from './svg/ic_settings.svg';
+import {ReactComponent as HelpOutlineIcon} from './svg/ic_help_outline.svg';
 
 
 const appStyles = (theme: Theme) => createStyles({
+    "&": { // :root
+        colorScheme: (isDarkMode()? "dark": "light")
+    },
+    menuListItem: {
+        color: "#FE8!important" as any, //theme.palette.text.primary,
+        fill: "#FE8!important" as any, //theme.palette.text.primary,
+    },
+    menuIcon: {
+        fill: (theme.palette.text.primary + "!important") as any, //theme.palette.text.primary,
+        opacity: 0.6
+    },
+    toolBar: {
+        color: "white"
+    },
+    listSubheader: {
+        backgroundImage: "linear-gradient(255,255,255,0.15),rgba(255,255,255,0.15)"
+    },
     loadingContent: {
         display: "block",
         position: "absolute",
@@ -72,7 +95,7 @@ const appStyles = (theme: Theme) => createStyles({
         top: "0px",
         width: "100%",
         height: "100%",
-        background: "#DDD",
+        background: isDarkMode() ? "#222": "#DDD",
         opacity: "0.95",
         justifyContent: "center",
         textAlign: "center",
@@ -91,13 +114,13 @@ const appStyles = (theme: Theme) => createStyles({
         top: "0px",
         width: "100%",
         height: "100%",
-        color: "#444",
+        color: isDarkMode() ? "#CCC": "#444",
         zIndex: 2000
     },
     errorContentMask: {
         position: "absolute", left: 0, top: 0,
         width: "100%", height: "100%",
-        background: "#BBB",
+        background: isDarkMode()? "#121212": "#BBB",
         opacity: 0.95,
         zIndex: 1999
     },
@@ -131,7 +154,7 @@ const appStyles = (theme: Theme) => createStyles({
 
     },
     errorMessage: {
-        color: '#000',
+        color: theme.palette.text.secondary,
         textAlign: "left",
         zIndex: 2010
 
@@ -140,7 +163,7 @@ const appStyles = (theme: Theme) => createStyles({
         position: "relative",
         top: "20%",
         width: "240px",
-        color: "#888",
+        color: isDarkMode() ? theme.palette.text.secondary : "#888",
         marginLeft: "auto",
         marginRight: "auto",
         // border: "3px solid #888",
@@ -167,7 +190,7 @@ const appStyles = (theme: Theme) => createStyles({
 
     toolBarSpacer:
     {
-        position: "relative", flex: "0 0 auto"
+        position: "relative", flex: "0 0 auto",
     },
 
 
@@ -190,7 +213,7 @@ const appStyles = (theme: Theme) => createStyles({
     },
 
     heroContent: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: theme.mainBackground,
         position: "relative",
         height: "100%",
         width: "100%"
@@ -198,7 +221,6 @@ const appStyles = (theme: Theme) => createStyles({
 
     drawerItem: {
         width: 350,
-        background: "#FF8080"
     },
     drawerItemFullWidth: {
         width: 'auto',
@@ -490,7 +512,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     private unmountListener(e: Event) {
         e.preventDefault();
-        if (this.model_.state.get() === State.Ready && !this.model_.isAndroidHosted()) {
+        if ((!this.model_.reloadRequested) && this.model_.state.get() === State.Ready && !this.model_.isAndroidHosted()) {
             (e as any).returnValue = "Are you sure you want to leave this page?";
             return "Are you sure you want to leave this page?";
         }
@@ -643,6 +665,7 @@ render() {
 
     return (
         <div style={{
+            colorScheme: isDarkMode() ? "dark": "light", // affects scrollbar color
             minHeight: 345, minWidth: 390,
             position: "absolute", width: "100%", height: "100%", background: "#F88", userSelect: "none",
             display: "flex", flexDirection: "column", flexWrap: "nowrap",
@@ -657,14 +680,15 @@ render() {
             <CssBaseline />
             {(!this.state.tinyToolBar) ?
                 (
-                    <AppBar position="absolute" style={{ background: "white" }}>
-                        <Toolbar variant="dense"   >
+                    <AppBar position="absolute"  >
+                        <Toolbar variant="dense" className={classes.toolBar}  >
                             <IconButton
                                 edge="start"
                                 aria-label="menu"
+                                color="inherit"
                                 onClick={() => { this.showDrawer() }}
                                 size="large">
-                                <MenuButton />
+                                <MenuButton style={{opacity: 0.75}} />
                             </IconButton>
                             <div style={{ flex: "0 1 400px", minWidth: 100 }}>
                                 <PresetSelector />
@@ -674,11 +698,12 @@ render() {
                                 <IconButton
                                     aria-label="menu"
                                     onClick={() => { this.toggleFullScreen(); }}
+                                    color="inherit"
                                     size="large">
                                     {this.state.isFullScreen ? (
-                                        <FullscreenExitIcon />
+                                        <FullscreenExitIcon style={{opacity: 0.75}} />
                                     ) : (
-                                        <FullscreenIcon />
+                                        <FullscreenIcon style={{opacity: 0.75}} />
 
                                     )}
 
@@ -692,6 +717,7 @@ render() {
                             style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
                             aria-label="menu"
                             onClick={() => { this.showDrawer() }}
+                            color="inherit"
                             size="large">
                             <MenuButton />
                         </IconButton>
@@ -699,6 +725,7 @@ render() {
                             <IconButton
                                 style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
                                 aria-label="menu"
+                                color="inherit"
                                 onClick={() => { this.toggleFullScreen(); }}
                                 size="large">
                                 {this.state.isFullScreen ? (
@@ -714,9 +741,10 @@ render() {
                 )}
             <TemporaryDrawer position='left' title="PiPedal"
                 is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
-                <List subheader={
-                    <ListSubheader component="div" id="nested-list-subheader">Banks</ListSubheader>
-                }>
+                <ListSubheader className="listSubheader" component="div" id="xnested-list-subheader" style={{background: "rgba(12,12,12,0.0)"}}>
+                    <Typography variant="caption" style={{position: "relative", top: 15}}>Banks</Typography></ListSubheader>
+
+                <List >
                     {
                         shortBankList.map((bank) => {
                             return (
@@ -746,18 +774,20 @@ render() {
                 <Divider />
                 <List>
                     <ListItem button key='RenameBank' onClick={() => { this.handleDrawerRenameBank() }}>
-                        <ListItemIcon><img src="img/drive_file_rename_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} /></ListItemIcon>
+                        <ListItemIcon >
+                            <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
+                        </ListItemIcon>
                         <ListItemText primary='Rename Bank' />
                     </ListItem>
                     <ListItem button key='SaveBank' onClick={() => { this.handleDrawerSaveBankAs() }} >
                         <ListItemIcon>
-                            <img src="img/save_bank_as.svg" alt="" style={{ opacity: 0.6 }} />
+                            <SaveBankAsIcon color="inherit" className={classes.menuIcon}/>
                         </ListItemIcon>
                         <ListItemText primary='Save As New Bank' />
                     </ListItem>
-                    <ListItem button key='CreateBank' onClick={() => { this.handleDrawerManageBanks(); }}>
+                    <ListItem button key='EditBanks' onClick={() => { this.handleDrawerManageBanks(); }}>
                         <ListItemIcon>
-                            <img src="img/edit_banks.svg" alt="" style={{ opacity: 0.6 }} />
+                            <EditBanksIcon color="inherit" className={classes.menuIcon}/>
                         </ListItemIcon>
                         <ListItemText primary='Manage Banks...' />
                     </ListItem>
@@ -766,19 +796,19 @@ render() {
                 <List>
                     <ListItem button key='Settings' onClick={() => { this.handleDrawerSettingsClick() }}>
                         <ListItemIcon>
-                            <img src="img/settings_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
+                            <SettingsIcon color="inherit" className={classes.menuIcon}/>
                         </ListItemIcon>
                         <ListItemText primary='Settings' />
                     </ListItem>
                     <ListItem button key='About' onClick={() => { this.handleDrawerAboutClick() }}>
                         <ListItemIcon>
-                            <img src="img/help_outline_black_24dp.svg" alt="" style={{ opacity: 0.6 }} />
+                            <HelpOutlineIcon color="inherit" className={classes.menuIcon}/>
                         </ListItemIcon>
                         <ListItemText primary='About' />
                     </ListItem>
                     <ListItem button key='Donations' onClick={() => { this.handleDrawerDonationClick() }}>
-                        <ListItemIcon>
-                            <VolunteerActivismIcon />
+                        <ListItemIcon >
+                            <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
                         </ListItemIcon>
                         <ListItemText primary='Donations' />
                     </ListItem>
@@ -786,7 +816,8 @@ render() {
 
             </TemporaryDrawer>
             {!this.state.tinyToolBar && (
-                <Toolbar className={classes.toolBarSpacer} variant="dense" />
+                <Toolbar className={classes.toolBarSpacer} variant="dense"  
+                />
             )}
             <main className={classes.mainFrame} >
                 <div className={classes.mainSizingPosition}>
@@ -807,7 +838,7 @@ render() {
             <RenameDialog
                 open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
                 defaultName={this.model_.banks.get().getSelectedEntryName()}
-                acceptActionName={"Rename"}
+                acceptActionName={this.state.renameBankDialogOpen ? "Rename": "Save as"}
                 onClose={() => {
                     this.setState({
                         renameBankDialogOpen: false,

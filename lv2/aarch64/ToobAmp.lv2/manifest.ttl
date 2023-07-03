@@ -12,6 +12,10 @@
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ConvolutionReverb.ttl> .
 
+<http://two-play.com/plugins/toob-nam> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobNeuralAmpModeler.ttl> .
+
 <http://two-play.com/plugins/toob-convolution-reverb-stereo> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ConvolutionReverbStereo.ttl> .
