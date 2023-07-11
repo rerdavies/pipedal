@@ -2,6 +2,13 @@
 
 ## PiPedal 1.1.28
 
+Bug fixes:
+
+- TooB Convolution filenames not updating properly.
+
+
+## PiPedal 1.1.28
+
 New in this release.
 
 - TooB Neural Amp Modeler - an LV2 port of  Steven Atkinson's astounding Neural Amp Modeler. Donwload model files from [ToneHunt.org](https://tonehunt.org). CPU is very high -- it runs on a Raspberry Pi 4 with just enough CPU left over for a couple of extra effects; but the results are worth it. TooB ML provides Neural Net modelled guitar amps with more modest CPU use (but considerably less flexibility).
