@@ -33,8 +33,7 @@ import Draggable from './Draggable'
 import Rect from './Rect';
 import {PiPedalStateError} from './PiPedalError';
 import Utility from './Utility';
-import isDarkMode from './DarkMode';
-
+import {isDarkMode} from './DarkMode';
 import {
     Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType
 } from './Pedalboard';

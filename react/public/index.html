@@ -40,22 +40,52 @@
     }
   </style>
   <script>
-      const darkMode = localStorage.getItem("darkMode"); if (darkMode) { } 
-      if (darkMode)
-      {
-          let bgStyle = document.getElementById("bgStyle");
-          if (bgStyle)
-          {
-            // disable the style block.
-            bgStyle.setAttribute('media',"max-width: 1px");
-          }
+    const androidHosted = !!(window.AndroidHost);
+
+    var darkMode = false;
+    var useSystem = false;
+
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    switch (localStorage.getItem("colorScheme")) {
+      case null:
+      default:
+        if (androidHosted) {
+          useSystem = true;
+        } else {
+          darkMode = false;
+        }
+        break;
+
+      case "Light":
+        darkMode = false;
+        break;
+      case "Dark":
+        darkMode = true;
+        break;
+      case "System":
+        useSystem = true;
+        break;
+    }
+    if (useSystem)
+    {
+      darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } 
+
+    if (!darkMode) {
+      let bgStyle = document.getElementById("bgStyle");
+      if (bgStyle) {
+        // disable the style block.
+        bgStyle.setAttribute('media', "max-width: 1px");
       }
+    }
   </script>
-  </head>
-  <body >
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
 
@@ -65,5 +95,6 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
-  </body>
+</body>
+
 </html>

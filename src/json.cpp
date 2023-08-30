@@ -634,6 +634,7 @@ void json_reader::throw_format_error(const char*error)
 
 }
 
+
 // void json_writer::write(const json_variant &value)
 // {
 //     ((JsonSerializable *)&value)->write_json(*this);

@@ -58,6 +58,7 @@
   },
   "devDependencies": {
     "@types/react-virtualized-auto-sizer": "^1.0.1",
-    "@types/react-window": "^1.8.5"
+    "@types/react-window": "^1.8.5",
+    "@babel/plugin-proposal-private-property-in-object": "7.21.0-placeholder-for-preset-env.2"
   }
 }

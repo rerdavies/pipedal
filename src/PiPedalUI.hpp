@@ -107,7 +107,7 @@ namespace pipedal {
     class UiFileProperty {
     private:
         std::string label_;
-        std::int64_t index_ = -1;
+        std::int32_t index_ = -1;
         std::string directory_;
         std::vector<UiFileType> fileTypes_;
         std::string patchProperty_;
@@ -120,7 +120,7 @@ namespace pipedal {
 
 
         const std::string &label() const { return label_; }
-        int64_t index() const { return index_; }
+        int32_t index() const { return index_; }
         const std::string &directory() const { return directory_; }
         const std::string&portGroup() const { return portGroup_; }
 
@@ -137,7 +137,7 @@ namespace pipedal {
     class UiFrequencyPlot {
     private:
         std::string patchProperty_;
-        std::int64_t index_ = -1;
+        std::int32_t index_ = -1;
         std::string portGroup_;
         float xLeft_ = 100;
         float xRight_ = 22000;
@@ -152,11 +152,11 @@ namespace pipedal {
           const std::filesystem::path&resourcePath);
 
         const std::string &patchProperty() const { return patchProperty_; }
-        int64_t index() const { return index_; }
+        int32_t index() const { return index_; }
         const std::string&portGroup() const { return portGroup_; }
         float xLeft() const { return xLeft_; }
         float xRight() const { return xRight_; }
-        float xLog() const { return xLog_; }
+        bool xLog() const { return xLog_; }
         float yTop() const { return yTop_; }
         float yBottom() const { return yBottom_; }
         float width() const { return width_; }

@@ -21,7 +21,7 @@ import React from 'react';
 import { ThemeProvider, createTheme, StyledEngineProvider, Theme } from '@mui/material/styles';
 
 import AppThemed from "./AppThemed";
-import isDarkMode from './DarkMode';
+import {isDarkMode} from './DarkMode';
 
 declare module '@mui/material/styles' {
     interface Theme {

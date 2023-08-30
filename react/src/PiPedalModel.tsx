@@ -38,12 +38,8 @@ import GovernorSettings from './GovernorSettings';
 import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
-import isDarkMode, {setDarkMode} from './DarkMode';
+import {ColorTheme, getColorScheme,setColorScheme} from './DarkMode';
 
-export enum ColorTheme {
-    Light,
-    Dark
-};
 
 export enum State {
     Loading,
@@ -2546,13 +2542,14 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     getTheme(): ColorTheme {
-        return isDarkMode() ? ColorTheme.Dark: ColorTheme.Light;
+        return getColorScheme();
     }
 
     setTheme(value: ColorTheme) {
+
         if (this.getTheme() !== value)
         {
-            setDarkMode(value === ColorTheme.Dark);
+            setColorScheme(value);
             this.reloadPage();
         }
     }
@@ -2562,7 +2559,7 @@ export class PiPedalModel //implements PiPedalModel
     reloadPage() {
         this.reloadRequested = true;
         // eslint-disable-next-line no-restricted-globals
-        location.reload();
+        window.location.reload();
     }
 
 

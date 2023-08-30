@@ -25,8 +25,7 @@ import withStyles from '@mui/styles/withStyles';
 import { UiControl } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle,State } from './PiPedalModel';
-import isDarkMode from './DarkMode';
-
+import {isDarkMode} from './DarkMode';
 
 
 

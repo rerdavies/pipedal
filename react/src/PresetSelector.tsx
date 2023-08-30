@@ -34,8 +34,7 @@ import Divider from '@mui/material/Divider';
 import RenameDialog from './RenameDialog'
 import Select from '@mui/material/Select';
 import UploadPresetDialog from './UploadPresetDialog';
-import isDarkMode from './DarkMode';
-
+import {isDarkMode} from './DarkMode';
 
 interface PresetSelectorProps extends WithStyles<typeof styles> {
 

@@ -33,8 +33,7 @@ import { PiPedalModel, PiPedalModelFactory, ListenHandle} from './PiPedalModel';
 import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import {PedalboardItem} from './Pedalboard';
-import isDarkMode from './DarkMode';
-
+import {isDarkMode} from './DarkMode';
 
 export const StandardItemSize = { width: 80, height: 140 }
 

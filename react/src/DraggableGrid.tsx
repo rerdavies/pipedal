@@ -21,7 +21,7 @@ import { Theme } from '@mui/material/styles';
 import createStyles from '@mui/styles/createStyles';
 import { Property } from "csstype";
 import { nullCast} from './Utility'
-import isDarkMode from './DarkMode';
+import {isDarkMode} from './DarkMode';
 
 const SELECT_SCALE = 1.0;
 

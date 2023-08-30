@@ -19,8 +19,7 @@
 
 import React from 'react';
 import Typography from '@mui/material/Typography';
-import isDarkMode from './DarkMode';
-
+import {isDarkMode} from './DarkMode';
 
 const RED_COLOR = isDarkMode()? "#F88":"#C00";
 const GREEN_COLOR = isDarkMode()? "rgba(255,255,255,0.7)": "#666";

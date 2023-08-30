@@ -29,7 +29,7 @@ import FormControl from '@mui/material/FormControl';
 
 import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
-import {ColorTheme} from './PiPedalModel';
+import {ColorTheme} from './DarkMode';
 
 
 
@@ -45,7 +45,14 @@ function SelectThemesDialog(props: SelectThemesDialogProps) {
     const { onClose, defaultTheme, open,onOk } = props;
     const [ selectedTheme, setSelectedTheme ] = useState(defaultTheme);
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        let value = ((event.target as HTMLInputElement).value) === '0' ? ColorTheme.Light: ColorTheme.Dark;
+        let value = ColorTheme.Light;
+        if ((event.target as HTMLInputElement).value === '1')
+        {
+            value = ColorTheme.Dark;
+        } else if ((event.target as HTMLInputElement).value === '2')
+        {
+            value = ColorTheme.System;
+        }        
         setSelectedTheme(value);
     };
     const handleClose = (): void => {
@@ -67,6 +74,7 @@ function SelectThemesDialog(props: SelectThemesDialogProps) {
                     >
                         <FormControlLabel value={ColorTheme.Light} control={<Radio size='small' />} label="Light" />
                         <FormControlLabel value={ColorTheme.Dark} control={<Radio size='small' />} label="Dark" />
+                        <FormControlLabel value={ColorTheme.System} control={<Radio size='small' />} label="Use system setting" />
                     </RadioGroup>
                 </FormControl>
             </DialogContent>

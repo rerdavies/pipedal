@@ -47,8 +47,7 @@ import MidiBindingsDialog from './MidiBindingsDialog';
 import PluginPresetSelector from './PluginPresetSelector';
 import {ReactComponent as OldDeleteIcon} from "./svg/old_delete_outline_24dp.svg";
 import {ReactComponent as MidiIcon} from "./svg/ic_midi.svg";
-import isDarkMode from './DarkMode';
-
+import {isDarkMode} from './DarkMode';
 
 const SPLIT_CONTROLBAR_THRESHHOLD = 650;
 

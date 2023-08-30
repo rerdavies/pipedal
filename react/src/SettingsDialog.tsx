@@ -23,7 +23,8 @@ import OkCancelDialog from './OkCancelDialog';
 import ListSelectDialog from './ListSelectDialog';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import { PiPedalModel, PiPedalModelFactory, State, ColorTheme } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
+import {ColorTheme} from './DarkMode';
 import ButtonBase from "@mui/material/ButtonBase";
 import AppBar from '@mui/material/AppBar';
 import Button from '@mui/material/Button';
@@ -749,7 +750,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
                                                 Color Theme</Typography>
                                             <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>
-                                                { this.model.getTheme() === ColorTheme.Dark ? "Dark" :"Light"}
+                                                { this.model.getTheme() === ColorTheme.Dark ? "Dark" :
+                                                (this.model.getTheme() ===  ColorTheme.Light ? "Light": "System")}
                                             </Typography>
                                         </div>
                                     </ButtonBase>

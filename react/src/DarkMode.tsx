@@ -17,12 +17,58 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+export enum ColorTheme {
+    Light,
+    Dark,
+    System
+};
 
-export default function isDarkMode(): boolean {
-    let value = localStorage.getItem("darkMode");
-    return value === "true";
+
+
+export function getColorScheme(): ColorTheme {
+    const androidHosted = !!((window as any).AndroidHost);
+
+    switch (localStorage.getItem('colorScheme')) {
+        case null:
+        default:
+            if (androidHosted) {
+                return ColorTheme.System;
+            } else {
+                return ColorTheme.Light;
+            }
+        case "Light":
+            return ColorTheme.Light;
+        case "Dark":
+            return ColorTheme.Dark;
+        case "System":
+            return ColorTheme.System;
+    }
+}
+export function setColorScheme(value: ColorTheme): void {
+    var storageValue;
+    switch (value) {
+        default:
+        case ColorTheme.Light:
+            storageValue = "Light";
+            break;
+        case ColorTheme.Dark:
+            storageValue = "Dark";
+            break;
+
+        case ColorTheme.System:
+            storageValue = "System";
+            break;
+    }
+    localStorage.setItem("colorScheme", storageValue);
 }
 
-export function setDarkMode(value: boolean): void {
-    localStorage.setItem("darkMode",value? "true": "false");
+export function isDarkMode(): boolean {
+    var colorTheme = getColorScheme();
+    if (colorTheme === ColorTheme.System) {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return true;
+        }
+    }
+    return colorTheme === ColorTheme.Dark;
 }
+

@@ -24,8 +24,7 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { MonitorPortHandle, PiPedalModel, State, PiPedalModelFactory } from "./PiPedalModel";
 import SvgPathBuilder from './SvgPathBuilder'
-import isDarkMode from './DarkMode';
-
+import {isDarkMode} from './DarkMode';
 //const char* model[] = {"12-TET","19-TET","24-TET", "31-TET", "53-TET"};
 // set_adjustment(ui->widget[2]->adj,440.0, 440.0, 427.0, 453.0, 0.1, CL_CONTINUOS);
 

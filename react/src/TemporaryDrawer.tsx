@@ -26,8 +26,7 @@ import IconButton from '@mui/material/Toolbar';
 import Drawer from '@mui/material/Drawer';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Theme } from '@mui/material/styles';
-import isDarkMode from './DarkMode';
-
+import {isDarkMode} from './DarkMode';
 
 const drawerStyles = (theme: Theme) => {
     return createStyles({

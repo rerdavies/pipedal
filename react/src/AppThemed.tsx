@@ -60,7 +60,7 @@ import { BankIndex, BankIndexEntry } from './Banks';
 import RenameDialog from './RenameDialog';
 import JackStatusView from './JackStatusView';
 import { Theme } from '@mui/material/styles';
-import isDarkMode from './DarkMode';
+import {isDarkMode} from './DarkMode';
 
 import {ReactComponent as RenameOutlineIcon} from './svg/drive_file_rename_outline_black_24dp.svg';
 import {ReactComponent as SaveBankAsIcon} from './svg/ic_save_bank_as.svg';

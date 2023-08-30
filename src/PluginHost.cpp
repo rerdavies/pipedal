@@ -105,6 +105,7 @@ void PluginHost::SetConfiguration(const PiPedalConfiguration &configuration)
 
 void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 {
+    isA = lilv_new_uri(pWorld, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
     rdfs__Comment = lilv_new_uri(pWorld, PluginHost::RDFS__comment);
     rdfs__range = lilv_new_uri(pWorld, PluginHost::RDFS__range);
     port_logarithmic = lilv_new_uri(pWorld, LV2_PORT_PROPS__logarithmic);
@@ -591,7 +592,7 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
         AutoLilvNode propertyUri = lilv_nodes_get(patchWritables, iNode);
         if (propertyUri)
         {
-            // isA lv2:Parameter?
+            // a lv2:Parameter?
             if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris.isA, lv2Host->lilvUris.lv2core__Parameter))
             {
                 //  rfs:range atom:Path?
