@@ -1,10 +1,10 @@
 # Release Notes
-## PiPedal 1.1.30
+## PiPedal 1.1.31
 
 - Use system preferences for dark mode when connecting from Android app.
 - 
 
-## PiPedal 1.1.31
+## PiPedal 1.1.29
 
 Bug fixes:
 
