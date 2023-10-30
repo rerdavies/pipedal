@@ -447,7 +447,11 @@ export enum ControlType {
     Dial,
     OnOffSwitch,
     ABSwitch,
-    Select
+    Select,
+
+    Tuner,
+    Vu,
+    DbVu
 }
 
 export class  UiControl implements Deserializable<UiControl> {
@@ -476,6 +480,7 @@ export class  UiControl implements Deserializable<UiControl> {
         this.is_bypass = input.is_bypass ? true: false;
         this.is_program_controller = input.is_program_controller? true: false;
         this.custom_units = input.custom_units ?? "";
+        this.connection_optional = input.connection_optional ? true: false;
 
 
         if (this.is_bypass)
@@ -485,7 +490,20 @@ export class  UiControl implements Deserializable<UiControl> {
 
         this.controlType = ControlType.Dial;
 
-        if (this.isValidEnumeration())
+        if (!this.is_input)
+        {
+            if (this.units === Units.midiNote)
+            {
+                this.controlType = ControlType.Tuner;
+
+            } else if (this.units === Units.db)
+            {
+                this.controlType = ControlType.DbVu;
+            } else {
+                this.controlType = ControlType.Vu;
+            }
+        }
+        else if (this.isValidEnumeration())
         {
             this.controlType = ControlType.Select;
             if (this.scale_points.length === 2)
@@ -559,6 +577,7 @@ export class  UiControl implements Deserializable<UiControl> {
     is_bypass: boolean = true;
     is_program_controller: boolean = true;
     custom_units: string = "";
+    connection_optional: boolean = false;
 
 
     // Return the value of the closest scale_point.
@@ -581,6 +600,10 @@ export class  UiControl implements Deserializable<UiControl> {
             return value;
         }
     }
+
+    isHidden() : boolean {
+        return this.not_on_gui || (this.connection_optional && !this.is_input);
+    }
     isOnOffSwitch() : boolean {
         return this.controlType === ControlType.OnOffSwitch;
     }
@@ -592,8 +615,22 @@ export class  UiControl implements Deserializable<UiControl> {
         return this.controlType === ControlType.Select;
     }
 
+    isLamp(): boolean {
+        return this.toggled_property && this.scale_points.length === 0 && !this.is_input;
+    }
     isDial() : boolean {
         return this.controlType === ControlType.Dial;
+    }
+
+    isTuner() : boolean {
+        return this.controlType === ControlType.Tuner;
+    }
+    isVu() : boolean {
+        return this.controlType === ControlType.Vu;
+    }
+
+    isDbVu() : boolean {
+        return this.controlType === ControlType.DbVu;
     }
 
     valueToRange(value: number): number {

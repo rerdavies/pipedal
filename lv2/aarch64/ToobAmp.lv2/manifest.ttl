@@ -31,10 +31,10 @@
      rdfs:seeAlso <ToobML.ttl> .
 
 
-
-<http://two-play.com/plugins/toob-power-stage-2> a lv2:Plugin ;
-     lv2:binary <ToobAmp.so> ;
-     rdfs:seeAlso <PowerStage2.ttl> .
+# Deprecated.
+#<http://two-play.com/plugins/toob-power-stage-2> a lv2:Plugin ;
+#     lv2:binary <ToobAmp.so> ;
+#     rdfs:seeAlso <PowerStage2.ttl> .
 
 <http://two-play.com/plugins/toob-input_stage> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
@@ -197,3 +197,13 @@ tpset:toob-convolution-reverb-preset-3
     lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
     rdfs:seeAlso <toob-convolution-reverb-presets.ttl> .
 
+###
+tpset:toob-cab-sim-preset-0
+   a pset:Preset;
+    lv2:appliesTo <http://two-play.com/plugins/toob-cab-sim> ;
+    rdfs:seeAlso <CabSim-presets.ttl> .
+
+tpset:toob-cab-sim-preset-1
+   a pset:Preset;
+    lv2:appliesTo <http://two-play.com/plugins/toob-cab-sim> ;
+    rdfs:seeAlso <CabSim-presets.ttl> .

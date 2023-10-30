@@ -36,18 +36,18 @@
                 doap:name "TooB BF-2 Stereo Flanger" ,
                 "TooB BF-2 Stereo Flanger"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        uiext:ui <http://two-play.com/plugins/toob-flanger-stereo-ui>;                
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
-Digital emulation of a Boss BF-2 Flanger*.
+Digital emulation of a Boss BF-2 Flanger.
 
-WARNING: use of this plugin in monophonic signal chains, on some hosts, may completely cancel out the flanger effect, since the right channel is 
+Note: use of this plugin in monophonic signal chains, on some hosts, may completely cancel out the flanger effect, since the right channel is 
 created by subtracting the output of the flanger delay line instead of adding it. If you are using this effect in a monophonic effect chain, you 
 should use the monophonic version of this effect.
-
-* Use of Boss Audio Systems trademarks is purely nominative. The TooB project is not associated in any way with, nor endorsed by Boss Audio Systems.
 
 """ ;
 
@@ -62,7 +62,7 @@ should use the monophonic version of this effect.
 
                 lv2:index  0;
                 lv2:symbol "manual" ;
-                rdfs:comment "LFO offset";
+                rdfs:comment "Maximum delay excursion";
                 lv2:name "Manual";
                 lv2:default 0.5 ;
                 lv2:minimum 0.0;
@@ -142,4 +142,12 @@ should use the monophonic version of this effect.
         ]
         .
 
+<http://two-play.com/plugins/toob-flanger-stereo-ui> 
+        a  uiext:X11UI ;
+        lv2:binary <ToobAmpUI.so>;
 
+        lv2:extensionData uiext::idle ;
+        lv2:extensionData uiext:resize ;
+        lv2:extensionData uiext:idleInterface;
+        lv2:requiredFeature uiext:idleInterface ;
+        .

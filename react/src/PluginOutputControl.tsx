@@ -26,6 +26,8 @@ import { UiControl } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle,State } from './PiPedalModel';
 import {isDarkMode} from './DarkMode';
+import GxTunerControl from './GxTunerControl';
+import Units from './Units';
 
 
 
@@ -77,12 +79,16 @@ const PluginOutputControl =
 
             private model: PiPedalModel;
             private vuRef: React.RefObject<HTMLDivElement>;
+            private dbVuRef: React.RefObject<HTMLDivElement>;
+            private dbVuTelltaleRef: React.RefObject<HTMLDivElement>;
             private lampRef: React.RefObject<HTMLDivElement>;
 
 
             constructor(props: PluginOutputControlProps) {
                 super(props);
                 this.vuRef = React.createRef<HTMLDivElement>();
+                this.dbVuRef = React.createRef<HTMLDivElement>();
+                this.dbVuTelltaleRef = React.createRef<HTMLDivElement>();
                 this.lampRef = React.createRef<HTMLDivElement>();
                 this.state = {
                     hasValue: false,
@@ -128,17 +134,95 @@ const PluginOutputControl =
                 }
             }
 
-            private VU_HEIGHT = 48-2;
+            private VU_HEIGHT = 60-4;
+            private DB_VU_HEIGHT = 60-4;
             private animationHandle: number | undefined = undefined;
             
+            private dbVuTelltale = -96.0;
+            private dbVuValue = -96.0;
+
+            private dbVuHoldTime = 0.0;
+
+            private requestDbVuAnimation() {
+                if (!this.animationHandle)
+                {
+                    this.animationHandle = requestAnimationFrame(
+                        ()=> {
+                            let value = this.dbVuValue;
+                            let range = this.vuMap(value);
+                            let top = range-this.VU_HEIGHT;
+                            if (top > 0) top = 0;
+        
+                            if (value > this.dbVuTelltale)
+                            {
+                                this.dbVuTelltale = value;
+                                this.dbVuHoldTime = Date.now()+2000;
+                            }
+                            if (this.dbVuRef.current)
+                            {
+                                this.dbVuRef.current.style.marginTop = top+"px";
+                            }
+                            this.animationHandle = undefined;
+                            this.updateDbVuTelltale();
+                        }
+                    )
+                }
+            }
+
+            updateDbVuTelltale() {
+                let telltaleDone = true;
+                if (this.dbVuHoldTime !== 0)
+                {
+                    telltaleDone = false;
+                    let t = Date.now();
+                    if (t >= this.dbVuHoldTime)
+                    {
+                        let dt = t-this.dbVuHoldTime;
+                        let telltaleValue = this.dbVuTelltale-30*dt/1000;
+                        if (telltaleValue < -200)
+                        {
+                            telltaleValue = -200;
+                            telltaleDone = true;
+                        } 
+                        this.dbVuTelltale = telltaleValue;
+                        this.dbVuHoldTime = t;
+
+                    }
+                    let y = this.dbVuMap(this.dbVuTelltale);
+                    if (y < 0) y = 0;
+
+                    if (this.dbVuTelltaleRef.current)
+                    {
+                        let telltaleStyle = this.dbVuTelltaleRef.current.style;
+                        telltaleStyle.marginTop = y + "px";
+                        let telltaleColor = "#0C0";
+                        if (this.dbVuTelltale >= 0)
+                        {
+                            telltaleColor = "#F00";
+                        } else if (this.dbVuTelltale >= -10)
+                        {
+                            telltaleColor = "#FF0";
+                        }
+                        telltaleStyle.background = telltaleColor;
+                    }
+                }
+                if (!telltaleDone)
+                {
+                    this.requestDbVuAnimation();
+                }
+            }
             private updateValue(value: number) {
                 if (this.lampRef.current)
                 {
                     let control = this.props.uiControl;
                     let range = (value-control.min_value)/(control.max_value-control.min_value);
                     this.lampRef.current.style.opacity = range +"";
+                } else if (this.dbVuRef.current)
+                {
+                    this.dbVuValue = value;
+                    this.requestDbVuAnimation();
                 }
-                if (this.vuRef.current) {
+                else if (this.vuRef.current) {
                     let control = this.props.uiControl;
                     let range = (value-control.min_value)/(control.max_value-control.min_value);
                     let top = this.VU_HEIGHT-range*this.VU_HEIGHT;
@@ -197,6 +281,19 @@ const PluginOutputControl =
                 return uiControl.formatDisplayValue(value);
             }
 
+
+            dbVuMap(value: number): number {
+                let control = this.props.uiControl;
+                let y = (control.max_value-value)*this.DB_VU_HEIGHT/(control.max_value-control.min_value);
+                return y;
+            }
+
+            vuMap(value: number): number {
+                let control = this.props.uiControl;
+                let y = (control.max_value-value)*this.VU_HEIGHT/(control.max_value-control.min_value);
+                return y;
+            }
+
             render() {
 
                 let control: UiControl = this.props.uiControl;
@@ -220,7 +317,53 @@ const PluginOutputControl =
                         item_width = 80;
                     }
                 }
-                if (control.isDial()) {
+                if (control.isTuner())
+                {
+                    item_width = undefined;
+                    return (
+                        <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
+                            <GxTunerControl instanceId={this.props.instanceId} symbolName={control.symbol} 
+                                valueIsMidi={ control.units === Units.midiNote}
+                                />
+                        </div >
+
+                    );
+
+                } else if (control.isDbVu())
+                {
+                    item_width = undefined;
+                    let redLevel = this.dbVuMap(0);
+                    let yellowLevel = this.dbVuMap(-10);
+                    return (
+                        <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
+                            {/* TITLE SECTION */}
+                            <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                                <Typography variant="caption" display="block" style={{
+                                    width: "100%",
+                                    textAlign: "center"
+                                }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
+                            </div>
+                            {/* CONTROL SECTION */}
+
+                            <div style={{ flex: "1 1 auto", display: "flex",  justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
+                                <div style={{ width: 8, height: this.DB_VU_HEIGHT+4, background: "#000",  }}>
+                                    <div style={{ height: this.DB_VU_HEIGHT, width: 4, overflow: "hidden", position: "absolute", margin: 2 }}>
+                                        <div style={{width: 4, height: redLevel,position: "absolute", marginTop: 0, background: "#F00"}} />
+                                        <div style={{width: 4, height: (yellowLevel-redLevel),position: "absolute", marginTop: redLevel, background: "#CC0"}} />
+                                        <div style={{width: 4, height: (this.DB_VU_HEIGHT-yellowLevel),position: "absolute", marginTop: yellowLevel, background: "#0A0"}} />
+
+                                        <div ref={this.dbVuRef} style={{ width: 4,position: "absolute",  marginTop: 0,height: this.VU_HEIGHT, background: "#000" }} />
+                                        <div ref={this.dbVuTelltaleRef} style={{ width: 4,position: "absolute",  marginTop: 0,height: 3, background: "#C00" }} />
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div >
+
+                    );
+                }
+                else if (control.isVu()) {
                     item_width = undefined;
                     return (
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
@@ -229,14 +372,14 @@ const PluginOutputControl =
                                 <Typography variant="caption" display="block" style={{
                                     width: "100%",
                                     textAlign: "center"
-                                }}> {control.name}</Typography>
+                                }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
                             </div>
                             {/* CONTROL SECTION */}
 
-                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "center", alignItems: "center", flexFlow: "row nowrap" }}>
-                                <div style={{ width: 6, height: 48, background: "#000",  }}>
-                                    <div style={{ height: 46, overflow: "hidden", position: "absolute", margin: 1 }}>
-                                        <div ref={this.vuRef} style={{ width: 4, height: 48, background: "#0C0", }} />
+                            <div style={{ flex: "1 1 auto", display: "flex",  justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
+                                <div style={{ width: 8, height: this.VU_HEIGHT+4, background: "#000",  }}>
+                                    <div style={{ height: this.VU_HEIGHT, overflow: "hidden", position: "absolute", margin: 2 }}>
+                                        <div ref={this.vuRef} style={{ width: 4, height: this.VU_HEIGHT, background: "#0C0", }} />
                                     </div>
                                 </div>
 
@@ -249,7 +392,7 @@ const PluginOutputControl =
                         </div >
 
                     );
-                } else if (control.toggled_property && control.scale_points.length === 0) {
+                } else if (control.isLamp()) {
                     item_width = undefined;
                     let attachedLamp = control.name === "" || control.name === "\u00A0" ;
                     return (
@@ -261,7 +404,7 @@ const PluginOutputControl =
                                 <Typography variant="caption" display="block" style={{
                                     width: "100%",
                                     textAlign: "center"
-                                }}> {control.name === "" ? "\u00A0": control.name}</Typography>
+                                }}> {control.name === "" ? "\u00A0": (control.name)}</Typography>
                             </div>
                             {/* CONTROL SECTION */}
 

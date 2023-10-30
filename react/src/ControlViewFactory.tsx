@@ -26,24 +26,11 @@ import PluginControlView from './PluginControlView';
 import SplitControlView from './SplitControlView';
 import Typography from '@mui/material/Typography';
 import IControlViewFactory from './IControlViewFactory';
-import ToobInputStageViewFactory from './ToobInputStageView';
-import ToobToneStackViewFactory from './ToobToneStackView';
-import ToobCabSimViewFactory from './ToobCabSimView';
-import ToobPowerStage2Factory from './ToobPowerStage2View';
-import ToobSpectrumAnalyzerViewFactory from './ToobSpectrumAnalyzerView';
-import ToobMLViewFactory from './ToobMLView';
-import { ToobTunerViewFactory, GxTunerViewFactory } from './GxTunerView';
+import { GxTunerViewFactory } from './GxTunerView';
 
 
 let pluginFactories: IControlViewFactory[] = [
-    new ToobInputStageViewFactory(),
-    new ToobToneStackViewFactory(),
-    new ToobCabSimViewFactory(),
-    new ToobPowerStage2Factory(),
-    new ToobSpectrumAnalyzerViewFactory(),
-    new ToobMLViewFactory(),
     new GxTunerViewFactory(),
-    new ToobTunerViewFactory()
 ];
 
 

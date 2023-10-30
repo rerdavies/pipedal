@@ -22,16 +22,15 @@
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix toob: <http://two-play.com/plugins/toob#> .
 
-<http://two-play.com/plugins/toob#frequencyResponseVector>
-        a lv2:Parameter ;
-        rdfs:label "frequencyResponseVector" ;
-        rdfs:range atom:Vector .
+@prefix tonestack: <two-play.com/plugins/toob-tone-stack#> .
 
-<http://two-play.com/plugins/toob-tone-stack#uiState>
-        a lv2:Parameter ;
-        rdfs:label "uiState" ;
-        rdfs:range atom:Vector .
+toob:frequencyResponseVector
+        a lv2:Parameter;
+        rdfs:label "Frequency Response";
+        rdfs:range atom:Vector.
 
 
 <http://two-play.com/rerdavies#me>
@@ -46,33 +45,26 @@
                 doap:name "TooB Tone Stack" ,
                 "TooB Tone Stack"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:microVersion 30 ;
+
+        uiext:ui <http://two-play.com/plugins/toob-tone-stack-ui>;                
+
         rdfs:comment """
-The TooB Tone Stack emulates the tone controls of either a 59' Bassman or a JCM8000 guitar amplifier.
-
-The TooB Input Stage is part of the TooB Amp Emulation Toolkit. Typically, you would 
-use the following plugins in the following order. 
-
-- TooB Input Stage
-
-- TooB Tone Stack
-
-- Toob Power Stage
-
-- Toob Cabinet Simulator
+TooB Tone Stack emulates the tone controls of a 59' Bassman, a JCM8000, or a Baxandall
+tone stack used in Polytone and HiWatt amps.
 """ ;
 
         mod:brand "TooB";
         mod:label "Tone Stack";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
-        
         patch:readable 
-                <http://two-play.com/plugins/toob#frequencyResponseVector>
-                ;
+            toob:frequencyResponseVector;
+
+        
         lv2:port
         [
                 a lv2:InputPort ,
@@ -144,7 +136,7 @@ use the following plugins in the following order.
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 lv2:index 6 ;
                 lv2:symbol "control" ;
@@ -154,7 +146,7 @@ use the following plugins in the following order.
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 lv2:index 7 ;
                 lv2:symbol "notify" ;
@@ -162,5 +154,35 @@ use the following plugins in the following order.
                 rdfs:comment "Plugin to GUI communication" ;
         ]
         .
+
+<http://two-play.com/plugins/toob-tone-stack-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
+
+<http://two-play.com/plugins/toob-tone-stack> 
+     pipedal_ui:ui <http://two-play.com/plugins/toob-tone-stack#piPedalUI>.
+
+
+<http://two-play.com/plugins/toob-tone-stack#piPedalUI> 
+    a pipedal_ui:ui ;
+    pipedal_ui:frequencyPlot
+    [
+        lv2:index 0 ;
+        pipedal_ui:patchProperty toob:frequencyResponseVector;
+        pipedal_ui:xLeft 30 ;
+        pipedal_ui:xRight 22050 ;
+        pipedal_ui:yTop 10 ;
+        pipedal_ui:yBottom -35 ;
+        pipedal_ui:xLog 1 ;
+        pipedal_ui:yDb 1 ;
+        pipedal_ui:width 236 ;
+    ]
+    .
 
 

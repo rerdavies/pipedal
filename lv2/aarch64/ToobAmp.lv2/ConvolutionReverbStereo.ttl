@@ -45,50 +45,52 @@ toobimpulse:impulseFile
         doap:name "TooB Convolution Reverb (Stereo)" ,
                 "TooB Convolution Reverb (Stereo)"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        uiext:ui <http://two-play.com/plugins/convolution-reverb-stereo-ui> ;
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
 
+
 Convolution reverb is a notoriously compute-intensive effect. If you are having performance issues,  use the Max T control to constrain the length of the impulse file to
-under two seconds. 
+under two seconds, or consider using the monophonic version of this effect.
 
-The Max T control affects how much of the impulse file is used. If the length of the impulse file is longer than the specified time, samples occuring after 
-the specified time are discarded, and the tail of the impulse convolution is fed back into the imput of the convolution. This ensures a smooth reverb tail, 
+The Max T control affects how much of the impulse file is used. If the length of the impulse file is longer than the specified time, samples occurring after 
+the specified time are discarded, and the tail of the impulse convolution is fed back into the input of the convolution. This ensures a smooth reverb tail, 
 and has little effect on the quality of the resulting reverb. If the impulse file is shorter than the specified time, then all samples in the impulse 
-file are used, and no feedback occurs. 
+file are used, and no feedback occurs. You can often get smooth reverbs that preserve most of the character of the impulse file with Max T set to  
+250ms or less.
 
-Because reverb impulse files typically include the original sound, you will often get strange comb filter effects if you use the Direct mix control;
+Because reverb impulse files often include the original sound, you will sometimes get strange comb filter effects if you use the Direct mix control;
 but this varies depending on the impulse file in question. Usually, the Direct mix control should be set to -INF.
 
-The Predelay control determines whether Toob Convolution Reverb will strip leading silence from the impulse data. Turning it on preserves silence in the
+The Predelay control determines whether Toob Convolution Reverb will strip leading silence from the impulse data. Turning it on preserves leading silence in the
 impulse signal; turning it off removes leading silence. If the the Direct mix control is set to -INF dB, there's no real point in 
-delaying the convolution reverb output; you want responses as quickly as possible; the Predelay control should be set to off.
+delaying the convolution reverb output; you want responses as quickly as possible. The Predelay control should be set to off.
  The leading silence in impulse files can sometimes be quite significant. 
 
-If the input file has 4 channels, Toob Convolution Reverb assumes the signal is in Ambisonic b-format, and downmixes the channels accordingly. Unfortunately,
-it currently dowmixes the Ambisonic audio to mono. The Width control determines
-how wide the stereo image is. 
+If the impulse file has 4 channels, Toob Convolution Reverb assumes the signal is in Ambisonic b-format, and down-mixes the ambisonic channels to stereo. 
+To generate monophonic reverb effects from ambisonic audio, use the monophonic version of this plugin.
 
 Toob Convolution Reverb comes with a nominal set of reverb impulse files to get you started. You are strongly encouraged to explore the rich collections of
 reverb impulse files that are widely available on the internet. 
 
-Special thanks are extended to the the OpenAir project, wich graciously provided the base set of impulse files distributed with Toob Convolution Reverb under 
-licensing terms that are compatible with the Toob Amp project's licensing terms.
+Special thanks are extended to the the OpenAir project, which graciously provided the base set of impulse files
+distributed with Toob Convolution Reverb under licensing terms that are compatible with the Toob Amp project's
+licensing terms.
 
 ---
 
-Toob Convolution Reverb's impulse files were provided by the OpenAir project.
-https://www.openair.hosted.york.ac.uk, under CC-By-4.0 licenses.
+Toob Convolution Reverb's impulse files were provided by the OpenAir project 
+(https://www.openair.hosted.york.ac.uk) under CC-By-4.0 licenses. 
 
+See the full text of the Creative Commons Attribution 4.0 International License given below for Disclaimers of Warrantees and 
+Limitations of Liability that apply to these works.
 
+##### Arthur Sykes Rymer Auditorium.wav
 
-Arthur Sykes Rymer Auditorium.wav
-
----------------------------------------
-
-By: www.openairlib.net, University of York
+Copyright © www.openairlib.net, University of York
 
 This work is provided under a Creative Commons Attribution 4.0 International License.
 
@@ -97,11 +99,9 @@ https://creativecommons.org/licenses/by/4.0/
 Source: https://www.openair.hosted.york.ac.uk/?page_id=425
 
 
-Jack Lyons Hall, University of York.wav
+##### Jack Lyons Hall, University of York.wav
 
----------------------------------------
-
-By: www.openairlib.net, Audiolab University of York, Alex Duffell, Aishwarya Sridhar, Zhong Li
+Copyright © www.openairlib.net, Audiolab University of York, Alex Duffell, Aishwarya Sridhar, Zhong Li
 
 This work is provided under a Creative Commons Attribution 4.0 International License.
 
@@ -111,24 +111,21 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=571
 
 
 
-Koli National Park - Winter.wav
+##### Koli National Park - Winter.wav
 
----------------------------------------
-
-By: www.openairlib.net, Audio Lab University of York, Andrew Chadwick, Simon Shelley
+Copyright © www.openairlib.net, Audio Lab University of York, Andrew Chadwick, Simon Shelley
 
 This work is provided under a Creative Commons Attribution 4.0 International License.
+
 https://creativecommons.org/licenses/by/4.0/
 
 Source: https://www.openair.hosted.york.ac.uk/?page_id=584
 
 
 
-St. Margaret’s Church.wav
+##### St. Margaret’s Church.wav
 
----------------------------------------
-
-By: www.openairlib.net, AudioLab University of York, www.ncem.co.uk
+Copyright © www.openairlib.net, AudioLab University of York, www.ncem.co.uk
 
 This work is provided under a Creative Commons Attribution 4.0 International License.
 
@@ -137,11 +134,9 @@ https://creativecommons.org/licenses/by/4.0/
 Source: https://www.openair.hosted.york.ac.uk/?page_id=702
 
 
-Genesis 6 Studio Live Room.wav
+##### Genesis 6 Studio Live Room.wav
 
----------------------------------------
-
-By: www.openairlib.net
+Copyright © www.openairlib.net
 
 This work is provided under a Creative Commons Attribution 4.0 International License.
 
@@ -370,7 +365,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 atom:supports patch:Message ;
 
@@ -382,7 +377,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 lv2:index 12;
                 lv2:symbol "notify" ;
@@ -399,10 +394,11 @@ toobcrs:ui
         pipedal_ui:fileProperties 
         [
                 a pipedal_ui:fileProperty;
-                rdfs:label "Impulse File" ;
+                rdfs:label "Reverb Impulse File" ;
                 lv2:index 3 ;
                 pipedal_ui:patchProperty toobimpulse:impulseFile ;
                 pipedal_ui:directory "ReverbImpulseFiles";
+                pipedal_ui:resourceDirectory "impulseFiles/reverb";
                 pipedal_ui:fileTypes 
                 [
                         a pipedal_ui:fileType;
@@ -415,10 +411,14 @@ toobcrs:ui
                         pipedal_ui:mimeType "audio/flac";
                 ]                ;
         ];
-        ui:portNotification 
-        [
-                lv2:symbol "loading_state";
-                ui:plugin <http://two-play.com/plugins/toob-convolution-reverb-stereo>;
-                ui:protocol ui:floatProtocol;
-        ]
         .
+
+<http://two-play.com/plugins/convolution-reverb-stereo-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .

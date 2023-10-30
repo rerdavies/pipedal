@@ -28,7 +28,7 @@ import {isDarkMode} from './DarkMode';
 //const char* model[] = {"12-TET","19-TET","24-TET", "31-TET", "53-TET"};
 // set_adjustment(ui->widget[2]->adj,440.0, 440.0, 427.0, 453.0, 0.1, CL_CONTINUOS);
 
-const FREQUENCY_PORT_NAME = "FREQ";
+const DEFAULT_FREQUENCY_PORT_NAME = "FREQ";
 
 const DIAL_WIDTH= 220;
 const DIAL_HEIGHT = 100;
@@ -89,6 +89,8 @@ const NOTES_53TET = ["la","laa","lo","law","ta","teh","te","tu","tuh","ti","tih"
 interface GxTunerControlProps extends WithStyles<typeof styles> {
     theme: Theme;
     instanceId: number;
+    valueIsMidi: boolean;
+    symbolName?: string;
 }
 type GxTunerControlState = {
     pitchInfo: PitchInfo
@@ -128,19 +130,23 @@ const GxTunerControl =
                 this.onStateChanged = this.onStateChanged.bind(this);
             }
 
+            frequencyPortName() : string {
+                if (this.props.symbolName) { return this.props.symbolName;}
+                return DEFAULT_FREQUENCY_PORT_NAME;
+            }
 
-            noteToPitchInfo(hz: number) : PitchInfo
+            noteToPitchInfo(value: number) : PitchInfo
             {
-                if (hz < 65) // ground hum. Ignore it.
-                {
-                    hz = 0;
-                } 
+                let aOffset = 69;
+
                 let tet = this.state.tet;
                 let refFrequency = this.state.refFrequency;
-                let aOffset: number;
                 let names: string[];
                 let semitoneCents = 100;
                 let valid = false;
+
+                let hz = -1;
+                let midiNote = -1;
 
 
                 switch (tet)
@@ -165,10 +171,25 @@ const GxTunerControl =
                 let name = "";
                 let fractionText = "";
                 let fraction = 0;
-                if (hz !== 0)
+
+                if (this.props.valueIsMidi)
+                {
+                    midiNote = value;
+                } else {
+                    if (value < 65)
+                    {
+                        hz = -1;
+                        midiNote = -1;
+                    } else {
+                        midiNote = Math.log2(hz/refFrequency)*12 + aOffset;
+                    }
+                }
+
+
+                if (midiNote > 0)
                 {
 
-                    let note = Math.log2(hz/refFrequency)*tet + aOffset;
+                    let note = midiNote;
                     let noteNumber = Math.round(note);
 
                     let octave = Math.floor((noteNumber)/tet);
@@ -198,7 +219,7 @@ const GxTunerControl =
             onFrequencyUpdated(value: number): void
             {
                 // suppress repeated zeros.
-                if (value === this.lastValue && value === 0 && this.animationIdle) return;
+                if (value === this.lastValue && value <= 0 && this.animationIdle) return;
 
                 this.lastValue = value;
 
@@ -206,7 +227,7 @@ const GxTunerControl =
                 this.setState({  
                     pitchInfo: pitchInfo
                 });
-                if (value === 0)
+                if (value <= 0)
                 {
                     this.startAnimationTimer();
                 } else {
@@ -246,7 +267,7 @@ const GxTunerControl =
 
             addSubscription() {
                 this.subscribedInstanceId = this.props.instanceId;
-                this.monitorHandle = this.model.monitorPort(this.props.instanceId,FREQUENCY_PORT_NAME,1.0/30,this.onFrequencyUpdated);
+                this.monitorHandle = this.model.monitorPort(this.props.instanceId,this.frequencyPortName(),1.0/30,this.onFrequencyUpdated);
             }
             removeSubscription() {
                 this.subscribedInstanceId = -1;

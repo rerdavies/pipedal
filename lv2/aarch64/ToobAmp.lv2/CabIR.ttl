@@ -79,14 +79,16 @@ cabir:impulseFile3
 
 <http://two-play.com/plugins/toob-cab-ir>
         a lv2:Plugin ,
-                lv2:ReverbPlugin ;
+                lv2:SimulatorPlugin ;
         doap:name "TooB Cab IR" ,
                 "TooB Cab IR"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        uiext:ui <http://two-play.com/plugins/cab-ir-ui> ;
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
-         lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
 
 TooB Cab IR is a convolution-based guitar cabinet impulse response simulator.
@@ -95,22 +97,20 @@ TooB Cab IR allows you to select and mix impulse responses for up to three micro
 so there is no performance cost for using more than one impulse response file. 
 
 Cab IR files are usually short, but sometimes include room response impulse files, which can be quite long. The Max T control determines the maximum length
-to use for impulse response files. If the length of the impulse file is longer than the specified time, samples occuring after 
-the specified time are discarded, and the tail of the impulse convolution is fed back into the imput of the convolution. This ensures a smooth reverb tail, 
+to use for impulse response files. If the length of the impulse file is longer than the specified time, samples occurring after 
+the specified time are discarded, and the tail of the impulse convolution is fed back into the input of the convolution. This ensures a smooth reverb tail, 
 and has little effect on the quality of the resulting reverb. If the impulse file is shorter than the specified time, then all samples in the impulse 
 file are used, and no feedback occurs.
 
-Toob Convolution Reverb comes with a nominal set of cabinet impulse files to get you started. You are strongly encouraged to seek out reverb impulse files 
-on the internet.
+Toob Convolution Reverb comes with a basic set of cabinet impulse files to get you started. There are, however, a rich variety of both free and commercial
+cabinet impulse response files available on the internet. You are strongly encouraged to explore alternate sources of cab IR files.
 
-Special thanks are extended to Kristoffer Ekstrand of Adventure Kid Research & Technology, who generously provided the base set of impulse files distributed with Toob Cab IR.
+Special thanks are extended to Kristoffer Ekstrand of Adventure Kid Research &amp; Technology, who 
+generously provided the base set of impulse files distributed with TooB Cab IR under a CC-BY-4.0 license.
 
 ---
 
- ![CC-BY-4.0](/img/cc-by.png)  
- By:  Kristoffer Ekstrand, Adventure Kid Research & Technology.
-
- The following files are licensed under a [Creative Commons Attribution 4.0 International License.][1]
+The following files are provided under a Creative Commons Attribution 4.0 International License. 
 
 ```
         80s UK 001.wav
@@ -132,21 +132,25 @@ Special thanks are extended to Kristoffer Ekstrand of Adventure Kid Research & T
         Vintage US 002.wav
 ```
 
-Source: <https://www.adventurekid.se/akrt/free-reverb-impulse-responses/>
+Source: https://www.adventurekid.se/akrt/free-reverb-impulse-responses/
 
+Copyright © Adventure Kid Research &amp; Technology, Kristoffer Ekstrand.
 
-[1]: https://creativecommons.org/licenses/by/4.0/
+These works are provided under a Creative Commons Attribution 4.0 International Public License.
 
+See the full text of the Creative Commons Attribution 4.0 International Public License given below for Disclaimers of Warrantees and 
+Limitations of Liability that apply to these works.
 
 
 """ ;
 
         mod:brand "TooB";
-        mod:label "Convolution Reverb";
+        mod:label "Cab IR";
         lv2:requiredFeature urid:map;
         lv2:optionalFeature state::freePath, state:makePath, state:mapPath, work:schedule ;
         
-        lv2:extensionData state:interface;
+        lv2:extensionData state:interface,
+                work:interface;
 
 
         lv2:optionalFeature lv2:hardRTCapable;
@@ -154,9 +158,6 @@ Source: <https://www.adventurekid.se/akrt/free-reverb-impulse-responses/>
                 cabir:impulseFile, cabir:impulseFile2, cabir:impulseFile3;
         patch:writable 
                 cabir:impulseFile,cabir:impulseFile2,cabir:impulseFile3;
-        lv2:extensionData state:interface,
-                work:interface;
-
         lv2:port
         [
                 a lv2:InputPort ,
@@ -344,7 +345,7 @@ Source: <https://www.adventurekid.se/akrt/free-reverb-impulse-responses/>
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 atom:supports patch:Message ;
 
@@ -356,7 +357,7 @@ Source: <https://www.adventurekid.se/akrt/free-reverb-impulse-responses/>
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 lv2:index 10;
                 lv2:symbol "notify" ;
@@ -378,6 +379,8 @@ cabir:ui
                 pg:group cabir:impulseFile1Group ;
 
                 pipedal_ui:directory "CabIR";
+                pipedal_ui:resourceDirectory "impulseFiles/CabIR";
+
                 pipedal_ui:patchProperty cabir:impulseFile ;
                 pipedal_ui:fileTypes 
                 [
@@ -393,6 +396,7 @@ cabir:ui
 
                 pipedal_ui:patchProperty cabir:impulseFile2 ;
                 pipedal_ui:directory "CabIR";
+                pipedal_ui:resourceDirectory "impulseFiles/CabIR";
                 pipedal_ui:fileTypes 
                 [
                         a pipedal_ui:fileType;
@@ -407,6 +411,7 @@ cabir:ui
 
                 pipedal_ui:patchProperty cabir:impulseFile3 ;
                 pipedal_ui:directory "CabIR";
+                pipedal_ui:resourceDirectory "impulseFiles/CabIR";
                 pipedal_ui:fileTypes 
                 [
                         a pipedal_ui:fileType;
@@ -419,15 +424,14 @@ cabir:ui
                         pipedal_ui:mimeType "audio/flac";
                 ];
         ];
-        ui:portNotification 
-        [
-                lv2:symbol "loading_state";
-                ui:plugin <http://two-play.com/plugins/toob-cab-ir>;
-                ui:protocol ui:floatProtocol;
-                # pipedal_ui:style pipedal_ui:text ;
-                # pipedal_ui:redLevel 0;
-                # pipedal_ui:yellowLevel -12;
-                # ui:portIndex 3;
-
-        ]
         .
+
+<http://two-play.com/plugins/cab-ir-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .

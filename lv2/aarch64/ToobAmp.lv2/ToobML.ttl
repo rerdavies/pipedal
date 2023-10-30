@@ -30,6 +30,12 @@ toobml:filterGroup
     lv2:name "EQ" ;
     lv2:symbol "filter" .
 
+toobml:sagGroup
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Transformer Sag" ;
+    lv2:symbol "sag" .
+
 
 
 <http://two-play.com/rerdavies#me>
@@ -44,21 +50,42 @@ toobml:filterGroup
                 doap:name "TooB ML Amplifier" ,
                 "TooB ML Amplifier"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        uiext:ui <http://two-play.com/plugins/toob-ml-ui>;
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
-         lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
 The TooB ML Amplifier plugin provides emulation of a variety of amplifiers and overdrive pedals that are implemented 
-using artifical intelligence/machine learning modelling of real amplifiers.
+using neural-network-based machine learning models of real amplifiers.
 
-A few models are trained to emulate the effects of the gain control on the amps that they model, but most are not.
+Generally, TooB ML uses smaller and more efficient neural networks than does TooB Neural Amp Modeller. As a result,
+TooB ML models use significantly less CPU, although TooB Neural Amp Modeller is significantly more flexible, and
+has a huge number of downloadable models.
+
+The BluesJR model has an additional Gain control the is used by the BluesJR model to simulate the effect of Blues Junior's gain control.
 
 For convenience, tone controls are provided for rough shaping of tone before the input signal is fed to the neural net models. The tone 
 section can be completely bypassed by setting all tone controls to exactly 0.5.
 
-The TooB ML Amplifier is based heavily on code from the RTNeural project (https://github.com/jatinchowdhury18/RTNeural), by Jatin Chowdhury,
-and uses model files from from the GuitarML Neural Pi project (https://github.com/GuitarML/NeuralPi).
+The Sag section models transformer sag using DSP simulation, since transformer sag is not captured well by neural network models. A modest amount 
+of transformer sag produces an amp simulation that feels  more "forgiving". The Sag section is not based on neural network modelling.
+
+To disable transformer modelling, set the Sag Out and Sag Feedback controls to zero. 
+
+The SagF control affects the cutoff frequency of a low-pass filter which is used to calculate the amount of transformer sag. Lower values produce a faster 
+onset; higher values produce a slower onset. Nominally, SagF should be set to 13Hz, which loosely models the transformer sag of a Fender Bassman based 
+on circuit simulations.
+
+The Sag Feedback control uses the calculated transformer voltage sag to scale the signal level of the input to the model. For models with gentle overdrive, it tends to keep the model operating in the sweet stop where the model is 
+on the edge of breakup. It does not work particularly well for models of heavily overdriven amplifiers. The effect of Sag Out is similar to that of an analog 
+compressor. Notionally, Sag Feedback models the effect of transformer sag on intermediate transformer stages (which causes them to clip at a lower level than
+they ordinarily would); and Sag Out models the effect of transformer sag on the final power stage of a guitar amplifier.
+
+
+The TooB ML Amplifier is based heavily on code ported from from the RTNeural project (https://github.com/jatinchowdhury18/RTNeural), by Jatin Chowdhury,
+and uses model files from the GuitarML Neural Pi project (https://github.com/GuitarML/NeuralPi).
 
 """ ;
 
@@ -87,13 +114,25 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 rdfs:comment "Input volume trim (pre-model)";
         ],  
         [
-                a lv2:InputPort, lv2:ControlPort ;
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
                 lv2:index 1 ;
+                lv2:symbol "trimOut" ;
+                lv2:name "";
+                lv2:default -35.0 ;
+                lv2:minimum -35.0 ;
+                lv2:maximum 10.0 ;    
+                units:unit units:db ;
+        ],
+        [
+                a lv2:InputPort, lv2:ControlPort ;
+                lv2:index 2 ;
                 lv2:symbol "model" ;
                 lv2:name "Model" ;
                 lv2:default 0.0 ; 
                 lv2:minimum 0.0 ;
-                lv2:maximum 1.0 ;
+                lv2:maximum 32.0 ;
                 lv2:portProperty lv2:enumeration ;
                 lv2:scalePoint 
                 [
@@ -234,33 +273,33 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 2  ;
+                lv2:index 3 ;
                 lv2:symbol "gain" ;
                 lv2:name "Gain";
                 lv2:default 3.0 ;
                 lv2:minimum 0.0 ;
                 lv2:maximum 10.0 ;
-                rdfs:comment "Model gain parameter (used by some but not all models)"
+                rdfs:comment "Model gain parameter (used by BluesJR model only)"
         ],  
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 3 ;
+                lv2:index 4 ;
                 lv2:symbol "master" ;
                 lv2:name "Master";
                 lv2:default 0.0 ;
                 lv2:minimum -30.0 ;
                 lv2:maximum 30.0 ;    
                 units:unit units:db ;
-                rdfs:comment "Output volume trim (pre-model)";
+                rdfs:comment "Output volume trim (post-model)";
         ],  
 
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 4 ;
+                lv2:index 5 ;
                 lv2:symbol "bass" ;
                 lv2:name "Bass";
 
@@ -275,7 +314,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 5 ;
+                lv2:index 6 ;
                 lv2:symbol "mid" ;
                 lv2:name "Mid";
 
@@ -295,7 +334,7 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 6 ;
+                lv2:index 7 ;
                 lv2:symbol "treble" ;
                 lv2:name "Treble";
 
@@ -309,31 +348,18 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 rdfs:comment "Treble eq (pre-model)";
         ],
         [
-                a lv2:OutputPort ,
-                lv2:ControlPort ;
-
-                lv2:portProperty epp:notOnGUI;
-                lv2:index 7 ;
-                lv2:symbol "gainEnable" ;
-                lv2:name "GainEnable";
-
-                lv2:default 0.1 ;
-                lv2:minimum 0.0 ;
-                lv2:maximum 1.0 ;
-
-        ],
-
-        [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
                 lv2:index 8 ;
                 lv2:symbol "sag" ;
-                lv2:name "Sag Vol";
+                lv2:name "Sag Out";
+                pg:group toobml:sagGroup ;
+
                 lv2:default 0.0 ;
                 lv2:minimum 0.0 ;
                 lv2:maximum 1.0;    
-                rdfs:comment "Transformer sag (volume)." ;
+                rdfs:comment "How much transformer sag affects output volume, post-model. Similar to an analog compressor effect." ;
         ],  
         [
                 a lv2:InputPort ,
@@ -341,24 +367,52 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
 
                 lv2:index 9 ;
                 lv2:symbol "sagd" ;
-                lv2:name "Sag Dist";
+                lv2:name "Sag Feedback";
+                pg:group toobml:sagGroup ;                
                 lv2:default 0.0 ;
                 lv2:minimum 0.0 ;
                 lv2:maximum 1.0;    
-                rdfs:comment "Transformer sag (distortion)." ;
+                rdfs:comment "Transformer sag feedback. How much transformer sag affects the input signal to the model. Tends to keep the model on the edge of breakup." ;
         ], 
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
 
+                lv2:index 10 ;
+                lv2:symbol "sagf" ;
+                lv2:name "SagF";
+                pg:group toobml:sagGroup ;
+                units:unit units:hz ;
 
+                lv2:default 13.0 ;
+                lv2:minimum 5.0 ;
+                lv2:maximum 25.0;    
+                rdfs:comment "Sag filter frequency." ;
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:portProperty epp:notOnGUI;
+                lv2:index 11 ;
+                lv2:symbol "gainEnable" ;
+                lv2:name "GainEnable";
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+
+        ],
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 10 ;
+                lv2:index 12 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ], [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 11 ;
+                lv2:index 13 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ]
@@ -367,9 +421,9 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 12 ;
+                lv2:index 14 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Plugin to GUI communication" ;
@@ -378,37 +432,22 @@ and uses model files from from the GuitarML Neural Pi project (https://github.co
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 13 ;
+                lv2:index 15 ;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Plugin to GUI communication" ;
-        ],
-        [
-                a atom:AtomPort ,
-                  lv2:OutputPort ;
-                atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
-                lv2:designation lv2:control ;
-                lv2:index 13 ;
-                lv2:symbol "notify" ;
-                lv2:name "Notify" ;
-                rdfs:comment "Plugin to GUI communication" ;
-        ],  
-        [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
-
-                lv2:index 14 ;
-                lv2:symbol "sagf" ;
-                lv2:name "SagF";
-                lv2:default 13.0 ;
-                lv2:minimum 5.0 ;
-                lv2:maximum 25.0;    
-                rdfs:comment "Sag filter Fc." ;
         ]
-
         .
 
 
+<http://two-play.com/plugins/toob-ml-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .

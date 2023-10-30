@@ -25,8 +25,10 @@
 namespace pipedal {
     using namespace std;
 
-    class inherit_priority_recursive_mutex: public recursive_mutex {
+
+
+    class inherit_priority_mutex: public mutex {
     public:
-        inherit_priority_recursive_mutex();
+        inherit_priority_mutex();
     };
 }; // namespace

@@ -36,12 +36,14 @@
                 doap:name "TooB Delay" ,
                 "TooB Delay"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        uiext:ui <http://two-play.com/plugins/toob-delay-ui> ;
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
-         lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
-A straighforward no-frills digital delay.
+A straightforward no-frills digital delay.
 
 """ ;
 
@@ -109,5 +111,16 @@ A straighforward no-frills digital delay.
                 lv2:name "Out"
         ]
         .
+
+<http://two-play.com/plugins/toob-delay-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
+
 
 

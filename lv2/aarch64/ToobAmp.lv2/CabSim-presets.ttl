@@ -1,0 +1,64 @@
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix tpset: <http://two-play.com/plugins/preset#> .
+
+tpset:toob-cab-sim-preset-0
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-cab-sim> ;
+    rdfs:label "Tweed 12\"" ;
+    lv2:port
+    [
+        lv2:symbol "locut" ;
+        pset:value 83.0 ;
+    ], [
+        lv2:symbol "bright" ;
+        pset:value 4.6 ;
+    ],  [
+        lv2:symbol "brightf" ;
+        pset:value 1460.0 ;
+    ],  [
+        lv2:symbol "hicut" ;
+        pset:value 6000.0 ;
+    ], [
+        lv2:symbol "comb" ;
+        pset:value 0.93 ;
+    ],  [
+        lv2:symbol "combf" ;
+        pset:value 4690.0 ;
+    ], [
+        lv2:symbol "trim" ;
+        pset:value 1.5 ;
+    ]
+     .
+
+tpset:toob-cab-sim-preset-1
+    a pset:Preset ; 
+    lv2:appliesTo <http://two-play.com/plugins/toob-cab-sim> ;
+    rdfs:label "Marshall 4x12" ;
+    lv2:port
+    [
+        lv2:symbol "locut" ;
+        pset:value 126.0 ;
+    ], [
+        lv2:symbol "bright" ;
+        pset:value 8.5 ;
+    ],  [
+        lv2:symbol "brightf" ;
+        pset:value 3160.0 ;
+    ],  [
+        lv2:symbol "hicut" ;
+        pset:value 5390.0 ;
+    ], [
+        lv2:symbol "comb" ;
+        pset:value 0.0 ;
+    ],  [
+        lv2:symbol "combf" ;
+        pset:value 7410.0 ;
+    ], [
+        lv2:symbol "trim" ;
+        pset:value 3.2  ;
+    ]
+     .
+
+

@@ -14,11 +14,12 @@
 
 @prefix atom: <http://lv2plug.in/ns/ext/atom#> .
 @prefix patch: <http://lv2plug.in/ns/ext/patch#> .
-@prefix plug: <http://two-play.com/plugins/toob-tone-stack#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix pipedalui: <http://github.com/rerdavies/pipedal/ui#> .
+
 @prefix toobtuner: <http://two-play.com/plugins/toob-tuner#> .
 
 
@@ -34,12 +35,14 @@
         a lv2:Plugin ,
                 lv2:AnalyserPlugin ;
         doap:name "TooB Tuner";
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        uiext:ui <http://two-play.com/plugins/toob-tuner-ui>;
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
-         lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
-A chromatic guitar tuner.
+TooB Tuner is a chromatic guitar tuner.
 """ ;
 
         lv2:requiredFeature urid:map, work:schedule ;
@@ -48,12 +51,42 @@ A chromatic guitar tuner.
 
         lv2:port
         [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 0 ;
+                lv2:symbol "FREQ" ;
+                lv2:name "Freq";
+                units:unit units:midiNote ;
+
+                lv2:default -1.0 ;
+                lv2:minimum -1.0 ;
+                lv2:maximum 128.0 ;
+        ],        
+        [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index  0;
+                lv2:portProperty lv2:integer;
+
+                lv2:index 1 ;
+                lv2:symbol "MUTE" ;
+                lv2:name "Mute";
+                rdfs:comment "Mute plugin output" ;
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+                lv2:portProperty lv2:toggled;                
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2;
                 lv2:symbol "REFFREQ" ;
-                lv2:name "RefFreq";
+                lv2:name "Ref Freq";
+                rdfs:comment "The pitch standard frequency of the note A4" ;
                 lv2:default 440 ;
                 lv2:minimum 425;
                 lv2:maximum 455 ;    
@@ -64,9 +97,10 @@ A chromatic guitar tuner.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 1 ;
+                lv2:index 3 ;
                 lv2:symbol "THRESHOLD" ;
                 lv2:name "Threshold";
+                rdfs:comment "The minimum volume of the input signal for which pitch values will be displayed." ;
 
 
                 lv2:default -37 ;
@@ -74,32 +108,7 @@ A chromatic guitar tuner.
                 lv2:maximum 0 ;
                 units:unit units:db ;
 
-        ], [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
-
-                lv2:portProperty lv2:integer;
-
-                lv2:index 2 ;
-                lv2:symbol "MUTE" ;
-                lv2:name "Mute";
-
-                lv2:default 0.0 ;
-                lv2:minimum 0.0 ;
-                lv2:maximum 1.0 ;
-        ],  
-        [
-                a lv2:OutputPort ,
-                lv2:ControlPort ;
-
-                lv2:index 3 ;
-                lv2:symbol "FREQ" ;
-                lv2:name "Freq";
-
-                lv2:default 0.0 ;
-                lv2:minimum 0.0 ;
-                lv2:maximum 1200.0 ;
-        ],        
+        ], 
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
@@ -118,7 +127,6 @@ A chromatic guitar tuner.
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 lv2:index 6 ;
                 lv2:symbol "control" ;
@@ -128,7 +136,6 @@ A chromatic guitar tuner.
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 lv2:index 7 ;
                 lv2:symbol "notify" ;
@@ -137,4 +144,13 @@ A chromatic guitar tuner.
         ]        
         .
 
+<http://two-play.com/plugins/toob-tuner-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
 

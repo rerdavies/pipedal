@@ -21,17 +21,15 @@
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix toob: <http://two-play.com/plugins/toob#> .
 
+@prefix cabsim: <two-play.com/plugins/toob-cab-sim#> .
 
-<http://two-play.com/plugins/toob#frequencyResponseVector>
-        a lv2:Parameter ;
-        rdfs:label "frequencyResponseVector" ;
-        rdfs:range atom:Vector .
-
-<http://two-play.com/plugins/toob-cab-sim#uiState>
-        a lv2:Parameter ;
-        rdfs:label "uiState" ;
-        rdfs:range atom:Vector .
+toob:frequencyResponseVector
+        a lv2:Parameter;
+        rdfs:label "Frequency Response";
+        rdfs:range atom:Vector.
 
 
 <http://two-play.com/rerdavies#me>
@@ -40,184 +38,200 @@
 	foaf:mbox <mailto:rerdavies@gmail.com> ;
 	foaf:homepage <https://github.com/sponsors/rerdavies> .
 
+
 <http://two-play.com/plugins/toob-cab-sim>
-        a lv2:Plugin ,
-                lv2:SimulatorPlugin ;
-        doap:name "TooB Cab Simulator" ,
-                "TooB Cab Simulator"@en-gb 
-                ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
-        doap:maintainer <http://two-play.com/rerdavies#me> ;
-         lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
-        rdfs:comment "TooB amplifier cabinet simulator." ;
+    a lv2:Plugin ,
+            lv2:SimulatorPlugin ;
+    doap:name "TooB Cab Simulator" ,
+            "TooB Cab Simulator"@en-gb 
+            ;
+    uiext:ui <http://two-play.com/plugins/toob-cab-sim-ui>;
+    doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
+    doap:maintainer <http://two-play.com/rerdavies#me> ;
+    lv2:minorVersion 0 ;
+    lv2:microVersion 30 ;
 
-        mod:brand "TooB";
-        mod:label "TooB CabSim";
-        lv2:requiredFeature urid:map ;
-        lv2:optionalFeature lv2:hardRTCapable;
-        patch:readable 
-                <http://two-play.com/plugins/toob#frequencyResponseVector>, 
-                <http://two-play.com/plugins/toob-cab-sim#uiState>;
+    mod:brand "TooB";
+    mod:label "TooB CabSim";
+    lv2:requiredFeature urid:map ;
+    lv2:optionalFeature lv2:hardRTCapable;
+    patch:readable 
+            toob:frequencyResponseVector;
+
 rdfs:comment """
-The TooB Cabinet simulator provides EQ tools for emulating cabinet response. See the presets for 
-emulations of well-known cabinets. 
+TooB Cab Simulator provides EQ tools for emulating cabinet response without incurring the heavy cost of 
+impulse-response based cabinet simulators. 
 
-The TooB Cabinet Simulator is part of the TooB Amp Emulation Toolkit. Typically, you would 
-use the following plugins in the following order:
-
-- TooB Input Stage
-
-- TooB Tone Stack
-
-- Toob Power Stage
-
-- Toob Cabinet Simulator
-
+See the plugin's presets for emulations of well-known cabinets. 
 
 """;
-        lv2:port
-        [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
+    lv2:port
+    [
+        a lv2:InputPort ,
+        lv2:ControlPort ;
 
-                lv2:index 0 ;
-                lv2:symbol "locut" ;
-                lv2:name "Lo Cut";
-                lv2:default 120.0 ;
-                lv2:minimum 30.0 ;
-                lv2:maximum 300.0 ;    
-                units:unit units:hz ;
-                lv2:scalePoint [
-                        rdfs:label "30Hz" ;
-                        rdf:value 30.0
-                ],  [
-                        rdfs:label "300Hz" ;
-                        rdf:value 300
-                ];
-                rdfs:comment "Low cutoff frequency. 30hz to 300hz. Set to minimum to disable." ;
-        ], [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
+        lv2:index 0 ;
+        lv2:symbol "locut" ;
+        lv2:name "Lo Cut";
+        lv2:default 83.0 ;
+        lv2:minimum 30.0 ;
+        lv2:maximum 300.0 ;    
+        units:unit units:hz ;
+        lv2:scalePoint [
+                rdfs:label "Off" ;
+                rdf:value 30.0;
+        ];
+        rdfs:comment "Low cutoff frequency. Set to minimum to disable." ;
+    ], [
+        a lv2:InputPort ,
+        lv2:ControlPort ;
 
-                lv2:index 1 ;
-                lv2:symbol "bright" ;
-                lv2:name "Bright";
-                lv2:default 0.0 ;
-                lv2:minimum 0.0 ;
-                lv2:maximum 20.0 ;    
-                units:unit units:db;
-                lv2:scalePoint [
-                        rdfs:label "0dB" ;
-                        rdf:value 0.0
-                ] , [
-                        rdfs:label "10dB" ;
-                        rdf:value 10
-                ] , [
-                        rdfs:label "20dB" ;
-                        rdf:value 20
-                ];
-                rdfs:comment "Bright boost (0db to 20db)." ;
+        lv2:index 1 ;
+        lv2:symbol "bright" ;
+        lv2:name "Bright";
+        lv2:default 0.0 ;
+        lv2:minimum 0.0 ;
+        lv2:maximum 20.0 ;    
+        units:unit units:db;
+        lv2:scalePoint [
+                rdfs:label "Off" ;
+                rdf:value 0.0;
+        ];
+        rdfs:comment "Bright filter boost. Set to minimum to disable." ;
 
-        ],  [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
+    ],  [
+        a lv2:InputPort ,
+        lv2:ControlPort ;
 
-                lv2:index 2 ;
-                lv2:symbol "brightf" ;
-                lv2:name "BrightF";
-                lv2:default 1300.0 ;
-                lv2:minimum 1000.0 ;
-                lv2:maximum 5000.0;    
-                units:unit units:hz;
-                lv2:designation param:cutoffFrequency ;
-                rdfs:comment "Bright boost frequency. (1khz to 8khz)" ;
+        lv2:index 2 ;
+        lv2:symbol "brightf" ;
+        lv2:name "BrightF";
+        lv2:default 1300.0 ;
+        lv2:minimum 1000.0 ;
+        lv2:maximum 5000.0;    
+        units:unit units:hz;
+        lv2:designation param:cutoffFrequency ;
+        rdfs:comment "Bright filter cutoff frequency." ;
 
-        ],  [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
+    ],  [
+        a lv2:InputPort ,
+        lv2:ControlPort ;
 
-                lv2:index 3 ;
-                lv2:symbol "hicut" ;
-                lv2:name "Hi Cut";
-                lv2:default 6000.0 ;
-                lv2:minimum 2000.0 ;
-                lv2:maximum 13000.0;    
-                units:unit units:hz;
-                lv2:portProperty epp:logarithmic;
-                lv2:designation param:cutoffFrequency ;
-                rdfs:comment "Hi cutoff frequency. 2khz to 13khz. Set to maximum to disable." ;
-        ], [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
+        lv2:index 3 ;
+        lv2:symbol "hicut" ;
+        lv2:name "Hi Cut";
+        lv2:default 6000.0 ;
+        lv2:minimum 2000.0 ;
+        lv2:maximum 13000.0;    
+        units:unit units:hz;
+        lv2:portProperty epp:logarithmic;
+        lv2:designation param:cutoffFrequency ;
+        rdfs:comment "Hi cutoff frequency. Set to maximum to disable." ;
+        lv2:scalePoint [
+                rdfs:label "Off" ;
+                rdf:value 13000.0;
+        ] ;
+    ], [
+        a lv2:InputPort ,
+        lv2:ControlPort ;
 
-                lv2:index 4 ;
-                lv2:symbol "comb" ;
-                lv2:name "Comb";
-                lv2:default 0.0 ;
-                lv2:minimum 0.0 ;
-                lv2:maximum 1.0;    
-                rdfs:comment "Amount of comb filtering. 0 to 1. Set to minimum to disable." ; 
-        ],  [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
+        lv2:index 4 ;
+        lv2:symbol "comb" ;
+        lv2:name "Comb";
+        lv2:default 0.32 ;
+        lv2:minimum 0.0 ;
+        lv2:maximum 1.0;    
+        rdfs:comment "Amount of comb filtering. Set to minimum to disable." ; 
+    ],  [
+        a lv2:InputPort ,
+        lv2:ControlPort ;
 
-                lv2:index 5 ;
-                lv2:symbol "combf" ;
-                lv2:name "Comb F";
-                lv2:default 2000.0 ;
-                lv2:minimum 1000.0 ;
-                lv2:maximum 8000.0;    
-                units:unit units:hz;
-                lv2:designation param:cutoffFrequency ;
-                rdfs:comment "Comb filter frequency. (1khz to 8khz)" ;
-        ], [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
+        lv2:index 5 ;
+        lv2:symbol "combf" ;
+        lv2:name "Comb F";
+        lv2:default 8000.0 ;
+        lv2:minimum 1000.0 ;
+        lv2:maximum 10000.0;    
+        units:unit units:hz;
+        lv2:designation param:cutoffFrequency ;
+        rdfs:comment "Comb filter notch frequency." ;
+    ], [
+        a lv2:InputPort ,
+        lv2:ControlPort ;
 
-                lv2:index 6 ;
-                lv2:symbol "trim" ;
-                lv2:name "Trim";
-                lv2:default 0.0 ;
-                lv2:minimum -30.0 ;
-                lv2:maximum 30.0;    
-                units:unit units:db;
-                rdfs:comment "Master volume trim. (-30db to + 30db)" ;
-        ], 
-        [
-                a lv2:AudioPort ,
-                        lv2:InputPort ;
-                lv2:index 7 ;
-                lv2:symbol "in" ;
-                lv2:name "In"
-        ] , 
-        [
-                a lv2:AudioPort ,
-                        lv2:OutputPort ;
-                lv2:index 8 ;
-                lv2:symbol "out" ;
-                lv2:name "Out"
-        ], [
-                a atom:AtomPort ,
-                  lv2:InputPort;
-                atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
-                lv2:designation lv2:control ;
-                lv2:index 9 ;
-                lv2:symbol "control" ;
-                lv2:name "Control" ;
-                rdfs:comment "Plugin to GUI communication" ;
-        ] , [
-                a atom:AtomPort ,
-                  lv2:OutputPort ;
-                atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
-                lv2:designation lv2:control ;
-                lv2:index 10 ;
-                lv2:symbol "notify" ;
-                lv2:name "Notify" ;
-                rdfs:comment "Plugin to GUI communication" ;
-        ]
-        .
+        lv2:index 6 ;
+        lv2:symbol "trim" ;
+        lv2:name "Trim";
+        lv2:default 1.5 ;
+        lv2:minimum -30.0 ;
+        lv2:maximum 30.0;    
+        units:unit units:db;
+        rdfs:comment "Output leveltrim." ;
+    ], 
+    [
+        a lv2:AudioPort ,
+                lv2:InputPort ;
+        lv2:index 7 ;
+        lv2:symbol "in" ;
+        lv2:name "In"
+    ] , 
+    [
+        a lv2:AudioPort ,
+                lv2:OutputPort ;
+        lv2:index 8 ;
+        lv2:symbol "out" ;
+        lv2:name "Out"
+    ], [
+        a atom:AtomPort ,
+            lv2:InputPort;
+        atom:bufferType atom:Sequence ;
+        # atom:supports patch:Message;
+        lv2:designation lv2:control ;
+        lv2:index 9 ;
+        lv2:symbol "control" ;
+        lv2:name "Control" ;
+        rdfs:comment "Plugin to GUI communication" ;
+    ] , [
+        a atom:AtomPort ,
+            lv2:OutputPort ;
+        atom:bufferType atom:Sequence ;
+        # atom:supports patch:Message;
+        lv2:designation lv2:control ;
+        lv2:index 10 ;
+        lv2:symbol "notify" ;
+        lv2:name "Notify" ;
+        rdfs:comment "Plugin to GUI communication" ;
+    ]
+    .
+
+<http://two-play.com/plugins/toob-cab-sim-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
+
+<http://two-play.com/plugins/toob-cab-sim> 
+     pipedal_ui:ui <http://two-play.com/plugins/toob-cab-sim#piPedalUI>.
+
+
+<http://two-play.com/plugins/toob-cab-sim#piPedalUI> 
+    a pipedal_ui:ui ;
+    pipedal_ui:frequencyPlot
+    [
+        lv2:index 0 ;
+        pipedal_ui:patchProperty toob:frequencyResponseVector;
+        pipedal_ui:xLeft 30 ;
+        pipedal_ui:xRight 22050 ;
+        pipedal_ui:yTop 10 ;
+        pipedal_ui:yBottom -35 ;
+        pipedal_ui:xLog 1 ;
+        pipedal_ui:yDb 1 ;
+        pipedal_ui:width 236 ;
+    ]
+    .
 
 

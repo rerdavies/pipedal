@@ -27,10 +27,11 @@
 
 @prefix toobcr: <http://two-play.com/plugins/toob-convolution-reverb#> .
 @prefix toobimpulse: <http://two-play.com/plugins/toob-impulse#> .
-                      
+
+
 toobimpulse:impulseFile
         a lv2:Parameter;
-        rdfs:label "File";
+        rdfs:label "Reverb Impulse File";
         rdfs:range atom:Path.
 
 
@@ -46,64 +47,64 @@ toobimpulse:impulseFile
         doap:name "TooB Convolution Reverb" ,
                 "TooB Convolution Reverb"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        uiext:ui <http://two-play.com/plugins/convolution-reverb-ui> ;
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
-         lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
 
 Convolution reverb is a notoriously compute-intensive effect. If you are having performance issues,  use the Max T control to constrain the length of the impulse file to
 under two seconds. 
 
-The Max T control affects how much of the impulse file is used. If the length of the impulse file is longer than the specified time, samples occuring after 
-the specified time are discarded, and the tail of the impulse convolution is fed back into the imput of the convolution. This ensures a smooth reverb tail, 
+The Max T control affects how much of the impulse file is used. If the length of the impulse file is longer than the specified time, samples occurring after 
+the specified time are discarded, and the tail of the impulse convolution is fed back into the input of the convolution. This ensures a smooth reverb tail, 
 and has little effect on the quality of the resulting reverb. If the impulse file is shorter than the specified time, then all samples in the impulse 
-file are used, and no feedback occurs. 
+file are used, and no feedback occurs. You can often get smooth reverbs that preserve most of the character of the impulse file with Max T set to 
+250ms or less.
 
-Because reverb impulse files typically include the original sound, you will often get strange comb filter effects if you use the Direct mix control;
+Because reverb impulse files often include the original sound, you will sometimes get strange comb filter effects if you use the Direct mix control;
 but this varies depending on the impulse file in question. Usually, the Direct mix control should be set to -INF.
 
-The Predelay control determines whether Toob Convolution Reverb will strip leading silence from the impulse data. Turning it on preserves silence in the
+The Predelay control determines whether Toob Convolution Reverb will strip leading silence from the impulse data. Turning it on preserves leading silence in the
 impulse signal; turning it off removes leading silence. If the the Direct mix control is set to -INF dB, there's no real point in 
-delaying the convolution reverb output; you want responses as quickly as possible; the Predelay control should be set to off.
+delaying the convolution reverb output; you want responses as quickly as possible. The Predelay control should be set to off.
  The leading silence in impulse files can sometimes be quite significant. 
 
-If the input file has 4 channels, Toob Convolution Reverb assumes the signal is in Ambisonic b-format, and downmixes the ambisonic channels to mono. To generate
+If the impulse file has 4 channels, Toob Convolution Reverb assumes the signal is in Ambisonic b-format, and down-mixes the ambisonic channels to mono. To generate
 stereo reverb effects from ambisonic audio, use the stereo version of this plugin.
 
 Toob Convolution Reverb comes with a nominal set of reverb impulse files to get you started. You are strongly encouraged to explore the rich collections of
 reverb impulse files that are widely available on the internet. 
 
-Special thanks are extended to the the OpenAir project, wich graciously provided the base set of impulse files distributed with Toob Convolution Reverb under 
-licensing terms that are compatible with the Toob Amp project's licensing terms.
+Special thanks are extended to the the OpenAir project, which graciously provided the base set of impulse files
+distributed with Toob Convolution Reverb under licensing terms that are compatible with the Toob Amp project's
+licensing terms.
 
 ---
 
-Toob Convolution Reverb's impulse files were provided by the OpenAir project.
-https://www.openair.hosted.york.ac.uk, under CC-By-4.0 licenses.
+Toob Convolution Reverb's impulse files were provided by the OpenAir project 
+(https://www.openair.hosted.york.ac.uk) under CC-By-4.0 licenses. 
 
+See the full text of the Creative Commons Attribution 4.0 International Public License given below for Disclaimers of Warrantees and 
+Limitations of Liability that apply to these works.
 
+##### Arthur Sykes Rymer Auditorium.wav
 
-Arthur Sykes Rymer Auditorium.wav
+Copyright © www.openairlib.net, University of York
 
----------------------------------------
-
-By: www.openairlib.net, University of York
-
-This work is provided under a Creative Commons Attribution 4.0 International License.
+This work is provided under a Creative Commons Attribution 4.0 International Public License.
 
 https://creativecommons.org/licenses/by/4.0/
 
 Source: https://www.openair.hosted.york.ac.uk/?page_id=425
 
 
-Jack Lyons Hall, University of York.wav
+##### Jack Lyons Hall, University of York.wav
 
----------------------------------------
+Copyright © www.openairlib.net, Audiolab University of York, Alex Duffell, Aishwarya Sridhar, Zhong Li
 
-By: www.openairlib.net, Audiolab University of York, Alex Duffell, Aishwarya Sridhar, Zhong Li
-
-This work is provided under a Creative Commons Attribution 4.0 International License.
+This work is provided under a Creative Commons Attribution 4.0 International Public License.
 
 https://creativecommons.org/licenses/by/4.0/
 
@@ -111,39 +112,34 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=571
 
 
 
-Koli National Park - Winter.wav
+##### Koli National Park - Winter.wav
 
----------------------------------------
+Copyright © www.openairlib.net, Audio Lab University of York, Andrew Chadwick, Simon Shelley
 
-By: www.openairlib.net, Audio Lab University of York, Andrew Chadwick, Simon Shelley
+This work is provided under a Creative Commons Attribution 4.0 International Public License.
 
-This work is provided under a Creative Commons Attribution 4.0 International License.
 https://creativecommons.org/licenses/by/4.0/
 
 Source: https://www.openair.hosted.york.ac.uk/?page_id=584
 
 
 
-St. Margaret’s Church.wav
+##### St. Margaret’s Church.wav
 
----------------------------------------
+Copyright © www.openairlib.net, AudioLab University of York, www.ncem.co.uk
 
-By: www.openairlib.net, AudioLab University of York, www.ncem.co.uk
-
-This work is provided under a Creative Commons Attribution 4.0 International License.
+This work is provided under a Creative Commons Attribution 4.0 International Public License.
 
 https://creativecommons.org/licenses/by/4.0/
 
 Source: https://www.openair.hosted.york.ac.uk/?page_id=702
 
 
-Genesis 6 Studio Live Room.wav
+##### Genesis 6 Studio Live Room.wav
 
----------------------------------------
+Copyright © www.openairlib.net
 
-By: www.openairlib.net
-
-This work is provided under a Creative Commons Attribution 4.0 International License.
+This work is provided under a Creative Commons Attribution 4.0 International Public License.
 
 https://creativecommons.org/licenses/by/4.0/
 
@@ -155,7 +151,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
         mod:label "TooB CReverb";
         lv2:requiredFeature urid:map;
         lv2:optionalFeature state::freePath, state:makePath, state:mapPath, work:schedule ;
-        lv2:extensionData state:interface;
+        lv2:extensionData state:interface, work:interface;
 
 
         lv2:optionalFeature lv2:hardRTCapable;
@@ -180,7 +176,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
 
                 lv2:default 1.5 ;
                 lv2:minimum 0.1 ;
-                lv2:maximum 10.0 ;    
+                lv2:maximum 10.0 ;
 
                 lv2:portProperty epp:notAutomatic ;
                 lv2:portProperty epp:expensive ;
@@ -189,7 +185,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
 
                 rdfs:comment "Maximum length of impulse data to use." ;
 
-        ],  
+        ],
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
@@ -199,7 +195,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 lv2:name "Direct";
                 lv2:default -40.0 ;
                 lv2:minimum -40.0 ;
-                lv2:maximum 20.0 ;    
+                lv2:maximum 20.0 ;
                 units:unit units:db ;
 
                 lv2:scalePoint [
@@ -208,7 +204,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 ];
                 rdfs:comment "Direct mix. Set to minimum to disable." ;
 
-        ],          
+        ],
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
@@ -219,7 +215,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
 
                 lv2:default -10.0 ;
                 lv2:minimum -40.0 ;
-                lv2:maximum 20.0 ;    
+                lv2:maximum 20.0 ;
                 units:unit units:db ;
 
                 lv2:scalePoint [
@@ -238,7 +234,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
 
                 lv2:default 1 ;
                 lv2:minimum 0 ;
-                lv2:maximum 1 ;    
+                lv2:maximum 1 ;
                 
                 lv2:portProperty lv2:enumeration ;
 
@@ -264,7 +260,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 lv2:portProperty lv2:enumeration ;
                 lv2:default 0.0 ;
                 lv2:minimum 0.0 ;
-                lv2:maximum 5.0 ;    
+                lv2:maximum 5.0 ;
 
 				# NotLoaded = 0,
 				# Idle = 1,
@@ -312,7 +308,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 atom:supports patch:Message ;
 
@@ -324,7 +320,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 lv2:index 8;
                 lv2:symbol "notify" ;
@@ -341,26 +337,31 @@ toobcr:ui
         pipedal_ui:fileProperties 
         [
                 a pipedal_ui:fileProperty;
-                rdfs:label "Impulse File" ;
-                lv2:index 4 ;
+                rdfs:label "Reverb Impulse File" ;
+                lv2:index 3 ;
                 pipedal_ui:patchProperty toobimpulse:impulseFile ;
                 pipedal_ui:directory "ReverbImpulseFiles";
+                pipedal_ui:resourceDirectory "impulseFiles/reverb";
                 pipedal_ui:fileTypes 
                 [
                         a pipedal_ui:fileType;
-                        rdfs:label "WAV File";
+                        rdfs:label "WAV files";
                         pipedal_ui:mimeType "audio/wav";
                 ],
                 [
                         a pipedal_ui:fileType;
-                        rdfs:label "FLAC File";
+                        rdfs:label "FLAC files";
                         pipedal_ui:mimeType "audio/flac";
                 ]                ;
-        ];
-        ui:portNotification 
-        [
-                lv2:symbol "loading_state";
-                ui:plugin <http://two-play.com/plugins/toob-convolution-reverb>;
-                ui:protocol ui:floatProtocol;
         ]
         .
+
+<http://two-play.com/plugins/convolution-reverb-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .

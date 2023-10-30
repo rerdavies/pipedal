@@ -45,26 +45,35 @@ toobNam:eqGroup
     lv2:symbol "eqGroup" .
 
 
+
 <http://two-play.com/plugins/toob-nam>
         a lv2:Plugin ,
                 lv2:AmplifierPlugin ;
         doap:name "TooB Neural Amp Modeler" ,
                 "TooB Neural Amp Modeler"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+
+        uiext:ui <http://two-play.com/plugins/toob-nam-ui> ;
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
-         lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
 A port of Steven Atkinson's Neural Amp Modeler to LV2. 
 
-TooB Neural Amp Modeler uses uplodable .nam model files. Download .nam files from http://tonehunt.org, and then upload them to TooB Neural Amp Modeler.
+TooB Neural Amp Modeler uses uploadable .nam model files. Download .nam files from http://tonehunt.org, and then load them into TooB Neural Amp Modeler. 
 
-https://tonehunt.org provides a huge selection of downloadable amp model files. 
+If you are using TooB Neural Amp Modeler from PiPedal, download the model files to the system on which you are running the client. You must then
+upload the file to the PiPedal server. Click on the "Model" control and then search for the Upload button in the file browser. Once uploaded to the server,
+you can then select the uploaded file in the browser directly.
+
+If you are not using PiPedal, just click on the Model control, and use the file browser to select the .nam file on your local system.
 
 TooB Neural Amp Modeler supports a much wider range of amp models than ToobML, but usually uses much more CPU. 
-You will need at least a Pi 4 to use Toob Neural Amp Modeler. If you are having trouble with CPU usage, tonehunt.org 
-does contain some smaller amp models. Search for the "feather" tag to find models that use less CPU.
+You will need at least a Pi 4 to use Toob Neural Amp Modeler, and you may need to increase your audio buffer sizes to prevent overruns. 
+If you are having trouble with CPU usage, tonehunt.org does contain some smaller amp models. Search for the "feather" tag to find
+models that use less CPU.
 
 If you are interested in building your own amp models, please visit https://www.neuralampmodeler.com/
 
@@ -95,6 +104,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+
 """ ;
 
         mod:brand "TooB";
@@ -115,21 +125,34 @@ SOFTWARE.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index  0;
+                lv2:index 0;
                 lv2:symbol "inputGain" ;
                 lv2:name "Input Gain";
                 lv2:default 0.0 ;
-                lv2:minimum -20.0;
-                lv2:maximum 20.0;
+                lv2:minimum -40.0;
+                lv2:maximum 40.0;
                 units:unit units:db;
                 rdfs:comment "Input gain";
+
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 1;
+                lv2:symbol "inputGainOut" ;
+                lv2:name "";
+                lv2:default -35.0 ;
+                lv2:minimum -35.0;
+                lv2:maximum 20.0;
+                units:unit units:db;
 
         ],
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index  1;
+                lv2:index 2;
                 lv2:symbol "outputGain" ;
                 lv2:name "Output Gain";
                 lv2:default 0.0 ;
@@ -137,15 +160,16 @@ SOFTWARE.
                 lv2:maximum 40.0;
                 units:unit units:db;
                 rdfs:comment "Output gain";
+
         ],
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index  2;
+                lv2:index 3;
                 lv2:symbol "gate" ;
                 lv2:name "Noise Gate";
-                lv2:default -80.0 ;
+                lv2:default -100.0 ;
                 lv2:minimum -100.0;
                 lv2:maximum 0.0;
                 rdfs:comment "Noise gate threshold. Set to minimum to disable.";
@@ -161,7 +185,7 @@ SOFTWARE.
                 a lv2:OutputPort ,
                 lv2:ControlPort ;
 
-                lv2:index  3;
+                lv2:index 4;
                 lv2:symbol "gateOut" ;
                 lv2:name "\u00A0";
                 lv2:default 0.0;
@@ -169,56 +193,17 @@ SOFTWARE.
                 lv2:maximum 1.0;
                 rdfs:comment "Gate Status";
                 lv2:portProperty lv2:toggled;
-        ],
-        [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
-
-                lv2:index  4;
-                lv2:symbol "bass" ;
-                lv2:name "Bass";
-                lv2:default 5.0;
-                lv2:minimum 0.0;
-                lv2:maximum 10.0;
-                rdfs:comment "Bass";
-                pg:group toobNam:eqGroup ;
 
         ],
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index  5;
-                lv2:symbol "mid" ;
-                lv2:name "Mid";
-                lv2:default 5.0;
-                lv2:minimum 0.0;
-                lv2:maximum 10.0;
-                rdfs:comment "Mid";
-                pg:group toobNam:eqGroup ;
-        ],
-        [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
-
-                lv2:index  6;
-                lv2:symbol "treble" ;
-                lv2:name "Treble";
-                lv2:default 5.0;
-                lv2:minimum 0.0;
-                lv2:maximum 10.0;
-                rdfs:comment "Bass";
-                pg:group toobNam:eqGroup ;
-        ],
-        [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
-
-                lv2:index 7 ;
+                lv2:index 5 ;
                 lv2:symbol "toneStack" ;
                 lv2:name "Type";
-                lv2:default 0.0 ;
-                lv2:minimum 2.0 ;
+                lv2:default 3.0 ;
+                lv2:minimum 0.0 ;
                 lv2:maximum 3.0; 
                 lv2:portProperty lv2:enumeration ;
 
@@ -235,20 +220,61 @@ SOFTWARE.
                         rdfs:label "Bypass" ;
                         rdf:value 3.0
                 ];   
+                rdfs:comment "Tonestack type";
                 pg:group toobNam:eqGroup ;
 
         ],
         [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 6;
+                lv2:symbol "bass" ;
+                lv2:name "Bass";
+                lv2:default 5.0;
+                lv2:minimum 0.0;
+                lv2:maximum 10.0;
+                rdfs:comment "Bass";
+                pg:group toobNam:eqGroup ;
+
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 7;
+                lv2:symbol "mid" ;
+                lv2:name "Mid";
+                lv2:default 5.0;
+                lv2:minimum 0.0;
+                lv2:maximum 10.0;
+                rdfs:comment "Mid";
+                pg:group toobNam:eqGroup ;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 8;
+                lv2:symbol "treble" ;
+                lv2:name "Treble";
+                lv2:default 5.0;
+                lv2:minimum 0.0;
+                lv2:maximum 10.0;
+                rdfs:comment "Bass";
+                pg:group toobNam:eqGroup ;
+        ],
+        [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 8 ;
+                lv2:index 9 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 9 ;
+                lv2:index 10 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ],
@@ -256,11 +282,11 @@ SOFTWARE.
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
                 atom:supports patch:Message ;
 
-                lv2:index 10 ;
+                lv2:index 11 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Control" ;
@@ -268,14 +294,26 @@ SOFTWARE.
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 11;
+                lv2:index 12;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Notification" ;
         ]
         .
+
+
+
+<http://two-play.com/plugins/toob-nam-ui>
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
 
 <http://two-play.com/plugins/toob-nam>  pipedal_ui:ui toobNam:ui .
 
@@ -287,7 +325,7 @@ toobNam:ui
                 a pipedal_ui:fileProperty;
                 rdfs:label "Model (*.nam)" ;
                 pipedal_ui:directory "NeuralAmpModels";
-                lv2:index 8 ;
+                lv2:index 2 ;
                 pipedal_ui:patchProperty toobNam:modelFile ;
                 pipedal_ui:fileTypes 
                 [
@@ -302,8 +340,7 @@ toobNam:ui
                 pipedal_ui:patchProperty toobNam:FrequencyResponse;
                 lv2:index 7 ;
                 pg:group toobNam:eqGroup ;
-                
-                pipedal_ui:width: 60;
+                pipedal_ui:width: 200;
         ]
 
         .

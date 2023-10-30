@@ -6,9 +6,9 @@ using namespace std;
 
 
 
-inherit_priority_recursive_mutex::inherit_priority_recursive_mutex()
+inherit_priority_mutex::inherit_priority_mutex()
 {
-#ifdef __linux__ // (I think windows mutexes have priority inheritance alread)
+#ifdef __linux__ // (windows mutexes do NOT have priority inheritance alread)
 
     // Recreate the raw mutex with priory inheritance.
     ::pthread_mutex_destroy(native_handle());

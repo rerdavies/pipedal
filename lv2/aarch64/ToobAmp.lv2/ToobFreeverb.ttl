@@ -36,14 +36,18 @@
                 doap:name "TooB Freeverb" ,
                 "TooB Freeverb"@en-gb 
                 ;
-        doap:license <https://two-play.com/TooB/licenses/isc> ;
+        uiext:ui <http://two-play.com/plugins/toob-freeverb-ui>;                
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:microVersion 30 ;
         rdfs:comment """
-ToobFreeverb is an Lv2 implementation of the famous Freeverb reverb effect.
+Toob Freeverb is an Lv2 implementation of the famous Freeverb reverb effect. FreeVerb delivers a well-balanced reverb with very little tonal coloration.
 
-The core implementation is taken from the The Synthesis Toolkit in C++ (STK), https://github.com/thestk/stk, Perry R. Cook and Gary P. Scavone.
+The original FreeVerb implementation was placed into the public domain by "Jezar at Dreampoint".
+
+The TooB implementation is ported from the Synthesis Toolkit in C++ (STK), by Perry R. Cook and Gary P. Scavone. https://github.com/thestk/stk
 
 """ ;
 
@@ -117,6 +121,16 @@ The core implementation is taken from the The Synthesis Toolkit in C++ (STK), ht
                 lv2:symbol "outR" ;
                 lv2:name "OutR"
         ]
+        .
+
+<http://two-play.com/plugins/toob-freeverb-ui> 
+        a  uiext:X11UI ;
+        lv2:binary <ToobAmpUI.so>;
+
+        lv2:extensionData uiext::idle ;
+        lv2:extensionData uiext:resize ;
+        lv2:extensionData uiext:idleInterface;
+        lv2:requiredFeature uiext:idleInterface ;
         .
 
 

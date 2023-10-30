@@ -256,7 +256,7 @@ private:
 
     AudioDriver *audioDriver = nullptr;
 
-    inherit_priority_recursive_mutex mutex;
+    std::recursive_mutex mutex;
     int64_t overrunGracePeriodSamples = 0;
 
     IAudioHostCallbacks *pNotifyCallbacks = nullptr;
@@ -328,7 +328,7 @@ private:
 
     virtual void Close()
     {
-        std::lock_guard guard(mutex);
+        std::lock_guard guard {mutex};
         if (!isOpen)
             return;
 
@@ -927,7 +927,7 @@ public:
         // bump thread prioriy two levels to
         // ensure that the service thread doesn't
         // get bogged down by UIwork. Doesn't have to be realtime, but it
-        // MUST run at higher priority than UI threads.
+        // MUST run at higher _ than UI threads.
         xxx; // TO DO.
 #elif defined(__linux__)
         int min = sched_get_priority_min(SCHED_RR);
@@ -1564,7 +1564,7 @@ private:
     std::vector<RestartThread *> restartThreads;
 
 public:
-    inherit_priority_recursive_mutex restart_mutex;
+    std::recursive_mutex restart_mutex;
     virtual void UpdateServerConfiguration(const JackServerSettings &jackServerSettings,
                                            std::function<void(bool success, const std::string &errorMessage)> onComplete)
     {
@@ -1575,7 +1575,7 @@ public:
     }
     void CleanRestartThreads(bool final)
     {
-        std::lock_guard guard(restart_mutex);
+        std::lock_guard guard {restart_mutex};
         for (size_t i = 0; i < restartThreads.size(); ++i)
         {
             if (final)

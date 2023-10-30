@@ -23,13 +23,16 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 @prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
-@prefix inputStage: <http://two-play.com/plugins/toob-input_stage#> .
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix toob: <http://two-play.com/plugins/toob#> .
 
+@prefix inputStage: <http://two-play.com/plugins/toob-input_stage#> .
 
 <http://two-play.com/plugins/toob#frequencyResponseVector>
         a lv2:Parameter ;
         rdfs:label "frequencyResponseVector" ;
         rdfs:range atom:Vector .
+
 
 <http://two-play.com/plugins/toob-input_stage#uiState>
         a lv2:Parameter ;
@@ -53,52 +56,45 @@ inputStage:filterGroup
 <http://two-play.com/plugins/toob-input_stage>
         a lv2:Plugin ,
                 lv2:SimulatorPlugin ;
+
+        uiext:ui <http://two-play.com/plugins/toob-input_stage-ui>;                
+
         doap:name "TooB Input Stage" ,
                 "TooB Input Stage"@en-gb 
                 ;
         doap:license <https://two-play.com/TooB/licenses/isc> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
-         lv2:minorVersion 0 ;
-        lv2:microVersion 29 ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 30 ;
 
         mod:brand "TooB";
         mod:label "TooB Input";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
         
+        patch:writable 
+                <http://two-play.com/plugins/toob#frequencyResponseVector>;
         patch:readable 
-                <http://two-play.com/plugins/toob#frequencyResponseVector>, 
-                <http://two-play.com/plugins/toob-input_stage#uiState>;
-rdfs:comment """
-TooB Input Stage provides basic tools for trimming and shaping guitar input signals
-before feeding them through amp emulations.
+                <http://two-play.com/plugins/toob#frequencyResponseVector>;
 
-Components in the TooB Amp Emulation Toolkit expect guitar signal levels to be nominally close 
+rdfs:comment """
+The TooB Input Stage provides basic tools for trimming and shaping guitar input signals
+before feeding them through amp emulations. Typically it should be placed as the 
+first effect in a guitar signal chain.
+
+Amp emulations expect guitar signal levels to be nominally close 
 to zero db. Use the Trim control to get your input signal into a reasonable range (ideally, into
 the yellow range on the VU, but not going above zero dB).
 
 In some cases, you can reduce noise in your guitar signal by filtering out low and high frequencies.
 Use the Low and Hi Cut controls to remove unnecessary frequencies. Set the Lo Cut to minimum value
-to disable the Low Cut filter. Se the Hi Cut control to maximum value to disable the Hi Cut filter.
+to disable the Low Cut filter. Set the Hi Cut control to maximum value to disable the Hi Cut filter.
 
 Bright EQ settings allow boosting of high frequencies to simulate the bright input jack
 found on many guitar amps. 
 
 The GateT control provides a noise gate. Set to minimum value to disable.
 
-The Boost control allows simulation of overdriven input stages. Use judiciously. Heavy overdrive 
-effects are better implemented in the TooB Power Stage. 
-
-The TooB Input Stage is part of the TooB Amp Emulation Toolkit. Typically, you would 
-use the following plugins in the following order. 
-
-- TooB Input Stage
-
-- TooB Tone Stack
-
-- Toob Power Stage
-
-- Toob Cabinet Simulator
 """;
         lv2:port
         [
@@ -119,17 +115,63 @@ use the following plugins in the following order.
                         rdfs:label "-INF" ;
                         rdf:value -60.0
                 ];
-                rdfs:comment "Input level trim"                 
-        ],  [
-                a lv2:InputPort ,
+                rdfs:comment "Input level trim";
+        ],  
+        [
+                a lv2:OutputPort ,
                 lv2:ControlPort ;
 
                 lv2:index 1 ;
+                lv2:symbol "trimOut" ;
+                lv2:name "";
+                lv2:default -35.0 ;
+                lv2:minimum -35.0 ;
+                lv2:maximum 10.0 ;    
+                units:unit units:db ;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                lv2:symbol "gate_t" ;
+                lv2:name "Gate T";
+                lv2:default -80.0 ;
+                lv2:minimum -80.0 ;
+                lv2:maximum -20.0;    
+                units:unit units:db;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value -80.0
+                ];
+                rdfs:comment "Noise gate threshold. Zero to disable." ;
+
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 3 ;
+                lv2:symbol "gate_out" ;
+                lv2:name "";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+                lv2:portProperty lv2:integer ; # Display as Lamp.
+                lv2:portProperty lv2:toggled ;
+                rdfs:comment "Noise gate" ;
+
+        ],                    
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  4;
                 pg:group inputStage:filterGroup ;
 
                 lv2:symbol "locut" ;
                 lv2:name "Lo Cut";
-                lv2:default 120.0 ;
+                lv2:default 60.0 ;
                 lv2:minimum 30.0 ;
                 lv2:maximum 300.0 ;    
                 units:unit units:hz;
@@ -143,7 +185,7 @@ use the following plugins in the following order.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 2 ;
+                lv2:index 5 ;
                 pg:group inputStage:filterGroup ;
                 lv2:symbol "bright" ;
                 lv2:name "Bright";
@@ -161,7 +203,7 @@ use the following plugins in the following order.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 3 ;
+                lv2:index 6 ;
                 pg:group inputStage:filterGroup ;
                 lv2:symbol "brightf" ;
                 lv2:name "Bright F";
@@ -180,11 +222,11 @@ use the following plugins in the following order.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 4 ;
+                lv2:index 7 ;
                 pg:group inputStage:filterGroup ;
                 lv2:symbol "hicut" ;
                 lv2:name "Hi Cut";
-                lv2:default 6000.0 ;
+                lv2:default 13000.0 ;
                 lv2:minimum 2000.0 ;
                 lv2:maximum 13000.0;    
                 units:unit units:hz;
@@ -195,60 +237,26 @@ use the following plugins in the following order.
                         rdf:value 13000.0
                 ];
                 rdfs:comment "Hi cutoff frequency." ;
-        ],  [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
-
-                lv2:index 5 ;
-                lv2:symbol "gate_t" ;
-                lv2:name "Gate T";
-                lv2:default -80.0 ;
-                lv2:minimum -80.0 ;
-                lv2:maximum -20.0;    
-                units:unit units:db;
-                lv2:scalePoint [
-                        rdfs:label "OFF" ;
-                        rdf:value -80.0
-                ];
-                rdfs:comment "Noise gate threshold. Zero to disable." ;
-
-        ],  [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
-
-                lv2:index 6 ;
-                lv2:symbol "boost" ;
-                lv2:name "Boost";
-                lv2:default 0.0 ;
-                lv2:minimum 0.0 ;
-                lv2:maximum 1.0;    
-                units:unit units:db;
-                lv2:scalePoint [
-                        rdfs:label "OFF" ;
-                        rdf:value 0.0
-                ];
-                rdfs:comment "Simulate overdriving the input buffer." ;
-
-        ], 
+        ],          
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 7 ;
+                lv2:index 8 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ] , [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 8 ;
+                lv2:index 9 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ],[
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 9 ;
+                lv2:index 10 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Plugin to GUI communication" ;
@@ -256,13 +264,48 @@ use the following plugins in the following order.
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
-                atom:supports patch:Message;
+                # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 10 ;
+                lv2:index 11 ;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Plugin to GUI communication" ;
         ]
         .
+
+
+<http://two-play.com/plugins/toob-input_stage-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    patch:writable 
+        <http://two-play.com/plugins/toob#frequencyResponseVector>;
+    .
+
+<http://two-play.com/plugins/toob-input_stage> 
+     pipedal_ui:ui <http://two-play.com/plugins/toob-input_stage#piPedalUI>.
+
+
+<http://two-play.com/plugins/toob-input_stage#piPedalUI> 
+    a pipedal_ui:ui ;
+    pipedal_ui:frequencyPlot
+    [
+        lv2:index 99 ; 
+        pg:group inputStage:filterGroup ;
+
+        pipedal_ui:patchProperty toob:frequencyResponseVector;
+        pipedal_ui:xLeft 30 ;
+        pipedal_ui:xRight 22050 ;
+        pipedal_ui:yTop 10 ;
+        pipedal_ui:yBottom -35 ;
+        pipedal_ui:xLog 1 ;
+        pipedal_ui:yDb 1 ;
+        pipedal_ui:width 160 ;
+    ]
+    .
 
 

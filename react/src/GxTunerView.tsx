@@ -88,7 +88,7 @@ const GxTunerView =
 
                 let result: (React.ReactNode | ControlGroup)[] = [];
 
-                let tunerControl = (<GxTunerControl instanceId={this.props.instanceId} />);
+                let tunerControl = (<GxTunerControl instanceId={this.props.instanceId} valueIsMidi={false} />);
                 result.push(tunerControl);
 
                 result.push(controls[refFreqIndex]);

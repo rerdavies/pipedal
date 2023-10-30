@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="48"
+   viewBox="0 -960 960 960"
+   width="48"
+   version="1.1"
+   id="svg227"
+   sodipodi:docname="undo.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs231" />
+  <sodipodi:namedview
+     id="namedview229"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="5.9367507"
+     inkscape:cx="76.641251"
+     inkscape:cy="24.676798"
+     inkscape:window-width="1920"
+     inkscape:window-height="972"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg227" />
+  <path
+     d="m 259,-240 v -60 h 310 q 70,0 120.5,-46.5 Q 740,-393 740,-462 740,-531 689.5,-577.5 639,-624 569,-624 H 274 l 114,114 -42,42 -186,-186 186,-186 42,42 -114,114 h 294 q 95,0 163.5,64 68.5,64 68.5,158 0,94 -68.5,158 -68.5,64 -163.5,64 z"
+     id="path225" />
+</svg>

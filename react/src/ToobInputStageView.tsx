@@ -28,7 +28,7 @@ import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
 import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
-import ToobFrequencyResponseView from './ToobFrequencyResponseView';
+//import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
 
 
@@ -62,11 +62,12 @@ const ToobInputStageView =
 
             ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
-                let group = controls[1] as ControlGroup;
-                group.controls.splice(0,0,
-                    ( <ToobFrequencyResponseView instanceId={this.props.instanceId} />)
-                    );
                 return controls;
+                // let group = controls[1] as ControlGroup;
+                // group.controls.splice(0,0,
+                //     ( <ToobFrequencyResponseView instanceId={this.props.instanceId} />)
+                //     );
+                // return controls;
             }
             render() {
                 return (<PluginControlView

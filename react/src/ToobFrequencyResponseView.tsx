@@ -153,16 +153,13 @@ const ToobFrequencyResponseView =
                 if (!this.mounted) return;
                 let pathBuilder = new SvgPathBuilder();
                
-                let minF = data[0];
-                let maxF = data[1];
                 let dbMin = data[2];
                 let dbMax = data[3];
-                let logMin = Math.log(minF);
-                let logMax = Math.log(maxF);
 
-                let toX_ = (frequency: number): number => {
-                    var logV = Math.log(frequency);
-                    return (this.xMax - this.xMin) * (logV - logMin) / (logMax - logMin) + this.xMin;
+                let n = data.length-4;
+
+                let toX_ = (bin: number): number => {
+                    return (this.xMax - this.xMin) * bin/n;
     
                 };
                 let toY_ = (value: number): number => {
@@ -178,11 +175,10 @@ const ToobFrequencyResponseView =
                 };
     
 
-                
-                if (data.length > 2) {
-                    pathBuilder.moveTo(toX_(data[4]), toY_(data[5]))
-                    for (let i = 6; i < data.length; i += 2) {
-                        pathBuilder.lineTo(toX_(data[i]), toY_(data[i + 1]));
+                if (n >= 2) {
+                    pathBuilder.moveTo(toX_(0), toY_(data[4]))
+                    for (let i = 1; i < n; i++) {
+                        pathBuilder.lineTo(toX_(i), toY_(data[i+4]));
                     }
                 }
                 this.currentPath = pathBuilder.toString();

@@ -306,7 +306,7 @@ const PluginControlView =
                 for (let i = 0; i < controlValues.length; ++i) {
                     let controlValue = controlValues[i];
                     let control = uiPlugin.getControl(controlValue.key);
-                    if (control && !control.not_on_gui) {
+                    if (control && !control.isHidden()) {
                         result.push(controlValue);
                     }
                 }
@@ -381,7 +381,7 @@ const PluginControlView =
 
                 for (let i = 0; i < plugin.controls.length; ++i) {
                     let pluginControl = plugin.controls[i];
-                    if (!pluginControl.not_on_gui) {
+                    if (!pluginControl.isHidden()) {
                         if (pluginControl.port_group !== "" && plugin.getPortGroupBySymbol(pluginControl.port_group)) {
                             let portGroup = nullCast(plugin.getPortGroupBySymbol(pluginControl.port_group));
 
@@ -394,7 +394,7 @@ const PluginControlView =
                             while (i + 1 < plugin.controls.length && plugin.controls[i + 1].port_group === pluginControl.port_group) {
                                 ++i;
                                 pluginControl = plugin.controls[i];
-                                if (!pluginControl.not_on_gui) {
+                                if (!pluginControl.isHidden()) {
                                     groupControls.push(
                                         this.makeStandardControl(pluginControl, controlValues)
                                     )

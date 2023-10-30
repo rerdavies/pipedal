@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="48"
+   viewBox="0 -960 960 960"
+   width="48"
+   version="1.1"
+   id="svg228"
+   sodipodi:docname="hard_drive.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs232" />
+  <sodipodi:namedview
+     id="namedview230"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1"
+     inkscape:cx="24"
+     inkscape:cy="24.5"
+     inkscape:window-width="1920"
+     inkscape:window-height="972"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg228" />
+  <path
+     id="path226"
+     d="m 80,-600 v 340 c 0,16.49998 5.867199,30.63282 17.617188,42.38281 C 109.36718,-205.8672 123.50002,-200 140,-200 h 680 c 16.49998,0 30.63282,-5.8672 42.38281,-17.61719 C 874.1328,-229.36718 880,-243.50002 880,-260 v -340 z m 60,60 h 680 v 280 H 140 Z m 539.88281,90 c -13.92132,0 -25.72397,4.86405 -35.39062,14.60938 C 634.82553,-425.64597 630,-413.8048 630,-399.88281 c 0,13.92132 4.86405,25.72397 14.60938,35.39062 9.74465,9.66666 21.58582,14.49219 35.50781,14.49219 13.92132,0 25.72397,-4.86405 35.39062,-14.60938 C 725.17447,-374.35403 730,-386.1952 730,-400.11719 c 0,-13.92132 -4.86405,-25.72397 -14.60938,-35.39062 C 705.64597,-445.17447 693.8048,-450 679.88281,-450 Z"
+     sodipodi:nodetypes="csssssscccccccscscscscs" />
+</svg>

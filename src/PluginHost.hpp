@@ -213,11 +213,11 @@ namespace pipedal
         bool is_logarithmic_ = false;
         int display_priority_ = -1;
         int range_steps_ = 0;
-        bool trigger_;
-        bool integer_property_;
-        bool enumeration_property_;
-        bool toggled_property_;
-        bool not_on_gui_;
+        bool trigger_ = false;
+        bool integer_property_ = false;
+        bool enumeration_property_ = false;
+        bool toggled_property_ = false;
+        bool not_on_gui_ = false;
         std::string buffer_type_;
         std::string port_group_;
 
@@ -225,6 +225,7 @@ namespace pipedal
         Units units_ = Units::none;
         std::string comment_;
         PiPedalUI::ptr piPedalUI_;
+
 
     public:
         bool IsSwitch() const
@@ -302,6 +303,7 @@ namespace pipedal
                 return Lv2BufferType::Sequence;
             return Lv2BufferType::Unknown;
         }
+
 
     public:
         Lv2PortInfo() {}
