@@ -4,3 +4,4 @@
 [submodule "modules/websocketpp"]
 	path = modules/websocketpp
 	url = https://github.com/zaphoyd/websocketpp.git
+	branch = develop
