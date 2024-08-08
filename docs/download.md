@@ -4,8 +4,8 @@
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS Bookworm (64-bit)](https://github.com/rerdavies/pipedal/releases/download/v1.2.33/pipedal_1.2.33_arm64.deb) v1.2.33 Beta1
-- [Ubuntu 21.04 or Raspberry Pi OS Buster (64-bit)](https://github.com/rerdavies/pipedal/releases/download/v1.2.32/pipedal_1.1.31_arm64.deb) v1.1.31
+- <a href="https://github.com/rerdavies/pipedal/releases/download/v1.2.33/pipedal_1.2.33_arm64.deb">Raspberry Pi OS Bookworm (64-bit) v1.2.33 Beta1</a>
+- <a href="https://github.com/rerdavies/pipedal/releases/download/v1.2.32/pipedal_1.1.31_arm64.deb">Ubuntu 21.04 or Raspberry Pi OS Buster (64-bit) v1.1.31</a>
 
 v1.2.33 Beta1 is does not currently support Ubuntu 21.04, or older versions of Raspberry Pi OS. 
 
