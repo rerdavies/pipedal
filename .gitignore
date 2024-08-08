@@ -1,6 +1,8 @@
 #build files
 build/
 
+#VS Code config files.
+.vscode/
 #settings
 
 Testing/
