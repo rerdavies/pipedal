@@ -82,7 +82,7 @@ void DBusDispatcher::WakeThread()
     uint64_t val = 1;
     if (eventFd != -1)
     {
-        write(eventFd, &val, sizeof(val));
+        (void)write(eventFd, &val, sizeof(val));
     }
 }
 void DBusDispatcher::ThreadProc()
@@ -180,7 +180,7 @@ void DBusDispatcher::ThreadProc()
                     if (pollFds[1].revents & POLLIN) // received a wakup event?
                     {
                         uint64_t counter;
-                        read(pollFds[1].fd, &counter, sizeof(counter)); // reset the wakeup event.
+                        (void)read(pollFds[1].fd, &counter, sizeof(counter)); // reset the wakeup event.
                     }
                 }
             }
