@@ -31,6 +31,7 @@
 #include "JackServerSettings.hpp"
 #include <thread>
 #include "RtInversionGuard.hpp"
+#include "PiPedalException.hpp"
 
 #include "CpuUse.hpp"
 

@@ -8,7 +8,7 @@ StartLimitIntervalSec=300
 StartLimitBurst=8
 
 [Service]
-ExecStart=${COMMAND} --systemd --log-level debug
+ExecStart=${COMMAND} --systemd --log-level info
 Type=notify
 WorkingDirectory=/var/pipedal
 TimeoutStopSec=5

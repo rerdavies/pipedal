@@ -111,18 +111,9 @@ You will need to add your userid to the pipedal_d group if you plan to share the
 You will need to reboot your machine to get the group membership change to take effect,or log out and log back
 in if you can do that.
 
-Or you can avoid all of this, by configuring the debug instance to use a data folder in your home directory. Edit 
-`debugConfig/config.json`:
+To run pipedald in a debugger, you need to use the following command-line to launch pipedal:
 
-    {
-        ...
-        "local_storage_path": "~/var/pipedal",
-        ...
-    }
-
-Run pipedald in a debugger, you need to use the following command-line to launch pipedal:
-
-    build/src/pipedald /etc/pipedal/config /etc/pipedal/react -port0.0.0.0:8080
+    build/src/pipedald /etc/pipedal/config /etc/pipedal/react -port 0.0.0.0:8080
     
 The first argument specifies where the pipedal daemon's configuration files are. The second argument specifies where 
 built static web pages for the web application are. And the port option specifies the port on which the daemon will
@@ -162,5 +153,7 @@ If you are using Visual Studio Code, you might find it useful to add the followi
         },
         ...
     }
+
 -----
+
 [<< The Build System](TheBuildSystem.md) | [Up](Documentation.md)  | [PiPedal Architecture >>](Architecture.md)

@@ -1,5 +1,0 @@
-export PREFIX=/usr/
-
-rm $PREFIX/bin/pipedal*.*
-rm -rf /etc/pipedal/
-

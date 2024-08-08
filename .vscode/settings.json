@@ -92,7 +92,11 @@
         "util": "cpp",
         "charconv": "cpp",
         "valarray": "cpp",
-        "hash_map": "cpp"
+        "hash_map": "cpp",
+        "nm-device-wifi-p2p.h": "c",
+        "strstream": "cpp",
+        "p2p_i.h": "c",
+        "p2p.h": "c"
     },
     "cSpell.words": [
         "Guitarix",

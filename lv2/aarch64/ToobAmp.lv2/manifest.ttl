@@ -31,10 +31,9 @@
      rdfs:seeAlso <ToobML.ttl> .
 
 
-# Deprecated.
-#<http://two-play.com/plugins/toob-power-stage-2> a lv2:Plugin ;
-#     lv2:binary <ToobAmp.so> ;
-#     rdfs:seeAlso <PowerStage2.ttl> .
+<http://two-play.com/plugins/toob-power-stage-2> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <PowerStage2.ttl> .
 
 <http://two-play.com/plugins/toob-input_stage> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;

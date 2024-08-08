@@ -35,7 +35,7 @@ PiPedalUI::PiPedalUI(PluginHost *pHost, const LilvNode *uiNode, const std::files
 {
     auto pWorld = pHost->getWorld();
 
-    AutoLilvNodes  fileNodes = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris.pipedalUI__fileProperties, nullptr);
+    AutoLilvNodes  fileNodes = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris->pipedalUI__fileProperties, nullptr);
     LILV_FOREACH(nodes, i, fileNodes)
     {
         const LilvNode *fileNode = lilv_nodes_get(fileNodes, i);
@@ -49,7 +49,7 @@ PiPedalUI::PiPedalUI(PluginHost *pHost, const LilvNode *uiNode, const std::files
             pHost->LogWarning(SS("Failed to read pipedalui::fileProperties. " << e.what()));
         }
     }
-    AutoLilvNodes  frequencyPlotNodes = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris.pipedalUI__frequencyPlot, nullptr);
+    AutoLilvNodes  frequencyPlotNodes = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris->pipedalUI__frequencyPlot, nullptr);
     LILV_FOREACH(nodes, i, frequencyPlotNodes)
     {
         const LilvNode *frequencyPlotNode = lilv_nodes_get(frequencyPlotNodes, i);
@@ -65,7 +65,7 @@ PiPedalUI::PiPedalUI(PluginHost *pHost, const LilvNode *uiNode, const std::files
         }
     }
 
-    AutoLilvNodes portNotifications = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris.ui__portNotification, nullptr);
+    AutoLilvNodes portNotifications = lilv_world_find_nodes(pWorld, uiNode, pHost->lilvUris->ui__portNotification, nullptr);
     LILV_FOREACH(nodes, i, portNotifications)
     {
         const LilvNode *portNotificationNode = lilv_nodes_get(portNotifications, i);
@@ -88,7 +88,7 @@ UiFileType::UiFileType(PluginHost *pHost, const LilvNode *node)
     AutoLilvNode label = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.rdfs__label,
+        pHost->lilvUris->rdfs__label,
         nullptr);
     if (label)
     {
@@ -101,7 +101,7 @@ UiFileType::UiFileType(PluginHost *pHost, const LilvNode *node)
     AutoLilvNode fileExtension = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.pipedalUI__fileExtension,
+        pHost->lilvUris->pipedalUI__fileExtension,
         nullptr);
     if (fileExtension)
     {
@@ -114,7 +114,7 @@ UiFileType::UiFileType(PluginHost *pHost, const LilvNode *node)
     AutoLilvNode mimeType = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.pipedalUI__mimeType,
+        pHost->lilvUris->pipedalUI__mimeType,
         nullptr);
     if (mimeType)
     {
@@ -140,7 +140,7 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     AutoLilvNode label = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.rdfs__label,
+        pHost->lilvUris->rdfs__label,
         nullptr);
     if (label)
     {
@@ -153,7 +153,7 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     AutoLilvNode index = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.lv2core__index,
+        pHost->lilvUris->lv2core__index,
         nullptr);
     if (index)
     {
@@ -167,7 +167,7 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     AutoLilvNode directory = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.pipedalUI__directory,
+        pHost->lilvUris->pipedalUI__directory,
         nullptr);
     if (directory)
     {
@@ -185,7 +185,7 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     AutoLilvNode patchProperty = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.pipedalUI__patchProperty,
+        pHost->lilvUris->pipedalUI__patchProperty,
         nullptr);
     if (patchProperty)
     {
@@ -196,13 +196,13 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
         throw std::logic_error("PiPedal FileProperty is missing pipedalui:patchProperty value.");
     }
 
-    AutoLilvNode portGroup = lilv_world_get(pWorld,node,pHost->lilvUris.portgroups__group,nullptr);
+    AutoLilvNode portGroup = lilv_world_get(pWorld,node,pHost->lilvUris->portgroups__group,nullptr);
     if (portGroup)
     {
         this->portGroup_ = portGroup.AsUri();
     }
 
-    this->fileTypes_ = UiFileType::GetArray(pHost, node, pHost->lilvUris.pipedalUI__fileTypes);
+    this->fileTypes_ = UiFileType::GetArray(pHost, node, pHost->lilvUris->pipedalUI__fileTypes);
 }
 
 std::vector<UiFileType> UiFileType::GetArray(PluginHost *pHost, const LilvNode *node, const LilvNode *uri)
@@ -210,7 +210,7 @@ std::vector<UiFileType> UiFileType::GetArray(PluginHost *pHost, const LilvNode *
     std::vector<UiFileType> result;
     LilvWorld *pWorld = pHost->getWorld();
 
-    LilvNodes *fileTypeNodes = lilv_world_find_nodes(pWorld, node, pHost->lilvUris.pipedalUI__fileTypes, nullptr);
+    LilvNodes *fileTypeNodes = lilv_world_find_nodes(pWorld, node, pHost->lilvUris->pipedalUI__fileTypes, nullptr);
     LILV_FOREACH(nodes, i, fileTypeNodes)
     {
         const LilvNode *fileTypeNode = lilv_nodes_get(fileTypeNodes, i);
@@ -297,7 +297,7 @@ UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
     // ]
     LilvWorld *pWorld = pHost->getWorld();
 
-    AutoLilvNode portIndex = lilv_world_get(pWorld, node, pHost->lilvUris.ui__portIndex, nullptr);
+    AutoLilvNode portIndex = lilv_world_get(pWorld, node, pHost->lilvUris->ui__portIndex, nullptr);
     if (!portIndex)
     {
         this->portIndex_ = -1;
@@ -306,7 +306,7 @@ UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
     {
         this->portIndex_ = (uint32_t)lilv_node_as_int(portIndex);
     }
-    AutoLilvNode symbol = lilv_world_get(pWorld, node, pHost->lilvUris.lv2__symbol, nullptr);
+    AutoLilvNode symbol = lilv_world_get(pWorld, node, pHost->lilvUris->lv2__symbol, nullptr);
     if (!symbol)
     {
         this->symbol_ = "";
@@ -315,7 +315,7 @@ UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
     {
         this->symbol_ = symbol.AsString();
     }
-    AutoLilvNode plugin = lilv_world_get(pWorld, node, pHost->lilvUris.ui__plugin, nullptr);
+    AutoLilvNode plugin = lilv_world_get(pWorld, node, pHost->lilvUris->ui__plugin, nullptr);
     if (!plugin)
     {
         this->plugin_ = "";
@@ -324,7 +324,7 @@ UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
     {
         this->plugin_ = plugin.AsUri();
     }
-    AutoLilvNode protocol = lilv_world_get(pWorld, node, pHost->lilvUris.ui__protocol, nullptr);
+    AutoLilvNode protocol = lilv_world_get(pWorld, node, pHost->lilvUris->ui__protocol, nullptr);
     if (!protocol)
     {
         this->protocol_ = "";
@@ -399,7 +399,7 @@ UiFrequencyPlot::UiFrequencyPlot(PluginHost*pHost, const LilvNode*node,
     AutoLilvNode patchProperty = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.pipedalUI__patchProperty,
+        pHost->lilvUris->pipedalUI__patchProperty,
         nullptr);
     if (patchProperty)
     {
@@ -414,7 +414,7 @@ UiFrequencyPlot::UiFrequencyPlot(PluginHost*pHost, const LilvNode*node,
     AutoLilvNode index = lilv_world_get(
         pWorld,
         node,
-        pHost->lilvUris.lv2core__index,
+        pHost->lilvUris->lv2core__index,
         nullptr);
     if (index)
     {
@@ -425,17 +425,17 @@ UiFrequencyPlot::UiFrequencyPlot(PluginHost*pHost, const LilvNode*node,
         this->index_ = -1;
     }
 
-    AutoLilvNode portGroup = lilv_world_get(pWorld,node,pHost->lilvUris.portgroups__group,nullptr);
+    AutoLilvNode portGroup = lilv_world_get(pWorld,node,pHost->lilvUris->portgroups__group,nullptr);
     if (portGroup)
     {
         this->portGroup_ = portGroup.AsUri();
     }
-    this->xLeft_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__xLeft,100);
-    this->xRight_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__xRight,22000);
-    this->yTop_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__yTop,5);
-    this->yBottom_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__yBottom,-35);
-    this->xLog_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__xLog,-35);
-    this->width_ = GetFloat(pWorld,node,pHost->lilvUris.pipedalUI__width,60);
+    this->xLeft_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__xLeft,100);
+    this->xRight_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__xRight,22000);
+    this->yTop_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__yTop,5);
+    this->yBottom_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__yBottom,-35);
+    this->xLog_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__xLog,-35);
+    this->width_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__width,60);
 }
 
 

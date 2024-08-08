@@ -136,7 +136,7 @@ static std::string toLower(const std::string&value)
 
 void MimeTypes::AddMimeType(const std::string&extension_, const std::string&mimeType)
 {
-    std::string extension = "." + toLower(extension_);
+    std::string extension = std::string(".") + toLower(extension_);
     mimeTypeToExtension[mimeType] = extension;
     extensionToMimeType[extension] = mimeType;
     if (mimeType.starts_with("audio/"))

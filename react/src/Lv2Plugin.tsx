@@ -451,7 +451,8 @@ export enum ControlType {
 
     Tuner,
     Vu,
-    DbVu
+    DbVu,
+    OutputSelect
 }
 
 export class  UiControl implements Deserializable<UiControl> {
@@ -499,6 +500,8 @@ export class  UiControl implements Deserializable<UiControl> {
             } else if (this.units === Units.db)
             {
                 this.controlType = ControlType.DbVu;
+            } else if (this.enumeration_property) {
+                this.controlType = ControlType.OutputSelect;
             } else {
                 this.controlType = ControlType.Vu;
             }
@@ -614,6 +617,10 @@ export class  UiControl implements Deserializable<UiControl> {
     isSelect() : boolean {
         return this.controlType === ControlType.Select;
     }
+    isOutputSelect() : boolean {
+        return !this.is_input && this.controlType === ControlType.OutputSelect;
+    }
+
 
     isLamp(): boolean {
         return this.toggled_property && this.scale_points.length === 0 && !this.is_input;

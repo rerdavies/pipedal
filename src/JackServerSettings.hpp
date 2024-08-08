@@ -33,8 +33,8 @@ namespace pipedal
         bool rebootRequired_ = false;
         std::string alsaDevice_;
         uint64_t sampleRate_ = 0;
-        uint32_t bufferSize_ = 0;
-        uint32_t numberOfBuffers_ = 0;
+        uint32_t bufferSize_ = 64;
+        uint32_t numberOfBuffers_ = 2;
 
     public:
         JackServerSettings();

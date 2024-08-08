@@ -1,0 +1,17 @@
+wpa_cli -ip2p-dev-wlan0 GET device_name pipedal
+wpa_cli -ip2p-dev-wlan0 GET country CA
+wpa_cli -ip2p-dev-wlan0 GET device_type 1-0050F204-1
+wpa_cli -ip2p-dev-wlan0 GET persistent_reconnect 1
+wpa_cli -ip2p-dev-wlan0 GET p2p_go_ht40 1
+wpa_cli -ip2p-dev-wlan0 GET update_config 1
+wpa_cli -ip2p-dev-wlan0 GET config_methods keypad
+wpa_cli -ip2p-dev-wlan0 GET p2p_go_intent 15
+
+wpa_cli -ip2p-dev-wlan0 SET device_name pipedal
+wpa_cli -ip2p-dev-wlan0 SET country CA
+wpa_cli -ip2p-dev-wlan0 SET device_type 1-0050F204-1
+wpa_cli -ip2p-dev-wlan0 SET persistent_reconnect 1
+wpa_cli -ip2p-dev-wlan0 SET p2p_go_ht40 1
+wpa_cli -ip2p-dev-wlan0 SET update_config 1
+wpa_cli -ip2p-dev-wlan0 SET config_methods keypad
+wpa_cli -ip2p-dev-wlan0 SET p2p_go_intent 15

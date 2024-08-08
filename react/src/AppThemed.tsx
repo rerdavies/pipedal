@@ -53,7 +53,6 @@ import ZoomedUiControl from './ZoomedUiControl'
 import MainPage from './MainPage';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
-import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import ListSubheader from '@mui/material/ListSubheader';
 import { BankIndex, BankIndexEntry } from './Banks';
@@ -67,6 +66,7 @@ import {ReactComponent as SaveBankAsIcon} from './svg/ic_save_bank_as.svg';
 import {ReactComponent as EditBanksIcon} from './svg/ic_edit_banks.svg';
 import {ReactComponent as SettingsIcon} from './svg/ic_settings.svg';
 import {ReactComponent as HelpOutlineIcon} from './svg/ic_help_outline.svg';
+import DialogEx from './DialogEx';
 
 
 const appStyles = (theme: Theme) => createStyles({
@@ -511,11 +511,12 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     }
 
     private unmountListener(e: Event) {
-        e.preventDefault();
         if ((!this.model_.reloadRequested) && this.model_.state.get() === State.Ready && !this.model_.isAndroidHosted()) {
+            e.preventDefault();
             (e as any).returnValue = "Are you sure you want to leave this page?";
             return "Are you sure you want to leave this page?";
         }
+        return undefined;
     }
     componentDidMount() {
 
@@ -862,7 +863,8 @@ render() {
                 onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
                 }
             />
-            <Dialog
+            <DialogEx
+                tag="Alert"
                 open={this.state.alertDialogOpen}
                 onClose={this.handleCloseAlert}
                 aria-describedby="alert-dialog-description"
@@ -881,7 +883,7 @@ render() {
                         OK
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </DialogEx>
             {this.state.showStatusMonitor && (<JackStatusView />)}
 
             <div className={classes.errorContent} style={{

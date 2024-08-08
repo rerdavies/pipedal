@@ -186,7 +186,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
             let classes = this.props.classes;
 
             return (
-                <DialogEx tag="AboutDlg" fullScreen open={this.props.open}
+                <DialogEx tag="about" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
                     style={{ userSelect: "none" }}
                 >

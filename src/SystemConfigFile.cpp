@@ -297,8 +297,20 @@ int SystemConfigFile::GetLineNumber(const std::string &line) const {
         }
     }
     return -1;
+}
+
+int SystemConfigFile::GetLineNumberStartingWith(const std::string &line) const {
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        if (lines[i].starts_with(line))
+        {
+            return i;
+        }
+    }
+    return -1;
 
 }
+
 void SystemConfigFile::EraseLine(int i)
 {
     if (i < 0 || i >= lines.size()) throw PiPedalArgumentException("Range error.");

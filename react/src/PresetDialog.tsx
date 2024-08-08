@@ -338,7 +338,7 @@ const PresetDialog = withStyles(styles, { withTheme: true })(
             let defaultSelectedIndex = this.getSelectedIndex();
 
             return (
-                <DialogEx tag="PresetDialog" fullScreen open={this.props.show}
+                <DialogEx tag="preset" fullScreen open={this.props.show}
                     onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}
                     style={{userSelect: "none"}}>
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>

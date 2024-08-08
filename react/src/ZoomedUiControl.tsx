@@ -211,7 +211,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                 displayValue = "\u00A0";
             }
             return (
-                <DialogEx tag="zoomedControlDlg" open={this.props.dialogOpen}
+                <DialogEx tag="zoomedControl" open={this.props.dialogOpen}
                     onClose={() => { this.props.onDialogClose() }}
                     onAbort={() => { this.props.onDialogClose() }}
                 >

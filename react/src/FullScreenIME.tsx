@@ -25,7 +25,7 @@ import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { UiControl } from './Lv2Plugin';
-import Dialog from '@mui/material/Dialog';
+import DialogEx from './DialogEx';
 import Input from '@mui/material/Input';
 import { nullCast } from './Utility';
 import Typography from '@mui/material/Typography';
@@ -196,7 +196,7 @@ const FullScreenIME =
                 let value = this.props.value;
 
                 return (
-                    <Dialog fullScreen open={!!(this.props.uiControl)} onClose={(e, r) => this.handleClose(e, r)} >
+                    <DialogEx tag="ime" fullScreen open={!!(this.props.uiControl)} onClose={(e, r) => this.handleClose(e, r)} >
                         <div style={{
                             width: "100%", height: "100%", position: "relative",
                             display: "flex", flexDirection: "column", flexWrap: "nowrap",
@@ -222,7 +222,7 @@ const FullScreenIME =
 
                         </div>
 
-                    </Dialog>
+                    </DialogEx>
                 );
 
             }

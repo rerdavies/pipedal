@@ -306,7 +306,7 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
             };
 
             return (
-                <DialogEx tag="WifiDirectConfigDialog" open={open} onClose={handleClose} style={{ userSelect: "none", }}
+                <DialogEx tag="p2pConfig" open={open} onClose={handleClose} style={{ userSelect: "none", }}
                     fullScreen={this.state.fullScreen} fullWidth={this.useLandscapeLayout()}
                 >
                     {this.state.landscapeLayout && (
@@ -315,10 +315,10 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                                 <IconButton
                                     edge="start"
                                     color="inherit"
-                                    onClick={()=> {this.props.onClose(); }}
+                                    onClick={() => { this.props.onClose(); }}
                                     aria-label="back"
                                     size="large">
-                                    <ArrowBackIcon htmlColor="#888"/>
+                                    <ArrowBackIcon htmlColor="#888" />
                                 </IconButton>
                                 <FormControlLabel
                                     control={(
@@ -412,7 +412,7 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                         </DialogContent>
                     )}
                     {(!this.state.landscapeLayout) && (
-                        <DialogContent sx={{minHeight: 96}} >
+                        <DialogContent sx={{ minHeight: 96 }} >
                             <div>
                                 <FormControlLabel
                                     control={(
@@ -509,7 +509,7 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                         <Button onClick={handleClose} color="primary" style={{ width: 120 }}>
                             Cancel
                         </Button>
-                        <Button onClick={() => this.handleOk()} color="secondary" style={{ width: 120 }} >
+                        <Button onClick={() => this.handleOk()} color="primary" style={{ width: 120 }} >
                             OK
                         </Button>
                     </DialogActions>

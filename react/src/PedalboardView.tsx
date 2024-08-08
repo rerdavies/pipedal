@@ -906,7 +906,14 @@ const PedalboardView =
                 throw new PiPedalStateError("scroll container not found.");
             }
 
-            pedalButton(instanceId: number, iconType: PluginType, draggable: boolean, enabled: boolean,hasBorder: boolean = true): ReactNode {
+            pedalButton(
+                instanceId: number, 
+                iconType: PluginType, 
+                draggable: boolean, 
+                enabled: boolean,
+                hasBorder: boolean = true,
+                pluginNotFound: boolean)
+            : ReactNode {
                 let classes = this.props.classes;
                 return (
                     <div className={hasBorder? classes.iconFrame : classes.borderlessIconFrame} onContextMenu={(e) => { e.preventDefault(); }}>
@@ -920,7 +927,7 @@ const PedalboardView =
                                 <Draggable  draggable={draggable} getScrollContainer={() => this.getScrollContainer()}
                                     onDragEnd={(x, y) => { this.onDragEnd(instanceId, x, y) }}
                                 >
-                                    <PluginIcon pluginType={iconType} size={24} opacity={enabled? 0.99:0.6} />                                    
+                                    <PluginIcon pluginType={iconType} size={24} pluginMissing={pluginNotFound} opacity={enabled? 0.99:0.6}  />                                    
                                 </Draggable>
                             </SelectHoverBackground>
                         </ButtonBase>
@@ -984,7 +991,7 @@ const PedalboardView =
                             result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
                                 <div className={classes.splitStart} >
 
-                                    {this.pedalButton(START_CONTROL, item.pluginType,false,true,false)}
+                                    {this.pedalButton(START_CONTROL, item.pluginType,false,true,false,false)}
                                 </div>
                             </div>);
                             break;
@@ -992,7 +999,7 @@ const PedalboardView =
                             result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
                                 <div className={classes.splitStart} >
 
-                                    {this.pedalButton(END_CONTROL, item.pluginType, false,true,false)}
+                                    {this.pedalButton(END_CONTROL, item.pluginType, false,true,false,false)}
                                 </div>
                             </div>);
                             break;
@@ -1001,7 +1008,7 @@ const PedalboardView =
 
                                 result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
                                     <div className={classes.splitStart} >
-                                        {this.pedalButton(item.pedalItem?.instanceId ?? -1, this.getSplitterIcon(item), false,true)}
+                                        {this.pedalButton(item.pedalItem?.instanceId ?? -1, this.getSplitterIcon(item), false,true,true,false)}
                                     </div>
                                 </div>);
 
@@ -1016,8 +1023,10 @@ const PedalboardView =
                                         >{item.name}</Typography>
                                     </div>
                                 )
+                                let uiPlugin = this.model.getUiPlugin(item.pedalItem?.uri??"");
+                                let pluginMissing = uiPlugin == null;
                                 result.push(<div key={this.renderKey++} className={classes.pedalItem} style={{ left: item.bounds.x, top: item.bounds.y }} >
-                                    {this.pedalButton(item.pedalItem?.instanceId ?? -1, item.pluginType, !item.isEmpty(), item.pedalItem?.isEnabled ?? false)}
+                                    {this.pedalButton(item.pedalItem?.instanceId ?? -1, item.pluginType, !item.isEmpty(), item.pedalItem?.isEnabled ?? false,true,pluginMissing)}
 
                                 </div>);
 

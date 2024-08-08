@@ -283,7 +283,7 @@ export const SystemMidiBindingDialog =
                 }
 
                 return (
-                    <DialogEx tag="SystemMidiBindingsDialog" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
+                    <DialogEx tag="systemMidiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
                         fullScreen={true} 
                         style={{userSelect: "none"}}
                     >

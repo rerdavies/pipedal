@@ -64,6 +64,10 @@ import { ReactComponent as FxEmptyIcon } from './svg/fx_empty.svg';
 
 import { ReactComponent as FxTerminalIcon } from './svg/fx_terminal.svg';
 
+import {isDarkMode} from './DarkMode';
+import { Color } from '@mui/material';
+
+
 
 const styles = (theme: Theme) =>
     createStyles({
@@ -75,6 +79,7 @@ const styles = (theme: Theme) =>
             color: theme.palette.text.primary,
             fill: theme.palette.text.primary
         },
+
     });
 
 export interface PluginIconProps extends WithStyles<typeof styles> {
@@ -82,10 +87,16 @@ export interface PluginIconProps extends WithStyles<typeof styles> {
     opacity?: number;
     offsetY?: number;
     pluginType: PluginType;
+    pluginMissing?: boolean;
 }
 
-export function SelectSvgIcon(plugin_type: PluginType, className: string, size: number = 24, opacity: number = 1.0) {
-    let myStyle = { width: size, height: size, opacity: opacity };
+export function SelectSvgIcon(plugin_type: PluginType, className: string, size: number = 24, opacity: number = 1.0, missingPlugin: boolean = false) {
+    let color = "";
+    if (missingPlugin)
+    {
+        color = isDarkMode()? "#C00000": "#B00000";
+    }
+    let myStyle = { width: size, height: size, opacity: opacity, color: color, fill: color };
     switch (plugin_type) {
         case PluginType.PhaserPlugin:
             return <FxPhaserIcon className={className} style={myStyle} />;
@@ -276,13 +287,15 @@ export function SelectIconUri(plugin_type: PluginType) {
 }
 
 const PluginIcon = withStyles(styles)((props: PluginIconProps) => {
-    const { classes, pluginType, opacity } = props;
+    const { classes, pluginType, opacity,pluginMissing } = props;
+
+    let pluginMissing_ : boolean = pluginMissing??false;
 
     let size: number = 24;
     if (props.size) size = props.size;
     let topVal: number = (props.offsetY ?? 0);
 
-    let svgIcon = SelectSvgIcon(pluginType, classes.icon, size, opacity);
+    let svgIcon = SelectSvgIcon(pluginType, classes.icon, size, opacity,pluginMissing_);
     if (svgIcon) {
         return svgIcon;
     }

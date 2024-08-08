@@ -259,7 +259,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
         };
 
         return (
-            <DialogEx tag="WifiConfigDialog" open={open} fullWidth onClose={handleClose} style={{userSelect: "none"}}
+            <DialogEx tag="wifiConfig" open={open} fullWidth onClose={handleClose} style={{userSelect: "none"}}
                 fullScreen={this.state.fullScreen}
             >
                 { this.state.fullScreen && (
@@ -340,7 +340,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     <Button onClick={handleClose} color="primary" style={{ width: 120 }}>
                         Cancel
                     </Button>
-                    <Button onClick={()=> this.handleOk(false)} color="secondary" style={{ width: 120 }} >
+                    <Button onClick={()=> this.handleOk(false)} color="success" style={{ width: 120 }} >
                         OK
                     </Button>
                 </DialogActions>

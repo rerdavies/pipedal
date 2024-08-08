@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+    
 
 
 
@@ -15,6 +16,37 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [    ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    // add the directory where our target was built to the PATHs
+                    // it gets resolved by CMake Tools:
+                    "name": "PATH",
+                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) pipedal_nm_p2pd",
+            "type": "cppdbg",
+            "request": "launch",
+            // Resolved by CMake Tools:
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [
+                "--loglevel",
+                "trace",
+                "--systemd-console"
+             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [
@@ -79,7 +111,8 @@
                 //"[Dev]"  -- all dev-machine tests.
                 //"[json_variants]"  // subtest of your choice, or none to run all of the tests.
                 //"[inverting_mutex_test]"
-                "[utf8_to_utf32]"
+                // "[utf8_to_utf32]"
+                "[wifi_channels_test]"
             ],
 
             "stopAtEntry": false,
@@ -188,9 +221,12 @@
             ///"args": [            "[lv2host_leak]" ],
             
             "args": [
-                "../../../debian/copyrights-base",
+                "--projectCopyright",
+                "debian/copyright",
                 "--output",
-                "../../../debian/copyrights"
+                "/tmp/copyrights.txt",
+                "liblilv-0-0", "lv2-dev", "libsdbus-c++-dev", "librsvg2-2", "libpango-1.0-0", "libx11-6", "libxrandr2"
+
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -229,10 +265,11 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
-                "--get-current-port"
+                "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
+                //"--get-current-port"
                 // "--uninstall"
-                //"--enable-p2p" , "--nopkexec"
-                //,"CA", "PiPedalTest","12345678","1"
+                //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
+                "--list-p2p-channels"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

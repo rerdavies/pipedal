@@ -28,7 +28,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import PluginInfoDialog from './PluginInfoDialog'
 import PluginIcon from './PluginIcon'
-import Dialog from '@mui/material/Dialog';
+import DialogEx from './DialogEx';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -657,7 +657,7 @@ export const LoadPluginDialog =
                 let isFavorite = this.state.favoritesList[this.state.selected_uri ?? ""];
                 return (
                     <React.Fragment>
-                        <Dialog
+                        <DialogEx tag="plugins"
                             onKeyPress={(e) => { this.handleKeyPress(e); }}
                             fullScreen={true}
                             TransitionComponent={undefined}
@@ -847,7 +847,7 @@ export const LoadPluginDialog =
 
                                 )}
                             </div>
-                        </Dialog>
+                        </DialogEx>
                     </React.Fragment >
                 );
             }

@@ -307,7 +307,7 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
 
         let isAndroid = UploadFileDialog.IsAndroid();
         return (
-            <DialogEx tag="UploadFileDialog" open={this.props.open} fullWidth onClose={() => this.handleClose()}
+            <DialogEx tag="uploadFile" open={this.props.open} fullWidth onClose={() => this.handleClose()}
                 fullScreen={this.state.fullScreen}
                 style={{ userSelect: "none" }}
             >
@@ -399,7 +399,7 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
                     {
                         this.state.okEnabled ?
                             (
-                                <Button onClick={() => this.handleClose()} color="secondary">
+                                <Button onClick={() => this.handleClose()} color="primary">
                                     OK
                                 </Button>
 

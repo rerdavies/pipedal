@@ -56,6 +56,7 @@ public:
     int64_t Insert(int64_t position, const std::string&key, const std::string&value);
     int64_t Insert(int64_t position, const std::string&line);
     int GetLineNumber(const std::string&line) const;
+    int GetLineNumberStartingWith(const std::string&line) const;
     bool HasLine(const std::string&line) const { return GetLineNumber(line) != -1; }
     void EraseLine(int i);
     int GetLineThatStartsWith(const std::string&text) const;

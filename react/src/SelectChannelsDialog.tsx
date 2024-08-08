@@ -24,7 +24,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
-import Dialog from '@mui/material/Dialog';
+import DialogEx from './DialogEx';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 import Checkbox from '@mui/material/Checkbox';
@@ -90,7 +90,7 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
 
 
         return (
-            <Dialog onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
+            <DialogEx tag="audioChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
                 <DialogTitle id="simple-dialog-title">Select Channels</DialogTitle>
                 <List>
                     {availableChannels.map((channel) => (
@@ -114,7 +114,7 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
                         OK
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </DialogEx>
         );
 
     } else {
@@ -154,7 +154,7 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
         }
 
         return (
-            <Dialog onClose={handleCancel} aria-labelledby="select-channels-title" open={open}>
+            <DialogEx tag="channels" onClose={handleCancel} aria-labelledby="select-channels-title" open={open}>
                 
                 <List style={{ marginLeft: 0, marginRight: 0}}>
                     <ListItem button onClick={() => handleListItemClick("Stereo")} key={"Stereo"} selected={selectionKey === "Stereo"} >
@@ -167,7 +167,7 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
                         <ListItemText primary={"Mono (right channel only"} />
                     </ListItem>
                 </List>
-            </Dialog>
+            </DialogEx>
         );
     }
 }

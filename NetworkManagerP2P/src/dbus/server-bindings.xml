@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<node name="/org/sdbuscpp/concatenator">
+    <interface name="org.sdbuscpp.Concatenator">
+        <method name="concatenate">
+            <arg type="ai" name="numbers" direction="in" />
+            <arg type="s" name="separator" direction="in" />
+            <arg type="s" name="concatenatedString" direction="out" />
+        </method>
+        <signal name="concatenated">
+            <arg type="s" name="concatenatedString" />
+        </signal>
+    </interface>
+</node>

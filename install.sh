@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sudo bash
 # copy files to installation directories
 cmake --install build --prefix /usr --config Release -v
 # Done as an install action by the debian package.

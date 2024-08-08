@@ -19,6 +19,10 @@ std::vector<std::string> unknownLicense ={
     "These copyright notices were found, but we were unable to automatically identify an associated license."
 };
 
+bool ContainsName(const std::string &copyright, const char*name)
+{
+    return copyright.find(name) != -1;
+}
 
 class Copyrights {
     struct License {
@@ -56,7 +60,7 @@ class Copyrights {
 
     }
 
-    void addCopyright(std::string license,const std::string &copyright)
+    void addCopyright(std::string license,std::string copyright)
     {
         if (copyright.length() == 0) return;
         if (copyright ==  "no-info-found") return;
@@ -64,6 +68,11 @@ class Copyrights {
         if (license == "")
         {
             license = UNKNOWN_LICENSE;
+        }
+        const static std::string UNSPECIFIED = "(unspecified) ";
+        if (copyright.starts_with(UNSPECIFIED))
+        {
+            copyright = copyright.substr(UNSPECIFIED.length());
         }
         auto currentLicense = licenseMap.find(license);
         if (currentLicense == licenseMap.end())
@@ -342,7 +351,7 @@ int main(int argc, const char*argv[])
         {
             cerr << endl;
         }
-        cout << "Syntax: processcopyrights --projectCopyright debian/copyright -output <oututfile> [<dependents>]*" << endl;
+        cout << "Syntax: processcopyrights --projectCopyright debian/copyright -output <outputfile> [<dependents>]*" << endl;
         return helpError? EXIT_FAILURE: EXIT_SUCCESS;
     }
 

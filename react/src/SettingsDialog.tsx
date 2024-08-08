@@ -522,7 +522,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             let disableShutdown = this.state.shuttingDown || this.state.restarting;
 
             return (
-                <DialogEx tag="SettingsDialog" fullScreen open={this.props.open}
+                <DialogEx tag="settings" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
                     style={{ userSelect: "none" }}
                 >

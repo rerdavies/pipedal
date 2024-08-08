@@ -33,6 +33,10 @@ namespace pipedal
     {
 
     public:
+        AutoLilvNode(const AutoLilvNode&) = delete;
+        AutoLilvNode&operator=(const AutoLilvNode&) = delete;
+        AutoLilvNode(AutoLilvNode&&) = default;
+
         AutoLilvNode()
         {
         }
@@ -89,6 +93,7 @@ namespace pipedal
         AutoLilvNode &operator=(AutoLilvNode &&other)
         {
             std::swap(this->node, other.node);
+            std::swap(this->isConst,other.isConst);
             return *this;
         }
 
@@ -101,7 +106,14 @@ namespace pipedal
         void Free()
         {
             if (node != nullptr && !isConst)
-                lilv_node_free(node);
+            {
+                try {
+                    lilv_node_free(node);
+                } catch (const std::exception&)
+                {
+
+                }
+            }
             node = nullptr;
         }
 

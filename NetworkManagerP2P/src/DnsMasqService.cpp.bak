@@ -1,0 +1,18 @@
+#include "DnsMasqService.hpp"
+#include "SysExec.hpp"
+#include "ss.hpp"
+
+
+void DnsMasqService::Start(const std::string&confFile, const std::string&wlan)
+{
+    std::string exec = SS("dnsmasq --conf-file=" << confFile << " --interface=p2p-"<< wlan << "-*");
+
+    this->pid = (int64_t)pipedal::sysExecAsync(exec);
+}
+void DnsMasqService::Stop()
+{
+    if (this->pid != -1)
+    {
+        pipedal::sysExecTerminate(pid,1000,500);
+    }
+}

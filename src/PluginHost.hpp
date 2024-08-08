@@ -727,7 +727,7 @@ namespace pipedal
 
             AutoLilvNode dc__format;
         };
-        LilvUris lilvUris;
+        LilvUris* lilvUris = nullptr;
 
     private:
         bool vst3Enabled = true;

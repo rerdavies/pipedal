@@ -23,12 +23,11 @@ import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
-import Dialog from '@mui/material/Dialog';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 import Checkbox from '@mui/material/Checkbox';
 import {AlsaMidiDeviceInfo} from './AlsaMidiDeviceInfo';
-
+import DialogEx from './DialogEx';
 
 
 
@@ -94,7 +93,7 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
 
 
     return (
-        <Dialog onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
+        <DialogEx tag="midiChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
             <DialogTitle id="simple-dialog-title">Select MIDI Device</DialogTitle>
             <List>
                 {availableChannels.map((channel) => (
@@ -118,7 +117,7 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
                     OK
                 </Button>
             </DialogActions>
-        </Dialog>
+        </DialogEx>
     );
 }
 

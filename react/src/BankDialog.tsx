@@ -293,7 +293,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
             let classes = this.props.classes;
             let selectedItem = this.isEditMode() ? this.state.selectedItem : this.state.banks.selectedBank;
             return (
-                <div key={bankEntry.instanceId} style={{ background: "white" }} >
+                <div key={bankEntry.instanceId}  >
 
                     <ButtonBase style={{ width: "100%", height: 48 }}
                         onClick={() => this.handleItemClick(bankEntry.instanceId)}
@@ -403,7 +403,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
             let defaultSelectedIndex = this.getSelectedIndex();
 
             return (
-                <DialogEx tag="BankDialog" fullScreen open={this.props.show}
+                <DialogEx tag="bank" fullScreen open={this.props.show}
                     onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}
                     style={{userSelect: "none"}}
                     >

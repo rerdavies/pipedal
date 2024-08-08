@@ -226,6 +226,14 @@ export const MidiBindingDialog =
 
                         for (let i = 0; i < plugin.controls.length; ++i) {
                             let control = plugin.controls[i];
+                            if (control.isHidden())
+                            {
+                                continue;
+                            }
+                            if (!control.is_input)
+                            {
+                                continue;
+                            }
                             let symbol = control.symbol;
                             result.push(
                                 <tr>
@@ -269,7 +277,7 @@ export const MidiBindingDialog =
                 }
 
                 return (
-                    <DialogEx tag="MidiBindingsDialog" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
+                    <DialogEx tag="midiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
                         fullScreen={true} 
                         style={{userSelect: "none"}}
                     >

@@ -1,4 +1,8 @@
 # Release Notes
+## PiPedal 1.2.32
+
+- Raspberry PI OS Bookworm Compatibility.
+
 ## PiPedal 1.1.31
 
 - Use system preferences for dark mode when connecting from Android app.

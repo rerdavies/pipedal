@@ -1,0 +1,10 @@
+#pragma once
+#include <string>
+
+class DnsMasqService {
+public:
+    void Start(const std::string&confFile, const std::string&wlan);
+    void Stop();
+private:
+    int64_t pid = -1;
+};

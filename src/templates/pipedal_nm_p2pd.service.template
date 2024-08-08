@@ -1,0 +1,20 @@
+[Unit]
+Description=PiPedal P2P Session Manager
+After=network.target
+After=nss-lookup.target
+After=wpa_supplicant.service
+After=NetworkManager.service
+After=dhcpcd.service
+StartLimitIntervalSec=300
+StartLimitBurst=8
+
+[Service]
+ExecStart=${COMMAND} --systemd --loglevel info
+Type=notify
+WorkingDirectory=/var/pipedal
+Restart=on-failure
+TimeoutStopSec=5
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

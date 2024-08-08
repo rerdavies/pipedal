@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "CommandLineParser.hpp"
-#include "PiPedalException.hpp"
 #include <filesystem>
 #include <stdlib.h>
 #include "WriteTemplateFile.hpp"
@@ -37,7 +36,7 @@
 #include <uuid/uuid.h>
 #include <random>
 #include "AudioConfig.hpp"
-
+#include "WifiChannelSelectors.hpp"
 
 #if JACK_HOST
 #define INSTALL_JACK_SERVICE 1
@@ -46,7 +45,6 @@
 #endif
 
 #define UNINSTALL_JACK_SERVICE 1
-
 
 #define SS(x) (((std::stringstream &)(std::stringstream() << x)).str())
 
@@ -70,9 +68,11 @@ using namespace pipedal;
 #define CHMOD_BIN "/usr/bin/chmod"
 
 #define SERVICE_PATH "/usr/lib/systemd/system"
-#define NATIVE_SERVICE "pipedald"
+#define PIPEDALD_SERVICE "pipedald"
 #define ADMIN_SERVICE "pipedaladmind"
 #define PIPEDAL_P2PD_SERVICE "pipedal_p2pd"
+#define PIPEDAL_NM_P2PD_SERVICE "pipedal_nm_p2pd"
+#define NETWORK_MANAGER_SERIVCE "NetworkManager"
 #define JACK_SERVICE "jack"
 
 #define REMOVE_OLD_SERVICE 0 // Grandfathering: whether to remove the old shutdown service (now pipedaladmind)
@@ -105,14 +105,14 @@ std::filesystem::path findOnPath(const std::string &command)
     }
     std::stringstream s;
     s << "'" << command << "' is not installed.";
-    throw PiPedalException(s.str());
+    throw std::runtime_error(s.str());
 }
 
 void EnableService()
 {
-    if (sysExec(SYSTEMCTL_BIN " enable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " enable " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to enable the " NATIVE_SERVICE " service.\n";
+        cout << "Error: Failed to enable the " PIPEDALD_SERVICE " service.\n";
     }
     if (sysExec(SYSTEMCTL_BIN " enable " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
     {
@@ -121,17 +121,17 @@ void EnableService()
 }
 void DisableService()
 {
-    #if INSTALL_JACK_SERVICE || UNINSTALL_JACK_SERVICE
+#if INSTALL_JACK_SERVICE || UNINSTALL_JACK_SERVICE
     if (silentSysExec(SYSTEMCTL_BIN " disable " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
-        #if INSTALL_JACK_SERVICE
-        // cout << "Error: Failed to disable the " JACK_SERVICE " service.";
-        #endif
+#if INSTALL_JACK_SERVICE
+// cout << "Error: Failed to disable the " JACK_SERVICE " service.";
+#endif
     }
-    #endif
-    if (sysExec(SYSTEMCTL_BIN " disable " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
+#endif
+    if (sysExec(SYSTEMCTL_BIN " disable " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to disable the " NATIVE_SERVICE " service.\n";
+        cout << "Error: Failed to disable the " PIPEDALD_SERVICE " service.\n";
     }
     if (sysExec(SYSTEMCTL_BIN " disable " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
     {
@@ -147,9 +147,9 @@ void DisableService()
 
 void StopService(bool excludeShutdownService = false)
 {
-    if (sysExec(SYSTEMCTL_BIN " stop " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " stop " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
     {
-        cout << "Error: Failed to stop the " NATIVE_SERVICE " service.\n";
+        cout << "Error: Failed to stop the " PIPEDALD_SERVICE " service.\n";
     }
     if (!excludeShutdownService)
     {
@@ -167,9 +167,9 @@ void StopService(bool excludeShutdownService = false)
 #if INSTALL_JACK_SERVICE || UNINSTALL_JACK_SERVICE
     if (silentSysExec(SYSTEMCTL_BIN " stop " JACK_SERVICE ".service") != EXIT_SUCCESS)
     {
-        #if INSTALL_JACK_SERVICE
-        // cout << PiPedalException("Failed to stop the " JACK_SERVICE " service.");
-        #endif
+#if INSTALL_JACK_SERVICE
+// cout << std::runtime_error("Failed to stop the " JACK_SERVICE " service.");
+#endif
     }
 #endif
 }
@@ -182,12 +182,12 @@ void StartService(bool excludeShutdownService = false)
     {
         if (sysExec(SYSTEMCTL_BIN " start " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
         {
-            throw PiPedalException("Failed to start the " ADMIN_SERVICE " service.");
+            throw std::runtime_error("Failed to start the " ADMIN_SERVICE " service.");
         }
     }
-    if (sysExec(SYSTEMCTL_BIN " start " NATIVE_SERVICE ".service") != EXIT_SUCCESS)
+    if (sysExec(SYSTEMCTL_BIN " start " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
     {
-        throw PiPedalException("Failed to start the " NATIVE_SERVICE " service.");
+        throw std::runtime_error("Failed to start the " PIPEDALD_SERVICE " service.");
     }
 #if INSTALL_JACK_SERVICE
     JackServerSettings serverSettings;
@@ -196,7 +196,7 @@ void StartService(bool excludeShutdownService = false)
     {
         if (sysExec(SYSTEMCTL_BIN " start " JACK_SERVICE ".service") != EXIT_SUCCESS)
         {
-            throw PiPedalException("Failed to start the " JACK_SERVICE " service.");
+            throw std::runtime_error("Failed to start the " JACK_SERVICE " service.");
         }
     }
 #endif
@@ -246,7 +246,7 @@ static void RemoveLine(const std::string &path, const std::string lineToRemove)
                 ifstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException(SS("Can't open " << path));
+                    throw std::runtime_error(SS("Can't open " << path));
                 }
                 while (true)
                 {
@@ -265,7 +265,7 @@ static void RemoveLine(const std::string &path, const std::string lineToRemove)
                 std::ofstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException(SS("Can't write to " << path));
+                    throw std::runtime_error(SS("Can't write to " << path));
                 }
                 for (auto &line : lines)
                 {
@@ -303,7 +303,7 @@ void InstallPamEnv()
                 ifstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException(SS("Can't open " << path));
+                    throw std::runtime_error(SS("Can't open " << path));
                 }
                 while (true)
                 {
@@ -328,7 +328,7 @@ void InstallPamEnv()
                 std::ofstream f(path);
                 if (!f.is_open())
                 {
-                    throw PiPedalException(SS("Can't write to " << path));
+                    throw std::runtime_error(SS("Can't write to " << path));
                 }
                 for (auto &line : lines)
                 {
@@ -348,7 +348,7 @@ void InstallLimits()
 {
     if (sysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
-        throw PiPedalException("Failed to create audio service group.");
+        throw std::runtime_error("Failed to create audio service group.");
     }
 
     std::filesystem::path limitsConfig = "/etc/security/limits.d/audio.conf";
@@ -364,7 +364,6 @@ void InstallLimits()
                << "\n";
     }
 }
-
 
 #if JACK_HOST
 void MaybeStartJackService()
@@ -390,13 +389,13 @@ void InstallAudioService()
 #if INSTALL_JACK_SERVICE
     if (sysExec(GROUPADD_BIN " -f " JACK_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
     {
-        throw PiPedalException("Failed to create jack service group.");
+        throw std::runtime_error("Failed to create jack service group.");
     }
     if (!userExists(JACK_SERVICE_ACCOUNT_NAME))
     {
         if (sysExec(USERADD_BIN " " JACK_SERVICE_ACCOUNT_NAME " -g " JACK_SERVICE_GROUP_NAME " -m -N -r") != EXIT_SUCCESS)
         {
-            //  throw PiPedalException("Failed to create service account.");
+            //  throw std::runtime_error("Failed to create service account.");
         }
         // lock account for login.
         silentSysExec("passwd -l " JACK_SERVICE_ACCOUNT_NAME);
@@ -417,18 +416,32 @@ void InstallAudioService()
 
     MaybeStartJackService();
 #endif
-
 }
 
-int SudoExec(char **argv)
+int SudoExec(int argc, char**argv)
 {
+        // re-execute with SUDO in order to prompt for SUDO credentials once only.
+    std::vector<char *> args;
+    std::string pkexec = "/usr/bin/sudo"; // staged because "ISO C++ forbids converting a string constant to std::vector<char*>::value_type"(!)
+    args.push_back((char *)(pkexec.c_str()));
+
+    std::string sPath = getSelfExePath();
+    args.push_back(const_cast<char *>(sPath.c_str()));
+    for (int arg = 1; arg < argc; ++arg)
+    {
+        args.push_back(const_cast<char *>(argv[arg]));
+    }
+
+    args.push_back(nullptr);
+
+    char **newArgs = &args[0];
+
     int pbPid;
     int returnValue = 0;
 
     if ((pbPid = fork()) == 0)
     {
-        execv(argv[0], argv);
-        exit(-1);
+        return execv(newArgs[0], newArgs);
     }
     else
     {
@@ -445,37 +458,35 @@ static bool IsP2pServiceEnabled()
     return settings.enable_;
 }
 
-static void RestartP2pdService()
-{
-    if (IsP2pServiceEnabled())
-    {
-        silentSysExec(SYSTEMCTL_BIN " restart " PIPEDAL_P2PD_SERVICE);
-    }
-}
-
-static void UninstallP2pdService()
-{
-    silentSysExec("systemctl stop " PIPEDAL_P2PD_SERVICE);
-    silentSysExec("systemctl disable " PIPEDAL_P2PD_SERVICE);
-}
-
-
 void Uninstall()
 {
     try
     {
+        try
+        {
+            if (IsP2pServiceEnabled())
+            {
+                WifiDirectConfigSettings settings;
+                settings.Load();
+                settings.enable_ = false;
+                settings.Save();
+                SetWifiDirectConfig(settings);
+            }
+        }
+        catch (const std::exception e)
+        {
+            std::cout << "Error: Unable to disable the Wiifi P2P service. " << e.what() << std::endl;
+        }
 
         OnWifiUninstall();
 
         StopService();
         DisableService();
-        UninstallP2pdService();
 
 #if UNINSTALL_JACK_SERVICE
         silentSysExec(SYSTEMCTL_BIN " stop jack");
         silentSysExec(SYSTEMCTL_BIN " disable jack");
 #endif
-
 
         try
         {
@@ -494,6 +505,13 @@ void Uninstall()
         }
         try
         {
+            std::filesystem::remove("/usr/bin/systemd/system/" PIPEDAL_NM_P2PD_SERVICE ".service");
+        }
+        catch (...)
+        {
+        }
+        try
+        {
             std::filesystem::remove("/usr/bin/systemd/system/" PIPEDAL_P2PD_SERVICE ".service");
         }
         catch (...)
@@ -502,7 +520,7 @@ void Uninstall()
 
         try
         {
-            std::filesystem::remove("/usr/bin/systemd/system/" NATIVE_SERVICE ".service");
+            std::filesystem::remove("/usr/bin/systemd/system/" PIPEDALD_SERVICE ".service");
         }
         catch (...)
         {
@@ -521,12 +539,12 @@ void Uninstall()
     }
     catch (const std::exception &e)
     {
-        // We should NEVER get here. But the consequences of failure are high (causes permanent apt installs/uninstall problems), so be safe. 
+        // We should NEVER get here. But the consequences of failure are high (causes permanent apt installs/uninstall problems), so be safe.
         cout << "ERROR: Unexpected error while uninstalling pipedal. (" << e.what() << ")" << endl;
     }
     catch (...)
     {
-        // We should NEVER get here. But the consequences of failure are high (causes permanent apt installs/uninstall problems), so be safe. 
+        // We should NEVER get here. But the consequences of failure are high (causes permanent apt installs/uninstall problems), so be safe.
         cout << "ERROR: Unexpected error while uninstalling pipedal." << endl;
     }
 }
@@ -577,15 +595,14 @@ static std::string RandomChars(int nchars)
 static void PrepareServiceConfigurationFile(uint16_t portNumber)
 {
     ServiceConfiguration serviceConfiguration;
-    try {
-        serviceConfiguration.Load();
-    } catch (const std::exception &)
+    try
     {
-
+        serviceConfiguration.Load();
     }
-    if (serviceConfiguration.deviceName == "" || serviceConfiguration.uuid == ""
-        || portNumber != serviceConfiguration.server_port
-    )
+    catch (const std::exception &)
+    {
+    }
+    if (serviceConfiguration.deviceName == "" || serviceConfiguration.uuid == "" || portNumber != serviceConfiguration.server_port)
     {
         if (serviceConfiguration.deviceName == "")
         {
@@ -600,190 +617,230 @@ static void PrepareServiceConfigurationFile(uint16_t portNumber)
     }
 }
 
-
+void CopyWpaSupplicantConfigFile()
+{
+    try {
+        const char NM_SUPPLICANT_CONFIG_PATH[] = "/etc/pipedal/config/wpa_supplicant/wpa_supplicant-pipedal.conf";
+        const char NM_SUPPLICANT_CONFIG_SOURCE_PATH[] = "/etc/pipedal/config/templates/wpa_supplicant-pipedal.conf";
+        std::filesystem::path destinationPath = NM_SUPPLICANT_CONFIG_PATH;
+        std::filesystem::path sourcePath = NM_SUPPLICANT_CONFIG_SOURCE_PATH;
+        
+        std::filesystem::create_directories(destinationPath.parent_path());
+        std::filesystem::copy_file(sourcePath,destinationPath,std::filesystem::copy_options::overwrite_existing);
+    } catch (const std::exception&e)
+    {
+        cout << "ERROR: " << e.what() << endl;
+    }
+}
 void Install(const std::filesystem::path &programPrefix, const std::string endpointAddress)
 {
-    if (sysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
-    {
-        throw PiPedalException("Failed to create audio service group.");
-    }
-    if (sysExec(GROUPADD_BIN " -f " SERVICE_GROUP_NAME) != EXIT_SUCCESS)
-    {
-        throw PiPedalException("Failed to create pipedald service group.");
-    }
-
-    InstallAudioService();
-    auto endpos = endpointAddress.find_last_of(':');
-    if (endpos == string::npos)
-    {
-        throw PiPedalException("Invalid endpoint address: " + endpointAddress);
-    }
-    uint16_t port;
-    auto strPort = endpointAddress.substr(endpos + 1);
+    cout << "Configuring pipedal" << endl;
     try
     {
-        auto lport = std::stoul(strPort);
-        if (lport == 0 || lport >= std::numeric_limits<uint16_t>::max())
+        if (sysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)
         {
-            throw PiPedalException("out of range.");
+            throw std::runtime_error("Failed to create audio service group.");
         }
-        port = (uint16_t)lport;
-        std::stringstream s;
-        s << port;
-        strPort = s.str(); // normalized.
-    }
-    catch (const std::exception &)
-    {
-        std::stringstream s;
-        s << "Invalid port number: " << strPort;
-        throw PiPedalException(s.str());
-    }
-    PrepareServiceConfigurationFile(port);
-
-
-
-    bool authBindRequired = port < 512;
-
-    // Create and configure service account.
-
-    if (sysExec(GROUPADD_BIN " -f " SERVICE_GROUP_NAME) != EXIT_SUCCESS)
-    {
-        throw PiPedalException("Failed to create service group.");
-    }
-
-    if (!userExists(SERVICE_ACCOUNT_NAME))
-    {
-        if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -m --home /var/pipedal/home -N -r") != EXIT_SUCCESS)
+        if (sysExec(GROUPADD_BIN " -f " SERVICE_GROUP_NAME) != EXIT_SUCCESS)
         {
-            //  throw PiPedalException("Failed to create service account.");
+            throw std::runtime_error("Failed to create pipedald service group.");
         }
-        // lock account for login.
-        silentSysExec("passwd -l " SERVICE_ACCOUNT_NAME);
-    }
-
-    // Add to audio groups.
-    sysExec(USERMOD_BIN " -a -G  " AUDIO_SERVICE_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
-
-    // create and configure /var directory.
-
-    std::filesystem::path varDirectory("/var/pipedal");
-    std::filesystem::create_directory(varDirectory);
-
-    {
-        std::stringstream s;
-        s << CHGRP_BIN " " SERVICE_GROUP_NAME " " << varDirectory.c_str();
-        sysExec(s.str().c_str());
-    }
-    {
-        std::stringstream s;
-        s << CHOWN_BIN << " " << SERVICE_ACCOUNT_NAME << " " << varDirectory.c_str();
-        sysExec(s.str().c_str());
-    }
-
-    {
-        std::stringstream s;
-        s << CHMOD_BIN << " 775 " << varDirectory.c_str();
-        sysExec(s.str().c_str());
-    }
-    {
-        std::stringstream s;
-        s << CHMOD_BIN << " g+s " << varDirectory.c_str(); // child files/directories inherit ownership.
-        sysExec(s.str().c_str());
-    }
-
-    // authbind port.
-
-    if (authBindRequired)
-    {
-        std::filesystem::create_directories("/etc/authbind/byport");
-        std::filesystem::path portAuthFile = std::filesystem::path("/etc/authbind/byport") / strPort;
-
+        // defensively disable wifi p2p if some leftover config file left it enabled.
+        try
         {
-            // create it.
-            std::ofstream f(portAuthFile);
-            if (!f.is_open())
+            if (IsP2pServiceEnabled())
             {
-                throw PiPedalException("Failed to create " + portAuthFile.string());
+                WifiDirectConfigSettings settings;
+                settings.Load();
+                settings.enable_ = false;
+                settings.Save();
             }
         }
+        catch (const std::exception &)
         {
-            // own it.
+        }
+
+        InstallAudioService();
+        auto endpos = endpointAddress.find_last_of(':');
+        if (endpos == string::npos)
+        {
+            throw std::runtime_error("Invalid endpoint address: " + endpointAddress);
+        }
+        uint16_t port;
+        auto strPort = endpointAddress.substr(endpos + 1);
+        try
+        {
+            auto lport = std::stoul(strPort);
+            if (lport == 0 || lport >= std::numeric_limits<uint16_t>::max())
+            {
+                throw std::runtime_error("out of range.");
+            }
+            port = (uint16_t)lport;
             std::stringstream s;
-            s << CHOWN_BIN << " " SERVICE_ACCOUNT_NAME " " << portAuthFile.c_str();
+            s << port;
+            strPort = s.str(); // normalized.
+        }
+        catch (const std::exception &)
+        {
+            std::stringstream s;
+            s << "Invalid port number: " << strPort;
+            throw std::runtime_error(s.str());
+        }
+        PrepareServiceConfigurationFile(port);
+
+        bool authBindRequired = port < 512;
+
+        // Create and configure service account.
+
+        if (sysExec(GROUPADD_BIN " -f " SERVICE_GROUP_NAME) != EXIT_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create service group.");
+        }
+
+        if (!userExists(SERVICE_ACCOUNT_NAME))
+        {
+            if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -m --home /var/pipedal/home -N -r") != EXIT_SUCCESS)
+            {
+                //  throw std::runtime_error("Failed to create service account.");
+            }
+            // lock account for login.
+            silentSysExec("passwd -l " SERVICE_ACCOUNT_NAME);
+        }
+
+        // Add to audio groups.
+        sysExec(USERMOD_BIN " -a -G  " AUDIO_SERVICE_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
+
+        // create and configure /var directory.
+
+        std::filesystem::path varDirectory("/var/pipedal");
+        std::filesystem::create_directory(varDirectory);
+
+        {
+            std::stringstream s;
+            s << CHGRP_BIN " " SERVICE_GROUP_NAME " " << varDirectory.c_str();
             sysExec(s.str().c_str());
         }
         {
-            // group own it.
             std::stringstream s;
-            s << CHGRP_BIN << " " SERVICE_GROUP_NAME " " << portAuthFile.c_str();
+            s << CHOWN_BIN << " " << SERVICE_ACCOUNT_NAME << " " << varDirectory.c_str();
+            sysExec(s.str().c_str());
+        }
+
+        {
+            std::stringstream s;
+            s << CHMOD_BIN << " 775 " << varDirectory.c_str();
             sysExec(s.str().c_str());
         }
         {
             std::stringstream s;
-            s << CHMOD_BIN << " 770 " << portAuthFile.c_str();
+            s << CHMOD_BIN << " g+s " << varDirectory.c_str(); // child files/directories inherit ownership.
             sysExec(s.str().c_str());
         }
-    }
 
-    cout << "Creating Systemd file."
-         << "\n";
-
-    std::map<string, string> map;
-
-    int shutdownPort = 3147;
-    map["DESCRIPTION"] = "PiPedal Web Service";
-    {
-        std::stringstream s;
+        // authbind port.
 
         if (authBindRequired)
         {
-            s << findOnPath("authbind").string() << " --deep ";
+            std::filesystem::create_directories("/etc/authbind/byport");
+            std::filesystem::path portAuthFile = std::filesystem::path("/etc/authbind/byport") / strPort;
+
+            {
+                // create it.
+                std::ofstream f(portAuthFile);
+                if (!f.is_open())
+                {
+                    throw std::runtime_error("Failed to create " + portAuthFile.string());
+                }
+            }
+            {
+                // own it.
+                std::stringstream s;
+                s << CHOWN_BIN << " " SERVICE_ACCOUNT_NAME " " << portAuthFile.c_str();
+                sysExec(s.str().c_str());
+            }
+            {
+                // group own it.
+                std::stringstream s;
+                s << CHGRP_BIN << " " SERVICE_GROUP_NAME " " << portAuthFile.c_str();
+                sysExec(s.str().c_str());
+            }
+            {
+                std::stringstream s;
+                s << CHMOD_BIN << " 770 " << portAuthFile.c_str();
+                sysExec(s.str().c_str());
+            }
         }
-        s
-            << (programPrefix / "bin" / NATIVE_SERVICE).string()
-            << " /etc/pipedal/config /etc/pipedal/react -port " << endpointAddress << " -systemd";
 
-        map["COMMAND"] = s.str();
+        std::map<string, string> map;
+
+        int shutdownPort = 3147;
+        map["DESCRIPTION"] = "PiPedal Web Service";
+        {
+            std::stringstream s;
+
+            if (authBindRequired)
+            {
+                s << findOnPath("authbind").string() << " --deep ";
+            }
+            s
+                << (programPrefix / "sbin" / PIPEDALD_SERVICE).string()
+                << " /etc/pipedal/config /etc/pipedal/react -port " << endpointAddress << " -systemd";
+
+            map["COMMAND"] = s.str();
+        }
+        WriteTemplateFile(map, GetServiceFileName(PIPEDALD_SERVICE));
+
+        map["DESCRIPTION"] = "PiPedal Admin Service";
+        {
+            std::stringstream s;
+
+            s
+                << (programPrefix / "sbin" / ADMIN_SERVICE).string()
+                << " -port " << shutdownPort;
+
+            map["COMMAND"] = s.str();
+        }
+        WriteTemplateFile(map, GetServiceFileName(ADMIN_SERVICE));
+
+        // /usr/bin/pipedal_p2pd --config-file /etc/pipedal/config/template_p2pd.conf
+
+        if (UsingNetworkManager())
+        {
+            std::string pipedal_nm_p2pd_cmd = SS(
+                (programPrefix / "sbin" / "pipedal_nm_p2pd").string()
+                //<< " --config-file " << PIPEDAL_P2PD_CONF_PATH
+            );
+            map["COMMAND"] = pipedal_nm_p2pd_cmd;
+
+            WriteTemplateFile(map, GetServiceFileName(PIPEDAL_NM_P2PD_SERVICE));
+        }
+        else
+        {
+            std::string pipedal_p2pd_cmd = SS(
+                (programPrefix / "sbin" / "pipedal_p2pd").string()
+                << " --config-file " << PIPEDAL_P2PD_CONF_PATH);
+            map["COMMAND"] = pipedal_p2pd_cmd;
+
+            WriteTemplateFile(map, GetServiceFileName(PIPEDAL_P2PD_SERVICE));
+        }
+        CopyWpaSupplicantConfigFile();
+
+        sysExec(SYSTEMCTL_BIN " daemon-reload");
+
+        RestartService(false);
+        EnableService();
     }
-    WriteTemplateFile(map, GetServiceFileName(NATIVE_SERVICE));
-
-    map["DESCRIPTION"] = "PiPedal Admin Service";
+    catch (const std::exception &e)
     {
-        std::stringstream s;
-
-        s
-            << (programPrefix / "bin" / ADMIN_SERVICE).string()
-            << " -port " << shutdownPort;
-
-        map["COMMAND"] = s.str();
+        // don't allow abnormal termination, which leaves the package in a state that's
+        // difficult to uninstall.
+        cout << "Error: " << e.what();
     }
-    WriteTemplateFile(map, GetServiceFileName(ADMIN_SERVICE));
-
-    // /usr/bin/pipedal_p2pd --config-file /etc/pipedal/config/template_p2pd.conf
-
-    std::string pipedal_p2pd_cmd = SS(
-        (programPrefix / "bin" / "pipedal_p2pd").string()
-        << " --config-file " << PIPEDAL_P2PD_CONF_PATH);
-    map["COMMAND"] = pipedal_p2pd_cmd;
-
-    WriteTemplateFile(map, GetServiceFileName(PIPEDAL_P2PD_SERVICE));
-
-    sysExec(SYSTEMCTL_BIN " daemon-reload");
-
-    cout << "Starting services"
-         << "\n";
-    RestartService(false);
-    EnableService();
-
-    RestartP2pdService();
-
-    cout << "Complete"
-         << "\n";
 }
 
 static std::string GetCurrentWebServicePort()
 {
-    std::filesystem::path servicePath = GetServiceFileName(NATIVE_SERVICE);
+    std::filesystem::path servicePath = GetServiceFileName(PIPEDALD_SERVICE);
     try
     {
         if (std::filesystem::exists(servicePath))
@@ -792,7 +849,7 @@ static std::string GetCurrentWebServicePort()
                 ifstream f(servicePath);
                 if (!f.is_open())
                 {
-                    throw PiPedalException(SS("Can't open " << servicePath));
+                    throw std::runtime_error(SS("Can't open " << servicePath));
                 }
                 while (true)
                 {
@@ -805,11 +862,11 @@ static std::string GetCurrentWebServicePort()
                         auto startPos = line.find("-port ");
                         if (startPos != std::string::npos)
                         {
-                            startPos = startPos+6;
+                            startPos = startPos + 6;
                             auto endPos = line.find(" -systemd");
                             if (endPos != std::string::npos)
                             {
-                                std::string result = line.substr(startPos,endPos-startPos);
+                                std::string result = line.substr(startPos, endPos - startPos);
                                 return result;
                             }
                         }
@@ -818,7 +875,7 @@ static std::string GetCurrentWebServicePort()
             }
         }
     }
-    catch (const std::exception &/*ignored*/)
+    catch (const std::exception & /*ignored*/)
     {
     }
     return "";
@@ -909,20 +966,24 @@ static void PrintHelp()
         << "Channel number defaults to 1."
         << "\n\n"
 
-        << HangingIndent() << "   --disable-p2p\tDisabled Wi-Fi Direct access."
+        << HangingIndent() << "    --disable-p2p\tDisable Wi-Fi Direct access."
         << "\n\n"
 
-        << HangingIndent() << "    --enable-legacy-ap\t <country_code> <ssid> <wep_password> <channel>\tEnable a legacy Wi-Fi access point."
+        << HangingIndent() << "    --list-p2p-channels [<country_code>] \tList valid p2p channels for the current/specified country."
         << "\n\n"
-        << "Enable a legacy Wi-Fi access point. \n\n"
-        << "country_code is the 2-letter ISO-3166 country code for "
-        << "the country you are in. see below for further notes."
-        << "\n\n"
-        << "See below for an explanation of when you might want to use a legacy Wi-Fi access point instead of Wifi-Direct access."
-        << "an explanation of when you might want to use a legacy Access Point instead of "
-        << "a P2P (Wi-Fi Direct) connection. Generally, you should prefer a P2p connection "
-        << "to an ordinary Hotspot connection."
-        << "\n\n"
+
+
+        // << HangingIndent() << "    --enable-legacy-ap\t <country_code> <ssid> <wep_password> <channel>\tEnable a legacy Wi-Fi access point."
+        // << "\n\n"
+        // << "Enable a legacy Wi-Fi access point. \n\n"
+        // << "country_code is the 2-letter ISO-3166 country code for "
+        // << "the country you are in. see below for further notes."
+        // << "\n\n"
+        // << "See below for an explanation of when you might want to use a legacy Wi-Fi access point instead of Wifi-Direct access."
+        // << "an explanation of when you might want to use a legacy Access Point instead of "
+        // << "a P2P (Wi-Fi Direct) connection. Generally, you should prefer a P2p connection "
+        // << "to an ordinary Hotspot connection."
+        // << "\n\n"
 
         << HangingIndent() << "    --disable-legacy-ap\tDisabled the legacy Wi-Fi access point."
         << "\n\n"
@@ -962,6 +1023,40 @@ static void PrintHelp()
            "therefore preferrable under almost all circumstances.\n\n";
 }
 
+static int ListP2PChannels(const std::vector<std::string>&arguments)
+{
+    try {
+        std::string country;
+        if (arguments.size() >= 2) 
+        {
+            throw std::runtime_error("Invalid arguments.");
+        } if (arguments.size() == 1)
+        {
+            country = arguments[0];
+        } else {
+            // use the currently selected country by default.
+            WifiDirectConfigSettings settings;
+            settings.Load();
+            if (settings.countryCode_.empty())
+            {
+                throw std::runtime_error("A country has not yet been selected. Please provde a country code.");
+            }
+            country = settings.countryCode_;
+        }
+        auto channelSelectors = getWifiChannelSelectors(country.c_str(),true);
+        for (const auto &channelSelector: channelSelectors)
+        {
+            cout << channelSelector.channelName_ << endl;
+        }
+    } catch (const std::exception &e)
+    {
+        cout << "ERROR: " << e.what() << endl;
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+
+}
+
 int main(int argc, char **argv)
 {
     CommandLineParser parser;
@@ -973,13 +1068,14 @@ int main(int argc, char **argv)
     bool enable = false, disable = false, restart = false;
     bool enable_ap = false, disable_ap = false;
     bool enable_p2p = false, disable_p2p = false;
+    bool list_p2p_channels = false;
     bool get_current_port = false;
-    bool nopkexec = false;
+    bool nosudo = false;
     bool excludeShutdownService = false;
     std::string prefixOption;
     std::string portOption;
 
-    parser.AddOption("--nopkexec", &nopkexec); // strictly a debugging aid.
+    parser.AddOption("--nosudo", &nosudo); // strictly a debugging aid. Run without sudo, until we fail because of permissions.
     parser.AddOption("--install", &install);
     parser.AddOption("--uninstall", &uninstall);
     parser.AddOption("--stop", &stop);
@@ -991,10 +1087,12 @@ int main(int argc, char **argv)
     parser.AddOption("--help", &help);
     parser.AddOption("--prefix", &prefixOption);
     parser.AddOption("--port", &portOption);
-    parser.AddOption("--enable-legacy-ap", &enable_ap);
+    //parser.AddOption("--enable-legacy-ap", &enable_ap);
     parser.AddOption("--disable-ap", &disable_ap);
     parser.AddOption("--enable-p2p", &enable_p2p);
     parser.AddOption("--disable-p2p", &disable_p2p);
+    parser.AddOption("--list-p2p-channels", &list_p2p_channels);
+
 
     parser.AddOption("--get-current-port", &get_current_port); // private. For debug use only.
 
@@ -1003,20 +1101,25 @@ int main(int argc, char **argv)
     {
         parser.Parse(argc, (const char **)argv);
 
-        int actionCount = get_current_port + install + uninstall + stop + start + enable + disable + enable_ap + disable_ap + restart + enable_p2p + disable_p2p;
+        int actionCount = 
+            help + get_current_port + install + uninstall + stop + start + enable + disable 
+            + enable_ap + disable_ap + restart + enable_p2p + disable_p2p
+            + list_p2p_channels
+            ;
         if (actionCount > 1)
         {
-            throw PiPedalException("Please provide only one action.");
+            throw std::runtime_error("Please provide only one action.");
         }
-        if (argc == 1 )
+        if (argc == 1)
         {
             help = true;
-        } else if (actionCount == 0)
+        }
+        else if (actionCount == 0)
         {
 
-            throw PiPedalException("No action provided.");
+            throw std::runtime_error("No action provided.");
         }
-        if ((!enable_p2p) && (!enable_ap))
+        if ((!enable_p2p) && (!enable_ap) && (!list_p2p_channels))
         {
             if (parser.Arguments().size() != 0)
             {
@@ -1045,7 +1148,11 @@ int main(int argc, char **argv)
     if (get_current_port)
     {
         std::cout << "current port: " << GetCurrentWebServicePort() << std::endl;
-        return 0;
+        return EXIT_SUCCESS;
+    }
+    if (list_p2p_channels)
+    {
+        return ListP2PChannels(parser.Arguments());
     }
     if (portOption.size() != 0 && !install)
     {
@@ -1055,24 +1162,9 @@ int main(int argc, char **argv)
     }
 
     auto uid = getuid();
-    if (uid != 0 && !nopkexec)
+    if (uid != 0 && !nosudo)
     {
-        // re-execute with PKEXEC in order to prompt for SUDO credentials once only.
-        std::vector<char *> args;
-        std::string pkexec = "/usr/bin/pkexec"; // staged because "ISO C++ forbids converting a string constant to std::vector<char*>::value_type"(!)
-        args.push_back((char *)(pkexec.c_str()));
-
-        std::string sPath = getSelfExePath();
-        args.push_back(const_cast<char *>(sPath.c_str()));
-        for (int arg = 1; arg < argc; ++arg)
-        {
-            args.push_back(const_cast<char *>(argv[arg]));
-        }
-
-        args.push_back(nullptr);
-
-        char **rawArgv = &args[0];
-        return SudoExec(rawArgv);
+        return SudoExec(argc,argv);
     }
 
     try
@@ -1088,12 +1180,12 @@ int main(int argc, char **argv)
             {
                 prefix = std::filesystem::path(argv[0]).parent_path().parent_path();
 
-                std::filesystem::path pipedalPath = prefix / "bin/pipedald";
+                std::filesystem::path pipedalPath = prefix / "sbin" / "pipedald";
                 if (!std::filesystem::exists(pipedalPath))
                 {
                     std::stringstream s;
                     s << "Can't find pipedald executable at " << pipedalPath << ". Try again using the -prefix option.";
-                    throw PiPedalException(s.str());
+                    throw std::runtime_error(s.str());
                 }
             }
 
@@ -1137,13 +1229,19 @@ int main(int argc, char **argv)
         }
         else if (enable_p2p)
         {
-            auto argv = parser.Arguments();
-            WifiDirectConfigSettings settings;
-            settings.ParseArguments(argv);
-            settings.valid_ = true;
-            settings.enable_ = true;
-            SetWifiDirectConfig(settings);
-            RestartService(true); // also have to retart web service so that it gets the correct device name.
+            try {
+                auto argv = parser.Arguments();
+                WifiDirectConfigSettings settings;
+                settings.ParseArguments(argv);
+                settings.valid_ = true;
+                settings.enable_ = true;
+                SetWifiDirectConfig(settings);
+                RestartService(true); // also have to retart web service so that it gets the correct device name.
+            } catch (const std::exception&e)
+            {
+                cout << "ERROR: " << e.what() << endl;
+                return EXIT_FAILURE;
+            }
         }
         else if (disable_p2p)
         {

@@ -28,7 +28,7 @@ import withStyles from '@mui/styles/withStyles';
 
 import Button from '@mui/material/Button';
 import DialogActions from '@mui/material/DialogActions';
-import Dialog from '@mui/material/Dialog';
+import DialogEx from './DialogEx';
 import JackServerSettings from './JackServerSettings';
 
 
@@ -271,7 +271,7 @@ const JackServerSettingsDialog = withStyles(styles)(
             }
 
             return (
-                <Dialog onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
+                <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
                     <DialogContent>
                         <div>
                             <FormControl className={classes.formControl}>
@@ -365,13 +365,13 @@ const JackServerSettingsDialog = withStyles(styles)(
                         <Button onClick={handleClose} color="primary">
                             Cancel
                         </Button>
-                        <Button onClick={() => this.handleApply()} color="secondary" disabled={
+                        <Button onClick={() => this.handleApply()} color="primary" disabled={
                             (!this.state.alsaDevices) || !this.state.jackServerSettings.valid}>
                             OK
                         </Button>
                     </DialogActions>
 
-                </Dialog>
+                </DialogEx>
             );
         }
     });

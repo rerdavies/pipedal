@@ -281,9 +281,11 @@ void PluginHost::OnConfigurationChanged(const JackConfiguration &configuration, 
 
 PluginHost::~PluginHost()
 {
-    lilvUris.Free();
-    free_world();
+    delete lilvUris;
+    lilvUris = nullptr;
     delete urids;
+    urids = nullptr;
+    free_world();
 }
 
 void PluginHost::free_world()
@@ -408,7 +410,8 @@ void PluginHost::Load(const char *lv2Path)
     // LilvNode*lv2_path = lilv_new_file_uri(pWorld,NULL,lv2Path);
     // lilv_world_set_option(world,LILV_OPTION_LV2_PATH,lv)
 
-    lilvUris.Initialize(pWorld);
+    lilvUris = new LilvUris();
+    lilvUris->Initialize(pWorld);
 
     const LilvPlugins *plugins = lilv_world_get_all_plugins(pWorld);
 
@@ -549,7 +552,7 @@ const char *PluginHost::RDFS__range = "http://www.w3.org/2000/01/rdf-schema#"
 LilvNode *PluginHost::get_comment(const std::string &uri)
 {
     AutoLilvNode uriNode = lilv_new_uri(pWorld, uri.c_str());
-    LilvNode *result = lilv_world_get(pWorld, uriNode, lilvUris.rdfs__Comment, nullptr);
+    LilvNode *result = lilv_world_get(pWorld, uriNode, lilvUris->rdfs__Comment, nullptr);
     return result;
 }
 
@@ -560,7 +563,7 @@ static bool ports_sort_compare(std::shared_ptr<Lv2PortInfo> &p1, const std::shar
 
 bool Lv2PluginInfo::HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin)
 {
-    AutoLilvNodes nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris.presets__preset);
+    AutoLilvNodes nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris->presets__preset);
     bool result = false;
     LILV_FOREACH(nodes, iNode, nodes)
     {
@@ -583,7 +586,7 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
 
     LilvWorld *pWorld = lv2Host->getWorld();
     AutoLilvNode pluginUri = lilv_plugin_get_uri(pPlugin);
-    AutoLilvNodes patchWritables = lilv_world_find_nodes(pWorld, pluginUri, lv2Host->lilvUris.patch__writable, nullptr);
+    AutoLilvNodes patchWritables = lilv_world_find_nodes(pWorld, pluginUri, lv2Host->lilvUris->patch__writable, nullptr);
 
     std::vector<UiFileProperty::ptr> fileProperties;
 
@@ -593,12 +596,12 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
         if (propertyUri)
         {
             // a lv2:Parameter?
-            if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris.isA, lv2Host->lilvUris.lv2core__Parameter))
+            if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->isA, lv2Host->lilvUris->lv2core__Parameter))
             {
                 //  rfs:range atom:Path?
-                if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris.rdfs__range, lv2Host->lilvUris.atom__Path))
+                if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->rdfs__range, lv2Host->lilvUris->atom__Path))
                 {
-                    AutoLilvNode label = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris.rdfs__label, nullptr);
+                    AutoLilvNode label = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->rdfs__label, nullptr);
                     std::string strLabel = label.AsString();
                     if (strLabel.length() != 0)
                     {
@@ -611,7 +614,7 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
                             std::make_shared<UiFileProperty>(
                                 strLabel, propertyUri.AsUri(), lv2DirectoryName);
 
-                        AutoLilvNodes dc_types = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris.dc__format, nullptr);
+                        AutoLilvNodes dc_types = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->dc__format, nullptr);
                         LILV_FOREACH(nodes, i, dc_types)
                         {
                             AutoLilvNode dc_type = lilv_nodes_get(dc_types, i);
@@ -657,10 +660,10 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     AutoLilvNode name = (lilv_plugin_get_name(pPlugin));
     this->name_ = nodeAsString(name);
 
-    AutoLilvNode brand = lilv_world_get(pWorld,plugUri,lv2Host->lilvUris.mod__brand, nullptr);
+    AutoLilvNode brand = lilv_world_get(pWorld,plugUri,lv2Host->lilvUris->mod__brand, nullptr);
     this->brand_ = nodeAsString(brand);
 
-    AutoLilvNode label = lilv_world_get(pWorld,plugUri,lv2Host->lilvUris.mod__label, nullptr);
+    AutoLilvNode label = lilv_world_get(pWorld,plugUri,lv2Host->lilvUris->mod__label, nullptr);
     this->label_ = nodeAsString(label);
     if (label_.length() == 0)
     {
@@ -738,7 +741,7 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     AutoLilvNode pipedalUINode = lilv_world_get(
         pWorld,
         lilv_plugin_get_uri(pPlugin),
-        lv2Host->lilvUris.pipedalUI__ui,
+        lv2Host->lilvUris->pipedalUI__ui,
         nullptr);
     if (pipedalUINode)
     {
@@ -872,12 +875,12 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     if (default_value_ < min_value_)
         default_value_ = min_value_;
 
-    this->is_logarithmic_ = lilv_port_has_property(plugin, pPort, host->lilvUris.port_logarithmic);
+    this->is_logarithmic_ = lilv_port_has_property(plugin, pPort, host->lilvUris->port_logarithmic);
 
     // typo in invada plugins.
-    this->is_logarithmic_ |= lilv_port_has_property(plugin, pPort, host->lilvUris.invada_portprops__logarithmic);
+    this->is_logarithmic_ |= lilv_port_has_property(plugin, pPort, host->lilvUris->invada_portprops__logarithmic);
 
-    AutoLilvNodes priority_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.port__display_priority);
+    AutoLilvNodes priority_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris->port__display_priority);
 
     this->display_priority_ = -1;
     if (priority_nodes)
@@ -889,7 +892,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
         }
     }
 
-    AutoLilvNodes range_steps_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris.port_range_steps);
+    AutoLilvNodes range_steps_nodes = lilv_port_get_value(plugin, pPort, host->lilvUris->port_range_steps);
     this->range_steps_ = 0;
     if (range_steps_nodes)
     {
@@ -899,13 +902,13 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
             this->range_steps_ = lilv_node_as_int(range_steps_node);
         }
     }
-    this->integer_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.integer_property_uri);
+    this->integer_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->integer_property_uri);
 
-    this->enumeration_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.enumeration_property_uri);
+    this->enumeration_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->enumeration_property_uri);
 
-    this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris.core__toggled);
-    this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris.portprops__not_on_gui_property_uri);
-    this->connection_optional_ = lilv_port_has_property(plugin, pPort, host->lilvUris.core__connectionOptional);
+    this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__toggled);
+    this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__not_on_gui_property_uri);
+    this->connection_optional_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__connectionOptional);
 
     LilvScalePoints *pScalePoints = lilv_port_get_scale_points(plugin, pPort);
     LILV_FOREACH(scale_points, iSP, pScalePoints)
@@ -929,16 +932,16 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     is_atom_port_ = is_a(host, LV2_ATOM__AtomPort);
     is_cv_port_ = is_a(host, LV2_CORE__CVPort);
 
-    supports_midi_ = lilv_port_supports_event(plugin, pPort, host->lilvUris.midi__event);
-    supports_time_position_ = lilv_port_supports_event(plugin, pPort, host->lilvUris.time_Position);
+    supports_midi_ = lilv_port_supports_event(plugin, pPort, host->lilvUris->midi__event);
+    supports_time_position_ = lilv_port_supports_event(plugin, pPort, host->lilvUris->time_Position);
 
-    AutoLilvNode designationValue = lilv_port_get(plugin, pPort, host->lilvUris.core__designation);
+    AutoLilvNode designationValue = lilv_port_get(plugin, pPort, host->lilvUris->core__designation);
     designation_ = nodeAsString(designationValue);
 
-    AutoLilvNode portGroup_value = lilv_port_get(plugin, pPort, host->lilvUris.portgroups__group);
+    AutoLilvNode portGroup_value = lilv_port_get(plugin, pPort, host->lilvUris->portgroups__group);
     port_group_ = nodeAsString(portGroup_value);
 
-    AutoLilvNode unitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris.units__unit);
+    AutoLilvNode unitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris->units__unit);
     if (unitsValueUri)
     {
         this->units_ = UriToUnits(nodeAsString(unitsValueUri));
@@ -946,7 +949,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     else
     {
         // invada plugins use the wrong URI.
-        AutoLilvNode invadaUnitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris.invada_units__unit);
+        AutoLilvNode invadaUnitsValueUri = lilv_port_get(plugin, pPort, host->lilvUris->invada_units__unit);
         if (invadaUnitsValueUri)
         {
             std::string uri = nodeAsString(invadaUnitsValueUri);
@@ -964,10 +967,10 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
         }
     }
 
-    AutoLilvNode commentNode = lilv_port_get(plugin, pPort, host->lilvUris.rdfs__Comment);
+    AutoLilvNode commentNode = lilv_port_get(plugin, pPort, host->lilvUris->rdfs__Comment);
     this->comment_ = nodeAsString(commentNode);
 
-    AutoLilvNode bufferType = lilv_port_get(plugin, pPort, host->lilvUris.atom__bufferType);
+    AutoLilvNode bufferType = lilv_port_get(plugin, pPort, host->lilvUris->atom__bufferType);
 
     this->buffer_type_ = "";
     if (bufferType)
@@ -1186,7 +1189,7 @@ std::vector<ControlValue> PluginHost::LoadFactoryPluginPreset(
         throw PiPedalStateException("No such plugin.");
     }
 
-    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris.presets__preset);
+    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris->presets__preset);
     LILV_FOREACH(nodes, i, presets)
     {
         const LilvNode *preset = lilv_nodes_get(presets, i);
@@ -1268,7 +1271,7 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
     PluginPresets result;
     result.pluginUri_ = pluginUri;
 
-    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris.presets__preset);
+    LilvNodes *presets = lilv_plugin_get_related(plugin, lilvUris->presets__preset);
     LILV_FOREACH(nodes, i, presets)
     {
         const LilvNode *preset = lilv_nodes_get(presets, i);
@@ -1344,9 +1347,9 @@ Lv2PortGroup::Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri)
 
     this->uri_ = groupUri;
     AutoLilvNode uri = lilv_new_uri(pWorld, groupUri.c_str());
-    LilvNode *symbolNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris.lv2core__symbol, nullptr);
+    LilvNode *symbolNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->lv2core__symbol, nullptr);
     symbol_ = nodeAsString(symbolNode);
-    LilvNode *nameNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris.lv2core__name, nullptr);
+    LilvNode *nameNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->lv2core__name, nullptr);
     name_ = nodeAsString(nameNode);
 }
 

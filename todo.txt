@@ -1,16 +1,24 @@
-JackConfiguration Input midi ports.
+x group EQ congrols on Toob Preamp.
+-x Bug with FLAC libs in debian package.
+-x check default presets.
+-x check Toob power stage is installed.
+X check FLAC decode.
+- make app use the same theme settings as the website.
+- BUG: gcs when we have an animated output control
+- Shutdown/reboot midi bindings
+- versioning.
+- sample launch.json file.
+- add tubeamp mods to release notes.
+- do we want to take a second crack at establishin multi-p2p connections with the driver_param?
+- merge ToobML gain control fixes AFTER we do the commit so we can enforce formatting.
 
-JackSettings Input midi ports.
 
-Midi Port selection UI.
+sudo apt install libsdbus-c++-dev libnm-dev
 
-CPU Use should be % of AVAILABLE time, not % of total.
-MIDI device selection.
-raw Alsa midi.
+
 
 
 
 Pri Description
 -----------------
 5 Re-use plugin instances when rebuilding pedalboard.
-3 OpenSound support.

@@ -274,7 +274,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
 
         return this.props.open &&
             (
-                <DialogEx onClose={() => this.props.onCancel()} open={this.props.open} tag="FilePropertyDialog" fullWidth maxWidth="xl" style={{ height: "90%" }}
+                <DialogEx onClose={() => this.props.onCancel()} open={this.props.open} tag="fileProperty" fullWidth maxWidth="xl" style={{ height: "90%" }}
                     PaperProps={{ style: { minHeight: "90%", maxHeight: "90%", overflowY: "visible" } }}
                 >
                     <DialogTitle >

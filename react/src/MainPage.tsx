@@ -353,7 +353,7 @@ export const MainPage =
                             alignItems: "center"
                         }}>
                             <div style={{ flex: "0 1 auto",minWidth: 0 }}>
-                                <span style={{ color: "#800000" }}>
+                                <span style={{ color: isDarkMode()? "#F02020": "#800000" }}>
                                     <span className={classes.title}>{title}</span>
                                 </span>
                             </div>
@@ -522,9 +522,9 @@ export const MainPage =
                         <div className={horizontalScrollLayout ? classes.controlContentSmall : classes.controlContent}>
                             {
                                 missing ? (
-                                    <div style={{ marginLeft: 100, marginTop: 20 }}>
+                                    <div style={{ marginLeft: 40, marginTop: 20 }}>
                                         <Typography variant="body1" paragraph={true}>Error: Plugin is not installed.</Typography>
-                                        <Typography noWrap variant="body2" paragraph={true}>{pluginUri}</Typography>
+                                        <Typography variant="body2" paragraph={true}>{pluginUri}</Typography>
                                     </div>
 
                                 ) :

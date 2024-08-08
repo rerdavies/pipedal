@@ -23,7 +23,7 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
+import DialogEx from './DialogEx';
 import MuiDialogTitle from '@mui/material/DialogTitle';
 import MuiDialogContent from '@mui/material/DialogContent';
 import MuiDialogActions from '@mui/material/DialogActions';
@@ -235,7 +235,7 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                 <InfoOutlinedIcon className={classes.icon} color='inherit' />
             </IconButton>
             {open && (
-                <Dialog onClose={handleClose} open={open} fullWidth >
+                <DialogEx tag="info" onClose={handleClose} open={open} fullWidth >
                     <MuiDialogTitle >
                         <div style={{ display: "flex", flexDirection: "row", alignItems: "start", flexWrap: "nowrap" }}>
                             <div style={{ flex: "0 0 auto", marginRight: 16 }}>
@@ -321,7 +321,7 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                             OK
                         </Button>
                     </PluginInfoDialogActions>
-                </Dialog>
+                </DialogEx>
             )}
         </div >
     );

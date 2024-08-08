@@ -28,7 +28,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
-import Dialog from '@mui/material/Dialog';
+import DialogEx from './DialogEx';
 import DialogActions from '@mui/material/DialogActions';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 
@@ -82,7 +82,7 @@ export default class ListSelectDialog extends ResizeResponsiveComponent<ListSele
     render() {
 
         return (
-            <Dialog onClose={()=>this.props.onClose()} open={this.props.open}>
+            <DialogEx tag="list" onClose={()=>this.props.onClose()} open={this.props.open}>
                 <List sx={{pt: 0}}>
                 {
                     this.props.items.map(
@@ -110,7 +110,7 @@ export default class ListSelectDialog extends ResizeResponsiveComponent<ListSele
                         Cancel
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </DialogEx>
         );
     }
 }

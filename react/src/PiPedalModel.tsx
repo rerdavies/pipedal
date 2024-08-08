@@ -2356,13 +2356,17 @@ export class PiPedalModel //implements PiPedalModel
                 serverConfigSettings
             )
                 .then(() => {
-                    resolve();
+                    //resolve();
                 })
                 .catch((err) => {
-                    reject(err);
+                    //resolve();
                 });
+            // yyy
+                resolve();
 
         });
+        this.restartExpected = true;
+        this.webSocket?.reconnect(); // close immediately, and wait for recoonnect.
         return result;
     }
 

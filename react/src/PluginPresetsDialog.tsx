@@ -359,7 +359,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
             
 
             return (
-                <DialogEx tag="PluginPresetsDialog" fullScreen open={this.props.show}
+                <DialogEx tag="pluginPresets" fullScreen open={this.props.show}
                     onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}
                     style={{userSelect: "none"}}>
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>

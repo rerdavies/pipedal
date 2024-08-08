@@ -22,6 +22,9 @@
 #include "WifiDirectConfigSettings.hpp"
 
 namespace pipedal {
+    void SetWifiConfigWLanAddress(const std::string&wLanAddress);
+    const std::string &GetWifiConfigWlanAddress();
+
 
     void SetWifiConfig(const WifiConfigSettings&settings);
     void SetWifiDirectConfig(const WifiDirectConfigSettings&settings);
@@ -29,4 +32,5 @@ namespace pipedal {
     void OnWifiUninstall();
     void OnWifiInstallComplete();
 
+    bool UsingNetworkManager();
 } // namespace.

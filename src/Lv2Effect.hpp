@@ -244,7 +244,7 @@ namespace pipedal
         {
             if (index == -1)
             {
-                this->bypass = value != 0;
+                SetBypass(value != 0);
             } else {
                 controlValues[index] = value;
             }

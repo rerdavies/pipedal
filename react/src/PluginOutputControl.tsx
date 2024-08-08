@@ -309,7 +309,7 @@ const PluginOutputControl =
                     }
                 }
 
-                let isSelect = control.isSelect();
+                let isSelect = control.isOutputSelect();
 
                 let item_width: number | undefined = isSelect ? 160 : 80;
                 if (isSelect) {
@@ -424,7 +424,32 @@ const PluginOutputControl =
                             </div>
                         </div >
                     );
-                } else {
+                } if (control.isOutputSelect()) {
+                    return (
+                        <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
+                            {/* TITLE SECTION */}
+                            <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                                <Typography variant="caption" display="block" style={{
+                                    width: "100%",
+                                    textAlign: "left"
+                                }}> {control.name}</Typography>
+                            </div>
+                            {/* CONTROL SECTION */}
+
+                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "start", alignItems: "center", flexFlow: "row nowrap" }}>
+                                <Typography variant="caption" display="block" noWrap style={{ width: "100%" }}>
+                                    {text}
+                                </Typography>
+                            </div>
+
+                            {/* LABEL/EDIT SECTION*, strictly a placeholder for visual alignment purposes.*/}
+                            <div style={{ flex: "0 0 auto", position: "relative", width: 40, height: 27 }}>
+                                &nbsp;
+                            </div>
+                        </div >
+                    );
+
+                }else {
                     return (
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
                             {/* TITLE SECTION */}

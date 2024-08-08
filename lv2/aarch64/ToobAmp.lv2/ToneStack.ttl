@@ -13,10 +13,10 @@
 @prefix mod:   <http://moddevices.com/ns/mod#> .
 @prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
 @prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
 
 @prefix atom: <http://lv2plug.in/ns/ext/atom#> .
 @prefix patch: <http://lv2plug.in/ns/ext/patch#> .
-@prefix plug: <http://two-play.com/plugins/toob-tone-stack#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
@@ -32,6 +32,12 @@ toob:frequencyResponseVector
         rdfs:label "Frequency Response";
         rdfs:range atom:Vector.
 
+tonestack:eqGroup
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "EQ" ;
+    lv2:symbol "eq" .
+
 
 <http://two-play.com/rerdavies#me>
 	a foaf:Person ;
@@ -42,13 +48,14 @@ toob:frequencyResponseVector
 <http://two-play.com/plugins/toob-tone-stack>
         a lv2:Plugin ,
                 lv2:SimulatorPlugin ;
-                doap:name "TooB Tone Stack" ,
+        doap:name "TooB Tone Stack" ,
                 "TooB Tone Stack"@en-gb 
                 ;
+
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 30 ;
+        lv2:microVersion 31 ;
 
         uiext:ui <http://two-play.com/plugins/toob-tone-stack-ui>;                
 
@@ -69,6 +76,7 @@ tone stack used in Polytone and HiWatt amps.
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
+                pg:group tonestack:eqGroup ;
 
                 lv2:index 0 ;
                 lv2:symbol "bass" ;
@@ -79,6 +87,7 @@ tone stack used in Polytone and HiWatt amps.
         ], [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
+                pg:group tonestack:eqGroup ;
 
                 lv2:index 1 ;
                 lv2:symbol "mid" ;
@@ -90,6 +99,7 @@ tone stack used in Polytone and HiWatt amps.
         ],  [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
+                pg:group tonestack:eqGroup ;
 
                 lv2:index 2 ;
                 lv2:symbol "treble" ;

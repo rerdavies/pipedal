@@ -23,7 +23,7 @@ import Button from '@mui/material/Button';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import Dialog from '@mui/material/Dialog';
+import DialogEx from './DialogEx';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 
@@ -64,7 +64,7 @@ function SelectThemesDialog(props: SelectThemesDialogProps) {
 
 
     return (
-        <Dialog onClose={handleClose} open={open}>
+        <DialogEx tag="theme" onClose={handleClose} open={open}>
             <DialogTitle id="simple-dialog-title">Theme</DialogTitle>
             <DialogContent>
                 <FormControl>
@@ -82,11 +82,11 @@ function SelectThemesDialog(props: SelectThemesDialogProps) {
                 <Button onClick={handleClose} color="primary">
                     Cancel
                 </Button>
-                <Button onClick={handleOk} color="secondary"  >
+                <Button onClick={handleOk} color="primary"  >
                     OK
                 </Button>
             </DialogActions>
-        </Dialog>
+        </DialogEx>
     );
 }
 

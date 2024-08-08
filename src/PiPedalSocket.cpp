@@ -36,7 +36,7 @@
 #include "AdminClient.hpp"
 #include "WifiConfigSettings.hpp"
 #include "WifiDirectConfigSettings.hpp"
-#include "WifiChannels.hpp"
+#include "WifiChannelSelectors.hpp"
 #include "SysExec.hpp"
 #include "PiPedalAlsa.hpp"
 #include <filesystem>
@@ -973,7 +973,7 @@ public:
         {
             std::string country;
             pReader->read(&country);
-            std::vector<WifiChannel> channels = pipedal::getWifiChannels(country.c_str());
+            std::vector<WifiChannelSelector> channels = pipedal::getWifiChannelSelectors(country.c_str());
             this->Reply(replyTo, "getWifiChannels", channels);
         }
         else if (message == "getPluginPresets")
