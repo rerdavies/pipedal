@@ -1,12 +1,27 @@
 # Release Notes
 ## PiPedal 1.2.32
 
-- Raspberry PI OS Bookworm Compatibility.
+This release provides compatibility with Raspberry Pi OS bookworm. If you are using Raspberry Pi OS buster, or Ubuntu 21.04, please use PiPedal v1.1.31 instead.
 
+If you are using the Android client, you should make sure you are using the most recent version, which includes significant improvements to Wi-Fi Direct pairing.
+
+Bug Fixes:
+
+- Support for NetworkManager network stacks used buy Raspberry Pi OS Bookworm, and Raspberry Pi 5 devices.
+- The .deb package now installs on Raspberry Pi OS Bookworm and Raspberry Pi 5 devices.
+- Bypass MIDI bindings now work properly. Thanks to @FoolHen.
+- GxTuner now correctly displays note pitches. Thanks to @FoolHen.
+- Fixed glitch in on-boarding process when changing Wi-Fi direct settings.
+- Fixed incorrect display of banks in dark mode Thanks to @FoolHen.
+- pidedald service shuts down cleanly. With help from @FoolHen.
+- Fixed missing dependency in build procedure documentation. Thanks to @FoolHen
+- Minor documentation corrections. With help from @FoolHen.
+- uninstall.sh now removes all files installed by ./install.sh (used only during development).
+  
 ## PiPedal 1.1.31
 
 - Use system preferences for dark mode when connecting from Android app.
-- 
+
 
 ## PiPedal 1.1.29
 
