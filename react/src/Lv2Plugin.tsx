@@ -506,7 +506,7 @@ export class  UiControl implements Deserializable<UiControl> {
                 this.controlType = ControlType.Vu;
             }
         }
-        else if (this.isValidEnumeration())
+        if (this.isValidEnumeration())
         {
             this.controlType = ControlType.Select;
             if (this.scale_points.length === 2)
