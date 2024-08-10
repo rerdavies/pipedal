@@ -367,11 +367,13 @@ const PedalboardView =
 
             frameRef: React.RefObject<HTMLDivElement>;
             scrollRef: React.RefObject<HTMLDivElement>;
-
+            private bgColor: string;
 
             constructor(props: PedalboardProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
+
+                this.bgColor = props.theme.palette.background.default
 
                 if (!props.selectedId) props.selectedId = -1;
                 this.state = {
@@ -692,6 +694,7 @@ const PedalboardView =
                 let y_ = item.bounds.y + CELL_HEIGHT / 2;
                 let numberOfOutputs = item.numberOfOutputs;
                 let color = enabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
+                let stereoCenterColor = this.bgColor;
                 let svgPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_ + CELL_WIDTH, y_).toString();
 
                 if (numberOfOutputs === 2) {
@@ -699,7 +702,7 @@ const PedalboardView =
                         <path key={this.renderKey++}  d={svgPath} stroke={color} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
                     ));
                     output.push((
-                        <path key={this.renderKey++}  d={svgPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
+                        <path key={this.renderKey++}  d={svgPath} stroke={stereoCenterColor} strokeWidth={SVG_STROKE_WIDTH} />
                     ));
                 } else if (numberOfOutputs === 1) {
                     output.push((
@@ -727,14 +730,14 @@ const PedalboardView =
 
                 if (item.numberOfInputs === 2 && item.topChildren[0].numberOfInputs === 2) {
                     output.push((<path key={this.renderKey++}  d={topStartPath} stroke={topColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />));
-                    output.push((<path key={this.renderKey++}  d={topStartPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />));
+                    output.push((<path key={this.renderKey++}  d={topStartPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />));
                 } else if (item.numberOfInputs !== 0 && item.topChildren[0].numberOfInputs !== 0) {
                     output.push((<path key={this.renderKey++}  d={topStartPath} stroke={topColor} strokeWidth={SVG_STROKE_WIDTH} />));
                 }
 
                 if (item.numberOfInputs === 2 && item.bottomChildren[0].numberOfInputs === 2) {
                     output.push((<path key={this.renderKey++}  d={bottomStartPath} stroke={bottomColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />));
-                    output.push((<path key={this.renderKey++}  d={bottomStartPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />));
+                    output.push((<path key={this.renderKey++}  d={bottomStartPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />));
 
                 } else if (item.numberOfInputs !== 0 && item.bottomChildren[0].numberOfInputs !== 0) {
                     output.push((<path key={this.renderKey++}  d={bottomStartPath} stroke={bottomColor} strokeWidth={SVG_STROKE_WIDTH} />));
@@ -824,7 +827,7 @@ const PedalboardView =
                             <path key={this.renderKey++}  d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
                         ));
                         output.push((
-                            <path key={this.renderKey++}  d={firstPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
+                            <path key={this.renderKey++}  d={firstPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
                         ));
                     } else if (!firstPathAbsent) {
                         output.push((
@@ -836,7 +839,7 @@ const PedalboardView =
                             <path key={this.renderKey++}  d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
                         ));
                         output.push((
-                            <path key={this.renderKey++}  d={secondPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
+                            <path key={this.renderKey++}  d={secondPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
                         ));
                     } else if (!secondPathAbsent) {
                         output.push((
@@ -868,12 +871,12 @@ const PedalboardView =
                     // draw stereo inner lines.
                     if (firstPathStereo) {
                         output.push((
-                            <path key={this.renderKey++}  d={firstPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
+                            <path key={this.renderKey++}  d={firstPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
                         ));
                     }
                     if (secondPathStereo) {
                         output.push((
-                            <path key={this.renderKey++}  d={secondPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
+                            <path key={this.renderKey++}  d={secondPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
                         ));
 
                     }
@@ -885,7 +888,7 @@ const PedalboardView =
                         <path key={this.renderKey++}  d={thirdPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
                     ));
                     output.push((
-                        <path key={this.renderKey++}  d={thirdPath} stroke="white" strokeWidth={SVG_STROKE_WIDTH} />
+                        <path key={this.renderKey++}  d={thirdPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
                     ));
 
 
@@ -958,7 +961,7 @@ const PedalboardView =
                 let outputs: ReactNode[] = [];
                 this.renderConnectors(outputs, layoutChain, true, false);
                 return (
-                    <div style={{width: layoutSize.width, height: layoutSize.height, overflow: "hidden"}}>
+                    <div key="connectors" style={{width: layoutSize.width, height: layoutSize.height, overflow: "hidden"}}>
                     <svg width={layoutSize.width} height={layoutSize.height}
                         xmlns="http://www.w3.org/2000/svg" viewBox={"0 0 " + layoutSize.width + " " + layoutSize.height}>
                         <g fill="none">

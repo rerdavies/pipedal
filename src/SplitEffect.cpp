@@ -33,6 +33,8 @@ static std::shared_ptr<Lv2PortInfo> MakeBypassPortInfo()
     bypassPortInfo->is_input(true);
     bypassPortInfo->is_control_port(true);
     bypassPortInfo->index(-1);
+
+    
     bypassPortInfo->min_value(0);
     bypassPortInfo->max_value(1);
     bypassPortInfo->default_value(1);
@@ -159,9 +161,9 @@ static Lv2PluginInfo makeSplitterPluginInfo()
     return result;
 }
 
-Lv2PluginInfo g_splitterPluginInfo = makeSplitterPluginInfo();
+Lv2PluginInfo::ptr g_splitterPluginInfo = std::make_shared<Lv2PluginInfo>(makeSplitterPluginInfo());
 
-const Lv2PluginInfo *pipedal::GetSplitterPluginInfo() { return &g_splitterPluginInfo; }
+Lv2PluginInfo::ptr pipedal::GetSplitterPluginInfo() { return g_splitterPluginInfo; }
 
 int SplitEffect::GetControlIndex(const std::string &symbol) const
 {

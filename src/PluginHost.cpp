@@ -1353,6 +1353,10 @@ Lv2PortGroup::Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri)
     name_ = nodeAsString(nameNode);
 }
 
+bool Lv2PluginInfo::isSplit() const 
+{
+    return uri_ == SPLIT_PEDALBOARD_ITEM_URI;
+}
 std::shared_ptr<HostWorkerThread> PluginHost::GetHostWorkerThread()
 {
     return pHostWorkerThread;

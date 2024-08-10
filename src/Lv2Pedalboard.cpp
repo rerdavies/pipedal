@@ -261,15 +261,15 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
 {
     if (pedalboardItem.midiBindings().size() != 0)
     {
-        auto pluginInfo = pHost->GetPluginInfo(pedalboardItem.uri());
-        const Lv2PluginInfo *pPluginInfo;
-        if (pluginInfo == nullptr && pedalboardItem.uri() == SPLIT_PEDALBOARD_ITEM_URI)
+        Lv2PluginInfo::ptr pluginInfo;
+        if (pedalboardItem.uri() == SPLIT_PEDALBOARD_ITEM_URI)
         {
-            pPluginInfo = GetSplitterPluginInfo();
+            pluginInfo = GetSplitterPluginInfo();
         }
         else
         {
-            pPluginInfo = pluginInfo.get();
+            pluginInfo = pHost->GetPluginInfo(pedalboardItem.uri());
+            
         }
 
         int effectIndex = this->GetIndexOfInstanceId(pedalboardItem.instanceId());
@@ -351,21 +351,10 @@ void Lv2Pedalboard::PrepareMidiMap(const Pedalboard &pedalboard)
         auto &item = pedalboard.items()[i];
         PrepareMidiMap(item);
 
-        auto pluginInfo = pHost->GetPluginInfo(item.uri());
-
-        if (pluginInfo)
-        {
-            for (size_t bindingIndex = 0; bindingIndex < item.midiBindings().size(); ++bindingIndex)
-            {
-                auto &binding = item.midiBindings()[i];
-                {
-                }
-            }
-        }
-        std::sort(this->midiMappings.begin(), this->midiMappings.end(),
-                  [](const MidiMapping &left, const MidiMapping &right)
-                  { return left.key < right.key; });
     }
+    std::sort(this->midiMappings.begin(), this->midiMappings.end(),
+                [](const MidiMapping &left, const MidiMapping &right)
+                { return left.key < right.key; });
 }
 void Lv2Pedalboard::Activate()
 {
@@ -606,7 +595,7 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
         if (size < 3)
             return;
         index = message[1];
-        value = 127;
+        value = message[2] == 0? 0: 127; // zero velocity = note off.
     }
     else if (cmd == 0xB0) // midi control.
     {

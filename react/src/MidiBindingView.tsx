@@ -32,6 +32,7 @@ import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
 import IconButton from '@mui/material/IconButton';
 import NumericInput from './NumericInput';
+import { UiPlugin } from './Lv2Plugin';
 
 
 
@@ -45,6 +46,7 @@ interface MidiBindingViewProps extends WithStyles<typeof styles> {
     instanceId: number;
     listen: boolean;
     midiBinding: MidiBinding;
+    uiPlugin: UiPlugin;
     onChange: (instanceId: number, newBinding: MidiBinding) => void;
     onListen: (instanceId: number, key: string, listenForControl: boolean) => void;
 }
@@ -139,8 +141,7 @@ const MidiBindingView =
             render() {
                 let classes = this.props.classes;
                 let midiBinding = this.props.midiBinding;
-                let pedalboardItem = this.model.pedalboard.get().getItem(this.props.instanceId);
-                let uiPlugin = this.model.getUiPlugin(pedalboardItem.uri);
+                let uiPlugin = this.props.uiPlugin;
                 if (!uiPlugin) {
                     return (<div />);
                 }
@@ -258,7 +259,11 @@ const MidiBindingView =
                                         value={midiBinding.switchControlType}
                                     >
                                         <MenuItem value={MidiBinding.LATCH_CONTROL_TYPE}>Toggle</MenuItem>
-                                        <MenuItem value={MidiBinding.MOMENTARY_CONTROL_TYPE}>Momentary</MenuItem>
+                                        <MenuItem value={MidiBinding.MOMENTARY_CONTROL_TYPE}>{
+                                            (midiBinding.bindingType === MidiBinding.BINDING_TYPE_NOTE) ? 
+                                                "Note on/off"
+                                                : "Control value"
+                                        }</MenuItem>
                                     </Select>
                                 </div>
                             ))

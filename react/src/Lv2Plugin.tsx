@@ -506,7 +506,7 @@ export class  UiControl implements Deserializable<UiControl> {
                 this.controlType = ControlType.Vu;
             }
         }
-        else if (this.isValidEnumeration())
+        if (this.isValidEnumeration())
         {
             this.controlType = ControlType.Select;
             if (this.scale_points.length === 2)
@@ -520,7 +520,10 @@ export class  UiControl implements Deserializable<UiControl> {
             }
         }
         return this;
-
+    }
+    applyProperties(properties: Partial<UiControl>): UiControl 
+    {
+        return {...this,...properties};
     }
     private hasScalePoint(value: number): boolean {
         for (let scale_point of this.scale_points)
@@ -726,7 +729,7 @@ export class  UiControl implements Deserializable<UiControl> {
                 text += "s";
                 break;
             // Midinote: not handled.
-            // semitone12TET not handled.
+            // semitone12TET not handled. 
 
 
 
@@ -758,6 +761,7 @@ export class  UiControl implements Deserializable<UiControl> {
 
     
 }
+
 
 export class UiPlugin implements Deserializable<UiPlugin> {
     deserialize(input: any): UiPlugin 
@@ -801,6 +805,11 @@ export class UiPlugin implements Deserializable<UiPlugin> {
             result[i] = new UiPlugin().deserialize(input[i]);
         }
         return result;
+    }
+
+    isSplit(): boolean {
+        return this.uri === "uri://two-play/pipedal/pedalboard#Split";
+
     }
     getControl(key: string): UiControl | undefined {
         for (let i = 0; i < this.controls.length; ++i)
@@ -859,4 +868,137 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     frequencyPlots:      UiFrequencyPlot[] = [];
     is_vst3 :            boolean = false;
 }
+
+
+
+export function makeSplitUiPlugin(): UiPlugin
+{
+
+    return new UiPlugin().deserialize({
+        uri:                  "uri://two-play/pipedal/pedalboard#Split",
+        name:                 "Split",
+        brand:                "",
+        label:                "",
+        plugin_type:         PluginType.SplitA,
+        plugin_display_type: "Split",
+        author_name:         "",
+        author_homepage:     "",
+        audio_inputs:        1,
+        audio_outputs:       1,
+        has_midi_input:      0,
+        has_midi_output:     0,
+        description: "",
+        controls:       [
+            new UiControl().applyProperties({
+                symbol: "splitType",
+                name:   "Type",
+                index: 0,
+                is_input: true,
+                min_value: 0.0,
+                max_value:  2.0,
+                enumeration_property: true,
+                scale_points: [
+                    new ScalePoint().deserialize({value: 0, label: "A/B"}),
+                    new ScalePoint().deserialize({value: 1, label: "mix"}),
+                    new ScalePoint().deserialize({value: 1, label: "L/R"}),
+                ],
+                is_bypass: false,
+                is_program_controller: false,
+                custom_units: "",
+                connection_optional: false,
+            
+            }) ,
+            new UiControl().applyProperties({
+                symbol: "select",
+                name:   "Select",
+                index: 1,
+                is_input: true,
+                min_value: 0.0,
+                max_value:  1.0,
+                enumeration_property: true,
+                scale_points: [
+                    new ScalePoint().deserialize({value: 0, label: "A"}),
+                    new ScalePoint().deserialize({value: 1, label: "B"}),
+                ],
+                is_bypass: false,
+                is_program_controller: false,
+                custom_units: "",
+                connection_optional: false,
+            
+            }) ,
+
+            new UiControl().applyProperties({
+                symbol: "mix",
+                name:   "Mix",
+                index: 2,
+                is_input: true,
+                min_value: -1.0,
+                max_value:  1.0,
+                is_bypass: false,
+                is_program_controller: false,
+                custom_units: "",
+                connection_optional: false,
+            
+            }) ,
+            new UiControl().applyProperties({
+                symbol: "panL",
+                name:   "Pan Top",
+                index: 3,
+                is_input: true,
+                min_value: -1.0,
+                max_value:  1.0,
+                is_bypass: false,
+                is_program_controller: false,
+                custom_units: "",
+                connection_optional: false,
+            
+            }) ,
+            new UiControl().applyProperties({
+                symbol: "volL",
+                name:   "Vol Top",
+                index: 4,
+                is_input: true,
+                min_value: -60.0,
+                max_value:  12.0,
+                is_bypass: false,
+                is_program_controller: false,
+                custom_units: "",
+                connection_optional: false,
+            
+            }) ,
+            new UiControl().applyProperties({
+                symbol: "panR",
+                name:   "Pan Bottom",
+                index: 5,
+                is_input: true,
+                min_value: -1.0,
+                max_value:  1.0,
+                is_bypass: false,
+                is_program_controller: false,
+                custom_units: "",
+                connection_optional: false,
+            
+            }) ,
+            new UiControl().applyProperties({
+                symbol: "volR",
+                name:   "Vol Bottom",
+                index: 6,
+                is_input: true,
+                min_value: -60.0,
+                max_value:  12.0,
+                is_bypass: false,
+                is_program_controller: false,
+                custom_units: "",
+                connection_optional: false,
+            }) 
+        ],
+        port_groups:    [],
+        fileProperties: [],
+        frequencyPlots: [],
+        is_vst3 :       false,
+    
+    }
+    );
+}
+
 

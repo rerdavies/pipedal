@@ -29,13 +29,14 @@ import IControlViewFactory from './IControlViewFactory';
 import { GxTunerViewFactory } from './GxTunerView';
 import ToobPowerstage2ViewFactory from './ToobPowerStage2View';
 import ToobSpectrumAnalyzerViewFactory from './ToobSpectrumAnalyzerView';
-// import ToobMLViewFactory from './ToobMLView';
+import ToobMLViewFactory from './ToobMLView';
+
 
 let pluginFactories: IControlViewFactory[] = [
     new GxTunerViewFactory(),
     new ToobPowerstage2ViewFactory(),
     new ToobSpectrumAnalyzerViewFactory(),
-    //new ToobMLViewFactory()
+    new ToobMLViewFactory()
 ];
 
 

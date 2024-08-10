@@ -36,7 +36,7 @@ namespace pipedal
     class Lv2PluginInfo;
     class Lv2PortInfo;
 
-    const Lv2PluginInfo *GetSplitterPluginInfo();
+    std::shared_ptr<Lv2PluginInfo> GetSplitterPluginInfo();
 
     const Lv2PortInfo *GetBypassPortInfo();
 

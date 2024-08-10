@@ -25,12 +25,10 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 
 import IControlViewFactory from './IControlViewFactory';
-import { PiPedalModelFactory, PiPedalModel,MonitorPortHandle } from "./PiPedalModel";
+import { PiPedalModelFactory, PiPedalModel, MonitorPortHandle } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
-import ToobFrequencyResponseView from './ToobFrequencyResponseView';
-
-
+import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
+// import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
 const styles = (theme: Theme) => createStyles({
 });
@@ -46,13 +44,12 @@ interface ToobMLState {
 
 const ToobMLView =
     withStyles(styles, { withTheme: true })(
-        class extends React.Component<ToobMLProps, ToobMLState> 
-        implements ControlViewCustomization
-        {
+        class extends React.Component<ToobMLProps, ToobMLState>
+            implements ControlViewCustomization {
             model: PiPedalModel;
             gainRef: React.RefObject<HTMLDivElement>;
 
-            customizationId: number = 1; 
+            customizationId: number = 1;
 
             constructor(props: ToobMLProps) {
                 super(props);
@@ -65,57 +62,75 @@ const ToobMLView =
 
             subscribedId?: number = undefined;
             monitorPortHandle?: MonitorPortHandle = undefined;
-            removeGainEnabledSubscription()
-            {
-                if (this.monitorPortHandle)
-                {
+            removeGainEnabledSubscription() {
+                if (this.monitorPortHandle) {
                     this.model.unmonitorPort(this.monitorPortHandle);
                     this.monitorPortHandle = undefined;
                 }
             }
-            addGainEnabledSubscription(instanceId: number)
-            {
+            addGainEnabledSubscription(instanceId: number) {
                 this.removeGainEnabledSubscription();
                 this.subscribedId = instanceId;
-                this.monitorPortHandle = this.model.monitorPort(instanceId,"gainEnable",0.1,
+                this.monitorPortHandle = this.model.monitorPort(instanceId, "gainEnable", 0.1,
                     (value: number) => {
-                        if (this.gainRef.current)
-                        {
-                            this.gainRef.current.style.opacity = value !== 0.0? "1.0": "0.4";
+                        if (this.gainRef.current) {
+                            this.gainRef.current.style.opacity = value !== 0.0 ? "1.0" : "0.4";
+                            if (value !== 0.0) {
+                                this.gainRef.current.style.pointerEvents = 'auto';
+                            } else {
+                                this.gainRef.current.style.pointerEvents = 'none';
+                            }
                         }
-                        this.setState({gainEnabled: value !== 0.0 });
+                        this.setState({ gainEnabled: value !== 0.0 });
                     });
             }
 
-            componentDidUpdate()
-            {
-                if (this.props.instanceId !== this.subscribedId)
-                {
-                    this.removeGainEnabledSubscription();
-                    this.addGainEnabledSubscription(this.props.instanceId);
+            // componentDidUpdate() {
+            //     if (this.props.instanceId !== this.subscribedId) {
+            //         this.removeGainEnabledSubscription();
+            //         this.addGainEnabledSubscription(this.props.instanceId);
 
+            //     }
+            // }
+            componentDidMount() {
+                this.addGainEnabledSubscription(this.props.instanceId);
+                if (this.gainRef.current) {
+                    this.gainRef.current.style.opacity = '0.4';
+                    this.gainRef.current.style.pointerEvents = 'none';
                 }
             }
-            componentDidMount()
-            {
-                this.addGainEnabledSubscription(this.props.instanceId);
-            }
-            componentWillUnmount()
-            {
+            componentWillUnmount() {
                 this.removeGainEnabledSubscription();
             }
 
-            ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
-            {
-                let group = controls[4] as ControlGroup;
-                group.controls.splice(0,0,
-                    ( <ToobFrequencyResponseView instanceId={this.props.instanceId} />)
-                    );
-
-                let gainControl: React.ReactElement = controls[2] as React.ReactElement;
-                if (gainControl)
+            ModifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+                // Find EQ group
+                // let group = controls.find((control) => typeof control !== 'string' && (control as ControlGroup).name === "EQ") as ControlGroup;
+                // if (group) {
+                //     group.controls.splice(0,0,
+                //         ( <ToobFrequencyResponseView 
+                //             instanceId={this.props.instanceId} 
+                //             />)
+                //         );
+                // }
+                let controlIndex: number = -1;
+                let controlValues = this.props.item.controlValues
+                for (let i:number = 0; i < controlValues.length; ++i)
                 {
-                    controls[2] = (<div ref={this.gainRef}> { gainControl} </div>);
+                    let ctl: any = controls[i];
+                    let key: any = ctl?.props?.uiControl?.symbol??"";
+                    
+                    if (key === "gain")
+                    {
+                        controlIndex = i;
+                        break;
+                    }
+                }
+
+                if (controlIndex !== -1 ) {
+
+                    let gainControl: React.ReactElement = controls[controlIndex] as React.ReactElement;
+                    controls[controlIndex] = (<div ref={this.gainRef}> {gainControl} </div>);
                 }
                 return controls;
             }
