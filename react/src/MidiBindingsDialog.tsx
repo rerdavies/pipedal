@@ -33,6 +33,7 @@ import IconButton from '@mui/material/IconButton';
 import MidiBinding from './MidiBinding';
 import MidiBindingView from './MidiBindingView';
 import Snackbar from '@mui/material/Snackbar';
+import { UiPlugin,makeSplitUiPlugin } from './Lv2Plugin';
 
 const styles = (theme: Theme) => createStyles({
     dialogAppBar: {
@@ -62,6 +63,10 @@ const styles = (theme: Theme) => createStyles({
     },
 });
 
+function not_null<T>(value: T | null) { 
+    if (!value) throw Error("Unexpected null value");
+    return value;
+}
 
 export interface MidiBindingDialogProps extends WithStyles<typeof styles> {
     open: boolean,
@@ -189,7 +194,43 @@ export const MidiBindingDialog =
                     let item = v.value;
 
 
-                    let plugin = this.model.getUiPlugin(item.uri);
+                    let isSplit = item.uri === "uri://two-play/pipedal/pedalboard#Split";
+                    let plugin : UiPlugin | null = this.model.getUiPlugin(item.uri);
+                    if (plugin === null && isSplit)
+                    {
+                        plugin = makeSplitUiPlugin();
+                        let splitType = item.getControlValue("splitType");
+                        not_null(plugin.getControl("splitType")).not_on_gui = true;
+                        switch (splitType)
+                        {
+                        case 0: // A/B
+                            not_null(plugin.getControl("select")).not_on_gui = false;
+                            not_null(plugin.getControl("mix")).not_on_gui = true;
+                            not_null(plugin.getControl("volL")).not_on_gui = true;
+                            not_null(plugin.getControl("panL")).not_on_gui = true;
+                            not_null(plugin.getControl("volR")).not_on_gui = true;
+                            not_null(plugin.getControl("panR")).not_on_gui = true;
+                            break;
+                        case 1: //mixer
+                            not_null(plugin.getControl("select")).not_on_gui = true;
+                            not_null(plugin.getControl("mix")).not_on_gui = false;
+                            not_null(plugin.getControl("volL")).not_on_gui = true;
+                            not_null(plugin.getControl("panL")).not_on_gui = true;
+                            not_null(plugin.getControl("volR")).not_on_gui = true;
+                            not_null(plugin.getControl("panR")).not_on_gui = true;
+                            break;
+                        case 2: // L/R
+                            not_null(plugin.getControl("select")).not_on_gui = true;
+                            not_null(plugin.getControl("mix")).not_on_gui = true;
+                            not_null(plugin.getControl("volL")).not_on_gui = false;
+                            not_null(plugin.getControl("panL")).not_on_gui = false;
+                            not_null(plugin.getControl("volR")).not_on_gui = false;
+                            not_null(plugin.getControl("panR")).not_on_gui = false;
+                            break;                       
+                        }
+
+                        // xxx
+                    }
                     if (plugin) {
                         result.push(
                             <tr>
@@ -200,29 +241,33 @@ export const MidiBindingDialog =
                                 </td>
                             </tr>
                         );
-                        result.push(
-                            <tr>
-                                <td className={classes.nameTd}>
-                                    <Typography noWrap style={{ verticalAlign: "center", height: 48 }}>
-                                        Bypass
-                                    </Typography>
-                                </td>
-                                <td className={classes.bindingTd}>
-                                    <MidiBindingView instanceId={item.instanceId} midiBinding={item.getMidiBinding("__bypass")}
-                                        onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {
-                                            if (instanceId === -2)
-                                            {
-                                                this.cancelListenForControl();
-                                            } else {
-                                                this.handleListenForControl(instanceId, symbol, listenForControl);
-                                            }
-                                        }}
-                                        listen={item.instanceId === this.state.listenInstanceId && this.state.listenSymbol === "__bypass"}
-                                        onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
-                                    />
-                                </td>
-                            </tr>
-                        );
+                        if (!isSplit)
+                        {
+                            result.push(
+                                <tr>
+                                    <td className={classes.nameTd}>
+                                        <Typography noWrap style={{ verticalAlign: "center", height: 48 }}>
+                                            Bypass
+                                        </Typography>
+                                    </td>
+                                    <td className={classes.bindingTd}>
+                                        <MidiBindingView instanceId={item.instanceId} midiBinding={item.getMidiBinding("__bypass")}
+                                            uiPlugin={plugin}
+                                            onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {
+                                                if (instanceId === -2)
+                                                {
+                                                    this.cancelListenForControl();
+                                                } else {
+                                                    this.handleListenForControl(instanceId, symbol, listenForControl);
+                                                }
+                                            }}
+                                            listen={item.instanceId === this.state.listenInstanceId && this.state.listenSymbol === "__bypass"}
+                                            onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
+                                        />
+                                    </td>
+                                </tr>
+                            );
+                        }
 
                         for (let i = 0; i < plugin.controls.length; ++i) {
                             let control = plugin.controls[i];
@@ -244,6 +289,7 @@ export const MidiBindingDialog =
                                     </td>
                                     <td className={classes.bindingTd}>
                                         <MidiBindingView instanceId={item.instanceId}
+                                            uiPlugin={plugin}
                                             midiBinding={item.getMidiBinding(symbol)}
                                             listen={item.instanceId === this.state.listenInstanceId && this.state.listenSymbol === symbol}
                                             onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {

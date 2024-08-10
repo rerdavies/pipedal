@@ -423,6 +423,7 @@ export class PiPedalModel //implements PiPedalModel
         //if (retry !== 0) {
         if (this.restartExpected) {
             this.setState(State.ApplyingChanges);
+            this.restartExpected = false;
         } else {
             this.setState(State.Reconnecting);
         }

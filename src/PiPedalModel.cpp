@@ -1266,21 +1266,20 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
     PedalboardItem *item = this->pedalboard.GetItem(instanceId);
     if (item)
     {
-        const Lv2PluginInfo *pPluginInfo;
+        Lv2PluginInfo::ptr pPluginInfo;
         if (item->uri() == SPLIT_PEDALBOARD_ITEM_URI)
         {
             pPluginInfo = GetSplitterPluginInfo();
         }
         else
         {
-            auto pluginInfo = lv2Host.GetPluginInfo(item->uri());
-            pPluginInfo = pluginInfo.get();
+            pPluginInfo = lv2Host.GetPluginInfo(item->uri());
         }
         if (pPluginInfo)
         {
             if (portIndex == -1)
             {
-                // bypass!
+                // bypass! yyy this->value!!!
                 this->pedalboard.SetItemEnabled(instanceId, value != 0);
                 // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
                 IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -1675,16 +1674,15 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 
 void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem)
 {
-    std::shared_ptr<Lv2PluginInfo> t = lv2Host.GetPluginInfo(pedalboardItem->uri());
-    const Lv2PluginInfo *pPlugin = t.get();
-    if (pPlugin == nullptr)
+    std::shared_ptr<Lv2PluginInfo> pPlugin = lv2Host.GetPluginInfo(pedalboardItem->uri());
+    if (!pPlugin)
     {
         if (pedalboardItem->uri() == SPLIT_PEDALBOARD_ITEM_URI)
         {
             pPlugin = GetSplitterPluginInfo();
         }
     }
-    if (pPlugin != nullptr)
+    if (pPlugin)
     {
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {

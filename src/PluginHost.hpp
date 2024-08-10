@@ -337,8 +337,10 @@ namespace pipedal
         friend class PluginHost;
 
     public:
+        using ptr = std::shared_ptr<Lv2PluginInfo>;
         Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvPlugin *);
         Lv2PluginInfo() {}
+        bool isSplit() const ;
 
     private:
         std::shared_ptr<PiPedalUI> FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin *pPlugin);
