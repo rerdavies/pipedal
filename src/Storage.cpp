@@ -1624,14 +1624,19 @@ std::string Storage::UploadUserFile(const std::string &directory, const std::str
         throw std::logic_error("patchProperty directory not implemented.");
     }
     {
-        std::filesystem::create_directories(path.parent_path());
+        try {
+            std::filesystem::create_directories(path.parent_path());
 
-        std::ofstream f(path, std::ios_base::trunc | std::ios_base::binary);
-        if (!f.is_open())
+            std::ofstream f(path, std::ios_base::trunc | std::ios_base::binary);
+            if (!f.is_open())
+            {
+                throw std::logic_error(SS("Can't create file " << path << "."));
+            }
+            f.write(fileBody.c_str(), fileBody.length());
+        } catch (const std::exception &e)
         {
-            throw std::logic_error(SS("Can't create file " << path << "."));
+            Lv2Log::error(SS("Upload failed. " << e.what()));
         }
-        f.write(fileBody.c_str(), fileBody.length());
     }
     return path.string();
 }

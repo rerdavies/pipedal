@@ -37,6 +37,7 @@
 #include <random>
 #include "AudioConfig.hpp"
 #include "WifiChannelSelectors.hpp"
+#include <grp.h>
 
 #if JACK_HOST
 #define INSTALL_JACK_SERVICE 1
@@ -592,6 +593,100 @@ static std::string RandomChars(int nchars)
     return s.str();
 }
 
+void SetVarPermissions(
+    const std::filesystem::path &path, 
+    std::filesystem::perms directoryPermissions,
+    std::filesystem::perms filePermissions,
+    uid_t uid, gid_t gid)
+{
+    namespace fs = std::filesystem;
+    using namespace std::filesystem;
+    try {
+        if (fs::exists(path)) {
+            
+            if (fs::is_directory(path)) {
+                fs::permissions(path, directoryPermissions, fs::perm_options::replace);
+                for (const auto& entry : fs::recursive_directory_iterator(path)) {
+                    try {
+                        if (fs::is_directory(entry))
+                        {
+                            fs::permissions(entry.path(), directoryPermissions, fs::perm_options::replace);
+                        } else {
+                            fs::permissions(entry.path(),filePermissions, fs::perm_options::replace);
+                        }
+                    } catch (const std::exception &e)
+                    {
+                        std::cout << "Error: failed to set permissions on file " << entry.path() << std::endl;                        
+                    }
+                    if (chown(path.c_str(),uid,gid) != 0)
+                    {
+                        std::cout << "Error: failed to set ownership of file " << entry.path() << std::endl;
+                    }
+
+                }
+            } else {
+                fs::permissions(path,filePermissions, fs::perm_options::replace);
+                chown(path.c_str(),uid,gid);
+            }
+        } else {
+            std::cout  << "Error: Path does not exist: " << path << std::endl;
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }    
+}
+
+
+static void FixPermissions()
+{
+    namespace fs = std::filesystem;
+    using namespace std::filesystem;
+
+    fs::create_directories("/var/pipedal");
+
+    fs::perms directoryPermissions = 
+        fs::perms::owner_read | fs::perms::owner_write | fs::perms::owner_exec |
+        fs::perms::group_read | fs::perms::group_write | fs::perms::group_exec |
+        fs::perms::others_read | fs::perms::others_exec |
+        fs::perms::set_gid;
+    
+    fs::perms filePermissions = 
+        fs::perms::owner_read | fs::perms::owner_write | 
+        fs::perms::group_read | fs::perms::group_write | 
+        fs::perms::others_read ;
+    
+    uid_t uid;
+    struct passwd *passwd;
+    if ((passwd = getpwnam("pipedal_d")) == nullptr)
+    {
+        cout << "Error: " << "User 'pipedal_d' does not exist." << endl;
+        return;
+    }
+    uid = passwd->pw_uid;
+    gid_t gid = passwd->pw_gid;
+    SetVarPermissions("/var/pipedal",directoryPermissions,filePermissions,uid,gid);
+
+    fs::perms wpa_supplicant_perms = 
+        fs::perms::owner_read | fs::perms::owner_write |
+        fs::perms::group_read | fs::perms::group_write;
+    
+    std::filesystem::path wpa_config_path{ "/etc/pipedal/config/wpa_supplicant/wpa_supplicant-pipedal.conf"};
+    try {
+        fs::permissions(wpa_config_path,wpa_supplicant_perms, fs::perm_options::replace);
+
+        struct group*grp = getgrnam("netdev");
+        if (grp != nullptr)
+        {
+            if (chown(wpa_config_path.c_str(),0,grp->gr_gid) != 0)
+            {
+                cout << "Error: Failed to change ownership of " << wpa_config_path << endl;
+            }
+        }
+    } catch (const std::exception&e)
+    {
+        cout << "Error: Failed to set permissions on " << wpa_config_path << ". " << e.what() << endl;
+    }
+}
 static void PrepareServiceConfigurationFile(uint16_t portNumber)
 {
     ServiceConfiguration serviceConfiguration;
@@ -827,6 +922,7 @@ void Install(const std::filesystem::path &programPrefix, const std::string endpo
 
         sysExec(SYSTEMCTL_BIN " daemon-reload");
 
+        FixPermissions();
         RestartService(false);
         EnableService();
     }
@@ -1070,6 +1166,7 @@ int main(int argc, char **argv)
     bool enable_p2p = false, disable_p2p = false;
     bool list_p2p_channels = false;
     bool get_current_port = false;
+    bool fix_permissions = false;
     bool nosudo = false;
     bool excludeShutdownService = false;
     std::string prefixOption;
@@ -1092,7 +1189,8 @@ int main(int argc, char **argv)
     parser.AddOption("--enable-p2p", &enable_p2p);
     parser.AddOption("--disable-p2p", &disable_p2p);
     parser.AddOption("--list-p2p-channels", &list_p2p_channels);
-
+    parser.AddOption("--fix-permissions", &fix_permissions);
+ 
 
     parser.AddOption("--get-current-port", &get_current_port); // private. For debug use only.
 
@@ -1104,7 +1202,7 @@ int main(int argc, char **argv)
         int actionCount = 
             help + get_current_port + install + uninstall + stop + start + enable + disable 
             + enable_ap + disable_ap + restart + enable_p2p + disable_p2p
-            + list_p2p_channels
+            + list_p2p_channels + fix_permissions
             ;
         if (actionCount > 1)
         {
@@ -1169,6 +1267,11 @@ int main(int argc, char **argv)
 
     try
     {
+        if (fix_permissions)
+        {
+            FixPermissions();
+            return EXIT_SUCCESS;
+        }
         if (install)
         {
             std::filesystem::path prefix;
