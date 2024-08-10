@@ -1,5 +1,17 @@
 # Release Notes
-## PiPedal 1.2.32
+
+## PiPedal 1.2.34 Beta2
+
+Fixes the following issues:
+
+- Midi Bindings can now be created for controls in a Split.
+- Gain control for ToobML is enabled or disabled depending on whether the modal has a gain control input.
+- The control view for split controls now displays properly.
+- Stereo connectors in dark mode now render properly.
+- Permissions are correctly set on existing files and folders in /var/pipedal at install time.
+- pipedalconfig has a new --fix-permissions option, which corrects permissions on files in /var/pipedal.
+
+## PiPedal 1.2.33 Beta1
 
 This release provides compatibility with Raspberry Pi OS bookworm. If you are using Raspberry Pi OS buster, or Ubuntu 21.04, please use PiPedal v1.1.31 instead.
 
