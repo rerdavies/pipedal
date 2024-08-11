@@ -701,7 +701,10 @@ int main(int argc, char *argv[])
                 // wait up to 15 seconds for the midi device to come online.
                 auto devices = model.GetAlsaDevices();
                 bool found = false;
-                if (!HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
+                if (HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
+                {
+                    Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
+                } else 
                 {
                     for (int i = 0; i < 5; ++i)
                     {
@@ -727,6 +730,9 @@ int main(int argc, char *argv[])
                         Lv2Log::info(SS("ALSA device " << serverSettings.GetAlsaInputDevice() << " not found."));
                     }
                 }
+            } else {
+                Lv2Log::info("No ALSA device selected.");
+
             }
 
             // pre-cache device info before we let audio services run.

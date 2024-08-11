@@ -603,12 +603,19 @@ void SetVarPermissions(
     using namespace std::filesystem;
     try {
         if (fs::exists(path)) {
-            
+            chown(path.c_str(),uid,gid);
             if (fs::is_directory(path)) {
                 fs::permissions(path, directoryPermissions, fs::perm_options::replace);
                 for (const auto& entry : fs::recursive_directory_iterator(path)) {
+                    cout << "    " << entry.path() << endl;
+
+                    if (chown(entry.path().c_str(),uid,gid) != 0)
+                    {
+                        std::cout << "Error: failed to set ownership of file " << entry.path() << std::endl;
+                    }
+
                     try {
-                        if (fs::is_directory(entry))
+                        if (fs::is_directory(entry.path()))
                         {
                             fs::permissions(entry.path(), directoryPermissions, fs::perm_options::replace);
                         } else {
@@ -618,15 +625,11 @@ void SetVarPermissions(
                     {
                         std::cout << "Error: failed to set permissions on file " << entry.path() << std::endl;                        
                     }
-                    if (chown(path.c_str(),uid,gid) != 0)
-                    {
-                        std::cout << "Error: failed to set ownership of file " << entry.path() << std::endl;
-                    }
 
                 }
             } else {
                 fs::permissions(path,filePermissions, fs::perm_options::replace);
-                chown(path.c_str(),uid,gid);
+                
             }
         } else {
             std::cout  << "Error: Path does not exist: " << path << std::endl;

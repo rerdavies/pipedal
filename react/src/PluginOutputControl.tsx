@@ -353,7 +353,7 @@ const PluginOutputControl =
                                         <div style={{width: 4, height: (this.DB_VU_HEIGHT-yellowLevel),position: "absolute", marginTop: yellowLevel, background: "#0A0"}} />
 
                                         <div ref={this.dbVuRef} style={{ width: 4,position: "absolute",  marginTop: 0,height: this.VU_HEIGHT, background: "#000" }} />
-                                        <div ref={this.dbVuTelltaleRef} style={{ width: 4,position: "absolute",  marginTop: 0,height: 3, background: "#C00" }} />
+                                        <div ref={this.dbVuTelltaleRef} style={{ width: 4,position: "absolute",  marginTop: 100,height: 3, background: "#C00" }} />
                                     </div>
                                 </div>
 

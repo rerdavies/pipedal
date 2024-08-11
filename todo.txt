@@ -1,8 +1,8 @@
-x group EQ congrols on Toob Preamp.
+- chmod not working 
+- x TooB NAM: dbVu telltale is zero0.
+- x TooB NAM: bass [] mid trebble.
 -x Bug with FLAC libs in debian package.
--x check default presets.
--x check Toob power stage is installed.
-X check FLAC decode.
+- X check FLAC decode.
 - make app use the same theme settings as the website.
 - BUG: gcs when we have an animated output control
 - Shutdown/reboot midi bindings

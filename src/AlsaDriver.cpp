@@ -1961,7 +1961,7 @@ namespace pipedal
             for (int retry = 0; retry < 15; ++retry)
             {
                 err = snd_pcm_open(&playbackHandle, alsaDeviceName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
-                if (err == -EBUSY)
+                if (err < 0) // field report of a device that is present, but won't immediately open.
                 {
                     sleep(1);
                     continue;
