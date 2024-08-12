@@ -1,16 +1,13 @@
-x group EQ congrols on Toob Preamp.
--x Bug with FLAC libs in debian package.
--x check default presets.
--x check Toob power stage is installed.
-X check FLAC decode.
+- make sure lv2-dev shows up in packaging. Make sure dhcpcd shows up in packaging
+- Toob nam input VU is not working.
+- x TooB NAM: dbVu telltale is zero0.
+- x TooB NAM: bass [] mid trebble.
+- X check FLAC decode.
 - make app use the same theme settings as the website.
 - BUG: gcs when we have an animated output control
 - Shutdown/reboot midi bindings
 - versioning.
-- sample launch.json file.
-- add tubeamp mods to release notes.
 - do we want to take a second crack at establishin multi-p2p connections with the driver_param?
-- merge ToobML gain control fixes AFTER we do the commit so we can enforce formatting.
 
 
 sudo apt install libsdbus-c++-dev libnm-dev

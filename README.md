@@ -1,12 +1,12 @@
 
 <img src='docs/GithubBanner.png' width="100%" /><br/>
 
-Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.34 Beta2</a> 
+Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.36 Beta3</a> 
 
 Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 
 
-> NEW version 1.2.34 Beta2 release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+> NEW version 1.2.36 Beta3 release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
 PiPedal running on a Raspberry Pi 4 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.

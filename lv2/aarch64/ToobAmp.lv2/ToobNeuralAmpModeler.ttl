@@ -58,7 +58,7 @@ toobNam:eqGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 31 ;
+        lv2:microVersion 36 ;
         rdfs:comment """
 A port of Steven Atkinson's Neural Amp Modeler to LV2. 
 
@@ -338,7 +338,7 @@ toobNam:ui
         pipedal_ui:frequencyPlot 
         [
                 pipedal_ui:patchProperty toobNam:FrequencyResponse;
-                lv2:index 7 ;
+                lv2:index 9 ;
                 pg:group toobNam:eqGroup ;
                 pipedal_ui:width: 200;
         ]

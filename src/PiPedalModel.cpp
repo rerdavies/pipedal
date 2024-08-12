@@ -142,7 +142,11 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
 
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
-    this->jackServerSettings.ReadJackDaemonConfiguration();
+#if JACK_HOST
+    this->jackConfiguration = this->jackConfiguration.JackInitialize();
+#else
+    this->jackServerSettings = storage.GetJackServerSettings();
+#endif
 }
 
 void PiPedalModel::LoadLv2PluginInfo()
@@ -945,6 +949,11 @@ bool PiPedalModel::RenamePreset(int64_t clientId, int64_t instanceId, const std:
     if (storage.RenamePreset(instanceId, name))
     {
         this->FirePresetsChanged(clientId);
+        if (storage.GetCurrentPresetId() == instanceId)
+        {
+            this->pedalboard.name(name);
+            this->FirePedalboardChanged(-1);
+        }
         return true;
     }
     else
