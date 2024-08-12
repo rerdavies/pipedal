@@ -177,7 +177,7 @@ struct PowerRule
 
 const char *filePaths[] =
     {
-        "/lib/firmware/regulatory.db", // bookworm, buster.
+        "/lib/firmware/regulatory.db", // bookworm, bullseye.
         "/usr/lib/crda/regulatory.bin" // previous versions?.
 };
 

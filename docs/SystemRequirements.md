@@ -16,7 +16,7 @@ PiPedal has been tested on the following Operating Systems:
 Older versions of PiPedal (v1.1.31) have been tested on the following operating systems:
 
 * Ubuntu 21.04 or later, 64-bit
-* Raspberry PI OS 64-bit Buster
+* Raspberry PI OS 64-bit bullseye
 
 Compatibility testing on these OS's for current versions of PiPedal is ongoing.
 

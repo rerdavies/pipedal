@@ -1,4 +1,13 @@
 # Release Notes
+## Pipedal 1.2.36 Beta3
+
+Fixes for the following issues: 
+
+- Failure to open audio devices on reboot for devices that initialize slowly.
+- TooB ML and Toob Neural Amp Modeller UI issues.
+- Misbehavior with preset names after renaming a preset.
+- Change default audio buffers to 64x3.
+- Filtering not working in plugin selection dialog.
 
 ## PiPedal 1.2.34 Beta2
 
@@ -13,7 +22,7 @@ Fixes the following issues:
 
 ## PiPedal 1.2.33 Beta1
 
-This release provides compatibility with Raspberry Pi OS bookworm. If you are using Raspberry Pi OS buster, or Ubuntu 21.04, please use PiPedal v1.1.31 instead.
+This release provides compatibility with Raspberry Pi OS bookworm. If you are using Raspberry Pi OS bullseye, or Ubuntu 21.04, please use PiPedal v1.1.31 instead.
 
 If you are using the Android client, you should make sure you are using the most recent version, which includes significant improvements to Wi-Fi Direct pairing.
 
