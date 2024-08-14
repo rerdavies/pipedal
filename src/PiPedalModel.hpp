@@ -333,8 +333,8 @@ namespace pipedal
 
         void DeleteSampleFile(const std::filesystem::path &fileName);
         std::string CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty);
-        std::string RenameSampleFile(const std::string&oldRelativePath,const std::string&newRelativePath,const UiFileProperty&uiFileProperty);
-        FilePropertyDirectoryTree::ptr GetSampleDirectoryTree(const UiFileProperty&uiFileProperty);
+        std::string RenameFilePropertyFile(const std::string&oldRelativePath,const std::string&newRelativePath,const UiFileProperty&uiFileProperty);
+        FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty);
 
         std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
         uint64_t CreateNewPreset();

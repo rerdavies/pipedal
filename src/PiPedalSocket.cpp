@@ -1488,18 +1488,18 @@ public:
             std::string newFileName = this->model.CreateNewSampleDirectory(args.relativePath_,args.uiFileProperty_);
             this->Reply(replyTo,"createNewSampleDirectory",newFileName);
         }
-        else if (message == "renameSampleFile")
+        else if (message == "renameFilePropertyFile")
         {
             RenameSampleFileArgs args;
             pReader->read(&args);
 
-            std::string newFileName = this->model.RenameSampleFile(args.oldRelativePath_,args.newRelativePath_,args.uiFileProperty_);
-            this->Reply(replyTo,"renameSampleFile",newFileName);
-        } else if (message == "GetSampleDirectoryTree"){
+            std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_,args.newRelativePath_,args.uiFileProperty_);
+            this->Reply(replyTo,"renameFilePropertyFile",newFileName);
+        } else if (message == "getFilePropertyDirectoryTree"){
             UiFileProperty uiFileProperty;
             pReader->read(&uiFileProperty);
-            FilePropertyDirectoryTree::ptr result = model.GetSampleDirectoryTree(uiFileProperty);
-            this->Reply(replyTo,"GetSampleDirectoryTree",result);
+            FilePropertyDirectoryTree::ptr result = model.GetFilePropertydirectoryTree(uiFileProperty);
+            this->Reply(replyTo,"GetFilePropertydirectoryTree",result);
 
         }
 

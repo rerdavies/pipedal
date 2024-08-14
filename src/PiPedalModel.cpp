@@ -2052,13 +2052,13 @@ std::vector<FileEntry> PiPedalModel::GetFileList2(const std::string &relativePat
     }
 }
 
-std::string PiPedalModel::RenameSampleFile(
+std::string PiPedalModel::RenameFilePropertyFile(
     const std::string&oldRelativePath,
     const std::string&newRelativePath,
     const UiFileProperty&uiFileProperty)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    return storage.RenameSampleFile(oldRelativePath,newRelativePath,uiFileProperty);
+    return storage.RenameFilePropertyFile(oldRelativePath,newRelativePath,uiFileProperty);
 }
 
 void PiPedalModel::DeleteSampleFile(const std::filesystem::path &fileName)
@@ -2073,10 +2073,10 @@ std::string PiPedalModel::CreateNewSampleDirectory(const std::string&relativePat
     return storage.CreateNewSampleDirectory(relativePath, uiFileProperty);
 
 }
-FilePropertyDirectoryTree::ptr PiPedalModel::GetSampleDirectoryTree(const UiFileProperty&uiFileProperty)
+FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    return storage.GetSampleDirectoryTree(uiFileProperty);
+    return storage.GetFilePropertydirectoryTree(uiFileProperty);
 
 }
 

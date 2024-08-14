@@ -39,6 +39,7 @@ import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
 import {ColorTheme, getColorScheme,setColorScheme} from './DarkMode';
+import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
 
 
 export enum State {
@@ -657,6 +658,11 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     onSocketConnectionLost() {
+        // remove all the events and subscriptions we have.
+        // yyy
+        this.vuSubscriptions = [];
+        this.monitorPatchPropertyListeners = [];
+
         if (this.isAndroidHosted()) {
             this.androidHost?.setDisconnected(true);
         }
@@ -922,6 +928,7 @@ export class PiPedalModel //implements PiPedalModel
                             // MUST not allow reconnect until at least one complete load has finished.
                             this.webSocket.canReconnect = true;
                         }
+                        this.setState(State.Ready);
                         return true;
                     })
                     .catch((error) => {
@@ -2064,10 +2071,10 @@ export class PiPedalModel //implements PiPedalModel
         for (let i = 0; i < this.monitorPatchPropertyListeners.length; ++i) {
             if (this.monitorPatchPropertyListeners[i].handle === listenHandle._handle) {
                 this.monitorPatchPropertyListeners.splice(i, 1);
+                this.webSocket?.send("cancelMonitorPatchProperty", listenHandle._handle);
                 break;
             }
         }
-        this.webSocket?.send("cancelMonitorPatchProperty", listenHandle._handle);
     }
 
 
@@ -2300,7 +2307,24 @@ export class PiPedalModel //implements PiPedalModel
         });
     }
     
-    renameSampleFile(oldRelativePath: string, newRelativePath: string, uiFileProperty: UiFileProperty) : Promise<string>
+    getFilePropertyDirectoryTree(uiFileProperty: UiFileProperty) : Promise<FilePropertyDirectoryTree> {
+        return new Promise<FilePropertyDirectoryTree>((resolve, reject) => {
+            let ws = this.webSocket;
+            if (!ws) {
+                resolve(new FilePropertyDirectoryTree());
+                return;
+            }
+            ws.request<FilePropertyDirectoryTree>(
+                "getFilePropertyDirectoryTree",
+                uiFileProperty
+            ).then((result)=> {
+                resolve(new FilePropertyDirectoryTree().deserialize(result));
+            }).catch((e) => {
+                reject(e);
+            });
+        });
+    }
+    renameFilePropertyFile(oldRelativePath: string, newRelativePath: string, uiFileProperty: UiFileProperty) : Promise<string>
     {
         return new Promise<string>((resolve, reject) => {
 
@@ -2310,7 +2334,7 @@ export class PiPedalModel //implements PiPedalModel
                 return;
             }
             ws.request<string>(
-                "renameSampleFile",
+                "renameFilePropertyFile",
                 {
                     oldRelativePath: oldRelativePath,
                     newRelativePath: newRelativePath,
@@ -2428,7 +2452,6 @@ export class PiPedalModel //implements PiPedalModel
                 .catch((err) => {
                     //resolve();
                 });
-            // yyy
                 resolve();
 
         });

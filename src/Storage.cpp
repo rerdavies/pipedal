@@ -1748,7 +1748,7 @@ std::string Storage::CreateNewSampleDirectory(const std::string&relativePath, co
     return path;
 
 }
-std::string Storage::RenameSampleFile(
+std::string Storage::RenameFilePropertyFile(
     const std::string&oldRelativePath,
     const std::string&newRelativePath,
     const UiFileProperty&uiFileProperty)
@@ -1789,12 +1789,15 @@ std::string Storage::RenameSampleFile(
 
 void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const
 {
-    for (auto child:  std::filesystem::recursive_directory_iterator(directory))
+    for (auto child:  std::filesystem::directory_iterator(directory))
     {
-        const auto& childPath = child.path();
-        FilePropertyDirectoryTree::ptr childTree = std::make_unique<FilePropertyDirectoryTree>(childPath.filename());
-        FillSampleDirectoryTree(childTree.get(),childPath);
-        node->children_.push_back(std::move(childTree));
+        if (child.is_directory())
+        {
+            const auto& childPath = child.path();
+            FilePropertyDirectoryTree::ptr childTree = std::make_unique<FilePropertyDirectoryTree>(childPath.filename());
+            FillSampleDirectoryTree(childTree.get(),childPath);
+            node->children_.push_back(std::move(childTree));
+        }
     }
     std::sort(node->children_.begin(),node->children_.end(),
         [this](const FilePropertyDirectoryTree::ptr&left,const FilePropertyDirectoryTree::ptr&right)
@@ -1802,7 +1805,7 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std:
             return this->locale(left->directoryName_,right->directoryName_);
         });
 }
-FilePropertyDirectoryTree::ptr Storage::GetSampleDirectoryTree(const UiFileProperty&uiFileProperty) const
+FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) const
 {
     FilePropertyDirectoryTree::ptr result = std::make_unique<FilePropertyDirectoryTree>("");
     if (uiFileProperty.directory().empty())

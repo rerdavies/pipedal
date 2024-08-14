@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-
+import { Theme, createStyles } from '@mui/material/styles';
 import RenameDialog from './RenameDialog';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
@@ -38,6 +38,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import OldDeleteIcon from './OldDeleteIcon';
 import Toolbar from '@mui/material/Toolbar';
+import { withStyles, WithStyles } from '@mui/styles';
+
 
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { UiFileProperty } from './Lv2Plugin';
@@ -48,7 +50,18 @@ import UploadFileDialog from './UploadFileDialog';
 import OkCancelDialog from './OkCancelDialog';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import HomeIcon from '@mui/icons-material/Home';
-export interface FilePropertyDialogProps {
+import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
+
+
+
+const styles = (theme: Theme) => createStyles({
+    secondaryText: {
+        color: theme.palette.text.secondary
+    },
+});
+
+
+export interface FilePropertyDialogProps extends WithStyles<typeof styles>  {
     open: boolean,
     fileProperty: UiFileProperty,
     selectedFile: string,
@@ -70,6 +83,7 @@ export interface FilePropertyDialogState {
     menuAnchorEl: null | HTMLElement;
     newFolderDialogOpen: boolean;
     renameDialogOpen: boolean;
+    moveDialogOpen: boolean;
 };
 
 function pathExtension(path: string)
@@ -85,7 +99,7 @@ function pathExtension(path: string)
     return path.substring(dotPos); // include the '.'.
 
 }
-function concatPath(left: string, right: string) {
+function pathConcat(left: string, right: string) {
     if (left === "") return right;
     if (right === "") return left;
     if (left.endsWith('/')) {
@@ -123,7 +137,9 @@ export function pathFileName(path: string): string {
     return path.substring(slashPos);
 }
 
-export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePropertyDialogProps, FilePropertyDialogState> {
+
+export default withStyles(styles, { withTheme: true })(
+    class FilePropertyDialog extends ResizeResponsiveComponent<FilePropertyDialogProps, FilePropertyDialogState> {
 
     getNavDirectoryFromFile(selectedFile: string, fileProperty: UiFileProperty): string {
 
@@ -160,7 +176,8 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
             openConfirmDeleteDialog: false,
             menuAnchorEl: null,
             newFolderDialogOpen: false,
-            renameDialogOpen: false
+            renameDialogOpen: false,
+            moveDialogOpen: false
         };
         this.requestScroll = true;
     }
@@ -250,7 +267,12 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
         if (prevProps.open !== this.props.open || prevProps.fileProperty !== this.props.fileProperty || prevProps.selectedFile !== this.props.selectedFile) {
             if (this.props.open) {
                 let navDirectory = this.getNavDirectoryFromFile(this.props.selectedFile, this.props.fileProperty);
-                this.setState({ selectedFile: this.props.selectedFile });
+                this.setState({ 
+                    selectedFile: this.props.selectedFile,
+                    newFolderDialogOpen: false,
+                    renameDialogOpen: false,
+                    moveDialogOpen: false
+                    });
                 this.requestFiles(navDirectory)
                 this.requestScroll = true;
             }
@@ -357,7 +379,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
         let directories = this.state.navDirectory.split("/");
         let target = "";
         for (let i = 0; i < directories.length - 1; ++i) {
-            target = concatPath(target, directories[i]);
+            target = pathConcat(target, directories[i]);
             let myTarget = target;
             breadcrumbs.push((
                 <Link underline="hover" key={(i + 1).toString()}
@@ -369,7 +391,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
         {
             let lastdirectory = directories[directories.length - 1];
             breadcrumbs.push((
-                <Typography key={directories.length.toString()} color="text.secondary"> {lastdirectory}</Typography>
+                <Typography noWrap key={directories.length.toString()} color="text.secondary"> {lastdirectory}</Typography>
             ));
 
         }
@@ -380,13 +402,35 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
         );
     }
 
+    getDefaultPath(): string {
+        try {
+            let storage = window.localStorage;
+            let result = storage.getItem("fpDefaultPath");
+            if (result)
+            {
+                return result;
+            }
+        } catch (e)
+        {
+
+        }
+
+        return this.state.navDirectory;
+    }
+    setDefaultPath(path: string) {
+        try {
+            let storage = window.localStorage;
+            storage.setItem("fpDefaultPath",path);
+        } catch(e) {
+
+        }
+    }
     hasSelectedFileOrFolder(): boolean {
         return this.state.hasSelection && this.state.selectedFile !== "";
     }
     render() {
-
+        let classes = this.props.classes;
         let columnWidth = this.state.columnWidth;
-
         return this.props.open &&
             (
                 <DialogEx onClose={() => this.props.onCancel()} open={this.props.open} tag="fileProperty" fullWidth maxWidth="xl" style={{ height: "90%" }}
@@ -403,7 +447,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
                             >
                                 <ArrowBackIcon style={{ width: 24, height: 24 }} />
                             </IconButton>
-                            <Typography component="div" sx={{ flexGrow: 1 }}>
+                            <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
                                 {this.props.fileProperty.label}
                             </Typography>
                             <IconButton
@@ -432,7 +476,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
                             >
                                 <MenuItem onClick={() => { this.handleMenuClose(); this.onNewFolder(); }}>New folder</MenuItem>
                                 {this.hasSelectedFileOrFolder() && (<Divider />)}
-                                {this.hasSelectedFileOrFolder() && (<MenuItem onClick={() => { this.handleMenuClose(); }}>Move</MenuItem>)}
+                                {this.hasSelectedFileOrFolder() && (<MenuItem onClick={() => { this.handleMenuClose();this.onMove(); }}>Move</MenuItem>)}
                                 {this.hasSelectedFileOrFolder() && (<MenuItem onClick={() => { this.handleMenuClose();this.onRename(); }}>Rename</MenuItem>)}
                             </Menu>
                         </Toolbar>
@@ -484,7 +528,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
                                                             ) : (
                                                                 <AudioFileIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
                                                             ))}
-                                                    <Typography noWrap style={{ flex: "1 1 auto", textAlign: "left" }}>{displayValue}</Typography>
+                                                    <Typography noWrap className={classes.secondaryText} variant="body2" style={{ flex: "1 1 auto", textAlign: "left" }}>{displayValue}</Typography>
                                                 </div>
                                             </ButtonBase>
                                         );
@@ -566,13 +610,36 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
 
                         )
                     }
+                    {
+                        this.state.moveDialogOpen && (
+                            (
+                                <FilePropertyDirectorySelectDialog 
+                                    open={this.state.moveDialogOpen}
+                                    uiFileProperty={this.props.fileProperty}
+                                    defaultPath={this.getDefaultPath()}
+                                    excludeDirectory={
+                                        this.isDirectory(this.state.selectedFile) 
+                                        ? pathConcat(this.state.navDirectory,pathFileName(this.state.selectedFile)): ""}
+                                    onClose={() => {this.setState({moveDialogOpen: false});}}
+                                    onOk={
+                                        (path) => { 
+                                            this.setState({moveDialogOpen: false});
+                                            this.setDefaultPath(path);
+                                            this.onExecuteMove(path);
+                                        }
+                                    }
+                                        
+                                />
+                            )
+                        )
+                    }
                 </DialogEx>
             );
     }
     openSelectedFile(): void {
         if (this.isDirectory(this.state.selectedFile)) {
             let directoryName = pathFileNameOnly(this.state.selectedFile);
-            let navDirectory = concatPath(this.state.navDirectory, directoryName);
+            let navDirectory = pathConcat(this.state.navDirectory, directoryName);
             this.requestFiles(navDirectory);
             this.setState({ navDirectory: navDirectory });
         } else {
@@ -590,6 +657,25 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
             return pathFileNameOnly(name);
         }
     }
+    private onMove(): void {
+        this.setState({ moveDialogOpen: true });
+    }
+    private onExecuteMove(newDirectory: string)
+    {
+        let fileName = pathFileName(this.state.selectedFile);
+        let oldFilePath = pathConcat(this.state.navDirectory,fileName);
+        let newFilePath = pathConcat(newDirectory,fileName);
+
+        this.model.renameFilePropertyFile(oldFilePath,newFilePath,this.props.fileProperty)
+        .then(()=>{
+            this.requestFiles(this.state.navDirectory);
+        })
+        .catch((e)=>{
+            this.model.showAlert(e.toString());
+        });
+
+    }
+
     private onRename(): void {
         this.setState({ renameDialogOpen: true });
     }
@@ -600,16 +686,16 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
         {
             let oldName = pathFileName(this.state.selectedFile);
             if (oldName === newName) return;
-            oldPath = concatPath(this.state.navDirectory,oldName);
-            newPath = concatPath(this.state.navDirectory,newName);;
+            oldPath = pathConcat(this.state.navDirectory,oldName);
+            newPath = pathConcat(this.state.navDirectory,newName);;
         } else {
             let oldName = pathFileNameOnly(this.state.selectedFile);
             if (oldName === newName) return;
             let extension = pathExtension(this.state.selectedFile);
-            oldPath = concatPath(this.state.navDirectory,oldName+extension);
-            newPath = concatPath(this.state.navDirectory,newName + extension);
+            oldPath = pathConcat(this.state.navDirectory,oldName+extension);
+            newPath = pathConcat(this.state.navDirectory,newName + extension);
         }
-        this.model.renameSampleFile(oldPath,newPath,this.props.fileProperty)
+        this.model.renameFilePropertyFile(oldPath,newPath,this.props.fileProperty)
         .then((newPath)=>{
             this.setState({selectedFile: newPath});
             this.requestFiles(this.state.navDirectory);
@@ -626,7 +712,7 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
     }
 
     private onExecuteNewFolder(newName: string) {
-        this.model.createNewSampleDirectory(concatPath(this.state.navDirectory,newName), this.props.fileProperty)
+        this.model.createNewSampleDirectory(pathConcat(this.state.navDirectory,newName), this.props.fileProperty)
             .then((newPath) => {
                 this.setState({selectedFile: newPath});
                 this.requestFiles(this.state.navDirectory);
@@ -637,4 +723,4 @@ export default class FilePropertyDialog extends ResizeResponsiveComponent<FilePr
             }
             );
     }
-}
+});

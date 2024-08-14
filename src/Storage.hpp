@@ -220,11 +220,11 @@ public:
     void DeleteSampleFile(const std::filesystem::path &fileName);
     std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
     std::string CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty);
-    std::string RenameSampleFile(
+    std::string RenameFilePropertyFile(
         const std::string&oldRelativePath,
         const std::string&newRelativePath,
         const UiFileProperty&uiFileProperty);
-    FilePropertyDirectoryTree::ptr GetSampleDirectoryTree(const UiFileProperty&uiFileProperty) const;
+    FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) const;
 
 };
 
