@@ -39,6 +39,7 @@
 #include <thread>
 #include "Promise.hpp"
 #include "AtomConverter.hpp"
+#include "FileEntry.hpp"
 
 namespace pipedal
 {
@@ -328,8 +329,13 @@ namespace pipedal
         void SetFavorites(const std::map<std::string, bool> &favorites);
 
         std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
+        std::vector<FileEntry> GetFileList2(const std::string &relativePath,const UiFileProperty&fileProperty);
 
         void DeleteSampleFile(const std::filesystem::path &fileName);
+        std::string CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty);
+        std::string RenameSampleFile(const std::string&oldRelativePath,const std::string&newRelativePath,const UiFileProperty&uiFileProperty);
+        FilePropertyDirectoryTree::ptr GetSampleDirectoryTree(const UiFileProperty&uiFileProperty);
+
         std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
         uint64_t CreateNewPreset();
 

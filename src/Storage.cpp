@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Robin Davies
+// Copyright (c) 2022-2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -40,6 +40,7 @@ const char *BANKS_FILENAME = "index.banks";
 #define USER_SETTINGS_FILENAME "userSettings.json";
 
 Storage::Storage()
+: locale("en_US.UTF-8")
 {
     SetConfigRoot("~/var/Config");
     SetDataRoot("~/var/PiPedal");
@@ -1467,11 +1468,6 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
     return result;
 }
 
-static bool containsDotDot(const std::string &value)
-{
-    std::size_t offset = value.find("..");
-    return offset != std::string::npos;
-}
 static bool containsDirectorySeparator(const std::string &value)
 {
     if (value.find("/") != std::string::npos)
@@ -1483,19 +1479,12 @@ static bool containsDirectorySeparator(const std::string &value)
     return false;
 }
 
+
 static void ThrowPermissionDeniedError()
 {
     throw std::logic_error("Permission denied.");
 }
 
-class LexicographicCompare
-{
-public:
-    bool operator()(const std::string &left, const std::string &right)
-    {
-        return std::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end());
-    }
-} lexicographicCompare;
 
 std::vector<std::string> Storage::GetFileList(const UiFileProperty &fileProperty)
 {
@@ -1537,16 +1526,109 @@ std::vector<std::string> Storage::GetFileList(const UiFileProperty &fileProperty
 
     // sort lexicographically
 
-    std::sort(result.begin(), result.end(), lexicographicCompare);
+    std::sort(result.begin(), result.end(), [this](const std::string&left,const std::string&right) {
+        return this->locale(left,right) < 0;
+    });
     return result;
 }
 
-bool Storage::IsValidSampleFile(const std::filesystem::path &fileName)
+static bool  ensureNoDotDot(const std::filesystem::path&path)
+{
+    for (auto segment_: path)
+    {
+        std::string segment = segment_.string();
+        if (segment.starts_with("."))
+        {
+            // the linux rule: any path that consists of all '.'s.
+            bool valid = false;
+            for (auto c: segment)
+            {
+                if (c != '.')
+                {
+                    valid = true;
+                    break;
+                }
+            }
+            if (!valid)
+            {
+                return false;
+            }
+
+        }
+    }
+    return true;
+}
+
+
+std::vector<FileEntry> Storage::GetFileList2(const std::string &relativePath,const UiFileProperty &fileProperty)
+{
+    if (!ensureNoDotDot(relativePath))
+    {
+        ThrowPermissionDeniedError();
+    }
+    if (!UiFileProperty::IsDirectoryNameValid(fileProperty.directory()))
+    {
+        ThrowPermissionDeniedError();
+    }
+
+    std::vector<FileEntry> result;
+
+    // if fileProperty has a user-accessible directory, push the entire file path.
+    if (fileProperty.directory().size() != 0)
+    {
+        std::filesystem::path audioFileDirectory = this->GetPluginAudioFileDirectory() / fileProperty.directory() / relativePath;
+        try
+        {
+            for (auto const &dir_entry : std::filesystem::directory_iterator(audioFileDirectory))
+            {
+                if (dir_entry.is_regular_file())
+                {
+                    auto &path = dir_entry.path();
+                    auto name = path.filename().string();
+                    if (name.length() > 0 && name[0] != '.') // don't show hidden files.
+                    {
+                        if (fileProperty.IsValidExtension(path.extension().string()))
+                        {
+                            // a relative path!
+                            result.push_back(FileEntry(path,false));
+                        }
+                    }
+                } else if (dir_entry.is_directory()) {
+                    result.push_back(FileEntry(dir_entry.path(),true));
+                }
+            }
+        }
+        catch (const std::exception &error)
+        {
+            throw std::logic_error("GetFileList failed. Directory not found: " + audioFileDirectory.string());
+        }
+    }
+
+    // sort lexicographically
+
+    std::sort(result.begin(), result.end(),[this](const FileEntry&l, const FileEntry&r) {
+        if (l.isDirectory_ != r.isDirectory_)
+        {
+            return l.isDirectory_ > r.isDirectory_;
+        }
+        return this->locale(l.filename_,r.filename_);
+    
+    });
+    return result;
+}
+
+
+bool Storage::IsValidSampleFileName(const std::filesystem::path &fileName)
 {
     if (!fileName.is_absolute())
     {
         return false;
     }
+    if (!ensureNoDotDot(fileName))
+    {
+        return false;
+    }
+    
     std::filesystem::path audioFilePath = this->GetPluginAudioFileDirectory();
 
     std::filesystem::path parentDirectory = fileName.parent_path();
@@ -1557,9 +1639,6 @@ bool Storage::IsValidSampleFile(const std::filesystem::path &fileName)
             return false;
         }
         std::string name = parentDirectory.filename().string();
-        if (name == ".." || name == ".")
-            return false;
-
         if (parentDirectory == audioFilePath)
             return true;
         parentDirectory = parentDirectory.parent_path();
@@ -1571,7 +1650,7 @@ bool Storage::IsValidSampleFile(const std::filesystem::path &fileName)
 }
 void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
 {
-    if (!IsValidSampleFile(fileName))
+    if (!IsValidSampleFileName(fileName))
     {
         throw std::logic_error("Permission denied.");
     }
@@ -1581,7 +1660,16 @@ void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
     }
     try
     {
-        std::filesystem::remove(fileName);
+        if (std::filesystem::is_directory(fileName))
+        {
+            if (fileName.string().length() > 1) // guard against rm -rf /  (bitter experience)
+            {
+                std::filesystem::remove_all(fileName);
+            }
+        }
+        else {
+            std::filesystem::remove(fileName);
+        }
     }
     catch (const std::exception &)
     {
@@ -1601,7 +1689,7 @@ std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, co
         throw std::logic_error("Permission denied.");
     }
     std::filesystem::path result = this->GetPluginAudioFileDirectory() / directory / filename;
-    if (!this->IsValidSampleFile(result))
+    if (!this->IsValidSampleFileName(result))
     {
         throw std::logic_error("Permission denied.");
     }
@@ -1640,6 +1728,98 @@ std::string Storage::UploadUserFile(const std::string &directory, const std::str
     }
     return path.string();
 }
+
+std::string Storage::CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty)
+{
+    if (uiFileProperty.directory().empty())
+    {
+        throw std::runtime_error("Invalid UI File Property.");
+    }
+    std::filesystem::path path = this->GetPluginAudioFileDirectory() / uiFileProperty.directory() / relativePath;
+    if (!this->IsValidSampleFileName(path))
+    {
+        throw std::runtime_error("Invalid file name.");
+    }
+    if (std::filesystem::exists(path))
+    {
+        throw std::runtime_error("A directory with that name already exists.");
+    }
+    std::filesystem::create_directories(path);
+    return path;
+
+}
+std::string Storage::RenameSampleFile(
+    const std::string&oldRelativePath,
+    const std::string&newRelativePath,
+    const UiFileProperty&uiFileProperty)
+{
+    if (uiFileProperty.directory().empty())
+    {
+        throw std::runtime_error("Invalid UI File Property.");
+    }
+    std::filesystem::path oldPath = this->GetPluginAudioFileDirectory() / uiFileProperty.directory() / oldRelativePath;
+    if (!this->IsValidSampleFileName(oldPath))
+    {
+        throw std::runtime_error("Invalid file name.");
+    }
+    if (!std::filesystem::exists(oldPath))
+    {
+        throw std::runtime_error("Original path does not exist.");
+    }
+
+    std::filesystem::path newPath = this->GetPluginAudioFileDirectory() / uiFileProperty.directory() / newRelativePath;
+    if (!this->IsValidSampleFileName(newPath))
+    {
+        throw std::runtime_error("Invalid file name.");
+    }
+    if (std::filesystem::exists(newPath))
+    {
+        if (std::filesystem::is_directory(newPath))
+        {
+            throw std::runtime_error("A directory with that name already exists.");
+        } else {
+            throw std::runtime_error("A file with that name already exists.");
+        }
+    }
+
+    std::filesystem::rename(oldPath,newPath);
+    return newPath;
+    
+}
+
+void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const
+{
+    for (auto child:  std::filesystem::recursive_directory_iterator(directory))
+    {
+        const auto& childPath = child.path();
+        FilePropertyDirectoryTree::ptr childTree = std::make_unique<FilePropertyDirectoryTree>(childPath.filename());
+        FillSampleDirectoryTree(childTree.get(),childPath);
+        node->children_.push_back(std::move(childTree));
+    }
+    std::sort(node->children_.begin(),node->children_.end(),
+        [this](const FilePropertyDirectoryTree::ptr&left,const FilePropertyDirectoryTree::ptr&right)
+        {
+            return this->locale(left->directoryName_,right->directoryName_);
+        });
+}
+FilePropertyDirectoryTree::ptr Storage::GetSampleDirectoryTree(const UiFileProperty&uiFileProperty) const
+{
+    FilePropertyDirectoryTree::ptr result = std::make_unique<FilePropertyDirectoryTree>("");
+    if (uiFileProperty.directory().empty())
+    {
+        throw std::runtime_error("Invalid uiFileProperty");
+    }
+    if (!ensureNoDotDot(uiFileProperty.directory()))
+    {
+        throw std::runtime_error("Invalid uiFileProperty");
+    }
+    std::filesystem::path rootDirectory = this->GetPluginAudioFileDirectory() / uiFileProperty.directory();
+
+    FillSampleDirectoryTree(result.get(),rootDirectory);
+
+    return result;
+}
+
 
 const PluginPresetIndex &Storage::GetPluginPresetIndex()
 {

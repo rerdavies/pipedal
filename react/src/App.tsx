@@ -59,7 +59,7 @@ const theme = createTheme(
             },
         },
         mainBackground: "#222",
-        toolbarColor: '#FFFFFF'
+        toolbarColor: '#222'
     }
         :
         {

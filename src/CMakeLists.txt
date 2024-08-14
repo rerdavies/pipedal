@@ -131,6 +131,8 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp 
+    FileEntry.cpp FileEntry.hpp
     atom_object.hpp atom_object.cpp
     FileBrowserFiles.h
     FileBrowserFilesFeature.hpp FileBrowserFilesFeature.cpp

@@ -2039,12 +2039,47 @@ std::vector<std::string> PiPedalModel::GetFileList(const UiFileProperty &filePro
         return std::vector<std::string>(); // don't disclose to users what the problem is.
     }
 }
+std::vector<FileEntry> PiPedalModel::GetFileList2(const std::string &relativePath,const UiFileProperty &fileProperty)
+{
+    try
+    {
+        return this->storage.GetFileList2(relativePath,fileProperty);
+    }
+    catch (const std::exception &e)
+    {
+        Lv2Log::warning("GetFileList() failed:  (%s)", e.what());
+        return std::vector<FileEntry>(); // don't disclose to users what the problem is.
+    }
+}
+
+std::string PiPedalModel::RenameSampleFile(
+    const std::string&oldRelativePath,
+    const std::string&newRelativePath,
+    const UiFileProperty&uiFileProperty)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return storage.RenameSampleFile(oldRelativePath,newRelativePath,uiFileProperty);
+}
 
 void PiPedalModel::DeleteSampleFile(const std::filesystem::path &fileName)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     storage.DeleteSampleFile(fileName);
 }
+
+std::string PiPedalModel::CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return storage.CreateNewSampleDirectory(relativePath, uiFileProperty);
+
+}
+FilePropertyDirectoryTree::ptr PiPedalModel::GetSampleDirectoryTree(const UiFileProperty&uiFileProperty)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return storage.GetSampleDirectoryTree(uiFileProperty);
+
+}
+
 
 std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, const std::string &fileBody)
 {

@@ -52,6 +52,10 @@ export enum State {
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
 
+export interface FileEntry {
+    filename: string;
+    isDirectory: boolean;
+};
 
 export type PluginPresetsChangedHandler = (pluginUri: string) => void;
 
@@ -337,7 +341,7 @@ interface Vst3ControlChangedBody {
 
 export interface FavoritesList {
     [url: string]: boolean;
-}
+};
 
 
 export class PiPedalModel //implements PiPedalModel 
@@ -1630,14 +1634,21 @@ export class PiPedalModel //implements PiPedalModel
             });
     }
 
+    // deprecated.
     requestFileList(piPedalFileProperty: UiFileProperty): Promise<string[]> {
         return nullCast(this.webSocket)
             .request<string[]>('requestFileList', piPedalFileProperty);
     }
-
+    requestFileList2(relativeDirectoryPath: string,piPedalFileProperty: UiFileProperty): Promise<FileEntry[]> {
+        return nullCast(this.webSocket)
+            .request<FileEntry[]>('requestFileList2',
+                {relativePath: relativeDirectoryPath, fileProperty: piPedalFileProperty}
+            );
+    }
+    
     deleteUserFile(fileName: string) : Promise<boolean>
     {
-        return nullCast(this.webSocket).request<boolean>('deleteUserFile',fileName)
+        return nullCast(this.webSocket).request<boolean>('deleteUserFile',fileName);
     }
 
 
@@ -2247,7 +2258,11 @@ export class PiPedalModel //implements PiPedalModel
         return new Promise<void>((resolve, reject) => {
 
             let ws = this.webSocket;
-            if (!ws) return;
+            if (!ws) 
+            {
+                resolve();
+                return;
+            }
             ws.request<void>(
                 "setGovernorSettings",
                 governor
@@ -2260,6 +2275,57 @@ export class PiPedalModel //implements PiPedalModel
                 });
         });
     }
+    createNewSampleDirectory(relativePath: string, uiFileProperty: UiFileProperty) : Promise<string>
+    {
+        return new Promise<string>((resolve, reject) => {
+
+            let ws = this.webSocket;
+            if (!ws) {
+                resolve("");
+                return;
+            }
+            ws.request<string>(
+                "createNewSampleDirectory",
+                {
+                    relativePath: relativePath,
+                    uiFileProperty: uiFileProperty
+                }
+            )
+                .then((newPath) => {
+                    resolve(newPath);
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
+    }
+    
+    renameSampleFile(oldRelativePath: string, newRelativePath: string, uiFileProperty: UiFileProperty) : Promise<string>
+    {
+        return new Promise<string>((resolve, reject) => {
+
+            let ws = this.webSocket;
+            if (!ws) {
+                resolve("");
+                return;
+            }
+            ws.request<string>(
+                "renameSampleFile",
+                {
+                    oldRelativePath: oldRelativePath,
+                    newRelativePath: newRelativePath,
+                    uiFileProperty: uiFileProperty
+                }
+            )
+                .then((newPath) => {
+                    resolve(newPath);
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
+    }
+
     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void> {
         let result = new Promise<void>((resolve, reject) => {
             let oldSettings = this.wifiConfigSettings.get();
@@ -2566,7 +2632,6 @@ export class PiPedalModel //implements PiPedalModel
         // eslint-disable-next-line no-restricted-globals
         window.location.reload();
     }
-
 
 };
 
