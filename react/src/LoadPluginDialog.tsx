@@ -814,8 +814,8 @@ export const LoadPluginDialog =
                                                 </div>
                                             </div>
                                             <div style={{ position: "relative", float: "right", flex: "0 1 200px", width: 200, display: "flex", alignItems: "center" }}>
-                                                <Button onClick={this.handleCancel} style={{ width: 120 }} >Cancel</Button>
-                                                <Button onClick={this.handleOk} color="secondary" disabled={selectedPlugin === null} style={{ width: 180 }} >SELECT</Button>
+                                                <Button variant="dialogSecondary" onClick={this.handleCancel} style={{ width: 120 }} >Cancel</Button>
+                                                <Button variant="dialogPrimary" onClick={this.handleOk} disabled={selectedPlugin === null} style={{ width: 180 }} >SELECT</Button>
                                             </div>
                                         </div>
                                     </DialogActions>
@@ -839,8 +839,8 @@ export const LoadPluginDialog =
                                         <div className={classes.bottom} style={{height: 64}}>
                                             <div style={{ flex: "1 1 1px" }} />
                                             <div style={{ position: "relative", flex: "0 1 auto", display: "flex", alignItems: "center" }}>
-                                                <Button onClick={this.handleCancel} style={{ height: 48 }} >Cancel</Button>
-                                                <Button onClick={this.handleOk} color="secondary" disabled={selectedPlugin === null} style={{ height: 48 }} >SELECT</Button>
+                                                <Button variant="dialogSecondary"  onClick={this.handleCancel} style={{ height: 48 }} >Cancel</Button>
+                                                <Button variant="dialogPrimary" onClick={this.handleOk} disabled={selectedPlugin === null} style={{ height: 48 }} >SELECT</Button>
                                             </div>
                                         </div>
                                     </DialogActions>

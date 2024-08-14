@@ -131,10 +131,10 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} color="primary">
+                    <Button onClick={handleClose} variant="dialogSecondary" >
                         Cancel
                     </Button>
-                    <Button onClick={handleOk} color="secondary" >
+                    <Button onClick={handleOk} variant="dialogPrimary"  >
                         {acceptActionName}
                     </Button>
                 </DialogActions>

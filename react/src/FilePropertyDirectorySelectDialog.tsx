@@ -334,10 +334,10 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
                 </DialogContent>
                 <Divider />
                 <DialogActions>
-                    <Button onClick={() => { this.onClose(); }} color="primary">
+                    <Button variant="dialogSecondary"  onClick={() => { this.onClose(); }} color="primary">
                         Cancel
                     </Button>
-                    <Button onClick={() => { this.onOK(); }} color="secondary" disabled={!this.state.hasSelection} >
+                    <Button variant="dialogPrimary" onClick={() => { this.onOK(); }} color="secondary" disabled={!this.state.hasSelection} >
                         OK
                     </Button>
                 </DialogActions>

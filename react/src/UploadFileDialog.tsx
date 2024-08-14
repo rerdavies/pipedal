@@ -384,7 +384,8 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
 
                 <DialogActions >
                     <Button
-                        component="label" color="primary" style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", marginLeft: 16, width: 120, flex: "0 0 auto" }}
+                        component="label" variant="dialogPrimary"  style={{ whiteSpace: "nowrap", 
+                            textOverflow: "ellipsis", marginLeft: 16, width: 120, flex: "0 0 auto" }}
                     >
                         Select&nbsp;Files
                         <input
@@ -399,12 +400,12 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
                     {
                         this.state.okEnabled ?
                             (
-                                <Button onClick={() => this.handleClose()} color="primary">
+                                <Button onClick={() => this.handleClose()} variant="dialogPrimary" >
                                     OK
                                 </Button>
 
                             ) : (
-                                <Button onClick={() => this.handleCancel()} color="primary">
+                                <Button onClick={() => this.handleCancel()} variant="dialogPrimary" >
                                     Cancel
                                 </Button>
 

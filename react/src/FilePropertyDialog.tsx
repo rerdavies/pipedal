@@ -553,12 +553,12 @@ export default withStyles(styles, { withTheme: true })(
                             </Button>
                             <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
 
-                            <Button onClick={() => { this.props.onCancel(); }} aria-label="cancel">
+                            <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
                                 Cancel
                             </Button>
-                            <Button style={{ flex: "0 0 auto" }}
+                            <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
                                 onClick={() => { this.openSelectedFile(); }}
-                                color="secondary"
+                                
                                 disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
                             >
                                 Select

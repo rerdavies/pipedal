@@ -2644,8 +2644,11 @@ export class PiPedalModel //implements PiPedalModel
         if (this.getTheme() !== value)
         {
             setColorScheme(value);
-            this.reloadPage();
-        }
+            setTimeout(()=>{
+                this.reloadPage();
+            },
+            200);
+}
     }
 
     reloadRequested: boolean = false;
@@ -2653,7 +2656,9 @@ export class PiPedalModel //implements PiPedalModel
     reloadPage() {
         this.reloadRequested = true;
         // eslint-disable-next-line no-restricted-globals
-        window.location.reload();
+        let url = window.location.href.split('#')[0];
+        window.location.href = url;
+        //window.location.reload();
     }
 
 };

@@ -107,10 +107,10 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
                     )}
                 </List>
                 <DialogActions>
-                    <Button onClick={handleClose} color="primary">
+                    <Button onClick={handleClose} variant="dialogSecondary" >
                         Cancel
                     </Button>
-                    <Button onClick={handleOk} color="primary" disabled={currentSelection.length === 0 || currentSelection.length > 2} >
+                    <Button onClick={handleOk} variant="dialogPrimary"  disabled={currentSelection.length === 0 || currentSelection.length > 2} >
                         OK
                     </Button>
                 </DialogActions>

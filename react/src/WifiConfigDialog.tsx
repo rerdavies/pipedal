@@ -337,10 +337,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
 
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} color="primary" style={{ width: 120 }}>
+                    <Button onClick={handleClose} variant="dialogSecondary"  style={{ width: 120 }}>
                         Cancel
                     </Button>
-                    <Button onClick={()=> this.handleOk(false)} color="success" style={{ width: 120 }} >
+                    <Button onClick={()=> this.handleOk(false)} variant="dialogPrimary"  style={{ width: 120 }} >
                         OK
                     </Button>
                 </DialogActions>
@@ -356,13 +356,13 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                         </Typography>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={()=> this.setState({showWifiWarningDialog: false})} color="primary" style={{ width: 120 }}>
+                        <Button onClick={()=> this.setState({showWifiWarningDialog: false})} variant="dialogSecondary"  style={{ width: 120 }}>
                             Cancel
                         </Button>
                         <Button onClick={()=> {
                             this.setState({showWifiWarningDialog: false});
                             this.handleOk(true);
-                        }} color="secondary" style={{ width: 120 }} >
+                        }} variant="dialogPrimary"  style={{ width: 120 }} >
                             PROCEED
                         </Button>
                     </DialogActions>

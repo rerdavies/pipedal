@@ -362,10 +362,10 @@ const JackServerSettingsDialog = withStyles(styles)(
                     </DialogContent>
 
                     <DialogActions>
-                        <Button onClick={handleClose} color="primary">
+                        <Button variant="dialogSecondary" onClick={handleClose} >
                             Cancel
                         </Button>
-                        <Button onClick={() => this.handleApply()} color="primary" disabled={
+                        <Button variant="dialogPrimary" onClick={() => this.handleApply()} disabled={
                             (!this.state.alsaDevices) || !this.state.jackServerSettings.valid}>
                             OK
                         </Button>
