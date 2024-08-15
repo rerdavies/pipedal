@@ -26,7 +26,9 @@ namespace pipedal {
 
 class  HttpRequest {
 public:
-    virtual const std::string&body() const = 0;
+    //virtual const std::string&body() const = 0;
+    virtual std::istream &get_body_input_stream() = 0;
+    virtual size_t content_length() const = 0;
     virtual const std::string &method() const = 0;
     virtual const std::string&get(const std::string&key) const = 0;
     virtual bool keepAlive() const = 0;
@@ -161,14 +163,14 @@ public:
 
     virtual void head_response(
         const uri&request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec) = 0;
 
     virtual void head_response(
         const std::string&fromAddress,
         const uri&request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec) {
         head_response(request_uri,req,res,ec);
@@ -178,14 +180,14 @@ public:
 
     virtual void get_response(
         const uri&request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec) = 0;
 
     virtual void get_response(
         const std::string&fromAddress,
         const uri&request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec)
         {
@@ -195,7 +197,7 @@ public:
 
     virtual void post_response(
         const uri&request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec) 
     {
@@ -204,7 +206,7 @@ public:
     virtual void post_response(
         const std::string&fromAddress,
         const uri&request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
         std::error_code &ec) 
     {

@@ -573,7 +573,9 @@ export default withStyles(styles, { withTheme: true })(
                                 this.setState({ openUploadFileDialog: false });
                             }
                         }
-                        uploadPage={"uploadUserFile?directory=" + encodeURIComponent(this.props.fileProperty.directory)}
+                        uploadPage={"uploadUserFile?directory=" + encodeURIComponent(
+                            pathConcat(this.props.fileProperty.directory,this.state.navDirectory)
+                        )}
                         onUploaded={() => { this.requestFiles(this.state.navDirectory); }}
                         fileProperty={this.props.fileProperty}
 

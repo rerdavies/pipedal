@@ -2081,9 +2081,9 @@ FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const 
 }
 
 
-std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, const std::string &fileBody)
+std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, std::istream&stream, size_t contentLength)
 {
-    return storage.UploadUserFile(directory, patchProperty, filename, fileBody);
+    return storage.UploadUserFile(directory, patchProperty, filename, stream,contentLength);
 }
 
 uint64_t PiPedalModel::CreateNewPreset()

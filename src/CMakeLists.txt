@@ -131,6 +131,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    TemporaryFile.cpp TemporaryFile.hpp     
     FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp 
     FileEntry.cpp FileEntry.hpp
     atom_object.hpp atom_object.cpp

@@ -218,7 +218,7 @@ public:
     void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings);
     std::vector<MidiBinding> GetSystemMidiBindings();
     void DeleteSampleFile(const std::filesystem::path &fileName);
-    std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
+    std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,std::istream&stream, size_t contentLength);
     std::string CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty);
     std::string RenameFilePropertyFile(
         const std::string&oldRelativePath,

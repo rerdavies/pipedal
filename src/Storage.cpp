@@ -1678,7 +1678,7 @@ void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
 }
 std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, const std::string &filename)
 {
-    if (!UiFileProperty::IsDirectoryNameValid(directory))
+    if (!ensureNoDotDot(directory))
     {
         throw std::logic_error("Permission denied.");
     }
@@ -1695,7 +1695,7 @@ std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, co
     }
     return result;
 }
-std::string Storage::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, const std::string &fileBody)
+std::string Storage::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, std::istream&stream, size_t contentLength)
 {
     std::filesystem::path path;
     if (directory.length() != 0)
@@ -1720,10 +1720,28 @@ std::string Storage::UploadUserFile(const std::string &directory, const std::str
             {
                 throw std::logic_error(SS("Can't create file " << path << "."));
             }
-            f.write(fileBody.c_str(), fileBody.length());
+            std::vector<uint8_t> buffer;
+            size_t BUFFER_SIZE = 64*1024;
+            buffer.resize(BUFFER_SIZE);
+            char *pBuffer= (char*)&(buffer[0]);
+            while (contentLength != 0)
+            {
+                size_t thisTime = std::min(BUFFER_SIZE,contentLength);
+                stream.read(pBuffer,(std::streamsize)thisTime);
+                if (!stream) {
+                    throw std::runtime_error("Unable to read body input stream.");
+                }
+                f.write(pBuffer,(std::streamsize)thisTime);
+                if (!f) {
+                    throw std::runtime_error("Failed to write to upload file.");
+                }
+                contentLength -= thisTime;
+            }
         } catch (const std::exception &e)
         {
             Lv2Log::error(SS("Upload failed. " << e.what()));
+            std::filesystem::remove(path);
+            throw;
         }
     }
     return path.string();

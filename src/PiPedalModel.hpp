@@ -336,7 +336,7 @@ namespace pipedal
         std::string RenameFilePropertyFile(const std::string&oldRelativePath,const std::string&newRelativePath,const UiFileProperty&uiFileProperty);
         FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty);
 
-        std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
+        std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,std::istream&inputStream,size_t streamLength);
         uint64_t CreateNewPreset();
 
         bool LoadCurrentPedalboard();

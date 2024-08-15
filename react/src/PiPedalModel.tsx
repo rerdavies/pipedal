@@ -766,8 +766,8 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
-    maxFileUploadSize: number = 100000000;
-    maxPresetUploadSize: number = 512 * 1024;
+    maxFileUploadSize: number = 512*1024*1024;
+    maxPresetUploadSize: number = 1024 * 1024;
     debug: boolean = false;
 
 

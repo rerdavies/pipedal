@@ -205,9 +205,9 @@ public:
 
     virtual void head_response(
         const uri &request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec)
+        std::error_code &ec) override
     {
         try
         {
@@ -264,9 +264,9 @@ public:
 
     virtual void get_response(
         const uri &request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec)
+        std::error_code &ec) override
     {
         try
         {
@@ -326,9 +326,9 @@ public:
     }
     virtual void post_response(
         const uri &request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec)
+        std::error_code &ec) override
     {
         try
         {
@@ -336,9 +336,7 @@ public:
 
             if (segment == "uploadPluginPresets")
             {
-                const std::string &presetBody = req.body();
-                std::stringstream s(presetBody);
-                json_reader reader(s);
+                json_reader reader(req.get_body_input_stream());
                 PluginPresets presets;
                 reader.read(&presets);
                 model->UploadPluginPresets(presets);
@@ -354,9 +352,7 @@ public:
             }
             else if (segment == "uploadPreset")
             {
-                const std::string &presetBody = req.body();
-                std::stringstream s(presetBody);
-                json_reader reader(s);
+                json_reader reader(req.get_body_input_stream());
 
                 uint64_t uploadAfter = -1;
                 std::string strUploadAfter = request_uri.query("uploadAfter");
@@ -381,9 +377,7 @@ public:
             }
             else if (segment == "uploadBank")
             {
-                const std::string &presetBody = req.body();
-                std::istringstream s(presetBody);
-                json_reader reader(s);
+                json_reader reader(req.get_body_input_stream());
 
                 uint64_t uploadAfter = -1;
                 std::string strUploadAfter = request_uri.query("uploadAfter");
@@ -410,7 +404,6 @@ public:
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
 
-                const std::string &fileBody = req.body();
                 const std::string &directory = request_uri.query("directory");
                 const std::string &filename = request_uri.query("filename");
                 const std::string &patchProperty = request_uri.query("property");
@@ -427,7 +420,7 @@ public:
 
                 std::string outputFileName = std::filesystem::path(directory) / filename;
 
-                std::string path = this->model->UploadUserFile(directory,patchProperty,filename,fileBody);
+                std::string path = this->model->UploadUserFile(directory,patchProperty,filename,req.get_body_input_stream(), req.content_length());
 
                 std::stringstream ss;
                 json_writer writer(ss);
@@ -494,9 +487,9 @@ public:
 
     virtual void head_response(
         const uri &request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec)
+        std::error_code &ec) override
     {
         // intercepted. See the other overload.
     }
@@ -504,9 +497,9 @@ public:
     virtual void head_response(
         const std::string &fromAddress,
         const uri &request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec)
+        std::error_code &ec) override
     {
         std::string response = GetConfig(fromAddress);
         res.set(HttpField::content_type, "application/json");
@@ -517,9 +510,9 @@ public:
 
     virtual void get_response(
         const uri &request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec)
+        std::error_code &ec) override
     {
         // intercepted. see the other overload.
     }
@@ -527,9 +520,9 @@ public:
     virtual void get_response(
         const std::string &fromAddress,
         const uri &request_uri,
-        const HttpRequest &req,
+        HttpRequest &req,
         HttpResponse &res,
-        std::error_code &ec)
+        std::error_code &ec) override
     {
         std::string response = GetConfig(fromAddress);
         res.set(HttpField::content_type, "application/json");
