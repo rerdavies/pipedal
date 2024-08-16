@@ -62,6 +62,7 @@ else()
   message(STATUS "LILV_0_INCLUDE_DIRS: ${LILV_0_INCLUDE_DIRS}")
 endif()
 
+pkg_check_modules(ZIP "lilv-0")
 
 # Use LV2 headers from the /usr/lib directory.
 #set (LV2DEV_INCLUDE_DIRS /usr/lib)
@@ -131,6 +132,8 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    Finally.hpp
+    ZipFile.cpp ZipFile.hpp
     TemporaryFile.cpp TemporaryFile.hpp     
     FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp 
     FileEntry.cpp FileEntry.hpp
@@ -230,7 +233,7 @@ set (PIPEDAL_INCLUDES
     .
 )
 
-set(PIPEDAL_LIBS libpipedald 
+set(PIPEDAL_LIBS libpipedald zip
     pthread atomic stdc++fs asound avahi-common avahi-client systemd
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 

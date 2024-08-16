@@ -79,7 +79,7 @@ const theme = createTheme(
                     main: '#A770E4'// #6750A4"   // #5B5690  #60529A  #5C5694
                 },
                 secondary: {
-                    main: "#0AA102" //'"#FF6060"
+                    main: "#FF6060"
                 },
             },
             mainBackground: "#222",

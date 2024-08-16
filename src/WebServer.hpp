@@ -28,6 +28,7 @@ class  HttpRequest {
 public:
     //virtual const std::string&body() const = 0;
     virtual std::istream &get_body_input_stream() = 0;
+    virtual const std::filesystem::path& get_body_temporary_file() = 0;
     virtual size_t content_length() const = 0;
     virtual const std::string &method() const = 0;
     virtual const std::string&get(const std::string&key) const = 0;

@@ -138,7 +138,7 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
     storage.Initialize();
-    lv2Host.SetPluginStoragePath(storage.GetPluginAudioFileDirectory());
+    lv2Host.SetPluginStoragePath(storage.GetPluginUploadDirectory());
 
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
@@ -1151,6 +1151,7 @@ void PiPedalModel::RestartAudio()
 
     // do a complete reload.
 
+
     this->audioHost->SetPedalboard(nullptr);
 
     this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
@@ -2093,6 +2094,17 @@ uint64_t PiPedalModel::CreateNewPreset()
     return storage.CreateNewPreset();
 }
 
+void PiPedalModel::CheckForResourceInitialization(Pedalboard &pedalboard)
+{
+    for (auto item: pedalboard.GetAllPlugins())
+    {
+        if (!item->isSplit())
+        {
+            lv2Host.CheckForResourceInitialization(item->uri(),storage.GetPluginUploadDirectory());
+        }
+
+    }
+}
 bool PiPedalModel::LoadCurrentPedalboard()
 {
     Lv2PedalboardErrorList errorMessages;
@@ -2101,6 +2113,7 @@ bool PiPedalModel::LoadCurrentPedalboard()
 
     // apply the error messages to the lv2Pedalboard.
     // return true if the error messages have changed
+    CheckForResourceInitialization(this->pedalboard);
     audioHost->SetPedalboard(lv2Pedalboard);
     return true;
 }

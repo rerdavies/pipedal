@@ -266,7 +266,7 @@ std::filesystem::path Storage::GetPluginPresetsDirectory() const
 {
     return this->dataRoot / "plugin_presets";
 }
-std::filesystem::path Storage::GetPluginAudioFileDirectory() const
+std::filesystem::path Storage::GetPluginUploadDirectory() const
 {
     return this->dataRoot / "audio_uploads";
 }
@@ -1498,7 +1498,7 @@ std::vector<std::string> Storage::GetFileList(const UiFileProperty &fileProperty
     // if fileProperty has a user-accessible directory, push the entire file path.
     if (fileProperty.directory().size() != 0)
     {
-        std::filesystem::path audioFileDirectory = this->GetPluginAudioFileDirectory() / fileProperty.directory();
+        std::filesystem::path audioFileDirectory = this->GetPluginUploadDirectory() / fileProperty.directory();
         try
         {
             for (auto const &dir_entry : std::filesystem::directory_iterator(audioFileDirectory))
@@ -1576,7 +1576,7 @@ std::vector<FileEntry> Storage::GetFileList2(const std::string &relativePath,con
     // if fileProperty has a user-accessible directory, push the entire file path.
     if (fileProperty.directory().size() != 0)
     {
-        std::filesystem::path audioFileDirectory = this->GetPluginAudioFileDirectory() / fileProperty.directory() / relativePath;
+        std::filesystem::path audioFileDirectory = this->GetPluginUploadDirectory() / fileProperty.directory() / relativePath;
         try
         {
             for (auto const &dir_entry : std::filesystem::directory_iterator(audioFileDirectory))
@@ -1629,7 +1629,7 @@ bool Storage::IsValidSampleFileName(const std::filesystem::path &fileName)
         return false;
     }
     
-    std::filesystem::path audioFilePath = this->GetPluginAudioFileDirectory();
+    std::filesystem::path audioFilePath = this->GetPluginUploadDirectory();
 
     std::filesystem::path parentDirectory = fileName.parent_path();
     while (true)
@@ -1688,7 +1688,7 @@ std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, co
     {
         throw std::logic_error("Permission denied.");
     }
-    std::filesystem::path result = this->GetPluginAudioFileDirectory() / directory / filename;
+    std::filesystem::path result = this->GetPluginUploadDirectory() / directory / filename;
     if (!this->IsValidSampleFileName(result))
     {
         throw std::logic_error("Permission denied.");
@@ -1753,7 +1753,7 @@ std::string Storage::CreateNewSampleDirectory(const std::string&relativePath, co
     {
         throw std::runtime_error("Invalid UI File Property.");
     }
-    std::filesystem::path path = this->GetPluginAudioFileDirectory() / uiFileProperty.directory() / relativePath;
+    std::filesystem::path path = this->GetPluginUploadDirectory() / uiFileProperty.directory() / relativePath;
     if (!this->IsValidSampleFileName(path))
     {
         throw std::runtime_error("Invalid file name.");
@@ -1775,7 +1775,7 @@ std::string Storage::RenameFilePropertyFile(
     {
         throw std::runtime_error("Invalid UI File Property.");
     }
-    std::filesystem::path oldPath = this->GetPluginAudioFileDirectory() / uiFileProperty.directory() / oldRelativePath;
+    std::filesystem::path oldPath = this->GetPluginUploadDirectory() / uiFileProperty.directory() / oldRelativePath;
     if (!this->IsValidSampleFileName(oldPath))
     {
         throw std::runtime_error("Invalid file name.");
@@ -1785,7 +1785,7 @@ std::string Storage::RenameFilePropertyFile(
         throw std::runtime_error("Original path does not exist.");
     }
 
-    std::filesystem::path newPath = this->GetPluginAudioFileDirectory() / uiFileProperty.directory() / newRelativePath;
+    std::filesystem::path newPath = this->GetPluginUploadDirectory() / uiFileProperty.directory() / newRelativePath;
     if (!this->IsValidSampleFileName(newPath))
     {
         throw std::runtime_error("Invalid file name.");
@@ -1834,7 +1834,7 @@ FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFil
     {
         throw std::runtime_error("Invalid uiFileProperty");
     }
-    std::filesystem::path rootDirectory = this->GetPluginAudioFileDirectory() / uiFileProperty.directory();
+    std::filesystem::path rootDirectory = this->GetPluginUploadDirectory() / uiFileProperty.directory();
 
     FillSampleDirectoryTree(result.get(),rootDirectory);
 

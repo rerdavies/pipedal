@@ -112,7 +112,7 @@ public:
     void SetDataRoot(const std::filesystem::path& path);
     void SetConfigRoot(const std::filesystem::path& path);
 
-    std::filesystem::path GetPluginAudioFileDirectory() const;
+    std::filesystem::path GetPluginUploadDirectory() const;
 
     std::vector<std::string> GetPedalboards();
 
@@ -225,7 +225,6 @@ public:
         const std::string&newRelativePath,
         const UiFileProperty&uiFileProperty);
     FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) const;
-
 };
 
 

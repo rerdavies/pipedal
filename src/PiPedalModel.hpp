@@ -190,7 +190,7 @@ namespace pipedal
 
         PiPedalConfiguration configuration;
 
-
+        void CheckForResourceInitialization(Pedalboard &pedalboard);
     public:
         PiPedalModel();
         virtual ~PiPedalModel();

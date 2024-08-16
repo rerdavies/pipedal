@@ -78,6 +78,8 @@ public:
         return m_ready;
     }
     std::istream&get_body_input_stream();
+
+    const std::filesystem::path& get_body_input_file();
     size_t content_length() const  { return m_content_length;}
 
     /// Returns the full raw request (including the body)
@@ -139,13 +141,19 @@ public:
     size_t m_content_length;
     bool m_ready;
     bool m_uploading_to_file = false;
-    size_t m_max_in_memory_upload = 1 ; // 1 MiB
+    size_t m_max_in_memory_upload = 0; // saver to have one code path. And any input body is going to be an upload anyway.
     std::shared_ptr<TemporaryFile> m_temporaryFile;
     std::ofstream m_outputStream;
     std::ifstream m_inputStream;
     std::stringstream m_stringInputStream;
     bool m_outputOpen = false;
 };
+const std::filesystem::path& request_with_file_upload::get_body_input_file() 
+{
+    if (!this->m_temporaryFile)
+        throw std::runtime_error("Request does not have a body.");
+    return this->m_temporaryFile->Path();
+}
 std::istream&request_with_file_upload::get_body_input_stream()
 {
     if (!m_outputOpen)
@@ -649,8 +657,11 @@ namespace pipedal
             {
             }
 
-            virtual const std::string &body() const { return m_request.get_body(); }
-            virtual std::istream &get_body_input_stream() { return m_request.get_body_input_stream(); }
+            virtual std::istream &get_body_input_stream() override { return m_request.get_body_input_stream(); }
+            virtual const std::filesystem::path& get_body_temporary_file()override {
+                return m_request.get_body_input_file();
+            } 
+
             virtual size_t content_length() const { return m_request.content_length(); }
 
 
