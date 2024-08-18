@@ -1,24 +1,25 @@
 # Release Notes
 ## Pipedal 1.2.37 Beta4
 
-Feature:
+You can now upload GuitarML Proteus models from the GuitarML project into TooB ML.
+
+- Download protues models from https://guitarml.com/tonelibrary/tonelib-pro.html
+- Load the TooB ML plugin.
+- click on the Model control.
+- click on the Upload button in the lower left corner of the Model selection dialog.
+- Upload the .json model file or .zip model collection that you downloaded from The GuitarML Tone Library.
+
+Features:
 - ToobML allows uploading of models.
 - TooBML support for large models (e.g. GuitarML Proteus models)
 - Support for sub-directories when uploading files.
 - Support for uploading .zip file bundles.
 
-You can now upload GuitarML Proteus models from the GuitarML project. 
-
-- Download protues models from https://guitarml.com/tonelibrary/tonelib-pro.html
-- Load TooB ML.
-- click on Model control.
-- click on the Upload button in the lower left corner of the Model selection dialog.
-- Upload the .json model or .zip model collection file that you downloaded from The GuitarML Tone Library.
-
 Fixes for the following issues: 
-- changes to dialog button color change.
+- Dialog button colors follow Android UI conventions.
 - automatic provisioning of resource files in .LV2 plugins.
 - The web server supports uploading of large files (limited by default to 512MB).
+
 
 ## Pipedal 1.2.36 Beta3
 
