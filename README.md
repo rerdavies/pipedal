@@ -6,15 +6,16 @@
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
 
-Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.37 Beta4</a> 
+Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.37 Beta4</a> Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 
-Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
+&nbsp;
 
+** NEW version 1.2.37 Beta4 release, providing support for Raspberry Pi OS Bookworm. See the [á  release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.**
 
-> NEW version 1.2.37 Beta4 release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+&nbsp;
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
-PiPedal running on a Raspberry Pi 4 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
+PiPedal running on a Raspberry Pi 4 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats. 
 
 PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
 
