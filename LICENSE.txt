@@ -1,4 +1,4 @@
-Copyright 2021-2023 Robin Davies
+Copyright 2021-2024 Robin Davies
 
 Permission is hereby granted, free of charge, to any person obtaining 
 a copy of this software and associated documentation files (the "Software"), 
@@ -22,6 +22,7 @@ THE SOFTWARE.
 Portions of this code are licensed under other licenses (none of them GPL).
 
 See the file debian/copyright for an enumeration of open-source files licensed
-under other licenses.
+under other terms. A complete list of notices for both source code and dependent
+libraries can be viewed in PiPedal's About page.
 
 
