@@ -1,7 +1,7 @@
 
 <img src='docs/GithubBanner.png' width="100%" /><br/>
 
-![Build](https://github.com/github/docs/actions/workflows/cmake.yml/badge.svg)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main)
 
 Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.36 Beta4</a> 
 
