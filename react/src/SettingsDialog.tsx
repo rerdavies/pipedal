@@ -885,7 +885,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                 onClose={()=> { this.setState({showThemeSelectDialog: false});} }
                                 onOk={(selectedTheme: ColorTheme) => {
                                     this.model.setTheme(selectedTheme);
-                                    this.setState({showThemeSelectDialog: false}); 
+                                    this.setState({showThemeSelectDialog: false});
                                 }}
                                 defaultTheme={this.model.getTheme()}
                             />

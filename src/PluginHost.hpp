@@ -30,6 +30,7 @@
 #include <cmath>
 #include <string>
 #include "IHost.hpp"
+#include <set>
 
 //#include "lv2.h"
 #include "Units.hpp"
@@ -685,7 +686,7 @@ namespace pipedal
             AutoLilvNode pipedalUI__patchProperty;
 
             AutoLilvNode pipedalUI__fileProperty;
-
+            AutoLilvNode pipedalUI__resourceDirectory;
             AutoLilvNode pipedalUI__fileTypes;
             AutoLilvNode pipedalUI__fileExtension;
             AutoLilvNode pipedalUI__mimeType;
@@ -811,8 +812,14 @@ namespace pipedal
 
     public:
         virtual MapFeature &GetMapFeature() { return this->mapFeature; }
+        void CheckForResourceInitialization(const std::string& pluginUri,const std::filesystem::path& pluginUploadDirectory);
 
     private:
+
+        std::set<std::string> pluginsThatHaveBeenCheckedForResources;
+
+        void CheckForResourceInitization(const std::string pluginUri);
+
         virtual LV2_URID_Map *GetLv2UridMap()
         {
             return this->mapFeature.GetMap();

@@ -25,6 +25,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import { nullCast } from './Utility';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
+import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
 
 
 export interface RenameDialogProps {
@@ -74,6 +75,12 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
     componentDidUpdate()
     {
     }
+    checkForIllegalCharacters(filename: string) {
+        if (filename.indexOf('/') !== -1)
+        {
+            throw new Error("Illegal character: '/'");
+        }
+    }
 
     render() {
         let props = this.props;
@@ -86,6 +93,14 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
         const handleOk = () => {
             let text = nullCast(this.refText.current).value;
             text = text.trim();
+            try {
+                this.checkForIllegalCharacters(text);
+            } catch (e:any)
+            {
+                let model:PiPedalModel = PiPedalModelFactory.getInstance();
+                model.showAlert(e.toString());
+                return;
+            }
             if (text.length === 0) return;
             onOk(text);
         }
@@ -116,10 +131,10 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} color="primary">
+                    <Button onClick={handleClose} variant="dialogSecondary" >
                         Cancel
                     </Button>
-                    <Button onClick={handleOk} color="secondary" >
+                    <Button onClick={handleOk} variant="dialogPrimary"  >
                         {acceptActionName}
                     </Button>
                 </DialogActions>

@@ -106,7 +106,7 @@ export default class ListSelectDialog extends ResizeResponsiveComponent<ListSele
                 }
                 </List>
                 <DialogActions>
-                    <Button onClick={()=> this.props.onClose()} color="primary">
+                    <Button variant="dialogSecondary" onClick={()=> this.props.onClose()} color="primary">
                         Cancel
                     </Button>
                 </DialogActions>

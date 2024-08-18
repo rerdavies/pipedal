@@ -546,10 +546,10 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                 <Typography>Are you sure you want to delete bank '{this.getSelectedBankName()}'?</Typography>
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={()=> this.handleDeletePromptClose()} color="primary">
+                            <Button variant="dialogSecondary" onClick={()=> this.handleDeletePromptClose()} color="primary">
                                 Cancel
                             </Button>
-                            <Button onClick={()=> this.handleDeletePromptOk()}  color="secondary" >
+                            <Button variant="dialogPrimary" onClick={()=> this.handleDeletePromptOk()}  color="secondary" >
                                 DELETE
                             </Button>
 

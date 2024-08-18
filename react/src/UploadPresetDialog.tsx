@@ -182,11 +182,11 @@ export default class UploadPresetDialog extends ResizeResponsiveComponent<Upload
                 </DialogContent>
 
                 <DialogActions>
-                    <Button onClick={() => this.handleClose()} color="primary">
+                    <Button onClick={() => this.handleClose()} variant="dialogSecondary" >
                         Cancel
                     </Button>
                     <Button
-                        component="label" color="secondary" style={{width: 120}}
+                        component="label" variant="dialogPrimary"  style={{width: 120}}
                     >
                         Select File
                         <input

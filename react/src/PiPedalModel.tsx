@@ -39,6 +39,7 @@ import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
 import {ColorTheme, getColorScheme,setColorScheme} from './DarkMode';
+import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
 
 
 export enum State {
@@ -52,6 +53,10 @@ export enum State {
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
 
+export interface FileEntry {
+    filename: string;
+    isDirectory: boolean;
+};
 
 export type PluginPresetsChangedHandler = (pluginUri: string) => void;
 
@@ -337,7 +342,7 @@ interface Vst3ControlChangedBody {
 
 export interface FavoritesList {
     [url: string]: boolean;
-}
+};
 
 
 export class PiPedalModel //implements PiPedalModel 
@@ -626,25 +631,6 @@ export class PiPedalModel //implements PiPedalModel
 
 
 
-    requestPluginClasses(): Promise<boolean> {
-        const myRequest = new Request(this.varRequest('plugin_classes.json'));
-        return fetch(myRequest)
-            .then(
-                response => response.json()
-            )
-            .then(data => {
-                let plugins = new PluginClass().deserialize(data);
-
-                this.validatePlugins(plugins);
-                this.plugin_classes.set(plugins);
-                return true;
-            })
-            .catch((error) => {
-                this.setError("Can't contact server.\n\n" + error);
-                return false;
-            });
-
-    }
     getWebSocket(): PiPedalSocket {
         if (this.webSocket === undefined) {
             throw new PiPedalStateError("Attempt to access web socket before it's connected.");
@@ -653,6 +639,11 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     onSocketConnectionLost() {
+        // remove all the events and subscriptions we have.
+        // yyy
+        this.vuSubscriptions = [];
+        this.monitorPatchPropertyListeners = [];
+
         if (this.isAndroidHosted()) {
             this.androidHost?.setDisconnected(true);
         }
@@ -756,8 +747,8 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
-    maxFileUploadSize: number = 100000000;
-    maxPresetUploadSize: number = 512 * 1024;
+    maxFileUploadSize: number = 512*1024*1024;
+    maxPresetUploadSize: number = 1024 * 1024;
     debug: boolean = false;
 
 
@@ -777,7 +768,7 @@ export class PiPedalModel //implements PiPedalModel
                     this.androidHost = new FakeAndroidHost();
                 }
                 this.debug = !!data.debug;
-                let { socket_server_port, socket_server_address } = data;
+                let { socket_server_port, socket_server_address,max_upload_size } = data;
                 if ((!socket_server_address) || socket_server_address === "*") {
                     socket_server_address = window.location.hostname;
                 }
@@ -788,6 +779,7 @@ export class PiPedalModel //implements PiPedalModel
 
                 this.socketServerUrl = socket_server;
                 this.varServerUrl = var_server_url;
+                this.maxFileUploadSize = parseInt(max_upload_size);
 
                 this.webSocket = new PiPedalSocket(
                     this.socketServerUrl,
@@ -918,6 +910,7 @@ export class PiPedalModel //implements PiPedalModel
                             // MUST not allow reconnect until at least one complete load has finished.
                             this.webSocket.canReconnect = true;
                         }
+                        this.setState(State.Ready);
                         return true;
                     })
                     .catch((error) => {
@@ -929,20 +922,6 @@ export class PiPedalModel //implements PiPedalModel
             ;
     }
 
-    requestCurrentPedalboard(): Promise<void> {
-        const myRequest = new Request(this.varRequest('current_pedalboard.json'));
-        return fetch(myRequest)
-            .then(
-                (response) => {
-                    return response.json();
-                }
-            )
-            .then(data => {
-                let pedalboard = new Pedalboard().deserialize(data);
-                pedalboard.ensurePedalboardIds();
-                this.pedalboard.set(pedalboard);
-            });
-    }
 
     onError(msg: string): void {
         this.errorMessage.set(msg);
@@ -1630,14 +1609,21 @@ export class PiPedalModel //implements PiPedalModel
             });
     }
 
+    // deprecated.
     requestFileList(piPedalFileProperty: UiFileProperty): Promise<string[]> {
         return nullCast(this.webSocket)
             .request<string[]>('requestFileList', piPedalFileProperty);
     }
-
+    requestFileList2(relativeDirectoryPath: string,piPedalFileProperty: UiFileProperty): Promise<FileEntry[]> {
+        return nullCast(this.webSocket)
+            .request<FileEntry[]>('requestFileList2',
+                {relativePath: relativeDirectoryPath, fileProperty: piPedalFileProperty}
+            );
+    }
+    
     deleteUserFile(fileName: string) : Promise<boolean>
     {
-        return nullCast(this.webSocket).request<boolean>('deleteUserFile',fileName)
+        return nullCast(this.webSocket).request<boolean>('deleteUserFile',fileName);
     }
 
 
@@ -2053,10 +2039,10 @@ export class PiPedalModel //implements PiPedalModel
         for (let i = 0; i < this.monitorPatchPropertyListeners.length; ++i) {
             if (this.monitorPatchPropertyListeners[i].handle === listenHandle._handle) {
                 this.monitorPatchPropertyListeners.splice(i, 1);
+                this.webSocket?.send("cancelMonitorPatchProperty", listenHandle._handle);
                 break;
             }
         }
-        this.webSocket?.send("cancelMonitorPatchProperty", listenHandle._handle);
     }
 
 
@@ -2247,7 +2233,11 @@ export class PiPedalModel //implements PiPedalModel
         return new Promise<void>((resolve, reject) => {
 
             let ws = this.webSocket;
-            if (!ws) return;
+            if (!ws) 
+            {
+                resolve();
+                return;
+            }
             ws.request<void>(
                 "setGovernorSettings",
                 governor
@@ -2260,6 +2250,74 @@ export class PiPedalModel //implements PiPedalModel
                 });
         });
     }
+    createNewSampleDirectory(relativePath: string, uiFileProperty: UiFileProperty) : Promise<string>
+    {
+        return new Promise<string>((resolve, reject) => {
+
+            let ws = this.webSocket;
+            if (!ws) {
+                resolve("");
+                return;
+            }
+            ws.request<string>(
+                "createNewSampleDirectory",
+                {
+                    relativePath: relativePath,
+                    uiFileProperty: uiFileProperty
+                }
+            )
+                .then((newPath) => {
+                    resolve(newPath);
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
+    }
+    
+    getFilePropertyDirectoryTree(uiFileProperty: UiFileProperty) : Promise<FilePropertyDirectoryTree> {
+        return new Promise<FilePropertyDirectoryTree>((resolve, reject) => {
+            let ws = this.webSocket;
+            if (!ws) {
+                resolve(new FilePropertyDirectoryTree());
+                return;
+            }
+            ws.request<FilePropertyDirectoryTree>(
+                "getFilePropertyDirectoryTree",
+                uiFileProperty
+            ).then((result)=> {
+                resolve(new FilePropertyDirectoryTree().deserialize(result));
+            }).catch((e) => {
+                reject(e);
+            });
+        });
+    }
+    renameFilePropertyFile(oldRelativePath: string, newRelativePath: string, uiFileProperty: UiFileProperty) : Promise<string>
+    {
+        return new Promise<string>((resolve, reject) => {
+
+            let ws = this.webSocket;
+            if (!ws) {
+                resolve("");
+                return;
+            }
+            ws.request<string>(
+                "renameFilePropertyFile",
+                {
+                    oldRelativePath: oldRelativePath,
+                    newRelativePath: newRelativePath,
+                    uiFileProperty: uiFileProperty
+                }
+            )
+                .then((newPath) => {
+                    resolve(newPath);
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
+    }
+
     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void> {
         let result = new Promise<void>((resolve, reject) => {
             let oldSettings = this.wifiConfigSettings.get();
@@ -2362,7 +2420,6 @@ export class PiPedalModel //implements PiPedalModel
                 .catch((err) => {
                     //resolve();
                 });
-            // yyy
                 resolve();
 
         });
@@ -2555,8 +2612,11 @@ export class PiPedalModel //implements PiPedalModel
         if (this.getTheme() !== value)
         {
             setColorScheme(value);
-            this.reloadPage();
-        }
+            setTimeout(()=>{
+                this.reloadPage();
+            },
+            200);
+}
     }
 
     reloadRequested: boolean = false;
@@ -2564,9 +2624,10 @@ export class PiPedalModel //implements PiPedalModel
     reloadPage() {
         this.reloadRequested = true;
         // eslint-disable-next-line no-restricted-globals
-        window.location.reload();
+        let url = window.location.href.split('#')[0];
+        window.location.href = url;
+        //window.location.reload();
     }
-
 
 };
 

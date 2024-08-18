@@ -35,7 +35,7 @@ TEST_CASE("WebServer shutdown", "[webServerShutdown][Build][Dev]")
         auto const threads = 3;
 
         auto server = WebServer::create(
-            address, port, doc_root.c_str(), threads);
+            address, port, doc_root.c_str(), threads,512*1024*1024);
         server->RunInBackground();
         sleep(5);
         server->ShutDown(1000);

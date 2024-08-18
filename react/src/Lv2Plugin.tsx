@@ -250,6 +250,7 @@ export class UiFileProperty {
             this.directory = input.directory;
             this.index = input.index;
             this.portGroup = input.portGroup;
+            this.resourceDirectory = input.resourceDirectory??"";
             return this;
         }
         static deserialize_array(input: any): UiFileProperty[]
@@ -303,6 +304,7 @@ export class UiFileProperty {
         directory: string = "";
         index: number = -1;
         portGroup: string = "";
+        resourceDirectory: string = "";
 
 };
 export class  Lv2Plugin implements Deserializable<Lv2Plugin> {

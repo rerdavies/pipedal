@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.2.36
+    VERSION 1.2.37
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
-set (DISPLAY_VERSION "v1.2.36beta2")
+set (DISPLAY_VERSION "v1.2.37beta4")
 
 set (CMAKE_INSTALL_PREFIX "/usr/")
 

@@ -111,7 +111,7 @@ typedef struct {
      get_upload_path returns the supplied path unmodified.
 `
      If the filename is a child of rootResourceDirectory, creates a corresponding link to the file in the file browser 
-     directory and returns the name of that link.
+     directory and returns the path of that link.
      
      The caller must free memory for the returned value with `LV2_FileBrowser_Files.free_path()`.
 

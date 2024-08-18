@@ -317,7 +317,7 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                         </div>
                     </PluginInfoDialogContent>
                     <PluginInfoDialogActions>
-                        <Button autoFocus onClick={handleClose} color="primary" style={{ width: "130px" }}>
+                        <Button variant="dialogPrimary"  autoFocus onClick={handleClose} style={{ width: "130px" }}>
                             OK
                         </Button>
                     </PluginInfoDialogActions>

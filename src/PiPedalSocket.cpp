@@ -40,6 +40,7 @@
 #include "SysExec.hpp"
 #include "PiPedalAlsa.hpp"
 #include <filesystem>
+#include "FileEntry.hpp"
 
 using namespace std;
 using namespace pipedal;
@@ -55,6 +56,33 @@ public:
 JSON_MAP_BEGIN(GetPatchPropertyBody)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, propertyUri)
+JSON_MAP_END()
+
+
+class CreateNewSampleDirectoryArgs {
+public:
+    std::string relativePath_;
+    UiFileProperty uiFileProperty_;
+    DECLARE_JSON_MAP(CreateNewSampleDirectoryArgs);
+};
+
+JSON_MAP_BEGIN(CreateNewSampleDirectoryArgs)
+JSON_MAP_REFERENCE(CreateNewSampleDirectoryArgs, relativePath)
+JSON_MAP_REFERENCE(CreateNewSampleDirectoryArgs, uiFileProperty)
+JSON_MAP_END()
+
+class RenameSampleFileArgs {
+public:
+    std::string oldRelativePath_;
+    std::string newRelativePath_;
+    UiFileProperty uiFileProperty_;
+    DECLARE_JSON_MAP(RenameSampleFileArgs);
+};
+
+JSON_MAP_BEGIN(RenameSampleFileArgs)
+JSON_MAP_REFERENCE(RenameSampleFileArgs, oldRelativePath)
+JSON_MAP_REFERENCE(RenameSampleFileArgs, newRelativePath)
+JSON_MAP_REFERENCE(RenameSampleFileArgs, uiFileProperty)
 JSON_MAP_END()
 
 
@@ -197,6 +225,21 @@ JSON_MAP_BEGIN(MonitorResultBody)
 JSON_MAP_REFERENCE(MonitorResultBody, subscriptionHandle)
 JSON_MAP_REFERENCE(MonitorResultBody, value)
 JSON_MAP_END()
+
+class FileRequestArgs
+{
+public:
+    std::string relativePath_;
+    UiFileProperty fileProperty_;
+
+    DECLARE_JSON_MAP(FileRequestArgs);
+};
+JSON_MAP_BEGIN(FileRequestArgs)
+JSON_MAP_REFERENCE(FileRequestArgs, relativePath)
+JSON_MAP_REFERENCE(FileRequestArgs, fileProperty)
+JSON_MAP_END()
+
+
 
 
 class MonitorPortBody
@@ -1417,6 +1460,13 @@ public:
             std::vector<std::string> list = this->model.GetFileList(fileProperty);
             this->Reply(replyTo,"requestFileList",list);
         } 
+        else if (message == "requestFileList2")
+        {
+            FileRequestArgs requestArgs;
+            pReader->read(&requestArgs);
+            std::vector<FileEntry> list = this->model.GetFileList2(requestArgs.relativePath_, requestArgs.fileProperty_);
+            this->Reply(replyTo,"requestFileList2",list);
+        } 
         else if (message == "newPreset")
         {
             int64_t presetId = this->model.CreateNewPreset();
@@ -1430,6 +1480,29 @@ public:
             this->model.DeleteSampleFile(fileName);
             this->Reply(replyTo,"deleteUserFile",true);
         }
+        else if (message == "createNewSampleDirectory")
+        {
+            CreateNewSampleDirectoryArgs args;
+            pReader->read(&args);
+
+            std::string newFileName = this->model.CreateNewSampleDirectory(args.relativePath_,args.uiFileProperty_);
+            this->Reply(replyTo,"createNewSampleDirectory",newFileName);
+        }
+        else if (message == "renameFilePropertyFile")
+        {
+            RenameSampleFileArgs args;
+            pReader->read(&args);
+
+            std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_,args.newRelativePath_,args.uiFileProperty_);
+            this->Reply(replyTo,"renameFilePropertyFile",newFileName);
+        } else if (message == "getFilePropertyDirectoryTree"){
+            UiFileProperty uiFileProperty;
+            pReader->read(&uiFileProperty);
+            FilePropertyDirectoryTree::ptr result = model.GetFilePropertydirectoryTree(uiFileProperty);
+            this->Reply(replyTo,"GetFilePropertydirectoryTree",result);
+
+        }
+
         else if (message == "setOnboarding")
         {
             bool value;

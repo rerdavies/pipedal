@@ -32,7 +32,7 @@
 #include "JackConfiguration.hpp"
 #include "lv2/urid/urid.h"
 #include "lv2/ui/ui.h"
-//#include "lv2.h"
+// #include "lv2.h"
 #include "lv2/atom/atom.h"
 #include "lv2/time/time.h"
 #include "lv2/state/state.h"
@@ -127,7 +127,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     atom__bufferType = lilv_new_uri(pWorld, LV2_ATOM__bufferType);
     atom__Path = lilv_new_uri(pWorld, LV2_ATOM__Path);
     presets__preset = lilv_new_uri(pWorld, LV2_PRESETS__Preset);
-    state__state = lilv_new_uri(pWorld,LV2_STATE__state);
+    state__state = lilv_new_uri(pWorld, LV2_STATE__state);
     rdfs__label = lilv_new_uri(pWorld, LILV_NS_RDFS "label");
 
     lv2core__symbol = lilv_new_uri(pWorld, LV2_CORE__symbol);
@@ -140,6 +140,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     pipedalUI__patchProperty = lilv_new_uri(pWorld, PIPEDAL_UI__patchProperty);
     pipedalUI__directory = lilv_new_uri(pWorld, PIPEDAL_UI__directory);
     pipedalUI__fileTypes = lilv_new_uri(pWorld, PIPEDAL_UI__fileTypes);
+    pipedalUI__resourceDirectory = lilv_new_uri(pWorld, PIPEDAL_UI__resourceDirectory);
     pipedalUI__fileProperty = lilv_new_uri(pWorld, PIPEDAL_UI__fileProperty);
     pipedalUI__fileExtension = lilv_new_uri(pWorld, PIPEDAL_UI__fileExtension);
     pipedalUI__mimeType = lilv_new_uri(pWorld, PIPEDAL_UI__mimeType);
@@ -163,9 +164,9 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     lv2__symbol = lilv_new_uri(pWorld, LV2_CORE__symbol);
     lv2__port = lilv_new_uri(pWorld, LV2_CORE__port);
 
-    #define MOD_PREFIX "http://moddevices.com/ns/mod#"
-    mod__label = lilv_new_uri(pWorld,MOD_PREFIX "label");
-    mod__brand = lilv_new_uri(pWorld,MOD_PREFIX "brand");
+#define MOD_PREFIX "http://moddevices.com/ns/mod#"
+    mod__label = lilv_new_uri(pWorld, MOD_PREFIX "label");
+    mod__brand = lilv_new_uri(pWorld, MOD_PREFIX "brand");
     // ui:portNotification
     // [
     //         ui:portIndex 3;
@@ -660,16 +661,15 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     AutoLilvNode name = (lilv_plugin_get_name(pPlugin));
     this->name_ = nodeAsString(name);
 
-    AutoLilvNode brand = lilv_world_get(pWorld,plugUri,lv2Host->lilvUris->mod__brand, nullptr);
+    AutoLilvNode brand = lilv_world_get(pWorld, plugUri, lv2Host->lilvUris->mod__brand, nullptr);
     this->brand_ = nodeAsString(brand);
 
-    AutoLilvNode label = lilv_world_get(pWorld,plugUri,lv2Host->lilvUris->mod__label, nullptr);
+    AutoLilvNode label = lilv_world_get(pWorld, plugUri, lv2Host->lilvUris->mod__label, nullptr);
     this->label_ = nodeAsString(label);
     if (label_.length() == 0)
     {
         this->label_ = this->name_;
-    } 
-
+    }
 
     AutoLilvNode author_name = (lilv_plugin_get_author_name(pPlugin));
     this->author_name_ = nodeAsString(author_name);
@@ -1242,14 +1242,16 @@ void PluginHost::PortValueCallback(const char *symbol, void *user_data, const vo
     if (type == pHost->urids->atom__Double)
     {
         (*pState->values)[symbol] = (float)(*static_cast<const double *>(value));
-    } else if (type == pHost->urids->atom__Float)
+    }
+    else if (type == pHost->urids->atom__Float)
     {
         (*pState->values)[symbol] = *static_cast<const float *>(value);
     }
     else if (type == pHost->urids->atom_Int)
     {
         (*pState->values)[symbol] = *static_cast<const int32_t *>(value);
-    } else
+    }
+    else
     {
         pState->failed = true;
     }
@@ -1289,7 +1291,6 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
                 PresetCallbackState cbData{this, &controlValues, false};
                 lilv_state_emit_port_values(state, PortValueCallback, (void *)&cbData);
 
-
                 int numProperties = lilv_state_get_num_properties(state);
                 // can't handle std:state part of preset.
                 if (numProperties == 0)
@@ -1298,11 +1299,12 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
                     {
                         result.presets_.push_back(PluginPreset(result.nextInstanceId_++, strLabel, controlValues, Lv2PluginState()));
                     }
-                } else {
+                }
+                else
+                {
                     result.presets_.push_back(PluginPreset::MakeLilvPreset(result.nextInstanceId_++, strLabel, controlValues, lilv_node_as_uri(preset)));
                 }
                 lilv_state_free(state);
-
             }
         }
     }
@@ -1353,7 +1355,7 @@ Lv2PortGroup::Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri)
     name_ = nodeAsString(nameNode);
 }
 
-bool Lv2PluginInfo::isSplit() const 
+bool Lv2PluginInfo::isSplit() const
 {
     return uri_ == SPLIT_PEDALBOARD_ITEM_URI;
 }
@@ -1362,6 +1364,112 @@ std::shared_ptr<HostWorkerThread> PluginHost::GetHostWorkerThread()
     return pHostWorkerThread;
 }
 
+class ResourceInfo {
+public:
+    ResourceInfo(const std::string&filePropertyDirectory,const std::string&resourceDirectory)
+    :filePropertyDirectory(filePropertyDirectory), resourceDirectory(resourceDirectory) {}
+
+    std::string filePropertyDirectory;
+    std::string resourceDirectory;
+    bool operator==(const ResourceInfo&other) const {
+        return this->filePropertyDirectory == other.filePropertyDirectory && this->resourceDirectory == other.resourceDirectory;
+
+    }
+    bool operator<(const ResourceInfo&other) const {
+        if (this->filePropertyDirectory < other.filePropertyDirectory)
+            return true;
+        if (this->filePropertyDirectory > other.filePropertyDirectory)
+            return false;
+        return  this->resourceDirectory < other.resourceDirectory;
+
+    }
+};
+
+static bool anyTargetFilesExist(const std::filesystem::path &sourceDirectory, const std::filesystem::path&targetDirectory)
+{
+    namespace fs = std::filesystem;
+    try {
+        if (!fs::exists(targetDirectory)) return false;
+        for (auto&directoryEntry : fs::directory_iterator(sourceDirectory))
+        {
+            fs::path thisPath = directoryEntry.path();
+            if (directoryEntry.is_directory())
+            {
+                auto name = thisPath.filename();
+                fs::path childSource = sourceDirectory / name;
+                fs::path childTarget = targetDirectory / name;
+                if (anyTargetFilesExist(childSource,childTarget))
+                {
+                    return true;
+                }
+            } else {
+                fs::path targetPath = targetDirectory / thisPath.filename();
+                if (fs::exists(targetPath))
+                {
+                    return true;
+                }
+            }
+        }
+
+    } catch (const std::exception&) {
+
+    }
+    return false;
+}
+
+static void createTargetLinks(const std::filesystem::path &sourceDirectory, const std::filesystem::path &targetDirectory)
+{
+    namespace fs = std::filesystem;
+
+    fs::create_directories(targetDirectory);
+
+    for (auto &dirEntry : fs::directory_iterator(sourceDirectory))
+    {
+        fs::path childSource = dirEntry.path();
+        fs::path childTarget = targetDirectory / childSource.filename();
+        if (dirEntry.is_directory()) {
+            createTargetLinks(childSource,childTarget);
+        } else {
+            fs::create_symlink(childSource,childTarget);
+        }
+    }
+}
+void PluginHost::CheckForResourceInitialization(const std::string &pluginUri,const std::filesystem::path&pluginUploadDirectory)
+{
+
+    auto plugin = GetPluginInfo(pluginUri);
+    if (plugin)
+    {
+        std::filesystem::path bundlePath = plugin->bundle_path();
+        if (!plugin->piPedalUI()) 
+            return;
+        const auto& fileProperties = plugin->piPedalUI()->fileProperties();
+        if (fileProperties.size() != 0 && !pluginsThatHaveBeenCheckedForResources.contains(pluginUri))
+        {
+            pluginsThatHaveBeenCheckedForResources.insert(pluginUri);
+
+            // eliminate duplicates.
+            std::set<ResourceInfo> resourceInfoSet;
+            for (const auto&fileProperty: fileProperties)
+            {
+                if (!fileProperty->resourceDirectory().empty() && !fileProperty->directory().empty())
+                {
+                    resourceInfoSet.insert(ResourceInfo(fileProperty->directory(),fileProperty->resourceDirectory()));
+                }
+            }
+            for (const ResourceInfo&resourceInfo: resourceInfoSet)
+            {
+                std::filesystem::path sourcePath = bundlePath / resourceInfo.resourceDirectory;
+                std::filesystem::path targetPath = pluginUploadDirectory / resourceInfo.filePropertyDirectory;
+                if (!anyTargetFilesExist(sourcePath,targetPath))
+                {
+                    createTargetLinks(sourcePath,targetPath);
+                }
+
+            }
+        }
+    }
+}
 // void PiPedalHostLogError(const std::string &error)
 // {
 //     Lv2Log::error("%s",error.c_str());

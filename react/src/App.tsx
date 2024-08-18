@@ -21,12 +21,12 @@ import React from 'react';
 import { ThemeProvider, createTheme, StyledEngineProvider, Theme } from '@mui/material/styles';
 
 import AppThemed from "./AppThemed";
-import {isDarkMode} from './DarkMode';
+import { isDarkMode } from './DarkMode';
 
 declare module '@mui/material/styles' {
     interface Theme {
-      mainBackground: React.CSSProperties['color'];
-      toolbarColor: React.CSSProperties['color'];
+        mainBackground: React.CSSProperties['color'];
+        toolbarColor: React.CSSProperties['color'];
     }
     interface ThemeOptions {
         mainBackground?: React.CSSProperties['color'];
@@ -35,12 +35,17 @@ declare module '@mui/material/styles' {
 
 }
 
-
+declare module '@mui/material/Button' {
+    interface ButtonPropsVariantOverrides {
+        dialogPrimary: true;
+        dialogSecondary: true;
+    }
+}
 
 
 declare module '@mui/styles/defaultTheme' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface DefaultTheme extends Theme {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface DefaultTheme extends Theme { }
 }
 
 
@@ -49,34 +54,71 @@ declare module '@mui/styles/defaultTheme' {
 const theme = createTheme(
     isDarkMode() ?
         {
-        palette: {
-            mode: 'dark',
-            primary: {
-                main: '#A770E4'// #6750A4"   // #5B5690  #60529A  #5C5694
+            components: {
+                MuiButton: {
+                    variants: [
+                        {
+                            props: { variant: 'dialogPrimary' },
+                            style: {
+                                color: "#FFFFFF"
+                            }
+                        },
+                        {
+                            props: { variant: 'dialogSecondary',  },
+                            style: {
+                                color: "rgb(255,255,255,0.7)"
+                            },
+                        },
+                    ],
+                },
             },
-            secondary: {
-                main: "#FF6060"
+
+            palette: {
+                mode: 'dark',
+                primary: {
+                    main: '#A770E4'// #6750A4"   // #5B5690  #60529A  #5C5694
+                },
+                secondary: {
+                    main: "#FF6060"
+                },
             },
-        },
-        mainBackground: "#222",
-        toolbarColor: '#FFFFFF'
-    }
+            mainBackground: "#222",
+            toolbarColor: '#222'
+        }
         :
         {
-        palette: {
-            primary: {
-                main: "#6750A4"   // #5B5690  #60529A  #5C5694
+            components: {
+                MuiButton: {
+                    variants: [
+                        {
+                            props: { variant: 'dialogPrimary' },
+                            style: {
+                                color: "rgb(0,0,0,0.87)"
+                            }
+                        },
+                        {
+                            props: { variant: 'dialogSecondary',  },
+                            style: {
+                                color: "rgb(0,0,0,0.6)"
+                            },
+                        },
+                    ],
+                },
             },
-            secondary: {
-                main: "#FF6060"
-            }
+            palette: {
+                primary: {
+                    main: "#6750A4"   // #5B5690  #60529A  #5C5694
+                },
+                secondary: {
+                    main: "#FF6060"
+                }
 
-        },
-        mainBackground: "#FFFFFF",
-        toolbarColor: '#FFFFFF'
+            },
+            mainBackground: "#FFFFFF",
+            toolbarColor: '#FFFFFF'
 
 
-    }
+        }
 );
 
 
@@ -97,7 +139,7 @@ const App = (class extends React.Component {
         return (
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={theme}>
-                    <AppThemed/>
+                    <AppThemed />
                 </ThemeProvider>
             </StyledEngineProvider>
         );

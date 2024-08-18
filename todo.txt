@@ -1,8 +1,8 @@
-- make sure lv2-dev shows up in packaging. Make sure dhcpcd shows up in packaging
-- Toob nam input VU is not working.
-- x TooB NAM: dbVu telltale is zero0.
-- x TooB NAM: bass [] mid trebble.
-- X check FLAC decode.
+- Zip file upload in a subdirectory.
+- Turning off wifi-direct sould re-enable NetworkManager.
+- ToobML save/restore state.
+
+
 - make app use the same theme settings as the website.
 - BUG: gcs when we have an animated output control
 - Shutdown/reboot midi bindings
@@ -10,12 +10,12 @@
 - do we want to take a second crack at establishin multi-p2p connections with the driver_param?
 
 
-sudo apt install libsdbus-c++-dev libnm-dev
-
 
 
 
 
 Pri Description
 -----------------
+9 Upload proteus patches.
+8 Migrate to Vite toolchain.
 5 Re-use plugin instances when rebuilding pedalboard.

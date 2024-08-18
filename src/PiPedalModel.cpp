@@ -138,7 +138,7 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
     storage.Initialize();
-    lv2Host.SetPluginStoragePath(storage.GetPluginAudioFileDirectory());
+    lv2Host.SetPluginStoragePath(storage.GetPluginUploadDirectory());
 
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
@@ -1151,6 +1151,7 @@ void PiPedalModel::RestartAudio()
 
     // do a complete reload.
 
+
     this->audioHost->SetPedalboard(nullptr);
 
     this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
@@ -2039,6 +2040,27 @@ std::vector<std::string> PiPedalModel::GetFileList(const UiFileProperty &filePro
         return std::vector<std::string>(); // don't disclose to users what the problem is.
     }
 }
+std::vector<FileEntry> PiPedalModel::GetFileList2(const std::string &relativePath,const UiFileProperty &fileProperty)
+{
+    try
+    {
+        return this->storage.GetFileList2(relativePath,fileProperty);
+    }
+    catch (const std::exception &e)
+    {
+        Lv2Log::warning("GetFileList() failed:  (%s)", e.what());
+        return std::vector<FileEntry>(); // don't disclose to users what the problem is.
+    }
+}
+
+std::string PiPedalModel::RenameFilePropertyFile(
+    const std::string&oldRelativePath,
+    const std::string&newRelativePath,
+    const UiFileProperty&uiFileProperty)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return storage.RenameFilePropertyFile(oldRelativePath,newRelativePath,uiFileProperty);
+}
 
 void PiPedalModel::DeleteSampleFile(const std::filesystem::path &fileName)
 {
@@ -2046,9 +2068,23 @@ void PiPedalModel::DeleteSampleFile(const std::filesystem::path &fileName)
     storage.DeleteSampleFile(fileName);
 }
 
-std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, const std::string &fileBody)
+std::string PiPedalModel::CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty)
 {
-    return storage.UploadUserFile(directory, patchProperty, filename, fileBody);
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return storage.CreateNewSampleDirectory(relativePath, uiFileProperty);
+
+}
+FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return storage.GetFilePropertydirectoryTree(uiFileProperty);
+
+}
+
+
+std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, std::istream&stream, size_t contentLength)
+{
+    return storage.UploadUserFile(directory, patchProperty, filename, stream,contentLength);
 }
 
 uint64_t PiPedalModel::CreateNewPreset()
@@ -2058,6 +2094,17 @@ uint64_t PiPedalModel::CreateNewPreset()
     return storage.CreateNewPreset();
 }
 
+void PiPedalModel::CheckForResourceInitialization(Pedalboard &pedalboard)
+{
+    for (auto item: pedalboard.GetAllPlugins())
+    {
+        if (!item->isSplit())
+        {
+            lv2Host.CheckForResourceInitialization(item->uri(),storage.GetPluginUploadDirectory());
+        }
+
+    }
+}
 bool PiPedalModel::LoadCurrentPedalboard()
 {
     Lv2PedalboardErrorList errorMessages;
@@ -2066,6 +2113,7 @@ bool PiPedalModel::LoadCurrentPedalboard()
 
     // apply the error messages to the lv2Pedalboard.
     // return true if the error messages have changed
+    CheckForResourceInitialization(this->pedalboard);
     audioHost->SetPedalboard(lv2Pedalboard);
     return true;
 }
@@ -2086,4 +2134,8 @@ void PiPedalModel::OnNotifyLv2RealtimeError(int64_t instanceId, const std::strin
         t[i]->OnErrorMessage(error);
     }
     delete[] t;
+}
+std::filesystem::path PiPedalModel::GetPluginUploadDirectory() const
+{
+    return storage.GetPluginUploadDirectory();
 }

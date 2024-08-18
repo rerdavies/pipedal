@@ -70,10 +70,10 @@ export default class OkCancelDialog extends React.Component<OkCancelDialogProps,
                     >{text}</Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} color="primary">
+                    <Button variant="dialogSecondary" onClick={handleClose} >
                         Cancel
                     </Button>
-                    <Button onClick={handleOk} color="secondary" >
+                    <Button variant="dialogPrimary" onClick={handleOk}  >
                         {okButtonText}
                     </Button>
                 </DialogActions>

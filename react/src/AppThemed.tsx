@@ -879,7 +879,7 @@ render() {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={this.handleCloseAlert} color="primary" autoFocus>
+                    <Button variant="dialogPrimary" onClick={this.handleCloseAlert} color="primary" autoFocus>
                         OK
                     </Button>
                 </DialogActions>

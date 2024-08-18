@@ -663,7 +663,7 @@ const PluginControlView =
 
                                     })
                                     .catch((error) => {
-                                        this.model.showAlert("setPatchProperty failed: " + error);
+                                        this.model.showAlert("Unable to complete the operation. Audio is not running." + error);
                                     });
                                 this.setState({ showFileDialog: false });
                             }

@@ -506,10 +506,10 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
                     )}
 
                     <DialogActions>
-                        <Button onClick={handleClose} color="primary" style={{ width: 120 }}>
+                        <Button onClick={handleClose} variant="dialogSecondary"  style={{ width: 120 }}>
                             Cancel
                         </Button>
-                        <Button onClick={() => this.handleOk()} color="primary" style={{ width: 120 }} >
+                        <Button onClick={() => this.handleOk()} variant="dialogPrimary"  style={{ width: 120 }} >
                             OK
                         </Button>
                     </DialogActions>

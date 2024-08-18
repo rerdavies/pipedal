@@ -39,6 +39,7 @@
 #include <thread>
 #include "Promise.hpp"
 #include "AtomConverter.hpp"
+#include "FileEntry.hpp"
 
 namespace pipedal
 {
@@ -189,12 +190,13 @@ namespace pipedal
 
         PiPedalConfiguration configuration;
 
-
+        void CheckForResourceInitialization(Pedalboard &pedalboard);
     public:
         PiPedalModel();
         virtual ~PiPedalModel();
 
         uint16_t GetWebPort() const { return webPort; }
+        std::filesystem::path GetPluginUploadDirectory() const;
         void Close();
 
         void SetOnboarding(bool value);
@@ -328,9 +330,14 @@ namespace pipedal
         void SetFavorites(const std::map<std::string, bool> &favorites);
 
         std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
+        std::vector<FileEntry> GetFileList2(const std::string &relativePath,const UiFileProperty&fileProperty);
 
         void DeleteSampleFile(const std::filesystem::path &fileName);
-        std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
+        std::string CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty);
+        std::string RenameFilePropertyFile(const std::string&oldRelativePath,const std::string&newRelativePath,const UiFileProperty&uiFileProperty);
+        FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty);
+
+        std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,std::istream&inputStream,size_t streamLength);
         uint64_t CreateNewPreset();
 
         bool LoadCurrentPedalboard();

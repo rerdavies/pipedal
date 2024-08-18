@@ -110,10 +110,10 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
                 )}
             </List>
             <DialogActions>
-                <Button onClick={handleClose} color="primary">
+                <Button onClick={handleClose} variant="dialogSecondary" >
                     Cancel
                 </Button>
-                <Button onClick={handleOk} color="primary"  >
+                <Button onClick={handleOk} variant="dialogPrimary"   >
                     OK
                 </Button>
             </DialogActions>

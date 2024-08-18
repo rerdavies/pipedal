@@ -28,7 +28,10 @@
 #include "JackServerSettings.hpp"
 #include "WifiConfigSettings.hpp"
 #include "WifiDirectConfigSettings.hpp"
+#include "FileEntry.hpp"
 #include <map>
+#include <locale>
+#include "FilePropertyDirectoryTree.hpp"
 
 
 namespace pipedal {
@@ -64,6 +67,7 @@ struct PluginPresetValues {
 
 class Storage {
 private:
+    std::locale locale;
     std::filesystem::path dataRoot;
     std::filesystem::path configRoot;
     BankIndex bankIndex;
@@ -71,6 +75,7 @@ private:
     PluginPresetIndex pluginPresetIndex;
     
 private:
+    void FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const;
 
     void MaybeCopyDefaultPresets();
     static std::string SafeEncodeName(const std::string& name);
@@ -107,9 +112,9 @@ public:
     void SetDataRoot(const std::filesystem::path& path);
     void SetConfigRoot(const std::filesystem::path& path);
 
-    std::filesystem::path GetPluginAudioFileDirectory() const;
+    std::filesystem::path GetPluginUploadDirectory() const;
 
-    std::vector<std::string> GetPedalboards();
+    //std::vector<std::string> GetPedalboards();
 
     const BankIndex & GetBanks() const { return bankIndex; }
 
@@ -149,6 +154,7 @@ public:
     int64_t DeleteBank(int64_t bankId);
 
     std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
+    std::vector<FileEntry> GetFileList2(const std::string&relativePath,const UiFileProperty&fileProperty);
 
 
     void SetJackChannelSelection(const JackChannelSelection&channelSelection);
@@ -176,7 +182,7 @@ private:
     void SavePluginPresetIndex();
 
     std::filesystem::path GetPluginPresetPath(const std::string &pluginUri) const;
-    bool IsValidSampleFile(const std::filesystem::path&fileName);
+    bool IsValidSampleFileName(const std::filesystem::path&fileName);
     std::filesystem::path MakeUserFilePath(const std::string &directory, const std::string&filename);
 
 public:
@@ -212,7 +218,13 @@ public:
     void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings);
     std::vector<MidiBinding> GetSystemMidiBindings();
     void DeleteSampleFile(const std::filesystem::path &fileName);
-    std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,const std::string&fileBody);
+    std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,std::istream&stream, size_t contentLength);
+    std::string CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty);
+    std::string RenameFilePropertyFile(
+        const std::string&oldRelativePath,
+        const std::string&newRelativePath,
+        const UiFileProperty&uiFileProperty);
+    FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) const;
 };
 
 

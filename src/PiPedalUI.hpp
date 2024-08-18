@@ -42,6 +42,7 @@
 #define PIPEDAL_UI__patchProperty  PIPEDAL_UI_PREFIX "patchProperty"
 #define PIPEDAL_UI__directory  PIPEDAL_UI_PREFIX "directory"
 #define PIPEDAL_UI__fileTypes  PIPEDAL_UI_PREFIX "fileTypes"
+#define PIPEDAL_UI__resourceDirectory PIPEDAL_UI_PREFIX "resourceDirectory"
 
 #define PIPEDAL_UI__fileType  PIPEDAL_UI_PREFIX "fileType"
 #define PIPEDAL_UI__fileExtension  PIPEDAL_UI_PREFIX "fileExtension"
@@ -112,6 +113,7 @@ namespace pipedal {
         std::vector<UiFileType> fileTypes_;
         std::string patchProperty_;
         std::string portGroup_;
+        std::string resourceDirectory_;
     public:
         using ptr = std::shared_ptr<UiFileProperty>;
         UiFileProperty() { }
@@ -130,6 +132,8 @@ namespace pipedal {
         const std::string &patchProperty() const { return patchProperty_; }
         bool IsValidExtension(const std::string&extension) const;
         static  bool IsDirectoryNameValid(const std::string&value);
+
+        const std::string&resourceDirectory() const { return resourceDirectory_; }
 
     public:
         DECLARE_JSON_MAP(UiFileProperty);

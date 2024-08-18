@@ -29,7 +29,7 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { UiFileProperty } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
-import { PiPedalModel, PiPedalModelFactory, ListenHandle} from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory, ListenHandle,State} from './PiPedalModel';
 import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import {PedalboardItem} from './Pedalboard';
@@ -98,8 +98,18 @@ const FilePropertyControl =
                     value: "",
                 };
                 this.model = PiPedalModelFactory.getInstance();
+                this.onStateChanged = this.onStateChanged.bind(this);
             }
 
+
+            onStateChanged(state: State) {
+                if (this.mounted)
+                {
+                    if (state === State.Ready) {
+                        this.subscribeToPatchProperty();
+                    }
+                }
+            }
             private propertyGetHandle?: ListenHandle;
 
             monitorPropertyHandle?: ListenHandle;
@@ -119,6 +129,7 @@ const FilePropertyControl =
                         }
                     }
                     );
+
             }
             unsubscribeToPatchProperty() {
                 if (this.monitorPropertyHandle !== undefined)
@@ -126,15 +137,18 @@ const FilePropertyControl =
                     this.model.cancelMonitorPatchProperty(this.monitorPropertyHandle);
                     this.monitorPropertyHandle = undefined;
                 }
+
             }
             private mounted: boolean = false;
             componentDidMount() {
+                this.model.state.addOnChangedHandler(this.onStateChanged);
                 this.mounted = true;
                 this.subscribeToPatchProperty();
             }
             componentWillUnmount() {
                 this.unsubscribeToPatchProperty();
                 this.mounted = false;
+                this.model.state.removeOnChangedHandler(this.onStateChanged);
             }
             componentDidUpdate(prevProps: Readonly<FilePropertyControlProps>, prevState: Readonly<FilePropertyControlState>, snapshot?: any): void {
                 if (prevProps.fileProperty.patchProperty !== this.props.fileProperty.patchProperty

@@ -26,6 +26,12 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix toobml: <http://two-play.com/plugins/toob-ml#> .
 
+
+toobml:modelFile
+        a lv2:Parameter;
+        rdfs:label "Model";
+        rdfs:range atom:Path.
+
 toobml:filterGroup
     a param:ControlGroup ,
         pg:InputGroup ;
@@ -66,7 +72,25 @@ Generally, TooB ML uses smaller and more efficient neural networks than does Too
 TooB ML models use significantly less CPU, although TooB Neural Amp Modeller is significantly more flexible, and
 has a huge number of downloadable models.
 
-The BluesJR model has an additional Gain control the is used by the BluesJR model to simulate the effect of Blues Junior's gain control.
+TooB ML models are compatible with models from the GuitarML project (). You can download new models from the GuitarML project 
+at 
+
+    https://guitarml.com/tonelibrary/tonelib-pro.html
+
+To use GuitarML models, download them locally using your browser, and then upload them to TooB ML using the following steps:
+
+- Load Toob ML in PiPedal.
+
+- Click on the "Models" control.
+
+- Click on the _Upload_ button in the lower left corner of the selection dialog.
+
+- Select the file that you downloaded localy.
+
+TooB ML can upload indiviual .json files, or collections of models in .zip files downloaded from the GuitarML site.
+
+Some models have an additional Gain control that can be used to simulate the effect of a Gain control on the amplifier 
+being simulated. The gain control will be enabled if the model you have selected has a gain input.
 
 For convenience, tone controls are provided for rough shaping of tone before the input signal is fed to the neural net models. The tone 
 section can be completely bypassed by setting all tone controls to exactly 0.5.
@@ -85,7 +109,6 @@ on the edge of breakup. It does not work particularly well for models of heavily
 compressor. Notionally, Sag Feedback models the effect of transformer sag on intermediate transformer stages (which causes them to clip at a lower level than
 they ordinarily would); and Sag Out models the effect of transformer sag on the final power stage of a guitar amplifier.
 
-
 The TooB ML Amplifier is based heavily on code ported from from the RTNeural project (https://github.com/jatinchowdhury18/RTNeural), by Jatin Chowdhury,
 and uses model files from the GuitarML Neural Pi project (https://github.com/GuitarML/NeuralPi).
 
@@ -94,8 +117,13 @@ and uses model files from the GuitarML Neural Pi project (https://github.com/Gui
         mod:brand "TooB";
         mod:label "TooB ML";
         lv2:requiredFeature urid:map, work:schedule ;
-        lv2:optionalFeature lv2:hardRTCapable;
+        lv2:optionalFeature state::freePath, state:makePath, state:mapPath ;
         lv2:extensionData state:interface, work:interface;
+
+        patch:readable 
+                toobml:modelFile;
+        patch:writable 
+                toobml:modelFile;
 
         patch:readable 
                 <http://two-play.com/plugins/toob#frequencyResponseVector>
@@ -128,12 +156,14 @@ and uses model files from the GuitarML Neural Pi project (https://github.com/Gui
                 units:unit units:db ;
         ],
         [
+                # legagcy for loading of old instances.
                 a lv2:InputPort, lv2:ControlPort ;
+                lv2:portProperty epp:notOnGUI;
                 lv2:index 2 ;
                 lv2:symbol "model" ;
                 lv2:name "Model" ;
-                lv2:default 0.0 ; 
-                lv2:minimum 0.0 ;
+                lv2:default -1.0 ; 
+                lv2:minimum -1.0 ;
                 lv2:maximum 32.0 ;
                 lv2:portProperty lv2:enumeration ;
                 lv2:scalePoint 
@@ -462,6 +492,31 @@ and uses model files from the GuitarML Neural Pi project (https://github.com/Gui
 
 <http://two-play.com/plugins/toob-ml#piPedalUI> 
     a pipedal_ui:ui ;
+    pipedal_ui:fileProperties 
+    [
+        a pipedal_ui:fileProperty;
+        rdfs:label "Model" ;
+        pipedal_ui:directory "ToobMlModels";
+        lv2:index 2 ;
+        pipedal_ui:patchProperty toobml:modelFile ;
+        pipedal_ui:resourceDirectory "models/tones";
+
+        pipedal_ui:fileTypes 
+        [
+            a pipedal_ui:fileType;
+            rdfs:label ".json file";
+            pipedal_ui:fileExtension ".json";
+            pipedal_ui:mimeType "application/json";
+        ],[
+            a pipedal_ui:fileType;
+            rdfs:label ".ml file";
+            pipedal_ui:fileExtension ".zip";
+            pipedal_ui:mimeType "application/zip";
+
+        ]
+        ;
+    ];
+
     pipedal_ui:frequencyPlot
     [
         lv2:index 8 ; 

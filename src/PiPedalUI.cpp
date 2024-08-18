@@ -201,7 +201,15 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     {
         this->portGroup_ = portGroup.AsUri();
     }
-
+    AutoLilvNode resourceDirectory = lilv_world_get(pWorld,node,pHost->lilvUris->pipedalUI__resourceDirectory,nullptr);
+    if (resourceDirectory)
+    {
+        this->resourceDirectory_ =  resourceDirectory.AsString();
+    }
+    if (this->resourceDirectory_.empty())
+    {
+        this->resourceDirectory_ = "default";
+    }
     this->fileTypes_ = UiFileType::GetArray(pHost, node, pHost->lilvUris->pipedalUI__fileTypes);
 }
 
@@ -460,6 +468,7 @@ JSON_MAP_REFERENCE(UiFileProperty, directory)
 JSON_MAP_REFERENCE(UiFileProperty, patchProperty)
 JSON_MAP_REFERENCE(UiFileProperty, fileTypes)
 JSON_MAP_REFERENCE(UiFileProperty, portGroup)
+JSON_MAP_REFERENCE(UiFileProperty, resourceDirectory)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(UiFrequencyPlot)
