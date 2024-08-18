@@ -10,7 +10,7 @@ Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.37 Be
 
 &nbsp;
 
-** NEW version 1.2.37 Beta4 release, providing support for Raspberry Pi OS Bookworm. See the [á  release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.**
+#### NEW version 1.2.37 Beta4 release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 
