@@ -1,6 +1,8 @@
 
 <img src='docs/GithubBanner.png' width="100%" /><br/>
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/{owner}/{repo}/CI?label=build)
+
 Download: <a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.36 Beta4</a> 
 
 Website: [https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
