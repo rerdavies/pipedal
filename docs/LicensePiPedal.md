@@ -21,7 +21,7 @@ THE SOFTWARE.
 
 Portions of this code are licensed under other licenses (none of them GPL).
 
-See the file debian/copyright for an enumeration of open-source files licensed
-under other terms.
+A complete list of open source copyright notices is provided 
+in PiPedal's About page.
 
 
