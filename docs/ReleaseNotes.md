@@ -3,7 +3,7 @@
 
 You can now upload GuitarML Proteus models from the GuitarML project into TooB ML.
 
-- Download protues models from https://guitarml.com/tonelibrary/tonelib-pro.html
+- Download Proteus models from https://guitarml.com/tonelibrary/tonelib-pro.html
 - Load the TooB ML plugin.
 - click on the Model control.
 - click on the Upload button in the lower left corner of the Model selection dialog.
