@@ -19,6 +19,7 @@
 
 import React from 'react';
 import { Theme, createStyles } from '@mui/material/styles';
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import RenameDialog from './RenameDialog';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
@@ -462,6 +463,18 @@ export default withStyles(styles, { withTheme: true })(
                             <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
                                 {this.props.fileProperty.label}
                             </Typography>
+
+                            <IconButton
+                                aria-label="new folder"
+                                edge="end"
+                                color="inherit"
+                                style={{ opacity: 0.6, marginRight: 8 }}
+                                onClick={(ev) => { this.onNewFolder(); }}
+                            >
+                                <CreateNewFolderIcon />
+                            </IconButton>
+
+
                             <IconButton
                                 aria-label="display more actions"
                                 edge="end"
@@ -508,11 +521,17 @@ export default withStyles(styles, { withTheme: true })(
                                 (this.state.columns !== 0) && // don't render until we have number of columns derived from layout.
                                 this.state.fileEntries.map(
                                     (value: FileEntry, index: number) => {
+                                        let isDefault = this.props.fileProperty.directory.startsWith("default");
                                         let displayValue = value.filename;
                                         if (displayValue === "") {
                                             displayValue = "<none>";
                                         } else {
-                                            displayValue = pathFileNameOnly(displayValue);
+                                            if (isDefault)
+                                            {
+                                                displayValue = pathFileName(displayValue);
+                                            } else {
+                                                displayValue = pathFileNameOnly(displayValue);
+                                            }
                                         }
                                         let selected = value.filename === this.state.selectedFile;
                                         let selectBg = selected ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.0)";

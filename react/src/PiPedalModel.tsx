@@ -631,25 +631,6 @@ export class PiPedalModel //implements PiPedalModel
 
 
 
-    requestPluginClasses(): Promise<boolean> {
-        const myRequest = new Request(this.varRequest('plugin_classes.json'));
-        return fetch(myRequest)
-            .then(
-                response => response.json()
-            )
-            .then(data => {
-                let plugins = new PluginClass().deserialize(data);
-
-                this.validatePlugins(plugins);
-                this.plugin_classes.set(plugins);
-                return true;
-            })
-            .catch((error) => {
-                this.setError("Can't contact server.\n\n" + error);
-                return false;
-            });
-
-    }
     getWebSocket(): PiPedalSocket {
         if (this.webSocket === undefined) {
             throw new PiPedalStateError("Attempt to access web socket before it's connected.");
@@ -941,20 +922,6 @@ export class PiPedalModel //implements PiPedalModel
             ;
     }
 
-    requestCurrentPedalboard(): Promise<void> {
-        const myRequest = new Request(this.varRequest('current_pedalboard.json'));
-        return fetch(myRequest)
-            .then(
-                (response) => {
-                    return response.json();
-                }
-            )
-            .then(data => {
-                let pedalboard = new Pedalboard().deserialize(data);
-                pedalboard.ensurePedalboardIds();
-                this.pedalboard.set(pedalboard);
-            });
-    }
 
     onError(msg: string): void {
         this.errorMessage.set(msg);

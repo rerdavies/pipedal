@@ -495,7 +495,7 @@ and uses model files from the GuitarML Neural Pi project (https://github.com/Gui
     pipedal_ui:fileProperties 
     [
         a pipedal_ui:fileProperty;
-        rdfs:label "Model (*.json)" ;
+        rdfs:label "Model" ;
         pipedal_ui:directory "ToobMlModels";
         lv2:index 2 ;
         pipedal_ui:patchProperty toobml:modelFile ;
