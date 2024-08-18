@@ -14,7 +14,7 @@ Install the package by running
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo dpkg -i ./pipedal_1.2.37_arm64.deb
+  sudo apt-get install ./pipedal_1.2.37_arm64.deb
 ```
 
 Follow the instructions in [_Configuring PiPedal After Installation_](https://rerdavies.github.io/pipedal/Configuring.html) to complete the installation.

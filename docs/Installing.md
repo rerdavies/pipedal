@@ -23,7 +23,7 @@ Install the package by running
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo dpkg -i pipedal_1.2.37_arm64.deb 
+  sudo apt-get install pipedal_1.2.37_arm64.deb 
 ```
 Adjust accordingly if you have downloaded v1.1.31.
 
