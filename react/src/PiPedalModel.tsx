@@ -787,7 +787,7 @@ export class PiPedalModel //implements PiPedalModel
                     this.androidHost = new FakeAndroidHost();
                 }
                 this.debug = !!data.debug;
-                let { socket_server_port, socket_server_address } = data;
+                let { socket_server_port, socket_server_address,max_upload_size } = data;
                 if ((!socket_server_address) || socket_server_address === "*") {
                     socket_server_address = window.location.hostname;
                 }
@@ -798,6 +798,7 @@ export class PiPedalModel //implements PiPedalModel
 
                 this.socketServerUrl = socket_server;
                 this.varServerUrl = var_server_url;
+                this.maxFileUploadSize = parseInt(max_upload_size);
 
                 this.webSocket = new PiPedalSocket(
                     this.socketServerUrl,

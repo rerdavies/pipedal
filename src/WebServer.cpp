@@ -56,7 +56,8 @@ const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
 
 using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
 
-const size_t MAX_READ_SIZE = 512 * 1024 * 1024;;
+const size_t MAX_READ_SIZE = 512 * 1024 * 1024;
+;
 using namespace boost;
 
 class request_with_file_upload : public websocketpp::http::parser::parser
@@ -77,10 +78,10 @@ public:
     {
         return m_ready;
     }
-    std::istream&get_body_input_stream();
+    std::istream &get_body_input_stream();
 
-    const std::filesystem::path& get_body_input_file();
-    size_t content_length() const  { return m_content_length;}
+    const std::filesystem::path &get_body_input_file();
+    size_t content_length() const { return m_content_length; }
 
     /// Returns the full raw request (including the body)
     std::string raw() const;
@@ -148,33 +149,39 @@ public:
     std::stringstream m_stringInputStream;
     bool m_outputOpen = false;
 };
-const std::filesystem::path& request_with_file_upload::get_body_input_file() 
+const std::filesystem::path &request_with_file_upload::get_body_input_file()
 {
     if (!this->m_temporaryFile)
         throw std::runtime_error("Request does not have a body.");
     return this->m_temporaryFile->Path();
 }
-std::istream&request_with_file_upload::get_body_input_stream()
+std::istream &request_with_file_upload::get_body_input_stream()
 {
     if (!m_outputOpen)
     {
         m_outputOpen = true;
         if (m_uploading_to_file)
         {
-            m_inputStream.open(this->m_temporaryFile->Path(),std::ios_base::in | std::ios_base::binary);
+            m_inputStream.open(this->m_temporaryFile->Path(), std::ios_base::in | std::ios_base::binary);
             return m_inputStream;
-        }else {
+        }
+        else
+        {
             auto body = super::get_body();
-            m_stringInputStream.write(body.c_str(),body.length());
+            m_stringInputStream.write(body.c_str(), body.length());
             m_stringInputStream.flush();
             m_stringInputStream.seekg(0);
             return m_stringInputStream;
         }
-    } else {
+    }
+    else
+    {
         if (m_uploading_to_file)
         {
             return m_inputStream;
-        } else {
+        }
+        else
+        {
             return m_stringInputStream;
         }
     }
@@ -193,7 +200,7 @@ bool request_with_file_upload::prepare_body(std::error_code &ec)
         try
         {
             this->m_temporaryFile = std::make_shared<TemporaryFile>(WEB_TEMP_DIR);
-            m_outputStream.open(this->m_temporaryFile->Path(),std::ios_base::trunc | std::ios_base::out | std::ios_base::binary);
+            m_outputStream.open(this->m_temporaryFile->Path(), std::ios_base::trunc | std::ios_base::out | std::ios_base::binary);
             if (!m_outputStream)
             {
                 throw std::runtime_error(SS("Unable to open file " << this->m_temporaryFile->Path()));
@@ -221,10 +228,12 @@ inline size_t request_with_file_upload::process_body(char const *buf, size_t len
     if (m_body_encoding == body_encoding::plain)
     {
         size_t processed = (std::min)(m_body_bytes_needed, len);
-        try {
-                m_outputStream.write(buf,processed);
-        } catch (const std::exception &e)
-    {
+        try
+        {
+            m_outputStream.write(buf, processed);
+        }
+        catch (const std::exception &e)
+        {
             Lv2Log::error(SS("Can't write to web temporary file " << m_temporaryFile->Path() << ". " << e.what()));
             ec = error::make_error_code(error::istream_bad);
             return 0;
@@ -507,7 +516,7 @@ public:
     typedef CustomPpConfig type;
     typedef websocketpp::config::asio base;
 
-    static const size_t max_http_body_size = MAX_READ_SIZE; // websocketpp::config::asio::max_http_body_size;
+    static size_t max_http_body_size; // websocketpp::config::asio::max_http_body_size;
     typedef pipedal_elog elog_type;
     typedef pipedal_alog alog_type;
 
@@ -527,6 +536,8 @@ public:
     typedef websocketpp::transport::asio::endpoint<transport_config>
         transport_type;
 };
+
+size_t CustomPpConfig::max_http_body_size = MAX_READ_SIZE;
 
 std::string
 pipedal::last_modified(const std::filesystem::path &path)
@@ -637,6 +648,7 @@ namespace pipedal
         int port = -1;
         std::filesystem::path rootPath;
         int threads = 1;
+        size_t maxUploadSize = 512 * 1024 * 1024;
 
         std::thread *pBgThread = nullptr;
         std::recursive_mutex io_mutex;
@@ -658,12 +670,12 @@ namespace pipedal
             }
 
             virtual std::istream &get_body_input_stream() override { return m_request.get_body_input_stream(); }
-            virtual const std::filesystem::path& get_body_temporary_file()override {
+            virtual const std::filesystem::path &get_body_temporary_file() override
+            {
                 return m_request.get_body_input_file();
-            } 
+            }
 
             virtual size_t content_length() const { return m_request.content_length(); }
-
 
             virtual const std::string &method() const { return m_request.get_method(); }
             virtual const std::string &get(const std::string &key) const { return m_request.get_header(key); }
@@ -1262,13 +1274,7 @@ namespace pipedal
             this->pBgThread = new std::thread(ThreadProc, this);
         }
 
-        WebServerImpl(const std::string &address, int port, const char *rootPath, int threads)
-            : address(address),
-              rootPath(rootPath),
-              port(port),
-              threads(threads)
-        {
-        }
+        WebServerImpl(const std::string &address, int port, const char *rootPath, int threads, size_t maxUploadSize);
     };
 } // namespace pipedal
 
@@ -1284,8 +1290,21 @@ std::shared_ptr<ISocketFactory> WebServerImpl::GetSocketFactory(const uri &reque
     }
     return nullptr;
 }
-
-std::shared_ptr<WebServer> pipedal::WebServer::create(const boost::asio::ip::address &address, int port, const char *rootPath, int threads)
+WebServerImpl::WebServerImpl(const std::string &address, int port, const char *rootPath, int threads, size_t maxUploadSize)
+    : address(address),
+      rootPath(rootPath),
+      port(port),
+      threads(threads),
+      maxUploadSize(maxUploadSize)
 {
-    return std::shared_ptr<WebServer>(new WebServerImpl(address.to_string(), port, rootPath, threads));
+    ::CustomPpConfig::max_http_body_size = maxUploadSize;
+}
+
+std::shared_ptr<WebServer> pipedal::WebServer::create(
+    const boost::asio::ip::address &address,
+    int port,
+    const char *rootPath, int threads,
+    size_t maxUploadSize)
+{
+    return std::shared_ptr<WebServer>(new WebServerImpl(address.to_string(), port, rootPath, threads, maxUploadSize));
 }

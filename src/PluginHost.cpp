@@ -1441,7 +1441,8 @@ void PluginHost::CheckForResourceInitialization(const std::string &pluginUri,con
     if (plugin)
     {
         std::filesystem::path bundlePath = plugin->bundle_path();
-
+        if (!plugin->piPedalUI()) 
+            return;
         const auto& fileProperties = plugin->piPedalUI()->fileProperties();
         if (fileProperties.size() != 0 && !pluginsThatHaveBeenCheckedForResources.contains(pluginUri))
         {

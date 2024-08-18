@@ -1,4 +1,6 @@
-- make sure lv2-dev shows up in packaging. Make sure dhcpcd shows up in packaging
+- Zip file upload in a subdirectory.
+- Turning off wifi-direct sould re-enable NetworkManager.
+- ToobML save/restore state.
 
 
 - make app use the same theme settings as the website.
@@ -6,9 +8,7 @@
 - Shutdown/reboot midi bindings
 - versioning.
 - do we want to take a second crack at establishin multi-p2p connections with the driver_param?
-- property subscriptions don't get refreshed after a disconnect.
 
-sudo apt install libsdbus-c++-dev libnm-dev
 
 
 
@@ -16,4 +16,6 @@ sudo apt install libsdbus-c++-dev libnm-dev
 
 Pri Description
 -----------------
+9 Upload proteus patches.
+8 Migrate to Vite toolchain.
 5 Re-use plugin instances when rebuilding pedalboard.

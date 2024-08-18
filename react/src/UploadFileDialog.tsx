@@ -208,7 +208,11 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
                     {
                         throw new Error("Invalid file extension.");
                     }
-                    let filename = await this.model.uploadFile(this.props.uploadPage, this.uploadList[i].file, "application/octet-stream", upload.abortController);
+                    let filename = await this.model.uploadFile(
+                        this.props.uploadPage, 
+                        this.uploadList[i].file, 
+                        "application/octet-stream", 
+                        upload.abortController);
                     this.props.onUploaded(filename);
                     upload.status = FileUploadStatus.Uploaded;
                     upload.statusMessage = "Uploaded.";

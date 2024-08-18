@@ -2135,3 +2135,7 @@ void PiPedalModel::OnNotifyLv2RealtimeError(int64_t instanceId, const std::strin
     }
     delete[] t;
 }
+std::filesystem::path PiPedalModel::GetPluginUploadDirectory() const
+{
+    return storage.GetPluginUploadDirectory();
+}

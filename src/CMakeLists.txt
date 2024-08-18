@@ -132,6 +132,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    WebServerConfig.cpp WebServerConfig.hpp
     Finally.hpp
     ZipFile.cpp ZipFile.hpp
     TemporaryFile.cpp TemporaryFile.hpp     

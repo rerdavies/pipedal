@@ -14,14 +14,14 @@
     "socketServerAddress": "0.0.0.0:80",
 
     /* Number of threads to use for servicing websockets */
-    "threads" :  10,
+    "threads" :  5,
 
     "logHttpRequests": false,
     /* { None=0,Error =1,Warning =2,Info = 3, Debug=4} */
     "logLevel": 3,
 
     /* Maximum filesize to allow when uploading */
-    "maxUploadSize": 1048576,
+    "maxUploadSize": 536870912,
 
     /* Provide access point capture redirects on this gateway. -- provides automatic browser launching on Access Point access. 
     (not implemented)

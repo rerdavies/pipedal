@@ -114,7 +114,7 @@ public:
 
     std::filesystem::path GetPluginUploadDirectory() const;
 
-    std::vector<std::string> GetPedalboards();
+    //std::vector<std::string> GetPedalboards();
 
     const BankIndex & GetBanks() const { return bankIndex; }
 

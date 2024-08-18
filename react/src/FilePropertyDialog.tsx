@@ -428,6 +428,18 @@ export default withStyles(styles, { withTheme: true })(
     hasSelectedFileOrFolder(): boolean {
         return this.state.hasSelection && this.state.selectedFile !== "";
     }
+    getFileExtensionList(uiFileProperty: UiFileProperty): string {
+        let result = "";
+        for (var fileType of uiFileProperty.fileTypes)
+        {
+            if (fileType.fileExtension !== "" && fileType.fileExtension !== ".zip")
+            {
+                if (result !== "") result = result + ",";
+                result += fileType.fileExtension;
+            }
+        }
+        return result;
+    }
     render() {
         let classes = this.props.classes;
         let columnWidth = this.state.columnWidth;
@@ -573,9 +585,13 @@ export default withStyles(styles, { withTheme: true })(
                                 this.setState({ openUploadFileDialog: false });
                             }
                         }
-                        uploadPage={"uploadUserFile?directory=" + encodeURIComponent(
-                            pathConcat(this.props.fileProperty.directory,this.state.navDirectory)
-                        )}
+                        uploadPage={
+                            "uploadUserFile?directory=" + encodeURIComponent(
+                                pathConcat(this.props.fileProperty.directory,this.state.navDirectory)
+                                )
+                            + "&ext="
+                            + encodeURIComponent(this.getFileExtensionList(this.props.fileProperty))
+                        }
                         onUploaded={() => { this.requestFiles(this.state.navDirectory); }}
                         fileProperty={this.props.fileProperty}
 

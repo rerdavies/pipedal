@@ -196,6 +196,7 @@ namespace pipedal
         virtual ~PiPedalModel();
 
         uint16_t GetWebPort() const { return webPort; }
+        std::filesystem::path GetPluginUploadDirectory() const;
         void Close();
 
         void SetOnboarding(bool value);

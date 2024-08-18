@@ -117,7 +117,7 @@ and uses model files from the GuitarML Neural Pi project (https://github.com/Gui
         mod:brand "TooB";
         mod:label "TooB ML";
         lv2:requiredFeature urid:map, work:schedule ;
-        lv2:optionalFeature lv2:hardRTCapable;
+        lv2:optionalFeature state::freePath, state:makePath, state:mapPath ;
         lv2:extensionData state:interface, work:interface;
 
         patch:readable 

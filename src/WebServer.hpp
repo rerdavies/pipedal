@@ -236,7 +236,8 @@ public:
         const boost::asio::ip::address &address, 
         int port, 
         const char *rootPath, 
-        int threads);
+        int threads,
+        size_t maxUploadsize);
 
 
 };

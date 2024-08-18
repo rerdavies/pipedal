@@ -22,7 +22,35 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <iostream>
+#include <zip.h>
+
+
 namespace pipedal {
+
+    class zip_file_input_stream_buf : public std::streambuf {
+    private:
+        zip_file_t* file;
+        std::vector<char> buffer;
+        static const size_t putback_size = 8;
+    public:
+        zip_file_input_stream_buf(zip_file_t* file, size_t buffer_size = 16384);
+        ~zip_file_input_stream_buf();
+    protected:
+        virtual int_type underflow() override;
+        virtual std::streamsize xsgetn(char* s, std::streamsize n) override;
+    };
+    class  zip_file_input_stream : public std::istream {
+    private:
+        zip_file_input_stream_buf buf;
+    public:
+        zip_file_input_stream(zip_file_t *file, size_t buff_size = 16384)
+        : std::istream(nullptr), buf(file,buff_size)
+        {
+            rdbuf(&buf);
+
+        }
+    };
     class ZipFile {
     protected:
         ZipFile();
@@ -36,6 +64,8 @@ namespace pipedal {
 
         virtual std::vector<std::string> GetFiles() = 0;
         virtual void ExtractTo(const std::string &zipName, const std::filesystem::path& path) = 0;
+        virtual zip_file_input_stream GetFileInputStream(const std::string& filename,size_t bufferSize = 16*1024) = 0;
+        virtual size_t GetFileSize(const std::string&filename) = 0;
 
     };
 }

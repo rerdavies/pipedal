@@ -1680,18 +1680,14 @@ std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, co
 {
     if (!ensureNoDotDot(directory))
     {
-        throw std::logic_error("Permission denied.");
+        throw std::logic_error(SS("Invalide filename: " << filename));
     }
     std::filesystem::path filePath{filename};
 
-    if (filePath.has_parent_path())
-    {
-        throw std::logic_error("Permission denied.");
-    }
     std::filesystem::path result = this->GetPluginUploadDirectory() / directory / filename;
     if (!this->IsValidSampleFileName(result))
     {
-        throw std::logic_error("Permission denied.");
+        throw std::logic_error(SS("Invalid upload path: " << result));
     }
     return result;
 }
