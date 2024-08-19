@@ -86,7 +86,7 @@ const pluginGridStyles = (theme: Theme) => createStyles({
         justifyContent: "space-between",
         paddingLeft: "24px",
         paddingRight: "48px",
-        
+
     },
     paper: {
         position: "relative",
@@ -181,8 +181,7 @@ type PluginGridState = {
 
 export const LoadPluginDialog =
     withStyles(pluginGridStyles, { withTheme: true })(
-        class extends ResizeResponsiveComponent<PluginGridProps, PluginGridState>
-        {
+        class extends ResizeResponsiveComponent<PluginGridProps, PluginGridState> {
             model: PiPedalModel;
             searchInputRef: React.RefObject<HTMLInputElement>;
 
@@ -436,15 +435,15 @@ export const LoadPluginDialog =
                     if (uiPlugin.author_name !== "") {
                         if (uiPlugin.author_homepage !== "") {
                             return (<Fragment>
-                                <div style={{flex: "0 1 auto"}}>
+                                <div style={{ flex: "0 1 auto" }}>
                                     <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.name + ",\u00A0"}</Typography>
                                 </div>
-                                <div style={{flex: "0 1 auto"}}>
+                                <div style={{ flex: "0 1 auto" }}>
                                     <a href={uiPlugin.author_homepage} target="_blank" rel="noopener noreferrer" >
                                         <Typography variant='body2' color="textSecondary" noWrap>{uiPlugin.author_name}</Typography>
                                     </a>
                                 </div>
-                                <div style={{flex: "0 0 auto"}}>
+                                <div style={{ flex: "0 0 auto" }}>
                                     <Typography variant='body2' color="textSecondary" noWrap>{stereoIndicator}</Typography>
                                 </div>
                             </Fragment>);
@@ -482,55 +481,59 @@ export const LoadPluginDialog =
 
             }
             getFilteredPlugins(searchString: string | null, filterType: PluginType | null, favoritesList: FavoritesList | null): UiPlugin[] {
-                if (searchString === null) {
-                    searchString = this.state.search_string;
-                }
-                if (filterType === null) {
-                    filterType = this.state.filterType;
-                }
-                if (favoritesList === null) {
-                    favoritesList = this.state.favoritesList;
-                }
-                let plugins = this.model.ui_plugins.get();
-
-                let results: { score: number; plugin: UiPlugin }[] = [];
-                let searchFilter = new SearchFilter(searchString);
-                let rootClass = this.model.plugin_classes.get();
-
-
-                for (let i = 0; i < plugins.length; ++i) {
-                    let plugin = plugins[i];
-                    try {
-                        if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
-                            let score: number = 0;
-                            if (plugin.is_vst3) {
-                                score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name, "vst3");
-                            } else {
-                                score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
-                            }
-
-                            if (score !== 0) {
-                                if (favoritesList[plugin.uri]) {
-                                    score += 32768;
-                                }
-                                results.push({ score: score, plugin: plugin });
-                            }
-                        }
-                    } catch (e)
-                    {
-                        alert("Bad plugin:" + (plugin?.name??"null") + " plugin type: " + (plugin?.plugin_type??"null"));
+                try {
+                    if (searchString === null) {
+                        searchString = this.state.search_string;
                     }
+                    if (filterType === null) {
+                        filterType = this.state.filterType;
+                    }
+                    if (favoritesList === null) {
+                        favoritesList = this.state.favoritesList;
+                    }
+                    let plugins = this.model.ui_plugins.get();
+
+                    let results: { score: number; plugin: UiPlugin }[] = [];
+                    let searchFilter = new SearchFilter(searchString);
+                    let rootClass = this.model.plugin_classes.get();
+
+                    for (let i = 0; i < plugins.length; ++i) {
+                        let plugin = plugins[i];
+                        try {
+                            if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
+                                let score: number = 0;
+                                if (plugin.is_vst3) {
+                                    score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name, "vst3");
+                                } else {
+                                    score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
+                                }
+
+                                if (score !== 0) {
+                                    if (favoritesList[plugin.uri]) {
+                                        score += 32768;
+                                    }
+                                    results.push({ score: score, plugin: plugin });
+                                }
+                            }
+                        } catch (e: any) {
+                            alert("Bad plugin:" + (plugin?.name ?? "null") + " plugin type: " + (plugin?.plugin_type ?? "null"
+                                + " " + e.toString()));
+                        }
+                    }
+                    results.sort((left: { score: number; plugin: UiPlugin }, right: { score: number; plugin: UiPlugin }) => {
+                        if (right.score < left.score) return -1;
+                        if (right.score > left.score) return 1;
+                        return left.plugin.name.localeCompare(right.plugin.name);
+                    });
+                    let t: UiPlugin[] = [];
+                    for (let i = 0; i < results.length; ++i) {
+                        t.push(results[i].plugin);
+                    }
+                    return t;
+                } catch (e: any) {
+                    alert("getFilteredPlugins: " + e.toString());
+                    throw e;
                 }
-                results.sort((left: { score: number; plugin: UiPlugin }, right: { score: number; plugin: UiPlugin }) => {
-                    if (right.score < left.score) return -1;
-                    if (right.score > left.score) return 1;
-                    return left.plugin.name.localeCompare(right.plugin.name);
-                });
-                let t: UiPlugin[] = [];
-                for (let i = 0; i < results.length; ++i) {
-                    t.push(results[i].plugin);
-                }
-                return t;
             }
 
             changedSearchString?: string = undefined;
@@ -841,10 +844,10 @@ export const LoadPluginDialog =
                                                 </IconButton>
                                             </div>
                                         </div>
-                                        <div className={classes.bottom} style={{height: 64}}>
+                                        <div className={classes.bottom} style={{ height: 64 }}>
                                             <div style={{ flex: "1 1 1px" }} />
                                             <div style={{ position: "relative", flex: "0 1 auto", display: "flex", alignItems: "center" }}>
-                                                <Button variant="dialogSecondary"  onClick={this.handleCancel} style={{ height: 48 }} >Cancel</Button>
+                                                <Button variant="dialogSecondary" onClick={this.handleCancel} style={{ height: 48 }} >Cancel</Button>
                                                 <Button variant="dialogPrimary" onClick={this.handleOk} disabled={selectedPlugin === null} style={{ height: 48 }} >SELECT</Button>
                                             </div>
                                         </div>

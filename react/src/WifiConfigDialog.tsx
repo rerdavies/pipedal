@@ -272,7 +272,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                             <Switch 
                                 checked={this.state.enabled}
                                 onChange={(e: any) => this.handleEnableChanged(e)}
-                                color="secondary"
+                                color="primary"
                             />
                         )}
                         label="Enable"

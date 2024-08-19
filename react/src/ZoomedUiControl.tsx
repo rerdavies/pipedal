@@ -44,7 +44,7 @@ const styles = (theme: Theme) => createStyles({
         transition: theme.transitions.create(['opacity', 'background-color'], {
             duration: theme.transitions.duration.shortest
         }),
-        backgroundColor: theme.palette.secondary.main,
+        backgroundColor: theme.palette.primary.main,
         opacity: theme.palette.mode === 'light' ? 0.38 : 0.3
     }
 
@@ -155,7 +155,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
             if (control.isOnOffSwitch()) {
                 // normal gray unchecked state.
                 return (
-                    <Switch checked={value !== 0} color="secondary"
+                    <Switch checked={value !== 0} color="primary"
                         onChange={(event) => {
                             this.onCheckChanged(event.target.checked);
                         }}
@@ -165,14 +165,14 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
             if (control.isAbToggle()) {
                 // unchecked color is not gray.
                 return (
-                    <Switch checked={value !== 0} color="secondary"
+                    <Switch checked={value !== 0} color="primary"
                         onChange={(event) => {
                             this.onCheckChanged(event.target.checked);
                         }}
                         classes={{
                             track: this.props.classes.switchTrack
                         }}
-                        style={{ color: this.props.theme.palette.secondary.main }}
+                        style={{ color: this.props.theme.palette.primary.main }}
                     />
                 );
             } else {

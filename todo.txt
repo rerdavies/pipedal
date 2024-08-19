@@ -1,3 +1,4 @@
+- feature: redo ./makepackage so that it runs without sudo.
 - Bug: text Cursor hovering over the breadcrumb bar in file property dialog.
 - Turning off wifi-direct sould re-enable NetworkManager.
 - ToobML save/restore state.
