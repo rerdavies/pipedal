@@ -62,7 +62,7 @@ const styles = (theme: Theme) => createStyles({
         transition: theme.transitions.create(['opacity', 'background-color'], {
             duration: theme.transitions.duration.shortest
         }),
-        backgroundColor: theme.palette.secondary.main,
+        backgroundColor: theme.palette.primary.main,
         opacity: theme.palette.mode === 'light' ? 0.38 : 0.3
     },
     displayValue: {
@@ -542,7 +542,7 @@ const PluginControl =
                             classes={{
                                 track: this.props.classes.switchTrack
                             }}
-                            style={{ color: this.props.theme.palette.secondary.main }}
+                            style={{ color: this.props.theme.palette.primary.main }}
                         />
                     );
                 } else {
