@@ -525,7 +525,7 @@ const PluginControl =
                 if (control.isOnOffSwitch()) {
                     // normal gray unchecked state.
                     return (
-                        <Switch checked={value !== 0} color="secondary"
+                        <Switch checked={value !== 0} color="primary"
                             onChange={(event) => {
                                 this.onCheckChanged(event.target.checked);
                             }}
@@ -535,7 +535,7 @@ const PluginControl =
                 if (control.isAbToggle()) {
                     // unchecked color is not gray.
                     return (
-                        <Switch checked={value !== 0} color="secondary"
+                        <Switch checked={value !== 0} color="primary"
                             onChange={(event) => {
                                 this.onCheckChanged(event.target.checked);
                             }}
