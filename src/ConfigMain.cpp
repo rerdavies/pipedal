@@ -607,7 +607,6 @@ void SetVarPermissions(
             if (fs::is_directory(path)) {
                 fs::permissions(path, directoryPermissions, fs::perm_options::replace);
                 for (const auto& entry : fs::recursive_directory_iterator(path)) {
-                    cout << "    " << entry.path() << endl;
 
                     if (chown(entry.path().c_str(),uid,gid) != 0)
                     {

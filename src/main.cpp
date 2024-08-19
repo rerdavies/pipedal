@@ -19,7 +19,7 @@
 
 #include "pch.h"
 #include "util.hpp"
-
+#include "Locale.hpp"
 #include "AudioConfig.hpp"
 #include "WebServer.hpp"
 #include <iostream>
@@ -230,6 +230,17 @@ int main(int argc, char *argv[])
 
     try
     {
+        {
+            auto locale = Locale::GetInstance();
+            Lv2Log::info(SS("Locale: " << locale->CurrentLocale()));
+            try {
+                auto collator = locale->GetCollator();
+            } catch (std::exception&e)
+            {
+                Lv2Log::error(e.what());
+                return EXIT_SUCCESS; //tell systemd not to auto-restart.
+            }
+        }
         PiPedalModel model;
         model.Init(configuration);
 

@@ -19,14 +19,34 @@
 
 #pragma once
 
-#include <locale>
+#include <memory>
+#include <string>
 
 namespace pipedal {
-
-    class Locale {
+    class Collator {
     public:
-        static void setDefaultLocale();
+        using ptr = std::shared_ptr<Collator>;
+        virtual int Compare(const std::string &left, const std::string&right) = 0;
+        virtual ~Collator();
+    };
+    class Locale {
+    protected:
+        Locale() { }
+    public:
+        virtual ~Locale();
+        // no copy, no move
+        Locale(const Locale&) = delete;
+        Locale(Locale&&) = delete;
+        Locale&operator =(const Locale&) = delete;
+        Locale&operator =(Locale&&) = delete;
+        
+        using ptr = std::shared_ptr<Locale>;
 
-        static const std::collate<char>& collation();
+        static ptr GetInstance();
+
+        virtual const std::string &CurrentLocale() const = 0;
+        virtual Collator::ptr GetCollator() = 0;
+    private:
+        static ptr g_instance;
     };
 }

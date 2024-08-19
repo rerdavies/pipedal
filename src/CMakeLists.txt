@@ -133,6 +133,7 @@ endif()
 
 set (PIPEDAL_SOURCES
     WebServerConfig.cpp WebServerConfig.hpp
+    Locale.hpp Locale.cpp
     Finally.hpp
     ZipFile.cpp ZipFile.hpp
     TemporaryFile.cpp TemporaryFile.hpp     
@@ -204,7 +205,6 @@ set (PIPEDAL_SOURCES
     AdminClient.hpp AdminClient.cpp
     MidiBinding.hpp MidiBinding.cpp
     PiPedalMath.hpp
-    Locale.hpp Locale.cpp
     Lv2EventBufferWriter.hpp Lv2EventBufferWriter.cpp
     IpSubnet.hpp
     PiPedalAlsa.hpp PiPedalAlsa.cpp
@@ -235,6 +235,9 @@ set (PIPEDAL_INCLUDES
 )
 
 set(PIPEDAL_LIBS libpipedald zip
+    icui18n
+    icuuc
+    icudata
     pthread atomic stdc++fs asound avahi-common avahi-client systemd
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 

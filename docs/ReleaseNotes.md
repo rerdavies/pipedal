@@ -1,4 +1,9 @@
 # Release Notes
+## Pipedal 1.2.38 Beta5
+
+Fixes:
+- PiPedal won't run on non-en-US locales.
+
 ## Pipedal 1.2.37 Beta4
 
 You can now upload GuitarML Proteus models from the GuitarML project into TooB ML.

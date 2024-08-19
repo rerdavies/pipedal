@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
+#include "Locale.hpp"
 #include "Storage.hpp"
 #include "AudioConfig.hpp"
 #include "PiPedalException.hpp"
@@ -40,7 +41,6 @@ const char *BANKS_FILENAME = "index.banks";
 #define USER_SETTINGS_FILENAME "userSettings.json";
 
 Storage::Storage()
-: locale("en_US.UTF-8")
 {
     SetConfigRoot("~/var/Config");
     SetDataRoot("~/var/PiPedal");
@@ -1525,9 +1525,10 @@ std::vector<std::string> Storage::GetFileList(const UiFileProperty &fileProperty
     }
 
     // sort lexicographically
+    auto collator = Locale::GetInstance()->GetCollator();
 
-    std::sort(result.begin(), result.end(), [this](const std::string&left,const std::string&right) {
-        return this->locale(left,right) < 0;
+    std::sort(result.begin(), result.end(), [&collator](const std::string&left,const std::string&right) {
+        return collator->Compare(left,right) < 0;
     });
     return result;
 }
@@ -1606,12 +1607,14 @@ std::vector<FileEntry> Storage::GetFileList2(const std::string &relativePath,con
 
     // sort lexicographically
 
-    std::sort(result.begin(), result.end(),[this](const FileEntry&l, const FileEntry&r) {
+    auto collator = Locale::GetInstance()->GetCollator();
+
+    std::sort(result.begin(), result.end(),[&collator](const FileEntry&l, const FileEntry&r) {
         if (l.isDirectory_ != r.isDirectory_)
         {
             return l.isDirectory_ > r.isDirectory_;
         }
-        return this->locale(l.filename_,r.filename_);
+        return collator->Compare(l.filename_,r.filename_) < 0;
     
     });
     return result;
@@ -1813,10 +1816,11 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std:
             node->children_.push_back(std::move(childTree));
         }
     }
+    auto collator = Locale::GetInstance()->GetCollator();
     std::sort(node->children_.begin(),node->children_.end(),
-        [this](const FilePropertyDirectoryTree::ptr&left,const FilePropertyDirectoryTree::ptr&right)
+        [&collator](const FilePropertyDirectoryTree::ptr&left,const FilePropertyDirectoryTree::ptr&right)
         {
-            return this->locale(left->directoryName_,right->directoryName_);
+            return collator->Compare(left->directoryName_,right->directoryName_) < 0;
         });
 }
 FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) const

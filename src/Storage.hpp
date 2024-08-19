@@ -30,7 +30,6 @@
 #include "WifiDirectConfigSettings.hpp"
 #include "FileEntry.hpp"
 #include <map>
-#include <locale>
 #include "FilePropertyDirectoryTree.hpp"
 
 
@@ -67,7 +66,6 @@ struct PluginPresetValues {
 
 class Storage {
 private:
-    std::locale locale;
     std::filesystem::path dataRoot;
     std::filesystem::path configRoot;
     BankIndex bankIndex;

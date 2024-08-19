@@ -23,43 +23,134 @@
 
 #include <stdlib.h>
 #include "Lv2Log.hpp"
-
+#include <unicode/utypes.h>
+#include <unicode/ucol.h>
+#include <unicode/unistr.h>
+#include <unicode/sortkey.h>
+#include <stdexcept>
+#include "ss.hpp"
+#include <mutex>
 
 // Must be UNICODE. Should reflect system locale.  (.e.g en-US.UTF8,  de-de.UTF8)
 
 // This is correct for libstdc++; most probably not correct for Windows or CLANG. :-(
 using namespace pipedal;
 
-static const char*getLocale(const char*localeEnvironmentVariable)
+
+std::string getCurrentLocale() {
+    std::string locale = setlocale(LC_ALL, nullptr);
+    if (locale.empty() || locale == "C") {
+        // If setlocale fails, try getting it from environment variables
+        const char* lang = getenv("LC_ALL");
+        if (lang) {
+            locale = lang;
+        } else {
+            // If LANG is not set, fall back to a default
+            lang = getenv("LC_COLLATE");
+            if (lang)
+            {
+                locale = lang;
+            } else{
+                lang = getenv("LANG");
+                if (lang) {
+                    locale = lang;
+                } else {
+                    locale = "en_US";
+                }
+            }
+        }
+    }
+    // Extract just the language and country code
+    size_t dot_pos = locale.find('.');
+    if (dot_pos != std::string::npos) {
+        locale = locale.substr(0, dot_pos);
+    }
+    return locale;
+}
+
+Collator::~Collator() {
+
+}
+
+class LocaleImpl;
+
+class CollatorImpl : public Collator {
+public:
+    CollatorImpl(std::shared_ptr<LocaleImpl> LocaleImpl,icu::Locale &locale);
+    ~CollatorImpl();
+
+    virtual int Compare(const std::string &left, const std::string&right);
+private:
+    icu::Collator* collator = nullptr;
+    std::shared_ptr<LocaleImpl> localeImpl;
+};
+
+CollatorImpl::~CollatorImpl()
 {
-    const char*result = getenv(localeEnvironmentVariable);
-    if (result == nullptr)
-    {
-        result = getenv("LC_ALL");
-    }
+    delete collator;
+    localeImpl = nullptr;
+}
+CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl> localeImpl, icu::Locale &locale)
+:localeImpl(localeImpl)
+{
+    UErrorCode status = U_ZERO_ERROR;
 
-    if (result == nullptr) {
-        result = "en_US.UTF-8";
+    this->collator = icu::Collator::createInstance(locale, status);
+
+    if (U_FAILURE(status)) {
+        throw std::runtime_error(SS("Failed to create collator: " << u_errorName(status)));
     }
-    std::stringstream s;
-    s << "Locale: "  << result;
-    Lv2Log::error(s.str());
-    return result;
+}
+
+int CollatorImpl::Compare(const std::string &left, const std::string&right) {
+    return collator->compare(left.c_str(),right.c_str());
+}
+Locale::ptr g_instance;
+
+class LocaleImpl: public Locale, public std::enable_shared_from_this<LocaleImpl>  {
+public:
+    LocaleImpl();
+    virtual const std::string &CurrentLocale() const ;
+    virtual Collator::ptr GetCollator();
+private:
+    std::unique_ptr<icu::Locale> locale;
+    std::string currentLocale;
+};
+
+LocaleImpl::LocaleImpl()
+{
+    currentLocale = getCurrentLocale();
+    locale = std::make_unique<icu::Locale>(currentLocale.c_str());
+}
+const std::string &LocaleImpl::CurrentLocale() const 
+{
+    return currentLocale;
 }
 
 
-void  Locale::setDefaultLocale() {
-    const char* locale = getLocale("LC_ALL");
-    try {
-        setlocale(LC_ALL,locale);
-    } catch (const std::exception&)
-    {
-        std::stringstream s;
-        s << "Failed to set default locale (" << locale << "). Defaulting to en_US.";
-        Lv2Log::error(s.str());
-        
-        std::setlocale(LC_ALL,"en_US.UTF-8");
-    }
+Collator::ptr LocaleImpl::GetCollator(){
+    auto pThis = shared_from_this();
+    return std::shared_ptr<Collator>(new CollatorImpl(pThis,*locale));
 }
-const std::collate<char>& Locale::collation() { return std::use_facet<std::collate<char> >(std::locale()); }
+
+static std::mutex createMutex;
+
+Locale::~Locale() 
+{
+
+}
+Locale::ptr Locale::g_instance;
+
+Locale::ptr Locale::GetInstance()
+{
+    std::lock_guard lock { createMutex};
+
+    if (g_instance)
+    {
+        return g_instance;
+    }
+    g_instance = std::make_shared<LocaleImpl>();
+    return g_instance;
+}
+
 

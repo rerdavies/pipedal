@@ -1,4 +1,4 @@
-- Zip file upload in a subdirectory.
+- Bug: text Cursor hovering over the breadcrumb bar in file property dialog.
 - Turning off wifi-direct sould re-enable NetworkManager.
 - ToobML save/restore state.
 
@@ -16,6 +16,5 @@
 
 Pri Description
 -----------------
-9 Upload proteus patches.
 8 Migrate to Vite toolchain.
 5 Re-use plugin instances when rebuilding pedalboard.

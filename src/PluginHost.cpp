@@ -21,7 +21,7 @@
 #include "PluginHost.hpp"
 #include <lilv/lilv.h>
 #include <stdexcept>
-#include <locale>
+#include "Locale.hpp"
 #include <string_view>
 #include "Lv2Log.hpp"
 #include <functional>
@@ -461,16 +461,16 @@ void PluginHost::Load(const char *lv2Path)
         Lv2Log::info("lilv: " + s);
     }
 
-    const auto &collation = std::use_facet<std::collate<char>>(std::locale());
-    auto compare = [&collation](
+    auto collator = Locale::GetInstance()->GetCollator();
+    auto compare = [&collator](
                        const std::shared_ptr<Lv2PluginInfo> &left,
                        const std::shared_ptr<Lv2PluginInfo> &right)
     {
         const char *pb1 = left->name().c_str();
         const char *pb2 = right->name().c_str();
-        return collation.compare(
-                   pb1, pb1 + left->name().size(),
-                   pb2, pb2 + right->name().size()) < 0;
+        return collator->Compare(
+                   left->name(),right->name()) 
+                   < 0;
     };
     std::sort(this->plugins_.begin(), this->plugins_.end(), compare);
 
