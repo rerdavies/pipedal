@@ -500,20 +500,25 @@ export const LoadPluginDialog =
 
                 for (let i = 0; i < plugins.length; ++i) {
                     let plugin = plugins[i];
-                    if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
-                        let score: number = 0;
-                        if (plugin.is_vst3) {
-                            score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name, "vst3");
-                        } else {
-                            score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
-                        }
-
-                        if (score !== 0) {
-                            if (favoritesList[plugin.uri]) {
-                                score += 32768;
+                    try {
+                        if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
+                            let score: number = 0;
+                            if (plugin.is_vst3) {
+                                score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name, "vst3");
+                            } else {
+                                score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name);
                             }
-                            results.push({ score: score, plugin: plugin });
+
+                            if (score !== 0) {
+                                if (favoritesList[plugin.uri]) {
+                                    score += 32768;
+                                }
+                                results.push({ score: score, plugin: plugin });
+                            }
                         }
+                    } catch (e)
+                    {
+                        alert("Bad plugin:" + (plugin?.name??"null") + " plugin type: " + (plugin?.plugin_type??"null"));
                     }
                 }
                 results.sort((left: { score: number; plugin: UiPlugin }, right: { score: number; plugin: UiPlugin }) => {
