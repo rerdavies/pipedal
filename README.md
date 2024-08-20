@@ -43,7 +43,7 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 ### [Using LV2 Audio Plugins](https://rerdavies.github.io/pipedal/UsingLv2Plugins.md)
 ### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.html)
 
- 
+ &nbsp;
 
 ### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.html)
 ### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.html)
