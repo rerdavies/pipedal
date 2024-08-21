@@ -13,17 +13,17 @@ page_icon: img/Install4.jpg
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS bookworm (64-bit) v1.2.39 Beta5](https://github.com/rerdavies/pipedal/releases/download/)
+- [Raspberry Pi OS bookworm (64-bit) v1.2.40 Beta6](https://github.com/rerdavies/pipedal/releases/download/)
 - [Ubuntu/Raspberry Pi OS bullseyeye (64-bit) v1.2.31](https://github.com/rerdavies/pipedal/releases/download/v1.1.31/pipedal_1.1.31_arm64.deb)
 
-Version 1.2.39 has not yet been tested on Ubuntu or Raspberry Pi OS bullseye. On these platforms, we recommend that you use version 1.1.31.
+Version 1.2.40 has not yet been tested on Ubuntu or Raspberry Pi OS bullseye. On these platforms, we recommend that you use version 1.1.31.
 
 Install the package by running 
 
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt-get install pipedal_1.2.39_arm64.deb 
+  sudo apt-get install pipedal_1.2.40_arm64.deb 
 ```
 Adjust accordingly if you have downloaded v1.1.31.
 
