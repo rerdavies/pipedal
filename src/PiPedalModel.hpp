@@ -46,6 +46,7 @@ namespace pipedal
 
     struct RealtimeMidiProgramRequest;
     struct RealtimeNextMidiProgramRequest;
+    class Lv2PluginChangeMonitor;
 
     class IPiPedalModelSubscriber
     {
@@ -78,12 +79,16 @@ namespace pipedal
         virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) = 0;
         //virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
         virtual void OnErrorMessage(const std::string&message) = 0;
+        virtual void OnLv2PluginsChanging() = 0;
         virtual void Close() = 0;
     };
 
     class PiPedalModel : private IAudioHostCallbacks
     {
     private:
+        std::function<void(void)> restartListener;
+
+        std::unique_ptr<Lv2PluginChangeMonitor> pluginChangeMonitor;
 
         std::unique_ptr<std::jthread> pingThread;
 
@@ -123,8 +128,8 @@ namespace pipedal
         std::vector<AtomOutputListener> atomOutputListeners;
 
         JackServerSettings jackServerSettings;
-        PluginHost lv2Host;
-        AtomConverter atomConverter; // must be AFTER lv2Host!
+        PluginHost pluginHost;
+        AtomConverter atomConverter; // must be AFTER pluginHost!
 
         Pedalboard pedalboard;
         Storage storage;
@@ -146,7 +151,6 @@ namespace pipedal
 
         void UpdateDefaults(PedalboardItem *pedalboardItem);
         void UpdateDefaults(Pedalboard *pedalboard);
-
         class VuSubscription
         {
         public:
@@ -199,6 +203,8 @@ namespace pipedal
         std::filesystem::path GetPluginUploadDirectory() const;
         void Close();
 
+        void SetRestartListener(std::function<void(void)> &&listener);
+        void OnLv2PluginsChanged();
         void SetOnboarding(bool value);
 
         void UpdateDnsSd();
@@ -210,7 +216,7 @@ namespace pipedal
         void LoadLv2PluginInfo();
         void Load();
 
-        const PluginHost &GetLv2Host() const { return lv2Host; }
+        const PluginHost &GetLv2Host() const { return pluginHost; }
         Pedalboard GetCurrentPedalboardCopy()
         {
             std::lock_guard<std::recursive_mutex> guard(mutex);

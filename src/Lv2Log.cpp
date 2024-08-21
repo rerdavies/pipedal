@@ -39,18 +39,16 @@ std::string timeTag()
 
     using namespace std::chrono;
 
-    auto t = std::chrono::system_clock::now()- timeZero;
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
 
+   auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
-    auto hours_ = duration_cast<hours>(t).count() % 24;
-    auto minutes_ = duration_cast<minutes>(t).count() % 60;
-    auto seconds_ = duration_cast<seconds>(t).count() % 60;
-    auto milliseconds_ = duration_cast<milliseconds>(t).count() % 1000;
 
     std::stringstream s;
 
     using namespace std;
-    s << setfill('0') << setw(2) << hours_ << ':' << setw(2) << minutes_ << ':' << setw(2) << seconds_ << "." << setw(3) << milliseconds_ << " ";
+    s << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S") << "." << std::setw(3) << std::setfill('0') << milliseconds.count() << " ";
     return s.str();
     
 }

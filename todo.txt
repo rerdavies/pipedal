@@ -1,3 +1,6 @@
+- revise docs to remove direct reference of RPI 4 (index.html)
+- change icons on gallery in index.html
+- provide direct link to docs on both landing pages.
 - feature: redo ./makepackage so that it runs without sudo.
 - Bug: text Cursor hovering over the breadcrumb bar in file property dialog.
 - Bug: Turning off wifi-direct sould re-enable NetworkManager.

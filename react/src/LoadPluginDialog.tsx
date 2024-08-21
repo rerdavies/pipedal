@@ -42,6 +42,7 @@ import SearchFilter from './SearchFilter';
 import { FixedSizeGrid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import StarIcon from '@mui/icons-material/Star';
 import { createStyles, Theme } from '@mui/material/styles';
 import { WithStyles, withStyles } from '@mui/styles';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -172,8 +173,9 @@ type PluginGridState = {
     grid_cell_width: number,
     grid_cell_columns: number,
     minimumItemWidth: number,
-    favoritesList: FavoritesList
-    gridItems: UiPlugin[];
+    favoritesList: FavoritesList,
+    uiPlugins: UiPlugin[]
+    //gridItems: UiPlugin[];
 
 
 }
@@ -207,7 +209,7 @@ export const LoadPluginDialog =
                     grid_cell_columns: this.getCellColumns(window.innerWidth),
                     minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220,
                     favoritesList: this.model.favorites.get(),
-                    gridItems: this.getFilteredPlugins("", filterType_, this.model.favorites.get())
+                    uiPlugins: this.model.ui_plugins.get()
 
                 };
 
@@ -217,11 +219,12 @@ export const LoadPluginDialog =
                 this.handleSearchStringReady = this.handleSearchStringReady.bind(this);
                 this.handleKeyPress = this.handleKeyPress.bind(this);
                 this.handleFavoritesChanged = this.handleFavoritesChanged.bind(this);
+                this.handlePluginsChanged = this.handlePluginsChanged.bind(this);
 
                 this.requestScrollTo();
             }
 
-            nominal_column_width: number = 250;
+            nominal_column_width: number = 350;
             margin_reserve: number = 30;
 
             getCellColumns(width: number) {
@@ -280,23 +283,31 @@ export const LoadPluginDialog =
                 this.setState(
                     {
                         favoritesList: favorites,
-                        gridItems: this.getFilteredPlugins(null, null, favorites)
                     });
+            }
+            handlePluginsChanged(plugins: UiPlugin[]) {
+                this.setState(
+                    {
+                        uiPlugins: plugins
+                    }
+                );
             }
             componentDidMount() {
                 super.componentDidMount();
                 this.updateWindowSize();
                 window.addEventListener('resize', this.updateWindowSize);
+
                 this.model.favorites.addOnChangedHandler(this.handleFavoritesChanged);
-                let favorites = this.model.favorites.get();
+                this.model.ui_plugins.addOnChangedHandler(this.handlePluginsChanged);
+
                 this.setState({
-                    favoritesList: favorites,
-                    gridItems: this.getFilteredPlugins(null, null, favorites)
+                    favoritesList: this.model.favorites.get(),
+                    uiPlugins: this.model.ui_plugins.get()
 
                 });
-
             }
             componentWillUnmount() {
+                this.model.ui_plugins.removeOnChangedHandler(this.handlePluginsChanged);
                 this.model.favorites.removeOnChangedHandler(this.handleFavoritesChanged);
                 super.componentWillUnmount();
                 window.removeEventListener('resize', this.updateWindowSize);
@@ -310,7 +321,6 @@ export const LoadPluginDialog =
                             this.setState({
                                 search_string: "",
                                 search_collapsed: true,
-                                gridItems: this.getFilteredPlugins("", null, null)
                             });
                         }
                         this.requestScrollTo();
@@ -331,7 +341,6 @@ export const LoadPluginDialog =
                 this.requestScrollTo();
                 this.setState({
                     filterType: filterValue,
-                    gridItems: this.getFilteredPlugins(null, filterValue, null)
                 });
             }
             onClearFilter(): void {
@@ -340,8 +349,7 @@ export const LoadPluginDialog =
                 if (this.state.filterType !== value) {
                     this.requestScrollTo();
                     this.setState({
-                        filterType: value,
-                        gridItems: this.getFilteredPlugins(null, value, null)
+                        filterType: value
                     });
                 }
             }
@@ -480,7 +488,7 @@ export const LoadPluginDialog =
                 return result;
 
             }
-            getFilteredPlugins(searchString: string | null, filterType: PluginType | null, favoritesList: FavoritesList | null): UiPlugin[] {
+            getFilteredPlugins(plugins: UiPlugin[], searchString: string | null, filterType: PluginType | null, favoritesList: FavoritesList | null): UiPlugin[] {
                 try {
                     if (searchString === null) {
                         searchString = this.state.search_string;
@@ -491,7 +499,6 @@ export const LoadPluginDialog =
                     if (favoritesList === null) {
                         favoritesList = this.state.favoritesList;
                     }
-                    let plugins = this.model.ui_plugins.get();
 
                     let results: { score: number; plugin: UiPlugin }[] = [];
                     let searchFilter = new SearchFilter(searchString);
@@ -544,12 +551,14 @@ export const LoadPluginDialog =
                 this.scrollToRequested = true;
             }
 
+            private cachedGridItems: UiPlugin[] = []; // retained for the scrollTo callback.
+
             handleScrollToCallback(element: FixedSizeGrid): void {
                 if (element) {
                     if (this.scrollToRequested) {
                         this.scrollToRequested = false;
                         let position = -1;
-                        let gridItems = this.state.gridItems;
+                        let gridItems = this.cachedGridItems;
                         for (let i = 0; i < gridItems.length; ++i) {
                             if (this.state.selected_uri === gridItems[i].uri) {
                                 position = i;
@@ -568,8 +577,7 @@ export const LoadPluginDialog =
                 if (this.changedSearchString !== undefined) {
                     this.requestScrollTo();
                     this.setState({
-                        search_string: this.changedSearchString,
-                        gridItems: this.getFilteredPlugins(this.changedSearchString, null, null)
+                        search_string: this.changedSearchString
                     });
                     this.changedSearchString = undefined;
                 }
@@ -588,9 +596,8 @@ export const LoadPluginDialog =
                     2000);
 
             }
-            renderItem(row: number, column: number): React.ReactNode {
+            renderItem(gridItems: UiPlugin[], row: number, column: number): React.ReactNode {
                 let item: number = (row) * this.gridColumnCount + (column);
-                let gridItems = this.state.gridItems;
                 if (item >= gridItems.length) {
                     return (<div />);
                 }
@@ -621,7 +628,7 @@ export const LoadPluginDialog =
                                         {
                                             isFavorite && (
                                                 <div style={{ flex: "0 0 auto" }}>
-                                                    <StarBorderIcon sx={{ color: "#C80", fontSize: 16, marginRight: "2px" }} />
+                                                    <StarIcon sx={{ color: "#C80", fontSize: 16, marginRight: "2px" }} />
                                                 </div>
                                             )
                                         }
@@ -646,6 +653,7 @@ export const LoadPluginDialog =
                 this.model.setFavorite(pluginUri, isFavorite);
             }
             gridColumnCount: number = 1;
+
 
             render() {
                 const { classes } = this.props;
@@ -701,8 +709,7 @@ export const LoadPluginDialog =
                                                         this.requestScrollTo();
                                                         this.setState({
                                                             search_collapsed: true,
-                                                            search_string: "",
-                                                            gridItems: this.getFilteredPlugins("", null, null)
+                                                            search_string: ""
                                                         });
 
                                                     } else {
@@ -718,8 +725,7 @@ export const LoadPluginDialog =
                                                             this.requestScrollTo();
                                                             this.setState({
                                                                 search_collapsed: true,
-                                                                search_string: "",
-                                                                gridItems: this.getFilteredPlugins("", null, null)
+                                                                search_string: ""
                                                             });
 
                                                         } else {
@@ -764,7 +770,9 @@ export const LoadPluginDialog =
                                             }
                                             let width = arg.width ?? 1;
                                             let height = arg.height ?? 1;
-                                            let gridItems = this.state.gridItems;
+                                            let gridItems = this.getFilteredPlugins(
+                                                this.state.uiPlugins, this.state.search_string, this.state.filterType, this.state.favoritesList);
+                                            this.cachedGridItems = gridItems;
 
                                             let scrollRef = (grid: FixedSizeGrid) => { this.handleScrollToCallback(grid); }
 
@@ -793,7 +801,7 @@ export const LoadPluginDialog =
                                                     {(arg: { columnIndex: number, rowIndex: number, style: CSSProperties }) => (
                                                         <div style={arg.style} >
                                                             {
-                                                                this.renderItem(arg.rowIndex, arg.columnIndex)
+                                                                this.renderItem(gridItems, arg.rowIndex, arg.columnIndex)
                                                             }
                                                         </div>
                                                     )}
@@ -837,11 +845,15 @@ export const LoadPluginDialog =
                                                 color: isFavorite ? "#F80" : "#CCC", display: (this.state.selected_uri ? "block" : "block"),
                                                 position: "relative"
                                             }}>
-                                                <IconButton color="inherit" aria-label="Set as favorite"
-                                                    onClick={() => { this.setFavorite(this.state.selected_uri, !isFavorite); }}
-                                                >
-                                                    <StarBorderIcon />
-                                                </IconButton>
+                                                {
+                                                    this.state.selected_uri !== "uri://two-play/pipedal/pedalboard#Empty" && (
+                                                        <IconButton color="inherit" aria-label="Set as favorite"
+                                                            onClick={() => { this.setFavorite(this.state.selected_uri, !isFavorite); }}
+                                                        >
+                                                            <StarBorderIcon />
+                                                        </IconButton>
+                                                    )
+                                                }
                                             </div>
                                         </div>
                                         <div className={classes.bottom} style={{ height: 64 }}>

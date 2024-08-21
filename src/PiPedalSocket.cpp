@@ -1587,6 +1587,12 @@ private:
         Send("onLv2StateChanged",message);
 
     }
+
+    virtual void OnLv2PluginsChanging() override {
+        Send("onLv2PluginsChanging",true);
+        Flush();
+    }
+
     virtual void OnErrorMessage(const std::string&message)
     {
         Send("onErrorMessage",message);
@@ -1778,6 +1784,9 @@ private:
         }
     }
 
+    void Flush() {
+        
+    }
     int outstandingNotifyAtomOutputs = 0;
 
     class PendingNotifyAtomOutput
