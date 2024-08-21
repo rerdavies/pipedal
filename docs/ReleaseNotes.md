@@ -33,7 +33,7 @@ Big fixes:
 - Dialog button colors follow Android UI conventions.
 - Toggle and on/off controls now display in purple instead of red/pink.
 - automatic provisioning of resource files in .LV2 plugins.
-- Gain control for ToobML is enabled or disabled depending on whether the modal has a gain control input.
+- Gain control for ToobML is enabled or disabled depending on whether the model has a gain control input (Thanks to @Foolhen)
 - The control view for split controls now displays properly.
 - Stereo connectors in dark mode now render properly.
 - Permissions are correctly set on existing files and folders in /var/pipedal at install time. `pipedalconfig1 has a new
@@ -44,7 +44,7 @@ Big fixes:
 - Fixed incorrect display of banks in dark mode Thanks to @FoolHen.
 - pidedald service shuts down cleanly. With help from @FoolHen.
 - Fixed missing dependency in build procedure documentation. Thanks to @FoolHen
-- Minor documentation corrections. With help from @FoolHen.
+- Documentation edits and corrections. With help from @FoolHen.
 - automatic provisioning of resource files in .LV2 plugins (devolopment feature)
 - uninstall.sh now removes all files installed by ./install.sh (used only during development).
 
