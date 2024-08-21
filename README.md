@@ -6,16 +6,18 @@
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.38 Beta5</a>&nbsp;&nbsp;&nbsp;&nbsp; Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.40 Beta6</a> 
+Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
+Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
 &nbsp;
 
-#### NEW version 1.2.38 Beta5 release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.2.40 Beta6 release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
-PiPedal running on a Raspberry Pi 4 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats. 
+PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats. 
 
 PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
 
@@ -43,7 +45,7 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 ### [Using LV2 Audio Plugins](https://rerdavies.github.io/pipedal/UsingLv2Plugins.md)
 ### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.html)
 
- 
+ &nbsp;
 
 ### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.html)
 ### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.html)

@@ -16,7 +16,7 @@ User=pipedal_d
 Group=pipedal_d
 Restart=always
 TimeoutStartSec=60
-RestartSec=25
+RestartSec=5
 TimeoutStopSec=15
 
 WorkingDirectory=/var/pipedal

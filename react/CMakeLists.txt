@@ -21,9 +21,57 @@ add_custom_command(
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/react
 
     DEPENDS 
-    src/SelectThemeDialog.tsx
     src/OkCancelDialog.tsx
     src/PluginControl.tsx
+    src/svg/ic_save_bank_as.svg
+    src/svg/fx_constant.svg
+    src/svg/fx_distortion.svg
+    src/svg/ic_help_outline.svg
+    src/svg/fx_oscillator.svg
+    src/svg/fx_filter.svg
+    src/svg/fx_function.svg
+    src/svg/fx_generator.svg
+    src/svg/fx_compressor.svg
+    src/svg/file_download_black_24dp.svg
+    src/svg/fx_filter_hp.svg
+    src/svg/fx_plugin.svg
+    src/svg/fx_error.svg
+    src/svg/fx_gate.svg
+    src/svg/ic_midi.svg
+    src/svg/ic_pluginpreset.svg
+    src/svg/fx_split_a.svg
+    src/svg/fx_utility.svg
+    src/svg/ic_pluginpreset2.svg
+    src/svg/fx_parametric_eq.svg
+    src/svg/fx_terminal.svg
+    src/svg/ic_presets.svg
+    src/svg/fx_flanger.svg
+    src/svg/fx_analyzer.svg
+    src/svg/fx_delay.svg
+    src/svg/fx_spectral.svg
+    src/svg/fx_chorus.svg
+    src/svg/fx_simulator.svg
+    src/svg/drive_file_rename_outline_black_24dp.svg
+    src/svg/fx_mixer.svg
+    src/svg/fx_eq.svg
+    src/svg/fx_modulator.svg
+    src/svg/file_upload_black_24dp.svg
+    src/svg/fx_pitch.svg
+    src/svg/fx_phaser.svg
+    src/svg/fx_amplifier.svg
+    src/svg/fx_lr.svg
+    src/svg/fx_instrument.svg
+    src/svg/fx_reverb.svg
+    src/svg/ic_edit_banks.svg
+    src/svg/fx_limiter.svg
+    src/svg/fx_empty.svg
+    src/svg/fx_dial.svg
+    src/svg/fx_flanger2.svg
+    src/svg/fx_split_b.svg
+    src/svg/fx_spatial.svg
+    src/svg/fx_converter.svg
+    src/svg/old_delete_outline_24dp.svg
+    src/svg/ic_settings.svg
     src/reportWebVitals.ts
     src/JackHostStatus.tsx
     src/PluginPresetsDialog.tsx
@@ -39,6 +87,7 @@ add_custom_command(
     src/StringBuilder.tsx
     src/FilePropertyDialog.tsx
     src/GxTunerControl.tsx
+    src/DarkMode.tsx
     src/App.tsx
     src/GxTunerView.tsx
     src/Rect.tsx
@@ -66,12 +115,14 @@ add_custom_command(
     src/ToobPowerStage2View.tsx
     src/ListSelectDialog.tsx
     src/ToobWaveShapeView.tsx
+    src/SelectThemeDialog.tsx
     src/PluginInfoDialog.tsx
     src/SearchFilter.tsx
     src/SearchControl.tsx
     src/JackServerSettings.tsx
     src/WifiChannel.tsx
     src/WifiConfigDialog.tsx
+    src/FilePropertyDirectoryTree.tsx
     src/App.test.tsx
     src/PluginPresetSelector.tsx
     src/ObservableProperty.tsx
@@ -97,6 +148,7 @@ add_custom_command(
     src/AlsaMidiDeviceInfo.tsx
     src/ResizeResponsiveComponent.tsx
     src/RenameDialog.tsx
+    src/FilePropertyDirectorySelectDialog.tsx
     src/SystemMidiBindingView.tsx
     src/OldDeleteIcon.tsx
     src/ToobInputStageView.tsx
@@ -122,142 +174,7 @@ add_custom_command(
     src/MidiBindingView.tsx
     src/PluginIcon.tsx
     src/UploadFileDialog.tsx
-                
-    public/css/roboto.css
-    public/logo192x.png
-    public/robots.txt
-    public/img/ic_drawer_2.png
-    public/img/fx_constant.svg
-    public/img/ic_presets_white.svg
-    public/img/cx_mono.svg
-    public/img/cx_stereo.svg
-    public/img/fx_distortion.svg
-    public/img/Pi-Logo-3.png
-    public/img/fx_oscillator.svg
-    src/svg/ic_save_bank_as.svg
-    src/svg/ic_edit_banks.svg
-    src/svg/ic_settings.svg
-    public/img/fx_filter.svg
-    public/img/delete_outline_black_24dp.svg
-    public/img/fx_function.svg
-    public/img/fx_generator.svg
-    public/img/old_delete_outline_black_24dp.svg
-    public/img/ic_bank.svg
-    public/img/fx_compressor.svg
-    public/img/fx_filter_hp.svg
-    public/img/fx_plugin.svg
-    public/img/fx_error.svg
-    public/img/fx_gate.svg
-    public/img/cc-by.png
-    public/img/fx_split_a.svg
-    public/img/fx_utility.svg
-    src/svg/ic_help_outline.svg
-    public/img/ic_navigate_before.svg
-    public/img/ic_drawer_2.svg
-    public/img/fx_parametric_eq.svg
-    public/img/fx_terminal.svg
-    public/img/ic_presets.svg
-    public/img/VST_Logo_Steinberg.ico
-    public/img/fx_flanger.svg
-    public/img/fx_analyzer.svg
-    public/img/fx_delay.svg
-    public/img/fx_spectral.svg
-    public/img/fx_chorus.svg
-    public/img/fx_simulator.svg
-    public/img/fx_mixer.svg
-    public/img/fx_eq.svg
-    public/img/fx_modulator.svg
-    public/img/fx_pitch.svg
-    public/img/ic_navigate_next.svg
-    public/img/fx_phaser.svg
-    public/img/ic_drawer.svg
-    public/img/fx_amplifier.svg
-    public/img/fx_lr.svg
-    public/img/fx_instrument.svg
-    public/img/Pi-Logo-3.svg
-    public/img/fx_reverb.svg
-    public/img/fx_limiter.svg
-    public/img/VST_Logo_Steinberg.png
-    public/img/fx_empty.svg
-    public/img/fx_dial.svg
-    public/img/ic_logo.svg
-    public/img/fx_flanger2.svg
-    public/img/old_delete_outline_white_24dp.svg
-    public/img/fx_split_b.svg
-    public/img/fx_spatial.svg
-    public/img/fx_converter.svg
-    public/img/vst.svg
-    public/img/vst.png
-    public/sample_lv2_plugins.json
-    public/serve.json
-    public/fonts/Roboto-LightItalic.woff2
-    public/fonts/Roboto-Light.woff2
-    public/fonts/Roboto-BlackItalic.woff2
-    public/fonts/Roboto-ThinItalic.woff2
-    public/fonts/Roboto-Bold.woff2
-    public/fonts/Roboto-Italic.woff2
-    public/fonts/Roboto-Black.woff2
-    public/fonts/Roboto-BoldItalic.woff2
-    public/fonts/Roboto-Regular.woff2
-    public/fonts/Roboto-Medium.woff2
-    public/fonts/Roboto-Thin.woff2
-    public/fonts/LICENSE.txt
-    public/fonts/Roboto-MediumItalic.woff2
-    public/favicon.ico
-    public/iso_codes.json
-    public/logo192.png
-    public/logo512.png
-    public/index.html
-    public/manifest.json
-    public/var/config.json
-    public/var/current_pedalboard.json
-    public/var/uiplugins.json
-    public/var/plugin_classes.json
-    src/svg/fx_constant.svg
-    src/svg/fx_distortion.svg
-    src/svg/fx_oscillator.svg
-    src/svg/fx_filter.svg
-    src/svg/fx_function.svg
-    src/svg/fx_generator.svg
-    src/svg/fx_compressor.svg
-    src/svg/file_download_black_24dp.svg
-    src/svg/fx_filter_hp.svg
-    src/svg/fx_plugin.svg
-    src/svg/fx_error.svg
-    src/svg/fx_gate.svg
-    src/svg/ic_midi.svg
-    src/svg/ic_pluginpreset.svg
-    src/svg/fx_split_a.svg
-    src/svg/fx_utility.svg
-    src/svg/ic_pluginpreset2.svg
-    src/svg/fx_parametric_eq.svg
-    src/svg/fx_terminal.svg
-    src/svg/ic_presets.svg
-    src/svg/fx_flanger.svg
-    src/svg/fx_analyzer.svg
-    src/svg/fx_delay.svg
-    src/svg/fx_spectral.svg
-    src/svg/fx_chorus.svg
-    src/svg/fx_simulator.svg
-    src/svg/fx_mixer.svg
-    src/svg/fx_eq.svg
-    src/svg/fx_modulator.svg
-    src/svg/file_upload_black_24dp.svg
-    src/svg/fx_pitch.svg
-    src/svg/fx_phaser.svg
-    src/svg/fx_amplifier.svg
-    src/svg/fx_lr.svg
-    src/svg/fx_instrument.svg
-    src/svg/fx_reverb.svg
-    src/svg/fx_limiter.svg
-    src/svg/fx_empty.svg
-    src/svg/fx_dial.svg
-    src/svg/fx_flanger2.svg
-    src/svg/fx_split_b.svg
-    src/svg/fx_spatial.svg
-    src/svg/fx_converter.svg
-    src/svg/old_delete_outline_24dp.svg
-        
+            
 )
 
 add_custom_target (

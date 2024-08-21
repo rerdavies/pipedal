@@ -132,6 +132,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp
     Finally.hpp

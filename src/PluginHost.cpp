@@ -1470,6 +1470,7 @@ void PluginHost::CheckForResourceInitialization(const std::string &pluginUri,con
         }
     }
 }
+
 // void PiPedalHostLogError(const std::string &error)
 // {
 //     Lv2Log::error("%s",error.c_str());

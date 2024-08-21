@@ -1,5 +1,9 @@
 # Release Notes
-## Pipedal 1.2.38 Beta5
+## Pipedal 1.2.40 Beta6
+- PiPedal now monitors lv2 directories in order to automatically add newly-installed LV2 plugins.
+- Toggle and on/off switch colors changed from red/pink to purple.
+
+## Pipedal 1.2.38 Beta6
 
 Fixes:
 - PiPedal won't run on non-en-US locales.

@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <iostream>
+#include <utility>
 #include <stdlib.h>
 #include <unistd.h>
 #include "CommandLineParser.hpp"
@@ -603,7 +604,7 @@ void SetVarPermissions(
     using namespace std::filesystem;
     try {
         if (fs::exists(path)) {
-            chown(path.c_str(),uid,gid);
+            std::ignore = chown(path.c_str(),uid,gid);
             if (fs::is_directory(path)) {
                 fs::permissions(path, directoryPermissions, fs::perm_options::replace);
                 for (const auto& entry : fs::recursive_directory_iterator(path)) {

@@ -39,7 +39,8 @@
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include "Lv2Log.hpp"
 #include <iostream>
-#include <unistd.h> // for nice()
+#include <unistd.h> // for nice(
+#include <utility>
 #include "util.hpp"
 
 using namespace pipedal;
@@ -190,7 +191,7 @@ void HostWorkerThread::ThreadProc() noexcept
     // run nice +2 (priority -2 on Windows)
     SetThreadName("lv2_worker");
     errno = 0;
-    (void)nice(2);
+    std::ignore = nice(2);
     if (errno != 0)
     {
         std::cout << "Warning: Unable to run Lv2 schedule thread at nice +1" << std::endl;

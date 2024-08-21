@@ -47,18 +47,12 @@
 
 #include <systemd/sd-daemon.h>
 
-
 using namespace pipedal;
-
-
-
 
 #ifdef __ARM_ARCH_ISA_A64
 #define AARCH64
 #endif
 
-
-sem_t signalSemaphore;
 
 bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::string &deviceId)
 {
@@ -77,21 +71,16 @@ public:
     std::string message(int ev) const { return "error message"; }
 };
 
-static volatile bool g_SigBreak = false;
-std::atomic<bool> ga_SigBreak { false };
+static std::atomic<bool> g_SigBreak = false;
+static std::atomic<bool> g_restart = false;
 
 void sig_handler(int signo)
 {
-    if (!g_SigBreak)
-    {
-        g_SigBreak = true;
-        sem_post(&signalSemaphore);
-    }
+    // we're using sig_wait. No need to do anything.
 }
 
 void throwSystemError(int error)
 {
-    
 }
 
 static bool isJackServiceRunning()
@@ -103,8 +92,6 @@ static bool isJackServiceRunning()
 
 int main(int argc, char *argv[])
 {
-
-    sem_init(&signalSemaphore, 0, 0);
 
 
 #ifndef WIN32
@@ -176,7 +163,6 @@ int main(int argc, char *argv[])
     }
     SetThreadName("main");
 
-
     std::filesystem::path doc_root = parser.Arguments()[0];
     std::filesystem::path web_root = doc_root;
     if (parser.Arguments().size() >= 2)
@@ -194,7 +180,7 @@ int main(int argc, char *argv[])
         std::stringstream s;
         s << "Unable to read configuration from '" << (doc_root / "config.json") << "'. (" << e.what() << ")";
         Lv2Log::error(s.str());
-        return EXIT_FAILURE;
+        return EXIT_SUCCESS; // indicate to systemd that we don't want a restart.
     }
 
     Lv2Log::log_level(configuration.GetLogLevel());
@@ -214,7 +200,7 @@ int main(int argc, char *argv[])
         auto const threads = std::max<int>(1, configuration.GetThreads());
 
         server = WebServer::create(
-            address, port, web_root.c_str(), threads,configuration.GetMaxUploadSize());
+            address, port, web_root.c_str(), threads, configuration.GetMaxUploadSize());
 
         Lv2Log::info("Document root: %s Threads: %d", doc_root.c_str(), (int)threads);
 
@@ -225,7 +211,7 @@ int main(int argc, char *argv[])
         std::stringstream s;
         s << "Fatal error: " << e.what() << std::endl;
         Lv2Log::error(s.str());
-        return EXIT_FAILURE;
+        return EXIT_SUCCESS; // indiate to systemd that we don't want a restart.
     }
 
     try
@@ -233,15 +219,25 @@ int main(int argc, char *argv[])
         {
             auto locale = Locale::GetInstance();
             Lv2Log::info(SS("Locale: " << locale->CurrentLocale()));
-            try {
+            try
+            {
                 auto collator = locale->GetCollator();
-            } catch (std::exception&e)
+            }
+            catch (std::exception &e)
             {
                 Lv2Log::error(e.what());
-                return EXIT_SUCCESS; //tell systemd not to auto-restart.
+                return EXIT_SUCCESS; // tell systemd not to auto-restart.
             }
         }
         PiPedalModel model;
+
+        model.SetRestartListener(
+            []()
+            {
+                g_restart = true;
+                raise(SIGTERM); // throws an exception under gdb, but correctly restarts the service when running live.
+            });
+
         model.Init(configuration);
 
         // Get heavy IO out of the way before letting dependent (Jack/ALSA) services run.
@@ -254,9 +250,7 @@ int main(int argc, char *argv[])
                        (unsigned long)getpid());
         }
 
-
         auto serverSettings = model.GetJackServerSettings();
-
 
         {
             // Wait for selected audio device to be initialized.
@@ -270,7 +264,8 @@ int main(int argc, char *argv[])
                 if (HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
                 {
                     Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
-                } else 
+                }
+                else
                 {
                     for (int i = 0; i < 5; ++i)
                     {
@@ -292,13 +287,16 @@ int main(int argc, char *argv[])
                     if (found)
                     {
                         Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
-                    } else {
+                    }
+                    else
+                    {
                         Lv2Log::info(SS("ALSA device " << serverSettings.GetAlsaInputDevice() << " not found."));
                     }
                 }
-            } else {
+            }
+            else
+            {
                 Lv2Log::info("No ALSA device selected.");
-
             }
 
             // pre-cache device info before we let audio services run.
@@ -360,7 +358,7 @@ int main(int argc, char *argv[])
 
         server->AddSocketFactory(pipedalSocketFactory);
 
-        ConfigureWebServer(*server,model,port,configuration.GetMaxUploadSize());
+        ConfigureWebServer(*server, model, port, configuration.GetMaxUploadSize());
         {
             server->RunInBackground(-1);
 
@@ -368,24 +366,9 @@ int main(int argc, char *argv[])
             model.UpdateDnsSd(); // now that the server is running, publish a  DNS-SD announcement.
             SetThreadName("main");
 
-            // AARCH64 sem_wait pins CPU 100%.
-                // static_assert(std::atomic<bool>::is_always_lock_free);
-
-                // while (true)
-                // {
-                //     auto sigBreak = ga_SigBreak.load();
-                //     if (sigBreak)
-                //     {
-                //         break;
-                //     }
-                //     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-                // }
-
-
             {
-                sigwait(&sigSet,&sig);
-                
+                sigwait(&sigSet, &sig);
+
                 if (systemd)
                 {
                     sd_notify(0, "STOPPING=1");
@@ -395,12 +378,14 @@ int main(int argc, char *argv[])
 
         Lv2Log::info("Closing audio session.");
         model.Close();
-        
+
         Lv2Log::info("Stopping web server.");
         server->ShutDown(5000);
         server->Join();
 
         Lv2Log::info("Shutdown complete.");
+
+        if (g_restart) return EXIT_FAILURE; // indicate to systemd that we want a restart.
     }
     catch (const std::exception &e)
     {

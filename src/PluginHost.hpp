@@ -813,6 +813,7 @@ namespace pipedal
     public:
         virtual MapFeature &GetMapFeature() { return this->mapFeature; }
         void CheckForResourceInitialization(const std::string& pluginUri,const std::filesystem::path& pluginUploadDirectory);
+        void ReloadPlugins();
 
     private:
 

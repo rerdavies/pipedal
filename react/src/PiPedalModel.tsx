@@ -48,7 +48,14 @@ export enum State {
     Error,
     Background,
     Reconnecting,
-    ApplyingChanges
+    ApplyingChanges,
+    ReloadingPlugins
+};
+
+export enum ReconnectReason {
+    Disconnected,
+    LoadingSettings,
+    ReloadingPlugins,
 };
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
@@ -356,6 +363,7 @@ export class PiPedalModel //implements PiPedalModel
     lv2Path: string = "";
     webSocket?: PiPedalSocket;
 
+
     ui_plugins: ObservableProperty<UiPlugin[]>
         = new ObservableProperty<UiPlugin[]>([]);
     state: ObservableProperty<State> = new ObservableProperty<State>(State.Loading);
@@ -426,13 +434,20 @@ export class PiPedalModel //implements PiPedalModel
     onSocketReconnecting(retry: number, maxRetries: number): void {
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
         //if (retry !== 0) {
-        if (this.restartExpected) {
-            this.setState(State.ApplyingChanges);
-            this.restartExpected = false;
-        } else {
+        switch (this.reconnectReason)
+        {
+        case ReconnectReason.Disconnected:
+        default:
             this.setState(State.Reconnecting);
+            break;
+        case ReconnectReason.LoadingSettings:
+            this.setState(State.ApplyingChanges);
+            break;
+        case ReconnectReason.ReloadingPlugins:
+            this.setState(State.ReloadingPlugins);
+            break;
+
         }
-        //}
     }
 
 
@@ -602,9 +617,16 @@ export class PiPedalModel //implements PiPedalModel
         {
             this.showAlert(body as string);
 
-        } else {
-            throw new PiPedalStateError("Unrecognized message received from server: " + message);
+        } 
+        else if (message === "onLv2PluginsChanging")
+        {
+            this.onLv2PluginsChanging();
         }
+    }
+    onLv2PluginsChanging() : void {
+        this.reconnectReason = ReconnectReason.ReloadingPlugins;
+        // this.webSocket?.reconnect(); // let the server do it for us.
+
     }
     setError(message: string): void {
         this.errorMessage.set(message);
@@ -630,6 +652,11 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
+    private reconnectReason: ReconnectReason = ReconnectReason.Disconnected;
+
+    isReloading(): boolean {
+        return this.state.get() !== State.Ready;
+    }
 
     getWebSocket(): PiPedalSocket {
         if (this.webSocket === undefined) {
@@ -654,7 +681,7 @@ export class PiPedalModel //implements PiPedalModel
             this.androidHost?.setDisconnected(false);
         }
 
-        this.restartExpected = false;
+        this.reconnectReason = ReconnectReason.Disconnected;
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
 
         // reload state, but not configuration.
@@ -1689,15 +1716,9 @@ export class PiPedalModel //implements PiPedalModel
         this.alertMessage.set(message);
     }
 
-    restartExpected: boolean = false;
 
-    expectRestart() {
-        this.restartExpected = true;
-
-
-    }
     setJackSettings(jackSettings: JackChannelSelection): void {
-        this.expectRestart();
+        this.reconnectReason = ReconnectReason.LoadingSettings;
         this.webSocket?.send("setJackSettings", jackSettings);
     }
 
@@ -2423,7 +2444,7 @@ export class PiPedalModel //implements PiPedalModel
                 resolve();
 
         });
-        this.restartExpected = true;
+        this.reconnectReason = ReconnectReason.LoadingSettings;
         this.webSocket?.reconnect(); // close immediately, and wait for recoonnect.
         return result;
     }
@@ -2619,10 +2640,8 @@ export class PiPedalModel //implements PiPedalModel
 }
     }
 
-    reloadRequested: boolean = false;
 
     reloadPage() {
-        this.reloadRequested = true;
         // eslint-disable-next-line no-restricted-globals
         let url = window.location.href.split('#')[0];
         window.location.href = url;
