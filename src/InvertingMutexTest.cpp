@@ -22,6 +22,7 @@
 #include <sstream>
 #include <cstdint>
 #include <string>
+#include <utility>
 
 #include "json.hpp"
 #include "json_variant.hpp"
@@ -46,7 +47,7 @@ TEST_CASE("inverting_mutext test", "[inverting_mutex_test]")
         std::thread thread(
             [&mutex]() mutable
             {
-                nice(5);
+                std::ignore = nice(5);
                 {
                     std::lock_guard<inverting_mutex> lock(mutex);
                     SetThreadName("imTest");
