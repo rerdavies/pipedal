@@ -315,6 +315,8 @@ void pipedal::SetWifiConfig(const WifiConfigSettings &settings)
         {
             apdConfig.Load(path);
         }
+        if (!UsingNetworkManager())
+        {}
         apdConfig.Set("interface", "wlan0");
         apdConfig.Set("driver", "nl80211");
         apdConfig.Set("country_code", settings.countryCode_);
@@ -553,6 +555,8 @@ void UninstallP2p()
         wifiDirectConfigSettings.Load();
         wifiDirectConfigSettings.enable_ = false;
         wifiDirectConfigSettings.Save();
+        sysExec(SYSTEMCTL_BIN " restart NetworkManager"); // bring up wlan0 wifi.
+
     }
 }
 
