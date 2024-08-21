@@ -618,7 +618,7 @@ export class PiPedalModel //implements PiPedalModel
             this.showAlert(body as string);
 
         } 
-        else if (message = "onLv2PluginsChanging")
+        else if (message === "onLv2PluginsChanging")
         {
             this.onLv2PluginsChanging();
         }
