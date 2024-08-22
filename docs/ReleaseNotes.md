@@ -1,14 +1,13 @@
 # Release Notes
-## PiPedal 1.2.41 
-Version 1.2 is officially released.
+## PiPedal 1.2.41 Release 
 
 This version includes the following new features:
 
 - Supports Raspberry Pi 5.
 - Supports Rasberry Pi OS Bookworm.
 - TooB ML allows uploading of models. See below for further details.
-- TooB ML allows uploading of model collections contained in .zip files.
 - TooBML support for large models (e.g. GuitarML Proteus models)
+- Upload .zip file bundles to all File plugin controls.
 - Uploads can be organized into sub-directories.
 - Various minor improvements to TooB plugin user interfaces.
 
