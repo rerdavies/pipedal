@@ -9,6 +9,8 @@ This version includes the following new features:
 - TooBML support for large models (e.g. GuitarML Proteus models)
 - Upload .zip file bundles to all File plugin controls.
 - Uploads can be organized into sub-directories.
+- PiPedal now monitors LV2 plugin directories for changes, and automatically updates available plugins in the 
+  PiPedal UI, without requiring a restart.
 - Various minor improvements to TooB plugin user interfaces.
 
 You can now upload new models into TooB ML. TooB ML models are compatible with models for the GuitarML Proteus plugin. Currently, the GuitarML Proteus model download pages are the best source for new models to use with TooB ML. To install 
@@ -20,8 +22,6 @@ new models in TooB ML, follow these instructions:
 - click on the Model control.
 - click on the Upload button in the lower left corner of the Model selection dialog.
 - Upload the .json model file or .zip model collection that you downloaded from The GuitarML Tone Library.
-- PiPedal now monitors LV2 plugin directories for changes, and automatically updates available plugins in the 
-  PiPedal UI, without requiring a restart.
 
 Big fixes:
 - Wi-Fi is restarted properly without requiring a reboot when the PiPedal Wi-Fi Direct connection is disabled.
