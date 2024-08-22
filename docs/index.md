@@ -9,8 +9,9 @@ To download PiPedal, click [here](download.md).
 To view PiPedal documentation, click [here](Documentation.md).
 
 
-> NEW version 1.2.41 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.2.41 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
+&nbsp;
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
