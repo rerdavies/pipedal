@@ -370,7 +370,7 @@ export default withStyles(styles, { withTheme: true })(
             <Link underline="hover"
                 color="inherit"
                 key="1" onClick={() => { this.navigate(""); }}
-                sx={{ display: 'flex', alignItems: 'center' }}
+                sx={{ display: 'flex', alignItems: 'center',cursor: "default" }}
             >
                 <HomeIcon sx={{ mr: 0.6 }} fontSize="inherit" />
                 Home
@@ -383,7 +383,7 @@ export default withStyles(styles, { withTheme: true })(
             target = pathConcat(target, directories[i]);
             let myTarget = target;
             breadcrumbs.push((
-                <Link underline="hover" key={(i + 1).toString()}
+                <Link underline="hover" key={(i + 1).toString()} style={{cursor: "default"}}
                     color="inherit" onClick={() => { this.navigate(myTarget) }}>
                     {directories[i]}
                 </Link>
@@ -392,7 +392,9 @@ export default withStyles(styles, { withTheme: true })(
         {
             let lastdirectory = directories[directories.length - 1];
             breadcrumbs.push((
-                <Typography noWrap key={directories.length.toString()} color="text.secondary"> {lastdirectory}</Typography>
+                <Typography noWrap key={directories.length.toString()} 
+                    style={{cursor: "default"}}
+                    color="text.secondary"> {lastdirectory}</Typography>
             ));
 
         }

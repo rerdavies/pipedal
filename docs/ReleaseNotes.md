@@ -1,9 +1,62 @@
 # Release Notes
+## PiPedal 1.2.41 Release 
+
+This version includes the following new features:
+
+- Supports Raspberry Pi 5.
+- Supports Rasberry Pi OS Bookworm.
+- TooB ML allows uploading of models. See below for further details.
+- TooBML support for large models (e.g. GuitarML Proteus models)
+- Upload .zip file bundles to all File plugin controls.
+- Uploads can be organized into sub-directories.
+- Various minor improvements to TooB plugin user interfaces.
+
+You can now upload new models into TooB ML. TooB ML models are compatible with models for the GuitarML Proteus plugin. Currently, the GuitarML Proteus model download pages are the best source for new models to use with TooB ML. To install 
+new models in TooB ML, follow these instructions:
+
+- Download Proteus models from https://guitarml.com/tonelibrary/tonelib-pro.html to your local computer or Android
+  device. TooB ML supports both Proteus .json models, and also allows you to install model collections contained in .zip files.
+- Load the TooB ML plugin.
+- click on the Model control.
+- click on the Upload button in the lower left corner of the Model selection dialog.
+- Upload the .json model file or .zip model collection that you downloaded from The GuitarML Tone Library.
+- PiPedal now monitors LV2 plugin directories for changes, and automatically updates available plugins in the 
+  PiPedal UI, without requiring a restart.
+
+Big fixes:
+- Wi-Fi is restarted properly without requiring a reboot when the PiPedal Wi-Fi Direct connection is disabled.
+- Dialog button colors follow Android UI conventions.
+- The web server supports uploading of large files (limited by default to 512MB).
+- Failure to open audio devices upon reboot for devices that initialize slowly.
+- Misbehavior with preset names after renaming a preset.
+- Dialog button colors follow Android UI conventions.
+- Toggle and on/off controls now display in purple instead of red/pink.
+- automatic provisioning of resource files in .LV2 plugins.
+- Gain control for ToobML is enabled or disabled depending on whether the model has a gain control input (Thanks to @Foolhen)
+- The control view for split controls now displays properly.
+- Stereo connectors in dark mode now render properly.
+- Permissions are correctly set on existing files and folders in /var/pipedal at install time. `pipedalconfig1 has a new
+  `--fix-permissions` option, which corrects permissions on files in /var/pipedal.
+- Bypass MIDI bindings now work properly. Thanks to @FoolHen.
+- GxTuner now correctly displays note pitches. Thanks to @FoolHen.
+- Fixed glitch in on-boarding process when changing Wi-Fi direct settings.
+- Fixed incorrect display of banks in dark mode Thanks to @FoolHen.
+- pidedald service shuts down cleanly. With help from @FoolHen.
+- Fixed missing dependency in build procedure documentation. Thanks to @FoolHen
+- Documentation edits and corrections. With help from @FoolHen.
+- automatic provisioning of resource files in .LV2 plugins (devolopment feature)
+- uninstall.sh now removes all files installed by ./install.sh (used only during development).
+
+
+
+
+
 ## Pipedal 1.2.40 Beta6
 - PiPedal now monitors lv2 directories in order to automatically add newly-installed LV2 plugins.
 - Toggle and on/off switch colors changed from red/pink to purple.
+- MIDI bindings can be created for split controls. 
 
-## Pipedal 1.2.38 Beta6
+## Pipedal 1.2.38 Beta5
 
 Fixes:
 - PiPedal won't run on non-en-US locales.

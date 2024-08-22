@@ -26,7 +26,7 @@ interface Deserializable<T> {
 }
 
 
-export class  Port implements Deserializable<Port> {
+export class Port implements Deserializable<Port> {
     deserialize(input: any): Port {
         this.port_index = input.port_index;
         this.symbol = input.symbol;
@@ -54,28 +54,27 @@ export class  Port implements Deserializable<Port> {
 
     static deserialize_array(input: any): Port[] {
         let result: Port[] = [];
-        for (let i = 0; i < input.length; ++i)
-        {
+        for (let i = 0; i < input.length; ++i) {
             result[i] = new Port().deserialize(input[i]);
         }
         return result;
     }
-    port_index:      number = -1;
-    symbol:          string = "";
-    name:            string = "";
-    min_value:       number = 0;
-    max_value:       number = 1;
-    default_value:   number = 0.5;
-    scale_points:    ScalePoint[] = [];
-    is_input:        boolean = false;
-    is_output:       boolean = false
+    port_index: number = -1;
+    symbol: string = "";
+    name: string = "";
+    min_value: number = 0;
+    max_value: number = 1;
+    default_value: number = 0.5;
+    scale_points: ScalePoint[] = [];
+    is_input: boolean = false;
+    is_output: boolean = false
     is_control_port: boolean = false;
-    is_audio_port:   boolean = false;
-    is_atom_port:    boolean = false;
-    is_valid:        boolean = false;
-    supports_midi:   boolean = false;
+    is_audio_port: boolean = false;
+    is_atom_port: boolean = false;
+    is_valid: boolean = false;
+    supports_midi: boolean = false;
     supports_time_position: boolean = false;
-    port_group:      string = "";
+    port_group: string = "";
     comment: string = "";
     is_bypass: boolean = false;
     is_program_controller: boolean = false;
@@ -91,10 +90,9 @@ export class PortGroup {
 
         return this;
     }
-    static deserialize_array(input: any) : PortGroup[] {
+    static deserialize_array(input: any): PortGroup[] {
         let result: PortGroup[] = [];
-        for (let i = 0; i < input.length; ++i)
-        {
+        for (let i = 0; i < input.length; ++i) {
             result.push(new PortGroup().deserialize(input[i]));
         }
         return result;
@@ -114,67 +112,71 @@ export class UiFileType {
         this.mimeType = input.mimeType;
         return this;
     }
-    static deserialize_array(input: any): UiFileType[]
-    {
+    static deserialize_array(input: any): UiFileType[] {
         let result: UiFileType[] = [];
-        for (let i = 0; i < input.length; ++i)
-        {
+        for (let i = 0; i < input.length; ++i) {
             result[i] = new UiFileType().deserialize(input[i]);
         }
         return result;
     }
 
-    private static IsAndroid() : boolean
-    {
+    private static IsAndroid(): boolean {
         return /Android/i.test(navigator.userAgent);
     }
-    static MergeMimeTypes(fileTypes: UiFileType[]): string
-    {
-        if (fileTypes.length === 0) { 
+    static MergeMimeTypes(fileTypes: UiFileType[]): string {
+        if (fileTypes.length === 0) {
             return "";
         }
-        let result = fileTypes[0].mimeType;
-        for (let i = 1; i < fileTypes.length; ++i)
-        {
-            let fileType = fileTypes[i];
-            if (fileType.mimeType !== result)
-            {
-                if (result.startsWith("audio/") && fileType.mimeType.startsWith("audio/"))
-                {
-                    result = "audio/*";
-                } else if (result.startsWith("video/") && fileType.mimeType.startsWith("video/"))
-                {
-                    result = "video/*";
-                } else if (result.startsWith("text/") && fileType.mimeType.startsWith("text/"))
-                {
-                    result = "text/*";
-                } else {
-                    result = "application/octet-stream";
-                }
-            }
-        }
-        if (this.IsAndroid())
-        {
-            if (result.startsWith("audio/")) result = "audio/*";
-            if (result.startsWith("video/")) result = "video/*";
-            if (result.startsWith("text/")) result = "text/*";
+        if (this.IsAndroid()) {
+            return "";   // allow selection of .zip files, plus whatever. We'll catch it later.
         } else {
             // chrome desktop thinks "application/octet-stream" is .exe, .com, or .bat.
             // Feed it file extensions isntead.
-            if (result === "application/octet-stream")
-            {
-                result = "";
-                for (let i = 0; i < fileTypes.length; ++i)
-                {
-                    if (i !== 0)
+            let result = "";
+            for (let i = 0; i < fileTypes.length; ++i) {
+                let fileType = fileTypes[i];
+                if (fileType.fileExtension !== "") {
+                    if (result.length !== 0) // prefer file extensions.
                     {
-                        result += ',';
+                        result += ",";
+                        result += fileType.fileExtension;
                     }
-                    result += fileTypes[i].fileExtension;
+                } else {
+                    if (fileType.mimeType !== result) {
+                        let t = "";
+                        if (result.startsWith("audio/") && fileType.mimeType.startsWith("audio/")) {
+                            t = "audio/*";
+                        } else if (result.startsWith("video/") && fileType.mimeType.startsWith("video/")) {
+                            t = "video/*";
+                        } else if (result.startsWith("text/") && fileType.mimeType.startsWith("text/")) {
+                            t = "text/*";
+                        }
+                        if (t.length !== 0) {
+                            if (result.length !== 0) {
+                                result += ",";
+                            }
+                            result += t;
+                        }
+                    }
                 }
             }
+            let hasZip = false;
+            let types = result.split(",");
+            for (let thisType of types) {
+                if (thisType === ".zip") {
+                    hasZip = true;
+                    break;
+                }
+            }
+
+            // add .zip files 
+            if (!hasZip) {
+                if (result.length !== 0) {
+                    result += ",.zip";
+                }
+            }
+            return result;
         }
-        return result;
     }
     name: string = "";
     fileExtension: string = "";
@@ -182,19 +184,16 @@ export class UiFileType {
 }
 
 export class UiPropertyNotification {
-    deserialize(input: any): UiPropertyNotification
-    {
+    deserialize(input: any): UiPropertyNotification {
         this.portIndex = input.portIndex;
         this.symbol = input.symbol;
         this.plugin = input.plugin;
         this.protocol = input.protocol;
         return this;
     }
-    static deserialize_array(input: any): UiPropertyNotification[]
-    {
+    static deserialize_array(input: any): UiPropertyNotification[] {
         let result: UiPropertyNotification[] = [];
-        for (let i = 0; i < input.length; ++i)
-        {
+        for (let i = 0; i < input.length; ++i) {
             result[i] = new UiPropertyNotification().deserialize(input[i]);
         }
         return result;
@@ -207,8 +206,7 @@ export class UiPropertyNotification {
 };
 
 export class UiFrequencyPlot {
-    deserialize(input: any): UiFrequencyPlot
-    {
+    deserialize(input: any): UiFrequencyPlot {
         this.patchProperty = input.patchProperty;
         this.index = input.index;
         this.portGroup = input.portGroup;
@@ -220,11 +218,9 @@ export class UiFrequencyPlot {
         this.width = input.width;
         return this;
     }
-    static deserialize_array(input: any): UiFrequencyPlot[]
-    {
+    static deserialize_array(input: any): UiFrequencyPlot[] {
         let result: UiFrequencyPlot[] = [];
-        for (let i = 0; i < input.length; ++i)
-        {
+        for (let i = 0; i < input.length; ++i) {
             result[i] = new UiFrequencyPlot().deserialize(input[i]);
         }
         return result;
@@ -242,78 +238,73 @@ export class UiFrequencyPlot {
 
 };
 export class UiFileProperty {
-        deserialize(input: any): UiFileProperty
-        {
-            this.label = input.label;
-            this.fileTypes = UiFileType.deserialize_array(input.fileTypes);
-            this.patchProperty = input.patchProperty;
-            this.directory = input.directory;
-            this.index = input.index;
-            this.portGroup = input.portGroup;
-            this.resourceDirectory = input.resourceDirectory??"";
-            return this;
+    deserialize(input: any): UiFileProperty {
+        this.label = input.label;
+        this.fileTypes = UiFileType.deserialize_array(input.fileTypes);
+        this.patchProperty = input.patchProperty;
+        this.directory = input.directory;
+        this.index = input.index;
+        this.portGroup = input.portGroup;
+        this.resourceDirectory = input.resourceDirectory ?? "";
+        return this;
+    }
+    static deserialize_array(input: any): UiFileProperty[] {
+        let result: UiFileProperty[] = [];
+        for (let i = 0; i < input.length; ++i) {
+            result[i] = new UiFileProperty().deserialize(input[i]);
         }
-        static deserialize_array(input: any): UiFileProperty[]
-        {
-            let result: UiFileProperty[] = [];
-            for (let i = 0; i < input.length; ++i)
-            {
-                result[i] = new UiFileProperty().deserialize(input[i]);
-            }
-            return result;
-        }
+        return result;
+    }
 
-        private static getFileExtension(name: string): string {
-            let pos = name.lastIndexOf('.');
-            let filenamePos = name.lastIndexOf('/') +1;
-            filenamePos = Math.max(name.lastIndexOf('\\')+1);
-            filenamePos = Math.max(name.lastIndexOf(':')+1);
-            if (pos < filenamePos)
-            {
-                return "";
-            }
-
-            if (pos !== -1) {
-                return name.substring(pos);
-            }
+    private static getFileExtension(name: string): string {
+        let pos = name.lastIndexOf('.');
+        let filenamePos = name.lastIndexOf('/') + 1;
+        filenamePos = Math.max(name.lastIndexOf('\\') + 1);
+        filenamePos = Math.max(name.lastIndexOf(':') + 1);
+        if (pos < filenamePos) {
             return "";
         }
-    
-        wantsFile(filename: string) : boolean {
-            if (this.fileTypes.length === 0) {
+
+        if (pos !== -1) {
+            return name.substring(pos);
+        }
+        return "";
+    }
+
+    wantsFile(filename: string): boolean {
+        if (this.fileTypes.length === 0) {
+            return true;
+        }
+        let extension = UiFileProperty.getFileExtension(filename);
+        if (extension === ".zip") {
+            return true;
+        }
+        for (let fileType of this.fileTypes) {
+            if (fileType.fileExtension === extension) {
                 return true;
             }
-            let extension = UiFileProperty.getFileExtension(filename);
-            for (let fileType of this.fileTypes)
-            {
-                if (fileType.fileExtension === extension )
-                {
-                    return true;
-                }
-                if (fileType.fileExtension === "*" || fileType.fileExtension === "")
-                {
-                    return true;
-                }
+            if (fileType.fileExtension === "*" || fileType.fileExtension === "") {
+                return true;
             }
-            return false;
         }
+        return false;
+    }
 
-        label:   string = "";
-        fileTypes: UiFileType[] = [];
-        patchProperty: string = "";
-        directory: string = "";
-        index: number = -1;
-        portGroup: string = "";
-        resourceDirectory: string = "";
+    label: string = "";
+    fileTypes: UiFileType[] = [];
+    patchProperty: string = "";
+    directory: string = "";
+    index: number = -1;
+    portGroup: string = "";
+    resourceDirectory: string = "";
 
 };
-export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
-    deserialize(input: any): Lv2Plugin
-    {
+export class Lv2Plugin implements Deserializable<Lv2Plugin> {
+    deserialize(input: any): Lv2Plugin {
         this.uri = input.uri;
         this.name = input.name;
-        this.brand = input.name? input.name: "";
-        this.label = input.label? input.label: this.name;
+        this.brand = input.name ? input.name : "";
+        this.label = input.label ? input.label : this.name;
         this.plugin_class = input.plugin_class;
         this.supported_features = input.supported_features;
         this.required_features = input.required_features;
@@ -321,23 +312,20 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
         this.author_name = input.author_name;
         this.author_homepage = input.author_homepage;
         this.comment = input.comment;
-        this.ports=  Port.deserialize_array(input.ports);
+        this.ports = Port.deserialize_array(input.ports);
         this.port_groups = PortGroup.deserialize_array(input.port_groups);
-        if (input.fileProperties)
-        {
+        if (input.fileProperties) {
             this.fileProperties = UiFileProperty.deserialize_array(input.fileProperties)
         } else {
             this.fileProperties = [];
         }
-        if (input.frequencyPlots)
-        {
+        if (input.frequencyPlots) {
             this.frequencyPlots = UiFrequencyPlot.deserialize_array(input.frequencyPlots)
         } else {
             this.frequencyPlots = [];
         }
 
-        if (input.uiPortNotifications)
-        {
+        if (input.uiPortNotifications) {
             this.uiPortNotifications = UiPropertyNotification.deserialize_array(input.uiPortNotifications);
         } else {
             this.uiPortNotifications = [];
@@ -346,36 +334,34 @@ export class  Lv2Plugin implements Deserializable<Lv2Plugin> {
     }
     static EmptyFeatures: string[] = [];
 
-    uri:                string = "";
-    name:               string = "";
-    brand:              string = "";
-    label:              string = "";
-    plugin_class:       string = "";
+    uri: string = "";
+    name: string = "";
+    brand: string = "";
+    label: string = "";
+    plugin_class: string = "";
     supported_features: string[] = Lv2Plugin.EmptyFeatures;
-    required_features:  string[] = Lv2Plugin.EmptyFeatures;
-    optional_features:  string[] = Lv2Plugin.EmptyFeatures;
-    author_name:        string = "";
-    author_homepage:    string = "";
-    comment:            string = "";
-    ports:              Port[] = Port.EmptyPorts;
-    port_groups:        PortGroup[] = [];
-    fileProperties:     UiFileProperty[] = [];
-    frequencyPlots:     UiFrequencyPlot[] = [];
+    required_features: string[] = Lv2Plugin.EmptyFeatures;
+    optional_features: string[] = Lv2Plugin.EmptyFeatures;
+    author_name: string = "";
+    author_homepage: string = "";
+    comment: string = "";
+    ports: Port[] = Port.EmptyPorts;
+    port_groups: PortGroup[] = [];
+    fileProperties: UiFileProperty[] = [];
+    frequencyPlots: UiFrequencyPlot[] = [];
     uiPortNotifications: UiPropertyNotification[] = [];
 }
 
 
-export class  ScalePoint implements Deserializable<ScalePoint> {
+export class ScalePoint implements Deserializable<ScalePoint> {
     deserialize(input: any): ScalePoint {
         this.value = input.value;
         this.label = input.label;
         return this;
     }
-    static deserialize_array(input: any): ScalePoint[]
-    {
+    static deserialize_array(input: any): ScalePoint[] {
         let result: ScalePoint[] = [];
-        for (let i = 0; i < input.length; ++i)
-        {
+        for (let i = 0; i < input.length; ++i) {
             result[i] = new ScalePoint().deserialize(input[i]);
         }
         return result;
@@ -386,9 +372,9 @@ export class  ScalePoint implements Deserializable<ScalePoint> {
 
 export enum PluginType {
     // Reserved types used in pedalboards.
-    None="",
-    InvalidPlugin= "InvalidPlugin",
-    
+    None = "",
+    InvalidPlugin = "InvalidPlugin",
+
     Plugin = "Plugin",
     AllpassPlugin = "AllpassPlugin",
     AmplifierPlugin = "AmplifierPlugin",
@@ -428,7 +414,7 @@ export enum PluginType {
     UtilityPlugin = "UtilityPlugin",
     WaveshaperPlugin = "WaveshaperPlugin",
 
-        // psuedo plugin type for the Amps node of the filter dialog.
+    // psuedo plugin type for the Amps node of the filter dialog.
     PiPedalAmpsNode = "PiPedalAmpsNode",
 
     // pseudo plugin types for splitter.
@@ -457,9 +443,8 @@ export enum ControlType {
     OutputSelect
 }
 
-export class  UiControl implements Deserializable<UiControl> {
-    deserialize(input: any): UiControl
-    {
+export class UiControl implements Deserializable<UiControl> {
+    deserialize(input: any): UiControl {
         this.symbol = input.symbol;
         this.name = input.name;
         this.index = input.index;
@@ -480,27 +465,23 @@ export class  UiControl implements Deserializable<UiControl> {
         this.units = input.units as Units;
 
         this.comment = input.comment ?? "";
-        this.is_bypass = input.is_bypass ? true: false;
-        this.is_program_controller = input.is_program_controller? true: false;
+        this.is_bypass = input.is_bypass ? true : false;
+        this.is_program_controller = input.is_program_controller ? true : false;
         this.custom_units = input.custom_units ?? "";
-        this.connection_optional = input.connection_optional ? true: false;
+        this.connection_optional = input.connection_optional ? true : false;
 
 
-        if (this.is_bypass)
-        {
+        if (this.is_bypass) {
             this.not_on_gui = true;
         }
 
         this.controlType = ControlType.Dial;
 
-        if (!this.is_input)
-        {
-            if (this.units === Units.midiNote)
-            {
+        if (!this.is_input) {
+            if (this.units === Units.midiNote) {
                 this.controlType = ControlType.Tuner;
 
-            } else if (this.units === Units.db)
-            {
+            } else if (this.units === Units.db) {
                 this.controlType = ControlType.DbVu;
             } else if (this.enumeration_property) {
                 this.controlType = ControlType.OutputSelect;
@@ -508,45 +489,36 @@ export class  UiControl implements Deserializable<UiControl> {
                 this.controlType = ControlType.Vu;
             }
         }
-        if (this.isValidEnumeration())
-        {
+        if (this.isValidEnumeration()) {
             this.controlType = ControlType.Select;
-            if (this.scale_points.length === 2)
-            {
+            if (this.scale_points.length === 2) {
                 this.controlType = ControlType.ABSwitch;
             }
         } else {
-            if (this.toggled_property || (this.integer_property && this.min_value === 0 && this.max_value === 1))
-            {
+            if (this.toggled_property || (this.integer_property && this.min_value === 0 && this.max_value === 1)) {
                 this.controlType = ControlType.OnOffSwitch;
             }
         }
         return this;
     }
-    applyProperties(properties: Partial<UiControl>): UiControl 
-    {
-        return {...this,...properties};
+    applyProperties(properties: Partial<UiControl>): UiControl {
+        return { ...this, ...properties };
     }
     private hasScalePoint(value: number): boolean {
-        for (let scale_point of this.scale_points)
-        {
+        for (let scale_point of this.scale_points) {
             if (scale_point.value === value) return true;
         }
         return false;
     }
-    private isValidEnumeration() : boolean {
+    private isValidEnumeration(): boolean {
         if (this.enumeration_property) return true;
-        if (this.toggled_property && this.min_value === 0 && this.max_value === 1)
-        {
-            if (this.hasScalePoint(this.min_value) && this.hasScalePoint(this.max_value))
-            {
+        if (this.toggled_property && this.min_value === 0 && this.max_value === 1) {
+            if (this.hasScalePoint(this.min_value) && this.hasScalePoint(this.max_value)) {
                 return true;
             }
         }
-        if (this.integer_property && this.min_value === 0 && this.max_value === 1)
-        {
-            if (this.hasScalePoint(this.min_value) && this.hasScalePoint(this.max_value))
-            {
+        if (this.integer_property && this.min_value === 0 && this.max_value === 1) {
+            if (this.hasScalePoint(this.min_value) && this.hasScalePoint(this.max_value)) {
                 return true;
             }
         }
@@ -557,23 +529,22 @@ export class  UiControl implements Deserializable<UiControl> {
 
     static deserialize_array(input: any): UiControl[] {
         let result: UiControl[] = [];
-        for (let i = 0; i < input.length; ++i)
-        {
+        for (let i = 0; i < input.length; ++i) {
             result[i] = new UiControl().deserialize(input[i]);
         }
         return result;
     }
     symbol: string = "";
-    name:   string = "";
+    name: string = "";
     index: number = -1;
     is_input: boolean = true;
     min_value: number = 0;
     max_value: number = 1;
-    default_value:number = 0.5;
+    default_value: number = 0.5;
     is_logarithmic: boolean = false;
     display_priority: number = -1;
     range_steps: number = 0;
-    integer_property:boolean = false;
+    integer_property: boolean = false;
     enumeration_property: boolean = false;
     trigger: boolean = false;
     not_on_gui: boolean = false;
@@ -589,16 +560,13 @@ export class  UiControl implements Deserializable<UiControl> {
 
 
     // Return the value of the closest scale_point.
-    clampSelectValue(value: number): number{
-        if (this.scale_points.length !== 0)
-        {
+    clampSelectValue(value: number): number {
+        if (this.scale_points.length !== 0) {
             let minError = 1.0E100;
             let bestValue = value;
-            for (let i = 0; i < this.scale_points.length; ++i)
-            {
-                let error = Math.abs(this.scale_points[i].value-value);
-                if (error < minError)
-                {
+            for (let i = 0; i < this.scale_points.length; ++i) {
+                let error = Math.abs(this.scale_points[i].value - value);
+                if (error < minError) {
                     minError = error;
                     bestValue = this.scale_points[i].value;
                 }
@@ -609,20 +577,20 @@ export class  UiControl implements Deserializable<UiControl> {
         }
     }
 
-    isHidden() : boolean {
+    isHidden(): boolean {
         return this.not_on_gui || (this.connection_optional && !this.is_input);
     }
-    isOnOffSwitch() : boolean {
+    isOnOffSwitch(): boolean {
         return this.controlType === ControlType.OnOffSwitch;
     }
 
     isAbToggle(): boolean {
         return this.controlType === ControlType.ABSwitch;
     }
-    isSelect() : boolean {
+    isSelect(): boolean {
         return this.controlType === ControlType.Select;
     }
-    isOutputSelect() : boolean {
+    isOutputSelect(): boolean {
         return !this.is_input && this.controlType === ControlType.OutputSelect;
     }
 
@@ -630,23 +598,23 @@ export class  UiControl implements Deserializable<UiControl> {
     isLamp(): boolean {
         return this.toggled_property && this.scale_points.length === 0 && !this.is_input;
     }
-    isDial() : boolean {
+    isDial(): boolean {
         return this.controlType === ControlType.Dial;
     }
 
-    isTuner() : boolean {
+    isTuner(): boolean {
         return this.controlType === ControlType.Tuner;
     }
-    isVu() : boolean {
+    isVu(): boolean {
         return this.controlType === ControlType.Vu;
     }
 
-    isDbVu() : boolean {
+    isDbVu(): boolean {
         return this.controlType === ControlType.DbVu;
     }
 
     valueToRange(value: number): number {
-        if (this.toggled_property) return value === 0 ? 0: 1;
+        if (this.toggled_property) return value === 0 ? 0 : 1;
 
         if (this.integer_property || this.enumeration_property) {
             value = Math.round(value);
@@ -659,11 +627,11 @@ export class  UiControl implements Deserializable<UiControl> {
         return range;
     }
 
-    rangeToValue(range: number) : number {
+    rangeToValue(range: number): number {
         if (range < 0) range = 0;
         if (range > 1) range = 1;
 
-        if (this.toggled_property) return range === 0? 0: 1;
+        if (this.toggled_property) return range === 0 ? 0 : 1;
 
         let value = range * (this.max_value - this.min_value) + this.min_value;
         if (this.integer_property || this.enumeration_property) {
@@ -680,11 +648,9 @@ export class  UiControl implements Deserializable<UiControl> {
             value = Math.round(value);
         }
 
-        for (let i = 0; i < this.scale_points.length; ++i)
-        {
+        for (let i = 0; i < this.scale_points.length; ++i) {
             let scalePoint = this.scale_points[i];
-            if (scalePoint.value === value)
-            {
+            if (scalePoint.value === value) {
                 return scalePoint.label;
             }
         }
@@ -738,8 +704,7 @@ export class  UiControl implements Deserializable<UiControl> {
         }
         return text;
     }
-    formatShortValue(value: number): string
-    {
+    formatShortValue(value: number): string {
         if (this.enumeration_property) {
             for (let i = 0; i < this.scale_points.length; ++i) {
                 let scale_point = this.scale_points[i];
@@ -761,17 +726,16 @@ export class  UiControl implements Deserializable<UiControl> {
         }
     }
 
-    
+
 }
 
 
 export class UiPlugin implements Deserializable<UiPlugin> {
-    deserialize(input: any): UiPlugin 
-    {
+    deserialize(input: any): UiPlugin {
         this.uri = input.uri;
         this.name = input.name;
-        this.brand = input.brand ? input.brand: "";
-        this.label = input.label? input.label: this.name;
+        this.brand = input.brand ? input.brand : "";
+        this.label = input.label ? input.label : this.name;
         this.plugin_type = input.plugin_type as PluginType;
         this.plugin_display_type = input.plugin_display_type;
         this.author_name = input.author_name;
@@ -783,14 +747,12 @@ export class UiPlugin implements Deserializable<UiPlugin> {
         this.description = input.description;
         this.controls = UiControl.deserialize_array(input.controls);
         this.port_groups = PortGroup.deserialize_array(input.port_groups);
-        if (input.fileProperties)
-        {
+        if (input.fileProperties) {
             this.fileProperties = UiFileProperty.deserialize_array(input.fileProperties)
         } else {
             this.fileProperties = [];
         }
-        if (input.frequencyPlots)
-        {
+        if (input.frequencyPlots) {
             this.frequencyPlots = UiFrequencyPlot.deserialize_array(input.frequencyPlots)
         } else {
             this.frequencyPlots = [];
@@ -802,8 +764,7 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     }
     static deserialize_array(input: any): UiPlugin[] {
         let result: UiPlugin[] = [];
-        for (let i = 0; i < input.length; ++i)
-        {
+        for (let i = 0; i < input.length; ++i) {
             result[i] = new UiPlugin().deserialize(input[i]);
         }
         return result;
@@ -814,191 +775,182 @@ export class UiPlugin implements Deserializable<UiPlugin> {
 
     }
     getControl(key: string): UiControl | undefined {
-        for (let i = 0; i < this.controls.length; ++i)
-        {
+        for (let i = 0; i < this.controls.length; ++i) {
             let control = this.controls[i];
-            if (control.symbol === key)
-            {
+            if (control.symbol === key) {
                 return control;
             }
-        } 
+        }
         return undefined;
     }
-    
-    getPortGroupByUri(uri: string) :PortGroup | null
-    {
-        for (let i = 0; i < this.port_groups.length; ++i)
-        {
+
+    getPortGroupByUri(uri: string): PortGroup | null {
+        for (let i = 0; i < this.port_groups.length; ++i) {
             let port_group = this.port_groups[i];
-            if (port_group.uri === uri)
-            {
+            if (port_group.uri === uri) {
                 return port_group;
             }
         }
         return null;
 
     }
-    getPortGroupBySymbol(symbol: string): PortGroup | null
-    {
-        for (let i = 0; i < this.port_groups.length; ++i)
-        {
+    getPortGroupBySymbol(symbol: string): PortGroup | null {
+        for (let i = 0; i < this.port_groups.length; ++i) {
             let port_group = this.port_groups[i];
-            if (port_group.symbol === symbol)
-            {
+            if (port_group.symbol === symbol) {
                 return port_group;
             }
         }
         return null;
     }
 
-    uri:                 string = "";
-    name:                string = "";
-    brand:               string = "";
-    label:               string = "";
-    plugin_type:         PluginType = PluginType.InvalidPlugin;
+    uri: string = "";
+    name: string = "";
+    brand: string = "";
+    label: string = "";
+    plugin_type: PluginType = PluginType.InvalidPlugin;
     plugin_display_type: string = "";
-    author_name:         string = "";
-    author_homepage:     string = "";
-    audio_inputs:        number = 0;
-    audio_outputs:       number = 0;
-    has_midi_input:      number = 0;
-    has_midi_output:     number = 0;
-    description: string  = "";
-    controls:            UiControl[] = [];
-    port_groups:         PortGroup[] = [];
-    fileProperties:      UiFileProperty[] = [];
-    frequencyPlots:      UiFrequencyPlot[] = [];
-    is_vst3 :            boolean = false;
+    author_name: string = "";
+    author_homepage: string = "";
+    audio_inputs: number = 0;
+    audio_outputs: number = 0;
+    has_midi_input: number = 0;
+    has_midi_output: number = 0;
+    description: string = "";
+    controls: UiControl[] = [];
+    port_groups: PortGroup[] = [];
+    fileProperties: UiFileProperty[] = [];
+    frequencyPlots: UiFrequencyPlot[] = [];
+    is_vst3: boolean = false;
 }
 
 
 
-export function makeSplitUiPlugin(): UiPlugin
-{
+export function makeSplitUiPlugin(): UiPlugin {
 
     return new UiPlugin().deserialize({
-        uri:                  "uri://two-play/pipedal/pedalboard#Split",
-        name:                 "Split",
-        brand:                "",
-        label:                "",
-        plugin_type:         PluginType.SplitA,
+        uri: "uri://two-play/pipedal/pedalboard#Split",
+        name: "Split",
+        brand: "",
+        label: "",
+        plugin_type: PluginType.SplitA,
         plugin_display_type: "Split",
-        author_name:         "",
-        author_homepage:     "",
-        audio_inputs:        1,
-        audio_outputs:       1,
-        has_midi_input:      0,
-        has_midi_output:     0,
+        author_name: "",
+        author_homepage: "",
+        audio_inputs: 1,
+        audio_outputs: 1,
+        has_midi_input: 0,
+        has_midi_output: 0,
         description: "",
-        controls:       [
+        controls: [
             new UiControl().applyProperties({
                 symbol: "splitType",
-                name:   "Type",
+                name: "Type",
                 index: 0,
                 is_input: true,
                 min_value: 0.0,
-                max_value:  2.0,
+                max_value: 2.0,
                 enumeration_property: true,
                 scale_points: [
-                    new ScalePoint().deserialize({value: 0, label: "A/B"}),
-                    new ScalePoint().deserialize({value: 1, label: "mix"}),
-                    new ScalePoint().deserialize({value: 1, label: "L/R"}),
+                    new ScalePoint().deserialize({ value: 0, label: "A/B" }),
+                    new ScalePoint().deserialize({ value: 1, label: "mix" }),
+                    new ScalePoint().deserialize({ value: 1, label: "L/R" }),
                 ],
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
-            
-            }) ,
+
+            }),
             new UiControl().applyProperties({
                 symbol: "select",
-                name:   "Select",
+                name: "Select",
                 index: 1,
                 is_input: true,
                 min_value: 0.0,
-                max_value:  1.0,
+                max_value: 1.0,
                 enumeration_property: true,
                 scale_points: [
-                    new ScalePoint().deserialize({value: 0, label: "A"}),
-                    new ScalePoint().deserialize({value: 1, label: "B"}),
+                    new ScalePoint().deserialize({ value: 0, label: "A" }),
+                    new ScalePoint().deserialize({ value: 1, label: "B" }),
                 ],
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
-            
-            }) ,
+
+            }),
 
             new UiControl().applyProperties({
                 symbol: "mix",
-                name:   "Mix",
+                name: "Mix",
                 index: 2,
                 is_input: true,
                 min_value: -1.0,
-                max_value:  1.0,
+                max_value: 1.0,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
-            
-            }) ,
+
+            }),
             new UiControl().applyProperties({
                 symbol: "panL",
-                name:   "Pan Top",
+                name: "Pan Top",
                 index: 3,
                 is_input: true,
                 min_value: -1.0,
-                max_value:  1.0,
+                max_value: 1.0,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
-            
-            }) ,
+
+            }),
             new UiControl().applyProperties({
                 symbol: "volL",
-                name:   "Vol Top",
+                name: "Vol Top",
                 index: 4,
                 is_input: true,
                 min_value: -60.0,
-                max_value:  12.0,
+                max_value: 12.0,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
-            
-            }) ,
+
+            }),
             new UiControl().applyProperties({
                 symbol: "panR",
-                name:   "Pan Bottom",
+                name: "Pan Bottom",
                 index: 5,
                 is_input: true,
                 min_value: -1.0,
-                max_value:  1.0,
+                max_value: 1.0,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
-            
-            }) ,
+
+            }),
             new UiControl().applyProperties({
                 symbol: "volR",
-                name:   "Vol Bottom",
+                name: "Vol Bottom",
                 index: 6,
                 is_input: true,
                 min_value: -60.0,
-                max_value:  12.0,
+                max_value: 12.0,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
-            }) 
+            })
         ],
-        port_groups:    [],
+        port_groups: [],
         fileProperties: [],
         frequencyPlots: [],
-        is_vst3 :       false,
-    
+        is_vst3: false,
+
     }
     );
 }
