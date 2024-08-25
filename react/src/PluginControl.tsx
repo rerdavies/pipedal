@@ -257,6 +257,9 @@ const PluginControl =
             touchDown: boolean = false;
             touchIdentifier: number = -1;
 
+            private lastclickTimeMs: number = 0;
+            private isTap: boolean = false;
+
             onTouchStart(e: TouchEvent<SVGSVGElement>) {
             }
             onTouchMove(e: TouchEvent<SVGSVGElement>) {
@@ -272,6 +275,7 @@ const PluginControl =
                 let e = e_ as PointerEvent;
                 if (this.isExtraTouch(e))
                 {
+                    this.isTap = false;
                     this.captureElement!.setPointerCapture(e.pointerId);
                     this.capturedPointers.push(e.pointerId);
                     ++this.pointersDown;
@@ -305,6 +309,7 @@ const PluginControl =
                     {
                         if (this.props.uiControl?.isDial()??false)
                         {
+                            this.isTap = false;
                             this.showZoomedControl();
                             return;
                         }
@@ -312,8 +317,14 @@ const PluginControl =
 
                     ++this.pointersDown;
 
-
                     this.mouseDown = true;
+                    if (this.pointersDown === 1)
+                    {
+                        this.isTap = true;
+                        this.tapStartMs = Date.now();
+                    } else {
+                        this.isTap = false;
+                    }
 
                     this.pointerId = e.pointerId;
                     this.pointerType = e.pointerType;
@@ -342,6 +353,7 @@ const PluginControl =
                     if (this.isExtraTouch(e))
                     {
                         ++this.pointersDown;
+                        this.isTap = false;
                         
                     }
                 }
@@ -354,6 +366,7 @@ const PluginControl =
             onPointerLostCapture(e: PointerEvent<SVGSVGElement>) {
                 if (this.isCapturedPointer(e)) {
                     --this.pointersDown;
+                    this.isTap = false;
                     
 
                     this.releaseCapture(e);
@@ -396,6 +409,36 @@ const PluginControl =
                 this.lastX = e.clientX;
                 return this.dRange;
             }
+            private lastTapMs = 0;
+
+            resetToDefaultValue(uiControl: UiControl): void
+            {
+                let value = uiControl.default_value;
+                this.model.setPedalboardControl(this.props.instanceId,uiControl.symbol,value);
+            }
+            onPointerDoubleTap() {
+                let uiControl = this.props.uiControl;
+                if (uiControl)
+                {
+                    if (uiControl.isDial())
+                    {
+                        this.resetToDefaultValue(uiControl);
+                    }
+                }
+            }
+            onPointerTap() {
+                // yyy
+                let tapTime = Date.now();
+                let dT = tapTime-this.lastTapMs;
+                this.lastTapMs = tapTime;
+
+                if (dT < 500)
+                {
+                    this.onPointerDoubleTap();
+                }
+            }
+            private tapStartMs: number = 0;
+
             onPointerUp(e: PointerEvent<SVGSVGElement>) {
 
                 if (this.isCapturedPointer(e)) {
@@ -407,6 +450,14 @@ const PluginControl =
                     this.previewRange(dRange, true);
 
                     this.releaseCapture(e);
+                    if (this.isTap)
+                    {
+                        let ms = Date.now()-this.tapStartMs;
+                        if (ms < 200)
+                        {
+                            this.onPointerTap();
+                        }
+                    }
 
                 } else {
                     --this.pointersDown;
@@ -437,11 +488,24 @@ const PluginControl =
 
             }
 
+            clickSlop() { 
+                return 3.5;  // maybe larger on touch devices.
+            }
             onPointerMove(e: PointerEvent<SVGSVGElement>): void {
                 if (this.isCapturedPointer(e)) {
                     e.preventDefault();
                     let dRange = this.updateRange(e)
                     this.previewRange(dRange, false);
+
+                    let x = e.clientX;
+                    let y = e.clientY;
+                    let dx = x - this.startX;
+                    let dy = y-this.startY;
+                    let distance = Math.sqrt(dx*dx+dy*dy);
+                    if (distance >= this.clickSlop())
+                    {
+                        this.isTap = false;
+                    }
                 }
             }
 
