@@ -67,6 +67,9 @@ static UpdateStatus GetCachedUpdateStatus()
                 json_reader reader(f);
                 UpdateStatus status;
                 reader.read(&status);
+
+                // cached curruent version might come from a different version.
+                status.ResetCurrentVersion();
                 return status;
             }
         }
@@ -552,6 +555,19 @@ UpdateStatus::UpdateStatus()
 #endif
 }
 
+void UpdateStatus::ResetCurrentVersion()
+{
+    currentVersion_ = PROJECT_VER;
+    currentVersionDisplayName_ = PROJECT_DISPLAY_VERSION;
+
+#ifdef TEST_UPDATE
+    // uncomment this line to test upgrading.
+    currentVersion_ = "1.2.39";
+    currentVersionDisplayName_ = "PiPedal 1.2.39-Debug";
+#endif
+}
+
+
 std::chrono::system_clock::time_point UpdateStatus::LastUpdateTime() const
 {
     std::chrono::system_clock::duration duration{this->lastUpdateTime_};
@@ -583,9 +599,125 @@ const GithubAsset *GithubRelease::GetDownloadForCurrentArchitecture() const
     return nullptr;
 }
 
+
 UpdateRelease::UpdateRelease()
 {
 }
+
+std::string Updater::GetUpdateFilename(const std::string &url)
+{
+    std::lock_guard lock(mutex);
+
+    // partialy whitelisting, partly avoiding having to parse a URL.
+    if (this->currentResult.releaseOnlyRelease_.UpdateUrl() == url)
+    {
+        return this->currentResult.releaseOnlyRelease_.AssetName();
+    }
+    if (this->currentResult.releaseOrBetaRelease_.UpdateUrl() == url)
+    {
+        return this->currentResult.releaseOrBetaRelease_.AssetName();
+    }
+    if (this->currentResult.devRelease_.UpdateUrl() == url)
+    {
+        return this->currentResult.devRelease_.AssetName();
+    }
+    throw std::runtime_error("Permission denied. Invalid url.");
+
+}
+static std::string unCRLF(const std::string &text)
+{
+    std::ostringstream ss;
+    for (char c : text)
+    {
+        if (c == '\r')
+            continue;
+        if (c == '\n') {
+            ss << '/';
+        } else 
+        {
+            ss << c;
+        }
+    }
+    return ss.str();
+}
+
+static void removeOldSiblings(int numberToKeep, const std::filesystem::path &fileToKeep)
+{
+    namespace fs = std::filesystem;
+
+    auto directory = fileToKeep.parent_path();
+    if (directory.empty()) return; // superstition.
+    struct RemoveEntry {
+        fs::path path;
+        fs::file_time_type time;
+    };
+    std::vector<RemoveEntry> entries;
+    for (const auto&dirEntry : fs::directory_iterator(directory))
+    {
+        if (dirEntry.is_regular_file())
+        {
+            if (dirEntry.path() != fileToKeep)
+            {
+                dirEntry.last_write_time();
+                entries.push_back(RemoveEntry { .path = dirEntry.path(), .time = dirEntry.last_write_time()});
+            }
+        }
+    }
+    std::sort(
+        entries.begin(),entries.end(),
+        [](const RemoveEntry&left, const RemoveEntry&right)
+        {
+            return left.time > right.time; // by time descending
+        }
+    );
+    for (size_t i = numberToKeep; i < entries.size(); ++i)
+    {
+        fs::remove(entries[i].path);
+    }
+}
+std::filesystem::path Updater::DownloadUpdate(const std::string &url)
+{
+    namespace fs = std::filesystem;
+    std::string filename = GetUpdateFilename(url);
+    if (filename.empty())
+    {
+        throw std::runtime_error("Permission denied. Invalid url.");
+    }    
+    auto downloadDirectory = WORKING_DIRECTORY / "downloads";
+    std::filesystem::create_directories(downloadDirectory);
+
+    auto downloadPath = downloadDirectory / filename;
+
+    try {
+        fs::remove(downloadPath);
+        std::string args = SS("-s -L " << url << " -o " << downloadPath << " 2>&1");
+        auto curlOutput = sysExecForOutput("curl", args);
+        if (curlOutput.exitCode != EXIT_SUCCESS)
+        {
+            Lv2Log::error(SS("Update download failed." << unCRLF(curlOutput.output)));
+            throw std::runtime_error("PiPedal server does not have access to the internet.");
+        }
+        if (!fs::exists(downloadPath) || fs::file_size(downloadPath) == 0)
+        {
+            throw std::runtime_error("Download failed.");
+        }
+        try {
+            removeOldSiblings(2, downloadPath);
+        } catch (const std::exception&e)
+        {
+            Lv2Log::error(SS("Can't remove download siblings" << e.what()));
+            // and carry on.
+        }
+        return downloadPath;
+    } catch (const std::exception &e)
+    {
+        std::filesystem::remove(downloadPath);
+        throw;
+    }
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 JSON_MAP_BEGIN(UpdateRelease)
 JSON_MAP_REFERENCE(UpdateRelease, updateAvailable)

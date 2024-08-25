@@ -358,7 +358,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     onOpenBank(bankId: number) {
         this.model_.openBank(bankId)
-            .catch((error) => this.model_.showAlert(error));
+            .catch((error) => this.model_.showAlert(error.toString()));
 
     }
 
@@ -383,7 +383,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         });
         this.model_.saveBankAs(this.model_.banks.get().selectedBank, newName)
             .catch((error) => {
-                this.model_.showAlert(error);
+                this.model_.showAlert(error.toString());
             });
 
     }
@@ -407,7 +407,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         });
         this.model_.renameBank(this.model_.banks.get().selectedBank, newName)
             .catch((error) => {
-                this.model_.showAlert(error);
+                this.model_.showAlert(error.toString());
             });
 
     }
@@ -896,12 +896,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
                     }
                 />
-                {
-                    (this.state.updateDialogOpen)
-                    && (
-                        <UpdateDialog open={true} />
-                    )
-                }
+                <UpdateDialog open={this.state.updateDialogOpen} />
                 {this.state.showStatusMonitor && (<JackStatusView />)}
 
 

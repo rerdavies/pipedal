@@ -22,6 +22,7 @@ export enum UpdatePolicyT {
     ReleaseOnly = 0,
     ReleaseOrBeta = 1,
     Development = 2,
+    Disable = 3,
 
 };
 export function intToUpdatePolicyT(intValue: number): UpdatePolicyT {
@@ -90,6 +91,7 @@ export class UpdateStatus {
     }
     getActiveRelease(): UpdateRelease {
         switch (this.updatePolicy) {
+            case UpdatePolicyT.Disable: // show available updates in the settings dialog.
             case UpdatePolicyT.ReleaseOnly:
                 return this.releaseOnlyRelease; 
             case UpdatePolicyT.ReleaseOrBeta:

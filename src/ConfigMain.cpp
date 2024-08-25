@@ -112,11 +112,11 @@ std::filesystem::path findOnPath(const std::string &command)
 
 void EnableService()
 {
-    if (sysExec(SYSTEMCTL_BIN " enable " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
+    if (silentSysExec(SYSTEMCTL_BIN " enable " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to enable the " PIPEDALD_SERVICE " service.\n";
     }
-    if (sysExec(SYSTEMCTL_BIN " enable " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
+    if (silentSysExec(SYSTEMCTL_BIN " enable " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
     {
         cout << "Error: Failed to enable the " ADMIN_SERVICE " service.\n";
     }
@@ -178,8 +178,10 @@ void StopService(bool excludeShutdownService = false)
 
 void StartService(bool excludeShutdownService = false)
 {
-
-    silentSysExec("/usr/bin/pulseaudio --kill"); // interferes with Jack audio service startup.
+    if (!UsingNetworkManager())
+    {
+        silentSysExec("/usr/bin/pulseaudio --kill"); // interferes with Jack audio service startup.
+    }
     if (!excludeShutdownService)
     {
         if (sysExec(SYSTEMCTL_BIN " start " ADMIN_SERVICE ".service") != EXIT_SUCCESS)
@@ -187,7 +189,7 @@ void StartService(bool excludeShutdownService = false)
             throw std::runtime_error("Failed to start the " ADMIN_SERVICE " service.");
         }
     }
-    if (sysExec(SYSTEMCTL_BIN " start " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
+    if (silentSysExec(SYSTEMCTL_BIN " start " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
     {
         throw std::runtime_error("Failed to start the " PIPEDALD_SERVICE " service.");
     }

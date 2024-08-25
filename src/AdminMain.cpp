@@ -220,6 +220,12 @@ bool setJackConfiguration(JackServerSettings serverSettings)
     return true;
 }
 
+void InstallUpdate(const std::filesystem::path path)
+{
+    std::string cmd = SS("/usr/bin/systemd-run --unit=pidal_update /usr/sbin/pipedal_update " <<path.string());
+    int rc = system(cmd.c_str());
+}
+
 class AdminServer
 {
 private:
@@ -259,7 +265,11 @@ private:
         }
         try
         {
-            if (command == "UnmonitorGovernor")
+            if (command == "InstallUpdate")
+            {
+                std::filesystem::path path = args;
+                InstallUpdate(path);
+            } else if (command == "UnmonitorGovernor")
             {
                 StopGovernorMonitorThread();
                 result = 0;

@@ -1,5 +1,5 @@
 # Release Notes
-## PiPedal 1.2.41 Release 
+## PiPedal 1.2.41` Release 
 
 This version includes the following new features:
 

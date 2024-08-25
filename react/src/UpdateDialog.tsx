@@ -30,15 +30,14 @@ import DialogEx from './DialogEx';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import { UpdateStatus, UpdateRelease, UpdatePolicyT,intToUpdatePolicyT } from './Updater';
+import { UpdateStatus, UpdateRelease, UpdatePolicyT, intToUpdatePolicyT } from './Updater';
 import { PiPedalModelFactory, PiPedalModel } from './PiPedalModel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 
 
-//const UPDATE_CHECK_DELAY = 86400000; // one day in ms.
-const UPDATE_CHECK_DELAY = 30 * 1000; // testing
-const CLOSE_DELAY = 100; // ms. 
+const UPDATE_CHECK_DELAY = 86400000; // one day in ms.
+// const UPDATE_CHECK_DELAY = 30 * 1000; // testing
 
 
 
@@ -69,11 +68,9 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
         this.onUpdateStatusChanged = this.onUpdateStatusChanged.bind(this);
     }
 
-    onUpdateStatusChanged(newValue: UpdateStatus)
-    {
-        if (!newValue.equals(this.state.updateStatus))
-        {
-            this.setState({updateStatus: newValue});
+    onUpdateStatusChanged(newValue: UpdateStatus) {
+        if (!newValue.equals(this.state.updateStatus)) {
+            this.setState({ updateStatus: newValue });
         }
     }
 
@@ -90,8 +87,8 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
     }
 
 
-    private handleOk() {
-
+    private handleOK() {
+        this.model.showUpdateDialog(false);
     }
     private handleUpdateNow() {
         this.model.updateNow()
@@ -100,9 +97,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
                 this.showAlert(e.toString());
             });
     }
-    private updatingLater: boolean = false;
     private handleUpdateLater() {
-        this.updatingLater = true;
         this.model.updateLater(UPDATE_CHECK_DELAY);
         this.model.showUpdateDialog(false); // allow close if launched from the settings window.
     }
@@ -110,10 +105,9 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
     private handleClose() {
         // ideally, we'd like to not close at all, but it screws up the nav backstack if we dont.
         // so, close, but do so very briefly
-        if (!this.updatingLater) {
-            this.model.updateLater(CLOSE_DELAY); // close and re-open immediately.
+        if (this.canUpgrade()) {
+            this.model.updateLater(UPDATE_CHECK_DELAY); // close and re-open immediately.
         }
-        this.updatingLater = false;
         this.model.showUpdateDialog(false);
     }
 
@@ -136,6 +130,12 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
     }
     canUpgrade(): boolean {
         let updateStatus = this.state.updateStatus;
+        if (updateStatus.updatePolicy === UpdatePolicyT.Disable) {
+            return false;
+        }
+        if (updateStatus.errorMessage !== "") {
+            return false;
+        }
         let updateRelease = updateStatus.getActiveRelease();
 
         return updateStatus.isValid && updateStatus.isOnline && updateRelease.updateAvailable;
@@ -143,7 +143,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
 
     private onPolicySelected(newValue: string | number): void {
         if (newValue.toString() === "") return;
-        let updatePolicy =  intToUpdatePolicyT(newValue as number);
+        let updatePolicy = intToUpdatePolicyT(newValue as number);
         this.model.setUpdatePolicy(updatePolicy);
 
     }
@@ -155,7 +155,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
         let compact = this.state.compactLandscape;
         return (
             <DialogEx tag="update" open={this.props.open} onClose={() => { this.handleClose(); }}
-                            style={{ userSelect: "none" }}
+                style={{ userSelect: "none" }}
             >
                 {
                     (!compact) &&
@@ -163,10 +163,11 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
                         <DialogTitle>
                             <div style={{ display: "flex", flexFlow: "row noWrap", alignItems: "center" }} >
                                 <Typography style={{ flexGrow: 1, flexShrink: 1, marginRight: 20 }} noWrap>PiPedal Updates</Typography>
-                                <Select style={{opacity: 0.6}} variant="standard" value={updateStatus.updatePolicy as number} onChange={(ev) => { this.onPolicySelected(ev.target.value); }}>
-                                    <MenuItem value={UpdatePolicyT.ReleaseOnly as number}>Release only</MenuItem>
-                                    <MenuItem value={UpdatePolicyT.ReleaseOrBeta as number}>Release or Beta</MenuItem>
-                                    <MenuItem value={UpdatePolicyT.Development as number}>Development</MenuItem>
+                                <Select style={{ opacity: 0.6 }} variant="standard" value={updateStatus.updatePolicy} onChange={(ev) => { this.onPolicySelected(ev.target.value); }}>
+                                    <MenuItem value={UpdatePolicyT.ReleaseOnly}>Release only</MenuItem>
+                                    <MenuItem value={UpdatePolicyT.ReleaseOrBeta}>Release or Beta</MenuItem>
+                                    <MenuItem value={UpdatePolicyT.Development}>Development</MenuItem>
+                                    <MenuItem value={UpdatePolicyT.Disable}>Disable</MenuItem>
                                 </Select>
                             </div>
 
@@ -181,12 +182,11 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
                 }
 
                 <DialogContent>
-                    {
-                        (upToDate) && (
-                            <Typography variant="body2" color="textSecondary" style={{ marginBottom: 12 }}>
-                                PiPedal is up to date.
-                            </Typography>
-                        )
+                    {(upToDate) && (
+                        <Typography variant="body2" color="textSecondary" style={{ marginBottom: 12 }}>
+                            PiPedal is up to date.
+                        </Typography>
+                    )
                     }
                     {(canUpgrade) && (
                         <Typography variant="body2" color="textSecondary" style={{ marginBottom: 12 }}>
@@ -202,7 +202,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
                             <Typography noWrap variant="body2" color="textSecondary" >
                                 Current version:
                             </Typography>
-                            {(canUpgrade) && (
+                            {(!upToDate) && (
                                 <Typography noWrap variant="body2" color="textSecondary" style={{ marginTop: 4 }} >
                                     Update  version:
                                 </Typography>
@@ -213,7 +213,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
                             <Typography noWrap variant="body2" color="textSecondary" >
                                 {updateStatus.currentVersionDisplayName}
                             </Typography>
-                            {(canUpgrade) && (
+                            {(!upToDate) && (
                                 <Typography noWrap variant="body2" color="textSecondary" style={{ marginTop: 4 }} >
                                     {updateRelease.upgradeVersionDisplayName}
                                 </Typography>
@@ -249,10 +249,10 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
                             ) : (
 
                                 <div style={{ display: "flex", flexFlow: "row noWrap", alignItems: "center" }}
-                                    onClick={()=>{ this.model.showUpdateDialog(false); }}
+
                                 >
                                     <div style={{ flexGrow: 1, flexShrink: 1 }} />
-                                    <Button variant="dialogPrimary">OK</Button>
+                                    <Button onClick={() => { this.handleOK(); }} variant="dialogPrimary">OK</Button>
                                 </div>
                             )
                     }

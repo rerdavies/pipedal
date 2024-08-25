@@ -41,7 +41,7 @@ AdminClient::~AdminClient()
 {
 }
 
-bool AdminClient::CanUseShutdownClient()
+bool AdminClient::CanUseAdminClient()
 {
     return true;
 }
@@ -104,7 +104,7 @@ bool AdminClient::SetJackServerConfiguration(const JackServerSettings &jackServe
 
 void AdminClient::SetWifiConfig(const WifiConfigSettings &settings)
 {
-    if (!CanUseShutdownClient())
+    if (!CanUseAdminClient())
     {
         throw PiPedalException("Can't perform this operation when debugging.");
     }
@@ -121,7 +121,7 @@ void AdminClient::SetWifiConfig(const WifiConfigSettings &settings)
 }
 void AdminClient::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
 {
-    if (!CanUseShutdownClient())
+    if (!CanUseAdminClient())
     {
         throw PiPedalException("Can't perform this operation when debugging.");
     }
@@ -139,7 +139,7 @@ void AdminClient::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
 
 void AdminClient::SetGovernorSettings(const std::string &settings)
 {
-    if (!CanUseShutdownClient())
+    if (!CanUseAdminClient())
     {
         throw PiPedalException("Can't use AdminClient when running interactively.");
     }
@@ -157,7 +157,7 @@ void AdminClient::SetGovernorSettings(const std::string &settings)
 
 void AdminClient::MonitorGovernor(const std::string &governor)
 {
-    if (!CanUseShutdownClient())
+    if (!CanUseAdminClient())
     {
         return;
     }
@@ -174,7 +174,7 @@ void AdminClient::MonitorGovernor(const std::string &governor)
 }
 void AdminClient::UnmonitorGovernor()
 {
-    if (!CanUseShutdownClient())
+    if (!CanUseAdminClient())
     {
         return;
     }
@@ -182,4 +182,17 @@ void AdminClient::UnmonitorGovernor()
     cmd << "UnmonitorGovernor";
     cmd << '\n';
     bool ignored = WriteMessage(cmd.str().c_str());
+}
+
+
+void AdminClient::InstallUpdate(const std::string&filename)
+{
+    if (!CanUseAdminClient())
+    {
+        // generally can't do amin operations when running under a debugger.
+        throw std::runtime_error("No admin client.");
+    }
+    std::stringstream cmd;
+    cmd << "InstallUpdate " << filename << '\n';
+    bool ignroed = WriteMessage(cmd.str().c_str());
 }

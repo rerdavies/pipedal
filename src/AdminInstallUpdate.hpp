@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2024Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -19,33 +19,10 @@
 
 #pragma once
 
-#include <string>
-#include "JackServerSettings.hpp"
-#include "WifiConfigSettings.hpp"
-#include "WifiDirectConfigSettings.hpp"
-#include "UnixSocket.hpp"
-#include <mutex>
+#include <filesystem>
 
-namespace pipedal {
+namespace pipedal
+{
+    void AdminInstallUpdate(const std::filesystem::path path);
 
-
-class AdminClient {
-    bool WriteMessage(const char*message);
-public:
-    AdminClient();
-    ~AdminClient();
-    bool CanUseAdminClient();
-    bool RequestShutdown(bool restart);
-    bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
-    void SetWifiConfig(const WifiConfigSettings & settings);
-    void SetWifiDirectConfig(const WifiDirectConfigSettings & settings);
-    void SetGovernorSettings(const std::string & governor);
-    void MonitorGovernor(const std::string &governor);
-    void UnmonitorGovernor();
-    void InstallUpdate(const std::string&filename);
-private:
-    std::mutex mutex;
-    UnixSocket socket;
-};
-
-} // namespace
+}

@@ -182,7 +182,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                 })
                 .catch(err => {
                     e.target.value = ""; // clear the file list so we can get another change notice.
-                    this.model.showAlert(err);
+                    this.model.showAlert(err.toString());
                 });
         }
         handleUploadBank() {
@@ -266,7 +266,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                         });
                     })
                     .catch((error) => {
-                        this.model.showAlert(error);
+                        this.model.showAlert(error.toString());
                     });
             }
         }
@@ -324,7 +324,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
             });
             this.model.moveBank(from, to)
                 .catch((error) => {
-                    this.model.showAlert(error);
+                    this.model.showAlert(error.toString());
                 });
         }
 

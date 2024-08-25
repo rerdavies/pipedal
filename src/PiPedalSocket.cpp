@@ -1067,7 +1067,7 @@ public:
         {
             WifiConfigSettings wifiConfigSettings;
             pReader->read(&wifiConfigSettings);
-            if (!GetAdminClient().CanUseShutdownClient())
+            if (!GetAdminClient().CanUseAdminClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");
             }
@@ -1088,7 +1088,7 @@ public:
         {
             WifiDirectConfigSettings wifiDirectConfigSettings;
             pReader->read(&wifiDirectConfigSettings);
-            if (!GetAdminClient().CanUseShutdownClient())
+            if (!GetAdminClient().CanUseAdminClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");
             }
@@ -1978,7 +1978,7 @@ std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &
 
 void PiPedalSocketHandler::RequestShutdown(bool restart)
 {
-    if (GetAdminClient().CanUseShutdownClient())
+    if (GetAdminClient().CanUseAdminClient())
     {
         GetAdminClient().RequestShutdown(restart);
     }

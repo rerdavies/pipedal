@@ -2212,8 +2212,10 @@ UpdateStatus PiPedalModel::GetUpdateStatus()  {
 
 void PiPedalModel::UpdateNow(const std::string&updateUrl)
 {
-    sleep(5);
-    throw std::runtime_error("Not implemented yet.");
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    auto fileName = updater.DownloadUpdate(updateUrl);
+
+    adminClient.InstallUpdate(fileName);
 
 }
 void PiPedalModel::ForceUpdateCheck() {

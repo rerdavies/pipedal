@@ -86,6 +86,7 @@ namespace pipedal
         std::chrono::system_clock::time_point LastUpdateTime() const;
         void LastUpdateTime(const std::chrono::system_clock::time_point &timePoint);
 
+        void ResetCurrentVersion();
         bool IsValid() const { return isValid_; }
         const std::string &ErrorMessage() const { return errorMessage_; }
         bool IsOnline() const { return isOnline_; }
@@ -116,7 +117,10 @@ namespace pipedal
         UpdatePolicyT GetUpdatePolicy();
         void SetUpdatePolicy(UpdatePolicyT updatePolicy);
         void ForceUpdateCheck();
+        std::filesystem::path DownloadUpdate(const std::string &url);
     private:
+        std::string GetUpdateFilename(const std::string &url);
+
         UpdatePolicyT updatePolicy = UpdatePolicyT::ReleaseOrBeta;
         using UpdateReleasePredicate = std::function<bool(const GithubRelease &githubRelease)>;
 

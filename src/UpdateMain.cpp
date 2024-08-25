@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2024Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -17,35 +17,22 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
+#include "AdminInstallUpdate.hpp"
+#include "Lv2Log.hpp"
+#include "Lv2SystemdLogger.hpp"
+#include <filesystem>
 
-#include <string>
-#include "JackServerSettings.hpp"
-#include "WifiConfigSettings.hpp"
-#include "WifiDirectConfigSettings.hpp"
-#include "UnixSocket.hpp"
-#include <mutex>
+using namespace pipedal;
 
-namespace pipedal {
+int main(int argc, char**argv)
+{
+    Lv2Log::set_logger(MakeLv2SystemdLogger());
 
-
-class AdminClient {
-    bool WriteMessage(const char*message);
-public:
-    AdminClient();
-    ~AdminClient();
-    bool CanUseAdminClient();
-    bool RequestShutdown(bool restart);
-    bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
-    void SetWifiConfig(const WifiConfigSettings & settings);
-    void SetWifiDirectConfig(const WifiDirectConfigSettings & settings);
-    void SetGovernorSettings(const std::string & governor);
-    void MonitorGovernor(const std::string &governor);
-    void UnmonitorGovernor();
-    void InstallUpdate(const std::string&filename);
-private:
-    std::mutex mutex;
-    UnixSocket socket;
-};
-
-} // namespace
+    if (argc != 2) 
+    {
+        Lv2Log::error("Invalid arguments.");
+        return EXIT_FAILURE;
+    }
+    std::filesystem::path path = argv[1];
+    AdminInstallUpdate(path);
+}

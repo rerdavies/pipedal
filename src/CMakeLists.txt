@@ -611,12 +611,20 @@ target_include_directories(capturepresets PRIVATE ${PIPEDAL_INCLUDES})
 target_link_libraries(capturepresets ${PIPEDAL_LIBS})
 
 
+add_executable(pipedal_update
+    UpdateMain.cpp 
+    Lv2Log.hpp Lv2Log.cpp
+    Lv2SystemdLogger.cpp Lv2SystemdLogger.hpp
+    AdminInstallUpdate.cpp AdminInstallUpdate.hpp
+)
+
+target_link_libraries(pipedal_update PRIVATE stdc++fs systemd )
+
 
 add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     UnixSocket.cpp UnixSocket.hpp
 
     SetWifiConfig.cpp SetWifiConfig.hpp
-
     JackServerSettings.hpp JackServerSettings.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
 
@@ -671,7 +679,7 @@ add_custom_target (
 install (TARGETS pipedalconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
    EXPORT pipedalTargets)
 
-   install (TARGETS pipedald pipedaladmind DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
+   install (TARGETS pipedald pipedaladmind pipedal_update DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
    EXPORT pipedalSbinTargets)
 
 

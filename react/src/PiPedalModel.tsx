@@ -20,7 +20,7 @@
 import { UiPlugin, UiControl, PluginType, UiFileProperty } from './Lv2Plugin';
 
 import { PiPedalArgumentError, PiPedalStateError } from './PiPedalError';
-import { UpdateStatus, UpdatePolicyT} from './Updater';
+import { UpdateStatus, UpdatePolicyT } from './Updater';
 import { ObservableProperty } from './ObservableProperty';
 import { Pedalboard, PedalboardItem, ControlValue } from './Pedalboard'
 import PluginClass from './PluginClass';
@@ -54,8 +54,7 @@ export enum State {
     InstallingUpdate,
 };
 
-export function wantsLoadingScreen(state: State)
-{
+export function wantsLoadingScreen(state: State) {
     return state >= State.Reconnecting;
 }
 
@@ -442,8 +441,7 @@ export class PiPedalModel //implements PiPedalModel
         this.onSocketConnectionLost = this.onSocketConnectionLost.bind(this);
     }
 
-    expectDisconnect(reason: ReconnectReason)
-    {
+    expectDisconnect(reason: ReconnectReason) {
         this.reconnectReason = reason;
     }
 
@@ -647,38 +645,36 @@ export class PiPedalModel //implements PiPedalModel
 
     private updateLaterTimeout?: NodeJS.Timeout = undefined;
 
-    private clearPromptForUpdateTimer()
-    {
-        if (this.updateLaterTimeout)
-        {
+    private clearPromptForUpdateTimer() {
+        if (this.updateLaterTimeout) {
             clearTimeout(this.updateLaterTimeout);
             this.updateLaterTimeout = undefined;
         }
     }
 
-    private setPromptForUpdateTimer(when: Date)
-    {
-        let ms = when.getTime()-Date.now();
+    private setPromptForUpdateTimer(when: Date) {
+        let ms = when.getTime() - Date.now();
         this.updateLaterTimeout = setTimeout(
-            ()=>{
+            () => {
                 this.updateLaterTimeout = undefined;
                 // make the server do a fresh check
                 this.getUpdateStatus()
-                .then(
-                    ()=>{
-                        this.updatePromptForUpdate();
-                    })
-                .catch((e)=>{
+                    .then(
+                        () => {
+                            this.updatePromptForUpdate();
+                        })
+                    .catch((e) => {
 
-                });
+                    });
             },
             ms);
     }
 
 
+    private lastCanUpdateNow: boolean = false;
     private updatePromptForUpdate() {
         this.clearPromptForUpdateTimer();
-        
+
         let stateEnabled = true; // must be present to accept alerts.  this.state.get() === State.Ready;
         let timeEnabled = false;
 
@@ -689,36 +685,36 @@ export class PiPedalModel //implements PiPedalModel
             let nDate = Date.now();
 
             let now: Date = new Date(nDate);
-            let tomorrow: Date = new Date(nDate + 86400000);
+            let maxDate: Date = new Date(nDate + 86400000*2); // sanity check for systems with unstable system clock
 
-            timeEnabled = (updateLaterTime < now || updateLaterTime >= tomorrow)
-            if (!timeEnabled)
-            {
-                this.setPromptForUpdateTimer(updateLaterTime);
-            }
+            timeEnabled = (updateLaterTime < now || updateLaterTime >= maxDate)
         }
         let updateStatus = this.updateStatus.get();
         let statusEnabled = updateStatus.isOnline && updateStatus.isValid && updateStatus.getActiveRelease().updateAvailable;
 
-        if (stateEnabled && timeEnabled && statusEnabled)
+        let canUpdateNow: boolean = (stateEnabled && timeEnabled && statusEnabled);
+        if (updateStatus.updatePolicy === UpdatePolicyT.Disable)
         {
-            this.showUpdateDialogValue = true;
+            canUpdateNow = false;
         }
-        this.promptForUpdate.set(this.showUpdateDialogValue);
 
-        if (stateEnabled && statusEnabled && !timeEnabled && updateLaterTime)
+        if (canUpdateNow && canUpdateNow !== this.lastCanUpdateNow)
         {
+            this.showUpdateDialogValue = true; // make the dialog sticky so it can show OK button
+        }
+        this.lastCanUpdateNow  = canUpdateNow;
+        this.promptForUpdate.set(this.showUpdateDialogValue || canUpdateNow);
+
+        if (stateEnabled && statusEnabled && !timeEnabled && updateLaterTime) {
             this.setPromptForUpdateTimer(updateLaterTime);
         }
     }
     private showUpdateDialogValue: boolean = false;
 
     showUpdateDialog(show: boolean = true) {
-        if (this.showUpdateDialogValue !== show)
-        {
+        if (this.showUpdateDialogValue !== show) {
             this.showUpdateDialogValue = show;
-            if (show)
-            {
+            if (show) {
                 this.forceUpdateCheck();
             }
             this.updatePromptForUpdate();
@@ -732,6 +728,7 @@ export class PiPedalModel //implements PiPedalModel
             if (current.currentVersion.length !== 0 && current.currentVersion !== updateStatus.currentVersion) {
                 // !! Server has been updated!!!
                 this.reloadPage();
+                throw new Error("Reloading...");
             }
             if (updateStatus.getActiveRelease().updateAvailable) {
                 this.promptForUpdate.set(true);
@@ -755,7 +752,6 @@ export class PiPedalModel //implements PiPedalModel
     setState(state: State) {
         if (this.state.get() !== state) {
             this.state.set(state);
-            this.updatePromptForUpdate();
         }
     }
 
@@ -809,7 +805,7 @@ export class PiPedalModel //implements PiPedalModel
                 return this.getUpdateStatus(); // detects whether server has been upgraded.
             })
             .then((updateStatus) => {
-
+                
                 return this.getWebSocket().request<any>("plugins");
             })
             .then(data => {
@@ -884,7 +880,7 @@ export class PiPedalModel //implements PiPedalModel
                 this.setState(State.Ready);
             })
             .catch((what) => {
-                this.onError(what);
+                this.onError(what.toString());
             })
     }
     makeSocketServerUrl(hostName: string, port: number): string {
@@ -971,7 +967,7 @@ export class PiPedalModel //implements PiPedalModel
                 return true;
             })
             .catch((error) => {
-                this.setError("Failed to connect to server. " + error);
+                this.setError("Failed to connect to server. " + error.toString());
                 return false;
             })
             .then((succeeded) => {
@@ -1066,7 +1062,7 @@ export class PiPedalModel //implements PiPedalModel
                         return true;
                     })
                     .catch((error) => {
-                        this.setError("Failed to fetch server state.\n\n" + error);
+                        this.setError("Failed to fetch server state.\n\n" + error.toString());
                         return false;
                     });
 
@@ -1150,7 +1146,7 @@ export class PiPedalModel //implements PiPedalModel
                 }
             })
             .catch((error) => {
-                this.setError("Failed to get server state. \n\n" + error);
+                this.setError("Failed to get server state. \n\n" + error.toString());
             });
         let t = this.onVisibilityChanged;
 
@@ -1789,28 +1785,31 @@ export class PiPedalModel //implements PiPedalModel
 
     updateNow(): Promise<void> {
         return new Promise<void>(
-            (accept,reject) => {
+            (accept, reject) => {
                 let updateStatus = this.updateStatus.get();
-                if (updateStatus.isOnline && updateStatus.isValid && updateStatus.getActiveRelease().updateAvailable)
-                {
+                if (updateStatus.isOnline && updateStatus.isValid && updateStatus.getActiveRelease().updateAvailable) {
                     this.setState(State.DownloadingUpdate);
+                    this.expectDisconnect(ReconnectReason.Updating);
                     let url = updateStatus.getActiveRelease().updateUrl;
+
                     nullCast(this.webSocket)
                         .request<void>('updateNow', url)
-                        .then(()=> {
+                        .then(() => {
                             this.setState(State.InstallingUpdate);
                             accept();
                         })
                         .catch(
-                            (e: any)=>{
+                            (e: any) => {
+                                this.expectDisconnect(ReconnectReason.Disconnected);
+
                                 this.setState(State.Ready); // TODO: hopefully we haven't had an intermediate disconnect.
                                 reject(e);
                             });
                 } else {
                     reject(new Error("Invalid  update request."));
                 }
-        
-            }   
+
+            }
         );
     }
 
@@ -1896,8 +1895,9 @@ export class PiPedalModel //implements PiPedalModel
         return this.copyPreset(instanceId, -1);
     }
 
-    showAlert(message: string): void {
-        this.alertMessage.set(message);
+    showAlert(message: string| Error): void {
+        let m = message.toString();
+        this.alertMessage.set(m);
     }
 
 
@@ -2009,8 +2009,7 @@ export class PiPedalModel //implements PiPedalModel
     }
     private isClosed = false;
     close() {
-        if (!this.isClosed)
-        {
+        if (!this.isClosed) {
             this.isClosed = true;
             this.webSocket?.close();
             this.webSocket = undefined;
@@ -2385,7 +2384,7 @@ export class PiPedalModel //implements PiPedalModel
                         resolve(json as number);
                     })
                     .catch((error) => {
-                        reject("Upload failed. " + error);
+                        reject("Upload failed. " + error.toString());
                     })
                     ;
             } catch (error) {
@@ -2775,7 +2774,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    setUpdatePolicy(updatePolicy: UpdatePolicyT) : void {
+    setUpdatePolicy(updatePolicy: UpdatePolicyT): void {
         let iPolicy = updatePolicy as number;
         if (this.webSocket) {
             this.webSocket.send("setUpdatePolicy", iPolicy);

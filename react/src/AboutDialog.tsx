@@ -156,7 +156,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                     })
                     .catch((err) => {
                         // ok in debug builds. File doesn't get placed until install time.
-                        console.log("Failed to fetch open-source notices. " + err);
+                        console.log("Failed to fetch open-source notices. " + err.toString());
                     });
             }
         }
