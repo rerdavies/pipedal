@@ -158,11 +158,40 @@ TEST_CASE("json smart ptrs", "[json_smart_ptrs][Build][Dev]")
     }
 }
 
+template <typename U>
+U & VariantAs(json_variant& v)
+{
+    throw std::runtime_error("Missing specialization.");
+}
+
+    template <>
+    inline json_null &VariantAs<json_null>(json_variant& v) { return v.as_null(); }
+
+    template <>
+    inline bool &VariantAs<bool>(json_variant& v) { return v.as_bool(); }
+
+    template <>
+    inline double &VariantAs<double>(json_variant& v) { return v.as_number(); }
+
+    template <>
+    inline std::string &VariantAs<std::string>(json_variant& v) { return v.as_string(); }
+
+    template <>
+    inline std::shared_ptr<json_object> &VariantAs<std::shared_ptr<json_object>>(json_variant& v) { return v.as_object(); }
+
+    template <>
+    inline std::shared_ptr<json_array> &VariantAs<std::shared_ptr<json_array>>(json_variant& v) { return v.as_array(); }
+
+    template <>
+    inline json_variant &VariantAs<json_variant>(json_variant& v) { return v; }
+
+
+
 template <typename T>
 void TestVariantRoundTrip(const T &value)
 {
     json_variant variant(value);
-    T out = variant.as<T>();
+    T &out = VariantAs<T>(variant);
     REQUIRE(out == value);
 
     std::string output;

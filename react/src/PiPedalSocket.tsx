@@ -41,7 +41,7 @@ export interface PiPedalSocketListener {
     onError: (message: string, exception?: Error) => void;
     onConnectionLost: () => void;
     onReconnect:  () => void;
-    onReconnecting: (retry: number, maxRetries: number) => void;
+    onReconnecting: (retry: number, maxRetries: number) => boolean;
 };
 
 class PiPedalSocket {
@@ -183,6 +183,7 @@ class PiPedalSocket {
 
     handleClose(_event: any): any {
         if (this.retrying) {
+            this.close();
             // treat this as a fatal error.
             if (this.listener) {
                 this.listener.onError("Server connection lost.");
@@ -230,7 +231,9 @@ class PiPedalSocket {
             this.close();
         }
 
-        this.listener.onReconnecting(this.retryCount,MAX_RETRIES);
+        if (!this.listener.onReconnecting(this.retryCount,MAX_RETRIES)) {
+            return;
+        }
         ++this.retryCount;
 
         this.connectInternal_()
@@ -262,6 +265,7 @@ class PiPedalSocket {
                 this.socket.onmessage = null;
                 this.socket.onopen = null;
                 this.socket.close();
+                this.socket = undefined;
             }
         } catch  (ignored)
         {

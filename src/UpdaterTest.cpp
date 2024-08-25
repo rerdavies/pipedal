@@ -17,31 +17,36 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
-#include <string>
+#include "pch.h"
+#include "catch.hpp"
+#include "Updater.hpp"
+#include "json.hpp"
 
-namespace pipedal
-{
-    // exec a command, returning the actual exit code (unlike execXX() or system() )
-    int sysExec(const char *szCommand);
+using namespace std;
 
-    // execute a command, suppressing output.
-    int silentSysExec(const char *szCommand);
+using namespace pipedal;
 
-    struct SysExecOutput
-    {
-        int exitCode;
-        std::string output;
-    };
+TEST_CASE( "updater test", "[updater]" ) {
+    int nCalls = 0;
+    cout << "------ upater test ----" << endl;
+    {    Updater updater;
 
-    SysExecOutput sysExecForOutput(const std::string& command, const std::string&args);
 
-    using ProcessId = int64_t; // platform-agnostic wrapper for pid_t;
-    // Returns a pid or -1 on errror.
-    ProcessId sysExecAsync(const std::string &command);
+        updater.SetUpdateListener(
+            [&nCalls](const UpdateStatus&updateStatus) mutable
+            {
 
-    void sysExecTerminate(ProcessId pid_, int termTimeoutMs = 1000, int killTimeoutMs = 500); // returns the process's exit status.
-    int sysExecWait(ProcessId pid);
+                cout << "updateStatus:" << endl;
+                json_writer writer(cout,false);
+                writer.write(updateStatus);
+                cout << endl;
+                ++nCalls;
+            }
+        );
+    }
+    REQUIRE(nCalls == 1);
 
-    std::string getSelfExePath();
+    
+
+
 }

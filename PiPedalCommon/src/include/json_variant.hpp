@@ -68,6 +68,7 @@ namespace pipedal
     public:
         ~json_variant();
         json_variant();
+        json_variant(json_reader &reader);
         json_variant(json_variant &&);
         json_variant(const json_variant &);
 
@@ -81,9 +82,9 @@ namespace pipedal
         json_variant(const std::shared_ptr<json_array> &value);
         json_variant(json_array &&array);
         json_variant(json_object &&object);
-        json_variant(const char*sz);
+        json_variant(const char *sz);
 
-        json_variant(const void*) = delete; // do NOT allow implicit conversion of pointers to bool
+        json_variant(const void *) = delete; // do NOT allow implicit conversion of pointers to bool
 
         json_variant &operator=(json_variant &&value);
         json_variant &operator=(const json_variant &value);
@@ -94,9 +95,9 @@ namespace pipedal
         json_variant &operator=(json_object &&value);
         json_variant &operator=(json_array &&value);
 
-        json_variant &operator=(const char*sz) { return (*this) = std::string(sz); }
+        json_variant &operator=(const char *sz) { return (*this) = std::string(sz); }
 
-        json_variant &operator=(void*) = delete; // do NOT allow implicit conversion of pointers to bool
+        json_variant &operator=(void *) = delete; // do NOT allow implicit conversion of pointers to bool
 
         void require_type(ContentType content_type) const
         {
@@ -145,6 +146,22 @@ namespace pipedal
             return content.double_value;
         }
 
+        int8_t as_int8() const { return (int8_t)as_number(); }
+
+        uint8_t as_uint8() const { return (uint8_t)as_number(); }
+
+        int16_t as_int16() const { return (int16_t)as_number(); }
+
+        uint16_t as_uint16() const { return (uint16_t)as_number(); }
+
+        int32_t as_int32() const { return (int32_t)as_number(); }
+
+        uint32_t as_uint32() const { return (uint32_t)as_number(); }
+
+        int64_t as_int64() const { return (int64_t)as_number(); }
+
+        uint64_t as_uint64() const { return (uint64_t)as_number(); }
+
         const std::string &as_string() const;
         std::string &as_string();
 
@@ -153,9 +170,6 @@ namespace pipedal
 
         const std::shared_ptr<json_array> &as_array() const;
         std::shared_ptr<json_array> &as_array();
-
-        template <typename U>
-        U &as() { static_assert("Invalid type."); }
 
         // convenience methods for object and array manipulation.
         static json_variant make_object();
@@ -179,6 +193,7 @@ namespace pipedal
         bool operator!=(const json_variant &other) const;
 
         std::string to_string() const;
+
     private:
         void free();
         void write_double_value(json_writer &writer, double value) const;
@@ -212,12 +227,12 @@ namespace pipedal
     class json_array : public JsonSerializable
     {
     private:
-        json_array(const json_array&) { } // deleted.
+        json_array(const json_array &) {} // deleted.
     public:
         using ptr = std::shared_ptr<json_array>;
 
         json_array() { ++allocation_count_; }
-        json_array(json_array&&other);
+        json_array(json_array &&other);
         ~json_array() { --allocation_count_; }
 
         json_variant &at(size_t index);
@@ -247,7 +262,7 @@ namespace pipedal
         }
         using iterator = std::vector<json_variant>::iterator;
         using const_iterator = std::vector<json_variant>::const_iterator;
-        
+
         iterator begin() { return values.begin(); }
         iterator end() { return values.end(); }
         const_iterator begin() const { return values.begin(); }
@@ -266,13 +281,13 @@ namespace pipedal
     class json_object : public JsonSerializable
     {
     private:
-        json_object(const json_object&) { } // deleted.
+        json_object(const json_object &) {} // deleted.
     public:
         using ptr = std::shared_ptr<json_object>;
 
-        json_object() { ++ allocation_count_;}
-        json_object(json_object&&other);
-        ~json_object() { --allocation_count_;}
+        json_object() { ++allocation_count_; }
+        json_object(json_object &&other);
+        ~json_object() { --allocation_count_; }
 
         size_t size() const { return values.size(); }
         json_variant &at(const std::string &index);
@@ -285,25 +300,24 @@ namespace pipedal
         bool operator!=(const json_object &other) const { return (!((*this) == other)); }
         bool contains(const std::string &index) const;
 
-
-        using values_t = std::vector< std::pair<std::string, json_variant> >;
+        using values_t = std::vector<std::pair<std::string, json_variant>>;
         using iterator = values_t::iterator;
         using const_iterator = values_t::const_iterator;
-        
+
         iterator begin() { return values.begin(); }
         iterator end() { return values.end(); }
         const_iterator begin() const { return values.begin(); }
         const_iterator end() const { return values.end(); }
 
-        iterator find(const std::string& key);
-        const_iterator find(const std::string& key) const;
-
+        iterator find(const std::string &key);
+        const_iterator find(const std::string &key) const;
 
         // strictly for testing purposes. Not thread-safe.
-        static int64_t allocation_count() 
+        static int64_t allocation_count()
         {
             return allocation_count_;
         }
+
     private:
         virtual void read_json(json_reader &reader);
         virtual void write_json(json_writer &writer) const;
@@ -316,27 +330,6 @@ namespace pipedal
 
     inline std::string &json_variant::memString() { return *(std::string *)content.mem; }
     inline const std::string &json_variant::memString() const { return *(const std::string *)content.mem; }
-
-    template <>
-    inline json_null &json_variant::as<json_null>() { return as_null(); }
-
-    template <>
-    inline bool &json_variant::as<bool>() { return as_bool(); }
-
-    template <>
-    inline double &json_variant::as<double>() { return as_number(); }
-
-    template <>
-    inline std::string &json_variant::as<std::string>() { return as_string(); }
-
-    template <>
-    inline std::shared_ptr<json_object> &json_variant::as<std::shared_ptr<json_object>>() { return as_object(); }
-
-    template <>
-    inline std::shared_ptr<json_array> &json_variant::as<std::shared_ptr<json_array>>() { return as_array(); }
-
-    template <>
-    inline json_variant &json_variant::as<json_variant>() { return *this; }
 
     inline json_variant::object_ptr &json_variant::memObject()
     {
@@ -525,22 +518,23 @@ namespace pipedal
         return !(*this == other);
     }
 
-
     // Holds a string but is json_read and json_written as an unqoted json object.
-    class raw_json_string: public JsonSerializable {
-        public:
-            raw_json_string() { }
-            raw_json_string(const std::string &value) : value(value) {}
-            const std::string& as_string() const { return value; }
+    class raw_json_string : public JsonSerializable
+    {
+    public:
+        raw_json_string() {}
+        raw_json_string(const std::string &value) : value(value) {}
+        const std::string &as_string() const { return value; }
 
-            void Set(const std::string&value) { this->value = value; }
+        void Set(const std::string &value) { this->value = value; }
 
-    private: 
-
-        virtual void write_json(json_writer &writer) const {
+    private:
+        virtual void write_json(json_writer &writer) const
+        {
             writer.write_raw(value.c_str());
         }
-        virtual void read_json(json_reader &reader) {
+        virtual void read_json(json_reader &reader)
+        {
             throw std::logic_error("Not implemented.");
         }
 

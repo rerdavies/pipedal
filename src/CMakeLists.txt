@@ -89,12 +89,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set (USE_SANITIZE False)
 
+
 if (!ENABLE_VST3)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-psabi")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-psabi -DARCHITECTURE=${CPACK_SYSTEM_NAME}")
 else()
     set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
 endif()
 
+EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
+message(STATUS DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
+
+add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
@@ -132,6 +137,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    Updater.cpp Updater.hpp
     Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp
@@ -278,7 +284,8 @@ add_executable(pipedaltest testMain.cpp
 
     InvertingMutexTest.cpp
     jsonTest.cpp
-
+    UpdaterTest.cpp
+    
     utilTest.cpp
     
     AlsaDriverTest.cpp

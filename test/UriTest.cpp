@@ -22,7 +22,7 @@
 #include <Uri.hpp>
 #include <string>
 
-using namespace piddle;
+using namespace pipedal;
 
 TEST_CASE( "uri test", "[uri]" ) {
 

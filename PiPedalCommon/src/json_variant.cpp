@@ -552,6 +552,11 @@ json_variant::json_variant(const char*sz)
     
 }
 
+json_variant::json_variant(json_reader&reader)
+{
+    this->read_json(reader);
+}
+
 
 
 /*static*/ json_null json_null::instance;

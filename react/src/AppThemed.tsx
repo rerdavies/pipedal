@@ -48,7 +48,7 @@ import SettingsDialog from './SettingsDialog';
 import AboutDialog from './AboutDialog';
 import BankDialog from './BankDialog';
 
-import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo } from './PiPedalModel';
+import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo,wantsLoadingScreen } from './PiPedalModel';
 import ZoomedUiControl from './ZoomedUiControl'
 import MainPage from './MainPage';
 import DialogContent from '@mui/material/DialogContent';
@@ -60,6 +60,7 @@ import RenameDialog from './RenameDialog';
 import JackStatusView from './JackStatusView';
 import { Theme } from '@mui/material/styles';
 import { isDarkMode } from './DarkMode';
+import UpdateDialog from './UpdateDialog';
 
 import { ReactComponent as RenameOutlineIcon } from './svg/drive_file_rename_outline_black_24dp.svg';
 import { ReactComponent as SaveBankAsIcon } from './svg/ic_save_bank_as.svg';
@@ -270,6 +271,7 @@ type AppState = {
     tinyToolBar: boolean;
     alertDialogOpen: boolean;
     alertDialogMessage: string;
+    updateDialogOpen: boolean;
     isSettingsDialogOpen: boolean;
     onboarding: boolean;
     isDebug: boolean;
@@ -324,6 +326,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             alertDialogMessage: "",
             presetName: this.model_.presets.get().getSelectedText(),
             isSettingsDialogOpen: false,
+            updateDialogOpen: false,
             onboarding: false,
             isDebug: true,
             presetChanged: this.model_.presets.get().presetChanged,
@@ -339,8 +342,10 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
         };
 
+        this.promptForUpdateHandler = this.promptForUpdateHandler.bind(this);
         this.errorChangeHandler_ = this.setErrorMessage.bind(this);
-        this.unmountListener = this.unmountListener.bind(this);
+        this.beforeUnloadListener = this.beforeUnloadListener.bind(this);
+        this.unloadListener = this.unloadListener.bind(this);
         this.stateChangeHandler_ = this.setDisplayState.bind(this);
         this.presetChangedHandler = this.presetChangedHandler.bind(this);
         this.alertMessageChangedHandler = this.alertMessageChangedHandler.bind(this);
@@ -510,18 +515,26 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         this.setState({ isFullScreen: !this.state.isFullScreen });
     }
 
-    private unmountListener(e: Event) {
-        if (this.model_.state.get() === State.Ready && !this.model_.isAndroidHosted()) {
-            e.preventDefault();
-            (e as any).returnValue = "Are you sure you want to leave this page?";
-            return "Are you sure you want to leave this page?";
-        }
+    private unloadListener(e: Event) {
+        this.model_.close();
         return undefined;
+    }
+
+    private beforeUnloadListener(e: Event) {
+        this.model_.close();
+        return undefined;
+    }
+    promptForUpdateHandler(newValue: boolean) {
+        if (this.state.updateDialogOpen !== newValue)
+        {
+            this.setState({updateDialogOpen: newValue});
+        }
     }
     componentDidMount() {
 
         super.componentDidMount();
-        window.addEventListener("beforeunload", this.unmountListener);
+        window.addEventListener("beforeunload", this.beforeUnloadListener);
+        window.addEventListener("unload", this.unloadListener);
 
         this.model_.errorMessage.addOnChangedHandler(this.errorChangeHandler_);
         this.model_.state.addOnChangedHandler(this.stateChangeHandler_);
@@ -529,6 +542,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         this.model_.alertMessage.addOnChangedHandler(this.alertMessageChangedHandler);
         this.model_.banks.addOnChangedHandler(this.banksChangedHandler);
         this.model_.showStatusMonitor.addOnChangedHandler(this.showStatusMonitorHandler);
+        this.model_.promptForUpdate.addOnChangedHandler(this.promptForUpdateHandler);
         this.alertMessageChangedHandler();
     }
 
@@ -550,13 +564,16 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     componentWillUnmount() {
         super.componentWillUnmount();
-        window.removeEventListener("beforeunload", this.unmountListener);
+        window.removeEventListener("beforeunload", this.beforeUnloadListener);
 
+        this.model_.promptForUpdate.removeOnChangedHandler(this.promptForUpdateHandler);
         this.model_.errorMessage.removeOnChangedHandler(this.errorChangeHandler_);
         this.model_.state.removeOnChangedHandler(this.stateChangeHandler_);
         this.model_.pedalboard.removeOnChangedHandler(this.presetChangedHandler);
         this.model_.banks.removeOnChangedHandler(this.banksChangedHandler);
         this.model_.banks.removeOnChangedHandler(this.showStatusMonitorHandler);
+
+        this.model_.close();
 
     }
 
@@ -661,6 +678,10 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 return "Applying\u00A0changes...";
             case State.ReloadingPlugins:
                 return "Reloading\u00A0plugins...";
+            case State.DownloadingUpdate:
+                return "Downloading update...";
+            case State.InstallingUpdate:
+                return "Installing update....";
             default:
                 return "Reconnecting...";
         }
@@ -840,7 +861,10 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     </div>
                 </main>
                 <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
-                <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
+                { (this.state.aboutDialogOpen)&&
+                (
+                    <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
+                )}
                 <SettingsDialog
                     open={this.state.isSettingsDialogOpen}
                     onboarding={this.state.onboarding}
@@ -872,6 +896,16 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
                     }
                 />
+                {
+                    (this.state.updateDialogOpen)
+                    && (
+                        <UpdateDialog open={true} />
+                    )
+                }
+                {this.state.showStatusMonitor && (<JackStatusView />)}
+
+
+
                 <DialogEx
                     tag="Alert"
                     open={this.state.alertDialogOpen}
@@ -893,14 +927,13 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                         </Button>
                     </DialogActions>
                 </DialogEx>
-                {this.state.showStatusMonitor && (<JackStatusView />)}
+
 
                 <div className={classes.errorContent} style={{
                     display: (
-                        this.state.displayState === State.Reconnecting 
-                        || this.state.displayState === State.ApplyingChanges
-                        || this.state.displayState === State.ReloadingPlugins)
+                        wantsLoadingScreen(this.state.displayState)
                         ? "block" : "none"
+                    )
                 }}
                 >
                     <div className={classes.errorContentMask} />

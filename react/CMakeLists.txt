@@ -21,6 +21,7 @@ add_custom_command(
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/react
 
     DEPENDS 
+    src/Updater.tsx
     src/OkCancelDialog.tsx
     src/PluginControl.tsx
     src/svg/ic_save_bank_as.svg

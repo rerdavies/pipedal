@@ -73,6 +73,11 @@ PiPedalModel::PiPedalModel()
 #else
     this->jackServerSettings = this->storage.GetJackServerSettings();
 #endif
+    updater.SetUpdateListener(
+        [this](const UpdateStatus&updateStatus)
+        {
+            this->OnUpdateStatusChanged(updateStatus);
+        });
 }
 
 void PiPedalModel::Close()
@@ -386,9 +391,9 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
 
             item->stateUpdateCount(item->stateUpdateCount() + 1);
 
-            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
 
             Lv2PluginState newState = item->lv2State();
+            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
             for (size_t i = 0; i < subscribers.size(); ++i)
             {
                 t[i] = this->subscribers[i];
@@ -2171,4 +2176,50 @@ void PiPedalModel::OnLv2PluginsChanged()
 void PiPedalModel::SetRestartListener(std::function<void(void)> &&listener)
 {
     this->restartListener = std::move(listener);
+}
+
+void PiPedalModel::OnUpdateStatusChanged(const UpdateStatus&updateStatus)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    if (this->currentUpdateStatus != updateStatus)
+    {
+        this->currentUpdateStatus = updateStatus;
+        FireUpdateStatusChanged(this->currentUpdateStatus);
+    }
+}
+void PiPedalModel::FireUpdateStatusChanged(const UpdateStatus&updateStatus)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    std::vector<IPiPedalModelSubscriber *> t;
+    t.reserve(subscribers.size());
+
+    for (auto subscriber: subscribers)
+    {
+        t.push_back(subscriber);
+    }
+
+    for (auto subscriber: t)
+    {
+        subscriber->OnUpdateStatusChanged(updateStatus);
+    }
+}
+UpdateStatus PiPedalModel::GetUpdateStatus()  {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return currentUpdateStatus;
+}
+
+void PiPedalModel::UpdateNow(const std::string&updateUrl)
+{
+    sleep(5);
+    throw std::runtime_error("Not implemented yet.");
+
+}
+void PiPedalModel::ForceUpdateCheck() {
+    updater.ForceUpdateCheck();
+}
+void PiPedalModel::SetUpdatePolicy(UpdatePolicyT updatePolicy)
+{
+    updater.SetUpdatePolicy(updatePolicy);
 }

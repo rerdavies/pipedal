@@ -393,6 +393,12 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 showThemeSelectDialog: true
             });
         }
+
+        handleCheckForUpdates()
+        {
+            this.model.showUpdateDialog();
+        }
+        
         handleMidiMessageSettings() {
             this.setState({
                 showSystemMidiBindingsDialog: true
@@ -785,6 +791,18 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             </div>
                                         </div>
                                     </ButtonBase>
+
+                                    <ButtonBase
+                                        className={classes.setting}
+                                        onClick={() => { this.handleCheckForUpdates(); }}  >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                Check for updates...</Typography>
+                                        </div>
+                                    </ButtonBase>
+
+
 
                                     <ButtonBase className={classes.setting} disabled={disableShutdown}
                                         onClick={() => this.handleRestart()}  >
