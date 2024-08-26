@@ -24,11 +24,11 @@ import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { BankIndexEntry, BankIndex } from './Banks';
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
-import Slide, {SlideProps} from '@mui/material/Slide';
+import Slide, { SlideProps } from '@mui/material/Slide';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import { Theme, createStyles } from '@mui/material/styles';
-import { WithStyles,withStyles } from "@mui/styles";
+import { WithStyles, withStyles } from "@mui/styles";
 import DraggableGrid, { ScrollDirection } from './DraggableGrid';
 import Fade from '@mui/material/Fade';
 
@@ -46,8 +46,12 @@ import MenuItem from '@mui/material/MenuItem';
 import DialogEx from './DialogEx';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import { ReactComponent as DownloadIcon} from './svg/file_download_black_24dp.svg';
-import { ReactComponent as UploadIcon} from './svg/file_upload_black_24dp.svg';
+import { ReactComponent as DownloadIcon } from './svg/file_download_black_24dp.svg';
+import { ReactComponent as UploadIcon } from './svg/file_upload_black_24dp.svg';
+import { ReactComponent as BankIcon } from './svg/ic_bank.svg';
+//import PublishIcon from '@mui/icons-material/Publish';
+// import FileDownloadIcon from '@mui/icons-material/FileDownload';
+// import AppsIcon from '@mui/icons-material/Apps';
 
 interface BankDialogProps extends WithStyles<typeof styles> {
     show: boolean;
@@ -73,8 +77,8 @@ interface BankDialogState {
 
 const styles = (theme: Theme) => createStyles({
     listIcon: {
-        width: 24, height: 24, 
-        opacity: 0.6, fill: theme.palette.text.primary 
+        width: 24, height: 24,
+        opacity: 0.6, fill: theme.palette.text.primary
     },
     dialogAppBar: {
         position: 'relative',
@@ -166,7 +170,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                     uploadAfter = await this.model.uploadBank(fileList[i], uploadAfter);
                 }
             } catch (error) {
-                this.model.showAlert(error +"");
+                this.model.showAlert(error + "");
             };
             return uploadAfter;
         }
@@ -300,11 +304,11 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                     >
                         <SelectHoverBackground selected={bankEntry.instanceId === selectedItem} showHover={true} />
                         <div className={classes.itemFrame}>
-                            <div className={classes.iconFrame}>
-                                <img src="img/ic_bank.svg" className={classes.itemIcon} alt="" />
+                            <div className={classes.ListItemIcon}>
+                                <BankIcon className={classes.listIcon}/>
                             </div>
                             <div className={classes.itemLabel}>
-                                <Typography noWrap>
+                                <Typography noWrap variant="body2" color="textPrimary">
                                     {bankEntry.name}
                                 </Typography>
                             </div>
@@ -405,8 +409,8 @@ const BankDialog = withStyles(styles, { withTheme: true })(
             return (
                 <DialogEx tag="bank" fullScreen open={this.props.show}
                     onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}
-                    style={{userSelect: "none"}}
-                    >
+                    style={{ userSelect: "none" }}
+                >
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <AppBar className={classes.dialogAppBar} style={{ display: this.isEditMode() ? "none" : "block" }} >
@@ -482,8 +486,8 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                                 >
                                                     <MenuItem onClick={() => { this.handleDownloadBank(); }} >
                                                         <ListItemIcon>
-                                                            <DownloadIcon className="listIcon"
-                                                                />
+                                                            <DownloadIcon className={classes.listIcon}
+                                                            />
                                                         </ListItemIcon>
                                                         <ListItemText>
                                                             Download bank
@@ -494,9 +498,8 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                                                         <MenuItem onClick={(e) => this.handleUploadBank()}>
 
 
-                                                            <ListItemIcon>
-                                                            <UploadIcon className="listIcon"
-                                                                />
+                                                            <ListItemIcon >
+                                                                <UploadIcon className={classes.listIcon} />
                                                             </ListItemIcon>
                                                             <ListItemText>
                                                                 Upload bank
@@ -541,15 +544,15 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                     />
 
                     <DialogEx tag="deletePrompt" open={this.state.showDeletePrompt} onClose={() => this.handleDeletePromptClose()}
-                        style={{userSelect: "none"}}>
+                        style={{ userSelect: "none" }}>
                         <DialogContent>
-                                <Typography>Are you sure you want to delete bank '{this.getSelectedBankName()}'?</Typography>
+                            <Typography>Are you sure you want to delete bank '{this.getSelectedBankName()}'?</Typography>
                         </DialogContent>
                         <DialogActions>
-                            <Button variant="dialogSecondary" onClick={()=> this.handleDeletePromptClose()} color="primary">
+                            <Button variant="dialogSecondary" onClick={() => this.handleDeletePromptClose()} color="primary">
                                 Cancel
                             </Button>
-                            <Button variant="dialogPrimary" onClick={()=> this.handleDeletePromptOk()}  color="secondary" >
+                            <Button variant="dialogPrimary" onClick={() => this.handleDeletePromptOk()} color="secondary" >
                                 DELETE
                             </Button>
 

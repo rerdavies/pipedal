@@ -65,6 +65,8 @@ import UpdateDialog from './UpdateDialog';
 import { ReactComponent as RenameOutlineIcon } from './svg/drive_file_rename_outline_black_24dp.svg';
 import { ReactComponent as SaveBankAsIcon } from './svg/ic_save_bank_as.svg';
 import { ReactComponent as EditBanksIcon } from './svg/ic_edit_banks.svg';
+
+import { ReactComponent as EditBanksIcon } from './svg/ic_edit_banks.svg';
 import { ReactComponent as SettingsIcon } from './svg/ic_settings.svg';
 import { ReactComponent as HelpOutlineIcon } from './svg/ic_help_outline.svg';
 import DialogEx from './DialogEx';
@@ -808,19 +810,19 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                             <ListItemIcon >
                                 <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
                             </ListItemIcon>
-                            <ListItemText primary='Rename Bank' />
+                            <ListItemText primary='Rename bank' />
                         </ListItem>
                         <ListItem button key='SaveBank' onClick={() => { this.handleDrawerSaveBankAs() }} >
                             <ListItemIcon>
                                 <SaveBankAsIcon color="inherit" className={classes.menuIcon} />
                             </ListItemIcon>
-                            <ListItemText primary='Save As New Bank' />
+                            <ListItemText primary='Save as new bank' />
                         </ListItem>
                         <ListItem button key='EditBanks' onClick={() => { this.handleDrawerManageBanks(); }}>
                             <ListItemIcon>
                                 <EditBanksIcon color="inherit" className={classes.menuIcon} />
                             </ListItemIcon>
-                            <ListItemText primary='Manage Banks...' />
+                            <ListItemText primary='Manage banks...' />
                         </ListItem>
                     </List>
                     <Divider />
