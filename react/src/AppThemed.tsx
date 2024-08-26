@@ -65,8 +65,6 @@ import UpdateDialog from './UpdateDialog';
 import { ReactComponent as RenameOutlineIcon } from './svg/drive_file_rename_outline_black_24dp.svg';
 import { ReactComponent as SaveBankAsIcon } from './svg/ic_save_bank_as.svg';
 import { ReactComponent as EditBanksIcon } from './svg/ic_edit_banks.svg';
-
-import { ReactComponent as EditBanksIcon } from './svg/ic_edit_banks.svg';
 import { ReactComponent as SettingsIcon } from './svg/ic_settings.svg';
 import { ReactComponent as HelpOutlineIcon } from './svg/ic_help_outline.svg';
 import DialogEx from './DialogEx';
