@@ -17,12 +17,12 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import React, { TouchEvent, PointerEvent, SyntheticEvent } from 'react';import { Theme } from '@mui/material/styles';
+import React, { TouchEvent, PointerEvent, SyntheticEvent } from 'react'; import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import createStyles from '@mui/styles/createStyles';
 import { PiPedalModel, PiPedalModelFactory, ZoomedControlInfo } from './PiPedalModel';
-import {ReactComponent as DialIcon} from './svg/fx_dial.svg';
+import { ReactComponent as DialIcon } from './svg/fx_dial.svg';
 
 const SELECTED_OPACITY = 0.8;
 const DEFAULT_OPACITY = 0.6;
@@ -36,7 +36,7 @@ const DEAD_ZONE_SIZE = 5;
 
 const styles = (theme: Theme) => createStyles({
     dialIcon: {
-        overscrollBehavior: "none", touchAction: "none", 
+        overscrollBehavior: "none", touchAction: "none",
         fill: theme.palette.text.primary,
         opacity: DEFAULT_OPACITY,
 
@@ -49,7 +49,7 @@ interface ZoomedDialProps extends WithStyles<typeof styles> {
     size: number,
 
     controlInfo: ZoomedControlInfo | undefined,
-
+    onDoubleTap(): void,
     onPreviewValue(value: number): void,
     onSetValue(value: number): void
 }
@@ -81,12 +81,28 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
             this.onPointerLostCapture = this.onPointerLostCapture.bind(this);
 
         }
+        onPointerDoubleTap() {
+            this.props.onDoubleTap();
+        }
+
+        private lastTapMs: number = 0;
+
+        onPointerTap() {
+            let tapTime = Date.now();
+            let dT = tapTime-this.lastTapMs;
+            this.lastTapMs = tapTime;
+
+            if (dT < 500)
+            {
+                this.onPointerDoubleTap();
+            }
+        }
 
         onPointerUp(e: PointerEvent<SVGSVGElement>) {
 
             if (this.isCapturedPointer(e)) {
                 --this.pointersDown;
-                
+
 
                 e.preventDefault();
                 this.updateAngle(e);
@@ -94,17 +110,25 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
                 this.releaseCapture(e);
 
+                if (this.isTap) {
+                    let ms = Date.now() - this.tapStartMs;
+                    if (ms < 200) {
+                        this.onPointerTap();
+                    }
+                }
+
+
+
             } else {
                 --this.pointersDown;
-                
+
             }
         }
 
 
-        releaseCapture(e: PointerEvent<SVGSVGElement>)
-        {
+        releaseCapture(e: PointerEvent<SVGSVGElement>) {
             let img = this.imgRef.current;
-            
+
             if (img && img.style) {
                 img.releasePointerCapture(e.pointerId);
                 img.style.opacity = "" + DEFAULT_OPACITY;
@@ -117,8 +141,8 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
             }
             document.body.removeEventListener(
                 "pointerdown",
-                this.onBodyPointerDownCapture,true
-                );
+                this.onBodyPointerDownCapture, true
+            );
 
             this.mouseDown = false;
 
@@ -128,7 +152,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
         onPointerLostCapture(e: PointerEvent<SVGSVGElement>) {
             if (this.isCapturedPointer(e)) {
                 --this.pointersDown;
-                
+
 
                 this.releaseCapture(e);
             }
@@ -193,7 +217,7 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
                 let uiControl = this.props.controlInfo.uiControl;
 
-                return r * (uiControl.max_value-uiControl.min_value)+uiControl.min_value;
+                return r * (uiControl.max_value - uiControl.min_value) + uiControl.min_value;
             }
             return 0;
         }
@@ -214,12 +238,12 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
             if (this.imgRef.current) {
                 let img = this.imgRef.current;
                 let rc = img.getBoundingClientRect();
-                let x = e.clientX - (rc.left+ rc.width / 2);
+                let x = e.clientX - (rc.left + rc.width / 2);
                 let y = e.clientY - (rc.top + rc.height / 2);
 
                 // dead zone in center of image. 
 
-                if (x*x+y*y < DEAD_ZONE_SIZE*DEAD_ZONE_SIZE) return NaN;
+                if (x * x + y * y < DEAD_ZONE_SIZE * DEAD_ZONE_SIZE) return NaN;
 
                 let angle = -Math.atan2(-y, x) * 180 / Math.PI + 90;
 
@@ -229,7 +253,8 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
         }
         captureElement?: SVGSVGElement;
         pointersDown: number = 0;
-
+        private isTap: boolean = false;
+        private tapStartMs: number = 0;
         onPointerDown(e: PointerEvent<SVGSVGElement>): void {
             if (!this.mouseDown && this.isValidPointer(e)) {
                 e.preventDefault();
@@ -238,6 +263,10 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
 
                 this.mouseDown = true;
+
+                this.isTap = true;
+                this.tapStartMs = Date.now();
+
                 this.pointersDown = 1;
                 this.pointerId = e.pointerId;
                 this.pointerType = e.pointerType;
@@ -276,12 +305,25 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
 
         }
 
+        clickSlop() {
+            return 3.5;  // maybe larger on touch devices.
+        }
 
 
         onPointerMove(e: PointerEvent<SVGSVGElement>): void {
             if (this.isCapturedPointer(e)) {
                 e.preventDefault();
-                this.updateAngle(e)
+                this.updateAngle(e);
+
+
+                let x = e.clientX;
+                let y = e.clientY;
+                let dx = x - this.startX;
+                let dy = y - this.startY;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance >= this.clickSlop()) {
+                    this.isTap = false;
+                }
             }
         }
 
@@ -297,20 +339,18 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
             let angle: number = this.pointerToAngle(e);
             if (!isNaN(angle)) {
                 if (!isNaN(this.lastPointerAngle)) {
-                    let dAngle = angle-this.lastPointerAngle;
+                    let dAngle = angle - this.lastPointerAngle;
                     while (dAngle > 180) dAngle -= 360;
                     while (dAngle < -180) dAngle += 360;
 
                     let scale = 1.0;
-                    if (this.pointersDown === 2)
-                    {
+                    if (this.pointersDown === 2) {
                         scale = FINE_RANGE_SCALE;
-                    } else if (this.pointersDown >= 3)
-                    {
+                    } else if (this.pointersDown >= 3) {
                         scale = ULTRA_FINE_RANGE_SCALE;
                     }
 
-                    this.currentAngle += dAngle*scale;
+                    this.currentAngle += dAngle * scale;
                     let previewValue = this.angleToValue(this.currentAngle);
                     this.previewValue(previewValue);
                     this.props.onPreviewValue(previewValue);
@@ -318,21 +358,17 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
                 this.lastPointerAngle = angle;
             }
         }
-        makeRotationTransform(angle: number): string
-        {
+        makeRotationTransform(angle: number): string {
             return "rotate(" + angle + "deg)";
         }
 
-        getDefaultRotationTransform(): string
-        {
+        getDefaultRotationTransform(): string {
             let v = this.getCurrentValue();
             let a = this.valueToAngle(v);
             return this.makeRotationTransform(a);
         }
-        previewValue(value: number): void
-        {
-            if (this.imgRef.current)
-            {
+        previewValue(value: number): void {
+            if (this.imgRef.current) {
                 let img = this.imgRef.current;
                 let angle = this.valueToAngle(value);
                 img.style.transform = this.makeRotationTransform(angle);
@@ -363,8 +399,8 @@ const ZoomedDial = withStyles(styles, { withTheme: true })(
             return (
                 <DialIcon ref={this.imgRef} className={classes.dialIcon}
                     style={{
-                         transform: this.getDefaultRotationTransform(),
-                         width: this.props.size, height: this.props.size, 
+                        transform: this.getDefaultRotationTransform(),
+                        width: this.props.size, height: this.props.size,
                     }}
                     onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
                     onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}

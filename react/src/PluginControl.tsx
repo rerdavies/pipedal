@@ -427,7 +427,6 @@ const PluginControl =
                 }
             }
             onPointerTap() {
-                // yyy
                 let tapTime = Date.now();
                 let dT = tapTime-this.lastTapMs;
                 this.lastTapMs = tapTime;
