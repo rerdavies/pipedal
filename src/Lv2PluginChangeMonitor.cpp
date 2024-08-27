@@ -27,6 +27,7 @@
 #include <chrono>
 #include <sys/eventfd.h>
 #include "PiPedalModel.hpp"
+#include "util.hpp"
 
 using namespace pipedal;
 
@@ -57,6 +58,7 @@ Lv2PluginChangeMonitor::~Lv2PluginChangeMonitor()
 
 void Lv2PluginChangeMonitor::ThreadProc()
 {
+    SetThreadName("Lv2Change");
     using clock = std::chrono::steady_clock;
 
     int inotify_fd = inotify_init();

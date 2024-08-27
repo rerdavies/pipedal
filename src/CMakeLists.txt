@@ -220,6 +220,7 @@ set (PIPEDAL_SOURCES
 
     JackDriver.cpp JackDriver.hpp
     AlsaDriver.cpp AlsaDriver.hpp
+    DummyAudioDriver.cpp DummyAudioDriver.hpp
     AudioDriver.hpp
     AudioConfig.hpp
 

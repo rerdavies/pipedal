@@ -169,9 +169,8 @@ namespace pipedal
 
         void UpdateRealtimeVuSubscriptions();
         void UpdateRealtimeMonitorPortSubscriptions();
-        void OnVuUpdate(const std::vector<VuUpdate> &updates);
 
-        void RestartAudio();
+        void RestartAudio(bool useDummyAudioDriver = false);
 
         std::vector<RealtimePatchPropertyRequest *> outstandingParameterRequests;
 
@@ -203,6 +202,8 @@ namespace pipedal
     public:
         PiPedalModel();
         virtual ~PiPedalModel();
+
+        void WaitForAudioDeviceToComeOnline();
 
         UpdateStatus GetUpdateStatus();
         void UpdateNow(const std::string&updateUrl);

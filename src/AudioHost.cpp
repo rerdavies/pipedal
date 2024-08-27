@@ -24,6 +24,7 @@
 
 #include "JackDriver.hpp"
 #include "AlsaDriver.hpp"
+#include "DummyAudioDriver.hpp"
 #include "AtomConverter.hpp"
 
 using namespace pipedal;
@@ -49,6 +50,7 @@ using namespace pipedal;
 #include <fstream>
 #include "Lv2EventBufferWriter.hpp"
 #include "InheritPriorityMutex.hpp"
+#include <atomic>
 
 #ifdef __linux__
 #include <sched.h>
@@ -105,73 +107,88 @@ static std::string GetGovernor()
     return pipedal::GetCpuGovernor();
 }
 
-
-class SystemMidiBinding {
+class SystemMidiBinding
+{
 private:
     MidiBinding currentBinding;
     bool controlState = false;
-public:
-    void SetBinding(const MidiBinding&binding) { currentBinding = binding; controlState = false; }
 
-    bool IsMatch(const MidiEvent&event);
-    bool IsTriggered(const MidiEvent&event);
+public:
+    void SetBinding(const MidiBinding &binding)
+    {
+        currentBinding = binding;
+        controlState = false;
+    }
+
+    bool IsMatch(const MidiEvent &event);
+    bool IsTriggered(const MidiEvent &event);
 };
 
 bool SystemMidiBinding::IsTriggered(const MidiEvent &event)
 {
     switch (currentBinding.bindingType())
     {
-        case BINDING_TYPE_NOTE:
-        {
-            if (event.size != 3) return false;
-            auto  command = event.buffer[0] & 0xF0;
-            if (command != 0x90) return false; // MIDI note on
-            if (event.buffer[1] != currentBinding.note()) return false;
-            return event.buffer[2] != 0;  // note-on with velicity of zero is a note-off.
-        }
-        break;
-        case BINDING_TYPE_CONTROL:
-        {
-            if (event.size != 3) return false;
-            auto  command = event.buffer[0] & 0xF0;
-            if (command != 0xB0) return false;
-            if (event.buffer[1] != currentBinding.control()) return false;
-            bool state = event.buffer[2] >= 0x64;
-            if (state != this->controlState)
-            {
-                this->controlState = state;
-                return state;
-            }
+    case BINDING_TYPE_NOTE:
+    {
+        if (event.size != 3)
             return false;
-        }
-        break;
-        default:
+        auto command = event.buffer[0] & 0xF0;
+        if (command != 0x90)
+            return false; // MIDI note on
+        if (event.buffer[1] != currentBinding.note())
             return false;
+        return event.buffer[2] != 0; // note-on with velicity of zero is a note-off.
+    }
+    break;
+    case BINDING_TYPE_CONTROL:
+    {
+        if (event.size != 3)
+            return false;
+        auto command = event.buffer[0] & 0xF0;
+        if (command != 0xB0)
+            return false;
+        if (event.buffer[1] != currentBinding.control())
+            return false;
+        bool state = event.buffer[2] >= 0x64;
+        if (state != this->controlState)
+        {
+            this->controlState = state;
+            return state;
+        }
+        return false;
+    }
+    break;
+    default:
+        return false;
     }
 }
 
-bool SystemMidiBinding::IsMatch(const MidiEvent&event)
+bool SystemMidiBinding::IsMatch(const MidiEvent &event)
 {
     switch (currentBinding.bindingType())
     {
-        case BINDING_TYPE_NOTE:
-        {
-            if (event.size != 3) return false;
-            auto  command = event.buffer[0] & 0xF0;
-            if (command != 0x80 && command != 0x90) return false; // note on/note off.
-            return event.buffer[1] == currentBinding.note();
-        }
-        break;
-        case BINDING_TYPE_CONTROL:
-        {
-            if (event.size != 3) return false;
-            auto  command = event.buffer[0] & 0xF0;
-            if (command != 0xB0) return false;
-            return event.buffer[1] == currentBinding.control();
-        }
-        break;
-        default:
+    case BINDING_TYPE_NOTE:
+    {
+        if (event.size != 3)
             return false;
+        auto command = event.buffer[0] & 0xF0;
+        if (command != 0x80 && command != 0x90)
+            return false; // note on/note off.
+        return event.buffer[1] == currentBinding.note();
+    }
+    break;
+    case BINDING_TYPE_CONTROL:
+    {
+        if (event.size != 3)
+            return false;
+        auto command = event.buffer[0] & 0xF0;
+        if (command != 0xB0)
+            return false;
+        return event.buffer[1] == currentBinding.control();
+    }
+    break;
+    default:
+        return false;
     }
 }
 
@@ -180,7 +197,6 @@ class AudioHostImpl : public AudioHost, private AudioDriverHost
 private:
     IHost *pHost = nullptr;
     LV2_Atom_Forge inputWriterForge;
-
 
     std::mutex atomConverterMutex;
     AtomConverter atomConverter;
@@ -254,7 +270,7 @@ private:
 
     Uris uris;
 
-    AudioDriver *audioDriver = nullptr;
+    std::unique_ptr<AudioDriver> audioDriver;
 
     std::recursive_mutex mutex;
     int64_t overrunGracePeriodSamples = 0;
@@ -282,7 +298,9 @@ private:
     SystemMidiBinding prevMidiBinding;
 
     JackChannelSelection channelSelection;
-    bool active = false;
+    std::atomic<bool> active = false;
+    std::atomic<bool> audioStopped = false;
+    std::atomic<bool> isDummyAudioDriver = false;
 
     std::shared_ptr<Lv2Pedalboard> currentPedalboard;
     std::vector<std::shared_ptr<Lv2Pedalboard>> activePedalboards; // pedalboards that have been sent to the audio queue.
@@ -307,7 +325,6 @@ private:
         return pHost->Lv2UridToString(pAtom->body.otype);
     }
 
-
     virtual std::string AtomToJson(const LV2_Atom *pAtom) override
     {
         std::lock_guard lock(atomConverterMutex);
@@ -315,7 +332,7 @@ private:
 
         std::stringstream s;
         json_writer writer(s);
-    
+
         writer.write(vAtom);
         return s.str();
     }
@@ -328,7 +345,7 @@ private:
 
     virtual void Close()
     {
-        std::lock_guard guard {mutex};
+        std::lock_guard guard{mutex};
         if (!isOpen)
             return;
 
@@ -349,7 +366,6 @@ private:
         audioDriver->Close();
 
         StopReaderThread();
-
 
         // release any pdealboards owned by the process thread.
         this->activePedalboards.resize(0);
@@ -375,7 +391,7 @@ private:
             delete[] midiLv2Buffers[i];
         }
         midiLv2Buffers.resize(0);
-
+        audioDriver = nullptr;
     }
 
     void ZeroBuffer(float *buffer, size_t nframes)
@@ -424,8 +440,7 @@ private:
         }
     }
 
-
-    virtual void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings);
+    virtual void SetSystemMidiBindings(const std::vector<MidiBinding> &bindings);
 
     void writeVu()
     {
@@ -633,7 +648,7 @@ private:
         return (event.size == 3 && event.buffer[0] == 0xB0 && event.buffer[1] == 0x00);
     }
 
-    bool onMidiEvent(Lv2EventBufferWriter&eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent&event)
+    bool onMidiEvent(Lv2EventBufferWriter &eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent &event)
     {
         eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
 
@@ -653,7 +668,6 @@ private:
         }
         return true;
     }
-
 
     void ProcessMidiInput()
     {
@@ -676,7 +690,6 @@ private:
                 Lv2EventBufferWriter::LV2_EvBuf_Iterator iterator = eventBufferWriter.begin();
                 MidiEvent event;
 
-
                 // write all deferred midi messages.
                 if (deferredMidiMessageCount != 0 && !midiProgramChangePending)
                 {
@@ -687,16 +700,15 @@ private:
                         if (deviceIndex == midiDeviceIx)
                         {
                             event.size = messageCount;
-                            event.buffer = deferredMidiMessages +i;
+                            event.buffer = deferredMidiMessages + i;
                             event.time = 0;
 
-                            onMidiEvent(eventBufferWriter,iterator,event);
+                            onMidiEvent(eventBufferWriter, iterator, event);
                         }
 
                         i += messageCount;
                     }
                 }
-
 
                 for (size_t frame = 0; frame < n; ++frame)
                 {
@@ -708,32 +720,32 @@ private:
                             this->deferredMidiMessageCount = 0; // we can discard previous control changes.
                             midiProgramChangePending = true;
 
-                            this->realtimeWriter.OnMidiProgramChange(++(this->midiProgramChangeId), selectedBank,event.buffer[1]);
+                            this->realtimeWriter.OnMidiProgramChange(++(this->midiProgramChangeId), selectedBank, event.buffer[1]);
                         }
                         else if (isBankChange(event))
                         {
                             this->selectedBank = event.buffer[2];
-                        } else if (this->nextMidiBinding.IsMatch(event))
+                        }
+                        else if (this->nextMidiBinding.IsMatch(event))
                         {
                             if (nextMidiBinding.IsTriggered(event))
                             {
                                 midiProgramChangePending = true;
-                                this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId),1);
+                                this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId), 1);
                             }
-                        } else if (this->prevMidiBinding.IsMatch(event))
+                        }
+                        else if (this->prevMidiBinding.IsMatch(event))
                         {
                             if (prevMidiBinding.IsTriggered(event))
                             {
                                 midiProgramChangePending = true;
-                                this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId),-1);
+                                this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId), -1);
                             }
                         }
                         else if (midiProgramChangePending)
                         {
                             // defer the message for processing after the program change has completed.
-                            if (event.size > 0 
-                                && event.size < 128 
-                                && event.size + 2 + this->deferredMidiMessageCount < DEFERRED_MIDI_BUFFER_SIZE)
+                            if (event.size > 0 && event.size < 128 && event.size + 2 + this->deferredMidiMessageCount < DEFERRED_MIDI_BUFFER_SIZE)
                             {
                                 this->deferredMidiMessages[deferredMidiMessageCount++] = midiDeviceIx;
                                 this->deferredMidiMessages[deferredMidiMessageCount++] = (uint8_t)event.size;
@@ -745,7 +757,7 @@ private:
                         }
                         else
                         {
-                            onMidiEvent(eventBufferWriter,iterator,event);
+                            onMidiEvent(eventBufferWriter, iterator, event);
                         }
                     }
                 }
@@ -757,17 +769,23 @@ private:
 
     std::mutex audioStoppedMutex;
 
-    bool IsAudioActive()
+
+
+    bool IsAudioRunning()
     {
-        std::lock_guard lock{audioStoppedMutex};
-        return this->active;
+        return this->active && (!this->audioStopped) && !this->isDummyAudioDriver;
     }
-    virtual void OnAudioStopped()
+    virtual void OnAudioStopped() override
     {
-        std::lock_guard lock{audioStoppedMutex};
+        this->audioStopped = true;
+        Lv2Log::info("Audio stopped.");
+    }
+    virtual void OnAudioTerminated() override
+    {
         this->active = false;
         Lv2Log::info("Audio stopped.");
     }
+
 
     virtual void OnProcess(size_t nframes)
     {
@@ -822,7 +840,7 @@ private:
                     {
                         if (this->realtimeVuBuffers != nullptr)
                         {
-                            pedalboard->ComputeVus(this->realtimeVuBuffers, (uint32_t)nframes,inputBuffers,outputBuffers);
+                            pedalboard->ComputeVus(this->realtimeVuBuffers, (uint32_t)nframes, inputBuffers, outputBuffers);
 
                             vuSamplesRemaining -= nframes;
                             if (vuSamplesRemaining <= 0)
@@ -862,6 +880,7 @@ private:
             throw;
         }
     }
+
 public:
     AudioHostImpl(IHost *pHost)
         : inputRingBuffer(RING_BUFFER_SIZE),
@@ -875,24 +894,16 @@ public:
           uris(pHost),
           atomConverter(pHost->GetMapFeature())
     {
-        realtimeAtomBuffer.resize(32*1024);
-        lv2_atom_forge_init(&inputWriterForge,pHost->GetMapFeature().GetMap());
+        realtimeAtomBuffer.resize(32 * 1024);
+        lv2_atom_forge_init(&inputWriterForge, pHost->GetMapFeature().GetMap());
 
-#if JACK_HOST
-        audioDriver = CreateJackDriver(this);
-#endif
-#if ALSA_HOST
-        audioDriver = CreateAlsaDriver(this);
-#endif
     }
     virtual ~AudioHostImpl()
     {
         Close();
         CleanRestartThreads(true);
-
-        delete audioDriver;
+        audioDriver = nullptr;
     }
-
 
     virtual JackConfiguration GetServerConfiguration()
     {
@@ -906,8 +917,6 @@ public:
     {
         return this->sampleRate;
     }
-
-
 
     void OnAudioComplete()
     {
@@ -942,7 +951,7 @@ public:
         {
             Lv2Log::debug("Service thread priority successfully boosted.");
         }
-        SetThreadName("aout");
+        SetThreadName("rtsvc");
 #else
         xxx; // TODO!
 #endif
@@ -957,9 +966,9 @@ public:
             using clock_duration = clock_time::duration;
 
             // check for overruns every 30 seconds.
-            clock_duration waitPeriod = 
+            clock_duration waitPeriod =
                 std::chrono::duration_cast<clock_duration>(std::chrono::seconds(30));
-            clock_time waitTime =  std::chrono::steady_clock::now();
+            clock_time waitTime = std::chrono::steady_clock::now();
 
             while (true)
             {
@@ -1022,7 +1031,7 @@ public:
                                 RealtimePatchPropertyRequest *pRequest = nullptr;
                                 hostReader.read(&pRequest);
 
-                                std::shared_ptr<Lv2Pedalboard> currentpedalboard;  
+                                std::shared_ptr<Lv2Pedalboard> currentpedalboard;
 
                                 {
                                     std::lock_guard guard(mutex);
@@ -1036,7 +1045,8 @@ public:
                                     {
                                         if (pRequest->errorMessage == nullptr)
                                         {
-                                            if (pRequest->GetSize() != 0) {
+                                            if (pRequest->GetSize() != 0)
+                                            {
                                                 IEffect *pEffect = currentPedalboard->GetEffect(pRequest->instanceId);
                                                 if (pEffect == nullptr)
                                                 {
@@ -1044,9 +1054,11 @@ public:
                                                 }
                                                 else
                                                 {
-                                                    pRequest->jsonResponse = AtomToJson((LV2_Atom*)pRequest->GetBuffer());
+                                                    pRequest->jsonResponse = AtomToJson((LV2_Atom *)pRequest->GetBuffer());
                                                 }
-                                            } else {
+                                            }
+                                            else
+                                            {
                                                 pRequest->errorMessage = "Plugin did not respond.";
                                             }
                                         }
@@ -1107,13 +1119,13 @@ public:
                                 IEffect *pEffect = currentPedalboard->GetEffect(instanceId);
                                 if (pEffect != nullptr && this->pNotifyCallbacks)
                                 {
-                                    LV2_Atom *atom = (LV2_Atom*)&atomBuffer[0];
+                                    LV2_Atom *atom = (LV2_Atom *)&atomBuffer[0];
                                     if (atom->type == uris.atom_Object)
                                     {
-                                        LV2_Atom_Object *obj = (LV2_Atom_Object*)atom;
+                                        LV2_Atom_Object *obj = (LV2_Atom_Object *)atom;
                                         if (obj->body.otype == uris.patch_Set)
                                         {
-                                            
+
                                             // Get the property and value of the set message
                                             const LV2_Atom *property = nullptr;
                                             const LV2_Atom *value = nullptr;
@@ -1125,8 +1137,8 @@ public:
                                                 0);
                                             if (property != nullptr && value != nullptr && property->type == uris.atom_URID)
                                             {
-                                                LV2_URID propertyUrid = ((LV2_Atom_URID*)property)->body;
-                                                this->pNotifyCallbacks->OnPatchSetReply(instanceId,propertyUrid,value);
+                                                LV2_URID propertyUrid = ((LV2_Atom_URID *)property)->body;
+                                                this->pNotifyCallbacks->OnPatchSetReply(instanceId, propertyUrid, value);
                                                 this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
                                             }
                                         }
@@ -1157,31 +1169,34 @@ public:
                                 hostReader.read(&body);
                                 OnAudioComplete();
                                 return;
-                            } else if (command == RingBufferCommand::MidiProgramChange)
+                            }
+                            else if (command == RingBufferCommand::MidiProgramChange)
                             {
                                 RealtimeMidiProgramRequest programRequest;
                                 hostReader.read(&programRequest);
                                 OnMidiProgramRequest(programRequest);
-                            } else if (command == RingBufferCommand::NextMidiProgram)
+                            }
+                            else if (command == RingBufferCommand::NextMidiProgram)
                             {
                                 RealtimeNextMidiProgramRequest request;
                                 hostReader.read(&request);
                                 pNotifyCallbacks->OnNotifyNextMidiProgram(request);
-                            } else if (command == RingBufferCommand::Lv2ErrorMessage)
+                            }
+                            else if (command == RingBufferCommand::Lv2ErrorMessage)
                             {
                                 size_t size;
                                 int64_t instanceId;
                                 hostReader.read(&instanceId);
                                 hostReader.read(&size);
-                                if (this->atomBuffer.size() < size+1)
+                                if (this->atomBuffer.size() < size + 1)
                                 {
-                                    this->atomBuffer.resize(size+1);
+                                    this->atomBuffer.resize(size + 1);
                                 }
                                 hostReader.read(size, &(atomBuffer[0]));
-                                char *p = (char*)&(atomBuffer[0]);
+                                char *p = (char *)&(atomBuffer[0]);
                                 p[size] = 0;
                                 std::string message(p);
-                                pNotifyCallbacks->OnNotifyLv2RealtimeError(instanceId,message);
+                                pNotifyCallbacks->OnNotifyLv2RealtimeError(instanceId, message);
                             }
                             else
                             {
@@ -1245,6 +1260,22 @@ public:
     {
 
         std::lock_guard guard(mutex);
+
+        if (isOpen)
+        {
+            throw PiPedalStateException("Already open.");
+        }
+        isOpen = true;
+
+        if (jackServerSettings.IsDummyAudioDevice())
+        {
+            this->isDummyAudioDriver = true;
+            this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this));
+        } else {
+            this->isDummyAudioDriver = false;
+            this->audioDriver = std::unique_ptr<AudioDriver>(CreateAlsaDriver(this));
+        }
+
         if (channelSelection.GetInputAudioPorts().size() == 0 || channelSelection.GetOutputAudioPorts().size() == 0)
         {
             return;
@@ -1253,11 +1284,6 @@ public:
         this->currentSample = 0;
         this->underruns = 0;
 
-        if (isOpen)
-        {
-            throw PiPedalStateException("Already open.");
-        }
-        isOpen = true;
 
         this->inputRingBuffer.reset();
         this->outputRingBuffer.reset();
@@ -1272,7 +1298,6 @@ public:
 
         try
         {
-
             audioDriver->Open(jackServerSettings, this->channelSelection);
 
             this->sampleRate = audioDriver->GetSampleRate();
@@ -1287,12 +1312,12 @@ public:
             }
 
             active = true;
+            audioStopped = false;
             audioDriver->Activate();
             Lv2Log::info(SS("Audio started. " << audioDriver->GetConfigurationDescription()));
         }
         catch (const std::exception &e)
         {
-            Lv2Log::error(SS("Failed to start audio. " << e.what()));
             Close();
             active = false;
             throw;
@@ -1368,7 +1393,6 @@ public:
                 }
             }
         }
-
     }
 
     void SetControlValue(uint64_t instanceId, const std::string &symbol, float value)
@@ -1387,22 +1411,22 @@ public:
         }
     }
 
-    virtual void SetInputVolume(float value) {
+    virtual void SetInputVolume(float value)
+    {
         std::lock_guard guard(mutex);
         if (active && this->currentPedalboard)
         {
             hostWriter.SetInputVolume(value);
         }
-
     }
 
-    virtual void SetOutputVolume(float value) {
+    virtual void SetOutputVolume(float value)
+    {
         std::lock_guard guard(mutex);
         if (active && this->currentPedalboard)
         {
             hostWriter.SetOutputVolume(value);
         }
-
     }
 
     virtual void SetVuSubscriptions(const std::vector<int64_t> &instanceIds)
@@ -1436,7 +1460,9 @@ public:
 
                         vuConfig->vuUpdateWorkingData.push_back(v);
                         vuConfig->vuUpdateResponseData.push_back(v);
-                    } else if (instanceId == Pedalboard::INPUT_VOLUME_ID || instanceId == Pedalboard::OUTPUT_VOLUME_ID) {
+                    }
+                    else if (instanceId == Pedalboard::INPUT_VOLUME_ID || instanceId == Pedalboard::OUTPUT_VOLUME_ID)
+                    {
                         int index = (int)instanceId;
                         VuUpdate v;
                         vuConfig->enabledIndexes.push_back(index);
@@ -1444,12 +1470,13 @@ public:
                         if (instanceId == Pedalboard::INPUT_VOLUME_ID)
                         {
                             v.isStereoInput_ = v.isStereoOutput_ = this->pHost->GetNumberOfInputAudioChannels() > 1;
-                        } else {
-                            v.isStereoInput_ = v.isStereoOutput_ =this->pHost->GetNumberOfOutputAudioChannels() > 1;
+                        }
+                        else
+                        {
+                            v.isStereoInput_ = v.isStereoOutput_ = this->pHost->GetNumberOfOutputAudioChannels() > 1;
                         }
                         vuConfig->vuUpdateWorkingData.push_back(v);
                         vuConfig->vuUpdateResponseData.push_back(v);
-
                     }
                 }
 
@@ -1499,8 +1526,7 @@ public:
     }
 
 private:
-
-    virtual bool UpdatePluginStates(Pedalboard& pedalboard) override;
+    virtual bool UpdatePluginStates(Pedalboard &pedalboard) override;
     virtual bool UpdatePluginState(PedalboardItem &pedalboardItem) override;
 
     class RestartThread
@@ -1575,7 +1601,7 @@ public:
     }
     void CleanRestartThreads(bool final)
     {
-        std::lock_guard guard {restart_mutex};
+        std::lock_guard guard{restart_mutex};
         for (size_t i = 0; i < restartThreads.size(); ++i)
         {
             if (final)
@@ -1641,7 +1667,7 @@ public:
 
         result.temperaturemC_ = GetRaspberryPiTemperature();
 
-        result.active_ = IsAudioActive();
+        result.active_ = IsAudioRunning();
         result.restarting_ = this->restarting;
 
         if (this->audioDriver != nullptr)
@@ -1680,31 +1706,31 @@ static std::string UriToFieldName(const std::string &uri)
     return uri.substr(pos + 1);
 }
 
-void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding>&bindings) 
+void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
 {
     for (auto i = bindings.begin(); i != bindings.end(); ++i)
     {
         if (i->symbol() == "nextProgram")
         {
             this->nextMidiBinding.SetBinding(*i);
-        } else if (i->symbol() == "prevProgram")
+        }
+        else if (i->symbol() == "prevProgram")
         {
             this->prevMidiBinding.SetBinding(*i);
         }
     }
 }
 
-
 AudioHost *AudioHost::CreateInstance(IHost *pHost)
 {
     return new AudioHostImpl(pHost);
 }
 
-bool AudioHostImpl::UpdatePluginStates(Pedalboard& pedalboard)
+bool AudioHostImpl::UpdatePluginStates(Pedalboard &pedalboard)
 {
     bool changed = false;
     auto pedalboardItems = pedalboard.GetAllPlugins();
-    for (PedalboardItem* item : pedalboardItems)
+    for (PedalboardItem *item : pedalboardItems)
     {
         if (!item->isSplit())
         {
@@ -1715,14 +1741,14 @@ bool AudioHostImpl::UpdatePluginStates(Pedalboard& pedalboard)
         }
     }
     return true;
-
 }
 bool AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
 {
-    IEffect*effect = currentPedalboard->GetEffect(pedalboardItem.instanceId());
+    IEffect *effect = currentPedalboard->GetEffect(pedalboardItem.instanceId());
     if (effect != nullptr)
     {
-        try {
+        try
+        {
             Lv2PluginState state;
             if (!effect->GetLv2State(&state))
             {
@@ -1734,7 +1760,8 @@ bool AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
                 return true;
             }
             return false;
-        } catch(const std::exception &e)
+        }
+        catch (const std::exception &e)
         {
             Lv2Log::warning(SS(pedalboardItem.pluginName() << ": " << e.what()));
             return false;
@@ -1742,9 +1769,6 @@ bool AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
     }
     return false;
 }
-
-
-
 
 JSON_MAP_BEGIN(JackHostStatus)
 JSON_MAP_REFERENCE(JackHostStatus, active)

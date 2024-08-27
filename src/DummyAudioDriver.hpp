@@ -1,7 +1,7 @@
 /*
  * MIT License
  * 
- * Copyright (c) 2022 Robin E. R. Davies
+ * Copyright (c) 2024 Robin E. R. Davies
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,14 +24,12 @@
 
 #pragma once
 
-#ifndef JACK_HOST // jack is no longer supported.
-#define JACK_HOST 0 
-#endif
+#include "AudioDriver.hpp"
+#include "JackServerSettings.hpp"
 
-#ifndef ALSA_HOST
-#define ALSA_HOST 1
-#endif
+namespace pipedal {
 
-#if JACK_HOST && ALSA_HOST
-#error Choose either JACK or ALSA
-#endif
+    AudioDriver* CreateDummyAudioDriver(AudioDriverHost*driverHost);
+
+}
+

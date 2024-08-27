@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Updater.hpp"
+#include "util.hpp"
 #include "json.hpp"
 #include "config.hpp"
 #include <sys/eventfd.h>
@@ -165,6 +166,7 @@ void Updater::SetUpdateListener(UpdateListener &&listener)
 
 void Updater::ThreadProc()
 {
+    SetThreadName("UpdateMonitor");
     struct pollfd pfd;
     pfd.fd = this->event_reader;
     pfd.events = POLLIN;

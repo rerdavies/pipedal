@@ -208,6 +208,9 @@ public:
     Oscillator oscillator;
     LatencyMonitor latencyMonitor;
 
+    virtual void OnAudioTerminated() {
+        
+    }
 
     virtual void OnAudioStopped() {
     }
