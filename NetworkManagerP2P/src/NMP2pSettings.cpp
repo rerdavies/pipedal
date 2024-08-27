@@ -12,14 +12,14 @@
 #include <sys/stat.h>
 
 using namespace pipedal;
-P2pSettings::P2pSettings(const std::filesystem::path&configDirectoryPath, const std::filesystem::path&varDirectoryPath = "/var/pipedal/config")
+P2pSettings::P2pSettings(const std::filesystem::path&configDirectoryPath, const std::filesystem::path&varDirectoryPath)
 :   configDirectoryPath(configDirectoryPath),
     varDirectoryPath(varDirectoryPath)
 
 {
 
 }
-
+  
 static const char*hexDigits = "0123456789abcdef";
 std::string MakeBssid()
 {

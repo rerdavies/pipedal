@@ -8,7 +8,9 @@
 class P2pSettings {
     // adapter between nm p2p settings, and legacy p2p                                                                      
 public:
-    P2pSettings(const std::filesystem::path&configDirectory = "/etc/pipedal/config", const std::filesystem::path&varDirectory = "/var/pipedal/config");
+    P2pSettings(
+        const std::filesystem::path&configDirectory = "/etc/pipedal/config", 
+        const std::filesystem::path&varDirectory = "/var/pipedal/config" );
 
     void Load();
     void Save();
