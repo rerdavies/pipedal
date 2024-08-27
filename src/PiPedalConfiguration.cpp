@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022-2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -20,9 +20,76 @@
 #include "pch.h"
 #include "PiPedalConfiguration.hpp"
 #include "json.hpp"
-
+#include "ss.hpp"
+#include "ServiceConfiguration.hpp"
 
 using namespace pipedal;
+namespace fs  = std::filesystem;
+
+void PiPedalConfiguration::Load(const std::filesystem::path &path, const std::filesystem::path &webRoot)
+{
+    docRoot_ = path;
+    webRoot_ = webRoot;
+
+    // load installer defaults.
+    {
+        std::filesystem::path configPath = path / "config.json";
+        std::ifstream f(configPath);
+        if (!f.is_open())
+        {
+            std::stringstream s;
+            s << "Unable to open " << configPath;
+            throw PiPedalStateException(s.str());
+        }
+        json_reader reader(f);
+        reader.read(this);
+    }
+    // web port comes from service.conf
+    ServiceConfiguration serviceConfiguration;
+
+    serviceConfiguration.Load(fs::path(this->local_storage_path_) / "config" / "service.conf");
+    this->socketServerAddress_ = SS("0.0.0.0:" << serviceConfiguration.server_port);
+
+    // load any user-made settings
+    {
+        std::filesystem::path userPath = std::filesystem::path(this->local_storage_path_) / "config" / "config.json";
+        if (std::filesystem::exists(userPath))
+        {
+            std::ifstream f(userPath);
+            json_reader reader(f);
+            reader.read(this);
+        }
+    }
+}
+
+uint16_t PiPedalConfiguration::GetSocketServerPort() const
+{
+    try
+    {
+        size_t pos = this->socketServerAddress_.find_last_of(':');
+        if (pos == std::string::npos)
+        {
+            throw std::exception();
+        }
+        std::string strPort = socketServerAddress_.substr(pos + 1);
+        unsigned long port = std::stoul(strPort);
+        if (port == 0)
+        {
+            throw std::exception();
+        }
+        if (port > std::numeric_limits<uint16_t>::max())
+        {
+            throw std::exception();
+        }
+        return (uint16_t)port;
+    }
+    catch (const std::exception &)
+    {
+        std::stringstream s;
+        s << "Invalid port number in '" << this->socketServerAddress_ << "'.";
+        throw PiPedalArgumentException(s.str());
+    }
+}
 
 JSON_MAP_BEGIN(PiPedalConfiguration)
 JSON_MAP_REFERENCE(PiPedalConfiguration, lv2_path)
@@ -37,4 +104,5 @@ JSON_MAP_REFERENCE(PiPedalConfiguration, maxUploadSize)
 JSON_MAP_REFERENCE(PiPedalConfiguration, accessPointGateway)
 JSON_MAP_REFERENCE(PiPedalConfiguration, accessPointServerAddress)
 JSON_MAP_REFERENCE(PiPedalConfiguration, isVst3Enabled)
+JSON_MAP_REFERENCE(PiPedalConfiguration, end)
 JSON_MAP_END()

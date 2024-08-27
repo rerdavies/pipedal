@@ -29,7 +29,9 @@ namespace pipedal {
     void SetWifiConfig(const WifiConfigSettings&settings);
     void SetWifiDirectConfig(const WifiDirectConfigSettings&settings);
 
-    void OnWifiUninstall();
+    void OnWifiUninstall(bool preserveState = false);
+    void OnWifiReinstall();
+
     void OnWifiInstallComplete();
 
     bool UsingNetworkManager();

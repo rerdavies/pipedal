@@ -8,7 +8,7 @@
 class P2pSettings {
     // adapter between nm p2p settings, and legacy p2p                                                                      
 public:
-    P2pSettings(const std::filesystem::path&configDirectory = "/etc/pipedal/config");
+    P2pSettings(const std::filesystem::path&configDirectory = "/etc/pipedal/config", const std::filesystem::path&varDirectory = "/var/pipedal/config");
 
     void Load();
     void Save();
@@ -16,6 +16,7 @@ public:
 private:
     bool valid_ = false;
     std::filesystem::path configDirectoryPath;
+    std::filesystem::path varDirectoryPath;
     bool auth_changed_ = true;
     std::vector<uint8_t> device_type_{ 
         0x00,0x01, 0x00,0x50,0xF2,0x04,  0x00,0x02 /*"1-0050F204-2";*/ 
@@ -59,7 +60,7 @@ public:
     };
     std::filesystem::path config_filename() const { 
         // "/etc/pipedal/config/wpa_supplicant/wpa_supplicant-pipedal.conf"; }
-        return (configDirectoryPath / "NetworkManagerP2P.json").string();
+        return (varDirectoryPath / "NetworkManagerP2P.json").string();
     };
 
     const std::string& bssid() const { return bssid_; }

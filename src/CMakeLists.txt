@@ -571,6 +571,7 @@ add_executable(pipedalconfig
     CommandLineParser.hpp
     PiPedalException.hpp 
     ConfigMain.cpp
+    PiPedalConfiguration.hpp PiPedalConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp

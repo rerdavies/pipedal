@@ -26,6 +26,7 @@
 
 #include <string>
 #include "ConfigSerializer.hpp"
+#include <filesystem>
 
 namespace pipedal {
     using namespace config_serializer;
@@ -38,12 +39,16 @@ namespace pipedal {
 
         static const char DEVICEID_FILE_NAME[];
 
-        void Load();
+        void Load(
+            std::filesystem::path path = "/var/pipedal/config/service.conf"
+        );
         void Save();
 
 
         std::string uuid;
         std::string deviceName = "PiPedal";
         uint32_t server_port = 80;
+    private: 
+        std::filesystem::path filename;
     };
 }

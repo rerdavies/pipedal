@@ -158,12 +158,12 @@ void WifiDirectConfigSettings::Load()
 {
     this->enable_ = false;
     std::string strEnable;
-    if (ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","enabled",&strEnable))
+    if (ConfigUtil::GetConfigLine("/var/pipedal/config/pipedal_p2pd.conf","enabled",&strEnable))
     {
         this->enable_ = (strEnable == "true" || strEnable == "1");
     }
     std::string strWlan;
-    if (ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","wlan",&strWlan))
+    if (ConfigUtil::GetConfigLine("/var/pipedal/config/pipedal_p2pd.conf","wlan",&strWlan))
     {
         this->wlan_ = strWlan;
     } else {
@@ -172,20 +172,20 @@ void WifiDirectConfigSettings::Load()
 
 
 
-    if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","p2p_device_name",&this->hotspotName_))
+    if (!ConfigUtil::GetConfigLine("/var/pipedal/config/pipedal_p2pd.conf","p2p_device_name",&this->hotspotName_))
     {
         this->hotspotName_ = "PiPedal";
     }
 
-    if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","country_code",&this->countryCode_))
+    if (!ConfigUtil::GetConfigLine("/var/pipedal/config/pipedal_p2pd.conf","country_code",&this->countryCode_))
     {
         this->countryCode_ = "US";
     }
-    if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","p2p_pin",&this->pin_))
+    if (!ConfigUtil::GetConfigLine("/var/pipedal/config/pipedal_p2pd.conf","p2p_pin",&this->pin_))
     {
         this->pin_ = "12345678";
     }
-    if (!ConfigUtil::GetConfigLine("/etc/pipedal/config/pipedal_p2pd.conf","wifiChannel",&this->channel_))
+    if (!ConfigUtil::GetConfigLine("/var/pipedal/config/pipedal_p2pd.conf","wifiChannel",&this->channel_))
     {
         this->channel_ = "6";
     }
