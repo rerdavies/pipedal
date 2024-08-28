@@ -2174,7 +2174,8 @@ UpdateStatus PiPedalModel::GetUpdateStatus()
 void PiPedalModel::UpdateNow(const std::string &updateUrl)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    auto fileName = updater.DownloadUpdate(updateUrl);
+    std::filesystem::path fileName,signatureName;
+    updater.DownloadUpdate(updateUrl,&fileName,&signatureName);
 
     adminClient.InstallUpdate(fileName);
 }

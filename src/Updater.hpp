@@ -52,6 +52,7 @@ namespace pipedal
         std::string upgradeVersionDisplayName_; // display name for the version.
         std::string assetName_;                 // filename only
         std::string updateUrl_;                 // url from which to download the .deb file.
+        std::string gpgSignatureUrl_;                 // url from which to download the .deb.asc file.
     public:
         UpdateRelease();
 
@@ -60,6 +61,7 @@ namespace pipedal
         const std::string &UpgradeVersionDisplayName() const { return upgradeVersionDisplayName_; }
         const std::string &AssetName() const { return assetName_; }
         const std::string &UpdateUrl() const { return updateUrl_; }
+        const std::string &GpgSignatureUrl() const { return gpgSignatureUrl_;}
         bool operator==(const UpdateRelease &other) const;
         DECLARE_JSON_MAP(UpdateRelease);
     };
@@ -108,6 +110,9 @@ namespace pipedal
     public:
         Updater();
         ~Updater();
+
+        static void ValidateSignature(const std::filesystem::path&file, const std::filesystem::path&signatureFile);
+        
         using UpdateListener = std::function<void(const UpdateStatus &upateResult)>;
 
         void SetUpdateListener(UpdateListener &&listener);
@@ -117,9 +122,10 @@ namespace pipedal
         UpdatePolicyT GetUpdatePolicy();
         void SetUpdatePolicy(UpdatePolicyT updatePolicy);
         void ForceUpdateCheck();
-        std::filesystem::path DownloadUpdate(const std::string &url);
+        void DownloadUpdate(const std::string &url, std::filesystem::path*file, std::filesystem::path*signatureFile);
     private:
         std::string GetUpdateFilename(const std::string &url);
+        std::string GetSignatureUrl(const std::string &url);
 
         UpdatePolicyT updatePolicy = UpdatePolicyT::ReleaseOrBeta;
         using UpdateReleasePredicate = std::function<bool(const GithubRelease &githubRelease)>;

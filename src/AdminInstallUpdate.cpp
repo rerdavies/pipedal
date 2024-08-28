@@ -29,6 +29,8 @@
 #include <sys/prctl.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include "UpdateResults.hpp"
+#include "Updater.cpp"
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -100,11 +102,28 @@ void updateLog(const std::string &message)
     write(1,message.c_str(),message.length());
     write(1,"\n",1);
 }
+
+
+static std::string getVersion(const fs::path path)
+{
+    std::string fileNameOnly = path.filename();
+    std::vector<std::string> segments = split(path,'_');
+    if (segments.size() != 3) return "Unknown";
+    return SS("v" << segments[1]);
+}
 void pipedal::AdminInstallUpdate(const std::filesystem::path path)
 {
 
+    UpdateResults updateResults;
+    updateResults.updated_ = true;
+
+    updateResults.updateVersion_ = getVersion(path);
     try
     {
+        // client needs a disconnect/reconnect even if the update doesn't happen.
+
+        exec("/usr/bin/systemctl stop pipedald");
+
         fs:create_directories(ROOT_INSTALL_DIRECTORY);
         Lv2Log::info(SS("Installing " << path));
 
@@ -138,20 +157,36 @@ void pipedal::AdminInstallUpdate(const std::filesystem::path path)
         dup2(fdNull, 0);
         close(fdNull);
 
-        updateLog("**Stopping pipedald");
+        // verify the signature (again), now that we're running as root and could do real damage
+        // if we install somebody else's package.
 
-        exec("/usr/bin/systemctl stop pipedald");
+        Updater::ValidateSignature(path, SS(path.string() << ".asc")); // errors are thrown.
 
         updateLog("** Installing update");
         int retcode = exec(cmd);
 
-
+        if (retcode != EXIT_SUCCESS)
+        {
+            updateResults.updateSuccessful_ = false;
+            updateResults.updateMessage_ = SS("Update failed. See " << INSTALLER_LOG_FILE_PATH.c_str() << " for further details.");
+        } else {
+            updateResults.updateSuccessful_ = true;
+            updateResults.updateMessage_ = SS("Successfully updated to version " << updateResults.updateVersion_ << ".");
+        }
+                                 
         // in case we didn't actually update for some reason.
-        updateLog("** Starting pipedald");
-        exec("/usr/bin/systemctl start pipedald");
    }
     catch (const std::exception &e)
     {
         updateLog(e.what());
+
+        updateResults.updated_ = false;
+        updateResults.updateSuccessful_ = false;
+        updateResults.updateMessage_ = e.what();
     }
+    updateResults.Save();
+
+    // restart pipedal to get the client to remove the "Updating..." message.
+    exec("/usr/bin/systemctl start pipedald");
+
 }

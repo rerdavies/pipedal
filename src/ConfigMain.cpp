@@ -57,7 +57,6 @@ using namespace std;
 using namespace pipedal;
 namespace fs = std::filesystem;
 
-
 #define SERVICE_ACCOUNT_NAME "pipedal_d"
 #define SERVICE_GROUP_NAME "pipedal_d"
 #define JACK_SERVICE_ACCOUNT_NAME "jack"
@@ -425,9 +424,9 @@ void InstallAudioService()
 #endif
 }
 
-int SudoExec(int argc, char**argv)
+int SudoExec(int argc, char **argv)
 {
-        // re-execute with SUDO in order to prompt for SUDO credentials once only.
+    // re-execute with SUDO in order to prompt for SUDO credentials once only.
     std::vector<char *> args;
     std::string pkexec = "/usr/bin/sudo"; // staged because "ISO C++ forbids converting a string constant to std::vector<char*>::value_type"(!)
     args.push_back((char *)(pkexec.c_str()));
@@ -470,7 +469,6 @@ void Uninstall()
     try
     {
         OnWifiUninstall(true);
-
 
         StopService();
         DisableService();
@@ -584,62 +582,72 @@ static std::string RandomChars(int nchars)
     return s.str();
 }
 
-static std::map<fs::path, fs::perms> sPermissionExceptions  
-({
-    {
-        "/var/pipedal/config/NetworkManagerP2P.json",    
-        fs::perms::owner_read | fs::perms::owner_write |   fs::perms::group_read | fs::perms::group_write 
+static std::map<fs::path, fs::perms> sPermissionExceptions({{"/var/pipedal/config/NetworkManagerP2P.json",
+                                                             fs::perms::owner_read | fs::perms::owner_write | fs::perms::group_read | fs::perms::group_write
 
-    }
-});
-
+}});
 
 void SetVarPermissions(
-    const fs::path &path, 
+    const fs::path &path,
     fs::perms directoryPermissions,
     fs::perms filePermissions,
     uid_t uid, gid_t gid)
 {
     using namespace std::filesystem;
-    try {
-        if (fs::exists(path)) {
-            std::ignore = chown(path.c_str(),uid,gid);
-            if (fs::is_directory(path)) {
+    try
+    {
+        if (fs::exists(path))
+        {
+            std::ignore = chown(path.c_str(), uid, gid);
+            if (fs::is_directory(path))
+            {
                 fs::permissions(path, directoryPermissions, fs::perm_options::replace);
-                for (const auto& entry : fs::recursive_directory_iterator(path)) {
+                for (const auto &entry : fs::recursive_directory_iterator(path))
+                {
 
-                    if (chown(entry.path().c_str(),uid,gid) != 0)
+                    if (chown(entry.path().c_str(), uid, gid) != 0)
                     {
                         std::cout << "Error: failed to set ownership of file " << entry.path() << std::endl;
                     }
 
-                    try {
+                    try
+                    {
                         if (fs::is_directory(entry.path()))
                         {
                             fs::permissions(entry.path(), directoryPermissions, fs::perm_options::replace);
-                        } else {
-                            fs::permissions(entry.path(),filePermissions, fs::perm_options::replace);
                         }
-                    } catch (const std::exception &e)
-                    {
-                        std::cout << "Error: failed to set permissions on file " << entry.path() << std::endl;                        
+                        else
+                        {
+                            fs::permissions(entry.path(), filePermissions, fs::perm_options::replace);
+                        }
                     }
-
-                }
-            } else {
-                if (sPermissionExceptions.contains(path))
-                {
-                    fs::permissions(path,sPermissionExceptions[path], fs::perm_options::replace);
-                } else {
-                    fs::permissions(path,filePermissions, fs::perm_options::replace);
+                    catch (const std::exception &e)
+                    {
+                        std::cout << "Error: failed to set permissions on file " << entry.path() << std::endl;
+                    }
                 }
             }
-        } else {
-            std::cout  << "Error: Path does not exist: " << path << std::endl;
+            else
+            {
+                if (sPermissionExceptions.contains(path))
+                {
+                    fs::permissions(path, sPermissionExceptions[path], fs::perm_options::replace);
+                }
+                else
+                {
+                    fs::permissions(path, filePermissions, fs::perm_options::replace);
+                }
+            }
         }
-    } catch (const fs::filesystem_error& e) {
+        else
+        {
+            std::cout << "Error: Path does not exist: " << path << std::endl;
+        }
+    }
+    catch (const fs::filesystem_error &e)
+    {
         std::cerr << "Error: " << e.what() << std::endl;
-    }    
+    }
 }
 
 namespace fs = std::filesystem;
@@ -651,17 +659,17 @@ static void FixPermissions()
 
     fs::create_directories("/var/pipedal");
 
-    fs::perms directoryPermissions = 
+    fs::perms directoryPermissions =
         fs::perms::owner_read | fs::perms::owner_write | fs::perms::owner_exec |
         fs::perms::group_read | fs::perms::group_write | fs::perms::group_exec |
         fs::perms::others_read | fs::perms::others_exec |
         fs::perms::set_gid;
-    
-    fs::perms filePermissions = 
-        fs::perms::owner_read | fs::perms::owner_write | 
-        fs::perms::group_read | fs::perms::group_write | 
-        fs::perms::others_read ;
-    
+
+    fs::perms filePermissions =
+        fs::perms::owner_read | fs::perms::owner_write |
+        fs::perms::group_read | fs::perms::group_write |
+        fs::perms::others_read;
+
     uid_t uid;
     struct passwd *passwd;
     if ((passwd = getpwnam("pipedal_d")) == nullptr)
@@ -671,25 +679,27 @@ static void FixPermissions()
     }
     uid = passwd->pw_uid;
     gid_t gid = passwd->pw_gid;
-    SetVarPermissions("/var/pipedal",directoryPermissions,filePermissions,uid,gid);
+    SetVarPermissions("/var/pipedal", directoryPermissions, filePermissions, uid, gid);
 
-    fs::perms wpa_supplicant_perms = 
+    fs::perms wpa_supplicant_perms =
         fs::perms::owner_read | fs::perms::owner_write |
         fs::perms::group_read | fs::perms::group_write;
-    
-    fs::path wpa_config_path{ "/etc/pipedal/config/wpa_supplicant/wpa_supplicant-pipedal.conf"};
-    try {
-        fs::permissions(wpa_config_path,wpa_supplicant_perms, fs::perm_options::replace);
 
-        struct group*grp = getgrnam("netdev");
+    fs::path wpa_config_path{"/etc/pipedal/config/wpa_supplicant/wpa_supplicant-pipedal.conf"};
+    try
+    {
+        fs::permissions(wpa_config_path, wpa_supplicant_perms, fs::perm_options::replace);
+
+        struct group *grp = getgrnam("netdev");
         if (grp != nullptr)
         {
-            if (chown(wpa_config_path.c_str(),0,grp->gr_gid) != 0)
+            if (chown(wpa_config_path.c_str(), 0, grp->gr_gid) != 0)
             {
                 cout << "Error: Failed to change ownership of " << wpa_config_path << endl;
             }
         }
-    } catch (const std::exception&e)
+    }
+    catch (const std::exception &e)
     {
         cout << "Error: Failed to set permissions on " << wpa_config_path << ". " << e.what() << endl;
     }
@@ -721,15 +731,17 @@ static void PrepareServiceConfigurationFile(uint16_t portNumber)
 
 void CopyWpaSupplicantConfigFile()
 {
-    try {
+    try
+    {
         const char NM_SUPPLICANT_CONFIG_PATH[] = "/etc/pipedal/config/wpa_supplicant/wpa_supplicant-pipedal.conf";
         const char NM_SUPPLICANT_CONFIG_SOURCE_PATH[] = "/etc/pipedal/config/templates/wpa_supplicant-pipedal.conf";
         fs::path destinationPath = NM_SUPPLICANT_CONFIG_PATH;
         fs::path sourcePath = NM_SUPPLICANT_CONFIG_SOURCE_PATH;
-        
+
         fs::create_directories(destinationPath.parent_path());
-        fs::copy_file(sourcePath,destinationPath,fs::copy_options::overwrite_existing);
-    } catch (const std::exception&e)
+        fs::copy_file(sourcePath, destinationPath, fs::copy_options::overwrite_existing);
+    }
+    catch (const std::exception &e)
     {
         cout << "ERROR: " << e.what() << endl;
     }
@@ -743,13 +755,47 @@ void DeployVarConfig()
         auto directory = varConfig.parent_path();
         fs::create_directories(directory);
         fs::path templateFile = "/etc/pipedal/config/templates/var_config.json";
-        try {
-            fs::copy(templateFile,varConfig);
-        } catch (const std::exception &e)
+        try
+        {
+            fs::copy(templateFile, varConfig);
+        }
+        catch (const std::exception &e)
         {
             std::cout << "Error: Failed to create " << varConfig << std::endl;
         }
     }
+}
+
+void InstallPgpKey()
+{
+    fs::path homeDir = "/var/pipedal/config/gpg";
+    fs::path keyPath = "/etc/pipedal/config/updatekey.gpg";
+
+    fs::create_directories(homeDir);
+    std::ignore = chmod(homeDir.c_str(), 0700);
+
+    {
+        std::stringstream s;
+        s << (CHOWN_BIN " " SERVICE_GROUP_NAME ":" SERVICE_GROUP_NAME " ") << homeDir.c_str();
+        sysExec(s.str().c_str());
+    }
+    std::ostringstream ss;
+    ss << "/usr/bin/gpg  --homedir " << homeDir.c_str() << " --import " << keyPath.c_str();
+
+    int rc = sysExec(ss.str().c_str());
+    if (rc != EXIT_SUCCESS)
+    {
+        cout << "Error: Failed  to create update keyring." << endl;
+    }
+
+    {
+        std::stringstream ss;
+        ss << (CHOWN_BIN " -R " SERVICE_GROUP_NAME ":" SERVICE_GROUP_NAME " ") << homeDir.c_str();
+        std::string cmd = ss.str();
+        cout << cmd << endl;
+        sysExec(cmd.c_str());
+    }
+    cout << "Debug: Finished creating keystring." << endl;
 }
 void Install(const fs::path &programPrefix, const std::string endpointAddress)
 {
@@ -954,7 +1000,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 
         // Restart WiFi Direct if neccessary.
         OnWifiReinstall();
-
+        InstallPgpKey();
     }
     catch (const std::exception &e)
     {
@@ -968,7 +1014,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 static std::string GetCurrentWebServicePort()
 {
     PiPedalConfiguration config;
-    config.Load("/etc/pipedal/config","");
+    config.Load("/etc/pipedal/config", "");
 
     std::ostringstream ss;
     ss << config.GetSocketServerPort();
@@ -1066,7 +1112,6 @@ static void PrintHelp()
         << HangingIndent() << "    --list-p2p-channels [<country_code>] \tList valid p2p channels for the current/specified country."
         << "\n\n"
 
-
         // << HangingIndent() << "    --enable-legacy-ap\t <country_code> <ssid> <wep_password> <channel>\tEnable a legacy Wi-Fi access point."
         // << "\n\n"
         // << "Enable a legacy Wi-Fi access point. \n\n"
@@ -1117,17 +1162,21 @@ static void PrintHelp()
            "therefore preferrable under almost all circumstances.\n\n";
 }
 
-static int ListP2PChannels(const std::vector<std::string>&arguments)
+static int ListP2PChannels(const std::vector<std::string> &arguments)
 {
-    try {
+    try
+    {
         std::string country;
-        if (arguments.size() >= 2) 
+        if (arguments.size() >= 2)
         {
             throw std::runtime_error("Invalid arguments.");
-        } if (arguments.size() == 1)
+        }
+        if (arguments.size() == 1)
         {
             country = arguments[0];
-        } else {
+        }
+        else
+        {
             // use the currently selected country by default.
             WifiDirectConfigSettings settings;
             settings.Load();
@@ -1137,18 +1186,18 @@ static int ListP2PChannels(const std::vector<std::string>&arguments)
             }
             country = settings.countryCode_;
         }
-        auto channelSelectors = getWifiChannelSelectors(country.c_str(),true);
-        for (const auto &channelSelector: channelSelectors)
+        auto channelSelectors = getWifiChannelSelectors(country.c_str(), true);
+        for (const auto &channelSelector : channelSelectors)
         {
             cout << channelSelector.channelName_ << endl;
         }
-    } catch (const std::exception &e)
+    }
+    catch (const std::exception &e)
     {
         cout << "ERROR: " << e.what() << endl;
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
-
 }
 
 int main(int argc, char **argv)
@@ -1182,13 +1231,12 @@ int main(int argc, char **argv)
     parser.AddOption("--help", &help);
     parser.AddOption("--prefix", &prefixOption);
     parser.AddOption("--port", &portOption);
-    //parser.AddOption("--enable-legacy-ap", &enable_ap);
+    // parser.AddOption("--enable-legacy-ap", &enable_ap);
     parser.AddOption("--disable-ap", &disable_ap);
     parser.AddOption("--enable-p2p", &enable_p2p);
     parser.AddOption("--disable-p2p", &disable_p2p);
     parser.AddOption("--list-p2p-channels", &list_p2p_channels);
     parser.AddOption("--fix-permissions", &fix_permissions);
- 
 
     parser.AddOption("--get-current-port", &get_current_port); // private. For debug use only.
 
@@ -1197,11 +1245,8 @@ int main(int argc, char **argv)
     {
         parser.Parse(argc, (const char **)argv);
 
-        int actionCount = 
-            help + get_current_port + install + uninstall + stop + start + enable + disable 
-            + enable_ap + disable_ap + restart + enable_p2p + disable_p2p
-            + list_p2p_channels + fix_permissions
-            ;
+        int actionCount =
+            help + get_current_port + install + uninstall + stop + start + enable + disable + enable_ap + disable_ap + restart + enable_p2p + disable_p2p + list_p2p_channels + fix_permissions;
         if (actionCount > 1)
         {
             throw std::runtime_error("Please provide only one action.");
@@ -1260,7 +1305,7 @@ int main(int argc, char **argv)
     auto uid = getuid();
     if (uid != 0 && !nosudo)
     {
-        return SudoExec(argc,argv);
+        return SudoExec(argc, argv);
     }
 
     try
@@ -1330,7 +1375,8 @@ int main(int argc, char **argv)
         }
         else if (enable_p2p)
         {
-            try {
+            try
+            {
                 auto argv = parser.Arguments();
                 WifiDirectConfigSettings settings;
                 settings.ParseArguments(argv);
@@ -1338,7 +1384,8 @@ int main(int argc, char **argv)
                 settings.enable_ = true;
                 SetWifiDirectConfig(settings);
                 RestartService(true); // also have to retart web service so that it gets the correct device name.
-            } catch (const std::exception&e)
+            }
+            catch (const std::exception &e)
             {
                 cout << "ERROR: " << e.what() << endl;
                 return EXIT_FAILURE;

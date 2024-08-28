@@ -137,6 +137,8 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    UpdateResults.cpp UpdateResults.hpp
+    UpdaterSecurity.hpp
     Updater.cpp Updater.hpp
     Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
@@ -615,12 +617,14 @@ target_link_libraries(capturepresets ${PIPEDAL_LIBS})
 
 add_executable(pipedal_update
     UpdateMain.cpp 
+    UpdateResults.cpp UpdateResults.hpp
     Lv2Log.hpp Lv2Log.cpp
     Lv2SystemdLogger.cpp Lv2SystemdLogger.hpp
+    UpdateResults.cpp UpdateResults.hpp
     AdminInstallUpdate.cpp AdminInstallUpdate.hpp
 )
 
-target_link_libraries(pipedal_update PRIVATE stdc++fs systemd )
+target_link_libraries(pipedal_update PRIVATE  stdc++fs systemd PiPedalCommon )
 
 
 add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp

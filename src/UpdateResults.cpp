@@ -1,4 +1,4 @@
-// Copyright (c) 2024Robin Davies
+// Copyright (c) 2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -17,23 +17,44 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "AdminInstallUpdate.hpp"
-#include "Lv2Log.hpp"
-#include "Lv2SystemdLogger.hpp"
+#include "UpdateResults.hpp"
 #include <filesystem>
+#include <fstream>
+#include "Lv2Log.hpp"
+#include "ss.hpp"
+
+
 
 using namespace pipedal;
+namespace fs = std::filesystem;
 
-int main(int argc, char**argv)
+const fs::path UPDATE_RESULT_PATH{"/var/pipedal/config"};
+void UpdateResults::Load()
 {
-    Lv2Log::set_logger(MakeLv2SystemdLogger());
-
-    if (argc != 2) 
+    std::ifstream f(UPDATE_RESULT_PATH);
+    if (f.is_open())
     {
-        Lv2Log::error("Invalid arguments.");
-        return EXIT_FAILURE;
+        json_reader reader(f);
+        reader.read(this);
     }
-    std::filesystem::path path = argv[1];
-    AdminInstallUpdate(path);
-    return EXIT_SUCCESS;
 }
+void UpdateResults::Save()
+{
+    std::ofstream f {UPDATE_RESULT_PATH};
+    if (f.is_open())
+    {
+        json_writer writer(f);
+        writer.write(this);
+    } else {
+        Lv2Log::error(SS("Can't write to " << UPDATE_RESULT_PATH));
+    }
+}
+
+
+JSON_MAP_BEGIN(UpdateResults)
+JSON_MAP_REFERENCE(UpdateResults, updated)
+JSON_MAP_REFERENCE(UpdateResults, updateSuccessful)
+JSON_MAP_REFERENCE(UpdateResults, updateVersion)
+JSON_MAP_REFERENCE(UpdateResults, updateMessage)
+JSON_MAP_REFERENCE(UpdateResults, installerLog)
+JSON_MAP_END()

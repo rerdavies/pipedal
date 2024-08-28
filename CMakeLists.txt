@@ -11,9 +11,6 @@ set (CMAKE_INSTALL_PREFIX "/usr/")
 include(CTest)
 enable_testing()
 
-# Frameworks
-# catch
-
 add_subdirectory("submodules/pipedal_p2pd")
 
 add_subdirectory("PiPedalCommon")
@@ -103,6 +100,8 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set (CPACK_STRIP_FILES ON)
 
+set(CPACK_DEBIAN_PACKAGE_SIGN_ALGORITHM "detached")
+set(CPACK_DEBIAN_PACKAGE_SIGN_TYPE "origin")
 
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm")
 

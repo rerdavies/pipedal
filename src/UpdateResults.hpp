@@ -1,4 +1,4 @@
-// Copyright (c) 2024Robin Davies
+// Copyright (c) 2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -17,23 +17,23 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "AdminInstallUpdate.hpp"
-#include "Lv2Log.hpp"
-#include "Lv2SystemdLogger.hpp"
-#include <filesystem>
+#pragma once
 
-using namespace pipedal;
+#include "json.hpp"
 
-int main(int argc, char**argv)
-{
-    Lv2Log::set_logger(MakeLv2SystemdLogger());
+namespace pipedal {
+    class UpdateResults {
+    public:
+        bool updated_ = false;
+        bool updateSuccessful_ = false;
+        std::string updateVersion_;
+        std::string updateMessage_;
+        std::string installerLog_;
 
-    if (argc != 2) 
-    {
-        Lv2Log::error("Invalid arguments.");
-        return EXIT_FAILURE;
-    }
-    std::filesystem::path path = argv[1];
-    AdminInstallUpdate(path);
-    return EXIT_SUCCESS;
+        void Load();
+        void Save();
+
+        DECLARE_JSON_MAP(UpdateResults);
+    };
+
 }

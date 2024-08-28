@@ -32,8 +32,11 @@
 #include "ss.hpp"
 #include "Lv2Log.hpp"
 #include <algorithm>
+#include "UpdaterSecurity.hpp"
+#include "SysExec.hpp"
 
 using namespace pipedal;
+namespace fs = std::filesystem;
 
 #define TEST_UPDATE
 
@@ -45,11 +48,8 @@ static constexpr uint64_t CLOSE_EVENT = 0;
 static constexpr uint64_t CHECK_NOW_EVENT = 1;
 static constexpr uint64_t UNCACHED_CHECK_NOW_EVENT = 2;
 
-
 static std::filesystem::path WORKING_DIRECTORY = "/var/pipedal/updates";
 static std::filesystem::path UPDATE_STATUS_CACHE_FILE = WORKING_DIRECTORY / "updateStatus.json";
-
-static std::string GITHUB_RELEASES_URL = "https://api.github.com/repos/rerdavies/pipedal/releases";
 
 Updater::clock::duration Updater::updateRate = std::chrono::duration_cast<Updater::clock::duration>(std::chrono::days(1));
 static std::chrono::system_clock::duration CACHE_DURATION = std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::minutes(30));
@@ -194,7 +194,8 @@ void Updater::ThreadProc()
                 if (value == CHECK_NOW_EVENT)
                 {
                     CheckForUpdate(true);
-                } else if (value == UNCACHED_CHECK_NOW_EVENT)
+                }
+                else if (value == UNCACHED_CHECK_NOW_EVENT)
                 {
                     CheckForUpdate(false);
                 }
@@ -221,6 +222,8 @@ public:
     GithubRelease(json_variant &v);
 
     const GithubAsset *GetDownloadForCurrentArchitecture() const;
+    const GithubAsset *GetGpgKeyForAsset(const std::string &name) const;
+
     bool draft = true;
     bool prerelease = true;
     std::string name;
@@ -349,8 +352,6 @@ static bool IsCacheValid(const UpdateStatus &updateStatus)
     return now >= validStart && now < validEnd;
 }
 
-
-
 UpdateRelease Updater::getUpdateRelease(
     const std::vector<GithubRelease> &githubReleases,
     const std::string &currentVersion,
@@ -361,6 +362,11 @@ UpdateRelease Updater::getUpdateRelease(
         auto *asset = githubRelease.GetDownloadForCurrentArchitecture();
         if (!asset)
             continue;
+        auto *pgpKey = githubRelease.GetGpgKeyForAsset(asset->name);
+        if (!pgpKey)
+        {
+            continue;
+        }
 
         if (!predicate(githubRelease))
             continue;
@@ -370,6 +376,7 @@ UpdateRelease Updater::getUpdateRelease(
         updateRelease.upgradeVersionDisplayName_ = normalizeReleaseName(githubRelease.name);
         updateRelease.assetName_ = asset->name;
         updateRelease.updateUrl_ = asset->browser_download_url;
+        updateRelease.gpgSignatureUrl_ = pgpKey->browser_download_url;
         return updateRelease;
     }
     return UpdateRelease();
@@ -377,10 +384,10 @@ UpdateRelease Updater::getUpdateRelease(
 
 void Updater::CheckForUpdate(bool useCache)
 {
-    UpdateStatus updateResult; 
+    UpdateStatus updateResult;
 
     {
-        std::lock_guard lock {mutex};
+        std::lock_guard lock{mutex};
         if (useCache && IsCacheValid(cachedUpdateStatus))
         {
             this->currentResult = cachedUpdateStatus;
@@ -394,7 +401,6 @@ void Updater::CheckForUpdate(bool useCache)
         updateResult = this->currentResult;
     }
     std::string args = SS("-s " << GITHUB_RELEASES_URL);
-
 
     updateResult.errorMessage_ = "";
 
@@ -569,7 +575,6 @@ void UpdateStatus::ResetCurrentVersion()
 #endif
 }
 
-
 std::chrono::system_clock::time_point UpdateStatus::LastUpdateTime() const
 {
     std::chrono::system_clock::duration duration{this->lastUpdateTime_};
@@ -582,6 +587,19 @@ void UpdateStatus::LastUpdateTime(const std::chrono::system_clock::time_point &t
     this->lastUpdateTime_ = timePoint.time_since_epoch().count();
 }
 
+const GithubAsset *GithubRelease::GetGpgKeyForAsset(const std::string &name) const
+{
+    std::string targetName = name + ".asc";
+
+    for (auto &asset : assets)
+    {
+        if (asset.name == targetName)
+        {
+            return &asset;
+        }
+    }
+    return nullptr;
+}
 const GithubAsset *GithubRelease::GetDownloadForCurrentArchitecture() const
 {
     // deb package names end in {DEBIAN_ARCHITECTURE}.deb
@@ -601,14 +619,31 @@ const GithubAsset *GithubRelease::GetDownloadForCurrentArchitecture() const
     return nullptr;
 }
 
-
 UpdateRelease::UpdateRelease()
 {
 }
 
+std::string Updater::GetSignatureUrl(const std::string &url)
+{
+
+    // partialy whitelisting, partly avoiding having to parse a URL.
+    if (this->currentResult.releaseOnlyRelease_.UpdateUrl() == url)
+    {
+        return this->currentResult.releaseOnlyRelease_.GpgSignatureUrl();
+    }
+    if (this->currentResult.releaseOrBetaRelease_.UpdateUrl() == url)
+    {
+        return this->currentResult.releaseOrBetaRelease_.GpgSignatureUrl();
+    }
+    if (this->currentResult.devRelease_.UpdateUrl() == url)
+    {
+        return this->currentResult.devRelease_.GpgSignatureUrl();
+    }
+    throw std::runtime_error("Permission denied. No signature URL.");
+}
+
 std::string Updater::GetUpdateFilename(const std::string &url)
 {
-    std::lock_guard lock(mutex);
 
     // partialy whitelisting, partly avoiding having to parse a URL.
     if (this->currentResult.releaseOnlyRelease_.UpdateUrl() == url)
@@ -624,7 +659,6 @@ std::string Updater::GetUpdateFilename(const std::string &url)
         return this->currentResult.devRelease_.AssetName();
     }
     throw std::runtime_error("Permission denied. Invalid url.");
-
 }
 static std::string unCRLF(const std::string &text)
 {
@@ -633,9 +667,11 @@ static std::string unCRLF(const std::string &text)
     {
         if (c == '\r')
             continue;
-        if (c == '\n') {
+        if (c == '\n')
+        {
             ss << '/';
-        } else 
+        }
+        else
         {
             ss << c;
         }
@@ -645,80 +681,207 @@ static std::string unCRLF(const std::string &text)
 
 static void removeOldSiblings(int numberToKeep, const std::filesystem::path &fileToKeep)
 {
-    namespace fs = std::filesystem;
 
+    auto extension = fileToKeep.extension();
     auto directory = fileToKeep.parent_path();
-    if (directory.empty()) return; // superstition.
-    struct RemoveEntry {
+    if (directory.empty())
+        return; // superstition.
+    struct RemoveEntry
+    {
         fs::path path;
         fs::file_time_type time;
     };
     std::vector<RemoveEntry> entries;
-    for (const auto&dirEntry : fs::directory_iterator(directory))
+    for (const auto &dirEntry : fs::directory_iterator(directory))
     {
         if (dirEntry.is_regular_file())
         {
-            if (dirEntry.path() != fileToKeep)
+            auto thisPath = dirEntry.path();
+            if (thisPath != fileToKeep)
             {
-                dirEntry.last_write_time();
-                entries.push_back(RemoveEntry { .path = dirEntry.path(), .time = dirEntry.last_write_time()});
+                if (thisPath.extension() == extension)
+                {
+                    entries.push_back(
+                        RemoveEntry{
+                            .path = thisPath,
+                            .time = dirEntry.last_write_time()});
+                }
             }
         }
     }
     std::sort(
-        entries.begin(),entries.end(),
-        [](const RemoveEntry&left, const RemoveEntry&right)
+        entries.begin(), entries.end(),
+        [](const RemoveEntry &left, const RemoveEntry &right)
         {
             return left.time > right.time; // by time descending
-        }
-    );
+        });
     for (size_t i = numberToKeep; i < entries.size(); ++i)
     {
         fs::remove(entries[i].path);
     }
 }
-std::filesystem::path Updater::DownloadUpdate(const std::string &url)
+
+static std::string getKeyId(const std::string&gpgText)
 {
-    namespace fs = std::filesystem;
-    std::string filename = GetUpdateFilename(url);
-    if (filename.empty())
+    std::string keyPosition = "using RSA key ";
+    size_t nPos = gpgText.find(keyPosition);
+    if (nPos = std::string::npos)
     {
-        throw std::runtime_error("Permission denied. Invalid url.");
-    }    
+        return "";
+    }
+    nPos += keyPosition.size();
+
+    auto start = nPos;
+
+    while (true)
+    {
+        char c = gpgText[nPos];
+        if (nPos >= gpgText.length() || c == ' ' || c == '\r' &&  c == '\n' && c == '\t')
+        {
+            break;
+        }
+        ++nPos;
+    }
+    return gpgText.substr(start,nPos-start);   
+}
+static std::string getAddress(const std::string&gpgText)
+{
+    std::string originPosition = "gpg: Good signature from \"";
+
+    size_t nPos = gpgText.find(originPosition);
+    if (nPos == std::string::npos)
+    {
+        return "";
+    }
+    auto start = nPos;
+    while (true)
+    {
+        if (nPos >= gpgText.length() || gpgText[nPos] == '\"' || gpgText[nPos] == '\r' || gpgText[nPos] == '\n')
+        {
+            break;
+        }
+        ++nPos;
+    }
+    return gpgText.substr(start,nPos-start);
+
+}
+void Updater::ValidateSignature(const std::filesystem::path&file, const std::filesystem::path&signatureFile)
+{
+    // sudo gpg --home /var/pipedal/config/gpg  --verify pipedal_1.2.41_arm64.deb.asc  pipedal_1.2.41_arm64.deb 
+    // gpg: assuming signed data in 'pipedal_1.2.41_arm64.deb'
+    // gpg: Signature made Tue 27 Aug 2024 09:25:06 PM EDT
+    // gpg:                using RSA key 381124E2BB4478D225D2313B2AEF3F7BD53EAA59
+    // gpg: Good signature from "Robin Davies <rerdavies@gmail.com>" [ultimate]
+    std::ostringstream ss;
+    ss << "-home " << PGP_UPDATE_KEYRING_PATH
+      << " --verify "
+      << signatureFile << " " << file;
+    
+    auto gpgOutput = sysExecForOutput("/usr/bin/gpg",ss.str());
+    if (gpgOutput.exitCode != EXIT_SUCCESS)
+    {
+        throw std::runtime_error("Update file is not correctly signed.");
+    }
+    const std::string&gpgText = gpgOutput.output;
+
+    std::string keyId = getKeyId(gpgText);
+
+    if (keyId != UPDATE_GPG_FINGERPRINT)
+    {
+        throw std::runtime_error("Update signature has the wrong fingerprint.");
+    }
+    std::string origin = getAddress(gpgText);
+    if (origin != UPDATE_GPG_ADDRESS) 
+    {
+        throw std::runtime_error("Update signature has an incorrect address.");
+    }
+}
+
+static bool badOutput(const std::filesystem::path &filePath)
+{
+    if (!fs::is_regular_file(filePath))
+    {
+        return false;
+    }
+    return fs::file_size(filePath) != 0;
+}
+void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file, std::filesystem::path *signatureFile)
+{
+    std::string filename, signatureUrl;
+    {
+        std::lock_guard lock{mutex};
+        filename = GetUpdateFilename(url);
+        signatureUrl = GetSignatureUrl(url);
+    }
+
+    // Only permit downloading of updates from the github releases for the pipedal project.
+    // I don't think this will get past GetUpdateFileName, but defense in depth. We will 
+    // not download from anywhere we don't trust.
+    if (!WhitelistDownloadUrl(url))
+    {
+        throw std::runtime_error(SS("Invalid update url. Downloads from this address are not permitted: " << url));
+    }
+    if (!WhitelistDownloadUrl(signatureUrl))
+    {
+        throw std::runtime_error(SS("Invalid update url. Downloads from this address are not permitted: " << signatureUrl));
+    }
     auto downloadDirectory = WORKING_DIRECTORY / "downloads";
     std::filesystem::create_directories(downloadDirectory);
 
-    auto downloadPath = downloadDirectory / filename;
+    auto downloadFilePath = downloadDirectory / filename;
+    auto downloadSignaturePath = downloadDirectory / SS(filename << ".asc");
 
-    try {
-        fs::remove(downloadPath);
-        std::string args = SS("-s -L " << url << " -o " << downloadPath << " 2>&1");
+    try
+    {
+        fs::remove(downloadFilePath);
+        fs::remove(downloadSignaturePath);
+
+        std::string args = SS("-s -L " << url << " -o " << downloadFilePath << " 2>&1");
         auto curlOutput = sysExecForOutput("curl", args);
-        if (curlOutput.exitCode != EXIT_SUCCESS)
+        if (curlOutput.exitCode != EXIT_SUCCESS || badOutput(downloadFilePath))
         {
             Lv2Log::error(SS("Update download failed." << unCRLF(curlOutput.output)));
             throw std::runtime_error("PiPedal server does not have access to the internet.");
         }
-        if (!fs::exists(downloadPath) || fs::file_size(downloadPath) == 0)
+
+        args = SS("-s -L " << signatureUrl << " -o " << downloadSignaturePath << " 2>&1");
+
+        curlOutput = sysExecForOutput("curl", args);
+        if (curlOutput.exitCode != EXIT_SUCCESS || badOutput(downloadSignaturePath))
         {
-            throw std::runtime_error("Download failed.");
+            Lv2Log::error(SS("Update download failed." << unCRLF(curlOutput.output)));
+            throw std::runtime_error("PiPedal server does not have access to the internet.");
         }
-        try {
-            removeOldSiblings(2, downloadPath);
-        } catch (const std::exception&e)
+
+        try
+        {
+            removeOldSiblings(2, downloadFilePath);
+            removeOldSiblings(2, downloadSignaturePath);
+        }
+        catch (const std::exception &e)
         {
             Lv2Log::error(SS("Can't remove download siblings" << e.what()));
             // and carry on.
         }
-        return downloadPath;
-    } catch (const std::exception &e)
+
+        // Can't only be performed under pipedal_d or root accouts.
+        // This is as far as you can go while debugging.
+
+        // The admin process will actually check the signature again running as root; but this is our last 
+        // chance to give a reasonable error message, so do it here as well, because any subsequent errors
+        // can only go to systemd logs.
+        ValidateSignature(downloadFilePath,downloadSignaturePath);
+        *file = downloadFilePath;
+        *signatureFile = downloadSignaturePath;
+        return;
+    }
+    catch (const std::exception &e)
     {
-        std::filesystem::remove(downloadPath);
+        std::filesystem::remove(downloadFilePath);
+        std::filesystem::remove(downloadSignaturePath);
         throw;
     }
-
 }
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 JSON_MAP_BEGIN(UpdateRelease)
@@ -727,6 +890,7 @@ JSON_MAP_REFERENCE(UpdateRelease, upgradeVersion)
 JSON_MAP_REFERENCE(UpdateRelease, upgradeVersionDisplayName)
 JSON_MAP_REFERENCE(UpdateRelease, assetName)
 JSON_MAP_REFERENCE(UpdateRelease, updateUrl)
+JSON_MAP_REFERENCE(UpdateRelease, gpgSignatureUrl)
 JSON_MAP_END();
 
 JSON_MAP_BEGIN(UpdateStatus)

@@ -44,13 +44,15 @@ export class UpdateRelease {
     upgradeVersionDisplayName: string = ""; // display name for the version.
     assetName: string = ""; // filename only 
     updateUrl: string = ""; // url from which to download the .deb file.
+    gpgSignatureUrl: string = "";
 
     equals(other: UpdateRelease): boolean {
         return (this.updateAvailable === other.updateAvailable) &&
             (this.upgradeVersion === other.upgradeVersion) &&
             (this.upgradeVersionDisplayName === other.upgradeVersionDisplayName) &&
             (this.assetName === other.assetName) &&
-            (this.updateUrl === other.updateUrl)
+            (this.updateUrl === other.updateUrl) &&
+            (this.gpgSignatureUrl === other.gpgSignatureUrl)
             ;
     }
 };
@@ -93,7 +95,7 @@ export class UpdateStatus {
         switch (this.updatePolicy) {
             case UpdatePolicyT.Disable: // show available updates in the settings dialog.
             case UpdatePolicyT.ReleaseOnly:
-                return this.releaseOnlyRelease; 
+                return this.releaseOnlyRelease;
             case UpdatePolicyT.ReleaseOrBeta:
                 return this.releaseOrBetaRelease;
             case UpdatePolicyT.Development:
