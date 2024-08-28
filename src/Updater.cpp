@@ -38,7 +38,7 @@
 using namespace pipedal;
 namespace fs = std::filesystem;
 
-#define TEST_UPDATE
+#undef TEST_UPDATE
 
 #ifndef DEBUG
 #undef TEST_UPDATE // do NOT leat this leak into a production build!
