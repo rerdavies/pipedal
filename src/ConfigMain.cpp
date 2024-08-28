@@ -782,7 +782,7 @@ void InstallPgpKey()
     std::ostringstream ss;
     ss << "/usr/bin/gpg  --homedir " << homeDir.c_str() << " --import " << keyPath.c_str();
 
-    int rc = sysExec(ss.str().c_str());
+    int rc = silentSysExec(ss.str().c_str());
     if (rc != EXIT_SUCCESS)
     {
         cout << "Error: Failed  to create update keyring." << endl;
