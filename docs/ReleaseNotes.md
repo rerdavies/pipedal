@@ -17,6 +17,7 @@ Bug fixes:
 
 - Fixed a bug which prevents the PiPedal UI from updating properly when using TooB Convolution Reverb and CabIR effects.
 - Plugin controls now work when there's no audio device running, or when the audio device stops.
+- Minor style and theming issues.
 
 ## PiPedal 1.2.41 Release 
 
