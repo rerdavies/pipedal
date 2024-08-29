@@ -42,6 +42,8 @@ namespace pipedal
         ReleaseOnly = 0,
         ReleaseOrBeta = 1,
         Development = 2,
+        Disabled = 3
+
     };
     class UpdateRelease
     {
@@ -123,6 +125,7 @@ namespace pipedal
         void SetUpdatePolicy(UpdatePolicyT updatePolicy);
         void ForceUpdateCheck();
         void DownloadUpdate(const std::string &url, std::filesystem::path*file, std::filesystem::path*signatureFile);
+        UpdateStatus GetCurrentStatus() const { return this->currentResult; }
     private:
         std::string GetUpdateFilename(const std::string &url);
         std::string GetSignatureUrl(const std::string &url);

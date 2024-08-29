@@ -178,7 +178,7 @@ void pipedal::AdminInstallUpdate(const std::filesystem::path path)
    }
     catch (const std::exception &e)
     {
-        updateLog(e.what());
+        updateLog(SS("Error: " << e.what()));
 
         updateResults.updated_ = false;
         updateResults.updateSuccessful_ = false;

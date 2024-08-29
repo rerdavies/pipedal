@@ -63,7 +63,7 @@ static UpdateStatus GetCachedUpdateStatus()
         if (std::filesystem::exists(UPDATE_STATUS_CACHE_FILE))
         {
             std::ifstream f{UPDATE_STATUS_CACHE_FILE};
-            if (!f.is_open())
+            if (f.is_open())
             {
                 json_reader reader(f);
                 UpdateStatus status;
@@ -100,7 +100,7 @@ static void SetCachedUpdateStatus(UpdateStatus &updateStatus)
 Updater::Updater()
 {
     cachedUpdateStatus = GetCachedUpdateStatus();
-    updatePolicy = cachedUpdateStatus.UpdatePolicy();
+    this->updatePolicy = cachedUpdateStatus.UpdatePolicy();
     currentResult = cachedUpdateStatus;
 
     int fds[2];
@@ -382,6 +382,36 @@ UpdateRelease Updater::getUpdateRelease(
     return UpdateRelease();
 }
 
+static void CheckUpdateHttpResponse(std::string errorCode)
+{
+    if (errorCode.starts_with("%"))
+    {
+        errorCode = errorCode.substr(1);
+    }
+    int code = -999;
+    {
+        std::istringstream ss{errorCode};
+        ss >> code;
+    }
+    if (code == -999)
+    {
+        throw std::runtime_error(SS("Invalid curl response: " << errorCode));
+    }
+    if (code == 200)
+    {
+        return;
+    }
+    if (code == 0)
+    {
+        throw std::runtime_error("PiPedal server can't reach the internet.");
+    }
+
+    {
+        std::string message = SS("HTTP error " << code << "");
+        throw std::runtime_error(message);
+    }
+}
+
 void Updater::CheckForUpdate(bool useCache)
 {
     UpdateStatus updateResult;
@@ -400,7 +430,13 @@ void Updater::CheckForUpdate(bool useCache)
         }
         updateResult = this->currentResult;
     }
-    std::string args = SS("-s " << GITHUB_RELEASES_URL);
+
+    const std::string responseOption = "-w \"%{response_code}\"";
+#ifdef WIN32
+    responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
+#endif
+
+    std::string args = SS("-s -L " << responseOption << " " << GITHUB_RELEASES_URL);
 
     updateResult.errorMessage_ = "";
 
@@ -413,6 +449,10 @@ void Updater::CheckForUpdate(bool useCache)
         }
         else
         {
+            if (result.output.length() == 0)
+            {
+                throw std::runtime_error("Server has no internet access.");
+            }
             std::stringstream ss(result.output);
             json_reader reader(ss);
             json_variant vResult(reader);
@@ -535,14 +575,11 @@ void Updater::SetUpdatePolicy(UpdatePolicyT updatePolicy)
     if (updatePolicy == this->updatePolicy)
         return;
     this->updatePolicy = updatePolicy;
-    if (this->currentResult.UpdatePolicy() != updatePolicy)
+    this->currentResult.UpdatePolicy(updatePolicy);
+    SetCachedUpdateStatus(this->currentResult);
+    if (listener)
     {
-        this->currentResult.UpdatePolicy(updatePolicy);
-        SetCachedUpdateStatus(this->currentResult);
-        if (listener)
-        {
-            listener(currentResult);
-        }
+        listener(currentResult);
     }
 }
 void Updater::ForceUpdateCheck()
@@ -721,30 +758,40 @@ static void removeOldSiblings(int numberToKeep, const std::filesystem::path &fil
     }
 }
 
-static std::string getKeyId(const std::string&gpgText)
+static std::string getFingerprint(const std::string &gpgText)
 {
     std::string keyPosition = "using RSA key ";
     size_t nPos = gpgText.find(keyPosition);
-    if (nPos = std::string::npos)
+    if (nPos == std::string::npos)
     {
         return "";
     }
-    nPos += keyPosition.size();
-
+    nPos += keyPosition.length();
+    while (nPos < gpgText.length() && gpgText[nPos] == ' ')
+    {
+        ++nPos;
+    }
     auto start = nPos;
 
     while (true)
     {
         char c = gpgText[nPos];
-        if (nPos >= gpgText.length() || c == ' ' || c == '\r' &&  c == '\n' && c == '\t')
+        if (nPos >= gpgText.length() || c == ' ' || c == '\r' || c == '\n' || c == '\t')
         {
             break;
         }
         ++nPos;
     }
-    return gpgText.substr(start,nPos-start);   
+    return gpgText.substr(start, nPos - start);
 }
-static std::string getAddress(const std::string&gpgText)
+static bool IsSignatureGood(const std::string&gpgText)
+{
+       std::string originPosition = "gpg: Good signature from \"";
+
+    size_t nPos = gpgText.find(originPosition);
+    return nPos != std::string::npos;
+}
+static std::string getAddress(const std::string &gpgText)
 {
     std::string originPosition = "gpg: Good signature from \"";
 
@@ -753,6 +800,7 @@ static std::string getAddress(const std::string&gpgText)
     {
         return "";
     }
+    nPos += originPosition.length();
     auto start = nPos;
     while (true)
     {
@@ -762,38 +810,44 @@ static std::string getAddress(const std::string&gpgText)
         }
         ++nPos;
     }
-    return gpgText.substr(start,nPos-start);
-
+    return gpgText.substr(start, nPos - start);
 }
-void Updater::ValidateSignature(const std::filesystem::path&file, const std::filesystem::path&signatureFile)
+void Updater::ValidateSignature(const std::filesystem::path &file, const std::filesystem::path &signatureFile)
 {
-    // sudo gpg --home /var/pipedal/config/gpg  --verify pipedal_1.2.41_arm64.deb.asc  pipedal_1.2.41_arm64.deb 
+    // sudo gpg --home /var/pipedal/config/gpg  --verify pipedal_1.2.41_arm64.deb.asc  pipedal_1.2.41_arm64.deb
     // gpg: assuming signed data in 'pipedal_1.2.41_arm64.deb'
     // gpg: Signature made Tue 27 Aug 2024 09:25:06 PM EDT
     // gpg:                using RSA key 381124E2BB4478D225D2313B2AEF3F7BD53EAA59
     // gpg: Good signature from "Robin Davies <rerdavies@gmail.com>" [ultimate]
     std::ostringstream ss;
-    ss << "-home " << PGP_UPDATE_KEYRING_PATH
-      << " --verify "
-      << signatureFile << " " << file;
-    
-    auto gpgOutput = sysExecForOutput("/usr/bin/gpg",ss.str());
+    ss << "--home " << PGP_UPDATE_KEYRING_PATH
+       << " --verify "
+       << signatureFile << " " << file;
+
+    Lv2Log::info(SS("/usr/bin/gpg " << ss.str()));
+    auto gpgOutput = sysExecForOutput("/usr/bin/gpg", ss.str());
     if (gpgOutput.exitCode != EXIT_SUCCESS)
     {
         throw std::runtime_error("Update file is not correctly signed.");
     }
-    const std::string&gpgText = gpgOutput.output;
+    const std::string &gpgText = gpgOutput.output;
 
-    std::string keyId = getKeyId(gpgText);
+    if (!IsSignatureGood(gpgText))
+    {
+        throw std::runtime_error("Update signature is not valid.");
+    }
+    std::string keyId = getFingerprint(gpgText);
+
+    Lv2Log::info(unCRLF(gpgText)); // yyy delete me.
 
     if (keyId != UPDATE_GPG_FINGERPRINT)
     {
-        throw std::runtime_error("Update signature has the wrong fingerprint.");
+        throw std::runtime_error(SS("Update signature has the wrong fingerprint: " << keyId));
     }
     std::string origin = getAddress(gpgText);
-    if (origin != UPDATE_GPG_ADDRESS) 
+    if (origin != UPDATE_GPG_ADDRESS)
     {
-        throw std::runtime_error("Update signature has an incorrect address.");
+        throw std::runtime_error(SS("Update signature has an incorrect address." << origin));
     }
 }
 
@@ -801,9 +855,39 @@ static bool badOutput(const std::filesystem::path &filePath)
 {
     if (!fs::is_regular_file(filePath))
     {
-        return false;
+        return true;
     }
-    return fs::file_size(filePath) != 0;
+    return fs::file_size(filePath) == 0;
+}
+
+static void checkCurlHttpResponse(std::string errorCode)
+{
+    if (errorCode.starts_with("%"))
+    {
+        errorCode = errorCode.substr(1);
+    }
+    int code = -999;
+    {
+        std::istringstream ss{errorCode};
+        ss >> code;
+    }
+    if (code == -999)
+    {
+        throw std::runtime_error(SS("Download failed. Invalid curl response: " << errorCode));
+    }
+    if (code == 200)
+    {
+        return;
+    }
+    if (code == 0)
+    {
+        throw std::runtime_error("PiPedal server can't reach the internet.");
+    }
+
+    {
+        std::string message = SS("Download failed (HTTP error " << code << ")");
+        throw std::runtime_error(message);
+    }
 }
 void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file, std::filesystem::path *signatureFile)
 {
@@ -815,7 +899,7 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
     }
 
     // Only permit downloading of updates from the github releases for the pipedal project.
-    // I don't think this will get past GetUpdateFileName, but defense in depth. We will 
+    // I don't think this will get past GetUpdateFileName, but defense in depth. We will
     // not download from anywhere we don't trust.
     if (!WhitelistDownloadUrl(url))
     {
@@ -836,22 +920,30 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
         fs::remove(downloadFilePath);
         fs::remove(downloadSignaturePath);
 
-        std::string args = SS("-s -L " << url << " -o " << downloadFilePath << " 2>&1");
-        auto curlOutput = sysExecForOutput("curl", args);
+        const std::string responseOption = "-w \"%{response_code}\"";
+#ifdef WIN32
+        responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
+#endif
+        std::string args = SS("-s -L " << responseOption << " " << url << " -o " << downloadFilePath.c_str());
+        Lv2Log::info(SS("/usr/bin/curl " << args)); // yyy delete me.
+        auto curlOutput = sysExecForOutput("/usr/bin/curl", args);
         if (curlOutput.exitCode != EXIT_SUCCESS || badOutput(downloadFilePath))
         {
-            Lv2Log::error(SS("Update download failed." << unCRLF(curlOutput.output)));
+            Lv2Log::error(SS("Update download failed. " << unCRLF(curlOutput.output)));
             throw std::runtime_error("PiPedal server does not have access to the internet.");
         }
+        checkCurlHttpResponse(curlOutput.output);
 
-        args = SS("-s -L " << signatureUrl << " -o " << downloadSignaturePath << " 2>&1");
+        args = SS("-s -L " << responseOption << " " << signatureUrl << " -o " << downloadSignaturePath.c_str());
+        Lv2Log::info(SS("/usr/bin/curl " << args));
 
-        curlOutput = sysExecForOutput("curl", args);
+        curlOutput = sysExecForOutput("/usr/bin/curl", args);
         if (curlOutput.exitCode != EXIT_SUCCESS || badOutput(downloadSignaturePath))
         {
-            Lv2Log::error(SS("Update download failed." << unCRLF(curlOutput.output)));
+            Lv2Log::error(SS("Update download failed. " << unCRLF(curlOutput.output)));
             throw std::runtime_error("PiPedal server does not have access to the internet.");
         }
+        checkCurlHttpResponse(curlOutput.output);
 
         try
         {
@@ -867,10 +959,10 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
         // Can't only be performed under pipedal_d or root accouts.
         // This is as far as you can go while debugging.
 
-        // The admin process will actually check the signature again running as root; but this is our last 
+        // The admin process will actually check the signature again running as root; but this is our last
         // chance to give a reasonable error message, so do it here as well, because any subsequent errors
         // can only go to systemd logs.
-        ValidateSignature(downloadFilePath,downloadSignaturePath);
+        ValidateSignature(downloadFilePath, downloadSignaturePath);
         *file = downloadFilePath;
         *signatureFile = downloadSignaturePath;
         return;

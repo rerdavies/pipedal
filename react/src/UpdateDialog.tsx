@@ -126,7 +126,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
     upToDate(): boolean {
         let updateStatus = this.state.updateStatus;
         let updateRelease: UpdateRelease = updateStatus.getActiveRelease();
-        return updateStatus.isValid && !updateRelease.updateAvailable
+        return !updateRelease.updateAvailable
     }
     canUpgrade(): boolean {
         let updateStatus = this.state.updateStatus;
@@ -153,6 +153,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
         let upToDate = this.upToDate();
         let canUpgrade = this.canUpgrade();
         let compact = this.state.compactLandscape;
+        let showUpgradeVersion = !upToDate && updateStatus.isValid && updateRelease.upgradeVersionDisplayName !== "";
         return (
             <DialogEx tag="update" open={this.props.open} onClose={() => { this.handleClose(); }}
                 style={{ userSelect: "none" }}
@@ -202,7 +203,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
                             <Typography noWrap variant="body2" color="textSecondary" >
                                 Current version:
                             </Typography>
-                            {(!upToDate) && (
+                            {(showUpgradeVersion) && (
                                 <Typography noWrap variant="body2" color="textSecondary" style={{ marginTop: 4 }} >
                                     Update  version:
                                 </Typography>
@@ -213,7 +214,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
                             <Typography noWrap variant="body2" color="textSecondary" >
                                 {updateStatus.currentVersionDisplayName}
                             </Typography>
-                            {(!upToDate) && (
+                            {(showUpgradeVersion) && (
                                 <Typography noWrap variant="body2" color="textSecondary" style={{ marginTop: 4 }} >
                                     {updateRelease.upgradeVersionDisplayName}
                                 </Typography>

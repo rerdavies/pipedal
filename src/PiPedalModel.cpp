@@ -66,6 +66,7 @@ PiPedalModel::PiPedalModel()
     : pluginHost(),
       atomConverter(pluginHost.GetMapFeature())
 {
+    this->currentUpdateStatus = updater.GetCurrentStatus();
     this->pedalboard = Pedalboard::MakeDefault();
 #if JACK_HOST
     this->jackServerSettings = this->storage.GetJackServerSettings(); // to get onboarding flag.
@@ -1258,7 +1259,6 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
         {
             if (portIndex == -1)
             {
-                // bypass! yyy this->value!!!
                 this->pedalboard.SetItemEnabled(instanceId, value != 0);
                 // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
                 IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -2168,7 +2168,7 @@ void PiPedalModel::FireUpdateStatusChanged(const UpdateStatus &updateStatus)
 UpdateStatus PiPedalModel::GetUpdateStatus()
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    return currentUpdateStatus;
+    return updater.GetCurrentStatus();
 }
 
 void PiPedalModel::UpdateNow(const std::string &updateUrl)

@@ -781,7 +781,6 @@ export class PiPedalModel //implements PiPedalModel
 
     onSocketConnectionLost() {
         // remove all the events and subscriptions we have.
-        // yyy
         this.vuSubscriptions = [];
         this.monitorPatchPropertyListeners = [];
 

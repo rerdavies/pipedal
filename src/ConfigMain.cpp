@@ -792,10 +792,8 @@ void InstallPgpKey()
         std::stringstream ss;
         ss << (CHOWN_BIN " -R " SERVICE_GROUP_NAME ":" SERVICE_GROUP_NAME " ") << homeDir.c_str();
         std::string cmd = ss.str();
-        cout << cmd << endl;
         sysExec(cmd.c_str());
     }
-    cout << "Debug: Finished creating keystring." << endl;
 }
 void Install(const fs::path &programPrefix, const std::string endpointAddress)
 {
