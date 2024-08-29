@@ -54,6 +54,12 @@ export enum State {
     InstallingUpdate,
 };
 
+class UpdatedError extends Error {
+    constructor(message: string)
+    {
+        super(message);
+    }
+};
 export function wantsLoadingScreen(state: State) {
     return state >= State.Reconnecting;
 }
@@ -728,10 +734,7 @@ export class PiPedalModel //implements PiPedalModel
             if (current.currentVersion.length !== 0 && current.currentVersion !== updateStatus.currentVersion) {
                 // !! Server has been updated!!!
                 this.reloadPage();
-                throw new Error("Reloading...");
-            }
-            if (updateStatus.getActiveRelease().updateAvailable) {
-                this.promptForUpdate.set(true);
+                throw new UpdatedError("Server has been updated");
             }
             this.updatePromptForUpdate()
         }
@@ -879,7 +882,12 @@ export class PiPedalModel //implements PiPedalModel
                 this.setState(State.Ready);
             })
             .catch((what) => {
-                this.onError(what.toString());
+                if (what instanceof UpdatedError)
+                {
+                    // do nothing. a page reload is imminent and unavoidable as soon as we return to the dispatcher.
+                } else {
+                    this.onError(what.toString());
+                }
             })
     }
     makeSocketServerUrl(hostName: string, port: number): string {
@@ -1070,8 +1078,20 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    onError(msg: string): void {
-        this.errorMessage.set(msg);
+    onError(message: string| Error): void {
+        let m = message;
+        if (message instanceof Error)
+        {
+            let e = message as Error;
+            if (e.message) {
+                m = e.message as string;
+            } else {
+                m = e.toString();
+            }
+        } else{
+            m = message.toString();
+        }
+        this.errorMessage.set(m);
         this.state.set(State.Error);
 
     }
@@ -1895,7 +1915,18 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     showAlert(message: string| Error): void {
-        let m = message.toString();
+        let m = message;
+        if (message instanceof Error)
+        {
+            let e = message as Error;
+            if (e.message) {
+                m = e.message as string;
+            } else {
+                m = e.toString();
+            }
+        } else{
+            m = message.toString();
+        }
         this.alertMessage.set(m);
     }
 
