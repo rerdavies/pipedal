@@ -431,12 +431,12 @@ void Updater::CheckForUpdate(bool useCache)
         updateResult = this->currentResult;
     }
 
-    const std::string responseOption = "-w \"%{response_code}\"";
+    //const std::string responseOption = "-w \"%{response_code}\"";
 #ifdef WIN32
     responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
 #endif
 
-    std::string args = SS("-s -L " << responseOption << " " << GITHUB_RELEASES_URL);
+    std::string args = SS("-s -L " << GITHUB_RELEASES_URL);
 
     updateResult.errorMessage_ = "";
 
@@ -477,7 +477,10 @@ void Updater::CheckForUpdate(bool useCache)
                     GithubRelease release{el};
                     if (!release.draft && release.GetDownloadForCurrentArchitecture() != nullptr)
                     {
-                        releases.push_back(std::move(release));
+                        if (release.name.find("Experimental") == std::string::npos) // experimental releases do not participate in auto-updates (not even for dev stream)
+                        {
+                            releases.push_back(std::move(release));
+                        }
                     }
                 }
                 std::sort(
