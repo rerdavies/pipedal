@@ -89,12 +89,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set (USE_SANITIZE False)
 
+
 if (!ENABLE_VST3)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-psabi")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-psabi -DARCHITECTURE=${CPACK_SYSTEM_NAME}")
 else()
     set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
 endif()
 
+EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
+message(STATUS DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
+
+add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
@@ -132,6 +137,9 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    UpdateResults.cpp UpdateResults.hpp
+    UpdaterSecurity.hpp
+    Updater.cpp Updater.hpp
     Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp
@@ -214,6 +222,7 @@ set (PIPEDAL_SOURCES
 
     JackDriver.cpp JackDriver.hpp
     AlsaDriver.cpp AlsaDriver.hpp
+    DummyAudioDriver.cpp DummyAudioDriver.hpp
     AudioDriver.hpp
     AudioConfig.hpp
 
@@ -278,7 +287,8 @@ add_executable(pipedaltest testMain.cpp
 
     InvertingMutexTest.cpp
     jsonTest.cpp
-
+    UpdaterTest.cpp
+    
     utilTest.cpp
     
     AlsaDriverTest.cpp
@@ -563,6 +573,7 @@ add_executable(pipedalconfig
     CommandLineParser.hpp
     PiPedalException.hpp 
     ConfigMain.cpp
+    PiPedalConfiguration.hpp PiPedalConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp
@@ -604,12 +615,22 @@ target_include_directories(capturepresets PRIVATE ${PIPEDAL_INCLUDES})
 target_link_libraries(capturepresets ${PIPEDAL_LIBS})
 
 
+add_executable(pipedal_update
+    UpdateMain.cpp 
+    UpdateResults.cpp UpdateResults.hpp
+    Lv2Log.hpp Lv2Log.cpp
+    Lv2SystemdLogger.cpp Lv2SystemdLogger.hpp
+    UpdateResults.cpp UpdateResults.hpp
+    AdminInstallUpdate.cpp AdminInstallUpdate.hpp
+)
+
+target_link_libraries(pipedal_update PRIVATE  stdc++fs systemd PiPedalCommon )
+
 
 add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     UnixSocket.cpp UnixSocket.hpp
 
     SetWifiConfig.cpp SetWifiConfig.hpp
-
     JackServerSettings.hpp JackServerSettings.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
 
@@ -664,7 +685,7 @@ add_custom_target (
 install (TARGETS pipedalconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
    EXPORT pipedalTargets)
 
-   install (TARGETS pipedald pipedaladmind DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
+   install (TARGETS pipedald pipedaladmind pipedal_update DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
    EXPORT pipedalSbinTargets)
 
 

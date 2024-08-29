@@ -239,10 +239,10 @@ namespace pipedal
 
         unsigned int periods = 0;
 
-        snd_pcm_hw_params_t *captureHwParams;
-        snd_pcm_sw_params_t *captureSwParams;
-        snd_pcm_hw_params_t *playbackHwParams;
-        snd_pcm_sw_params_t *playbackSwParams;
+        snd_pcm_hw_params_t *captureHwParams = nullptr;
+        snd_pcm_sw_params_t *captureSwParams = nullptr;
+        snd_pcm_hw_params_t *playbackHwParams = nullptr;
+        snd_pcm_sw_params_t *playbackSwParams = nullptr;
 
         bool capture_and_playback_not_synced = false;
 
@@ -1469,6 +1469,32 @@ namespace pipedal
                 Lv2Log::error("ALSA audio thread terminated abnormally.");
             }
             this->driverHost->OnAudioStopped();
+
+            // if we terminated abnormally, pump messages until we have been terminated.
+            if (!terminateAudio())
+            {
+                // zero out input buffers.
+                for (size_t i = 0; i < this->captureBuffers.size(); ++i)
+                {
+                    float*pBuffer = captureBuffers[i];
+                    for (size_t j = 0; j < this->bufferSize; ++j)
+                    {
+                        pBuffer[j] = 0;
+                    }
+
+                }
+                while(!terminateAudio())
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    // zero out input buffers.
+                    this->driverHost->OnProcess(this->bufferSize);
+
+                }
+            }
+            this->driverHost->OnAudioTerminated();
+
+
+            
         }
 
         bool alsaActive = false;
@@ -1947,6 +1973,17 @@ namespace pipedal
                          std::vector<std::string> &inputAudioPorts,
                          std::vector<std::string> &outputAudioPorts)
     {
+        if (jackServerSettings.IsDummyAudioDevice())
+        {
+            inputAudioPorts.clear();
+            inputAudioPorts.push_back("system::capture_0");
+            inputAudioPorts.push_back("system::capture_1");
+            outputAudioPorts.clear();
+            outputAudioPorts.push_back("system::playback_0");
+            outputAudioPorts.push_back("system::playback_1");
+
+            return true;
+        }
 
         snd_pcm_t *playbackHandle = nullptr;
         snd_pcm_t *captureHandle = nullptr;
@@ -1958,7 +1995,7 @@ namespace pipedal
         try
         {
             int err;
-            for (int retry = 0; retry < 15; ++retry)
+            for (int retry = 0; retry < 2; ++retry)
             {
                 err = snd_pcm_open(&playbackHandle, alsaDeviceName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
                 if (err < 0) // field report of a device that is present, but won't immediately open.
@@ -2044,7 +2081,6 @@ namespace pipedal
         }
         catch (const std::exception &e)
         {
-            Lv2Log::warning(SS("Unable to read ALSA configuration for " << alsaDeviceName << ". " << e.what() << "."));
             result = false;
             throw;
         }

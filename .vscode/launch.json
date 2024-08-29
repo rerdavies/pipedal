@@ -112,7 +112,7 @@
                 //"[json_variants]"  // subtest of your choice, or none to run all of the tests.
                 //"[inverting_mutex_test]"
                 // "[utf8_to_utf32]"
-                "[wifi_channels_test]"
+                "[updater]"
             ],
 
             "stopAtEntry": false,
@@ -258,10 +258,11 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
                 "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
+                "--prefix", "/usr",
                 //"--get-current-port"
-                // "--uninstall"
+                "--install"
                 //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
-                "--list-p2p-channels"
+                //"--list-p2p-channels"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

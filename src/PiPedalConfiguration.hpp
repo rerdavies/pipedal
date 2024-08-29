@@ -48,6 +48,7 @@ private:
     std::string accessPointGateway_;
     std::string accessPointServerAddress_;
     bool isVst3Enabled_ = true;
+    bool end_ = false; // dummy target for /var/pipedal/config/config.json
 
 public:
     bool IsVst3Enabled() const { return isVst3Enabled_; }
@@ -57,26 +58,8 @@ public:
     const std::filesystem::path& GetWebRoot() const {
         return webRoot_;
     }
-    void Load(const std::filesystem::path& path, const std::filesystem::path&webRoot) {
-        std::filesystem::path configPath =  path / "config.json";
-        if (!std::filesystem::exists(configPath))
-        {
-            throw PiPedalException("File not found.");
-        }
-        std::ifstream f(configPath);
-        if (!f.is_open())
-        {
-            std::stringstream s;
-            s << "Unable to open " << configPath;
-            throw PiPedalStateException(s.str());
-        }
-        json_reader reader(f);
-        reader.read(this);
-        docRoot_ = path;
+    void Load(const std::filesystem::path& path, const std::filesystem::path&webRoot);
 
-        webRoot_ = webRoot;
-        
-    }
     const std::filesystem::path &GetDocRoot() const { return docRoot_; }
     const std::string &GetLv2Path() const { return lv2_path_; }
     const std::string &GetLocalStoragePath() const { return local_storage_path_; }
@@ -108,32 +91,8 @@ public:
         return socketServerAddress_.substr(0,pos);
     }
     
-    uint16_t GetSocketServerPort() const {
-        try {
-            size_t pos = this->socketServerAddress_.find_last_of(':');
-            if (pos == std::string::npos)
-            {
-                throw std::exception();
-            }
-            std::string strPort = socketServerAddress_.substr(pos+1);
-            unsigned long port =  std::stoul(strPort);
-            if (port == 0) 
-            {
-                throw std::exception();
-            }
-            if (port > std::numeric_limits<uint16_t>::max())
-            {
-                throw std::exception();
-            }
-            return (uint16_t) port;
-        } catch (const std::exception &)
-        {
-            std::stringstream s;
-            s << "Invalid port number in '" << this->socketServerAddress_ << "'.";
-            throw PiPedalArgumentException(s.str());
-        }
+    uint16_t GetSocketServerPort() const;
 
-    }
     uint32_t GetThreads() const { return threads_; }
 
     DECLARE_JSON_MAP(PiPedalConfiguration);

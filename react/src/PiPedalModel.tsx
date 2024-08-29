@@ -20,7 +20,7 @@
 import { UiPlugin, UiControl, PluginType, UiFileProperty } from './Lv2Plugin';
 
 import { PiPedalArgumentError, PiPedalStateError } from './PiPedalError';
-
+import { UpdateStatus, UpdatePolicyT } from './Updater';
 import { ObservableProperty } from './ObservableProperty';
 import { Pedalboard, PedalboardItem, ControlValue } from './Pedalboard'
 import PluginClass from './PluginClass';
@@ -38,7 +38,7 @@ import GovernorSettings from './GovernorSettings';
 import WifiChannel from './WifiChannel';
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
-import {ColorTheme, getColorScheme,setColorScheme} from './DarkMode';
+import { ColorTheme, getColorScheme, setColorScheme } from './DarkMode';
 import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
 
 
@@ -49,13 +49,20 @@ export enum State {
     Background,
     Reconnecting,
     ApplyingChanges,
-    ReloadingPlugins
+    ReloadingPlugins,
+    DownloadingUpdate,
+    InstallingUpdate,
 };
+
+export function wantsLoadingScreen(state: State) {
+    return state >= State.Reconnecting;
+}
 
 export enum ReconnectReason {
     Disconnected,
     LoadingSettings,
     ReloadingPlugins,
+    Updating,
 };
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
@@ -369,6 +376,9 @@ export class PiPedalModel //implements PiPedalModel
     state: ObservableProperty<State> = new ObservableProperty<State>(State.Loading);
     visibilityState: ObservableProperty<VisibilityState> = new ObservableProperty<VisibilityState>(VisibilityState.Visible);
 
+    promptForUpdate: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
+    updateStatus: ObservableProperty<UpdateStatus> = new ObservableProperty<UpdateStatus>(new UpdateStatus());
+
     errorMessage: ObservableProperty<string> = new ObservableProperty<string>("");
     alertMessage: ObservableProperty<string> = new ObservableProperty<string>("");
 
@@ -431,23 +441,31 @@ export class PiPedalModel //implements PiPedalModel
         this.onSocketConnectionLost = this.onSocketConnectionLost.bind(this);
     }
 
-    onSocketReconnecting(retry: number, maxRetries: number): void {
-        if (this.visibilityState.get() === VisibilityState.Hidden) return;
+    expectDisconnect(reason: ReconnectReason) {
+        this.reconnectReason = reason;
+    }
+
+    onSocketReconnecting(retry: number, maxRetries: number): boolean {
+        if (this.isClosed) return false;
+        if (this.visibilityState.get() === VisibilityState.Hidden) return false;
         //if (retry !== 0) {
-        switch (this.reconnectReason)
-        {
-        case ReconnectReason.Disconnected:
-        default:
-            this.setState(State.Reconnecting);
-            break;
-        case ReconnectReason.LoadingSettings:
-            this.setState(State.ApplyingChanges);
-            break;
-        case ReconnectReason.ReloadingPlugins:
-            this.setState(State.ReloadingPlugins);
-            break;
+        switch (this.reconnectReason) {
+            case ReconnectReason.Disconnected:
+            default:
+                this.setState(State.Reconnecting);
+                break;
+            case ReconnectReason.LoadingSettings:
+                this.setState(State.ApplyingChanges);
+                break;
+            case ReconnectReason.ReloadingPlugins:
+                this.setState(State.ReloadingPlugins);
+                break;
+            case ReconnectReason.Updating:
+                this.setState(State.InstallingUpdate);
+                break;
 
         }
+        return true;
     }
 
 
@@ -486,17 +504,17 @@ export class PiPedalModel //implements PiPedalModel
         }
         else if (message === "onOutputVolumeChanged") {
             let value = body as number;
-            this._setOutputVolume(value,false);
+            this._setOutputVolume(value, false);
         }
         else if (message === "onInputVolumeChanged") {
             let value = body as number;
-            this._setInputVolume(value,false);
+            this._setInputVolume(value, false);
         } else if (message === "onLv2StateChanged") {
 
             let instanceId = body.instanceId as number;
-            let state = body.state as [boolean,any];
+            let state = body.state as [boolean, any];
 
-            this.onLv2StateChanged(instanceId,state);
+            this.onLv2StateChanged(instanceId, state);
         } else if (message === "onVst3ControlChanged") {
             let controlChangedBody = body as Vst3ControlChangedBody;
             this._setVst3PedalboardControlValue(
@@ -613,18 +631,113 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onSystemMidiBindingsChanged") {
             let bindings = MidiBinding.deserialize_array(body);
             this.systemMidiBindings.set(bindings);
-        } else if (message === "onErrorMessage")
-        {
+        } else if (message === "onErrorMessage") {
             this.showAlert(body as string);
 
-        } 
-        else if (message === "onLv2PluginsChanging")
-        {
+        }
+        else if (message === "onLv2PluginsChanging") {
             this.onLv2PluginsChanging();
+        } else if (message === "onUpdateStatusChanged") {
+            let updateStatus = new UpdateStatus().deserialize(body);
+            this.onUpdateStatusChanged(updateStatus);
         }
     }
-    onLv2PluginsChanging() : void {
-        this.reconnectReason = ReconnectReason.ReloadingPlugins;
+
+    private updateLaterTimeout?: NodeJS.Timeout = undefined;
+
+    private clearPromptForUpdateTimer() {
+        if (this.updateLaterTimeout) {
+            clearTimeout(this.updateLaterTimeout);
+            this.updateLaterTimeout = undefined;
+        }
+    }
+
+    private setPromptForUpdateTimer(when: Date) {
+        let ms = when.getTime() - Date.now();
+        this.updateLaterTimeout = setTimeout(
+            () => {
+                this.updateLaterTimeout = undefined;
+                // make the server do a fresh check
+                this.getUpdateStatus()
+                    .then(
+                        () => {
+                            this.updatePromptForUpdate();
+                        })
+                    .catch((e) => {
+
+                    });
+            },
+            ms);
+    }
+
+
+    private lastCanUpdateNow: boolean = false;
+    private updatePromptForUpdate() {
+        this.clearPromptForUpdateTimer();
+
+        let stateEnabled = true; // must be present to accept alerts.  this.state.get() === State.Ready;
+        let timeEnabled = false;
+
+        let updateLaterTime = this.getUpdateTime();
+        if (updateLaterTime == null) {
+            timeEnabled = true;
+        } else {
+            let nDate = Date.now();
+
+            let now: Date = new Date(nDate);
+            let maxDate: Date = new Date(nDate + 86400000*2); // sanity check for systems with unstable system clock
+
+            timeEnabled = (updateLaterTime < now || updateLaterTime >= maxDate)
+        }
+        let updateStatus = this.updateStatus.get();
+        let statusEnabled = updateStatus.isOnline && updateStatus.isValid && updateStatus.getActiveRelease().updateAvailable;
+
+        let canUpdateNow: boolean = (stateEnabled && timeEnabled && statusEnabled);
+        if (updateStatus.updatePolicy === UpdatePolicyT.Disable)
+        {
+            canUpdateNow = false;
+        }
+
+        if (canUpdateNow && canUpdateNow !== this.lastCanUpdateNow)
+        {
+            this.showUpdateDialogValue = true; // make the dialog sticky so it can show OK button
+        }
+        this.lastCanUpdateNow  = canUpdateNow;
+        this.promptForUpdate.set(this.showUpdateDialogValue || canUpdateNow);
+
+        if (stateEnabled && statusEnabled && !timeEnabled && updateLaterTime) {
+            this.setPromptForUpdateTimer(updateLaterTime);
+        }
+    }
+    private showUpdateDialogValue: boolean = false;
+
+    showUpdateDialog(show: boolean = true) {
+        if (this.showUpdateDialogValue !== show) {
+            this.showUpdateDialogValue = show;
+            if (show) {
+                this.forceUpdateCheck();
+            }
+            this.updatePromptForUpdate();
+        }
+    }
+
+    onUpdateStatusChanged(updateStatus: UpdateStatus): void {
+        let current = this.updateStatus.get();
+        if (!current.equals(updateStatus)) {
+            this.updateStatus.set(updateStatus);
+            if (current.currentVersion.length !== 0 && current.currentVersion !== updateStatus.currentVersion) {
+                // !! Server has been updated!!!
+                this.reloadPage();
+                throw new Error("Reloading...");
+            }
+            if (updateStatus.getActiveRelease().updateAvailable) {
+                this.promptForUpdate.set(true);
+            }
+            this.updatePromptForUpdate()
+        }
+    }
+    onLv2PluginsChanging(): void {
+        this.expectDisconnect(ReconnectReason.ReloadingPlugins);
         // this.webSocket?.reconnect(); // let the server do it for us.
 
     }
@@ -642,14 +755,15 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
 
-    validatePlugins(plugin: PluginClass) {
+    validatePluginClasses(plugin: PluginClass) {
         if (plugin.plugin_type === PluginType.None) {
             console.log("Error: No plugin type for uri '" + plugin.uri + "'");
         }
         for (let i = 0; i < plugin.children.length; ++i) {
-            this.validatePlugins(plugin.children[i]);
+            this.validatePluginClasses(plugin.children[i]);
         }
     }
+
 
 
     private reconnectReason: ReconnectReason = ReconnectReason.Disconnected;
@@ -667,7 +781,6 @@ export class PiPedalModel //implements PiPedalModel
 
     onSocketConnectionLost() {
         // remove all the events and subscriptions we have.
-        // yyy
         this.vuSubscriptions = [];
         this.monitorPatchPropertyListeners = [];
 
@@ -681,13 +794,17 @@ export class PiPedalModel //implements PiPedalModel
             this.androidHost?.setDisconnected(false);
         }
 
-        this.reconnectReason = ReconnectReason.Disconnected;
+        this.expectDisconnect(ReconnectReason.Disconnected); // the next expected disconnect will be an actual disconnect.
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
 
         // reload state, but not configuration.
         this.getWebSocket().request<number>("hello")
             .then(clientId => {
                 this.clientId = clientId;
+                return this.getUpdateStatus(); // detects whether server has been upgraded.
+            })
+            .then((updateStatus) => {
+                
                 return this.getWebSocket().request<any>("plugins");
             })
             .then(data => {
@@ -762,7 +879,7 @@ export class PiPedalModel //implements PiPedalModel
                 this.setState(State.Ready);
             })
             .catch((what) => {
-                this.onError(what);
+                this.onError(what.toString());
             })
     }
     makeSocketServerUrl(hostName: string, port: number): string {
@@ -774,7 +891,7 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
-    maxFileUploadSize: number = 512*1024*1024;
+    maxFileUploadSize: number = 512 * 1024 * 1024;
     maxPresetUploadSize: number = 1024 * 1024;
     debug: boolean = false;
 
@@ -795,7 +912,7 @@ export class PiPedalModel //implements PiPedalModel
                     this.androidHost = new FakeAndroidHost();
                 }
                 this.debug = !!data.debug;
-                let { socket_server_port, socket_server_address,max_upload_size } = data;
+                let { socket_server_port, socket_server_address, max_upload_size } = data;
                 if ((!socket_server_address) || socket_server_address === "*") {
                     socket_server_address = window.location.hostname;
                 }
@@ -825,6 +942,9 @@ export class PiPedalModel //implements PiPedalModel
                 return false;
             })
             .then(() => {
+                return this.getUpdateStatus();
+            })
+            .then((updateStatus) => {
                 const isoRequest = new Request('iso_codes.json');
                 return fetch(isoRequest);
             })
@@ -846,7 +966,7 @@ export class PiPedalModel //implements PiPedalModel
                 return true;
             })
             .catch((error) => {
-                this.setError("Failed to connect to server. " + error);
+                this.setError("Failed to connect to server. " + error.toString());
                 return false;
             })
             .then((succeeded) => {
@@ -868,7 +988,7 @@ export class PiPedalModel //implements PiPedalModel
                     .then((data) => {
 
                         this.plugin_classes.set(new PluginClass().deserialize(data));
-                        this.validatePlugins(this.plugin_classes.get());
+                        this.validatePluginClasses(this.plugin_classes.get());
 
                         return this.getWebSocket().request<PresetIndex>("getPresets");
                     })
@@ -941,7 +1061,7 @@ export class PiPedalModel //implements PiPedalModel
                         return true;
                     })
                     .catch((error) => {
-                        this.setError("Failed to fetch server state.\n\n" + error);
+                        this.setError("Failed to fetch server state.\n\n" + error.toString());
                         return false;
                     });
 
@@ -1025,7 +1145,7 @@ export class PiPedalModel //implements PiPedalModel
                 }
             })
             .catch((error) => {
-                this.setError("Failed to get server state. \n\n" + error);
+                this.setError("Failed to get server state. \n\n" + error.toString());
             });
         let t = this.onVisibilityChanged;
 
@@ -1131,7 +1251,7 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
 
-    private onLv2StateChanged(instanceId: number, state: [boolean,any]): void {
+    private onLv2StateChanged(instanceId: number, state: [boolean, any]): void {
         let item = this.pedalboard.get().getItem(instanceId);
         item.lv2State = state;
         for (let item of this.stateChangedListeners) {
@@ -1182,33 +1302,31 @@ export class PiPedalModel //implements PiPedalModel
         this.webSocket?.send("setPatchProperty", body);
     }
 
-    setInputVolume(volume_db: number) : void {
-        this._setInputVolume(volume_db,true);
+    setInputVolume(volume_db: number): void {
+        this._setInputVolume(volume_db, true);
     }
-    previewInputVolume(volume_db: number) : void {
-        nullCast(this.webSocket).send("previewInputVolume",volume_db);
+    previewInputVolume(volume_db: number): void {
+        nullCast(this.webSocket).send("previewInputVolume", volume_db);
 
     }
-    previewOutputVolume(volume_db: number) : void {
-        nullCast(this.webSocket).send("previewOutputVolume",volume_db);
+    previewOutputVolume(volume_db: number): void {
+        nullCast(this.webSocket).send("previewOutputVolume", volume_db);
 
     }
 
-    private _setInputVolume(volume_db: number, notifyServer: boolean) : void {
-        let  changed: boolean = false;
+    private _setInputVolume(volume_db: number, notifyServer: boolean): void {
+        let changed: boolean = false;
 
         let pedalboard = this.pedalboard.get();
-        if (pedalboard.input_volume_db !== volume_db)
-        {
+        if (pedalboard.input_volume_db !== volume_db) {
             let newPedalboard = pedalboard.clone();
             newPedalboard.input_volume_db = volume_db;
             this.pedalboard.set(newPedalboard);
             changed = true;
         }
-        if (changed)
-        {
+        if (changed) {
             if (notifyServer) {
-                nullCast(this.webSocket).send("setInputVolume",volume_db);
+                nullCast(this.webSocket).send("setInputVolume", volume_db);
             }
 
             for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
@@ -1220,26 +1338,23 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
 
-    setOutputVolume(volume_db: number, notifyServer: boolean) : void 
-    {
-        this._setOutputVolume(volume_db,true);
+    setOutputVolume(volume_db: number, notifyServer: boolean): void {
+        this._setOutputVolume(volume_db, true);
     }
 
-    private _setOutputVolume(volume_db: number, notifyServer: boolean) : void {
-        let  changed: boolean = false;
+    private _setOutputVolume(volume_db: number, notifyServer: boolean): void {
+        let changed: boolean = false;
 
         let pedalboard = this.pedalboard.get();
-        if (pedalboard.output_volume_db !== volume_db)
-        {
+        if (pedalboard.output_volume_db !== volume_db) {
             let newPedalboard = pedalboard.clone();
             newPedalboard.output_volume_db = volume_db;
             this.pedalboard.set(newPedalboard);
             changed = true;
         }
-        if (changed)
-        {
+        if (changed) {
             if (notifyServer) {
-                nullCast(this.webSocket).send("setOutputVolume",volume_db);
+                nullCast(this.webSocket).send("setOutputVolume", volume_db);
             }
             for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
                 let item = this._controlValueChangeItems[i];
@@ -1256,15 +1371,13 @@ export class PiPedalModel //implements PiPedalModel
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalboard = pedalboard.clone();
 
-        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db")
-        {
-            this._setInputVolume(value,notifyServer);
+        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
+            this._setInputVolume(value, notifyServer);
             return;
-        } else if (instanceId === Pedalboard.END_CONTROL)
-        {
-            this._setOutputVolume(value,notifyServer);
+        } else if (instanceId === Pedalboard.END_CONTROL) {
+            this._setOutputVolume(value, notifyServer);
             return;
-        } 
+        }
         let item = newPedalboard.getItem(instanceId);
         let changed = item.setControlValue(key, value);
 
@@ -1365,7 +1478,7 @@ export class PiPedalModel //implements PiPedalModel
         while (true) {
             let v = it.next();
             if (v.done) break;
-            let item = v.value; 
+            let item = v.value;
             if (item.instanceId === itemId) {
                 item.deserialize(new PedalboardItem()); // skeezy way to re-initialize.
                 item.instanceId = ++newPedalboard.nextInstanceId;
@@ -1395,16 +1508,14 @@ export class PiPedalModel //implements PiPedalModel
         // mouse is down. Don't update EVERYBODY, but we must change 
         // the control on the running audio plugin.
         // TODO: respect "expensive" port attribute.
-        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db")
-        {
+        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
             this.previewInputVolume(value);
             return;
-        } else if (instanceId === Pedalboard.END_CONTROL)
-        {
+        } else if (instanceId === Pedalboard.END_CONTROL) {
             this.previewOutputVolume(value);
             return;
-        } 
-        
+        }
+
         this._setServerControl("previewControl", instanceId, key, value);
     }
 
@@ -1530,13 +1641,11 @@ export class PiPedalModel //implements PiPedalModel
     }
     addPedalboardItem(instanceId: number, append: boolean): number {
         let pedalboard = this.pedalboard.get();
-        if (instanceId === Pedalboard.START_CONTROL && append)
-        {
+        if (instanceId === Pedalboard.START_CONTROL && append) {
             instanceId = pedalboard.items[0].instanceId;
             append = false;
-        } else if (instanceId === Pedalboard.END_CONTROL && !append)
-        {
-            instanceId = pedalboard.items[pedalboard.items.length-1].instanceId;
+        } else if (instanceId === Pedalboard.END_CONTROL && !append) {
+            instanceId = pedalboard.items[pedalboard.items.length - 1].instanceId;
             append = true;
         }
         let newPedalboard = pedalboard.clone();
@@ -1555,14 +1664,12 @@ export class PiPedalModel //implements PiPedalModel
     }
     addPedalboardSplitItem(instanceId: number, append: boolean): number {
         let pedalboard = this.pedalboard.get();
-        
-        if (instanceId === Pedalboard.START_CONTROL && append)
-        {
+
+        if (instanceId === Pedalboard.START_CONTROL && append) {
             instanceId = pedalboard.items[0].instanceId;
             append = false;
-        } else if (instanceId === Pedalboard.END_CONTROL && !append)
-        {
-            instanceId = pedalboard.items[pedalboard.items.length-1].instanceId;
+        } else if (instanceId === Pedalboard.END_CONTROL && !append) {
+            instanceId = pedalboard.items[pedalboard.items.length - 1].instanceId;
             append = true;
         }
 
@@ -1615,7 +1722,6 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-
     saveCurrentPresetAs(newName: string, saveAfterInstanceId = -1): Promise<number> {
         // default behaviour is to save after the currently selected preset.
         if (saveAfterInstanceId === -1) {
@@ -1636,21 +1742,97 @@ export class PiPedalModel //implements PiPedalModel
             });
     }
 
+    getUpdateStatus(): Promise<UpdateStatus> {
+        return new Promise<UpdateStatus>(
+            (accept, reject) => {
+                nullCast(this.webSocket)
+                    .request<UpdateStatus>('getUpdateStatus')
+                    .then((result) => {
+                        let updateStatus = new UpdateStatus().deserialize(result);
+                        this.onUpdateStatusChanged(updateStatus);
+                        accept(result);
+                    }).catch(
+                        (e) => {
+                            reject(e);
+                        }
+
+                    );
+
+            });
+
+    }
+    launchExternalUrl(url: string) {
+        if (this.isAndroidHosted()) {
+            try {
+                this.androidHost?.launchExternalUrl(url);
+            } catch (e) {
+                // if they haven't updated their client yet, just don't do it.
+            }
+
+
+        } else {
+            window.open(url, "_blank")?.focus();
+        }
+    }
+
+    updateLater(delayMs: number) {
+        let futureDate = new Date(Date.now() + delayMs);
+        localStorage.setItem('nextUpdateTime', futureDate.toISOString());
+
+        this.updatePromptForUpdate();
+    }
+
+    updateNow(): Promise<void> {
+        return new Promise<void>(
+            (accept, reject) => {
+                let updateStatus = this.updateStatus.get();
+                if (updateStatus.isOnline && updateStatus.isValid && updateStatus.getActiveRelease().updateAvailable) {
+                    this.setState(State.DownloadingUpdate);
+                    this.expectDisconnect(ReconnectReason.Updating);
+                    let url = updateStatus.getActiveRelease().updateUrl;
+
+                    nullCast(this.webSocket)
+                        .request<void>('updateNow', url)
+                        .then(() => {
+                            this.setState(State.InstallingUpdate);
+                            accept();
+                        })
+                        .catch(
+                            (e: any) => {
+                                this.expectDisconnect(ReconnectReason.Disconnected);
+
+                                this.setState(State.Ready); // TODO: hopefully we haven't had an intermediate disconnect.
+                                reject(e);
+                            });
+                } else {
+                    reject(new Error("Invalid  update request."));
+                }
+
+            }
+        );
+    }
+
+    getUpdateTime(): Date | null {
+        let item = localStorage.getItem('nextUpdateTime');
+        if (item) {
+            return new Date(item);
+        }
+        return null;
+    }
     // deprecated.
     requestFileList(piPedalFileProperty: UiFileProperty): Promise<string[]> {
         return nullCast(this.webSocket)
             .request<string[]>('requestFileList', piPedalFileProperty);
     }
-    requestFileList2(relativeDirectoryPath: string,piPedalFileProperty: UiFileProperty): Promise<FileEntry[]> {
+    requestFileList2(relativeDirectoryPath: string, piPedalFileProperty: UiFileProperty): Promise<FileEntry[]> {
         return nullCast(this.webSocket)
             .request<FileEntry[]>('requestFileList2',
-                {relativePath: relativeDirectoryPath, fileProperty: piPedalFileProperty}
+                { relativePath: relativeDirectoryPath, fileProperty: piPedalFileProperty }
             );
     }
-    
-    deleteUserFile(fileName: string) : Promise<boolean>
-    {
-        return nullCast(this.webSocket).request<boolean>('deleteUserFile',fileName);
+
+    deleteUserFile(fileName: string): Promise<boolean> {
+        return nullCast(this.webSocket).request<boolean>('deleteUserFile', fileName);
     }
 
 
@@ -1712,13 +1894,14 @@ export class PiPedalModel //implements PiPedalModel
         return this.copyPreset(instanceId, -1);
     }
 
-    showAlert(message: string): void {
-        this.alertMessage.set(message);
+    showAlert(message: string| Error): void {
+        let m = message.toString();
+        this.alertMessage.set(m);
     }
 
 
     setJackSettings(jackSettings: JackChannelSelection): void {
-        this.reconnectReason = ReconnectReason.LoadingSettings;
+        this.expectDisconnect(ReconnectReason.LoadingSettings);
         this.webSocket?.send("setJackSettings", jackSettings);
     }
 
@@ -1823,7 +2006,14 @@ export class PiPedalModel //implements PiPedalModel
         }
 
     }
-
+    private isClosed = false;
+    close() {
+        if (!this.isClosed) {
+            this.isClosed = true;
+            this.webSocket?.close();
+            this.webSocket = undefined;
+        }
+    }
     setPatchProperty(instanceId: number, uri: string, value: any): Promise<boolean> {
         let result = new Promise<boolean>((resolve, reject) => {
             if (this.webSocket) {
@@ -2107,7 +2297,7 @@ export class PiPedalModel //implements PiPedalModel
         window.open(url, "_blank");
     }
 
-    uploadFile(uploadPage: string, file: File, contentType: string = "application/octet-stream",  abortController?: AbortController): Promise<string> {
+    uploadFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {
         let result = new Promise<string>((resolve, reject) => {
             try {
                 if (file.size > this.maxFileUploadSize) {
@@ -2117,17 +2307,15 @@ export class PiPedalModel //implements PiPedalModel
                 let parsedUrl = new URL(url);
                 let fileNameOnly = file.name.split('/').pop()?.split('\\')?.pop();
                 let query = parsedUrl.search;
-                if (query.length === 0)
-                {
+                if (query.length === 0) {
                     query += '?';
                 } else {
                     query += '&';
                 }
-                if (!fileNameOnly)
-                {
+                if (!fileNameOnly) {
                     reject("Invalid filename.");
                 }
-                query += "filename=" + encodeURIComponent(fileNameOnly??"");
+                query += "filename=" + encodeURIComponent(fileNameOnly ?? "");
                 parsedUrl.search = query;
                 url = parsedUrl.toString();
                 fetch(
@@ -2146,7 +2334,7 @@ export class PiPedalModel //implements PiPedalModel
                             reject("Upload failed. " + response.statusText);
                             return;
                         } else {
-                            return response.json(); 
+                            return response.json();
                         }
                     })
                     .then((json) => {
@@ -2195,7 +2383,7 @@ export class PiPedalModel //implements PiPedalModel
                         resolve(json as number);
                     })
                     .catch((error) => {
-                        reject("Upload failed. " + error);
+                        reject("Upload failed. " + error.toString());
                     })
                     ;
             } catch (error) {
@@ -2254,8 +2442,7 @@ export class PiPedalModel //implements PiPedalModel
         return new Promise<void>((resolve, reject) => {
 
             let ws = this.webSocket;
-            if (!ws) 
-            {
+            if (!ws) {
                 resolve();
                 return;
             }
@@ -2271,8 +2458,7 @@ export class PiPedalModel //implements PiPedalModel
                 });
         });
     }
-    createNewSampleDirectory(relativePath: string, uiFileProperty: UiFileProperty) : Promise<string>
-    {
+    createNewSampleDirectory(relativePath: string, uiFileProperty: UiFileProperty): Promise<string> {
         return new Promise<string>((resolve, reject) => {
 
             let ws = this.webSocket;
@@ -2295,8 +2481,8 @@ export class PiPedalModel //implements PiPedalModel
                 });
         });
     }
-    
-    getFilePropertyDirectoryTree(uiFileProperty: UiFileProperty) : Promise<FilePropertyDirectoryTree> {
+
+    getFilePropertyDirectoryTree(uiFileProperty: UiFileProperty): Promise<FilePropertyDirectoryTree> {
         return new Promise<FilePropertyDirectoryTree>((resolve, reject) => {
             let ws = this.webSocket;
             if (!ws) {
@@ -2306,15 +2492,14 @@ export class PiPedalModel //implements PiPedalModel
             ws.request<FilePropertyDirectoryTree>(
                 "getFilePropertyDirectoryTree",
                 uiFileProperty
-            ).then((result)=> {
+            ).then((result) => {
                 resolve(new FilePropertyDirectoryTree().deserialize(result));
             }).catch((e) => {
                 reject(e);
             });
         });
     }
-    renameFilePropertyFile(oldRelativePath: string, newRelativePath: string, uiFileProperty: UiFileProperty) : Promise<string>
-    {
+    renameFilePropertyFile(oldRelativePath: string, newRelativePath: string, uiFileProperty: UiFileProperty): Promise<string> {
         return new Promise<string>((resolve, reject) => {
 
             let ws = this.webSocket;
@@ -2441,11 +2626,11 @@ export class PiPedalModel //implements PiPedalModel
                 .catch((err) => {
                     //resolve();
                 });
-                resolve();
+            resolve();
 
         });
-        this.reconnectReason = ReconnectReason.LoadingSettings;
-        this.webSocket?.reconnect(); // close immediately, and wait for recoonnect.
+        this.expectDisconnect(ReconnectReason.LoadingSettings);
+        // this.webSocket?.reconnect(); // avoid races by letting the server do it for us.
         return result;
     }
 
@@ -2524,8 +2709,7 @@ export class PiPedalModel //implements PiPedalModel
 
         ++ix;
         if (ix >= uiPlugin.controls.length) return;
-        while (!uiPlugin.controls[ix].is_input)
-        {
+        while (!uiPlugin.controls[ix].is_input) {
             ++ix;
             if (ix >= uiPlugin.controls.length) return;
         }
@@ -2558,8 +2742,7 @@ export class PiPedalModel //implements PiPedalModel
 
         --ix;
         if (ix < 0) return;
-        while (!uiPlugin.controls[ix].is_input)
-        {
+        while (!uiPlugin.controls[ix].is_input) {
             --ix;
             if (ix < 0) return;
         }
@@ -2590,6 +2773,20 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
+    setUpdatePolicy(updatePolicy: UpdatePolicyT): void {
+        let iPolicy = updatePolicy as number;
+        if (this.webSocket) {
+            this.webSocket.send("setUpdatePolicy", iPolicy);
+        }
+
+    }
+    forceUpdateCheck() {
+        if (this.webSocket) {
+            this.webSocket.send("forceUpdateCheck");
+        }
+
+    }
+
     preloadImages(imageList: string): void {
         let imageNames = imageList.split(';');
         for (let i = 0; i < imageNames.length; ++i) {
@@ -2619,8 +2816,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     // returns the ID of the new preset.
-    newPresetItem(createAfter: number): Promise<number>
-    {
+    newPresetItem(createAfter: number): Promise<number> {
         return nullCast(this.webSocket).request<number>("newPreset");
     }
 
@@ -2630,14 +2826,13 @@ export class PiPedalModel //implements PiPedalModel
 
     setTheme(value: ColorTheme) {
 
-        if (this.getTheme() !== value)
-        {
+        if (this.getTheme() !== value) {
             setColorScheme(value);
-            setTimeout(()=>{
+            setTimeout(() => {
                 this.reloadPage();
             },
-            200);
-}
+                200);
+        }
     }
 
 
@@ -2647,7 +2842,6 @@ export class PiPedalModel //implements PiPedalModel
         window.location.href = url;
         //window.location.reload();
     }
-
 };
 
 let instance: PiPedalModel | undefined = undefined;

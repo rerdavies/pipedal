@@ -112,7 +112,12 @@ void JackConfiguration::AlsaInitialize(
     this->isValid_ = false;
     this->errorStatus_ = "";
 
-    this->inputMidiDevices_ = GetAlsaMidiInputDevices();
+    if (jackServerSettings.IsDummyAudioDevice())
+    {
+        this->inputMidiDevices_.clear();
+    } else {
+        this->inputMidiDevices_ = GetAlsaMidiInputDevices();
+    }
     if (jackServerSettings.IsValid())
     {
         this->blockLength_ = jackServerSettings.GetBufferSize();
@@ -126,7 +131,7 @@ void JackConfiguration::AlsaInitialize(
         }
         } catch (const std::exception& /*ignore*/)
         {
-
+            throw;
         }
 
     } 

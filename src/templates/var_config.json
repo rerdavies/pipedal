@@ -1,0 +1,45 @@
+{
+
+// This file overrides default settings, as set by the installer in /etc/pipdal/config.json
+//
+// Changes made in this file will be preserved across upgrades.
+//
+// To override default settings, uncomment the setting line you want to modify.
+//
+// You should reboot after modifying any of these settings.
+
+
+       
+// Paths where PiPedal will look for LV2 Plugins.
+// One or more directories, seperated by ':' 
+    
+    // "lv2_path": "/usr/lib/lv2:/usr/local/lib/lv2:/usr/modep/lv2",
+
+
+// whether to lock process pages into memory. should be true unless running on a very memory constrained system.
+// Setting to false may cause unpredictable audio dropouts.
+
+    // "mlock": true,
+
+// Number of threads the web server should use.
+    
+    // "threads" :  5,
+
+
+// Whether to log individual http requests. (highly inadvisable, as requests are logged to the systemd log)
+
+    // "logHttpRequests": false,
+
+// Log level for the web server
+// { None=0,Error =1,Warning =2,Info = 3, Debug=4} 
+
+    // "logLevel": 3,
+
+// Maximum filesize to allow when uploading
+
+    // "maxUploadSize": 536870912  // 512MiB
+
+
+// does nothing. avoids chasing ','s.
+    "end" : true   
+}

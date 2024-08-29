@@ -20,20 +20,28 @@
 #pragma once
 #include <string>
 
-namespace pipedal {
-// exec a command, returning the actual exit code (unlike execXX() or system() )
-int sysExec(const char*szCommand);
+namespace pipedal
+{
+    // exec a command, returning the actual exit code (unlike execXX() or system() )
+    int sysExec(const char *szCommand);
 
-// execute a command, suppressing output.
-int silentSysExec(const char *szCommand);
+    // execute a command, suppressing output.
+    int silentSysExec(const char *szCommand);
 
+    struct SysExecOutput
+    {
+        int exitCode;
+        std::string output;
+    };
 
-using ProcessId = int64_t; // platform-agnostic wrapper for pid_t;
-// Returns a pid or -1 on errror.
-ProcessId sysExecAsync(const std::string&command);
+    SysExecOutput sysExecForOutput(const std::string& command, const std::string&args);
 
-void sysExecTerminate(ProcessId pid_,int termTimeoutMs = 1000,int killTimeoutMs = 500 ); // returns the process's exit status.
-int sysExecWait(ProcessId pid);
+    using ProcessId = int64_t; // platform-agnostic wrapper for pid_t;
+    // Returns a pid or -1 on errror.
+    ProcessId sysExecAsync(const std::string &command);
 
-std::string getSelfExePath();
+    void sysExecTerminate(ProcessId pid_, int termTimeoutMs = 1000, int killTimeoutMs = 500); // returns the process's exit status.
+    int sysExecWait(ProcessId pid);
+
+    std::string getSelfExePath();
 }

@@ -1,18 +1,15 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.2.41
+    VERSION 1.2.44
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
-set (DISPLAY_VERSION "v1.2.41")
-
+set (DISPLAY_VERSION "PiPedal v1.2.42-Experimental")
+set (PACKAGE_ARCHITECTURE "arm64")
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
 include(CTest)
 enable_testing()
-
-# Frameworks
-# catch
 
 add_subdirectory("submodules/pipedal_p2pd")
 
@@ -95,7 +92,7 @@ set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
 #set(CPACK_DEBIAN_PACKAGE_DEPENDS "jackd2, hostapd, dhcpcd, dnsmasq" )
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, hostapd, dhcpcd,dnsmasq, authbind" )
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, hostapd, dhcpcd,dnsmasq, authbind, gpg" )
 #set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
@@ -103,6 +100,8 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set (CPACK_STRIP_FILES ON)
 
+set(CPACK_DEBIAN_PACKAGE_SIGN_ALGORITHM "detached")
+set(CPACK_DEBIAN_PACKAGE_SIGN_TYPE "origin")
 
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm")
 

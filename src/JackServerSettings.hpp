@@ -54,6 +54,14 @@ namespace pipedal
         uint32_t GetBufferSize() const { return bufferSize_; }
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
         const std::string &GetAlsaInputDevice() const { return alsaDevice_; }
+        void UseDummyAudioDevice() {
+            this->valid_ = true;
+            if (sampleRate_ == 0) sampleRate_ = 48000;
+            this->alsaDevice_  = "__DUMMY_AUDIO__";
+        }
+        bool IsDummyAudioDevice() const {
+            return this->alsaDevice_ == "__DUMMY_AUDIO__";
+        }
 
         void ReadJackDaemonConfiguration();
 

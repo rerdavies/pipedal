@@ -549,13 +549,18 @@ void UninstallP2p()
         restoreP2pDnsmasqConfFile();
         restoreNetworkManagerP2pConfig();
 
-        sysExec(SYSTEMCTL_BIN " restart dhcpcd");
+        if (!UsingNetworkManager())
+        {
+            sysExec(SYSTEMCTL_BIN " restart dhcpcd");
+        } else {
+            sysExec(SYSTEMCTL_BIN " restart NetworkManager"); // bring up wlan0 wifi.
+
+        }
 
         WifiDirectConfigSettings wifiDirectConfigSettings;
         wifiDirectConfigSettings.Load();
         wifiDirectConfigSettings.enable_ = false;
-        wifiDirectConfigSettings.Save();
-        sysExec(SYSTEMCTL_BIN " restart NetworkManager"); // bring up wlan0 wifi.
+        SetWifiDirectConfig(wifiDirectConfigSettings);
 
     }
 }
@@ -675,8 +680,15 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
         cout << e.what() << endl;
     }
 }
-
-void pipedal::OnWifiUninstall()
+void pipedal::OnWifiReinstall() {
+    WifiDirectConfigSettings settings;
+    settings.Load();
+    if (settings.enable_)
+    {
+        SetWifiDirectConfig(settings);
+    }
+}
+void pipedal::OnWifiUninstall(bool preserveState)
 {
     // intaller hook
     if (IsApdInstalled())
@@ -685,7 +697,15 @@ void pipedal::OnWifiUninstall()
     }
     if (IsP2pInstalled())
     {
+        WifiDirectConfigSettings settings;
+        settings.Load();
         UninstallP2p();
+
+        // preserve the state for future installs.
+        if (preserveState)
+        {
+            settings.Save();
+        }
     }
 }
 void pipedal::OnWifiInstallComplete()

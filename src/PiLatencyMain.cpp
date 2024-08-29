@@ -346,6 +346,10 @@ public:
     virtual void OnAudioStopped()
     {
     }
+    virtual void OnAudioTerminated()
+    {
+        
+    }
     virtual void OnProcess(size_t nFrames)
     {
 

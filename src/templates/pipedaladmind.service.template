@@ -8,6 +8,7 @@ Restart=always
 RestartSec=60
 WorkingDirectory=/var/pipedal
 TimeoutStopSec=15
+KillMode=process
 
 
 [Install]

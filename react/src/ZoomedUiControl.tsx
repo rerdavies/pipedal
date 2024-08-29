@@ -195,6 +195,14 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                 );
             }
         }
+        onDoubleTap() {
+            let controlInfo = this.props.controlInfo;
+            if (!controlInfo) return;
+            let instanceId = controlInfo?.instanceId;
+            let uiControl = controlInfo?.uiControl
+            
+            this.model.setPedalboardControl(instanceId,uiControl.symbol,uiControl.default_value);
+        }
 
         render() {
             if (!this.props.controlInfo) {
@@ -241,6 +249,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                             {uiControl.isDial() ? (
 
                                 <ZoomedDial size={200} controlInfo={this.props.controlInfo}
+                                    onDoubleTap={()=>{this.onDoubleTap();}}
                                     onPreviewValue={(v) => {
                                         this.setState({ value: v });
                                     }}

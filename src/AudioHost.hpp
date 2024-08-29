@@ -166,7 +166,7 @@ public:
 
 class JackHostStatus {
 public:
-    bool active_;
+    bool active_ = false;
     std::string errorMessage_;
     bool restarting_;
     uint64_t underruns_;

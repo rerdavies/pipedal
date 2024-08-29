@@ -20,6 +20,7 @@
 #include "pch.h"
 
 #include "PiPedalSocket.hpp"
+#include "Updater.hpp"
 #include "json.hpp"
 #include "viewstream.hpp"
 #include "PiPedalVersion.hpp"
@@ -1001,7 +1002,19 @@ public:
             pReader->read(&handle);
             this->model.CancelMonitorPatchProperty(this->clientId, handle);
         }
-
+        else if (message == "getUpdateStatus")
+        {
+            UpdateStatus updateStatus = model.GetUpdateStatus();
+            this->Reply(replyTo,"getUpdateStatus",updateStatus);
+        }
+        else if (message == "updateNow")
+        {
+            std::string updateUrl;
+            pReader->read(&updateUrl);
+            model.UpdateNow(updateUrl);
+            bool result = true;
+            this->Reply(replyTo,"updateNow",result);
+        }
         else if (message == "getJackStatus")
         {
             JackHostStatus status = model.GetJackStatus();
@@ -1054,7 +1067,7 @@ public:
         {
             WifiConfigSettings wifiConfigSettings;
             pReader->read(&wifiConfigSettings);
-            if (!GetAdminClient().CanUseShutdownClient())
+            if (!GetAdminClient().CanUseAdminClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");
             }
@@ -1075,7 +1088,7 @@ public:
         {
             WifiDirectConfigSettings wifiDirectConfigSettings;
             pReader->read(&wifiDirectConfigSettings);
-            if (!GetAdminClient().CanUseShutdownClient())
+            if (!GetAdminClient().CanUseAdminClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");
             }
@@ -1442,6 +1455,18 @@ public:
             pReader->read(&favorites);
             this->model.SetFavorites(favorites);
         }
+        else if (message == "setUpdatePolicy")
+        {
+            int iPolicy;
+            pReader->read(&iPolicy);
+
+            this->model.SetUpdatePolicy((UpdatePolicyT)iPolicy);
+        }
+        else if (message == "forceUpdateCheck")
+        {   
+            this->model.ForceUpdateCheck();
+
+        }
         else if (message == "setSystemMidiBindings")
         {
             std::vector<MidiBinding> bindings;
@@ -1581,6 +1606,10 @@ protected:
     }
 
 private:
+    virtual void OnUpdateStatusChanged(const UpdateStatus&updateStatus) {
+        Send("onUpdateStatusChanged",updateStatus);
+    }
+
     virtual void OnLv2StateChanged(int64_t instanceId, const Lv2PluginState &state)
     {
         Lv2StateChangedBody message { (uint64_t)instanceId, state};
@@ -1949,7 +1978,7 @@ std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &
 
 void PiPedalSocketHandler::RequestShutdown(bool restart)
 {
-    if (GetAdminClient().CanUseShutdownClient())
+    if (GetAdminClient().CanUseAdminClient())
     {
         GetAdminClient().RequestShutdown(restart);
     }

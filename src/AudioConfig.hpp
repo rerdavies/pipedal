@@ -24,8 +24,8 @@
 
 #pragma once
 
-#ifndef JACK_HOST
-#define JACK_HOST 0
+#ifndef JACK_HOST // jack is no longer supported.
+#define JACK_HOST 0 
 #endif
 
 #ifndef ALSA_HOST

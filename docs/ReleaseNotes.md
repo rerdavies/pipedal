@@ -1,4 +1,24 @@
 # Release Notes
+
+## PiPedal 1.2.44 Release 
+
+This version includes the following new features:
+
+- Double-tap (or double-click) dial controls to reset them to default values.
+- Update PiPedal to the latest version from within the PiPedal web UI or PiPedal client. PiPedal monitors the PiPedal github repository for new releases,
+  and prompts you to update when new releases become available.
+- Choose whether to monitor Release, Beta or Developer update streams, or disable update monitoring altogether.
+- All PiPedal configuration settings now preserved when upgrading.
+- Advanced configuration options are now stored in /var/pipedal/config/config.json so that they are preserved when upgrading.
+
+<img src="img/Updates-sshot.png" width="80%"/>
+
+Bug fixes:
+
+- Fixed a bug which prevents the PiPedal UI from updating properly when using TooB Convolution Reverb and CabIR effects.
+- Plugin controls now work when there's no audio device running, or when the audio device stops.
+- Minor style and theming issues.
+
 ## PiPedal 1.2.41 Release 
 
 This version includes the following new features:

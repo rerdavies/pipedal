@@ -156,7 +156,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                     })
                     .catch((err) => {
                         // ok in debug builds. File doesn't get placed until install time.
-                        console.log("Failed to fetch open-source notices. " + err);
+                        console.log("Failed to fetch open-source notices. " + err.toString());
                     });
             }
         }
@@ -184,7 +184,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
 
         render() {
             let classes = this.props.classes;
-
+            let addressKey = 0;
             return (
                 <DialogEx tag="about" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
@@ -228,7 +228,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
 
                                 {this.model.isAndroidHosted() && (
                                     <Typography noWrap display="block" variant="body2" style={{ marginBottom: 12 }}  >
-                                        Copyright &#169; 2022 Robin Davies.
+                                        Copyright &#169; 2022-2024 Robin Davies.
                                     </Typography>
                                 )}
                                 <Divider />
@@ -239,7 +239,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                                 {
                                     this.model.serverVersion?.webAddresses.map((address) =>
                                     (
-                                        <Typography display="block" variant="body2" style={{ marginBottom: 0, marginLeft: 24 }}  >
+                                        <Typography key={addressKey++} display="block" variant="body2" style={{ marginBottom: 0, marginLeft: 24 }}  >
                                             {address}
                                         </Typography>
                                     ))

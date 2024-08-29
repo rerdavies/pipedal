@@ -51,6 +51,7 @@ namespace pipedal {
         virtual void OnProcess(size_t nFrames) = 0;
         virtual void OnUnderrun() = 0;
         virtual void OnAudioStopped() = 0;
+        virtual void OnAudioTerminated() = 0;
 
 
     };

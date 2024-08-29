@@ -349,7 +349,7 @@ export default withStyles(styles, { withTheme: true })(
                     }
                 ).catch(
                     (e: any) => {
-                        this.model.showAlert(e + "");
+                        this.model.showAlert(e.toString());
                     }
                 );
         }

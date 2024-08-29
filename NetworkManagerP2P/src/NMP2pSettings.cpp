@@ -9,14 +9,17 @@
 #include "WifiRegs.hpp"
 #include "ChannelInfo.hpp"
 #include "DBusLog.hpp"
+#include <sys/stat.h>
 
 using namespace pipedal;
-P2pSettings::P2pSettings(const std::filesystem::path&configDirectoryPath)
+P2pSettings::P2pSettings(const std::filesystem::path&configDirectoryPath, const std::filesystem::path&varDirectoryPath)
+:   configDirectoryPath(configDirectoryPath),
+    varDirectoryPath(varDirectoryPath)
+
 {
-    this->configDirectoryPath = configDirectoryPath;
 
 }
-
+  
 static const char*hexDigits = "0123456789abcdef";
 std::string MakeBssid()
 {
@@ -188,12 +191,40 @@ void P2pSettings::Load()
     }
 
 }
+
+static void openWithPerms(
+    std::ofstream &f, 
+    const std::filesystem::path &path, 
+    std::filesystem::perms perms = 
+        std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
+        std::filesystem::perms::group_read | std::filesystem::perms::group_write)
+{
+    auto directory = path.parent_path();
+    std::filesystem::create_directories(directory);
+    // open and close to make an existing empty file.
+    // close it.
+    {
+        std::ofstream f;
+        f.open(path);
+        f.close();
+    }
+    // set the perms.
+    std::filesystem::permissions(
+        path,
+        perms,
+        std::filesystem::perm_options::replace); 
+
+    // open for re3al.
+    f.open(path);
+}
 void P2pSettings::Save()
 {
     auto filename = config_filename();
     try {
-        std::ofstream f(filename);
-        if (!f)
+        std::ofstream f;
+        openWithPerms(f,filename);
+
+        if (!f.is_open())
         {
             throw std::runtime_error("Can't write to file.");
         }

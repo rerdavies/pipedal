@@ -30,6 +30,7 @@
 #include <functional>
 #include <filesystem>
 #include "Banks.hpp"
+#include "Updater.hpp"
 #include "PiPedalConfiguration.hpp"
 #include "JackServerSettings.hpp"
 #include "WifiConfigSettings.hpp"
@@ -56,7 +57,7 @@ namespace pipedal
         virtual void OnControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value) = 0;
         virtual void OnInputVolumeChanged(float value) = 0;
         virtual void OnOutputVolumeChanged(float value) = 0;
-
+        virtual void OnUpdateStatusChanged(const UpdateStatus&updateStatus) = 0;
         virtual void OnLv2StateChanged(int64_t pedalItemId,const Lv2PluginState&newState ) = 0;
         virtual void OnVst3ControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value, const std::string &state) = 0;
         virtual void OnPedalboardChanged(int64_t clientId, const Pedalboard &pedalboard) = 0;
@@ -86,6 +87,10 @@ namespace pipedal
     class PiPedalModel : private IAudioHostCallbacks
     {
     private:
+
+        UpdateStatus currentUpdateStatus;
+        Updater updater;
+        void OnUpdateStatusChanged(const UpdateStatus&updateStatus);
         std::function<void(void)> restartListener;
 
         std::unique_ptr<Lv2PluginChangeMonitor> pluginChangeMonitor;
@@ -164,9 +169,8 @@ namespace pipedal
 
         void UpdateRealtimeVuSubscriptions();
         void UpdateRealtimeMonitorPortSubscriptions();
-        void OnVuUpdate(const std::vector<VuUpdate> &updates);
 
-        void RestartAudio();
+        void RestartAudio(bool useDummyAudioDriver = false);
 
         std::vector<RealtimePatchPropertyRequest *> outstandingParameterRequests;
 
@@ -199,6 +203,11 @@ namespace pipedal
         PiPedalModel();
         virtual ~PiPedalModel();
 
+        void WaitForAudioDeviceToComeOnline();
+
+        UpdateStatus GetUpdateStatus();
+        void UpdateNow(const std::string&updateUrl);
+        void FireUpdateStatusChanged(const UpdateStatus&updateStatus);
         uint16_t GetWebPort() const { return webPort; }
         std::filesystem::path GetPluginUploadDirectory() const;
         void Close();
@@ -334,7 +343,8 @@ namespace pipedal
 
         std::map<std::string, bool> GetFavorites() const;
         void SetFavorites(const std::map<std::string, bool> &favorites);
-
+        void SetUpdatePolicy(UpdatePolicyT updatePolicy);
+        void ForceUpdateCheck();
         std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
         std::vector<FileEntry> GetFileList2(const std::string &relativePath,const UiFileProperty&fileProperty);
 

@@ -54,15 +54,6 @@ using namespace pipedal;
 #endif
 
 
-bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::string &deviceId)
-{
-    for (auto &device : devices)
-    {
-        if (device.id_ == deviceId)
-            return true;
-    }
-    return false;
-}
 
 class application_category : public boost::system::error_category
 {
@@ -142,9 +133,9 @@ int main(int argc, char *argv[])
         std::cout << "Usage: pipedald <doc_root> [<web_root>] [options...]\n\n"
                   << "Options:\n"
                   << "   -systemd: Log to systemd journals instead of to the console.\n"
-                  << "   -port: Port to listen on e.g. 0.0.0.0:80\n"
+                  << "   -port: Port to listen on e.g. 80, or 0.0.0.0:80\n"
                   << "Example:\n"
-                  << "    pipedald /etc/pipedal/config /etc/pipedal/react -port 0.0.0.0:80 \n"
+                  << "    pipedald /etc/pipedal/config /etc/pipedal/react -port 80 \n"
                      "\n"
                      "Description:\n\n"
                      "    Configuration is read from <doc_root>/config.json\n"
@@ -250,58 +241,7 @@ int main(int argc, char *argv[])
                        (unsigned long)getpid());
         }
 
-        auto serverSettings = model.GetJackServerSettings();
-
-        {
-            // Wait for selected audio device to be initialized.
-            // It may take some time for ALSA to publish all available devices when rebooting.
-
-            if (serverSettings.IsValid())
-            {
-                // wait up to 15 seconds for the midi device to come online.
-                auto devices = model.GetAlsaDevices();
-                bool found = false;
-                if (HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
-                {
-                    Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
-                }
-                else
-                {
-                    for (int i = 0; i < 5; ++i)
-                    {
-                        sleep(3);
-                        devices = model.GetAlsaDevices();
-                        if (HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
-                        {
-                            found = true;
-                            break;
-                        }
-                        if (g_SigBreak)
-                            exit(1);
-                        if (!systemd)
-                        {
-                            break;
-                        }
-                        Lv2Log::info(SS("Waiting for ALSA device " << serverSettings.GetAlsaInputDevice() << " to come online..."));
-                    }
-                    if (found)
-                    {
-                        Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
-                    }
-                    else
-                    {
-                        Lv2Log::info(SS("ALSA device " << serverSettings.GetAlsaInputDevice() << " not found."));
-                    }
-                }
-            }
-            else
-            {
-                Lv2Log::info("No ALSA device selected.");
-            }
-
-            // pre-cache device info before we let audio services run.
-            model.GetAlsaDevices();
-        }
+        model.WaitForAudioDeviceToComeOnline();
 
         // only accept signals on the main thread.
         int sig;

@@ -393,6 +393,12 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 showThemeSelectDialog: true
             });
         }
+
+        handleCheckForUpdates()
+        {
+            this.model.showUpdateDialog();
+        }
+        
         handleMidiMessageSettings() {
             this.setState({
                 showSystemMidiBindingsDialog: true
@@ -665,7 +671,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     <ButtonBase className={classes.setting} disabled={!isConfigValid} onClick={() => this.handleMidiMessageSettings()}  >
                                         <SelectHoverBackground selected={false} showHover={true} />
                                         <div style={{ width: "100%" }}>
-                                            <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>System MIDI Bindings</Typography>
+                                            <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>System MIDI bindings</Typography>
 
                                         </div>
                                     </ButtonBase>
@@ -748,7 +754,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         <SelectHoverBackground selected={false} showHover={true} />
                                         <div style={{ width: "100%" }}>
                                             <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                Color Theme</Typography>
+                                                Color theme</Typography>
                                             <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>
                                                 { this.model.getTheme() === ColorTheme.Dark ? "Dark" :
                                                 (this.model.getTheme() ===  ColorTheme.Light ? "Light": "System")}
@@ -785,6 +791,18 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             </div>
                                         </div>
                                     </ButtonBase>
+
+                                    <ButtonBase
+                                        className={classes.setting}
+                                        onClick={() => { this.handleCheckForUpdates(); }}  >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                Check for updates...</Typography>
+                                        </div>
+                                    </ButtonBase>
+
+
 
                                     <ButtonBase className={classes.setting} disabled={disableShutdown}
                                         onClick={() => this.handleRestart()}  >

@@ -138,7 +138,7 @@ export default class JackHostStatus {
                     <Typography variant="caption" color="inherit">{label}</Typography>
 
                     <span style={{ color: RED_COLOR }}>
-                        <Typography variant="caption" color="inherit">{status.errorMessage === "" ? "Stopped" : status.errorMessage}&nbsp;&nbsp;</Typography>
+                        <Typography variant="caption" color="inherit">{status.errorMessage === "" ? "Audio\u00A0Stopped" : status.errorMessage}&nbsp;&nbsp;</Typography>
                     </span>
                     {
                         status.temperaturemC > -100000 &&

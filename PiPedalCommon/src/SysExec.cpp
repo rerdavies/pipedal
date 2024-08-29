@@ -267,3 +267,42 @@ int pipedal::sysExecWait(ProcessId pid_)
     return exitStatus;
 
 }
+
+SysExecOutput pipedal::sysExecForOutput(const std::string &program, const std::string &args)
+{
+    namespace fs = std::filesystem;
+    fs::path fullPath = findOnSystemPath(program);
+    if (!fs::exists(fullPath))
+    {
+        throw std::runtime_error(SS("Path does not exist. " << fullPath));
+    }
+    std::stringstream s;
+    s << fullPath.c_str() << " " << args << " 2>&1";
+
+    std::string fullCommand = s.str();
+    FILE *output = popen(fullCommand.c_str(), "r");
+    if (output)
+    {
+        char buffer[512];
+        std::stringstream ssOutput;
+
+        while (!feof(output))
+        {
+            size_t nRead = fread(buffer, sizeof(char),sizeof(buffer), output);
+            ssOutput.write(buffer,nRead);
+            if (nRead == 0) 
+                break;
+
+        }
+        int rc = pclose(output);
+        SysExecOutput result
+        {
+            .exitCode = rc,
+            .output = ssOutput.str()
+        };
+        return result;
+   } else {
+        throw std::runtime_error(SS("Failed to execute command. " <<  fullCommand ));
+   }
+
+}

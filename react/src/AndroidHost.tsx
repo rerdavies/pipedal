@@ -28,7 +28,7 @@ export interface  AndroidHostInterface {
     getHostVersion() : string;
     chooseNewDevice() : void;
     setDisconnected(isDisconnected: boolean): void;
-
+    launchExternalUrl(url:string): boolean;
 };
 
 export class FakeAndroidHost implements AndroidHostInterface
@@ -47,4 +47,8 @@ export class FakeAndroidHost implements AndroidHostInterface
     }
     showSponsorship() : void { }
 
+    launchExternalUrl(url:string): boolean
+    {
+        return false;
+    }
 }

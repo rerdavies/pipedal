@@ -34,7 +34,7 @@ class AdminClient {
 public:
     AdminClient();
     ~AdminClient();
-    bool CanUseShutdownClient();
+    bool CanUseAdminClient();
     bool RequestShutdown(bool restart);
     bool SetJackServerConfiguration(const JackServerSettings & jackServerSettings);
     void SetWifiConfig(const WifiConfigSettings & settings);
@@ -42,6 +42,7 @@ public:
     void SetGovernorSettings(const std::string & governor);
     void MonitorGovernor(const std::string &governor);
     void UnmonitorGovernor();
+    void InstallUpdate(const std::string&filename);
 private:
     std::mutex mutex;
     UnixSocket socket;

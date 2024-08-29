@@ -66,6 +66,7 @@ PiPedalModel::PiPedalModel()
     : pluginHost(),
       atomConverter(pluginHost.GetMapFeature())
 {
+    this->currentUpdateStatus = updater.GetCurrentStatus();
     this->pedalboard = Pedalboard::MakeDefault();
 #if JACK_HOST
     this->jackServerSettings = this->storage.GetJackServerSettings(); // to get onboarding flag.
@@ -73,6 +74,11 @@ PiPedalModel::PiPedalModel()
 #else
     this->jackServerSettings = this->storage.GetJackServerSettings();
 #endif
+    updater.SetUpdateListener(
+        [this](const UpdateStatus &updateStatus)
+        {
+            this->OnUpdateStatusChanged(updateStatus);
+        });
 }
 
 void PiPedalModel::Close()
@@ -242,64 +248,8 @@ void PiPedalModel::Load()
     scheduler_params.sched_priority = 10;
     memset(&scheduler_params, 0, sizeof(sched_param));
     sched_setscheduler(0, SCHED_RR, &scheduler_params);
-#if JACK_HOST
-    this->jackConfiguration = this->jackConfiguration.JackInitialize();
-#else
-    this->jackServerSettings = storage.GetJackServerSettings();
-    if (jackServerSettings.IsValid())
-    {
-        this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
-        if (!jackServerSettings.IsValid())
-        {
-            for (size_t retry = 0; retry < 5; ++retry)
-            {
-                // retry until the device comes online.
-                sleep(3);
-                Lv2Log::info("Retrying AlsaInitialize");
-                jackConfiguration.isValid(true);
-                this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
-                if (jackConfiguration.isValid())
-                {
-                    Lv2Log::info("Retry succeeded.");
-                    break;
-                }
-            }
-        }
-    }
-    else
-    {
-        this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
-    }
-#endif
-    if (this->jackConfiguration.isValid())
-    {
-        JackChannelSelection selection = storage.GetJackChannelSelection(jackConfiguration);
-        selection = selection.RemoveInvalidChannels(jackConfiguration);
 
-        this->pluginHost.OnConfigurationChanged(jackConfiguration, selection);
-        try
-        {
-            audioHost->Open(this->jackServerSettings, selection);
-            bool loadedSuccessfully = false;
-            try
-            {
-                LoadCurrentPedalboard();
-                loadedSuccessfully = true;
-            }
-            catch (const std::exception &e)
-            {
-                Lv2Log::error("Failed to load initial plugin. %s", e.what());
-            }
-        }
-        catch (std::exception &e)
-        {
-            Lv2Log::error("Failed to start audio device. %s", e.what());
-        }
-    }
-    else
-    {
-        Lv2Log::error("Audio device not configured.");
-    }
+    RestartAudio();
 }
 
 IPiPedalModelSubscriber *PiPedalModel::GetNotificationSubscriber(int64_t clientId)
@@ -386,9 +336,8 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
 
             item->stateUpdateCount(item->stateUpdateCount() + 1);
 
-            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-
             Lv2PluginState newState = item->lv2State();
+            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
             for (size_t i = 0; i < subscribers.size(); ++i)
             {
                 t[i] = this->subscribers[i];
@@ -1138,58 +1087,64 @@ JackConfiguration PiPedalModel::GetJackConfiguration()
     return this->jackConfiguration;
 }
 
-void PiPedalModel::RestartAudio()
+void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
 {
-    if (this->audioHost->IsOpen())
-    {
-
-        this->audioHost->Close();
-    }
-    // restarting is a bit dodgy. It was impossible with Jack, but
-    // now very plausible with the ALSA audio stack.
-
-    // Still bugs wrt/ restarting the circular buffers for the audio thread.
-
-    // for the meantime, just rely on the fact that the admin service will restart
-    // the process.
-    //...
-
-    // do a complete reload.
-
-    this->audioHost->SetPedalboard(nullptr);
-
-    this->jackConfiguration.AlsaInitialize(this->jackServerSettings);
-
-    if (this->jackConfiguration.isValid())
-    {
-        JackChannelSelection selection = storage.GetJackChannelSelection(jackConfiguration);
-        selection = selection.RemoveInvalidChannels(jackConfiguration);
-    }
-    else
-    {
-        jackConfiguration.setErrorStatus("Error");
-    }
-
-    FireJackConfigurationChanged(jackConfiguration);
-
-    if (!jackServerSettings.IsValid() || !jackConfiguration.isValid())
-    {
-        Lv2Log::error("Audio configuration not valid.");
-        return;
-    }
     try
     {
-        JackChannelSelection channelSelection = GetJackChannelSelection();
+        if (this->audioHost->IsOpen())
+        {
+
+            this->audioHost->Close();
+        }
+        // restarting is a bit dodgy. It was impossible with Jack, but
+        // now very plausible with the ALSA audio stack.
+
+        // Still bugs wrt/ restarting the circular buffers for the audio thread.
+
+        // do a complete reload.
+
+        this->audioHost->SetPedalboard(nullptr);
+
+        auto jackServerSettings = this->jackServerSettings;
+        if (useDummyAudioDriver)
+        {
+            jackServerSettings.UseDummyAudioDevice();
+        }
+
+        auto jackConfiguration = this->jackConfiguration;
+        jackConfiguration.AlsaInitialize(jackServerSettings);
+        if (jackConfiguration.isValid())
+        {
+            JackChannelSelection selection = storage.GetJackChannelSelection(jackConfiguration);
+            selection = selection.RemoveInvalidChannels(jackConfiguration);
+        }
+        else
+        {
+            jackConfiguration.setErrorStatus("Error");
+        }
+        if (!useDummyAudioDriver)
+        {
+            this->jackConfiguration = jackConfiguration;
+            FireJackConfigurationChanged(jackConfiguration);
+        }
+
+        if (!jackServerSettings.IsValid() || !jackConfiguration.isValid())
+        {
+            throw std::runtime_error("Audio configuration not valid.");
+        }
+
+        JackChannelSelection channelSelection = this->storage.GetJackChannelSelection(jackConfiguration);
+        if (this->jackConfiguration.isValid())
+        {
+            channelSelection.RemoveInvalidChannels(this->jackConfiguration);
+        }
         if (!channelSelection.isValid())
         {
-            Lv2Log::error("Audio configuration not valid.");
-            return;
+            throw std::runtime_error("Audio configuration not valid.");
         }
-        this->audioHost->Open(this->jackServerSettings, channelSelection);
+        this->audioHost->Open(jackServerSettings, channelSelection);
 
         this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
-
-        std::vector<std::string> errorMessages;
 
         LoadCurrentPedalboard();
 
@@ -1198,8 +1153,19 @@ void PiPedalModel::RestartAudio()
     }
     catch (const std::exception &e)
     {
-        Lv2Log::error(SS("Failed to start audio. " << e.what()));
-        throw;
+        this->audioHost->Close();
+        if (useDummyAudioDriver)
+        {
+            Lv2Log::error(SS("Failed to start dummy audio driver. " << e.what()));
+        }
+        else
+        {
+            Lv2Log::error(SS("Failed to start audio. " << e.what()));
+        }
+        if (!useDummyAudioDriver)
+        {
+            RestartAudio(true); // use the dummy audio driver.
+        }
     }
 }
 
@@ -1293,7 +1259,6 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
         {
             if (portIndex == -1)
             {
-                // bypass! yyy this->value!!!
                 this->pedalboard.SetItemEnabled(instanceId, value != 0);
                 // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
                 IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
@@ -2171,4 +2136,111 @@ void PiPedalModel::OnLv2PluginsChanged()
 void PiPedalModel::SetRestartListener(std::function<void(void)> &&listener)
 {
     this->restartListener = std::move(listener);
+}
+
+void PiPedalModel::OnUpdateStatusChanged(const UpdateStatus &updateStatus)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    if (this->currentUpdateStatus != updateStatus)
+    {
+        this->currentUpdateStatus = updateStatus;
+        FireUpdateStatusChanged(this->currentUpdateStatus);
+    }
+}
+void PiPedalModel::FireUpdateStatusChanged(const UpdateStatus &updateStatus)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    std::vector<IPiPedalModelSubscriber *> t;
+    t.reserve(subscribers.size());
+
+    for (auto subscriber : subscribers)
+    {
+        t.push_back(subscriber);
+    }
+
+    for (auto subscriber : t)
+    {
+        subscriber->OnUpdateStatusChanged(updateStatus);
+    }
+}
+UpdateStatus PiPedalModel::GetUpdateStatus()
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return updater.GetCurrentStatus();
+}
+
+void PiPedalModel::UpdateNow(const std::string &updateUrl)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    std::filesystem::path fileName,signatureName;
+    updater.DownloadUpdate(updateUrl,&fileName,&signatureName);
+
+    adminClient.InstallUpdate(fileName);
+}
+void PiPedalModel::ForceUpdateCheck()
+{
+    updater.ForceUpdateCheck();
+}
+void PiPedalModel::SetUpdatePolicy(UpdatePolicyT updatePolicy)
+{
+    updater.SetUpdatePolicy(updatePolicy);
+}
+
+static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::string &deviceId)
+{
+    for (auto &device : devices)
+    {
+        if (device.id_ == deviceId)
+            return true;
+    }
+    return false;
+}
+
+void PiPedalModel::WaitForAudioDeviceToComeOnline()
+{
+    auto serverSettings = this->GetJackServerSettings();
+    // Wait for selected audio device to be initialized.
+    // It may take some time for ALSA to publish all available devices when rebooting.
+
+    if (serverSettings.IsValid())
+    {
+        // wait up to 15 seconds for the midi device to come online.
+        auto devices = GetAlsaDevices();
+        bool found = false;
+        if (HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
+        {
+            Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
+        }
+        else
+        {
+            Lv2Log::info(SS("Waiting for ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
+            for (int i = 0; i < 5; ++i)
+            {
+                sleep(2);
+                devices = GetAlsaDevices();
+                if (HasAlsaDevice(devices, serverSettings.GetAlsaInputDevice()))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+            {
+                Lv2Log::info(SS("Found ALSA device " << serverSettings.GetAlsaInputDevice() << "."));
+            }
+            else
+            {
+                Lv2Log::info(SS("ALSA device " << serverSettings.GetAlsaInputDevice() << " not found."));
+            }
+        }
+    }
+    else
+    {
+        Lv2Log::info("No ALSA device selected.");
+    }
+
+    // pre-cache device info before we let audio services run.
+    GetAlsaDevices();
 }
