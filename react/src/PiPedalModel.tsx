@@ -1402,10 +1402,10 @@ export class PiPedalModel //implements PiPedalModel
         let changed = item.setControlValue(key, value);
 
         if (changed) {
-            this.pedalboard.set(newPedalboard);
             if (notifyServer) {
                 this._setServerControl("setControl", instanceId, key, value);
             }
+            this.pedalboard.set(newPedalboard);
             for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
                 let item = this._controlValueChangeItems[i];
                 if (instanceId === item.instanceId) {
