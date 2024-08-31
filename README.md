@@ -12,7 +12,7 @@ Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](htt
 
 &nbsp;
 
-#### NEW version 1.2.44 Release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.2.45 Release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 

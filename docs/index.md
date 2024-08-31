@@ -9,7 +9,7 @@ To download PiPedal, click [here](download.md).
 To view PiPedal documentation, click [here](Documentation.md).
 
 
-#### NEW version 1.2.44 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.2.45 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 
