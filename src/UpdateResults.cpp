@@ -22,6 +22,7 @@
 #include <fstream>
 #include "Lv2Log.hpp"
 #include "ss.hpp"
+#include "ofstream_synced.hpp"
 
 
 
@@ -40,7 +41,7 @@ void UpdateResults::Load()
 }
 void UpdateResults::Save()
 {
-    std::ofstream f {UPDATE_RESULT_PATH};
+    pipedal::ofstream_synced f {UPDATE_RESULT_PATH};
     if (f.is_open())
     {
         json_writer writer(f);

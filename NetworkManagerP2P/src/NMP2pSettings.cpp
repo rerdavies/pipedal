@@ -10,6 +10,7 @@
 #include "ChannelInfo.hpp"
 #include "DBusLog.hpp"
 #include <sys/stat.h>
+#include "ofstream_synced.hpp"
 
 using namespace pipedal;
 P2pSettings::P2pSettings(const std::filesystem::path&configDirectoryPath, const std::filesystem::path&varDirectoryPath)
@@ -193,7 +194,7 @@ void P2pSettings::Load()
 }
 
 static void openWithPerms(
-    std::ofstream &f, 
+    pipedal::ofstream_synced &f, 
     const std::filesystem::path &path, 
     std::filesystem::perms perms = 
         std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
@@ -221,7 +222,7 @@ void P2pSettings::Save()
 {
     auto filename = config_filename();
     try {
-        std::ofstream f;
+        pipedal::ofstream_synced f;
         openWithPerms(f,filename);
 
         if (!f.is_open())

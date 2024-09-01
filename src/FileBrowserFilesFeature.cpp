@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdexcept>
 #include "util.hpp"
+#include "ofstream_synced.hpp"
 
 using namespace pipedal;
 using namespace pipedal::implementation;
@@ -101,7 +102,7 @@ FileBrowserFilesFeature::FileBrowserFilesFeature()
 }
 void BrowserFilesVersionInfo::Save(std::filesystem::path &path)
 {
-    std::ofstream f{path};
+    pipedal::ofstream_synced f{path};
     if (!f.is_open())
         return;
     f << version << std::endl;

@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include "ss.hpp"
 #include <chrono>
+#include "ofstream_synced.hpp"
 
 
 namespace impl {
@@ -72,7 +73,7 @@ public:
         f << "trace: " << message << std::endl;
     }
 private:
-    std::ofstream f;
+    pipedal::ofstream_synced f;
 };
 
 class SystemdDBusLogger : public IDBusLogger {

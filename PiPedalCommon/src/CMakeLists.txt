@@ -41,6 +41,7 @@ message(STATUS "NMPIPEDAL CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 # Use the sdbus-c++ target in SDBusCpp namespace
 add_library(PiPedalCommon STATIC
+  ofstream_synced.cpp include/ofstream_synced.hpp
   ConfigSerializer.cpp include/ConfigSerializer.hpp
   WifiRegs.cpp include/WifiRegs.hpp
   WifiRegulations.cpp include/WifiRegulations.hpp
