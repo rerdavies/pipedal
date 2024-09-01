@@ -55,10 +55,6 @@ export enum State {
 };
 
 class UpdatedError extends Error {
-    constructor(message: string)
-    {
-        super(message);
-    }
 };
 export function wantsLoadingScreen(state: State) {
     return state >= State.Reconnecting;
