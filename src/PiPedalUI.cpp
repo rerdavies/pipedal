@@ -206,10 +206,6 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
     {
         this->resourceDirectory_ =  resourceDirectory.AsString();
     }
-    if (this->resourceDirectory_.empty())
-    {
-        this->resourceDirectory_ = "default";
-    }
     this->fileTypes_ = UiFileType::GetArray(pHost, node, pHost->lilvUris->pipedalUI__fileTypes);
 }
 

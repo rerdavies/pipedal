@@ -1457,6 +1457,7 @@ void PluginHost::CheckForResourceInitialization(const std::string &pluginUri,con
                     resourceInfoSet.insert(ResourceInfo(fileProperty->directory(),fileProperty->resourceDirectory()));
                 }
             }
+            try {
             for (const ResourceInfo&resourceInfo: resourceInfoSet)
             {
                 std::filesystem::path sourcePath = bundlePath / resourceInfo.resourceDirectory;
@@ -1466,6 +1467,10 @@ void PluginHost::CheckForResourceInitialization(const std::string &pluginUri,con
                     createTargetLinks(sourcePath,targetPath);
                 }
 
+            }
+            } catch (const std::exception &e)
+            {
+                Lv2Log::error(SS("CheckForResourceInitialization: " << e.what()));
             }
         }
     }

@@ -1,5 +1,23 @@
 # Release Notes
 
+## PiPedal 1.2.45 Release
+
+This version focuses on fixes and improvements to TooB Neural Amp Modeler.
+TooB NAM now uses about 20% less CPU, which can help enormously on Raspberry Pi 4. 
+
+You may need to change your audio buffers to prevent dropouts when using TooB Neural Amp Modeler. Setting your audio buffers to 32x4 seems to produce good results. You may also want experiment with 16x4 audio buffers. This seems to work, but it has had limited testing so far, so I can't say with any certainty whether it is stable for long-term use. 2-buffer audio settings should be avoided. As always, using your Pi for anything else at the same time you are using PiPedal will cause XRuns.
+
+I would once again like to extend special thanks and acknowledgements to Steven Atkins for his outstanding work on the NeuralAmpModelerCore project on which TooB Neural Amp Modeler depends (as do almost all other Neural Amp Modeler plugins).
+
+Bug fixes:
+
+- The About page now displays the correct version.
+- TooB NAM frequency response now displays correctly.
+- TooB NAM no longer displays error messages when loading.
+- Update Dialog has better layout on portrait phone displays.
+- Prevent brief flashing of the Reload... button during the last phase of an update.
+
+
 ## PiPedal 1.2.44 Release 
 
 This version includes the following new features:

@@ -431,7 +431,7 @@ void Updater::CheckForUpdate(bool useCache)
         updateResult = this->currentResult;
     }
 
-    //const std::string responseOption = "-w \"%{response_code}\"";
+    // const std::string responseOption = "-w \"%{response_code}\"";
 #ifdef WIN32
     responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
 #endif
@@ -787,9 +787,9 @@ static std::string getFingerprint(const std::string &gpgText)
     }
     return gpgText.substr(start, nPos - start);
 }
-static bool IsSignatureGood(const std::string&gpgText)
+static bool IsSignatureGood(const std::string &gpgText)
 {
-       std::string originPosition = "gpg: Good signature from \"";
+    std::string originPosition = "gpg: Good signature from \"";
 
     size_t nPos = gpgText.find(originPosition);
     return nPos != std::string::npos;

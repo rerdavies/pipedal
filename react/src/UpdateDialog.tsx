@@ -34,6 +34,7 @@ import { UpdateStatus, UpdateRelease, UpdatePolicyT, intToUpdatePolicyT } from '
 import { PiPedalModelFactory, PiPedalModel } from './PiPedalModel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 
 
 const UPDATE_CHECK_DELAY = 86400000; // one day in ms.
@@ -47,12 +48,12 @@ export interface UpdateDialogProps {
 
 export interface UpdateDialogState {
     updateStatus: UpdateStatus;
-    compactLandscape: boolean;
+    compactWidth: boolean;
     alertDialogOpen: boolean;
     alertDialogMessage: string;
 };
 
-export default class UpdateDialog extends React.Component<UpdateDialogProps, UpdateDialogState> {
+export default class UpdateDialog extends ResizeResponsiveComponent<UpdateDialogProps, UpdateDialogState> {
     private model: PiPedalModel;
 
     constructor(props: UpdateDialogProps) {
@@ -61,12 +62,13 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
         let updateStatus = this.model.updateStatus.get();
         this.state = {
             updateStatus: updateStatus,
-            compactLandscape: false,
+            compactWidth: this.isCompactWidth(),
             alertDialogOpen: false,
             alertDialogMessage: ""
         };
         this.onUpdateStatusChanged = this.onUpdateStatusChanged.bind(this);
     }
+    isCompactWidth() { return this.windowSize.width < 420; }
 
     onUpdateStatusChanged(newValue: UpdateStatus) {
         if (!newValue.equals(this.state.updateStatus)) {
@@ -77,15 +79,22 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
     private mounted: boolean = false;
 
     componentDidMount() {
+        super.componentDidMount();
         this.mounted = true;
         this.model.updateStatus.addOnChangedHandler(this.onUpdateStatusChanged);
     }
     componentWillUnmount() {
+        super.componentWillUnmount();
         this.model.updateStatus.removeOnChangedHandler(this.onUpdateStatusChanged);
         this.mounted = false;
 
     }
-
+    onWindowSizeChanged(width: number, height: number): void {
+        super.onWindowSizeChanged(width, height);
+        if (this.isCompactWidth() !== this.state.compactWidth) {
+            this.setState({ compactWidth: this.isCompactWidth() });
+        }
+    }
 
     private handleOK() {
         this.model.showUpdateDialog(false);
@@ -152,35 +161,25 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
         let updateRelease = updateStatus.getActiveRelease();
         let upToDate = this.upToDate();
         let canUpgrade = this.canUpgrade();
-        let compact = this.state.compactLandscape;
         let showUpgradeVersion = !upToDate && updateStatus.isValid && updateRelease.upgradeVersionDisplayName !== "";
+        let compactWidth = this.state.compactWidth;
         return (
             <DialogEx tag="update" open={this.props.open} onClose={() => { this.handleClose(); }}
                 style={{ userSelect: "none" }}
             >
-                {
-                    (!compact) &&
-                    (
-                        <DialogTitle>
-                            <div style={{ display: "flex", flexFlow: "row noWrap", alignItems: "center" }} >
-                                <Typography style={{ flexGrow: 1, flexShrink: 1, marginRight: 20 }} noWrap>PiPedal Updates</Typography>
-                                <Select style={{ opacity: 0.6 }} variant="standard" value={updateStatus.updatePolicy} onChange={(ev) => { this.onPolicySelected(ev.target.value); }}>
-                                    <MenuItem value={UpdatePolicyT.ReleaseOnly}>Release only</MenuItem>
-                                    <MenuItem value={UpdatePolicyT.ReleaseOrBeta}>Release or Beta</MenuItem>
-                                    <MenuItem value={UpdatePolicyT.Development}>Development</MenuItem>
-                                    <MenuItem value={UpdatePolicyT.Disable}>Disable</MenuItem>
-                                </Select>
-                            </div>
+                <DialogTitle>
+                    <div style={{ display: "flex", flexFlow: "row noWrap", alignItems: "center" }} >
+                        <Typography style={{ flexGrow: 1, flexShrink: 1, marginRight: 20 }} noWrap>Updates</Typography>
+                        <Select style={{ opacity: 0.6 }} variant="standard" value={updateStatus.updatePolicy} onChange={(ev) => { this.onPolicySelected(ev.target.value); }}>
+                            <MenuItem value={UpdatePolicyT.ReleaseOnly}>Release only</MenuItem>
+                            <MenuItem value={UpdatePolicyT.ReleaseOrBeta}>Release or Beta</MenuItem>
+                            <MenuItem value={UpdatePolicyT.Development}>Development</MenuItem>
+                            <MenuItem value={UpdatePolicyT.Disable}>Disable</MenuItem>
+                        </Select>
+                    </div>
 
-                        </DialogTitle>
-                    )
-                }
-                {
-                    (!compact) &&
-                    (
-                        <Divider />
-                    )
-                }
+                </DialogTitle>
+                <Divider />
 
                 <DialogContent>
                     {(upToDate) && (
@@ -197,31 +196,56 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
 
                     )
                     }
+                    {
+                        (compactWidth) ? (
+                            <div>
+                                <Typography noWrap variant="body2" color="textSecondary" >
+                                    Current version:
+                                </Typography>
+                                <Typography noWrap variant="body2" color="textSecondary" style={{ marginLeft: 16 }} >
+                                    {updateStatus.currentVersionDisplayName}
+                                </Typography>
+                                {(showUpgradeVersion) && (
+                                    <div style={{marginTop: 4}}>
+                                        <Typography noWrap variant="body2" color="textSecondary"  >
+                                            Update  version:
+                                        </Typography>
+                                        <Typography noWrap variant="body2" color="textSecondary"  >
+                                            {updateRelease.upgradeVersionDisplayName}
+                                        </Typography>
+                                    </div>
+                                )}
 
-                    <div style={{ display: "flex", flexFlow: "row noWrap" }}>
-                        <div>
-                            <Typography noWrap variant="body2" color="textSecondary" >
-                                Current version:
-                            </Typography>
-                            {(showUpgradeVersion) && (
-                                <Typography noWrap variant="body2" color="textSecondary" style={{ marginTop: 4 }} >
-                                    Update  version:
-                                </Typography>
-                            )
-                            }
-                        </div>
-                        <div style={{ flexShrink: 1, flexGrow: 1, marginLeft: 12 }}>
-                            <Typography noWrap variant="body2" color="textSecondary" >
-                                {updateStatus.currentVersionDisplayName}
-                            </Typography>
-                            {(showUpgradeVersion) && (
-                                <Typography noWrap variant="body2" color="textSecondary" style={{ marginTop: 4 }} >
-                                    {updateRelease.upgradeVersionDisplayName}
-                                </Typography>
-                            )
-                            }
-                        </div>
-                    </div>
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", flexFlow: "row noWrap" }}>
+                                <div>
+                                    <Typography noWrap variant="body2" color="textSecondary" >
+                                        Current version:
+                                    </Typography>
+                                    {(showUpgradeVersion) && (
+                                        <Typography noWrap variant="body2" color="textSecondary" style={{ marginTop: 4 }} >
+                                            Update  version:
+                                        </Typography>
+                                    )
+                                    }
+                                </div>
+                                <div style={{ flexShrink: 1, flexGrow: 1, marginLeft: 12 }}>
+                                    <Typography noWrap variant="body2" color="textSecondary" >
+                                        {updateStatus.currentVersionDisplayName}
+                                    </Typography>
+                                    {(showUpgradeVersion) && (
+                                        <Typography noWrap variant="body2" color="textSecondary" style={{ marginTop: 4 }} >
+                                            {updateRelease.upgradeVersionDisplayName}
+                                        </Typography>
+                                    )
+                                    }
+                                </div>
+                            </div>
+
+                        )
+                    }
+
                     {
                         (updateStatus.errorMessage.length !== 0) &&
                         (
@@ -233,7 +257,7 @@ export default class UpdateDialog extends React.Component<UpdateDialogProps, Upd
 
                         )
                     }
-                    <Button style={{ marginLeft: 16, marginTop: 12 }} onClick={() => { this.onViewReleaseNotes(); }}>View release notes</Button>
+                    <Button style={{ marginLeft: 8, marginTop: 12 }} onClick={() => { this.onViewReleaseNotes(); }}>View release notes</Button>
                 </DialogContent>
                 <Divider />
                 <DialogActions>
