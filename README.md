@@ -6,7 +6,7 @@
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.42</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.45</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
