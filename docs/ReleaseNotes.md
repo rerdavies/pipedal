@@ -1,7 +1,7 @@
 # Release Notes
 ## PiPedal 1.2.47 Release
 
-This version fixes an significant and dangerous defect that may cause loss of presets, banks or configuration data if you remove power from your Raspberry Pi within up to five minutes of last saving data instead of performing an orderly shutdown or reboot. Users of PiPedal should upgrade immediately.
+This version fixes a significant and dangerous defect that may cause loss of presets, banks or configuration data if you remove power from your Raspberry Pi within up to five minutes of last saving data instead of performing an orderly shutdown or reboot. Users of PiPedal should upgrade immediately.
 
 This release also fixes a significant performance issue with TooB Neural Amp Modeler.
 
