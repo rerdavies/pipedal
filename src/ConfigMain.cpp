@@ -40,6 +40,8 @@
 #include "WifiChannelSelectors.hpp"
 #include "PiPedalConfiguration.hpp"
 #include <grp.h>
+#include "ofstream_synced.hpp"
+
 
 #if JACK_HOST
 #define INSTALL_JACK_SERVICE 1
@@ -1346,10 +1348,12 @@ int main(int argc, char **argv)
                 portOption = "0.0.0.0:" + portOption;
             }
             Install(prefix, portOption);
+            FileSystemSync();
         }
         else if (uninstall)
         {
             Uninstall();
+            FileSystemSync();
         }
         else if (stop)
         {

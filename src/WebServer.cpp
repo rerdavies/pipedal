@@ -36,6 +36,7 @@
 #include <strings.h>
 #include "Ipv6Helpers.hpp"
 #include "util.hpp"
+#include "ofstream_synced.hpp"
 
 #include "WebServer.hpp"
 

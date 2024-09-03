@@ -1,0 +1,3 @@
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+${SCRIPT_DIR}/../build/src/profilePlugin -w ToobNam_Profile -o /tmp/ToobNam.perf &&\
+google-pprof --text ${SCRIPT_DIR}/../build/src/profilePlugin --add_lib  /usr/lib/lv2/ToobAmp.lv2/ToobAmp.so  /tmp/ToobNam.perf >./ToobNam.txt

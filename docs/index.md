@@ -1,7 +1,7 @@
 
 
 <img src="GithubBanner.png" width="100%"/>
-<a href="Installing.html"><i>v1.2.45</i></a>
+<a href="Installing.html"><i>v1.2.47</i></a>
 
 &nbsp;
 
@@ -9,7 +9,7 @@ To download PiPedal, click [here](download.md).
 To view PiPedal documentation, click [here](Documentation.md).
 
 
-#### NEW version 1.2.45 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.2.47 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 

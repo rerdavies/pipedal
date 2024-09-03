@@ -31,6 +31,7 @@
 #include "PiPedalUI.hpp"
 #include "PluginHost.hpp"
 #include "ss.hpp"
+#include "ofstream_synced.hpp"
 
 using namespace pipedal;
 
@@ -344,7 +345,7 @@ void Storage::SavePluginPresetIndex()
     if (pluginPresetIndexChanged)
     {
         pluginPresetIndexChanged = false;
-        std::ofstream os;
+        pipedal::ofstream_synced os;
         auto path = GetPluginPresetsDirectory() / "index.json";
         os.open(path, std::ios_base::trunc);
         if (os.fail())
@@ -359,7 +360,7 @@ void Storage::SavePluginPresetIndex()
 
 void Storage::SaveBankIndex()
 {
-    std::ofstream os;
+    pipedal::ofstream_synced os;
     os.open(GetIndexFileName(), std::ios_base::trunc);
     json_writer writer(os, false);
     writer.write(this->bankIndex);
@@ -434,7 +435,7 @@ void Storage::SaveBankFile(const std::string &name, const BankFile &bankFile)
     }
     try
     {
-        std::ofstream s;
+        pipedal::ofstream_synced s;
         s.open(fileName, std::ios_base::trunc);
         json_writer writer(s, false);
         writer.write(bankFile);
@@ -721,7 +722,7 @@ void Storage::SaveChannelSelection()
     auto fileName = this->GetChannelSelectionFileName();
     try
     {
-        std::ofstream s(fileName);
+        pipedal::ofstream_synced s(fileName);
         json_writer writer(s, false);
         writer.write(this->jackChannelSelection);
     }
@@ -906,7 +907,7 @@ int64_t Storage::UploadBank(BankFile &bankFile, int64_t uploadAfter)
         bankFile.name(s.str());
     }
     std::filesystem::path path = this->GetBankFileName(bankFile.name());
-    std::ofstream f(path);
+    pipedal::ofstream_synced f(path);
     if (!f.is_open())
     {
         throw PiPedalException("Can't write to bank file.");
@@ -928,7 +929,7 @@ void Storage::SaveUserSettings()
 {
     std::filesystem::path path = this->dataRoot / USER_SETTINGS_FILENAME;
     {
-        std::ofstream f(path);
+        pipedal::ofstream_synced f(path);
         if (!f.is_open())
         {
             throw PiPedalException("Unable to write to " + ((std::string)path));
@@ -964,7 +965,7 @@ void Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings
 
     std::filesystem::path path = this->dataRoot / WIFI_CONFIG_SETTINGS_FILENAME;
     {
-        std::ofstream f(path);
+        pipedal::ofstream_synced f(path);
         if (!f.is_open())
         {
             throw PiPedalException("Unable to write to " + ((std::string)path));
@@ -1077,7 +1078,7 @@ void Storage::SaveCurrentPreset(const CurrentPreset &currentPreset)
     {
         std::filesystem::path path = GetCurrentPresetPath();
 
-        std::ofstream f(path);
+        pipedal::ofstream_synced f(path);
         json_writer writer(f, false);
         writer.write(currentPreset);
     }
@@ -1152,7 +1153,7 @@ void Storage::SavePluginPresets(const std::string &pluginUri, const PluginPreset
     }
     auto tempPath = path.string() + ".$$$";
     {
-        std::ofstream os;
+        pipedal::ofstream_synced os;
         os.open(tempPath, std::ios_base::trunc);
         if (os.fail())
         {
@@ -1396,7 +1397,7 @@ std::map<std::string, bool> Storage::GetFavorites() const
 void Storage::SetFavorites(const std::map<std::string, bool> &favorites)
 {
     std::filesystem::path fileName = this->dataRoot / "favorites.json";
-    std::ofstream f;
+    pipedal::ofstream_synced f;
     f.open(fileName);
     if (f.is_open())
     {
@@ -1425,7 +1426,7 @@ pipedal::JackServerSettings Storage::GetJackServerSettings()
 void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfiguration)
 {
     std::filesystem::path fileName = this->dataRoot / "AudioConfig.json";
-    std::ofstream f;
+    pipedal::ofstream_synced f;
     f.open(fileName);
     if (f.is_open())
     {
@@ -1440,7 +1441,7 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
 void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
 {
     std::filesystem::path fileName = this->dataRoot / "SystemMidiBindings.json";
-    std::ofstream f;
+    pipedal::ofstream_synced f;
     f.open(fileName);
     if (f.is_open())
     {
@@ -1714,7 +1715,7 @@ std::string Storage::UploadUserFile(const std::string &directory, const std::str
         try {
             std::filesystem::create_directories(path.parent_path());
 
-            std::ofstream f(path, std::ios_base::trunc | std::ios_base::binary);
+            pipedal::ofstream_synced f(path, std::ios_base::trunc | std::ios_base::binary);
             if (!f.is_open())
             {
                 throw std::logic_error(SS("Can't create file " << path << "."));

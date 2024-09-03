@@ -34,6 +34,7 @@
 #include <algorithm>
 #include "UpdaterSecurity.hpp"
 #include "SysExec.hpp"
+#include "ofstream_synced.hpp"
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -88,7 +89,7 @@ static void SetCachedUpdateStatus(UpdateStatus &updateStatus)
     updateStatus.LastUpdateTime(std::chrono::system_clock::now());
     try
     {
-        std::ofstream f{UPDATE_STATUS_CACHE_FILE};
+        pipedal::ofstream_synced f{UPDATE_STATUS_CACHE_FILE};
         json_writer writer{f};
         writer.write(updateStatus);
     }

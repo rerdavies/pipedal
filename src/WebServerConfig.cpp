@@ -28,6 +28,7 @@
 #include <memory>
 #include "ZipFile.hpp"
 #include "PiPedalUI.hpp"
+#include "ofstream_synced.hpp"
 
 
 #define PRESET_EXTENSION ".piPreset"
@@ -439,6 +440,7 @@ public:
                         Lv2Log::error(SS("Unzip failed. " << e.what()));
                         throw;
                     }
+                    FileSystemSync();
 
                 } else {
                     outputFileName = this->model->UploadUserFile(directory,patchProperty,filename,req.get_body_input_stream(), req.content_length());

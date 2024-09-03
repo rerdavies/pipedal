@@ -26,6 +26,7 @@
 #include "SystemConfigFile.hpp"
 #include "SysExec.hpp"
 #include "WriteTemplateFile.hpp"
+#include <unistd.h>
 
 using namespace pipedal;
 using namespace std;
@@ -473,6 +474,7 @@ void pipedal::SetWifiConfig(const WifiConfigSettings &settings)
         sysExec(SYSTEMCTL_BIN " restart dnsmasq");
         sysExec(SYSTEMCTL_BIN " enable dnsmasq");
     }
+    ::sync();
 }
 
 /*********************************************************************************
@@ -563,6 +565,7 @@ void UninstallP2p()
         SetWifiDirectConfig(wifiDirectConfigSettings);
 
     }
+    ::sync();
 }
 
 static void RemoveDhcpcdConfig()
@@ -679,6 +682,7 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
     {
         cout << e.what() << endl;
     }
+    ::sync();
 }
 void pipedal::OnWifiReinstall() {
     WifiDirectConfigSettings settings;
@@ -686,6 +690,7 @@ void pipedal::OnWifiReinstall() {
     if (settings.enable_)
     {
         SetWifiDirectConfig(settings);
+        ::sync();
     }
 }
 void pipedal::OnWifiUninstall(bool preserveState)
@@ -707,6 +712,7 @@ void pipedal::OnWifiUninstall(bool preserveState)
             settings.Save();
         }
     }
+    ::sync();
 }
 void pipedal::OnWifiInstallComplete()
 {

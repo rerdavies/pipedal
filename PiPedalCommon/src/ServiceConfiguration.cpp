@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <tuple>
+#include "ofstream_synced.hpp"
 
 using namespace pipedal;
 
@@ -65,7 +66,7 @@ void ServiceConfiguration::Save()
         std::filesystem::create_directories(directory);
 
         // make sure the file has correct permissions.
-        std::ofstream t;
+        pipedal::ofstream_synced t;
         t.open(filename);
         t.close();
 

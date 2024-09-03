@@ -30,6 +30,7 @@
 #include "autoptr_vector.h"
 #include <unordered_map>
 #include <fstream>
+#include "ofstream_synced.hpp"
 
 namespace config_serializer
 {
@@ -256,7 +257,7 @@ namespace config_serializer
         }
         void Save(const std::string &path)
         {
-            std::ofstream f;
+            pipedal::ofstream_synced f;
             f.open(path);
             if (!f.is_open())
             {

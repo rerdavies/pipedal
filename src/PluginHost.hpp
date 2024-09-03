@@ -740,9 +740,9 @@ namespace pipedal
         size_t maxBufferSize = 1024;
         size_t maxAtomBufferSize = 16 * 1024;
         bool hasMidiInputChannel;
-        int numberOfAudioInputChannels = 2;
-        int numberOfAudioOutputChannels = 2;
-        double sampleRate = 0;
+        int numberOfAudioInputChannels = 1;
+        int numberOfAudioOutputChannels = 1;
+        double sampleRate = 48000;
 
         std::string vst3CachePath;
 

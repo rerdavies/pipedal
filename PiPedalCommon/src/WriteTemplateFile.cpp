@@ -21,6 +21,7 @@
 #include "WriteTemplateFile.hpp"
 #include <fstream>
 #include <stdexcept>
+#include "ofstream_synced.hpp"
 
 using namespace pipedal;
 
@@ -37,7 +38,7 @@ void pipedal::WriteTemplateFile(
     const std::filesystem::path &inputFile,
     const std::filesystem::path &outputFile)
 {
-    std::ofstream out(outputFile);
+    pipedal::ofstream_synced out(outputFile);
     std::ifstream in(inputFile);
 
     if (!in.is_open())

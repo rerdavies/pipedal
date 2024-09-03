@@ -251,6 +251,9 @@ namespace pipedal
 
 
         void SetPedalboard(int64_t clientId, Pedalboard &pedalboard);
+        Pedalboard&GetPedalboard();
+        std::shared_ptr<Lv2Pedalboard> GetLv2Pedalboard();
+
         void UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalboard);
 
         void GetPresets(PresetIndex *pResult);
