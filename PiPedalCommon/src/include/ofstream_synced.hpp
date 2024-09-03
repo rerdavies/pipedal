@@ -10,6 +10,7 @@ namespace pipedal
     class ofstream_synced : public std::ofstream
     {
     public:
+        using super = std::ofstream;
         ofstream_synced() {}
 
         explicit ofstream_synced(const std::string &filename, ios_base::openmode mode = ios_base::out)
@@ -20,6 +21,7 @@ namespace pipedal
             : std::ofstream(filename, mode)
         {
         }
+        void close();
         ~ofstream_synced();
     };
 

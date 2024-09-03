@@ -8,12 +8,14 @@ void pipedal::FileSystemSync()
 {
     ::sync();
 }
-
-ofstream_synced::~ofstream_synced()
-{
+void ofstream_synced::close() {
     if (is_open())
     {
-        close();
+        super::close();
         ::sync();
     }
+}
+ofstream_synced::~ofstream_synced()
+{
+    ofstream_synced::close();
 }
