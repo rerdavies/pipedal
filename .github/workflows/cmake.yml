@@ -30,7 +30,7 @@ jobs:
         sudo apt install libasound2-dev
         sudo apt install libwebsocketpp-dev authbind
         sudo apt install libsdbus-c++-dev libsdbus-c++-bin
-        sudo apt install libavahi-client-dev libzip-dev libicu-dev
+        sudo apt install libavahi-client-dev libzip-dev libicu-dev apt google-perftools
         git submodule update --init --recursive 
         ./react-config
 
