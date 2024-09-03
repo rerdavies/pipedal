@@ -492,7 +492,7 @@ void PiPedalModel::FirePedalboardChanged(int64_t clientId, bool loadAudioThread)
     if (loadAudioThread)
     {
         // notify the audio thread.
-        if (audioHost->IsOpen())
+        if (audioHost && audioHost->IsOpen())
         {
             LoadCurrentPedalboard();
 
@@ -2070,6 +2070,21 @@ void PiPedalModel::CheckForResourceInitialization(Pedalboard &pedalboard)
         }
     }
 }
+Pedalboard &PiPedalModel::GetPedalboard()
+{
+    return this->pedalboard;
+}
+std::shared_ptr<Lv2Pedalboard> PiPedalModel::GetLv2Pedalboard()
+{
+    // test only.
+    Lv2PedalboardErrorList errorMessages;
+    std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->pluginHost.CreateLv2Pedalboard(this->pedalboard, errorMessages)};
+    if (errorMessages.size() != 0)
+    {
+        throw std::runtime_error(errorMessages[0].message);
+    }
+    return lv2Pedalboard;
+}
 bool PiPedalModel::LoadCurrentPedalboard()
 {
     Lv2PedalboardErrorList errorMessages;
@@ -2174,8 +2189,8 @@ UpdateStatus PiPedalModel::GetUpdateStatus()
 void PiPedalModel::UpdateNow(const std::string &updateUrl)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    std::filesystem::path fileName,signatureName;
-    updater.DownloadUpdate(updateUrl,&fileName,&signatureName);
+    std::filesystem::path fileName, signatureName;
+    updater.DownloadUpdate(updateUrl, &fileName, &signatureName);
 
     adminClient.InstallUpdate(fileName);
 }

@@ -1,0 +1,3 @@
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+${SCRIPT_DIR}/../build/src/profilePlugin -w Nam_Profile -o /tmp/nam.perf &&\
+google-pprof --text ${SCRIPT_DIR}/../build/src/profilePlugin --add_lib  /usr/lib/lv2/neural_amp_modeler.lv2/neural_amp_modeler.so  /tmp/nam.perf >./nam.txt

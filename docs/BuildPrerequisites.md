@@ -27,7 +27,7 @@ Run the following commands to install dependent libraries required by the PiPeda
     sudo apt install -y authbind
     sudo apt install -y libavahi-client-dev
     sudo apt install -y libnm-dev libicu-dev
-    sudo apt install -y libsdbus-c++-dev libzip-dev
+    sudo apt install -y libsdbus-c++-dev libzip-dev google-perftools
     
 
 ### Installing Sources

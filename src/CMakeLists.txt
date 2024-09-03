@@ -310,6 +310,14 @@ target_link_libraries(pipedaltest PRIVATE PiPedalCommon)
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
 
+add_executable(profilePlugin
+    profilePluginMain.cpp
+    )
+target_link_libraries(profilePlugin PRIVATE profiler  ${PIPEDAL_LIBS}) 
+
+target_include_directories(profilePlugin PRIVATE ${PIPEDAL_INCLUDES}
+    )
+
 add_executable(jsonTest
      testMain.cpp
      jsonTest.cpp

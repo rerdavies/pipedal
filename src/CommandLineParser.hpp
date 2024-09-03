@@ -162,7 +162,7 @@ namespace pipedal
         {
             if (shortOption.length() != 0)
             {
-                auto option = "-" + longOption;
+                auto option = "-" + shortOption;
                 options.push_back(new BooleanOption(option, pResult, true));
                 options.push_back(new BooleanOption(option + "+", pResult, true));
                 options.push_back(new BooleanOption(option + "-", pResult, false));
