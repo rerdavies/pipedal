@@ -238,9 +238,9 @@ const JackServerSettingsDialog = withStyles(styles)(
             if (max > 2048) max = 2048;
 
             for (let i = 16; i <= max; i *= 2) {
-                if (i >= alsaDevice.minBufferSize) {
+                //if (i >= alsaDevice.minBufferSize) { // yyy should be MxN >= minBufferSize, or perhaps MxNx2 >= minBufferSize
                     result.push(i);
-                }
+                //}
             }
             return result;
         }
@@ -351,6 +351,9 @@ const JackServerSettingsDialog = withStyles(styles)(
                                         <MenuItem value={2}>2</MenuItem>
                                         <MenuItem value={3}>3</MenuItem>
                                         <MenuItem value={4}>4</MenuItem>
+                                        <MenuItem value={6}>6</MenuItem> // yyy: delete me.
+                                        <MenuItem value={8}>8</MenuItem>
+                                        <MenuItem value={12}>12</MenuItem>
                                     </Select>
                                 </FormControl>
                             </div>
