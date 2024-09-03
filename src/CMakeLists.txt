@@ -9,6 +9,13 @@ set(CXX_STANDARD 20)
 
 include(FindPkgConfig)
 
+
+if(DEFINED ENV{GITHUB_ACTIONS})
+  message(STATUS "Building in GitHub Actions environment")
+  set(GITHUB_ACTIONS TRUE)
+else()
+  set(GITHUB_ACTIONS FALSE)
+endif()
 #################################################################
 # ENABLE/DISABLE VST3 Support.
 # Disabled, pending approval of Steinberg VST3 License.
@@ -310,14 +317,17 @@ target_link_libraries(pipedaltest PRIVATE PiPedalCommon)
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
 
-add_executable(profilePlugin
-    profilePluginMain.cpp
-    )
-target_link_libraries(profilePlugin PRIVATE profiler  ${PIPEDAL_LIBS}) 
+if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
 
-target_include_directories(profilePlugin PRIVATE ${PIPEDAL_INCLUDES}
-    )
 
+    add_executable(profilePlugin
+        profilePluginMain.cpp
+        )
+    target_link_libraries(profilePlugin PRIVATE profiler  ${PIPEDAL_LIBS}) 
+
+    target_include_directories(profilePlugin PRIVATE ${PIPEDAL_INCLUDES}
+        )
+endif()
 add_executable(jsonTest
      testMain.cpp
      jsonTest.cpp
