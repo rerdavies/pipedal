@@ -179,7 +179,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
 
-            "args": [            "Nam_Profile", "--no-profile","-w" ],
+            "args": [            "ToobNam_Profile", "--no-profile","-w" ],
 
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

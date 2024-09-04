@@ -153,6 +153,10 @@ void profilePlugin(const ProfileOptions &profileOptions)
 
     RingBufferSink ringBufferSink(writerRingbuffer);
 
+
+    // run once to get memory allocations in NAM and ML out of the way.
+    lv2Pedalboard->Run(inputBuffers, outputBuffers, nFrames, &ringBufferWriter);
+
     /* *** Pump the plugin for a bit if it is expected to do work on the scheduler  thread when initializing */
     if (profileOptions.waitForWork)
     {
