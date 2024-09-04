@@ -474,7 +474,7 @@ void Updater::CheckForUpdate(bool useCache)
                 std::vector<GithubRelease> releases;
                 for (size_t i = 0; i < vArray->size(); ++i)
                 {
-                    auto &el = vArray->at(0);
+                    auto &el = vArray->at(i);
                     GithubRelease release{el};
                     if (!release.draft && release.GetDownloadForCurrentArchitecture() != nullptr)
                     {
