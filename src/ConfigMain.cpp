@@ -951,7 +951,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
             }
             s
                 << (programPrefix / "sbin" / PIPEDALD_SERVICE).string()
-                << " /etc/pipedal/config /etc/pipedal/react -port " << endpointAddress << " -systemd";
+                << " /etc/pipedal/config /etc/pipedal/react -systemd";
 
             map["COMMAND"] = s.str();
         }

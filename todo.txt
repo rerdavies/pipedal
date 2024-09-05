@@ -1,7 +1,9 @@
-- feature: redo ./makepackage so that it runs without sudo.
-- Bug: text Cursor hovering over the breadcrumb bar in file property dialog.
-- Bug: Turning off wifi-direct sould re-enable NetworkManager.
-- ToobML save/restore state.
+- Back button after reloads on Android.
+- pidedal_nm_p2p2 service not started from web ui.
+- pipedal_nm_p2pd connection not visible.
+- hdcpcd spurious ipv6 error messages.
+- also stopping on startup, even with big buffers.
+
 
 
 - make app use the same theme settings as the website.

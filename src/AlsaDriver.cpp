@@ -1315,7 +1315,7 @@ namespace pipedal
             throw PiPedalStateException(SS("ALSA error:" << snd_strerror(err)));
         }
 
-        std::jthread *audioThread;
+        std::jthread *audioThread = nullptr;
         bool audioRunning;
 
         bool block = false;

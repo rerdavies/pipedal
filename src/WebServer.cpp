@@ -1252,7 +1252,12 @@ namespace pipedal
 
                 for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
                 {
-                    m_endpoint.close(*it, websocketpp::close::status::normal, "");
+                    try {
+                        m_endpoint.close(*it, websocketpp::close::status::normal, "");
+                    } catch (const std::exception&ignored)
+                    {
+
+                    }
                 }
             }
         }

@@ -1,4 +1,23 @@
 # Release Notes
+## PiPedal 1.2.49 Release
+
+The theme for this release: fixing big, embarassing bugs.
+
+URGENT: PiPedal 1.2.47 fixed a significant and dangerous defect that may cause loss of presets, banks or configuration data if you remove power from your Raspberry Pi within up to five minutes of last saving data instead of performing an orderly shutdown or reboot. Users of PiPedal should upgrade to at least version 1.2.47 immediately, if they have not alread done so.
+
+In addition, a bug in the Auto Update code prevents PiPedal from seeing PiPedal Release or Beta builds if the most recent build is a Development or Experimental build. If you want to stay in sync with Release or Beta update streams, please install this version right away.
+
+Bug fixes:
+- Unable to configure Wi-Fi direct connections.
+- Update checks do not see Release or Beta updates if there is a later Development build.
+- Unable to configure audio buffers properly for devices with minBufferSize=256.
+- Ongoing improvements to TooB Neural Amp Modeler.
+
+Known issues:
+- TooB Neural Amp Modeler runs 5% slower than Mike Oliphant's Neural Amp Modeler, despite running virtually identical code from Steven Atkins' NeuralAmpModelerCore project. Investigation continues.
+
+
+
 ## PiPedal 1.2.47 Release
 
 This version fixes a significant and dangerous defect that may cause loss of presets, banks or configuration data if you remove power from your Raspberry Pi within up to five minutes of last saving data instead of performing an orderly shutdown or reboot. Users of PiPedal should upgrade immediately.

@@ -559,11 +559,6 @@ void UninstallP2p()
 
         }
 
-        WifiDirectConfigSettings wifiDirectConfigSettings;
-        wifiDirectConfigSettings.Load();
-        wifiDirectConfigSettings.enable_ = false;
-        SetWifiDirectConfig(wifiDirectConfigSettings);
-
     }
     ::sync();
 }
@@ -655,7 +650,7 @@ static void ConfigDhcpcdForP2p()
 }
 void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
 {
-
+    settings.Save();
     try
     {
         char band;
@@ -675,7 +670,6 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
         else
         {
             InstallP2p(settings);
-            sysExec(SYSTEMCTL_BIN " restart pipedald");
         }
     }
     catch (const std::exception &e)
