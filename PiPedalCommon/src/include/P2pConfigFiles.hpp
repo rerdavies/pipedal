@@ -25,7 +25,7 @@
 #pragma once
 
 
-#define DEVICE_GUID_FILE "/etc/pipedal/config/device_uuid"
+#define DEVICE_GUID_FILE "/var/pipedal/config/device_uuid"
 
-#define PIPEDAL_P2PD_CONF_PATH "/etc/pipedal/config/pipedal_p2pd.conf"
+#define PIPEDAL_P2PD_CONF_PATH "/var/pipedal/config/pipedal_p2pd.conf"
 

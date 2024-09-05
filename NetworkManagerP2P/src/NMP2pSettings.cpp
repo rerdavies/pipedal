@@ -201,19 +201,25 @@ static void openWithPerms(
         std::filesystem::perms::group_read | std::filesystem::perms::group_write)
 {
     auto directory = path.parent_path();
-    std::filesystem::create_directories(directory);
-    // open and close to make an existing empty file.
-    // close it.
+    if (!std::filesystem::exists(directory))
     {
-        std::ofstream f;
-        f.open(path);
-        f.close();
+        std::filesystem::create_directories(directory);
+        // open and close to make an existing empty file.
+        // close it.
+        {
+            std::ofstream f;
+            f.open(path);
+            f.close();
+        }
+        try {
+            // set the perms.
+            std::filesystem::permissions(
+                path,
+                perms,
+                std::filesystem::perm_options::replace); 
+        } catch (const std::exception&) {
+        }
     }
-    // set the perms.
-    std::filesystem::permissions(
-        path,
-        perms,
-        std::filesystem::perm_options::replace); 
 
     // open for re3al.
     f.open(path);
