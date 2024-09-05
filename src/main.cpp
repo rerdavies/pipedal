@@ -220,7 +220,27 @@ int main(int argc, char *argv[])
                 return EXIT_SUCCESS; // tell systemd not to auto-restart.
             }
         }
+        // only accept signals on the main thread.
+        // block now so that threads spawned by model inherit the block mask.
+        int sig;
+        sigset_t sigSet;
+        int s;
+        sigemptyset(&sigSet);
+        sigaddset(&sigSet, SIGINT);
+        sigaddset(&sigSet, SIGTERM);
+        sigaddset(&sigSet, SIGUSR1);
+
+        s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
+        if (s != 0)
+        {
+            throw std::logic_error("pthread_sigmask failed.");
+        }
+
+
+
         PiPedalModel model;
+
+
 
         model.SetRestartListener(
             []()
@@ -243,20 +263,6 @@ int main(int argc, char *argv[])
 
         model.WaitForAudioDeviceToComeOnline();
 
-        // only accept signals on the main thread.
-        int sig;
-        sigset_t sigSet;
-        int s;
-        sigemptyset(&sigSet);
-        sigaddset(&sigSet, SIGINT);
-        sigaddset(&sigSet, SIGTERM);
-        sigaddset(&sigSet, SIGUSR1);
-
-        s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
-        if (s != 0)
-        {
-            throw std::logic_error("pthread_sigmask failed.");
-        }
 
 #if JACK_HOST
         if (systemd)

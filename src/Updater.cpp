@@ -172,40 +172,45 @@ void Updater::ThreadProc()
     pfd.fd = this->event_reader;
     pfd.events = POLLIN;
 
-    while (true)
-    {
-        int ret = poll(&pfd, 1, std::chrono::duration_cast<std::chrono::milliseconds>(updateRate).count()); // 1000 ms timeout
+    try {
+        while (true)
+        {
+            int ret = poll(&pfd, 1, std::chrono::duration_cast<std::chrono::milliseconds>(updateRate).count()); // 1000 ms timeout
 
-        if (ret == -1)
-        {
-            Lv2Log::error("Updater: Poll error.");
-            break;
-        }
-        else if (ret == 0)
-        {
-            CheckForUpdate(true);
-        }
-        else
-        {
-            // Event occurred
-            uint64_t value;
-            ssize_t s = read(event_reader, &value, sizeof(uint64_t));
-            if (s == sizeof(uint64_t))
+            if (ret == -1)
             {
-                if (value == CHECK_NOW_EVENT)
+                Lv2Log::error("Updater: Poll error.");
+                break;
+            }
+            else if (ret == 0)
+            {
+                CheckForUpdate(true);
+            }
+            else
+            {
+                // Event occurred
+                uint64_t value;
+                ssize_t s = read(event_reader, &value, sizeof(uint64_t));
+                if (s == sizeof(uint64_t))
                 {
-                    CheckForUpdate(true);
-                }
-                else if (value == UNCACHED_CHECK_NOW_EVENT)
-                {
-                    CheckForUpdate(false);
-                }
-                else
-                {
-                    break;
+                    if (value == CHECK_NOW_EVENT)
+                    {
+                        CheckForUpdate(true);
+                    }
+                    else if (value == UNCACHED_CHECK_NOW_EVENT)
+                    {
+                        CheckForUpdate(false);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }
+    } catch (const std::exception&e)
+    {
+        Lv2Log::error(SS("Updater: Service thread terminated abnormally: " << e.what()));
     }
 }
 
