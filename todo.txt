@@ -3,6 +3,7 @@
 - pipedal_nm_p2pd connection not visible.
 - hdcpcd spurious ipv6 error messages.
 - also stopping on startup, even with big buffers.
+- pipedald admin needs to fork in response to a wifi p2p update or do it on a thread.
 
 
 
@@ -14,6 +15,24 @@
 
 
 
+
+Package: raspi-firmware
+Version: 1:1.20240902-1
+
+Package: raspi-firmware
+Version: 1.20220830+ds-1
+
+
+Package: firmware-brcm80211
+Source: firmware-nonfree
+Version: 1:20230625-2+rpt3
+
+Package: f
+
+
+downgrade:
+sudo apt install raspi-firmware=1.20220830+ds-1
+sudo apt install firmware-brcm80211=1:20230625-2+rpt2
 
 
 
