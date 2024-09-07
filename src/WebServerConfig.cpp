@@ -401,7 +401,6 @@ public:
 
                 if (patchProperty.length() == 0 && directory.length() == 0)
                 {
-                    // yyy no throwing!
                     throw PiPedalException("Malformed request.");
 
                 }

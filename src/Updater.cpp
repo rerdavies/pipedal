@@ -847,14 +847,13 @@ void Updater::ValidateSignature(const std::filesystem::path &file, const std::fi
     }
     std::string keyId = getFingerprint(gpgText);
 
-    Lv2Log::info(unCRLF(gpgText)); // yyy delete me.
 
-    if (keyId != UPDATE_GPG_FINGERPRINT)
+    if (keyId != UPDATE_GPG_FINGERPRINT && keyId != UPDATE_GPG_FINGERPRINT2)
     {
-        throw std::runtime_error(SS("Update signature has the wrong fingerprint: " << keyId));
+        throw std::runtime_error(SS("Update signature has the wrong id: " << keyId));
     }
     std::string origin = getAddress(gpgText);
-    if (origin != UPDATE_GPG_ADDRESS)
+    if (origin != UPDATE_GPG_ADDRESS && origin != UPDATE_GPG_ADDRESS2)
     {
         throw std::runtime_error(SS("Update signature has an incorrect address." << origin));
     }
@@ -934,7 +933,6 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
         responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
 #endif
         std::string args = SS("-s -L " << responseOption << " " << url << " -o " << downloadFilePath.c_str());
-        Lv2Log::info(SS("/usr/bin/curl " << args)); // yyy delete me.
         auto curlOutput = sysExecForOutput("/usr/bin/curl", args);
         if (curlOutput.exitCode != EXIT_SUCCESS || badOutput(downloadFilePath))
         {
@@ -944,7 +942,6 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
         checkCurlHttpResponse(curlOutput.output);
 
         args = SS("-s -L " << responseOption << " " << signatureUrl << " -o " << downloadSignaturePath.c_str());
-        Lv2Log::info(SS("/usr/bin/curl " << args));
 
         curlOutput = sysExecForOutput("/usr/bin/curl", args);
         if (curlOutput.exitCode != EXIT_SUCCESS || badOutput(downloadSignaturePath))

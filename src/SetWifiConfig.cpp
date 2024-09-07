@@ -560,6 +560,13 @@ void UninstallP2p()
         }
 
     }
+    if (UsingNetworkManager())
+    {
+        // dhcpcd comes up enabled after an install, so stop it always.
+        sysExec(SYSTEMCTL_BIN " stop dhcpcd");
+        sysExec(SYSTEMCTL_BIN " disable dhcpcd");
+
+    }
     ::sync();
 }
 

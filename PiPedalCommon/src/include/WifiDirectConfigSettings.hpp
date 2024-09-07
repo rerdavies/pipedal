@@ -37,7 +37,7 @@ namespace pipedal {
         std::string hotspotName_ = "pipedal";
         bool pinChanged_ = false;
         std::string pin_;
-        std::string channel_ = "0"; // "0" -> select automatically.
+        std::string channel_ = "1"; // "0" -> select automatically.
         std::string wlan_ = "wlan0";
 
         void ParseArguments(const std::vector<std::string> &arguments);

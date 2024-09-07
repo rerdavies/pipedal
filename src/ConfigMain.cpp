@@ -771,7 +771,8 @@ void DeployVarConfig()
 void InstallPgpKey()
 {
     fs::path homeDir = "/var/pipedal/config/gpg";
-    fs::path keyPath = "/etc/pipedal/config/updatekey.gpg";
+    fs::path keyPath = "/etc/pipedal/config/updatekey.asc";
+    fs::path keyPath2 = "/etc/pipedal/config/updatekey2.asc";
 
     fs::create_directories(homeDir);
     std::ignore = chmod(homeDir.c_str(), 0700);
@@ -781,15 +782,26 @@ void InstallPgpKey()
         s << (CHOWN_BIN " " SERVICE_GROUP_NAME ":" SERVICE_GROUP_NAME " ") << homeDir.c_str();
         sysExec(s.str().c_str());
     }
-    std::ostringstream ss;
-    ss << "/usr/bin/gpg  --homedir " << homeDir.c_str() << " --import " << keyPath.c_str();
-
-    int rc = silentSysExec(ss.str().c_str());
-    if (rc != EXIT_SUCCESS)
     {
-        cout << "Error: Failed  to create update keyring." << endl;
-    }
+        std::ostringstream ss;
+        ss << "/usr/bin/gpg  --homedir " << homeDir.c_str() << " --import " << keyPath.c_str();
+        int rc = silentSysExec(ss.str().c_str());
+        if (rc != EXIT_SUCCESS)
+        {
+            cout << "Error: Failed  to create update keyring." << endl;
+        }
 
+    }
+    {
+        std::ostringstream ss;
+        ss << "/usr/bin/gpg  --homedir " << homeDir.c_str() << " --import " << keyPath2.c_str();
+        int rc = silentSysExec(ss.str().c_str());
+        if (rc != EXIT_SUCCESS)
+        {
+            cout << "Error: Failed  to add update key." << endl;
+        }
+
+    }
     {
         std::stringstream ss;
         ss << (CHOWN_BIN " -R " SERVICE_GROUP_NAME ":" SERVICE_GROUP_NAME " ") << homeDir.c_str();
@@ -1396,10 +1408,11 @@ int main(int argc, char **argv)
         else if (disable_p2p)
         {
             WifiDirectConfigSettings settings;
-            settings.valid_ = true;
+            settings.Load();
             settings.enable_ = false;
             SetWifiDirectConfig(settings);
             RestartService(true);
+            return EXIT_SUCCESS;
         }
         else if (enable_ap)
         {

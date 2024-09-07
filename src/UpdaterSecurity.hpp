@@ -42,9 +42,16 @@
 #ifndef UPDATE_GPG_ADDRESS
 #define UPDATE_GPG_ADDRESS "Robin Davies <rerdavies@gmail.com>"
 #endif 
+#ifndef UPDATE_GPG_ADDRESS2
+#define UPDATE_GPG_ADDRESS2 "PiPedal Project  <rerdavies@gmail.com>"
+#endif 
+
 
 #ifndef UPDATE_GPG_FINGERPRINT
 #define UPDATE_GPG_FINGERPRINT "381124E2BB4478D225D2313B2AEF3F7BD53EAA59"
+#endif
+#ifndef UPDATE_GPG_FINGERPRINT2
+#define UPDATE_GPG_FINGERPRINT2 "2D1F39DBB1F819412B678F88E9D7081E08E3D85C"
 #endif
 
 // Configuration for downloading of updates.
