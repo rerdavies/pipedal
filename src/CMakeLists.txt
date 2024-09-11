@@ -9,6 +9,8 @@ set(CXX_STANDARD 20)
 
 include(FindPkgConfig)
 
+find_package(sdbus-c++ REQUIRED)
+
 
 if(DEFINED ENV{GITHUB_ACTIONS})
   message(STATUS "Building in GitHub Actions environment")
@@ -144,6 +146,8 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    DBusToLv2Log.cpp DBusToLv2Log.hpp
+    HotspotManager.cpp HotspotManager.hpp
     UpdateResults.cpp UpdateResults.hpp
     UpdaterSecurity.hpp
     Updater.cpp Updater.hpp
@@ -252,6 +256,7 @@ set (PIPEDAL_INCLUDES
 )
 
 set(PIPEDAL_LIBS libpipedald zip
+    PiPedalCommon
     icui18n
     icuuc
     icudata
@@ -290,6 +295,13 @@ target_link_libraries(pipedald PRIVATE PiPedalCommon
     )
 
 #################################
+add_executable(hotspotManagerTest 
+    hotspotManagerTestMain.cpp
+    HotspotManager.cpp HotspotManager.hpp Lv2Log.cpp Lv2Log.hpp)
+
+target_link_libraries(hotspotManagerTest PRIVATE ${PIPEDAL_LIBS})
+
+
 add_executable(pipedaltest testMain.cpp
 
     InvertingMutexTest.cpp
@@ -313,7 +325,7 @@ add_executable(pipedaltest testMain.cpp
     MemDebug.cpp
     MemDebug.hpp
     )
-target_link_libraries(pipedaltest PRIVATE PiPedalCommon)
+target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
 

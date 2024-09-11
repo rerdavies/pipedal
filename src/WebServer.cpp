@@ -1160,23 +1160,7 @@ namespace pipedal
                 m_endpoint.set_close_handler(bind(&WebServerImpl::on_close, this, _1));
                 m_endpoint.set_http_handler(bind(&WebServerImpl::on_http, this, _1));
 
-                std::string hostName = getHostName();
-                if (hostName.length() != 0)
-                {
-                    std::stringstream ss;
-                    ss << "Listening on " << hostName << ".local:" << this->port;
-                    Lv2Log::info(ss.str());
-                }
-                std::string ipv4Address = getIpv4Address("eth0");
-                if (ipv4Address.length() != 0)
-                {
-                    Lv2Log::info(SS("Listening on " << ipv4Address << ":" << this->port));
-                }
-                std::string wifiAddress = getIpv4Address("wlan0");
-                if (wifiAddress.length() != 0)
-                {
-                    Lv2Log::info(SS("Listening on Wi-Fi address " << wifiAddress << ":" << this->port));
-                }
+                DisplayIpAddresses();
 
                 std::stringstream ss;
                 ss << port;
@@ -1252,11 +1236,12 @@ namespace pipedal
 
                 for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
                 {
-                    try {
-                        m_endpoint.close(*it, websocketpp::close::status::normal, "");
-                    } catch (const std::exception&ignored)
+                    try
                     {
-
+                        m_endpoint.close(*it, websocketpp::close::status::normal, "");
+                    }
+                    catch (const std::exception &ignored)
+                    {
                     }
                 }
             }
@@ -1279,6 +1264,8 @@ namespace pipedal
             this->signalOnDone = signalOnDone;
             this->pBgThread = new std::thread(ThreadProc, this);
         }
+
+        virtual void DisplayIpAddresses() override;
 
         WebServerImpl(const std::string &address, int port, const char *rootPath, int threads, size_t maxUploadSize);
     };
@@ -1313,4 +1300,25 @@ std::shared_ptr<WebServer> pipedal::WebServer::create(
     size_t maxUploadSize)
 {
     return std::shared_ptr<WebServer>(new WebServerImpl(address.to_string(), port, rootPath, threads, maxUploadSize));
+}
+
+void WebServerImpl::DisplayIpAddresses()
+{
+    std::string hostName = getHostName();
+    if (hostName.length() != 0)
+    {
+        std::stringstream ss;
+        ss << "Listening on mDns address " << hostName << ":" << this->port;
+        Lv2Log::info(ss.str());
+    }
+    std::string ipv4Address = getIpv4Address("eth0");
+    if (ipv4Address.length() != 0)
+    {
+        Lv2Log::info(SS("Listening on eth0 address " << ipv4Address << ":" << this->port));
+    }
+    std::string wifiAddress = getIpv4Address("wlan0");
+    if (wifiAddress.length() != 0)
+    {
+        Lv2Log::info(SS("Listening on Wi-Fi address " << wifiAddress << ":" << this->port));
+    }
 }

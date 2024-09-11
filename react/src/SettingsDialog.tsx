@@ -24,7 +24,7 @@ import ListSelectDialog from './ListSelectDialog';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
-import {ColorTheme} from './DarkMode';
+import { ColorTheme } from './DarkMode';
 import ButtonBase from "@mui/material/ButtonBase";
 import AppBar from '@mui/material/AppBar';
 import Button from '@mui/material/Button';
@@ -394,11 +394,10 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             });
         }
 
-        handleCheckForUpdates()
-        {
+        handleCheckForUpdates() {
             this.model.showUpdateDialog();
         }
-        
+
         handleMidiMessageSettings() {
             this.setState({
                 showSystemMidiBindingsDialog: true
@@ -702,13 +701,13 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                 <ButtonBase
                                     className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    onClick={() => this.handleShowWifiDirectConfigDialog()}  >
+                                    onClick={() => this.handleShowWifiConfigDialog()}  >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
                                         <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Configure Wi-Fi Direct hotspot</Typography>
+                                            Wi-Fi auto hotspot</Typography>
                                         <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            {this.state.wifiDirectConfigSettings.getSummaryText()}
+                                            {this.state.wifiConfigSettings.getSummaryText()}
                                         </Typography>
 
                                     </div>
@@ -756,8 +755,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
                                                 Color theme</Typography>
                                             <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>
-                                                { this.model.getTheme() === ColorTheme.Dark ? "Dark" :
-                                                (this.model.getTheme() ===  ColorTheme.Light ? "Light": "System")}
+                                                {this.model.getTheme() === ColorTheme.Dark ? "Dark" :
+                                                    (this.model.getTheme() === ColorTheme.Light ? "Light" : "System")}
                                             </Typography>
                                         </div>
                                     </ButtonBase>
@@ -765,9 +764,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     <ButtonBase
                                         className={classes.setting}
-                                        onClick={() => { 
+                                        onClick={() => {
                                             this.model.setShowStatusMonitor(!this.state.showStatusMonitor)
-                                         }}  >
+                                        }}  >
                                         <SelectHoverBackground selected={false} showHover={true} />
                                         <div style={{ width: "100%" }}>
                                             <div style={{
@@ -900,20 +899,26 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         (this.state.showThemeSelectDialog) &&
                         (
                             <SelectThemeDialog open={this.state.showThemeSelectDialog}
-                                onClose={()=> { this.setState({showThemeSelectDialog: false});} }
+                                onClose={() => { this.setState({ showThemeSelectDialog: false }); }}
                                 onOk={(selectedTheme: ColorTheme) => {
                                     this.model.setTheme(selectedTheme);
-                                    this.setState({showThemeSelectDialog: false});
+                                    this.setState({ showThemeSelectDialog: false });
                                 }}
                                 defaultTheme={this.model.getTheme()}
                             />
 
                         )
                     }
-                    <WifiConfigDialog wifiConfigSettings={this.state.wifiConfigSettings} open={this.state.showWifiConfigDialog}
-                        onClose={() => this.setState({ showWifiConfigDialog: false })}
-                        onOk={(wifiConfigSettings) => this.handleApplyWifiConfig(wifiConfigSettings)}
-                    />
+                    {
+                        (this.state.showWifiConfigDialog) &&
+                        (
+                            <WifiConfigDialog wifiConfigSettings={this.state.wifiConfigSettings} open={this.state.showWifiConfigDialog}
+                                onClose={() => this.setState({ showWifiConfigDialog: false })}
+                                onOk={(wifiConfigSettings) => this.handleApplyWifiConfig(wifiConfigSettings)}
+                            />
+
+                        )
+                    }
                     <WifiDirectConfigDialog wifiDirectConfigSettings={this.state.wifiDirectConfigSettings} open={this.state.showWifiDirectConfigDialog}
                         onClose={() => this.setState({ showWifiDirectConfigDialog: false })}
                         onOk={(wifiDirectConfigSettings: WifiDirectConfigSettings) => this.handleApplyWifiDirectConfig(wifiDirectConfigSettings)}

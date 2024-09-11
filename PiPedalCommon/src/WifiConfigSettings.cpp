@@ -21,30 +21,412 @@
 #include <stdexcept>
 #include "ss.hpp"
 #include "ChannelInfo.hpp"
+#include <filesystem>
+#include "ofstream_synced.hpp"
+#include <stdexcept>
+#include <cctype>
+#include "SysExec.hpp"
+
+#include <sdbus-c++/sdbus-c++.h>
+#include <iostream>
+#include <memory>
 
 using namespace pipedal;
 using namespace std;
+namespace fs = std::filesystem;
 
-JSON_MAP_BEGIN(WifiConfigSettings)
-    JSON_MAP_REFERENCE(WifiConfigSettings,valid)
-    JSON_MAP_REFERENCE(WifiConfigSettings,wifiWarningGiven)
-    JSON_MAP_REFERENCE(WifiConfigSettings,rebootRequired)
-    JSON_MAP_REFERENCE(WifiConfigSettings,enable)
-    JSON_MAP_REFERENCE(WifiConfigSettings,hotspotName)
-    JSON_MAP_REFERENCE(WifiConfigSettings,mdnsName)
-    JSON_MAP_REFERENCE(WifiConfigSettings,hasPassword)
-    JSON_MAP_REFERENCE(WifiConfigSettings,password)
-    JSON_MAP_REFERENCE(WifiConfigSettings,countryCode)
-    JSON_MAP_REFERENCE(WifiConfigSettings,channel)
-JSON_MAP_END()
+static const fs::path CONFIG_PATH = "/var/pipedal/config/wifiConfig.json";
 
-bool WifiConfigSettings::ValidateCountryCode(const std::string&value)
+WifiConfigSettings::WifiConfigSettings()
 {
-    if (value.size() < 2 || value.size() > 3) return false;
-    return true;
+    Load();
 }
 
-int32_t pipedal::ChannelToChannelNumber(const std::string&channel)
+static std::string getWifiCountryCode()
+{
+    try
+    {
+        SysExecOutput result = sysExecForOutput("iw", "reg get");
+        if (result.exitCode != EXIT_SUCCESS)
+        {
+            return "";
+        }
+        const std::string &output = result.output;
+        size_t pos = output.find("country");
+        if (pos != std::string::npos)
+        {
+            std::string result = output.substr(pos + 8, 2);
+            if (WifiConfigSettings::ValidateCountryCode(result))
+            {
+                return result;
+            }
+        }
+    }
+    catch (const std::exception &e)
+    {
+        return ""; // unset.
+    }
+    return "";
+}
+
+static void setWifiCountryCode(const std::string &countryCode)
+{
+    if (!WifiConfigSettings::ValidateCountryCode(countryCode))
+    {
+        throw std::runtime_error("Invalid country code.");
+    }
+    SysExecOutput result = sysExecForOutput("iw", SS("reg set " << countryCode));
+    if (result.exitCode != EXIT_SUCCESS)
+    {
+        throw std::runtime_error(SS("Failed to set country code: " << result.output));
+    }
+}
+bool WifiConfigSettings::ValidateCountryCode(const std::string &text)
+{
+    if (text.length() != 2)
+        return false;
+    return std::isalpha(text[0]) && std::isalpha(text[1]);
+}
+void WifiConfigSettings::Load()
+{
+    try
+    {
+        if (fs::exists(CONFIG_PATH))
+        {
+            std::ifstream f(CONFIG_PATH);
+            if (!f)
+            {
+                throw std::runtime_error("Can't open file.");
+            }
+            json_reader reader(f);
+            reader.read(this);
+        }
+        this->countryCode_ = getWifiCountryCode();
+    }
+    catch (const std::exception &e)
+    {
+        throw std::runtime_error(SS("Can't load WifiConfigSettings. " << e.what()));
+    }
+}
+
+static void openWithPerms(
+    pipedal::ofstream_synced &f, 
+    const std::filesystem::path &path, 
+    std::filesystem::perms perms = 
+        std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
+        std::filesystem::perms::group_read | std::filesystem::perms::group_write)
+{
+    auto directory = path.parent_path();
+    if (!std::filesystem::exists(directory))
+    {
+        std::filesystem::create_directories(directory);
+        // open and close to make an existing empty file.
+        // close it.
+        {
+            std::ofstream f;
+            f.open(path);
+            f.close();
+        }
+        try {
+            // set the perms.
+            std::filesystem::permissions(
+                path,
+                perms,
+                std::filesystem::perm_options::replace); 
+        } catch (const std::exception&) {
+        }
+    }
+
+    // open for re3al.
+    f.open(path);
+}
+
+void WifiConfigSettings::Save() 
+{
+    try
+    {
+        ofstream_synced f;
+        openWithPerms(f,CONFIG_PATH);
+        json_writer writer(f);
+        writer.write(this);
+    }
+    catch (const std::exception &e)
+    {
+        throw std::runtime_error(SS("Can't save WifiConfigSettings. " << e.what()));
+    }
+}
+
+namespace pipedal::priv
+{
+
+    class Device
+    {
+    public:
+        Device(const std::string &path)
+            : m_proxy(sdbus::createProxy(
+                  sdbus::createSystemBusConnection(),
+                  "org.freedesktop.NetworkManager",
+                  path))
+        {
+        }
+
+        uint32_t GetDeviceType() const
+        {
+            sdbus::Variant device_type_variant;
+            m_proxy->callMethod("Get")
+                .onInterface("org.freedesktop.DBus.Properties")
+                .withArguments("org.freedesktop.NetworkManager.Device", "DeviceType")
+                .storeResultsTo(device_type_variant);
+            return device_type_variant.get<uint32_t>();
+        }
+
+        std::string GetPath() const
+        {
+            return m_proxy->getObjectPath();
+        }
+
+    private:
+        std::unique_ptr<sdbus::IProxy> m_proxy;
+    };
+    class NetworkManager
+    {
+    public:
+        NetworkManager()
+            : m_proxy(sdbus::createProxy(
+                  sdbus::createSystemBusConnection(),
+                  "org.freedesktop.NetworkManager",
+                  "/org/freedesktop/NetworkManager")),
+              m_settings_proxy(sdbus::createProxy(
+                  sdbus::createSystemBusConnection(),
+                  "org.freedesktop.NetworkManager",
+                  "/org/freedesktop/NetworkManager/Settings"))
+        {
+        }
+
+        struct HotspotInfo
+        {
+            std::string connection_path;
+            std::string active_connection_path;
+        };
+
+        std::string AddConnection(const std::map<std::string, std::map<std::string, sdbus::Variant>> &connection)
+        {
+            std::string path;
+            m_settings_proxy->callMethod("AddConnection")
+                .onInterface("org.freedesktop.NetworkManager.Settings")
+                .withArguments(connection)
+                .storeResultsTo(path);
+            return path;
+        }
+        std::string AddConnection(const std::string &ssid, const std::string &password)
+        {
+            // Create connection
+            std::map<std::string, std::map<std::string, sdbus::Variant>> connection;
+            connection["connection"]["type"] = sdbus::Variant("802-11-wireless");
+            connection["connection"]["id"] = sdbus::Variant(ssid);
+            std::vector<uint8_t> ssid_bytes(ssid.begin(), ssid.end());
+            connection["802-11-wireless"]["ssid"] = sdbus::Variant(ssid_bytes);
+            connection["802-11-wireless"]["mode"] = sdbus::Variant(std::string("ap"));
+            connection["802-11-wireless-security"]["key-mgmt"] = sdbus::Variant(std::string("wpa-psk"));
+            connection["802-11-wireless-security"]["psk"] = sdbus::Variant(password);
+            connection["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
+            connection["ipv6"]["method"] = sdbus::Variant(std::string("ignore"));
+
+            return AddConnection(connection);
+        }
+
+        std::string ActivateConnection(const std::string &connection_path, const std::string &device_path)
+        {
+            std::string active_connection_path;
+            m_proxy->callMethod("ActivateConnection")
+                .onInterface("org.freedesktop.NetworkManager")
+                .withArguments(connection_path, device_path, "/")
+                .storeResultsTo(active_connection_path);
+            return active_connection_path;
+        }
+
+        void DeactivateConnection(const std::string &active_connection_path)
+        {
+            m_proxy->callMethod("DeactivateConnection")
+                .onInterface("org.freedesktop.NetworkManager")
+                .withArguments(active_connection_path);
+        }
+
+        std::string GetWirelessDevicePath()
+        {
+            auto devices = GetAllDevices();
+            for (const auto &device : devices)
+            {
+                if (device.GetDeviceType() == 2)
+                { // 2 is the value for Wi-Fi devices
+                    return device.GetPath();
+                }
+            }
+            throw std::runtime_error("No Wi-Fi device found");
+        }
+
+        std::string CreateHotspot(const std::string &ssid, const std::string &password)
+        {
+            // Create connection
+            std::map<std::string, std::map<std::string, sdbus::Variant>> connection;
+            connection["connection"]["type"] = sdbus::Variant("802-11-wireless");
+            connection["connection"]["id"] = sdbus::Variant(ssid);
+            std::vector<uint8_t> ssid_bytes(ssid.begin(), ssid.end());
+            connection["802-11-wireless"]["ssid"] = sdbus::Variant(ssid_bytes);
+            connection["802-11-wireless"]["mode"] = sdbus::Variant(std::string("ap"));
+            connection["802-11-wireless-security"]["key-mgmt"] = sdbus::Variant(std::string("wpa-psk"));
+            connection["802-11-wireless-security"]["psk"] = sdbus::Variant(password);
+            connection["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
+            connection["ipv6"]["method"] = sdbus::Variant(std::string("ignore"));
+
+            auto connection_path = AddConnection(connection);
+            return connection_path;
+        }
+
+        std::string EnableHotspot(const std::string &connection_path)
+        {
+
+            // Enable hotspot
+            std::string device_path = GetWirelessDevicePath();
+            std::string active_connection_path = ActivateConnection(connection_path, device_path);
+
+            return active_connection_path;
+        }
+
+
+        void RemoveConnection(const std::string &connection)
+        {
+            auto connection_proxy = sdbus::createProxy(
+                m_proxy->getConnection(),
+                "org.freedesktop.NetworkManager",
+                connection);
+            connection_proxy->callMethod("Delete")
+                .onInterface("org.freedesktop.NetworkManager.Settings.Connection");
+        }
+
+        std::optional<std::string> GetActiveConnection(const std::string &device_path)
+        {
+            std::vector<sdbus::ObjectPath> active_connections;
+            m_proxy->callMethod("Get")
+                .onInterface("org.freedesktop.DBus.Properties")
+                .withArguments("org.freedesktop.NetworkManager", "ActiveConnections")
+                .storeResultsTo(active_connections);
+
+            for (const auto &conn : active_connections)
+            {
+                auto conn_proxy = sdbus::createProxy(
+                    m_proxy->getConnection(),
+                    "org.freedesktop.NetworkManager",
+                    conn);
+
+                sdbus::ObjectPath conn_device;
+                conn_proxy->callMethod("Get")
+                    .onInterface("org.freedesktop.DBus.Properties")
+                    .withArguments("org.freedesktop.NetworkManager.Connection.Active", "Devices")
+                    .storeResultsTo(conn_device);
+
+                if (conn_device == device_path)
+                {
+                    return conn;
+                }
+            }
+
+            return std::nullopt;
+        }
+        std::string GetHotspotConnectionPath(const std::string &ssid)
+        {
+            std::vector<sdbus::ObjectPath> connections;
+            m_settings_proxy->callMethod("ListConnections")
+                .onInterface("org.freedesktop.NetworkManager.Settings")
+                .storeResultsTo(connections);
+
+            for (const auto &conn_path : connections)
+            {
+                auto conn_proxy = sdbus::createProxy(sdbus::createSystemBusConnection(),
+                                                     "org.freedesktop.NetworkManager",
+                                                     conn_path);
+
+                sdbus::Variant settings_variant;
+                conn_proxy->callMethod("GetSettings")
+                    .onInterface("org.freedesktop.NetworkManager.Settings.Connection")
+                    .storeResultsTo(settings_variant);
+
+                auto settings = settings_variant.get<std::map<std::string, std::map<std::string, sdbus::Variant>>>();
+
+                // Check if this is a Wi-Fi connection
+                if (settings["connection"]["type"].get<std::string>() == "802-11-wireless")
+                {
+                    // Check if it's an access point (hotspot) connection
+                    if (settings["802-11-wireless"]["mode"].get<std::string>() == "ap")
+                    {
+                        // Check if the SSID matches
+                        std::vector<uint8_t> conn_ssid = settings["802-11-wireless"]["ssid"].get<std::vector<uint8_t>>();
+                        std::string conn_ssid_str(conn_ssid.begin(), conn_ssid.end());
+                        if (conn_ssid_str == ssid)
+                        {
+                            return conn_path;
+                        }
+                    }
+                }
+            }
+
+            return ""; // No matching hotspot connection found
+        }
+
+    private:
+        std::vector<Device> GetAllDevices()
+        {
+            sdbus::Variant devices_variant;
+            m_proxy->callMethod("Get")
+                .onInterface("org.freedesktop.DBus.Properties")
+                .withArguments("org.freedesktop.NetworkManager", "AllDevices")
+                .storeResultsTo(devices_variant);
+
+            std::vector<sdbus::ObjectPath> device_paths = devices_variant.get<std::vector<sdbus::ObjectPath>>();
+            std::vector<Device> devices;
+            for (const auto &path : device_paths)
+            {
+                devices.emplace_back(path);
+            }
+            return devices;
+        }
+
+        std::unique_ptr<sdbus::IProxy> m_proxy;
+        std::unique_ptr<sdbus::IProxy> m_settings_proxy;
+    };
+}
+
+
+JSON_MAP_BEGIN(WifiConfigSettings)
+JSON_MAP_REFERENCE(WifiConfigSettings, valid)
+JSON_MAP_REFERENCE(WifiConfigSettings, wifiWarningGiven)
+JSON_MAP_REFERENCE(WifiConfigSettings, rebootRequired)
+JSON_MAP_REFERENCE(WifiConfigSettings, enable)
+JSON_MAP_REFERENCE(WifiConfigSettings, hotspotName)
+JSON_MAP_REFERENCE(WifiConfigSettings, mdnsName)
+JSON_MAP_REFERENCE(WifiConfigSettings, hasPassword)
+JSON_MAP_REFERENCE(WifiConfigSettings, password)
+JSON_MAP_REFERENCE(WifiConfigSettings, countryCode)
+JSON_MAP_REFERENCE(WifiConfigSettings, channel)
+JSON_MAP_REFERENCE(WifiConfigSettings, alwaysOn)
+JSON_MAP_REFERENCE(WifiConfigSettings, homeNetworks)
+JSON_MAP_END()
+
+int32_t pipedal::ChannelToChannelNumber(const std::string &channel)
+{
+    std::string t = channel;
+    // remove deprecated band specs.
+    if (t.size() > 1 && t[0] == 'a' || t[0] == 'g')
+    {
+        t = t.substr(1);
+    }
+    int32_t channelNumber = 0;
+    std::stringstream ss(t);
+    ss >> channelNumber;
+    return channelNumber;
+}
+
+static uint32_t ParseChannel(const std::string &channel)
 {
     std::string t = channel;
     // remove dprecated band specs.
@@ -52,24 +434,9 @@ int32_t pipedal::ChannelToChannelNumber(const std::string&channel)
     {
         t = t.substr(1);
     }
-    int32_t channelNumber = 1;
-    std::stringstream ss(t);
-    ss >> channelNumber;
-    return channelNumber;
-
-}
-
-static uint32_t ParseChannel(const std::string & channel)
-{
-       std::string t = channel;
-    // remove dprecated band specs.
-    if (t.size() > 1 && t[0] == 'a' || t[0] == 'g')
-    {
-        t = t.substr(1);
-    }
     size_t size = t.length();
 
-    unsigned long long lChannel = std::stoull(t,&size);
+    unsigned long long lChannel = std::stoull(t, &size);
     if (size != t.length())
     {
         throw invalid_argument("Expecting a number: '" + t + "'.");
@@ -92,7 +459,7 @@ uint32_t pipedal::ChannelToWifiFrequency(uint32_t channel)
     // 2.4GHz.
     if (channel >= 1 && channel <= 13)
     {
-        return 2412 + 5*(channel-1);
+        return 2412 + 5 * (channel - 1);
     }
     if (channel == 14)
     {
@@ -101,26 +468,25 @@ uint32_t pipedal::ChannelToWifiFrequency(uint32_t channel)
     // 802.11y
     if (channel >= 131 && channel < 137)
     {
-        return 3660 + (channel-131)*5;
+        return 3660 + (channel - 131) * 5;
     }
     if (channel >= 32 && channel <= 68 && (channel & 1) == 0)
     {
-        return 5160 + (channel-32)/2*10;
+        return 5160 + (channel - 32) / 2 * 10;
     }
-    if (channel == 96) return 5480;
+    if (channel == 96)
+        return 5480;
 
     if (channel >= 100 && channel <= 196)
     {
-        return 5500 + (channel-100)/5;
+        return 5500 + (channel - 100) / 5;
     }
     throw invalid_argument(SS("Invalid WiFi channel: " << channel));
-
 }
 
-
-bool WifiConfigSettings::ValidateChannel(const std::string&countryCode,const std::string&value)
+bool WifiConfigSettings::ValidateChannel(const std::string &countryCode, const std::string &value)
 {
-    if (value == "0")  // = "Autoselect".
+    if (value == "0") // = "Autoselect".
     {
         return true;
     }
@@ -134,15 +500,17 @@ bool WifiConfigSettings::ValidateChannel(const std::string&countryCode,const std
     {
         throw std::invalid_argument(SS("Invalid country code: " << countryCode));
     }
-    auto regDom = getWifiRegClass(countryCode,ParseChannel(value),40);
-    if (regDom == -1) {
-        std::vector<int32_t> valid_channels = getValidChannels(countryCode,40);
+    auto regDom = getWifiRegClass(countryCode, ParseChannel(value), 40);
+    if (regDom == -1)
+    {
+        std::vector<int32_t> valid_channels = getValidChannels(countryCode, 40);
         std::stringstream ss;
         ss << "Channel " << value << " is not permitted in the selected country.\n     Valid channels: ";
         bool first = true;
-        for (auto channel: valid_channels)
+        for (auto channel : valid_channels)
         {
-            if (!first) ss << ", ";
+            if (!first)
+                ss << ", ";
             first = false;
             ss << channel;
         }
@@ -153,10 +521,136 @@ bool WifiConfigSettings::ValidateChannel(const std::string&countryCode,const std
     return true;
 }
 
- void WifiConfigSettings::ParseArguments(const std::vector<std::string> &argv)
- {
+static const char* trueValues[] {
+    "true",
+    "on",
+    "yes"
+    "1",
+    nullptr
+};
+static const char* falseValues[] {
+    "false",
+    "off",
+    "no",
+    "0",
+    nullptr
+};
+
+static bool Matches(const std::string&value, const char**matches)
+{
+    while(*matches)
+    {
+        if (value == *matches) return true;
+        ++matches;
+    }
+    return false;
+}
+
+static bool TryStringToBool(const std::string &value, bool*outputValue)
+{
+    if (Matches(value,trueValues)) 
+    {
+        *outputValue = true;
+        return true;
+    }
+    if (Matches(value, falseValues)) {
+        *outputValue = false;
+        return true;
+    }
+    *outputValue = false;
+    return false;
+
+}
+
+static WifiConfigSettings::ssid_t readSsid(std::istream&ss)
+{
+    using ssid_t = WifiConfigSettings::ssid_t;
+    char c;
+    
+    ssid_t result;
+    while (ss.peek() == ' ')
+    {
+        ss >> c;
+    }
+    if (ss.peek() == '"')
+    {
+        ss >> c;
+        while (!ss.eof() && ss.peek() != '"')
+        {
+            ss >> c;
+            if (c == '\\')
+            {
+                if (ss.eof())
+                {
+                    break;
+                }
+                ss >> c;
+                switch (c) {
+                    case 'n':
+                        result.push_back((uint8_t)'\n');
+                        break;
+                    case 'r':
+                        result.push_back((uint8_t)'\r');
+                        break;
+                    case 't':
+                        result.push_back((uint8_t)'\t');
+                        break;
+                    case 'b':
+                        result.push_back((uint8_t)'\b');
+                        break;
+                    default:
+                        result.push_back((uint8_t)c);
+                        break;
+                }
+            } else {
+                result.push_back((uint8_t)c);
+            }
+        }
+    } else {
+        while (!ss.eof())
+        {
+            if (c == ':')
+            {
+                break;
+            }
+            ss >> c;
+            if (c == ':')
+            {
+                break;
+            }
+            result.push_back((uint8_t)c);
+        }
+    }
+    return result;
+}
+static std::vector<WifiConfigSettings::ssid_t> stringToSsidArray(const std::string&value)
+{
+    using ssid_t = WifiConfigSettings::ssid_t;
+    std::istringstream ss(value);
+
+    std::vector<WifiConfigSettings::ssid_t> result;
+    while (true)
+    {
+        ssid_t ssid = readSsid(ss);
+        if (ssid.size() == 0) 
+        {
+            break;
+        }
+        result.push_back(ssid);
+        if (ss.peek() == ':')
+        {
+            char c;
+            ss >> c;
+        }
+    }
+    return result;
+
+}
+void WifiConfigSettings::ParseArguments(const std::vector<std::string> &argv)
+{
     this->valid_ = false;
-    if (argv.size() != 4) {
+    if (argv.size() < 4 || argv.size() > 6)
+    {
         throw invalid_argument("Invalid number of arguments.");
     }
     this->enable_ = true;
@@ -166,23 +660,91 @@ bool WifiConfigSettings::ValidateChannel(const std::string&countryCode,const std
     this->password_ = argv[2];
     this->channel_ = argv[3];
     this->hasPassword_ = this->password_.length() != 0;
+    this->homeNetworks_ = std::vector<ssid_t>();
+    this->alwaysOn_ = false;
+
 
     if (!ValidateCountryCode(this->countryCode_))
     {
         throw invalid_argument("Invalid country code.");
     }
-    if (this->hotspotName_.length() > 31) throw invalid_argument("Hotspot name is too long.");
-    if (this->hotspotName_.length() < 1) throw invalid_argument("Hotspot name is too short.");
-    if (this->password_.size() != 0 && this->password_.size() < 8) throw invalid_argument("Passphrase must be at least 8 characters long.");
+    if (this->hotspotName_.length() > 31)
+        throw invalid_argument("Hotspot name is too long.");
+    if (this->hotspotName_.length() < 1)
+        throw invalid_argument("Hotspot name is too short.");
+    if (this->password_.size() != 0 && this->password_.size() < 8)
+        throw invalid_argument("Passphrase must be at least 8 characters long.");
 
-    if (!ValidateChannel(this->countryCode_,this->channel_))
+    if (!ValidateChannel(this->countryCode_, this->channel_))
     {
         throw invalid_argument("Channel is not valid.");
     }
 
+    if (argv.size() >= 5)
+    {
+        if (!TryStringToBool(argv[4],&this->alwaysOn_))
+        {
+            throw std::runtime_error(SS("Invalid boolean value: " << argv[4]));
+        }
+    }   
+    if (argv.size() >= 6)
+    {
+        this->homeNetworks_ = stringToSsidArray(argv[5]);
+    }
+
     // validate that the channel number is supported for the given country code.
 
-
     this->valid_ = true;
+}
 
- }
+bool WifiConfigSettings::ConfigurationChanged(const WifiConfigSettings&other) const
+{
+    return !(
+        this->valid_ == other.valid_ &&
+        this->rebootRequired_ == other.rebootRequired_ &&
+        this->enable_ == other.enable_ &&
+        this->countryCode_ == other.countryCode_ &&
+        this->mdnsName_ == other.mdnsName_ &&
+        this->hasPassword_ == other.hasPassword_ &&
+        this->password_ == other.password_ &&
+        this->channel_ == other.channel_ &&
+        this->homeNetworks_ == other.homeNetworks_ &&
+        this->alwaysOn_ == other.alwaysOn_
+    );
+
+}
+bool WifiConfigSettings::operator==(const WifiConfigSettings&other) const
+{
+    return !ConfigurationChanged(other) && this->wifiWarningGiven_ == other.wifiWarningGiven_;
+}
+
+
+bool WifiConfigSettings::WantsHotspot(bool ethernetConnected, const std::vector<ssid_t> &availableNetworks)
+{
+    if ((!this->valid_) || (!this->enable_)) 
+        return false;
+    if (ethernetConnected)
+    {
+        return false;
+    }
+    if (!homeNetworks_.empty())
+    {
+        for (auto &network: availableNetworks)
+        {
+            for (auto&homeNetwork: homeNetworks_)
+            {
+                if (network == homeNetwork) 
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    if (alwaysOn_) 
+    {
+        return true;
+    }
+    return availableNetworks.size() == 0;
+}
+
+

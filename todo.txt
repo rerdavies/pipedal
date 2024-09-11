@@ -1,3 +1,25 @@
+Installer:
+
+    sudo systemctl restart polkitd.service
+
+
+- Scanning.
+- verify that scanning doesn't cause overruns.
+- UI changes.
+- test behaviour when Osgilliad is offline.
+- docs changes.
+- unicode commandline arguments.
+- unicode filenames.
+- update configMain.
+- address change handlers in client (and browser?)
+- Notify hotspotManager on settings changed.
+- Midi binding for hotspotManager.
+- Keybaord escape for hotspotManager.
+- verify stripping in installer.
+- verify update with no keyring.
+-verify clean removal of dhcpcd and nm_p2p2d
+
+
 - Back button after reloads on Android.
 - pidedal_nm_p2p2 service not started from web ui.
 - pipedal_nm_p2pd connection not visible.

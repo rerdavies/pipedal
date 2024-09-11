@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
         if (help || parser.Arguments().size() == 0)
         {
             std::cout << "pipedald - Pipedal web socket server.\n"
-                         "Copyright (c) 2022 Robin Davies.\n"
+                         "Copyright (c) 2022-2024 Robin Davies.\n"
                          "\n";
         }
     }
@@ -241,6 +241,14 @@ int main(int argc, char *argv[])
         PiPedalModel model;
 
 
+        model.SetNetworkChangedListener(
+            [&server]() mutable {
+                if (server) 
+                {
+                    server->DisplayIpAddresses();
+                }
+            }
+        );
 
         model.SetRestartListener(
             []()

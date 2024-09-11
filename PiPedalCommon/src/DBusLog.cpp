@@ -23,28 +23,39 @@ static std::string getDateTime()
     std::stringstream ss; 
     ss << std::put_time(std::localtime(&in_time_t),"%Y-%m-%d %H:%M:%S");
     ss << '.' << std::setfill('0') << std::setw(3) << ms.count();
+    ss << " ";
     return ss.str();
 }
 
 class ConsoleDBusLogger : public IDBusLogger {
 
 public:
+    ConsoleDBusLogger(bool showTime = true)
+    :showTime(showTime)
+    {
+
+    }
     void LogError(const std::string&message) {
-        std::cout << getDateTime() << " error: " << message << std::endl;
+        std::cout << getDateTime() << "error: " << message << std::endl;
     }
     void LogWarning(const std::string&message){
-        std::cout << getDateTime() << " warning: " << message << std::endl;
+        std::cout << getDateTime() << "warning: " << message << std::endl;
     }
     void LogInfo(const std::string&message) {
-        std::cout << getDateTime() << " info: " << message << std::endl;
+        std::cout << getDateTime() << "info: " << message << std::endl;
     }
     void LogDebug(const std::string&message) {
-        std::cout << getDateTime() << " debug: " << message << std::endl;
+        std::cout << getDateTime() << "debug: " << message << std::endl;
     }
     void LogTrace(const std::string&message) {
         std::cout << getDateTime() << " trace: " << message << std::endl;
     }
+private:
 
+    std::string getDateTime() {
+        return  (showTime) ? getDateTime(): "";
+    }
+    bool showTime;
 };
 class FileDBusLogger : public IDBusLogger {
 
@@ -105,6 +116,11 @@ public:
 
 static std::vector<std::unique_ptr<IDBusLogger>> loggers;
 
+void SetDBusLogger(std::unique_ptr<IDBusLogger> && logger)
+{
+    loggers.clear();
+    loggers.push_back(std::move(logger));
+}
 
 
 void SetDBusLogLevel(DBusLogLevel level)
@@ -215,11 +231,6 @@ void LogTrace(const std::string&path,const char*method,const std::string&message
     }
 }
 
-void SetDBusLogger(std::unique_ptr<IDBusLogger> && logger)
-{
-    loggers.clear();
-    loggers.push_back(std::move(logger));
-}
 
 void SetDBusConsoleLogger()
 {

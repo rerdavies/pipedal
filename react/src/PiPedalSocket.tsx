@@ -278,7 +278,7 @@ class PiPedalSocket {
                     ws.onerror = null;
                     reject("Connection closed unexpectedly.");
                 };
-                ws.onerror = (event: Event) => {
+                ws.onerror = (evWheent: Event) => {
                     ws.onclose = null;
                     ws.onerror = null;
                     reject("Failed to connect.");
@@ -286,7 +286,6 @@ class PiPedalSocket {
                 ws.onopen = (event: Event) => {
                     ws.onerror = self.handleError.bind(self);
                     ws.onclose = self.handleClose.bind(self);
-                    alert("Web socket connected."); //yyy
                     ws.onopen = null;
                     resolve(ws);
                 };

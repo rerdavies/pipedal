@@ -327,6 +327,14 @@ namespace pipedal
         bool allowNaN() const { return allowNaN_; }
         void allowNaN(bool allow) { allowNaN_ = allow; }
 
+        void write(uint8_t value)
+        {
+            os << value;
+        }
+        void write(int8_t value)
+        {
+            os << value;
+        }
         void write(long long value)
         {
             os << value;
@@ -881,6 +889,13 @@ namespace pipedal
         {
             skip_whitespace();
             *value = read_boolean();
+        }
+        void read(uint8_t*value)
+        {
+            skip_whitespace();
+            is_ >> *value;
+            if (is_.fail())
+                throw JsonException("Invalid format.");
         }
         void read(int *value)
         {

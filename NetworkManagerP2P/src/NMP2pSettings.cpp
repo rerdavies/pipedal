@@ -193,7 +193,7 @@ void P2pSettings::Load()
 
 }
 
-static void openWithPerms(
+static void openWithRestrictedPerms(
     pipedal::ofstream_synced &f, 
     const std::filesystem::path &path, 
     std::filesystem::perms perms = 
@@ -229,7 +229,7 @@ void P2pSettings::Save()
     auto filename = config_filename();
     try {
         pipedal::ofstream_synced f;
-        openWithPerms(f,filename);
+        openWithRestrictedPerms(f,filename);
 
         if (!f.is_open())
         {

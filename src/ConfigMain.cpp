@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "CommandLineParser.hpp"
+#include "SystemConfigFile.hpp"
+
 #include <filesystem>
 #include <stdlib.h>
 #include "WriteTemplateFile.hpp"
@@ -42,6 +44,7 @@
 #include <grp.h>
 #include "ofstream_synced.hpp"
 
+#define P2PD_DISABLED
 
 #if JACK_HOST
 #define INSTALL_JACK_SERVICE 1
@@ -64,6 +67,7 @@ namespace fs = std::filesystem;
 #define JACK_SERVICE_ACCOUNT_NAME "jack"
 #define AUDIO_SERVICE_GROUP_NAME "audio"
 #define JACK_SERVICE_GROUP_NAME AUDIO_SERVICE_GROUP_NAME
+#define NETDEV_GROUP_NAME "netdev"
 
 #define SYSTEMCTL_BIN "/usr/bin/systemctl"
 #define GROUPADD_BIN "/usr/sbin/groupadd"
@@ -149,6 +153,86 @@ void DisableService()
         cout << "Error: Failed to disable the " OLD_SHUTDOWN_SERVICE " service.\n";
     }
 #endif
+}
+
+static void RestartAvahiService()
+{
+    silentSysExec(SS(SYSTEMCTL_BIN << " restart avahi-daemon.service").c_str());
+}
+static void AvahiInstall()
+{
+    // disable IPv6 mdns broadcasts. Avahi broadcasts link-local IPV6 addresses which are unusually difficult to deal with.
+
+    try
+    {
+        std::filesystem::path avahiConfig("/etc/avahi/avahi-daemon.conf");
+        SystemConfigFile avahi(avahiConfig);
+
+        bool changed = avahi.RemoveUndoableActions();
+        int line = avahi.GetLineThatStartsWith("use-ipv6=yes");
+        if (line != -1)
+        {
+            avahi.UndoableReplaceLine(line, "use-ipv6=no");
+            changed = true;
+        }
+        else
+        {
+            if (avahi.GetLineThatStartsWith("use-ipv6=no") == -1)
+            {
+                line = avahi.GetLineThatStartsWith("[server]");
+                if (line == 1)
+                {
+                    throw std::runtime_error("Unable to find [server] section.");
+                }
+                {
+                    // increment to end of section.
+                    while (line < avahi.GetLineCount())
+                    {
+                        const auto &txt = avahi.Get(line);
+                        if (txt.empty())
+                        {
+                            break;
+                        }
+                        if (txt.starts_with("[")) // start of next section.
+                        {
+                            break;
+                        }
+                        ++line;
+                    }
+                }
+                avahi.UndoableAddLine(avahi.GetLineCount(), "use-ipv6=no");
+                changed = true;
+            }
+        }
+        if (changed)
+        {
+            avahi.Save();
+            RestartAvahiService();
+        }
+    }
+    catch (const std::exception &e)
+    {
+        cout << "Warning: Unabled to disable Ipv6 mDNS announcements. " << e.what() << endl;
+    }
+}
+
+static void AvahiUninstall()
+{
+    try
+    {
+        std::filesystem::path avahiConfig("/etc/avahi/avahi-daemon.conf");
+        SystemConfigFile avahi(avahiConfig);
+
+        if (avahi.RemoveUndoableActions())
+        {
+            avahi.Save();
+            RestartAvahiService();
+        }
+    }
+    catch (const std::exception &e)
+    {
+        cout << " Warning: Unable to restore Avahi Daemon configuration. " << e.what() << endl;
+    }
 }
 
 void StopService(bool excludeShutdownService = false)
@@ -526,6 +610,8 @@ void Uninstall()
         {
         }
         UninstallPamEnv();
+        AvahiUninstall();
+
         // UninstallLimits();
         sysExec(SYSTEMCTL_BIN " daemon-reload");
     }
@@ -676,7 +762,8 @@ static void FixPermissions()
     struct passwd *passwd;
     if ((passwd = getpwnam("pipedal_d")) == nullptr)
     {
-        cout << "Error: " << "User 'pipedal_d' does not exist." << endl;
+        cout << "Error: "
+             << "User 'pipedal_d' does not exist." << endl;
         return;
     }
     uid = passwd->pw_uid;
@@ -790,7 +877,6 @@ void InstallPgpKey()
         {
             cout << "Error: Failed  to create update keyring." << endl;
         }
-
     }
     {
         std::ostringstream ss;
@@ -800,7 +886,6 @@ void InstallPgpKey()
         {
             cout << "Error: Failed  to add update key." << endl;
         }
-
     }
     {
         std::stringstream ss;
@@ -825,6 +910,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
             throw std::runtime_error("Failed to create pipedald service group.");
         }
         // defensively disable wifi p2p if some leftover config file left it enabled.
+#ifdef P2PD_DISABLED
         try
         {
             if (IsP2pServiceEnabled())
@@ -838,6 +924,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         catch (const std::exception &)
         {
         }
+#endif
 
         InstallAudioService();
         auto endpos = endpointAddress.find_last_of(':');
@@ -888,6 +975,9 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 
         // Add to audio groups.
         sysExec(USERMOD_BIN " -a -G  " AUDIO_SERVICE_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
+        // add to netdev group
+        sysExec(USERMOD_BIN " -a -G  " NETDEV_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
+
 
         // create and configure /var directory.
 
@@ -1007,12 +1097,16 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         sysExec(SYSTEMCTL_BIN " daemon-reload");
 
         FixPermissions();
-        RestartService(false);
+
+        StopService(false);
+        AvahiInstall();
+        InstallPgpKey();
+        StartService(false);
+
         EnableService();
 
         // Restart WiFi Direct if neccessary.
         OnWifiReinstall();
-        InstallPgpKey();
     }
     catch (const std::exception &e)
     {

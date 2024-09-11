@@ -942,7 +942,7 @@ export class PiPedalModel //implements PiPedalModel
                 return this.webSocket.connect();
             })
             .catch((error) => {
-                this.setError("Failed to connect to server." + error.toString());
+                this.setError("Failed to connect to server. " + this.socketServerUrl);
                 return false;
             })
             .then(() => {

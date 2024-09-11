@@ -1,0 +1,6 @@
+[Adding or changing system-wide NetworkManager connections]
+Identity=unix-group:pipedal_d
+Action=org.freedesktop.NetworkManager.settings.modify.system
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes

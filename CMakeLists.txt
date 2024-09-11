@@ -50,6 +50,13 @@ install(
 install(   
      FILES ${PROJECT_SOURCE_DIR}/debian/copyright DESTINATION /usr/share/doc/pipedal
 )
+#install (
+#    DIRECTORY ${PROJECT_SOURCE_DIR}/src/polkit-1/rules/10-pipedal-networkmanager.rule DESTINATION /var/lib/polkit-1/localauthority/
+#)
+
+install (
+    FILES ${PROJECT_SOURCE_DIR}/src/polkit-1/rules/55-pipedal-networkmanager.rule DESTINATION /etc/polkit-1/rules.d/
+)
 install (
     DIRECTORY ${REACT_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
 )

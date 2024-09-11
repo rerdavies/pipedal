@@ -84,9 +84,20 @@ namespace pipedal
         virtual void Close() = 0;
     };
 
+    class HotspotManager;
+
     class PiPedalModel : private IAudioHostCallbacks
     {
+    public:
+        using clock = std::chrono::steady_clock;
+
+        using PostHandle = uint64_t;
+        using PostCallback = std::function<void()>;
+        using NetworkChangedListener = std::function<void(void)>;
+        
+
     private:
+        std::unique_ptr<HotspotManager> hotspotManager;
 
         UpdateStatus currentUpdateStatus;
         Updater updater;
@@ -139,6 +150,14 @@ namespace pipedal
         Pedalboard pedalboard;
         Storage storage;
         bool hasPresetChanged = false;
+
+        NetworkChangedListener networkChangedListener;
+        void FireNetworkChanged() {
+            if (networkChangedListener)
+            {
+                networkChangedListener();
+            }
+        }
 
         std::unique_ptr<AudioHost> audioHost;
         JackConfiguration jackConfiguration;
@@ -193,6 +212,11 @@ namespace pipedal
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) override;
         virtual void OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) override;
 
+        PostHandle networkChangingDelayHandle = 0;
+        void CancelNetworkChangingTimer();
+        
+        void OnNetworkChanging(bool ethernetConnected,bool hotspotConnected);
+        void OnNetworkChanged(bool ethernetConnected, bool hotspotConnected);
 
         void UpdateVst3Settings(Pedalboard &pedalboard);
 
@@ -202,6 +226,24 @@ namespace pipedal
     public:
         PiPedalModel();
         virtual ~PiPedalModel();
+
+
+
+        virtual PostHandle Post(PostCallback&&fn);
+        virtual PostHandle PostDelayed(const clock::duration&delay,PostCallback&&fn);
+        virtual bool CancelPost(PostHandle handle);
+
+        template<class REP,class PERIOD> 
+        PostHandle PostDelayed(const std::chrono::duration<REP,PERIOD>&delay,PostCallback&&fn)
+        {
+            return PostDelayed(
+                std::chrono::duration_cast<clock::duration,REP,PERIOD>(delay),
+                std::move(fn));
+        }
+
+        void SetNetworkChangedListener(NetworkChangedListener listener) {
+            networkChangedListener = listener;
+        }
 
         void WaitForAudioDeviceToComeOnline();
 

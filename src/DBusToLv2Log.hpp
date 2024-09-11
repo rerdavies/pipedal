@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -17,23 +17,9 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
-#include "WifiConfigSettings.hpp"
-#include "WifiDirectConfigSettings.hpp"
 
+#pragma once
 
 namespace pipedal {
-    void SetWifiConfigWLanAddress(const std::string&wLanAddress);
-    const std::string &GetWifiConfigWlanAddress();
-
-
-    void SetWifiConfig(WifiConfigSettings&settings);
-    void SetWifiDirectConfig(const WifiDirectConfigSettings&settings);
-
-    void OnWifiUninstall(bool preserveState = false);
-    void OnWifiReinstall();
-
-    void OnWifiInstallComplete();
-
-    bool UsingNetworkManager();
-} // namespace.
+    void DbusLogToLv2Log();
+}

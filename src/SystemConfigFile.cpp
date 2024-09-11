@@ -23,6 +23,7 @@
 #include <fstream>
 #include <string>
 #include <regex>
+#include "ss.hpp"
 
 using namespace pipedal;
 using namespace std;
@@ -107,6 +108,7 @@ static inline std::string ValuePart(const std::string &line)
         throw PiPedalException("Value not found.");
     return line.substr(pos + 1);
 }
+
 std::string SystemConfigFile::Get(const std::string &key) const
 {
     int64_t lineIndex = GetLine(key);
@@ -345,4 +347,47 @@ void SystemConfigFile::AppendLine(const std::string &line)
 {
     lines.push_back(line);
 }
+
+
+static const std::string REPLACE_SLUG = "# PiPedal replace:";
+static const std::string ADD_SLUG = "# PiPedal add:";
+
+void SystemConfigFile::UndoableReplaceLine(int line,const std::string&text)
+{
+    std::string undoComment = SS(REPLACE_SLUG << lines[line]);
+    lines[line] = undoComment;
+    InsertLine(line+1,text);
+}
+int SystemConfigFile::UndoableAddLine(int line,const std::string&text)
+{
+    std::string undoComment = ADD_SLUG;
+    InsertLine(line,undoComment);
+    InsertLine(line+1,text);
+    return line+2;
+}
+
+bool SystemConfigFile::RemoveUndoableActions()
+{
+    bool changed = false;
+    for (int i = 0; i < GetLineCount(); ++i)
+    {
+        if (lines[i].starts_with("# PiPedal"))
+        {
+            if (lines[i].starts_with(REPLACE_SLUG))
+            {
+                std::string oldText = lines[i].substr(REPLACE_SLUG.length());
+                lines[i] = oldText;
+                this->EraseLine(i+1);
+                changed = true;
+            } else if (lines[i].starts_with(ADD_SLUG))
+            {
+                EraseLine(i);
+                EraseLine(i);
+                changed = true;
+            }
+        }
+    }
+    return changed;
+}
+
 

@@ -1,0 +1,6 @@
+// grant NetworkManager dbus permissions (no-prompts) to the pipedald systemd service.
+polpolkit.addRule(function(action, subject) {  
+  if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.isInGroup("pipedal_d")) {  
+    return polkit.Result.YES;  
+  }  
+});

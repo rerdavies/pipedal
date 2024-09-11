@@ -35,6 +35,8 @@
 #include "PiPedalUI.hpp"
 #include "atom_object.hpp"
 #include "Lv2PluginChangeMonitor.hpp"
+#include "HotspotManager.hpp"
+#include "DBusToLv2Log.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -79,6 +81,17 @@ PiPedalModel::PiPedalModel()
         {
             this->OnUpdateStatusChanged(updateStatus);
         });
+
+
+    DbusLogToLv2Log();
+
+    hotspotManager = HotspotManager::Create();
+    hotspotManager->SetNetworkChangingListener(
+        [this](bool ethernetConnected, bool hotspotEnabling) {
+            OnNetworkChanging(ethernetConnected,hotspotEnabling);
+        }
+    );
+    hotspotManager->Open();
 }
 
 void PiPedalModel::Close()
@@ -106,7 +119,10 @@ void PiPedalModel::Close()
 
 PiPedalModel::~PiPedalModel()
 {
-    pluginChangeMonitor = nullptr;
+    CancelNetworkChangingTimer();
+    hotspotManager = nullptr; // turn off the hotspot.
+
+    pluginChangeMonitor = nullptr; // stop monitorin LV2 directories.
     try
     {
         adminClient.UnmonitorGovernor();
@@ -952,11 +968,23 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
-    adminClient.SetWifiConfig(wifiConfigSettings);
 
+    
+#if NEW_WIFI_CONFIG
+    if (this->storage.SetWifiConfigSettings(wifiConfigSettings))
+    {
+        if (this->hotspotManager)
+        {
+            this->hotspotManager->Reload();
+        }
+    }
+#else
     this->storage.SetWifiConfigSettings(wifiConfigSettings);
+    adminClient.SetWifiConfig(wifiConfigSettings);
+#endif
 
     {
+        // yyy: review locking semantics here. This is wrong. Convert to shared pointers?
         IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
         for (size_t i = 0; i < subscribers.size(); ++i)
         {
@@ -964,11 +992,11 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
         }
         size_t n = this->subscribers.size();
 
-        WifiConfigSettings tWifiConfigSettings = storage.GetWifiConfigSettings(); // (the passwordless version)
+        WifiConfigSettings settingsWithNoSecrets = storage.GetWifiConfigSettings(); // (the passwordless version)
 
         for (size_t i = 0; i < n; ++i)
         {
-            t[i]->OnWifiConfigSettingsChanged(tWifiConfigSettings);
+            t[i]->OnWifiConfigSettingsChanged(settingsWithNoSecrets);
         }
         delete[] t;
     }
@@ -2258,4 +2286,56 @@ void PiPedalModel::WaitForAudioDeviceToComeOnline()
 
     // pre-cache device info before we let audio services run.
     GetAlsaDevices();
+}
+
+PiPedalModel::PostHandle PiPedalModel::Post(PostCallback&&fn)
+{
+    // I know. odd place to forward this to, but it's a very serviceable dispatcher implementation.
+    // Why? because it's there, and PiPedalModel has no thread of its own to do dispatching.
+    if (!hotspotManager)
+    {
+        throw std::runtime_error("Too early. It's not ready yet.");
+    }
+    return hotspotManager->Post(std::move(fn));
+}
+PiPedalModel::PostHandle PiPedalModel::PostDelayed(const clock::duration&delay,PostCallback&&fn)
+{
+    if (!hotspotManager)
+    {
+        throw std::runtime_error("Too early. It's not ready yet.");
+    }
+    return hotspotManager->PostDelayed(delay,std::move(fn));
+
+}
+bool PiPedalModel::CancelPost(PostHandle handle) {
+    if (!hotspotManager)
+    {
+        throw std::runtime_error("Too early. It's not ready yet.");
+    }
+    return hotspotManager->CancelPost(handle);
+}
+
+void PiPedalModel::CancelNetworkChangingTimer()
+{
+    if (networkChangingDelayHandle)
+    {
+        CancelPost(networkChangingDelayHandle);
+        networkChangingDelayHandle = 0;
+    }
+}
+        
+void PiPedalModel::OnNetworkChanging(bool ethernetConnected,bool hotspotConnected)
+{
+    CancelNetworkChangingTimer();
+    this->networkChangingDelayHandle = 
+        PostDelayed(std::chrono::seconds(5),
+        [this,ethernetConnected,hotspotConnected]() {
+            this->networkChangingDelayHandle = 0;
+            OnNetworkChanged(ethernetConnected,hotspotConnected);
+        }
+        );
+}
+void PiPedalModel::OnNetworkChanged(bool ethernetConnected, bool hotspotConnected)
+{
+    FireNetworkChanged();
 }
