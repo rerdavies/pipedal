@@ -1105,7 +1105,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 
         EnableService();
 
-        // Restart WiFi Direct if neccessary.
+        // Restart Wi-Fi Direct if neccessary.
         OnWifiReinstall();
     }
     catch (const std::exception &e)

@@ -504,7 +504,7 @@ uint32_t pipedal::ChannelToWifiFrequency(uint32_t channel)
     {
         return 5500 + (channel - 100) / 5;
     }
-    throw invalid_argument(SS("Invalid WiFi channel: " << channel));
+    throw invalid_argument(SS("Invalid Wi-Fi channel: " << channel));
 }
 
 bool WifiConfigSettings::ValidateChannel(const std::string &countryCode, const std::string &value)
