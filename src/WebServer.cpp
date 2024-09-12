@@ -41,6 +41,7 @@
 #include "WebServer.hpp"
 
 #include "Uri.hpp"
+#include "ss.hpp"
 
 #include <websocketpp/config/asio_no_tls.hpp>
 
@@ -1194,7 +1195,7 @@ namespace pipedal
             }
             catch (websocketpp::exception const &e)
             {
-                std::cout << e.what() << std::endl;
+                Lv2Log::error(SS("Web server: " << e.what()));
             }
             if (this->signalOnDone != -1)
             {

@@ -20,6 +20,8 @@
 #pragma once
 
 #include "json.hpp"
+#include <vector>
+#include <string>
 
 
 #ifndef NEW_WIFI_CONFIG
@@ -39,12 +41,23 @@
 #endif
 
 namespace pipedal {
+    std::string ssidToString(const std::vector<uint8_t> &ssid);
+    std::vector<std::string> ssidToStringVector(const std::vector<std::vector<uint8_t>> &ssids);
 
 
     uint32_t ChannelToWifiFrequency(const std::string &channel);
     uint32_t ChannelToWifiFrequency(uint32_t channel);
     int32_t ChannelToChannelNumber(const std::string&channel);
     
+
+    enum class HotspotAutoStartMode {
+        // saved to file. Do not remove or renumber enums.
+        Never = 0, 
+        NoEthernetConnection = 1,
+        NotAtHome = 2,
+        NoRememberedWifiConections = 3,
+        Always = 4
+    };
     class WifiConfigSettings {
     public:
         using ssid_t = std::vector<uint8_t>;
@@ -53,26 +66,45 @@ namespace pipedal {
         void Load();
         void Save();
 
-        bool valid_ = false;
-        bool wifiWarningGiven_ = false;
-        bool rebootRequired_ = false;
-        bool enable_ = false;
+        int16_t autoStartMode_ = 0; // see HotspotAutoStartMode
+        bool hasSavedPassword_ = false;
+        std::string homeNetwork_;
+
         std::string countryCode_ = "US"; // iso 3661
         std::string hotspotName_ = "pipedal";
-        std::string mdnsName_ = "pipedal";
-        std::vector<ssid_t> homeNetworks_;
         bool hasPassword_ = false;
         std::string password_;
         std::string channel_ = "";
-        bool alwaysOn_ = false;
 
-        void ParseArguments(const std::vector<std::string> &arguments);
+        bool wifiWarningGiven_ = false;  // Do not use. Present only for backward compatibility.
+        bool valid_ = false; // Do not use. Present only for backward compatibility.
+    private:
+        bool rebootRequired_ = false;  // Do not use. Present only for backward compatibility.
+        std::string mdnsName_ = "pipedal";
+        bool enable_ = false; // Do not use. Present only for backward compatibility.
+    public:
+        bool IsEnabled() const { return autoStartMode_ != 0; }
+        // Initialize from commandline arguments (see ConfigMain.cpp)
+        void ParseArguments(
+            const std::vector<std::string> &argv,
+            HotspotAutoStartMode startMode,
+            const std::string homeNetworkSsid
+            );
         static bool ValidateCountryCode(const std::string&value);
         static bool ValidateChannel(const std::string&countryCode,const std::string&value);
 
         bool operator==(const WifiConfigSettings&other) const;
         bool ConfigurationChanged(const WifiConfigSettings&other) const;
-        bool WantsHotspot(bool ethernetConnected,const std::vector<ssid_t> &availableNetworks);
+        bool WantsHotspot(
+            bool ethernetConnected, 
+            const std::vector<std::string> &availableRememberedNetworks, // remembered networks that are currently visible
+            const std::vector<std::string> &availableNetworks // all visible networks.
+        );
+        bool WantsHotspot(
+            bool ethernetConnected, 
+            const std::vector<std::vector<uint8_t>> &availableRememberedNetworks, // remembered networks that are currently visible
+            const std::vector<std::vector<uint8_t>> &availableNetworks // all visible networks.
+            );
 
     public:
         DECLARE_JSON_MAP(WifiConfigSettings);

@@ -63,6 +63,11 @@ namespace pipedal
             this->indent = indent;
             return *this;
         }
+        PrettyPrinter&AddIndent(int64_t indent)
+        {
+            this->indent += indent;
+            return *this;
+        }
 
         void WriteLine() {
             lineBuffer.push_back('\n');
@@ -246,6 +251,15 @@ namespace pipedal
             return pp;
         };
     }
+    pp_manip AddIndent(int n)
+    {
+        return [n] (PrettyPrinter&pp) ->PrettyPrinter& {
+            pp.AddIndent(n);
+            return pp;
+        };
+
+    }
+
     pp_manip HangingIndent()
     {
         return [] (PrettyPrinter&pp)  ->PrettyPrinter&{

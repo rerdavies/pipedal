@@ -19,14 +19,15 @@ add_subdirectory("react")
 
 add_subdirectory("src")
 
-add_subdirectory("NetworkManagerP2P")
+# Replaced with hotspot.
+#add_subdirectory("NetworkManagerP2P")
 
 
-install (TARGETS pipedal_p2pd DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
-   )
+# install (TARGETS pipedal_p2pd DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
+#    )
 
-install (TARGETS pipedal_nm_p2pd DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
-)
+# install (TARGETS pipedal_nm_p2pd DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
+# )
 
 # select LV2 source directory for the current build architecture
 
@@ -99,7 +100,7 @@ set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
 #set(CPACK_DEBIAN_PACKAGE_DEPENDS "jackd2, hostapd, dhcpcd, dnsmasq" )
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, hostapd, dhcpcd,dnsmasq, authbind, gpg" )
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, hostapd, authbind, gpg" )
 #set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

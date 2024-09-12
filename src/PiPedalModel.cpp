@@ -91,7 +91,7 @@ PiPedalModel::PiPedalModel()
             OnNetworkChanging(ethernetConnected,hotspotEnabling);
         }
     );
-    hotspotManager->Open();
+    // don't actuall start the hotspotManager until after LV2 is initialized (in order to avoid logging oddities)
 }
 
 void PiPedalModel::Close()
@@ -2241,6 +2241,11 @@ static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::
     return false;
 }
 
+void PiPedalModel::StartHotspotMonitoring()
+{
+    this->hotspotManager->Open();
+}
+
 void PiPedalModel::WaitForAudioDeviceToComeOnline()
 {
     auto serverSettings = this->GetJackServerSettings();
@@ -2324,6 +2329,16 @@ void PiPedalModel::CancelNetworkChangingTimer()
     }
 }
         
+
+std::vector<std::string> PiPedalModel::GetKnownWifiNetworks()
+{
+    if (!this->hotspotManager)
+    {
+        return std::vector<std::string>();
+    }
+    return this->hotspotManager->GetKnownWifiNetworks();
+}
+
 void PiPedalModel::OnNetworkChanging(bool ethernetConnected,bool hotspotConnected)
 {
     CancelNetworkChangingTimer();

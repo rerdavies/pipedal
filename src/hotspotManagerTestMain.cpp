@@ -29,19 +29,25 @@ int main(int argc, char**argv)
     while (true)
     {
         std::string line;
-        std::cout << "e=enable,x=disable,q=quit > " << std::endl;;
+        std::cout << "e=no-etthernet,a=always,n=never,q=quit > " << std::endl;;
         std::getline(std::cin,line);
     
         if (line == "e")
         {
             settings.Load();
-            settings.enable_ = true;
+            settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::NoEthernetConnection;
             settings.Save();
             hotspotManager->Reload();
-        } else if (line == "x")
+        } else if (line == "a")
         {
             settings.Load();
-            settings.enable_ = false;
+            settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Always;
+            settings.Save();
+            hotspotManager->Reload();
+        } else if (line == "n")
+        {
+            settings.Load();
+            settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Never;
             settings.Save();
             hotspotManager->Reload();
         } else if (line == "q") {
@@ -52,9 +58,6 @@ int main(int argc, char**argv)
     }
     hotspotManager->Close();
     hotspotManager = nullptr;
-
-
-
 
     return EXIT_SUCCESS;
 }

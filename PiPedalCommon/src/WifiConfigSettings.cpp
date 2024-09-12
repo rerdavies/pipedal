@@ -102,6 +102,8 @@ void WifiConfigSettings::Load()
             reader.read(this);
         }
         this->countryCode_ = getWifiCountryCode();
+        this->enable_ = this->autoStartMode_ != (uint16_t)HotspotAutoStartMode::Never;
+        this->mdnsName_ = this->hotspotName_;
     }
     catch (const std::exception &e)
     {
@@ -143,12 +145,27 @@ static void openWithPerms(
 
 void WifiConfigSettings::Save() 
 {
+    WifiConfigSettings newSettings {*this};
+    
+    // sync legacy settings, just in case i don't know what.
+    newSettings.mdnsName_ = newSettings.hotspotName_;
+    newSettings.enable_ = newSettings.IsEnabled();
+    // fill in the password, if required.
+    if (!newSettings.hasPassword_)
+    {
+        WifiConfigSettings oldSettings;
+        oldSettings.Load();
+        newSettings.hasPassword_ = oldSettings.hasPassword_;
+        newSettings.password_ = oldSettings.password_;
+    }
+    newSettings.hasSavedPassword_ = newSettings.hasPassword_;
+    
     try
     {
         ofstream_synced f;
         openWithPerms(f,CONFIG_PATH);
         json_writer writer(f);
-        writer.write(this);
+        writer.write(&newSettings);
     }
     catch (const std::exception &e)
     {
@@ -398,6 +415,7 @@ namespace pipedal::priv
 
 
 JSON_MAP_BEGIN(WifiConfigSettings)
+// v0
 JSON_MAP_REFERENCE(WifiConfigSettings, valid)
 JSON_MAP_REFERENCE(WifiConfigSettings, wifiWarningGiven)
 JSON_MAP_REFERENCE(WifiConfigSettings, rebootRequired)
@@ -408,8 +426,13 @@ JSON_MAP_REFERENCE(WifiConfigSettings, hasPassword)
 JSON_MAP_REFERENCE(WifiConfigSettings, password)
 JSON_MAP_REFERENCE(WifiConfigSettings, countryCode)
 JSON_MAP_REFERENCE(WifiConfigSettings, channel)
-JSON_MAP_REFERENCE(WifiConfigSettings, alwaysOn)
-JSON_MAP_REFERENCE(WifiConfigSettings, homeNetworks)
+
+// v1: Auto-hotspot
+
+JSON_MAP_REFERENCE(WifiConfigSettings, autoStartMode)
+JSON_MAP_REFERENCE(WifiConfigSettings, homeNetwork)
+JSON_MAP_REFERENCE(WifiConfigSettings, hasSavedPassword)
+
 JSON_MAP_END()
 
 int32_t pipedal::ChannelToChannelNumber(const std::string &channel)
@@ -646,22 +669,33 @@ static std::vector<WifiConfigSettings::ssid_t> stringToSsidArray(const std::stri
     return result;
 
 }
-void WifiConfigSettings::ParseArguments(const std::vector<std::string> &argv)
+void WifiConfigSettings::ParseArguments(
+    const std::vector<std::string> &argv,
+    HotspotAutoStartMode startMode,
+    const std::string homeNetworkSsid
+
+    )
 {
     this->valid_ = false;
-    if (argv.size() < 4 || argv.size() > 6)
+    if (argv.size() != 4)
     {
         throw invalid_argument("Invalid number of arguments.");
     }
-    this->enable_ = true;
+    WifiConfigSettings oldSettings;
+    oldSettings.Load();
+    this->valid_ = false;
+
+    this->autoStartMode_ = (int16_t)startMode;
+    this->enable_ = startMode != HotspotAutoStartMode::Never;
+    this->homeNetwork_ = homeNetworkSsid;
+
     this->countryCode_ = argv[0];
     this->hotspotName_ = argv[1];
     this->mdnsName_ = this->hotspotName_;
     this->password_ = argv[2];
     this->channel_ = argv[3];
     this->hasPassword_ = this->password_.length() != 0;
-    this->homeNetworks_ = std::vector<ssid_t>();
-    this->alwaysOn_ = false;
+    this->hasSavedPassword_ = oldSettings.hasSavedPassword_;
 
 
     if (!ValidateCountryCode(this->countryCode_))
@@ -672,24 +706,18 @@ void WifiConfigSettings::ParseArguments(const std::vector<std::string> &argv)
         throw invalid_argument("Hotspot name is too long.");
     if (this->hotspotName_.length() < 1)
         throw invalid_argument("Hotspot name is too short.");
+    
     if (this->password_.size() != 0 && this->password_.size() < 8)
         throw invalid_argument("Passphrase must be at least 8 characters long.");
+
+    if (this->password_.size() == 0 && !this->hasSavedPassword_)
+    {
+        throw invalid_argument("Passphrase required.");
+    }
 
     if (!ValidateChannel(this->countryCode_, this->channel_))
     {
         throw invalid_argument("Channel is not valid.");
-    }
-
-    if (argv.size() >= 5)
-    {
-        if (!TryStringToBool(argv[4],&this->alwaysOn_))
-        {
-            throw std::runtime_error(SS("Invalid boolean value: " << argv[4]));
-        }
-    }   
-    if (argv.size() >= 6)
-    {
-        this->homeNetworks_ = stringToSsidArray(argv[5]);
     }
 
     // validate that the channel number is supported for the given country code.
@@ -701,15 +729,17 @@ bool WifiConfigSettings::ConfigurationChanged(const WifiConfigSettings&other) co
 {
     return !(
         this->valid_ == other.valid_ &&
-        this->rebootRequired_ == other.rebootRequired_ &&
-        this->enable_ == other.enable_ &&
+        //this->rebootRequired_ == other.rebootRequired_ &&
+        //this->enable_ == other.enable_ &&
         this->countryCode_ == other.countryCode_ &&
-        this->mdnsName_ == other.mdnsName_ &&
+        this->hotspotName_ == other.hotspotName_ &&
         this->hasPassword_ == other.hasPassword_ &&
         this->password_ == other.password_ &&
         this->channel_ == other.channel_ &&
-        this->homeNetworks_ == other.homeNetworks_ &&
-        this->alwaysOn_ == other.alwaysOn_
+
+        this->homeNetwork_ == other.homeNetwork_ &&
+        this->autoStartMode_ == other.autoStartMode_ &&
+        this->hasSavedPassword_ == other.hasSavedPassword_
     );
 
 }
@@ -718,33 +748,75 @@ bool WifiConfigSettings::operator==(const WifiConfigSettings&other) const
     return !ConfigurationChanged(other) && this->wifiWarningGiven_ == other.wifiWarningGiven_;
 }
 
-
-bool WifiConfigSettings::WantsHotspot(bool ethernetConnected, const std::vector<ssid_t> &availableNetworks)
+static bool CanSeeHomeNetwork(const std::string&home, const std::vector<std::string>&availableNetworks)
 {
-    if ((!this->valid_) || (!this->enable_)) 
-        return false;
-    if (ethernetConnected)
+    for (const auto &availableNetwork: availableNetworks)
     {
-        return false;
-    }
-    if (!homeNetworks_.empty())
-    {
-        for (auto &network: availableNetworks)
+        if (availableNetwork == home) 
         {
-            for (auto&homeNetwork: homeNetworks_)
-            {
-                if (network == homeNetwork) 
-                {
-                    return false;
-                }
-            }
+            return true;
         }
     }
-    if (alwaysOn_) 
+    return false;
+}
+
+bool WifiConfigSettings::WantsHotspot(
+    bool ethernetConnected, 
+    const std::vector<std::string> &availableRememberedNetworks,
+    const std::vector<std::string> &availableNetworks)
+{
+    if ((!this->valid_)) 
+        return false;
+    
+    HotspotAutoStartMode autoStartMode = (HotspotAutoStartMode)this->autoStartMode_;
+
+    switch (autoStartMode)
     {
-        return true;
+        case HotspotAutoStartMode::Never:
+        default:
+            return false;
+
+        case HotspotAutoStartMode::NoEthernetConnection:
+            return !ethernetConnected;
+        case HotspotAutoStartMode::NotAtHome:
+            return !CanSeeHomeNetwork(this->homeNetwork_, availableNetworks);
+        case HotspotAutoStartMode::NoRememberedWifiConections:
+            return availableRememberedNetworks.size() == 0;
+        case HotspotAutoStartMode::Always:
+            return true;
     }
-    return availableNetworks.size() == 0;
+}
+
+std::string pipedal::ssidToString(const std::vector<uint8_t> &ssid)
+{
+    std::stringstream s;
+    for (auto v: ssid)
+    {
+        if (v == 0) break; // breaks for some arguably legal ssids, but I can live with that.
+        s << (char)v;
+    }
+    return s.str();
+}
+
+std::vector<std::string> pipedal::ssidToStringVector(const std::vector<std::vector<uint8_t>> &ssids)
+{
+    std::vector<std::string> result;
+    result.reserve(ssids.size());
+    for (const std::vector<uint8_t> &ssid: ssids)
+    {
+        result.push_back(ssidToString(ssid));
+    }
+    return result;
+}
+bool WifiConfigSettings::WantsHotspot(
+    bool ethernetConnected, 
+    const std::vector<std::vector<uint8_t>> &availableRememberedNetworks, // remembered networks that are currently visible
+    const std::vector<std::vector<uint8_t>> &availableNetworks // all visible networks.
+    )
+{
+    std::vector<std::string> sAvailableRememberedNetworks = ssidToStringVector(availableRememberedNetworks);
+    std::vector<std::string> sAvailableNetworks = ssidToStringVector(availableNetworks);
+    return WantsHotspot(ethernetConnected,sAvailableRememberedNetworks,sAvailableNetworks);
 }
 
 

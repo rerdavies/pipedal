@@ -335,6 +335,14 @@ namespace pipedal
         {
             os << value;
         }
+        void write(short value)
+        {
+            os << value;
+        }
+        void write(unsigned short value)
+        {
+            os << value;
+        }
         void write(long long value)
         {
             os << value;
@@ -897,6 +905,22 @@ namespace pipedal
             if (is_.fail())
                 throw JsonException("Invalid format.");
         }
+        void read(short * value)
+        {
+            skip_whitespace();
+            is_ >> *value;
+            if (is_.fail())
+                throw JsonException("Invalid format.");
+        }
+
+        void read(unsigned short * value)
+        {
+            skip_whitespace();
+            is_ >> *value;
+            if (is_.fail())
+                throw JsonException("Invalid format.");
+        }
+
         void read(int *value)
         {
             skip_whitespace();

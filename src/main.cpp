@@ -269,6 +269,7 @@ int main(int argc, char *argv[])
                        (unsigned long)getpid());
         }
 
+        model.StartHotspotMonitoring();
         model.WaitForAudioDeviceToComeOnline();
 
 

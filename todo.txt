@@ -3,9 +3,7 @@ Installer:
     sudo systemctl restart polkitd.service
 
 
-- Scanning.
 - verify that scanning doesn't cause overruns.
-- UI changes.
 - test behaviour when Osgilliad is offline.
 - docs changes.
 - unicode commandline arguments.

@@ -1025,6 +1025,12 @@ public:
             std::vector<AlsaDeviceInfo> devices = model.GetAlsaDevices();
             this->Reply(replyTo, "getAlsaDevices", devices);
         }
+        else if (message == "getKnownWifiNetworks")
+        {
+            std::vector<std::string> channels = this->model.GetKnownWifiNetworks();
+            this->Reply(replyTo, "getWifiChannels", channels);
+
+        }
         else if (message == "getWifiChannels")
         {
             std::string country;

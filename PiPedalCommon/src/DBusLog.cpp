@@ -116,12 +116,6 @@ public:
 
 static std::vector<std::unique_ptr<IDBusLogger>> loggers;
 
-void SetDBusLogger(std::unique_ptr<IDBusLogger> && logger)
-{
-    loggers.clear();
-    loggers.push_back(std::move(logger));
-}
-
 
 void SetDBusLogLevel(DBusLogLevel level)
 {
@@ -231,11 +225,17 @@ void LogTrace(const std::string&path,const char*method,const std::string&message
     }
 }
 
+void SetDBusLogger(std::unique_ptr<IDBusLogger> && logger)
+{
+    loggers.clear();
+    loggers.push_back(std::move(logger));
+}
+
+
 
 void SetDBusConsoleLogger()
 {
-    loggers.clear();
-    loggers.push_back(std::make_unique<ConsoleDBusLogger>());
+    SetDBusLogger(std::make_unique<ConsoleDBusLogger>());
 }
 void AddDBusConsoleLogger()
 {
@@ -243,13 +243,11 @@ void AddDBusConsoleLogger()
 }
 void SetDBusSystemdLogger()
 {
-    loggers.clear();
-    loggers.push_back(std::make_unique<SystemdDBusLogger>());
+        SetDBusLogger(std::make_unique<SystemdDBusLogger>());
 
 }
 void SetDBusFileLogger(const std::filesystem::path &path)
 {
-    loggers.clear();
-    loggers.push_back(std::make_unique<FileDBusLogger>(path));
+        SetDBusLogger(std::make_unique<FileDBusLogger>(path));
 }
 

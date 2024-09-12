@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2022-2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -1132,7 +1132,7 @@ static void PrintHelp()
     PrettyPrinter pp;
     pp << "pipedalconfig - Command-line post-install configuration for PiPedal"
        << "\n"
-       << "Copyright (c) 2022 Robin Davies. All rights reserved."
+       << "Copyright (c) 2022-2024 Robin Davies."
        << "\n"
        << "\n"
        << "See https://rerdavies.github.io/pipedal/Documentation.html for "
@@ -1157,10 +1157,10 @@ static void PrintHelp()
         << "\n"
 
         << HangingIndent() << "    --install [--port <port#>]\t"
-        << "Install or re-install services and service accounts."
+        << "Install or re-install PiPedal services and service accounts."
         << "\n"
         << "\n"
-        << "The --port option controls which port the web server uses."
+        << "The --port option controls which TCP/IP port the web server uses."
         << "\n\n"
 
         << HangingIndent() << "    --uninstall\t"
@@ -1169,68 +1169,54 @@ static void PrintHelp()
         << "\n"
 
         << HangingIndent() << "    --enable\t"
-        << "Start the pipedal service at boot time."
+        << "Start PiPedal services at boot time."
         << "\n"
         << "\n"
 
-        << HangingIndent() << "    --disable\tDo not start the pipedal service at boot time."
+        << HangingIndent() << "    --disable\tDo not start PiPedal services at boot time."
         << "\n"
         << "\n"
-        << HangingIndent() << "    --start\tStart the pipedal services."
+        << HangingIndent() << "    --start\tStart PiPedal services."
         << "\n"
         << "\n"
-        << HangingIndent() << "    --stop\tStop the pipedal services."
+        << HangingIndent() << "    --stop\tStop PiPedal services."
         << "\n"
         << "\n"
-        << HangingIndent() << "    --restart\tRestart the pipedal services."
+        << HangingIndent() << "    --restart\tRestart PiPedal services."
         << "\n"
         << "\n"
-
-        << HangingIndent() << "    --enable-p2p [<country_code> <ssid> [[<pin>] <channel>] ]\t"
-        << "Enable the P2P (Wi-Fi Direct) hotspot."
+        << HangingIndent() << "    --enable-hotspot\t <country_code> <ssid> <wep_password> <channel> [<hotspot-option>]"
+        << "\n\nEnable Wi-Fi hotspot."
         << "\n\n"
-        << "With no additional arguments, the P2P channel is enabled with most-recent settings."
+        << "PiPedal's Wi-Fi hotspot allows you to connect to your Raspberry Pi when you don't have a Wi-Fi router, for example, when you are "
+        << "performing away from home. It is most particularly useful when using the PiPedal Android client. Consult PiPedal's online documentation "
+        << "for guidance on configuring a Wi-Fi hotspot."
         << "\n\n"
-        << "<country_code> is the 2-letter ISO-3166 country code for "
-           "the country you are in. see below for further notes."
+        << "One of the following hotspot options can be specifed. If no hotspot option is given, the hotspot will always be enabled. "
+        << "If one of the hotspot options are given, the PiPedal server will turn the hotspot on or off automatically, as conditions change."
+        <<  "\n\n"
+        << "--home-network <wifi-ssid>\n"
+        << AddIndent(4) << "Hotspot is disabled if the specificed Wi-Fi network is detected.\n"
+        << AddIndent(-4)
+        << "--no-ethernet\n" 
+        << AddIndent(4) << "Hotspot is disabled if an ethernet network is connected.\n"
+        << AddIndent(-4)
+        << "--no-wifi\n"
+        << AddIndent(4) << "Hotspot is disabled if a remembered Wi-Fi network is detected.\n"
+        << AddIndent(-4)
+        << "\n"
+        << "Caution: Wi-Fi connections are disabled when the hotspot is activated. If you currently access your Raspberry Pi using  "
+        << "Wi-Fi, choose your hotspot options carefully, to ensure that you can still access your Raspberry Pi."
         << "\n\n"
-        << "<ssid> is the name you see when connecting. "
+        << "country_code is the 2-letter ISO-3166 country code for "
+        << "the country you are in. see below for further notes."
         << "\n\n"
-        << "<pin> is an exactly-eight-digit pin number that you must  "
-        << "enter when connecting to the hotspot. If you don't  "
-        << "provide a pin, pipedalconfig will generate and "
-        << "display a random pin for you. The pin is a "
-        << "so-called \"label\" pin, which is the same every "
-        << "time you are asked to enter it (unlike a keypad pin "
-        << "which changes every time you need to enter it."
-        << "\n\n"
-        << "Consider attaching a label to the bottom of your device "
-        << "so you can can remember the pin if you wan't to connect a new "
-        << "device to PiPedal. (It's also available on the Settings page of PiPedal, if you have access to PiPedal UI on another device.)"
-        << "\n\n"
-        << "For best performance, the channel number should be 1, 6, or 11 (the Wifi Direct \"social\" channels). "
-        << "Channel number defaults to 1."
-        << "\n\n"
-
-        << HangingIndent() << "    --disable-p2p\tDisable Wi-Fi Direct access."
-        << "\n\n"
-
-        << HangingIndent() << "    --list-p2p-channels [<country_code>] \tList valid p2p channels for the current/specified country."
+        << "If the Wi-Fi channel is not specified, a Wi-Fi channel will be automatically selected."
         << "\n\n"
 
-        // << HangingIndent() << "    --enable-legacy-ap\t <country_code> <ssid> <wep_password> <channel>\tEnable a legacy Wi-Fi access point."
-        // << "\n\n"
-        // << "Enable a legacy Wi-Fi access point. \n\n"
-        // << "country_code is the 2-letter ISO-3166 country code for "
-        // << "the country you are in. see below for further notes."
-        // << "\n\n"
-        // << "See below for an explanation of when you might want to use a legacy Wi-Fi access point instead of Wifi-Direct access."
-        // << "an explanation of when you might want to use a legacy Access Point instead of "
-        // << "a P2P (Wi-Fi Direct) connection. Generally, you should prefer a P2p connection "
-        // << "to an ordinary Hotspot connection."
-        // << "\n\n"
-
-        << HangingIndent() << "    --disable-legacy-ap\tDisabled the legacy Wi-Fi access point."
+        << HangingIndent() << "    --disable-hotspot\tDisabled the Wi-Fi hotspot."
+        << "\n\n"
+        << HangingIndent() << "    --list-wifi-channels [<country_code>] \tList valid Wifi channels for the current/specified country."
         << "\n\n"
 
         << Indent(0) << "Country codes:"
@@ -1244,28 +1230,11 @@ static void PrintHelp()
         << "with reduced amplitude and feature sets."
         << "\n\n"
         << "For the most part, Wi-Fi country codes are taken from the list of ISO 3661 "
-        << "2-letter country codes; although there are a handful of exceptions for  small "
+        << "2-letter country codes; although there are a handful of exceptions for small "
         << "countries and islands. See the Alpha-2 code column of "
         << "\n\n"
         << Indent(8) << "https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes."
-        << "\n\n"
-
-        << Indent(0) << "Legacy Wi-Fi Access Points:"
-        << "\n\n"
-        << Indent(4)
-        << "Some older devices may not be able to connect to PiPedal using Wi-Fi Direct connections. "
-           "Old Apple devices, for example, do not support Wi-Fi Direct. In theory, Wi-Fi Direct should "
-           "allow legacy Wi-Fi devices to connect to a Wi-Fi Direct access points as if it were an "
-           "ordinary Access Point. If this turns out "
-           "not to be the case, you can configure PiPedal to provide a legacy Wi-Fi access point instead. "
-           "\n\n"
-           "Unlike Wi-Fi Direct connections, legacy Access Points will prevent both the connecting device "
-           "and the PiPedal host machine from connecting to the Internet over a simultanous Wi-Fi connection Access "
-           "Point. On a connecting Android device, you won't be able to use the data connection either when a legacy "
-           "Wi-Fi connection is active."
-           "\n\n"
-           "Wi-Fi Direct connections are "
-           "therefore preferrable under almost all circumstances.\n\n";
+        << "\n\n";
 }
 
 static int ListP2PChannels(const std::vector<std::string> &arguments)
@@ -1315,7 +1284,7 @@ int main(int argc, char **argv)
     bool helpError = false;
     bool stop = false, start = false;
     bool enable = false, disable = false, restart = false;
-    bool enable_ap = false, disable_ap = false;
+    bool enable_hotspot = false, disable_hotspot = false;
     bool enable_p2p = false, disable_p2p = false;
     bool list_p2p_channels = false;
     bool get_current_port = false;
@@ -1324,6 +1293,9 @@ int main(int argc, char **argv)
     bool excludeShutdownService = false;
     std::string prefixOption;
     std::string portOption;
+    std::string homeNetwork;
+    bool noEthernet = false;
+    bool noWifi = false;
 
     parser.AddOption("--nosudo", &nosudo); // strictly a debugging aid. Run without sudo, until we fail because of permissions.
     parser.AddOption("--install", &install);
@@ -1337,22 +1309,17 @@ int main(int argc, char **argv)
     parser.AddOption("--help", &help);
     parser.AddOption("--prefix", &prefixOption);
     parser.AddOption("--port", &portOption);
-    // parser.AddOption("--enable-legacy-ap", &enable_ap);
-    parser.AddOption("--disable-ap", &disable_ap);
-    parser.AddOption("--enable-p2p", &enable_p2p);
-    parser.AddOption("--disable-p2p", &disable_p2p);
-    parser.AddOption("--list-p2p-channels", &list_p2p_channels);
-    parser.AddOption("--fix-permissions", &fix_permissions);
-
-    parser.AddOption("--get-current-port", &get_current_port); // private. For debug use only.
-
-    parser.AddOption("--excludeShutdownService", &excludeShutdownService); // private (unstable) option used by shutdown service.
+    parser.AddOption("--enable-hotspot", &enable_hotspot);
+    parser.AddOption("--disable-hotspot", &disable_hotspot);
+    parser.AddOption("--home-network",&homeNetwork);
+    parser.AddOption("--no-ethernet",&noEthernet);
+    parser.AddOption("--no-wifi",&noWifi);
     try
     {
         parser.Parse(argc, (const char **)argv);
 
         int actionCount =
-            help + get_current_port + install + uninstall + stop + start + enable + disable + enable_ap + disable_ap + restart + enable_p2p + disable_p2p + list_p2p_channels + fix_permissions;
+            help + get_current_port + install + uninstall + stop + start + enable + disable + enable_hotspot + disable_hotspot + restart + enable_p2p + disable_p2p + list_p2p_channels + fix_permissions;
         if (actionCount > 1)
         {
             throw std::runtime_error("Please provide only one action.");
@@ -1366,12 +1333,29 @@ int main(int argc, char **argv)
 
             throw std::runtime_error("No action provided.");
         }
-        if ((!enable_p2p) && (!enable_ap) && (!list_p2p_channels))
+        if ((!enable_p2p) && (!enable_hotspot) && (!list_p2p_channels))
         {
             if (parser.Arguments().size() != 0)
             {
                 cout << "Error: Unexpected argument : " << parser.Arguments()[0] << "\n";
                 helpError = true;
+            }
+        }
+        int hotspotOptionCount =
+            (homeNetwork.length() != 0 ? 1: 0)
+            + noEthernet
+            + noWifi;
+
+        if (enable_hotspot)
+        {
+            if (hotspotOptionCount > 1)
+            {
+                throw std::runtime_error("Only one hotspot option at a time can be specified.");
+            }
+        } else {
+            if (hotspotOptionCount > 0)
+            {
+                throw std::runtime_error("Hotspot options only only valid when the --enable-hotspot option has been supplied.");
             }
         }
     }
@@ -1383,7 +1367,7 @@ int main(int argc, char **argv)
     }
     if (helpError)
     {
-        cout << "\n";
+        cout << endl;
         return EXIT_FAILURE; // don't scroll the error off the screen.
     }
 
@@ -1483,21 +1467,23 @@ int main(int argc, char **argv)
         }
         else if (enable_p2p)
         {
-            try
-            {
-                auto argv = parser.Arguments();
-                WifiDirectConfigSettings settings;
-                settings.ParseArguments(argv);
-                settings.valid_ = true;
-                settings.enable_ = true;
-                SetWifiDirectConfig(settings);
-                RestartService(true); // also have to retart web service so that it gets the correct device name.
-            }
-            catch (const std::exception &e)
-            {
-                cout << "ERROR: " << e.what() << endl;
-                return EXIT_FAILURE;
-            }
+            cout << "ERROR: Wi-Fi p2p connections are no longer supported. Use hotspots instead." << endl;
+            return EXIT_FAILURE;
+            // try
+            // {
+            //     auto argv = parser.Arguments();
+            //     WifiDirectConfigSettings settings;
+            //     settings.ParseArguments(argv);
+            //     settings.valid_ = true;
+            //     settings.enable_ = true;
+            //     SetWifiDirectConfig(settings);
+            //     RestartService(true); // also have to retart web service so that it gets the correct device name.
+            // }
+            // catch (const std::exception &e)
+            // {
+            //     cout << "ERROR: " << e.what() << endl;
+            //     return EXIT_FAILURE;
+            // }
         }
         else if (disable_p2p)
         {
@@ -1508,20 +1494,45 @@ int main(int argc, char **argv)
             RestartService(true);
             return EXIT_SUCCESS;
         }
-        else if (enable_ap)
+        else if (enable_hotspot)
         {
             auto argv = parser.Arguments();
             WifiConfigSettings settings;
-            settings.ParseArguments(argv);
 
+            HotspotAutoStartMode startMode = HotspotAutoStartMode::Always;
+            if (homeNetwork.length() != 0)
+            {
+                startMode = HotspotAutoStartMode::NotAtHome;
+            } else if (noEthernet)
+            {
+                startMode = HotspotAutoStartMode::NoEthernetConnection;
+            } else if (noWifi)
+            {
+                startMode = HotspotAutoStartMode::NoRememberedWifiConections;
+            }
+
+            settings.ParseArguments(argv,startMode,homeNetwork);
+
+            if (settings.hasPassword_)
+            {
+                settings.hasSavedPassword_ = true;
+            }
             SetWifiConfig(settings);
+            if (silentSysExec(SYSTEMCTL_BIN " restart " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
+            {
+                throw std::runtime_error("Failed to restart the " PIPEDALD_SERVICE " service.");
+            }
         }
-        else if (disable_ap)
+        else if (disable_hotspot)
         {
             WifiConfigSettings settings;
             settings.valid_ = true;
-            settings.enable_ = false;
+            settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Never;
             SetWifiConfig(settings);
+            if (silentSysExec(SYSTEMCTL_BIN " restart " PIPEDALD_SERVICE ".service") != EXIT_SUCCESS)
+            {
+                throw std::runtime_error("Failed to restart the " PIPEDALD_SERVICE " service.");
+            }
         }
     }
     catch (const std::exception &e)

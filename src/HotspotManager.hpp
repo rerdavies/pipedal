@@ -30,7 +30,6 @@ namespace pipedal {
         HotspotManager(HotspotManager&&) = delete;
         HotspotManager & operator=(const HotspotManager&) = delete;
         HotspotManager & operator=(const HotspotManager&&) = delete;
-
     protected: 
 
         HotspotManager() {} // use Create().
@@ -46,6 +45,9 @@ namespace pipedal {
         virtual void Open() = 0;
         virtual void Reload() = 0;
         virtual void Close() = 0;
+
+        virtual std::vector<std::string> GetKnownWifiNetworks() = 0;
+
 
         using NetworkChangingListener = std::function<void(bool ethernetConnected,bool hotspotEnabled)>;
 

@@ -366,7 +366,8 @@ export class PiPedalModel //implements PiPedalModel
     clientId: number = -1;
 
     serverVersion?: PiPedalVersion;
-    countryCodes: Object = {};
+    countryCodes: {[Name: string]: string} = {};
+    
     socketServerUrl: string = "";
     varServerUrl: string = "";
     lv2Path: string = "";
@@ -956,7 +957,7 @@ export class PiPedalModel //implements PiPedalModel
                 return response.json();
             })
             .then((countryCodes) => {
-                this.countryCodes = countryCodes as Object;
+                this.countryCodes = countryCodes as {[Name: string]: string};
 
                 return this.getWebSocket().request<number>("hello");
             })
@@ -2556,27 +2557,33 @@ export class PiPedalModel //implements PiPedalModel
             let oldSettings = this.wifiConfigSettings.get();
             wifiConfigSettings = wifiConfigSettings.clone();
 
-            if ((!oldSettings.enable) && (!wifiConfigSettings.enable)) {
+            if ((!oldSettings.isEnabled()) && (!wifiConfigSettings.isEnabled())) {
                 // no effective change.
                 resolve();
                 return;
             }
-            if (!wifiConfigSettings.enable) {
+            if (!wifiConfigSettings.isEnabled()) {
                 wifiConfigSettings.hasPassword = false;
-                wifiConfigSettings.hotspotName = oldSettings.hotspotName;
+                wifiConfigSettings.password = "";
             } else {
-                if (wifiConfigSettings.countryCode === oldSettings.countryCode
-                    && wifiConfigSettings.channel === oldSettings.channel
-                    && wifiConfigSettings.hotspotName === oldSettings.hotspotName) {
-                    if (!wifiConfigSettings.hasPassword) {
-                        // no effective change.
-                        resolve();
-                        return;
+                if (wifiConfigSettings.hasPassword)
+                    {
+                        wifiConfigSettings.hasSavedPassword = true;
                     }
-                }
             }
             // save a  version for the server (potentially carrying a password)
-            let serverConfigSettings = wifiConfigSettings.clone();
+            let serverConfigSettings: WifiConfigSettings;
+            if (wifiConfigSettings.isEnabled()) {
+                serverConfigSettings = wifiConfigSettings.clone();
+            } else {
+                // avoid leaking edits to the server
+                serverConfigSettings = oldSettings.clone(); 
+                serverConfigSettings.autoStartMode = wifiConfigSettings.autoStartMode;
+                wifiConfigSettings = oldSettings.clone();
+                wifiConfigSettings.autoStartMode = 0;
+            }
+
+            wifiConfigSettings.hasPassword = false;
             wifiConfigSettings.password = "";
             this.wifiConfigSettings.set(wifiConfigSettings);
 
@@ -2660,6 +2667,24 @@ export class PiPedalModel //implements PiPedalModel
         // this.webSocket?.reconnect(); // avoid races by letting the server do it for us.
         return result;
     }
+
+
+    getKnownWifiNetworks() : Promise<string[]> {
+        let result = new Promise<string[]>((resolve, reject) => {
+            if (!this.webSocket) {
+                reject("Connection closed.");
+                return;
+            }
+            this.webSocket.request<string[]>("getKnownWifiNetworks")
+                .then((data) => {
+                    resolve(data);
+                })
+                .catch((err) => reject(err));
+        });
+        return result;
+        
+    }
+
 
     getWifiChannels(countryIso3661: string): Promise<WifiChannel[]> {
         let result = new Promise<WifiChannel[]>((resolve, reject) => {

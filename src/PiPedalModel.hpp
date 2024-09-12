@@ -245,6 +245,8 @@ namespace pipedal
             networkChangedListener = listener;
         }
 
+        void StartHotspotMonitoring();
+
         void WaitForAudioDeviceToComeOnline();
 
         UpdateStatus GetUpdateStatus();
@@ -333,6 +335,7 @@ namespace pipedal
 
         void SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings);
         WifiConfigSettings GetWifiConfigSettings();
+        std::vector<std::string> GetKnownWifiNetworks();
 
         void SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiConfigSettings);
         WifiDirectConfigSettings GetWifiDirectConfigSettings();

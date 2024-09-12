@@ -961,12 +961,19 @@ bool Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings
     {
         copyToSave.hasPassword_ = previousValue.hasPassword_;
         copyToSave.password_ = previousValue.hasPassword_;
+        copyToSave.hasSavedPassword_ = previousValue.hasPassword_;
+    } else {
+        if (copyToSave.IsEnabled())
+        {
+            copyToSave.hasSavedPassword_ = copyToSave.hasPassword_;
+        }
     }
-    bool configChanged = wifiConfigSettings.ConfigurationChanged(previousValue);
+    bool configChanged = copyToSave.ConfigurationChanged(previousValue);
     copyToSave.Save();
     this->wifiConfigSettings = copyToSave;
     this->wifiConfigSettings.hasPassword_ = false;
     this->wifiConfigSettings.password_ = "";
+    
     return configChanged;
 }
 

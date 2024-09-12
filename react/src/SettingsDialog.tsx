@@ -681,6 +681,20 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                             <div >
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">CONNECTION</Typography>
 
+                                <ButtonBase
+                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                    onClick={() => this.handleShowWifiConfigDialog()}  >
+                                    <SelectHoverBackground selected={false} showHover={true} />
+                                    <div style={{ width: "100%" }}>
+                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                            Wi-Fi auto hotspot</Typography>
+                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
+                                            {this.state.wifiConfigSettings.getSummaryText()}
+                                        </Typography>
+
+                                    </div>
+                                </ButtonBase>
+
                                 {
                                     this.state.isAndroidHosted &&
                                     (
@@ -699,33 +713,6 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     )
                                 }
 
-                                <ButtonBase
-                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    onClick={() => this.handleShowWifiConfigDialog()}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Wi-Fi auto hotspot</Typography>
-                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            {this.state.wifiConfigSettings.getSummaryText()}
-                                        </Typography>
-
-                                    </div>
-                                </ButtonBase>
-
-                                <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    style={{ display: "none" }}
-                                    onClick={() => this.handleShowWifiConfigDialog()}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Configure Wi-Fi hotspot</Typography>
-                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            {this.state.wifiConfigSettings.getSummaryText()}
-                                        </Typography>
-
-                                    </div>
-                                </ButtonBase>
                             </div>
                             {(!this.props.onboarding) ? (
                                 <div >
