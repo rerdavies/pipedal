@@ -194,7 +194,6 @@ set (PIPEDAL_SOURCES
     RequestHandler.hpp 
     Scratch.cpp PluginHost.hpp PluginHost.cpp
     PluginType.hpp PluginType.cpp
-    Lv2Log.hpp Lv2Log.cpp
     PiPedalSocket.hpp PiPedalSocket.cpp
     PiPedalVersion.hpp PiPedalVersion.cpp
     PiPedalModel.hpp PiPedalModel.cpp 
@@ -297,7 +296,7 @@ target_link_libraries(pipedald PRIVATE PiPedalCommon
 #################################
 add_executable(hotspotManagerTest 
     hotspotManagerTestMain.cpp
-    HotspotManager.cpp HotspotManager.hpp Lv2Log.cpp Lv2Log.hpp)
+    HotspotManager.cpp HotspotManager.hpp)
 
 target_link_libraries(hotspotManagerTest PRIVATE ${PIPEDAL_LIBS})
 
@@ -608,7 +607,6 @@ add_executable(pipedalconfig
     SystemConfigFile.hpp SystemConfigFile.cpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp
     asan_options.cpp
-    Lv2Log.cpp Lv2Log.hpp
 
     )
 
@@ -621,7 +619,6 @@ add_executable(pipedal_latency_test
     PiLatencyMain.cpp
     PiPedalAlsa.hpp PiPedalAlsa.cpp
     asan_options.cpp
-    Lv2Log.cpp Lv2Log.hpp
     AlsaDriver.cpp AlsaDriver.hpp
     JackConfiguration.hpp JackConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
@@ -648,7 +645,6 @@ target_link_libraries(capturepresets ${PIPEDAL_LIBS})
 add_executable(pipedal_update
     UpdateMain.cpp 
     UpdateResults.cpp UpdateResults.hpp
-    Lv2Log.hpp Lv2Log.cpp
     Lv2SystemdLogger.cpp Lv2SystemdLogger.hpp
     UpdateResults.cpp UpdateResults.hpp
     AdminInstallUpdate.cpp AdminInstallUpdate.hpp
@@ -664,7 +660,6 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     JackServerSettings.hpp JackServerSettings.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
 
-    Lv2Log.cpp Lv2Log.hpp
     SystemConfigFile.hpp SystemConfigFile.cpp    
     CpuGovernor.cpp CpuGovernor.hpp
     asan_options.cpp

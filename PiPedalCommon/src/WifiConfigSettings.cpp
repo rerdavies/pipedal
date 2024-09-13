@@ -26,7 +26,7 @@
 #include <stdexcept>
 #include <cctype>
 #include "SysExec.hpp"
-
+#include "Lv2Log.hpp"
 #include <sdbus-c++/sdbus-c++.h>
 #include <iostream>
 #include <memory>
@@ -136,6 +136,7 @@ static void openWithPerms(
                 perms,
                 std::filesystem::perm_options::replace); 
         } catch (const std::exception&) {
+            Lv2Log::warning(SS("Failed to set permissions on" << path << "."));
         }
     }
 

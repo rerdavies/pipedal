@@ -59,7 +59,7 @@ add_library(PiPedalCommon STATIC
 
   NetworkManagerInterfaces.cpp
   include/NetworkManagerInterfaces.hpp
-
+  Lv2Log.cpp include/Lv2Log.hpp
   DBusEvent.cpp
   DBusVariantHelper.cpp
   DBusLog.cpp

@@ -571,7 +571,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     (
                                         <div>
                                             <Typography display="block" variant="body1" color="textSecondary" style={{ paddingLeft: 24, paddingBottom: 8 }}>
-                                                Select and configure an audio device. You may optionally configure MIDI inputs, and set up a Wi-Fi Direct Hotspot now as well.
+                                                Select and configure an audio device. You may optionally configure MIDI inputs, and configure up a Wi-Fi Auto-Hotspot as well.
+                                                The Auto-Hotspot feature allows you to connect to Pipedal even if you don't have access to a Wi-Fi router.
                                             </Typography>
                                             <Typography display="block" variant="body1" color="textSecondary" style={{ paddingLeft: 24, paddingBottom: 8 }}>
                                                 Access and modify these settings later by selecting the <i>Settings</i> menu item on the main menu.

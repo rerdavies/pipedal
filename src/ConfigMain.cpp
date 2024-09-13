@@ -552,6 +552,11 @@ static bool IsP2pServiceEnabled()
 
 void Uninstall()
 {
+    // if NetworkManager isn't installed, Install will have failed.
+    // Do cleanup as if the Isntall had not failed.
+
+    PretendNetworkManagerIsInstalled();
+
     try
     {
         OnWifiUninstall(true);
@@ -897,6 +902,11 @@ void InstallPgpKey()
 void Install(const fs::path &programPrefix, const std::string endpointAddress)
 {
     cout << "Configuring pipedal" << endl;
+
+    if (!UsingNetworkManager())
+    {
+        throw std::runtime_error("The current OS is not using NetworkManager. Services not configured.");
+    }
     try
     {
         DeployVarConfig();
@@ -1275,6 +1285,13 @@ static int ListP2PChannels(const std::vector<std::string> &arguments)
     return EXIT_SUCCESS;
 }
 
+void RequireNetworkManager()
+{
+    if (!UsingNetworkManager())
+    {
+        throw std::runtime_error("The current OS is not using NetworkManager.");
+    }
+}
 int main(int argc, char **argv)
 {
     CommandLineParser parser;
@@ -1407,68 +1424,92 @@ int main(int argc, char **argv)
         }
         if (install)
         {
-            fs::path prefix;
-            if (prefixOption.length() != 0)
-            {
-                prefix = fs::path(prefixOption);
-            }
-            else
-            {
-                prefix = fs::path(argv[0]).parent_path().parent_path();
-
-                fs::path pipedalPath = prefix / "sbin" / "pipedald";
-                if (!fs::exists(pipedalPath))
+            try {
+                fs::path prefix;
+                if (prefixOption.length() != 0)
                 {
-                    std::stringstream s;
-                    s << "Can't find pipedald executable at " << pipedalPath << ". Try again using the -prefix option.";
-                    throw std::runtime_error(s.str());
+                    prefix = fs::path(prefixOption);
                 }
-            }
+                else
+                {
+                    prefix = fs::path(argv[0]).parent_path().parent_path();
 
-            if (portOption == "")
-            {
-                portOption = GetCurrentWebServicePort();
+                    fs::path pipedalPath = prefix / "sbin" / "pipedald";
+                    if (!fs::exists(pipedalPath))
+                    {
+                        std::stringstream s;
+                        s << "Can't find pipedald executable at " << pipedalPath << ". Try again using the -prefix option.";
+                        throw std::runtime_error(s.str());
+                    }
+                }
+
                 if (portOption == "")
                 {
-                    portOption = "80";
+                    portOption = GetCurrentWebServicePort();
+                    if (portOption == "")
+                    {
+                        portOption = "80";
+                    }
                 }
-            }
-            if (portOption.find(':') == string::npos)
+                if (portOption.find(':') == string::npos)
+                {
+                    portOption = "0.0.0.0:" + portOption;
+                }
+                Install(prefix, portOption);
+                FileSystemSync();
+
+            } catch (const std::exception&e)
             {
-                portOption = "0.0.0.0:" + portOption;
+                cout << "ERROR: " << e.what() << endl;
+                FileSystemSync();
+                return EXIT_SUCCESS; // say we succeeded so we don't put APT into a hellish state.
             }
-            Install(prefix, portOption);
-            FileSystemSync();
         }
         else if (uninstall)
         {
-            Uninstall();
-            FileSystemSync();
+            try {
+                Uninstall();
+                FileSystemSync();
+            } catch (const std::exception &e)
+            {
+                cout << "ERROR: " << e.what() << endl;
+                FileSystemSync();
+                return EXIT_SUCCESS; // Say we succeeds so that we don't put APT into a hellish state.
+            }
         }
         else if (stop)
         {
+            RequireNetworkManager();
             StopService();
+
         }
         else if (start)
         {
+            RequireNetworkManager();
             StartService();
         }
         else if (restart)
         {
+            RequireNetworkManager();
             RestartService(excludeShutdownService);
         }
         else if (enable)
         {
+            RequireNetworkManager();
             EnableService();
+            FileSystemSync();
+
         }
         else if (disable)
         {
+            RequireNetworkManager();
             DisableService();
+            FileSystemSync();
+
         }
         else if (enable_p2p)
         {
-            cout << "ERROR: Wi-Fi p2p connections are no longer supported. Use hotspots instead." << endl;
-            return EXIT_FAILURE;
+            throw std::runtime_error("Wi-Fi p2p connections are no longer supported. Use hotspots instead.");
             // try
             // {
             //     auto argv = parser.Arguments();
@@ -1487,15 +1528,20 @@ int main(int argc, char **argv)
         }
         else if (disable_p2p)
         {
+            RequireNetworkManager();
             WifiDirectConfigSettings settings;
             settings.Load();
             settings.enable_ = false;
             SetWifiDirectConfig(settings);
+            
+            
             RestartService(true);
             return EXIT_SUCCESS;
         }
         else if (enable_hotspot)
         {
+            RequireNetworkManager();
+
             auto argv = parser.Arguments();
             WifiConfigSettings settings;
 
@@ -1522,9 +1568,12 @@ int main(int argc, char **argv)
             {
                 throw std::runtime_error("Failed to restart the " PIPEDALD_SERVICE " service.");
             }
+            FileSystemSync();
         }
         else if (disable_hotspot)
         {
+            RequireNetworkManager();
+
             WifiConfigSettings settings;
             settings.valid_ = true;
             settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Never;
@@ -1533,6 +1582,7 @@ int main(int argc, char **argv)
             {
                 throw std::runtime_error("Failed to restart the " PIPEDALD_SERVICE " service.");
             }
+            FileSystemSync();
         }
     }
     catch (const std::exception &e)
