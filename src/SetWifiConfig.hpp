@@ -36,4 +36,6 @@ namespace pipedal {
     void OnWifiInstallComplete();
 
     bool UsingNetworkManager();
+    void PretendNetworkManagerIsInstalled();
+
 } // namespace.

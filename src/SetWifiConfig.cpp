@@ -70,8 +70,39 @@ const std::string &pipedal::GetWifiConfigWlanAddress()
     return gWlanAddress;
 }
 
+static bool gNetworkManagerTestExecuted = false;
+static bool gUsingNetworkManager = false;
+
+void pipedal::PretendNetworkManagerIsInstalled()
+{
+    gNetworkManagerTestExecuted = true;
+    gUsingNetworkManager = true;
+}
 bool pipedal::UsingNetworkManager()
 {
+    if (gNetworkManagerTestExecuted)
+    {
+        return gUsingNetworkManager;
+    }
+    bool bResult = false;
+    auto result = sysExecForOutput("systemctl","is-active NetworkManager");
+    if (result.exitCode == EXIT_SUCCESS)
+    {
+        std::string text = result.output.erase(result.output.find_last_not_of(" \n\r\t")+1);
+        if (text == "active")
+        {
+            bResult = true;
+        } else if (text == "inactive")
+        {
+            bResult = false;
+        } else {
+            throw std::runtime_error(SS("UsingNetworkManager: unexpected result (" << text << ")"));
+        }
+        gNetworkManagerTestExecuted = true;
+        gUsingNetworkManager = bResult;
+        return bResult;
+    }
+
     // does the neworkManager service path exists?
     return std::filesystem::exists(NETWORK_MANAGER_SERVICE_PATH);
 }

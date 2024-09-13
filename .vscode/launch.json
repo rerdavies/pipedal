@@ -11,6 +11,13 @@
     "version": "0.2.0",
     "configurations": [
     {
+        "name": "Attach to Edge",
+        "port": 9222,
+        "request": "attach",
+        "type": "msedge",
+        "webRoot": "${workspaceFolder}"
+    },
+    {
         "name": "(gdb) Attach",
         "type": "cppdbg",
         "request": "attach",
@@ -308,8 +315,11 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
+                "--prefix",
+                "/usr/sbin",
                 "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
-                "--disable-p2p"
+                "--install"
+
                 //"--get-current-port"
                 //"--install"
                 //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
