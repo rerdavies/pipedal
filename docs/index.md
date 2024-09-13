@@ -18,9 +18,11 @@ PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency au
 
 {% include gallery.html %}
 
-PiPedal can be remotely controlled via a web interface over Ethernet, or from your phone or tablet via Wi-Fi Direct. Set up and configure the Wi-Fi Direct interface via the browser interface.
+PiPedal can be remotely controlled via a web interface over Ethernet, or Wi-Fi. If you don't have access to a Wi-Fi router, PiPedal can be configured to 
+start a Wi-Fi hotspot automatically, whenever your Raspberry Pi can't connect to your home network.
 
-Install the [PiPedal Remote Android app](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) to get one-click access to PiPedal via Wi-Fi Direct. Or connect from PC, Laptop or your Raspberry Pi via a web browser over Ethernet. You can set up and configure the Wi-Fi Direct connection from the browser interface.
+Install the [PiPedal Remote Android app](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) to get one-click access to PiPedal via Wi-Fi networks, or Wi-Fi hotspots. If you are using PiPedal away from home, you can configure PiPedal to automatically start a Wi-Fi hotspot on your Raspberry Pi 
+whenever Pipedal is unable to detect your home network. The PiPedal Client Android app will allow to connect by simply launching the app, whether you are at home, or using a Wi-Fi auto-hotspot at a gig, when away from home.
 
 PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
 

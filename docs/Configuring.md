@@ -10,7 +10,7 @@ Before using PiPedal, you will need to configure settings for the audio device t
 
 {% include pageIconL.html %}
 
-You will also want to configure PiPedal  to provide a Wi-Fi Direct access point (hotspot) that you can connect to using your phone. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that the Wi-Fi Direct access point is enabled before you do. 
+You will also want to configure PiPedal  to provide a Wi-Fi auto-hotspot so that you can connect to using your using your Android phone or tablet. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that PiPedal's Wi-Fi auto-hotspot is enabled before you do. 
 
 PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
 
@@ -21,8 +21,31 @@ with PiPedal.
 
 ### Installing the PiPedal Remote Android app
 
-Install [PiPedal Remote](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) on your Android device. PiPepedal Remote can connect to
-PiPedal on your Raspberry Pi device  as long as your Android device and Raspberry Pi are connected to the same network via a normal Wi-Fi access point, or via an Ethernet connection. 
+If you are using an Android phone or table to connect to PiPedal, you should download and install the [PiPedal Android Client](https://play.google.com/store/apps/details?id=com.twoplay.pipedal)
+
+The Android PiPedal client provides three  feature: 
+
+1. It automatically locates running instances of PiPedal on the local Wi-Fi network using dns/Bonjour discovery. So you don't need to keep track of which IP address to connect with.
+
+2. It provides a web view of PiPedal user interface with none of the clutter associated with a web browser. No browser address bars; no additional window clutter from the browser. Just a view of the PiPedal UI. So you get to use every precious pixel of your display to control PiPedal.
+
+3. It happens to interoperate nicely with PiPedal's auto-hotspot feature, allowing one-click connection to PiPedal even when you're away from home and don't have access to a Wi-Fi router. 
+
+In theory, you could do all of this using Chrome, running on your phone. And, in fact, you can. But it's a fiddly procedure. The Android PiPedal Client takes care of all of those details, and allows you to connect to PiPedal from your phone or tablet with just one click to launch the app.
+
+The PiPedal client will connect to the PiPedal server running on your Raspberry Pi automatically if they are both connected to the same Wi-Fi router. When you are away from home, you should configure PiPedal to automatically bring up a Wi-Fi hotspot when the Raspberry Pi is not able to connect to your home network. 
+
+When you do, you can easily connect to PiPedal via the Android app.
+
+- You show up at a local venue to perform.
+
+- You power up your Raspberry pi. The PiPedal server boots up, and decides that it is not able to connect to your home network, so it starts up a Wi-Fi hotspot.
+
+- Your phone or tablet doesn't have a Wi-Fi connection, because you're not at home. But when it sees the PiPedal hotspot it will automatically connect.
+
+- You launch the PiPedal client on your Android device. It searches the network associated with the current active Wi-Fi connection (the PiPedal hotspot, in this instance), and finds a PiPedal server announcing itself via mDNS/Bonjour. And having located the pipedal server, it automatically opens up a Web View and connects to the PiPedal web user interface.
+
+None of this is particularly clever. But it does make things simple.
 
 ## First Connection
 
@@ -30,13 +53,15 @@ You can complete the initial configuration procedure using any of the following 
 
 1. _Log on to the Raspberry Pi device_. Launch a web browser, and connect to http:://127.0.0.1/
 
-2.  _Connect Raspberry Pi to a Wi-Fi or Ethernet network, and connect from your laptop or desktop._ Connect to http://raspberrypi.local/ (substitute the host name of your Raspberry Pi if you have changed it from the default).
+2.  _Connect your Raspberry Pi to a Wi-Fi or Ethernet network, and connect from your laptop or desktop._ Connect to http://raspberrypi/ (substitute the host name of your Raspberry Pi if you have changed it from the default).
 
 3. _From your Android device._ Install PiPedal Remote on your Android device. Connect your Raspberry Pi to your home router using a Wi-Fi or Ethernet connection. Launch PiPedal Remote on your Android device.
 
-4. _From a LINUX command prompt._ As a last resort, you can configure the Wi-Fi Direct access point using the `pipedalconfig` program. Type `pipedalconfig --help` at a command prompt on your Raspberry Pi.
+4. _From a LINUX command prompt._ As a last resort, you can configure the Wi-Fi hotspotusing the `pipedalconfig` program. Type `pipedalconfig --help` at a command prompt on your Raspberry Pi.
 
 If you already have another web server on port 80, see [*How to Change the Web Server Port*](ChangingTheWebServerPort.md).
+
+When you connect to PiPedal for the first time, you will be presented with an Onboarding dialog, which allows you to complete the setup of things that need to be configured before you use PiPedal. From the Onboarding dialog, you can select and configure the audio device, and (optionally) configure Pipedal's Wi-Fi auto hotspot.
 
 ### Configuring Audio
 
@@ -70,47 +95,76 @@ LINUX Kernel version 5.16 includes fixes to ALSA audio that are supposed to dram
 
 PiPedal uses the ALSA audio stack; so (unlike Jack Audio) there is no performance penalty for using 44100Hz sample rates. However, using a 48000Hz sampling rates does provide significant improvements in high-frequency audio quality when performing digital audio signal processing.
 
-### Activating the P2P (Wi-Fi Direct) Hotspot
+### Activating the Wi-Fi Auto-Hotspot
 
-The preferred way to connect to a PiPedal host device is via Wi-Fi Direct connections. Doing so allows you to use your PiPedal device when you are away from home.
-     
-Enable PiPedal's Wi-Fi Direct hotspot connection from the Settings dialog (Click on the hamburger icon; click on *Settings*; click on *Wi-Fi Direct Hotspot*). You will need to select a PIN and enable the connection before you can use it. The PiPedal hotspot will be visible to anyone with Wi-Fi distance; so choose your PIN carefully. Do NOT use trivial PINs like 12345678, or 00000000! Note that when connecting via Wi-Fi direct, you only have to enter the PIN once on the device you are connecting from; and it will be remembered automatically for subsequent connections.
+The PiPedal <b><i>Auto-Hotspot</i></b> feature allows you to connect to your Raspberry Pi even if you don't have
+access to a Wi-Fi router. For example, if you are performing at a live venue, you probably will not
+have access to a Wi-Fi router; but you can configure PiPedal so that your Raspberry Pi  automatically
+starts a Wi-Fi hotspot when you are not at home. The feature is primarily intended for use with the
+PiPedal Android client, but you may find it useful for other purposes as well.
 
-Best practice would be to generate a random PIN (using the Generate Random Pin button in the setup dialog), and then tape a label to the bottom of your Raspberry PI 
-(not the top) with the PIN written on it, in case you ever need to connect to PiPedal with a device that hasn't been previously set up. 
-     
-Wi-Fi Direct connections differ in a couple of ways from normal Wi-Fi connections
-     
-- You only have to enter the pin once; the device you connect from will remember the PIN and connect without a PIN after that.
+Raspberry Pi devices are unable to run hotspots, and have another active Wi-Fi connection at the same time; so the auto-hotspot feature
+automatically turns the hotspot on, when your Raspberry Pi cannot otherwise be connected to, and can be configured to
+automatically turn the PiPedal hotspot off when you do want your Raspberry Pi to connect to another Wi-Fi access point.
+How you configure PiPedal's auto-hostpot depends on how you normally connect to your Raspberry Pi when you are at home.
 
-- You can have a simultaneous connection to your Wi-Fi router when using a Wi-Fi Direct connection to your Raspberry Pi. The device you
-  are connecting from will continue use the Internet over your Wi-Fi router, and only use the Wi-Fi Direct connection to communication 
-  with your Raspberry Pi.
+To configure Pipedal's Auto-Hotspot, open the Auto-Hotspot configuration dialog. You can access this dialog directly from the Onboarding page; or if 
+you have completed the onboarding procedure, you can open the dialog from the <b><i>Auto Hotspot</i></b> item in the <b><i>PiPedal Settings</i></b> dialog.
 
-- You can use a Wi-Fi Direct connection even when you don't have a Wi-Fi router connection. Android phones will continue to communicate 
-  with the Internet over their
-  data connections, even when a Wi-Fi Direct connection is active.
+The Auto-Hotspot offers you several choices as to how and PiPedal should open up a Wi-Fi hotspot. Which option you choose depends on how you connect to 
+PiPedal when you are at home.
 
-- More than one device can connect to the Wi-Fi Direct connection on the Raspberry Pi when it is active/
+If you normally connect to your Raspberry Pi using an ethernet connection, starting the Wi-Fi hotspot when there is <b><i>No ethernet connection</i></b> is a
+good choice. The PiPedal Wi-Fi hotspot will be available whenever the ethernet cable is unplugged. <b><i>Always on</i></b> is
+also a good choice, but may confuse your phone or tablet, since your Android device will now have to decide whether to auto-connect to your home Wi-Fi
+router, or to the Raspberry Pi hotspot. If you use the <b><i>No ethernet connection</i></b> option, your phone or tablet will
+never see the PiPedal hotspot and your Wi-Fi router at the same time.
 
-- Your Raspberry Pi can also have simultaneous access to a Wi-Fi router access point when the Wi-Fi Direct connection is enabled.
+If you normally connect to your Raspberry Pi through a Wi-Fi router, <b><i>Not at home</i></b> is a good choice. The
+PiPedal hotspot will be automatically turned off whenever your home Wi-Fi router is in range, and automatically turned on
+when you are out of range of your home Wi-Fi router.
 
-- Wi-Fi Direct connections are backward compatible with Wi-Fi access points if you are using an older device. Look for the DIRECT-xx-YourDeviceName access point.
-  But if you use a legacy connection, the connecting device cannot have a simultanous Wi-Fi router connection.
+If there are multiple locations, and multiple Wi-Fi routers you use with PiPedal on a regular basis, you can choose to start the 
+PiPedal Wi-Fi hotspot when <b><i>No remembered Wi-Fi connections</i></b> are visible, but this is a riskier option. The PiPedal hotspot will be automatically turned on if there are no
+Wi-Fi access points in range that you have previously connected to from your Raspberry Pi, and will be automatically turned on otherwise.
+The risk is that you could find yourself unable to connect to your Raspberry Pi when performing
+at a local bar, after you have used your Rasberry Pi to connect to the Wi-Fi access point at the coffee shop nextdoor. (Public Wi-Fi access
+points usually won't work because devices that are connected to a public access point can't connect to each other).
+Will you ever do that? Probably not. But there is some risk that you might find yourself unable to connect at a live venue. Whether that's an
+acceptable risk is up to you.
 
-If you use the PiPedal Android app, the Android app will manage discovery and setting up of Wi-Fi direct connections to your Raspberry Pi device automatically; but you must complete the initial configuration using a direct web connection first.
-     
-PC support for Wi-Fi Direct connections varies dramatically. Modern PCs support Wi-Fi Direct; but you may find it easier to communicate with PiPedal via your Wi-Fi router. Configure PiPedal to use a Wi-Fi connection as well as a Wi-Fi Direct access point (or connect an ethernet cable to your Raspberry Pi). Just remember to configure your phone to use a Wi-Fi Diret connection _before_ you take PiPedal out on a gig, because you won't have a Wi-Fi router then.
+Typically, when you're away from home, there's no easy way to connect to your Raspberry Pi from a laptop in order to
+correct the problem. So you should carefully test that your auto-hotspot configuration works as expected before you adventure
+away from home with PiPedal.
 
-PiPedal advertises the address of the Raspberry Pi host  machine via Multi-cast DNS (M-DNS). You should be able to establish web connections to the Raspberry Pi using the address `http://<hostname-of-your-pi>.local/`, no matter how you are connected.
-     
-Older devices may not support Wi-Fi Direct connections; but they will be able to use the Wi-Fi Direct connection as an ordinary Wi-Fi Hotspot. But they won't have access to the Internet over your Wi-Fi router while they have a connection with your Raspberry Pi.
+### Connecting to PiPedal Using a Laptop when you are Away From Home
 
-You _must_ select the correct country when setting up your Wi-Fi Direct connection. Regulations for use of Wi-Fi vary greatly from coutry to country, and define both the channels you are allowed to use, and the features and signal strength of Wi-Fi connections on those channels. 
+If your laptop has Wi-Fi support, you can use a laptop to connect to Raspberry Pi when you are away from home. 
 
-For best results, you should select Wi-Fi channel 1, 6 or 11 (referred to as the "Wi-Fi Direct Social Channels"). Doing so reduces the time it takes for other devices to discover the Raspberry Pi. While it is possible to use 5Ghz channels for Wi-Fi Direct, it may take some time for connecting devices to find your PiPedal device.
+When you are at home, connect both the Raspberry Pi and your Laptop to the same Wi-Fi router. Out of the box, Raspberry Pi OS is 
+configured to announce itself via mDNS/Bonjour, and Window and Mac operating systems can both use mDNS/Bonjour name resolution.
 
-Support for Apple/IOS devices: a client for Apple/IoS devices is in long-term development plans; but I don't own any Apple device on which to do development and testing. If you'd like to see an Apple/IOS client, your sponsorship would help. (The client performs automatic discovery and set up of Wi-Fi direct connections, and relies on the Web interface after that. Not difficult to implement. Just expensive.)
+Simply launch
+
+    http://raspberrypi
+
+(or supply the actual hostname of your Raspberry Pi if you have changed the default hostname).
+
+When you are away from home, you can use Wi-Fi hotspots to connect your laptop and your Raspberry Pi device. You can either configure 
+your laptop to provide a Wi-Fi hotspot, and then get your Raspberry Pi to connect to the hotspot on your laptop. Raspberry Pi OS will 
+automatically connect to your laptop hotspot whenever it sees it, after you have connected for the first time, and entered login 
+credentials on your Raspberry Pi. After the first time, all you need to do is turn on your laptop hotspot, and Raspberry Pi OS will 
+connect to it. 
+
+Usually, you cannect from your laptop using the same web address:  http://raspberrpi (or the hostname of your raspberry pi, if you have 
+changed it). Unlike Android phones (where mDNS name resolution doesn't work on Android-hosted hotspots), mDNS/Bonjour name resolution usually 
+works on laptop-hosted hotspots when using Windows or Mac OS. If are running Linux on your laptop, you may need to install and configure the
+Avahi package to get mDNS/Bonjour name resolution to work.
+
+And if that doesn't work, you can configure PiPedal to launch an auto-hotspot, and then connect from your laptop to the PiPedal hotspot on your Raspberry Pi.
+When the Raspberry Pi hosts the hotspot, mDNS discovery is definitely enabled; so you should be able to connect using http://raspberrypi. But if that doesn't work, PiPedal's IP address will always be 10.40.1, when the PiPedal Wi-Fi hotspot is running, so you can always connect using  http://10.40.0.1.
+
+
 
 --------
 [<< Installing PiPedal](Installing.md)  | [Up](Documentation.md) | | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)
