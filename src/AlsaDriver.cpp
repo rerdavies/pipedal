@@ -1422,45 +1422,58 @@ namespace pipedal
                     }
 
                     // snd_pcm_wait(captureHandle, 1);
-
-                    ssize_t framesRead;
-                    if ((framesRead = ReadBuffer(captureHandle, this->rawCaptureBuffer, bufferSize)) < 0)
+                    ssize_t framesToRead = bufferSize;
+                    ssize_t framesRead = 0;
+                    bool xrun = false;
+                    while (framesToRead != 0)
                     {
-                        this->driverHost->OnUnderrun();
-                        auto state = snd_pcm_state(playbackHandle);
-                        XrunRecoverInputUnderrun(captureHandle, framesRead);
-                        continue;
-                    }
-                    else
-                    {
-                        cpuUse.AddSample(ProfileCategory::Read);
-                        if (framesRead == 0)
-                            continue;
-                        if (framesRead != bufferSize)
-                        {
-                            throw PiPedalStateException("Invalid read.");
-                        }
-
-                        (this->*copyInputFn)(framesRead);
-                        cpuUse.AddSample(ProfileCategory::Driver);
-
-                        this->driverHost->OnProcess(framesRead);
-
-                        cpuUse.AddSample(ProfileCategory::Execute);
-
-                        (this->*copyOutputFn)(framesRead);
-                        cpuUse.AddSample(ProfileCategory::Driver);
-                        // process.
-
-                        ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer, framesRead);
-
-                        if (err < 0)
+                        ssize_t thisTime = framesToRead;
+                        ssize_t nFrames;
+                        if ((nFrames = ReadBuffer(
+                            captureHandle, 
+                            this->rawCaptureBuffer + this->captureFrameSize*framesRead, 
+                            bufferSize)) < 0)
                         {
                             this->driverHost->OnUnderrun();
-                            XrunRecoverOutputOverrun(playbackHandle, err);
+                            auto state = snd_pcm_state(playbackHandle);
+                            XrunRecoverInputUnderrun(captureHandle, nFrames);
+                            xrun = true;
+                            break;
                         }
-                        cpuUse.AddSample(ProfileCategory::Write);
+                        framesRead += nFrames;
+                        framesToRead -= nFrames; 
                     }
+                    if (xrun)
+                    {
+                        continue;
+                    }
+                    cpuUse.AddSample(ProfileCategory::Read);
+                    if (framesRead == 0)
+                        continue;
+                    if (framesRead != bufferSize)
+                    {
+                        throw PiPedalStateException("Invalid read.");
+                    }
+
+                    (this->*copyInputFn)(framesRead);
+                    cpuUse.AddSample(ProfileCategory::Driver);
+
+                    this->driverHost->OnProcess(framesRead);
+
+                    cpuUse.AddSample(ProfileCategory::Execute);
+
+                    (this->*copyOutputFn)(framesRead);
+                    cpuUse.AddSample(ProfileCategory::Driver);
+                    // process.
+
+                    ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer, framesRead);
+
+                    if (err < 0)
+                    {
+                        this->driverHost->OnUnderrun();
+                        XrunRecoverOutputOverrun(playbackHandle, err);
+                    }
+                    cpuUse.AddSample(ProfileCategory::Write);
                 }
             }
             catch (const std::exception &e)
