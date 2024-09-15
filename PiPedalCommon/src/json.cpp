@@ -632,6 +632,60 @@ void json_reader::throw_format_error(const char*error)
 
 }
 
+static std::string timePointToISO8601(const std::chrono::system_clock::time_point &tp)
+{
+    auto tt = std::chrono::system_clock::to_time_t(tp);
+    std::tm tm = *std::gmtime(&tt);
+    std::stringstream ss;
+    ss << std::put_time(&tm,"%Y-%m-%dT%H:%M:%S") << "Z";
+    return ss.str();
+    
+}
+static std::chrono::system_clock::time_point ISO8601ToTimePoint(const std::string&timeString)
+{
+    if (timeString.empty())
+    {
+        return std::chrono::system_clock::time_point();
+    }
+    if (timeString.back() != 'Z')
+    {
+        throw std::runtime_error("Time string is not in UTC Z timezone. Time-zones are not supported.");
+    }
+
+    std::tm tm = {};
+    std::istringstream ss(timeString);
+    ss >> std::get_time(&tm,"%Y-%m-%dT%H:%M:%S"); 
+    if (ss.fail())
+    {
+        throw std::runtime_error("Failed to parse ISO 8601 time string.");
+    }
+    time_t tt;
+    #ifdef _WIN32
+    tt = _mkgmtime(&tm);
+    #else 
+    tt = timegm(&tm);
+    #endif
+    if (tt == -1)
+    {
+        throw std::runtime_error("Failed to conver ISO 8601 time string.");
+    }
+    return std::chrono::system_clock::from_time_t(tt);
+}
+
+void json_writer::write (const std::chrono::system_clock::time_point &time)
+{
+    std::string timeString = timePointToISO8601(time);
+    write(timeString);
+}
+
+void json_reader::read(std::chrono::system_clock::time_point *value)
+{
+    std::string timeString;
+    read(&timeString);
+    *value = ISO8601ToTimePoint(timeString);
+}
+        
+
 
 // void json_writer::write(const json_variant &value)
 // {

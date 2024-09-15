@@ -1,7 +1,4 @@
 
-- Shutdown/reboot midi bindings
-- Midi binding for hotspotManager.
-
 - verify that scanning doesn't cause overruns.
 - address change handlers in client (and browser?)
 - Keybaord escape for hotspotManager.

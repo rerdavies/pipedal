@@ -19,6 +19,7 @@
 
 #pragma once
 #include <mutex>
+#include "UpdaterStatus.hpp"
 #include "PluginHost.hpp"
 #include "GovernorSettings.hpp"
 #include "Pedalboard.hpp"
@@ -30,7 +31,6 @@
 #include <functional>
 #include <filesystem>
 #include "Banks.hpp"
-#include "Updater.hpp"
 #include "PiPedalConfiguration.hpp"
 #include "JackServerSettings.hpp"
 #include "WifiConfigSettings.hpp"
@@ -48,6 +48,7 @@ namespace pipedal
     struct RealtimeMidiProgramRequest;
     struct RealtimeNextMidiProgramRequest;
     class Lv2PluginChangeMonitor;
+    class Updater;
 
     class IPiPedalModelSubscriber
     {
@@ -101,8 +102,8 @@ namespace pipedal
     private:
         std::unique_ptr<HotspotManager> hotspotManager;
 
+        std::unique_ptr<Updater> updater;
         UpdateStatus currentUpdateStatus;
-        Updater updater;
         void OnUpdateStatusChanged(const UpdateStatus&updateStatus);
         std::function<void(void)> restartListener;
 

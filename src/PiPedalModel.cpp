@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Robin Davies
+// Copyright (c) 2022-2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -38,6 +38,7 @@
 #include "HotspotManager.hpp"
 #include "DBusToLv2Log.hpp"
 #include "SysExec.hpp"
+#include "Updater.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -69,7 +70,8 @@ PiPedalModel::PiPedalModel()
     : pluginHost(),
       atomConverter(pluginHost.GetMapFeature())
 {
-    this->currentUpdateStatus = updater.GetCurrentStatus();
+    this->updater = Updater::Create();
+    this->currentUpdateStatus = updater->GetCurrentStatus();
     this->pedalboard = Pedalboard::MakeDefault();
 #if JACK_HOST
     this->jackServerSettings = this->storage.GetJackServerSettings(); // to get onboarding flag.
@@ -77,7 +79,7 @@ PiPedalModel::PiPedalModel()
 #else
     this->jackServerSettings = this->storage.GetJackServerSettings();
 #endif
-    updater.SetUpdateListener(
+    updater->SetUpdateListener(
         [this](const UpdateStatus &updateStatus)
         {
             this->OnUpdateStatusChanged(updateStatus);
@@ -2212,24 +2214,24 @@ void PiPedalModel::FireUpdateStatusChanged(const UpdateStatus &updateStatus)
 UpdateStatus PiPedalModel::GetUpdateStatus()
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    return updater.GetCurrentStatus();
+    return updater->GetCurrentStatus();
 }
 
 void PiPedalModel::UpdateNow(const std::string &updateUrl)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     std::filesystem::path fileName, signatureName;
-    updater.DownloadUpdate(updateUrl, &fileName, &signatureName);
+    updater->DownloadUpdate(updateUrl, &fileName, &signatureName);
 
     adminClient.InstallUpdate(fileName);
 }
 void PiPedalModel::ForceUpdateCheck()
 {
-    updater.ForceUpdateCheck();
+    updater->ForceUpdateCheck();
 }
 void PiPedalModel::SetUpdatePolicy(UpdatePolicyT updatePolicy)
 {
-    updater.SetUpdatePolicy(updatePolicy);
+    updater->SetUpdatePolicy(updatePolicy);
 }
 
 static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::string &deviceId)

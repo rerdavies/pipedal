@@ -33,6 +33,7 @@
 #include <concepts>
 #include <limits>
 #include <stdexcept>
+#include <chrono>
 
 #define DECLARE_JSON_MAP(CLASSNAME) \
     static pipedal::json_map::storage_type<CLASSNAME> jmap
@@ -367,6 +368,7 @@ namespace pipedal
         {
             os << value;
         }
+        void write (const std::chrono::system_clock::time_point &time);
 
     private:
         static void throw_encoding_error();
@@ -995,6 +997,8 @@ namespace pipedal
             if (is_.fail())
                 throw JsonException("Invalid format.");
         }
+        void read(std::chrono::system_clock::time_point *value);
+
         template <typename T>
         void read(std::vector<T> *value)
         {

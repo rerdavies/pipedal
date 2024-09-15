@@ -151,7 +151,7 @@ set (PIPEDAL_SOURCES
     HotspotManager.cpp HotspotManager.hpp
     UpdateResults.cpp UpdateResults.hpp
     UpdaterSecurity.hpp
-    Updater.cpp Updater.hpp
+    Updater.cpp Updater.hpp UpdaterStatus.hpp
     Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp
