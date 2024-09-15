@@ -202,8 +202,16 @@ namespace pipedal
         {
             Close();
 #ifdef ALSADRIVER_CONFIG_DBG
-            snd_output_close(snd_output);
-            snd_pcm_status_free(snd_status);
+            if (snd_output)
+            {
+                snd_output_close(snd_output);
+                snd_output = nullptr;
+            }
+            if (snd_status)
+            {
+                snd_pcm_status_free(snd_status);
+                snd_status = nullptr;
+            }
 #endif
         }
 
@@ -1606,8 +1614,8 @@ namespace pipedal
             int dataLength = 0;
             int dataIndex = 0;
             size_t statusBytesRemaining = 0;
-            size_t data0;
-            size_t data1;
+            size_t data0 =0;
+            size_t data1 = 0;
 
             size_t eventCount = 0;
             MidiEvent events[MAX_MIDI_EVENT];
@@ -1655,15 +1663,15 @@ namespace pipedal
             }
             void Close()
             {
-                if (hIn)
-                {
-                    snd_rawmidi_close(hIn);
-                    hIn = nullptr;
-                }
                 if (hInParams)
                 {
                     snd_rawmidi_params_free(hInParams);
                     hInParams = 0;
+                }
+                if (hIn)
+                {
+                    snd_rawmidi_close(hIn);
+                    hIn = nullptr;
                 }
             }
 
@@ -1875,14 +1883,21 @@ namespace pipedal
         {
             const auto &devices = channelSelection.GetInputMidiDevices();
 
-            midiStates.resize(devices.size());
+            midiStates.reserve(devices.size());
 
             for (size_t i = 0; i < devices.size(); ++i)
             {
                 const auto &device = devices[i];
-                MidiState *state = new MidiState();
-                midiStates[i] = state;
-                state->Open(device);
+                MidiState *midiState = nullptr;
+                try {
+                    midiState = new MidiState();
+                    midiState->Open(device);
+                    midiStates.push_back(midiState);
+                } catch (const std::exception &e)
+                {
+                    // logged already.
+                    delete midiState;
+                }
             }
         }
 
@@ -2098,16 +2113,26 @@ namespace pipedal
             throw;
         }
         if (playbackHwParams)
+        {
             snd_pcm_hw_params_free(playbackHwParams);
-        if (captureHwParams)
+            playbackHwParams = nullptr;
+        }
+
+        if (captureHwParams) {
             snd_pcm_hw_params_free(captureHwParams);
+            captureHwParams = nullptr;
+        }
 
         if (playbackHandle)
         {
             snd_pcm_close(playbackHandle);
+            playbackHandle = nullptr;
         }
         if (captureHandle)
+        {
             snd_pcm_close(captureHandle);
+            captureHandle = nullptr;
+        }
         return result;
     }
 
