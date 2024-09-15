@@ -17,46 +17,13 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "TemporaryFile.hpp"
-#include <fstream>
+#pragma once 
+namespace pipedal {
+    enum class RealtimeMidiEventType {
+        Shutdown,
+        Reboot,
+        StartHotspot,
+        StopHotspot
+    };
 
-using namespace pipedal;
-
-
-TemporaryFile::TemporaryFile(const std::filesystem::path&directory)
-{
-    namespace fs = std::filesystem;
-    fs::create_directories(directory);
-
-    // Generate a unique filename
-    std::string filename;
-    do {
-        std::string random_string(8, '\0');
-        const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-        
-        srand(static_cast<unsigned int>(time(nullptr)));
-        for (int i = 0; i < 8; ++i) {
-            random_string[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
-        }
-        
-        filename = directory / ("temp_" + random_string + ".tmp");
-    } while (fs::exists(filename));
-
-    // Create the file
-    std::ofstream file(filename);
-    if (!file) {
-        throw std::runtime_error("Failed to create temporary file");
-    }
-    file.close();
-
-    this->path = filename;
-
-}
-TemporaryFile::~TemporaryFile()
-{
-    if (!path.empty())
-    {
-        std::filesystem::remove(path);
-    }
-}
-
+};

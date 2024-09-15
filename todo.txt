@@ -1,14 +1,9 @@
-Installer:
 
-    sudo systemctl restart polkitd.service
-
-- Did I break ALSA device config?be
-
+- Shutdown/reboot midi bindings
+- Midi binding for hotspotManager.
 
 - verify that scanning doesn't cause overruns.
 - address change handlers in client (and browser?)
-- Notify hotspotManager on settings changed.
-- Midi binding for hotspotManager.
 - Keybaord escape for hotspotManager.
 - verify stripping in installer.
 - verify update with no keyring.
@@ -17,21 +12,15 @@ Installer:
 X Review docs changes once we go live.
 
 - Back button after reloads on Android.
-- pidedal_nm_p2p2 service not started from web ui.
-- pipedal_nm_p2pd connection not visible.
-- hdcpcd spurious ipv6 error messages.
-- also stopping on startup, even with big buffers.
-- pipedald admin needs to fork in response to a wifi p2p update or do it on a thread.
 
 Localisation: support non-UTF8 code pages.
 - unicode commandline arguments.
-- unicode filenames.
+- review unicode filenames (this is probably ok)
 
 
 
 - make app use the same theme settings as the website.
 - BUG: gcs when we have an animated output control
-- Shutdown/reboot midi bindings
 - versioning.
 - do we want to take a second crack at establishin multi-p2p connections with the driver_param?
 

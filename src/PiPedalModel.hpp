@@ -78,9 +78,11 @@ namespace pipedal
         virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites) = 0;
         virtual void OnShowStatusMonitorChanged(bool show) = 0;
         virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) = 0;
+
         //virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
         virtual void OnErrorMessage(const std::string&message) = 0;
         virtual void OnLv2PluginsChanging() = 0;
+        virtual void OnNetworkChanging(bool hotspotConnected) = 0;
         virtual void Close() = 0;
     };
 
@@ -203,6 +205,8 @@ namespace pipedal
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
         virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) override;
         virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom*atomValue) override;
+        virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
+
 
         void OnNotifyPatchProperty(uint64_t instanceId, LV2_URID outputAtomProperty, const std::string &atomJson);
 
@@ -227,7 +231,7 @@ namespace pipedal
         PiPedalModel();
         virtual ~PiPedalModel();
 
-
+        void RequestShutdown(bool restart);
 
         virtual PostHandle Post(PostCallback&&fn);
         virtual PostHandle PostDelayed(const clock::duration&delay,PostCallback&&fn);

@@ -459,7 +459,6 @@ private:
     {
         return model.GetAdminClient();
     }
-    void RequestShutdown(bool restart);
 
     std::recursive_mutex writeMutex;
     PiPedalModel &model;
@@ -1246,15 +1245,12 @@ public:
         }
         else if (message == "shutdown")
         {
-            PresetIndex newIndex;
-
-            RequestShutdown(false);
+            model.RequestShutdown(false);
             this->Reply(replyTo, "shutdown");
         }
         else if (message == "restart")
         {
-            PresetIndex newIndex;
-            RequestShutdown(true);
+            model.RequestShutdown(true);
             this->Reply(replyTo, "restart");
         }
         else if (message == "deletePresetItem")
@@ -1627,6 +1623,18 @@ private:
         Send("onLv2PluginsChanging",true);
         Flush();
     }
+    virtual void OnNetworkChanging(bool hotspotConnected) override {
+        try {
+            Send("onNetworkChanging",hotspotConnected);
+            Flush();
+
+        } catch (const std::exception&ignored)
+        {
+
+        }
+
+    }
+
 
     virtual void OnErrorMessage(const std::string&message)
     {
@@ -1982,38 +1990,3 @@ std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &
     return std::make_shared<PiPedalSocketFactory>(model);
 }
 
-void PiPedalSocketHandler::RequestShutdown(bool restart)
-{
-    if (GetAdminClient().CanUseAdminClient())
-    {
-        GetAdminClient().RequestShutdown(restart);
-    }
-    else
-    {
-        // ONLY works when interactively logged in.
-        std::stringstream s;
-        s << "/usr/sbin/shutdown ";
-        if (restart)
-        {
-            s << "-r";
-        }
-        else
-        {
-            s << "-P";
-        }
-        s << " now";
-
-        if (sysExec(s.str().c_str()) != EXIT_SUCCESS)
-        {
-            Lv2Log::error("shutdown failed.");
-            if (restart)
-            {
-                throw new PiPedalStateException("Restart request failed.");
-            }
-            else
-            {
-                throw new PiPedalStateException("Shutdown request failed.");
-            }
-        }
-    }
-}

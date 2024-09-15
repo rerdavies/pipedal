@@ -682,6 +682,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 return "Downloading update...";
             case State.InstallingUpdate:
                 return "Installing update....";
+            case State.HotspotChanging:
+                return "Network connection changing..."
             default:
                 return "Reconnecting...";
         }

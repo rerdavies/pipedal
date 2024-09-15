@@ -127,6 +127,19 @@ namespace pipedal
         void DownloadUpdate(const std::string &url, std::filesystem::path*file, std::filesystem::path*signatureFile);
         UpdateStatus GetCurrentStatus() const { return this->currentResult; }
     private:
+        using clock = std::chrono::steady_clock;
+
+        void RetryAfter(clock::duration delay);
+
+        template<typename REP,typename PERIOD> 
+        void RetryAfter(std::chrono::duration<REP,PERIOD> duration)
+        {
+            RetryAfter(std::chrono::duration_cast<clock::duration>(duration));
+        }
+
+        void SaveRetryTime(const std::chrono::system_clock::time_point &time);
+        clock::time_point LoadRetryTime();
+
         std::string GetUpdateFilename(const std::string &url);
         std::string GetSignatureUrl(const std::string &url);
 
@@ -140,7 +153,6 @@ namespace pipedal
 
         UpdateStatus cachedUpdateStatus;
         bool stopped = false;
-        using clock = std::chrono::steady_clock;
 
         int event_reader = -1;
         int event_writer = -1;
@@ -154,5 +166,6 @@ namespace pipedal
         bool hasInfo = false;
         UpdateStatus currentResult;
         static clock::duration updateRate;
+        clock::time_point updateRetryTime;
     };
 }

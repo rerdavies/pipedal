@@ -37,6 +37,7 @@
 #include "Lv2PluginChangeMonitor.hpp"
 #include "HotspotManager.hpp"
 #include "DBusToLv2Log.hpp"
+#include "SysExec.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -1957,7 +1958,7 @@ void PiPedalModel::CancelMonitorPatchProperty(int64_t clientId, int64_t clientHa
             atomOutputListeners.erase(atomOutputListeners.begin() + i);
             break;
         }
-    }
+    } 
     if (midiEventListeners.size() == 0)
     {
         audioHost->SetListenForMidiEvent(false);
@@ -2343,14 +2344,107 @@ void PiPedalModel::OnNetworkChanging(bool ethernetConnected,bool hotspotConnecte
 {
     CancelNetworkChangingTimer();
     this->networkChangingDelayHandle = 
-        PostDelayed(std::chrono::seconds(5),
+        PostDelayed(std::chrono::seconds(10), // takes a while for network configuration to be fully applied.
         [this,ethernetConnected,hotspotConnected]() {
             this->networkChangingDelayHandle = 0;
             OnNetworkChanged(ethernetConnected,hotspotConnected);
         }
         );
+
+    // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+    std::vector<IPiPedalModelSubscriber *> t;
+    t.reserve(this->subscribers.size());
+
+    for (size_t i = 0; i < subscribers.size(); ++i)
+    {
+        t.push_back(this->subscribers[i]);
+    }
+    for (size_t i = 0; i < t.size(); ++i)
+    {
+        t[i]->OnNetworkChanging(hotspotConnected);
+    }
+
 }
 void PiPedalModel::OnNetworkChanged(bool ethernetConnected, bool hotspotConnected)
 {
     FireNetworkChanged();
+}
+
+void PiPedalModel::OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) 
+{
+    try {
+        switch (eventType)
+        {
+            case RealtimeMidiEventType::Shutdown:
+                {
+                    this->RequestShutdown(false);
+                }
+                break;
+            case RealtimeMidiEventType::Reboot:
+                {
+                    this->RequestShutdown(true);
+                }
+                break;
+            case RealtimeMidiEventType::StartHotspot:
+            {
+                WifiConfigSettings settings = storage.GetWifiConfigSettings();
+                if (!settings.hasSavedPassword_)
+                {
+                    throw std::runtime_error("Can't start Wi-Fi hotspot because no password has been configured.");
+                }
+                settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Always;
+                this->SetWifiConfigSettings(settings);
+            }
+            break;
+            case RealtimeMidiEventType::StopHotspot:
+            {
+                WifiConfigSettings settings = storage.GetWifiConfigSettings();
+                settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Never;
+                this->SetWifiConfigSettings(settings);
+            }
+            break;
+
+            default:
+                break;
+        }
+    } catch (const std::exception&e)
+    {
+        Lv2Log::error(SS("Failed to process realtime MIDI event. " << e.what()));
+    }
+}
+
+void PiPedalModel::RequestShutdown(bool restart)
+{
+    if (GetAdminClient().CanUseAdminClient())
+    {
+        GetAdminClient().RequestShutdown(restart);
+    }
+    else
+    {
+        // ONLY works when interactively logged in.
+        std::stringstream s;
+        s << "/usr/sbin/shutdown ";
+        if (restart)
+        {
+            s << "-r";
+        }
+        else
+        {
+            s << "-P";
+        }
+        s << " now";
+
+        if (sysExec(s.str().c_str()) != EXIT_SUCCESS)
+        {
+            Lv2Log::error("shutdown failed.");
+            if (restart)
+            {
+                throw new PiPedalStateException("Restart request failed.");
+            }
+            else
+            {
+                throw new PiPedalStateException("Shutdown request failed.");
+            }
+        }
+    }
 }

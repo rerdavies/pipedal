@@ -52,6 +52,7 @@ export enum State {
     ReloadingPlugins,
     DownloadingUpdate,
     InstallingUpdate,
+    HotspotChanging,
 };
 
 class UpdatedError extends Error {
@@ -65,6 +66,7 @@ export enum ReconnectReason {
     LoadingSettings,
     ReloadingPlugins,
     Updating,
+    HotspotChanging
 };
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
@@ -466,6 +468,10 @@ export class PiPedalModel //implements PiPedalModel
             case ReconnectReason.Updating:
                 this.setState(State.InstallingUpdate);
                 break;
+            case ReconnectReason.HotspotChanging:
+                this.setState(State.HotspotChanging);
+                this.startHotspotReconnectTimer();
+                break;
 
         }
         return true;
@@ -643,8 +649,12 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onUpdateStatusChanged") {
             let updateStatus = new UpdateStatus().deserialize(body);
             this.onUpdateStatusChanged(updateStatus);
+        } else if (message === "onNetworkChanging")
+        {
+            this.onNetworkChanging(body as boolean);
         }
     }
+
 
     private updateLaterTimeout?: NodeJS.Timeout = undefined;
 
@@ -789,7 +799,7 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
     onSocketReconnected() {
-
+        this.cancelOnNetworkChanging();
         if (this.isAndroidHosted()) {
             this.androidHost?.setDisconnected(false);
         }
@@ -943,7 +953,7 @@ export class PiPedalModel //implements PiPedalModel
                 return this.webSocket.connect();
             })
             .catch((error) => {
-                this.setError("Failed to connect to server. " + this.socketServerUrl);
+                this.setError("Failed to connect to server. (" + this.socketServerUrl + ")");
                 return false;
             })
             .then(() => {
@@ -2893,6 +2903,100 @@ export class PiPedalModel //implements PiPedalModel
         let url = window.location.href.split('#')[0];
         window.location.href = url;
         //window.location.reload();
+    }
+
+    private networkChanging: boolean = false;
+    private networkChanging_expectHotspot = false;
+    private expectNetworkChangeTimeout?: NodeJS.Timeout = undefined;
+    private hotspotReconnectTimer?: NodeJS.Timeout = undefined;
+
+    async detectServer(address: string)
+    {
+        let port = window.location.port;
+        let newUrl = new URL("http://" + address + ":" + port + "/manifest.json");
+
+        try {
+            let response = await fetch(newUrl);
+            if (response.ok)
+            {
+                return "http://" + address +":"+ port;
+            }
+            return "";
+        } catch (error: any)
+        {
+            return "";
+        }
+    }
+    async pollForLiveServer() {
+        let wifiConfigSettings = this.wifiConfigSettings.get();
+        if (wifiConfigSettings.mdnsName.length !== 0)
+        {
+            let newUrl = await this.detectServer(wifiConfigSettings.mdnsName);
+            if (newUrl.length !== 0)
+            {
+                return newUrl;
+            }
+        }
+        if (this.networkChanging_expectHotspot)
+        {
+            let newUrl = await this.detectServer("10.40.0.1");
+            if (newUrl.length !== 0)
+            {
+                return newUrl;
+            }
+        }
+        return "";
+    }
+    cancelHotspotReconnectTimer()
+    {
+        if (this.hotspotReconnectTimer)
+        {
+            clearTimeout(this.hotspotReconnectTimer);
+        }
+
+    }
+    startHotspotReconnectTimer()
+    {
+        // poll for access to a running pipedal server
+        this.hotspotReconnectTimer = setTimeout(
+            async () => {
+                let newUrl = await this.pollForLiveServer();
+                if (newUrl.length === 0)
+                {
+                    this.startHotspotReconnectTimer();
+                } else {
+                    this.cancelOnNetworkChanging();
+                    window.location.replace(newUrl);
+                }
+            },
+            5*1000);
+        
+    }
+    cancelOnNetworkChanging()
+    {
+        this.cancelHotspotReconnectTimer();
+        if (this.expectNetworkChangeTimeout)
+        {
+            clearTimeout(this.expectNetworkChangeTimeout);
+            this.expectNetworkChangeTimeout = undefined;
+        }
+        this.networkChanging = false;
+        this.expectDisconnect(ReconnectReason.Disconnected);
+    }
+    onNetworkChanging(hotspotConnected: boolean)
+    {
+        this.cancelOnNetworkChanging();
+
+        this.networkChanging = true;
+        this.networkChanging_expectHotspot = hotspotConnected;
+        this.expectDisconnect(ReconnectReason.HotspotChanging);
+
+        this.expectNetworkChangeTimeout = setTimeout(
+            () => {
+                this.cancelOnNetworkChanging();
+            },
+            30*1000);
+
     }
 };
 

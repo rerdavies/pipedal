@@ -725,6 +725,12 @@ static std::vector<std::vector<uint8_t>> GetAccessPointSsids(std::vector<AccessP
 }
 void HotspotManagerImpl::MaybeStartHotspot()
 {
+    if (this->state == State::Error) return;
+
+    if (!wlanDevice || !wlanWirelessDevice)
+    {
+        // devices are transitioning. Do nothing.
+    }
     std::vector<AccessPoint::ptr> allAccessPoints = GetAllAccessPoints();
     std::vector<std::vector<uint8_t>> allAccessPointSsids = GetAccessPointSsids(allAccessPoints);
     std::vector<std::vector<uint8_t>> connectableSsids = GetKnownVisibleAccessPoints(allAccessPointSsids); // all the ssids currently visible for which we have credentials.
@@ -820,7 +826,7 @@ void HotspotManagerImpl::StartHotspot()
             wireless["band"] = "a";
             wireless["band"] = "bg";
 
-            uint32_t iChannel;
+            uint32_t iChannel = 0;
             auto channel = this->wifiConfigSettings.channel_;
             if (channel.length() != 0)
             {

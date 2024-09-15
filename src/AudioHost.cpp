@@ -296,6 +296,10 @@ private:
 
     SystemMidiBinding nextMidiBinding;
     SystemMidiBinding prevMidiBinding;
+    SystemMidiBinding startHotspotMidiBinding;
+    SystemMidiBinding stopHotspotMidiBinding;
+    SystemMidiBinding rebootMidiBinding;
+    SystemMidiBinding shutdownMidiBinding;
 
     JackChannelSelection channelSelection;
     std::atomic<bool> active = false;
@@ -742,6 +746,34 @@ private:
                                 this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId), -1);
                             }
                         }
+                        else if (this->shutdownMidiBinding.IsMatch(event))
+                        {
+                            if (shutdownMidiBinding.IsTriggered(event))
+                            {
+                                this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::Shutdown);
+                            }
+                        }
+                        else if (this->rebootMidiBinding.IsMatch(event))
+                        {
+                            if (rebootMidiBinding.IsTriggered(event))
+                            {
+                                this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::Reboot);
+                            }
+                        }
+                        else if (this->startHotspotMidiBinding.IsMatch(event))
+                        {
+                            if (startHotspotMidiBinding.IsTriggered(event))
+                            {
+                                this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::StartHotspot);
+                            }
+                        }
+                        else if (this->stopHotspotMidiBinding.IsMatch(event))
+                        {
+                            if (stopHotspotMidiBinding.IsTriggered(event))
+                            {
+                                this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::StopHotspot);
+                            }
+                        }
                         else if (midiProgramChangePending)
                         {
                             // defer the message for processing after the program change has completed.
@@ -1181,6 +1213,12 @@ public:
                                 RealtimeNextMidiProgramRequest request;
                                 hostReader.read(&request);
                                 pNotifyCallbacks->OnNotifyNextMidiProgram(request);
+                            }
+                            else if (command == RingBufferCommand::RealtimeMidiEvent)
+                            {
+                                RealtimeMidiEventRequest request;
+                                hostReader.read(&request);
+                                pNotifyCallbacks->OnNotifyMidiRealtimeEvent(request.eventType);
                             }
                             else if (command == RingBufferCommand::Lv2ErrorMessage)
                             {
@@ -1710,6 +1748,7 @@ void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindin
 {
     for (auto i = bindings.begin(); i != bindings.end(); ++i)
     {
+
         if (i->symbol() == "nextProgram")
         {
             this->nextMidiBinding.SetBinding(*i);
@@ -1717,6 +1756,20 @@ void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindin
         else if (i->symbol() == "prevProgram")
         {
             this->prevMidiBinding.SetBinding(*i);
+        } else if (i->symbol() == "startHotspot")
+        {
+            this->startHotspotMidiBinding.SetBinding(*i);
+        } else if (i->symbol() == "stopHotspot")
+        {
+            this->stopHotspotMidiBinding.SetBinding(*i);
+        } else if (i->symbol() == "reboot")
+        {
+            this->rebootMidiBinding.SetBinding(*i);
+        } else if (i->symbol() == "shutdown")
+        {
+            this->shutdownMidiBinding.SetBinding(*i);
+        } else {
+            Lv2Log::error(SS("Invalid system midi binding: " << i->symbol()));
         }
     }
 }

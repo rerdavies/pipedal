@@ -146,6 +146,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    RealtimeMidiEventType.hpp
     DBusToLv2Log.cpp DBusToLv2Log.hpp
     HotspotManager.cpp HotspotManager.hpp
     UpdateResults.cpp UpdateResults.hpp
@@ -646,7 +647,7 @@ add_executable(pipedal_update
     UpdateMain.cpp 
     UpdateResults.cpp UpdateResults.hpp
     Lv2SystemdLogger.cpp Lv2SystemdLogger.hpp
-    UpdateResults.cpp UpdateResults.hpp
+    TemporaryFile.cpp TemporaryFile.hpp
     AdminInstallUpdate.cpp AdminInstallUpdate.hpp
 )
 

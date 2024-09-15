@@ -67,10 +67,9 @@
         useSystem = true;
         break;
     }
-    if (useSystem)
-    {
+    if (useSystem) {
       darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } 
+    }
 
     if (!darkMode) {
       let bgStyle = document.getElementById("bgStyle");
@@ -79,6 +78,22 @@
         bgStyle.setAttribute('media', "max-width: 1px");
       }
     }
+    function removeHashOnLoad() {
+      if (window.location.hash) {
+        // Store the hash value (without the '#' symbol)
+        var hash = window.location.hash.substring(1);
+
+        // Replace the current URL without the hash
+        var newUrl = window.location.href.replace(window.location.hash, '');
+
+        // Use HTML5 history API to change the URL without reloading the page
+        history.replaceState(null, document.title, newUrl);
+
+      }
+    }
+
+    // Run the function when the window loads
+    window.addEventListener('load', removeHashOnLoad);    
   </script>
 </head>
 

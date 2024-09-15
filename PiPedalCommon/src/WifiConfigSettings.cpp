@@ -30,6 +30,7 @@
 #include <sdbus-c++/sdbus-c++.h>
 #include <iostream>
 #include <memory>
+#include <unistd.h> // for gethostname()
 
 using namespace pipedal;
 using namespace std;
@@ -87,6 +88,18 @@ bool WifiConfigSettings::ValidateCountryCode(const std::string &text)
         return false;
     return std::isalpha(text[0]) && std::isalpha(text[1]);
 }
+
+static std::string GetHostName()
+{
+    char buffer[1024];
+    if (gethostname(buffer,1024) != 0)
+    {
+        buffer[0] = '\0';
+    }
+    buffer[1023] = '\0';
+    return buffer;
+}
+
 void WifiConfigSettings::Load()
 {
     try
@@ -103,7 +116,7 @@ void WifiConfigSettings::Load()
         }
         this->countryCode_ = getWifiCountryCode();
         this->enable_ = this->autoStartMode_ != (uint16_t)HotspotAutoStartMode::Never;
-        this->mdnsName_ = this->hotspotName_;
+        this->mdnsName_ = GetHostName();
     }
     catch (const std::exception &e)
     {
@@ -689,6 +702,7 @@ void WifiConfigSettings::ParseArguments(
     this->autoStartMode_ = (int16_t)startMode;
     this->enable_ = startMode != HotspotAutoStartMode::Never;
     this->homeNetwork_ = homeNetworkSsid;
+    this->mdnsName_ = GetHostName();
 
     this->countryCode_ = argv[0];
     this->hotspotName_ = argv[1];

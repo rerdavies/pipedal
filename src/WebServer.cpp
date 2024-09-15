@@ -1320,6 +1320,13 @@ void WebServerImpl::DisplayIpAddresses()
     std::string wifiAddress = getIpv4Address("wlan0");
     if (wifiAddress.length() != 0)
     {
-        Lv2Log::info(SS("Listening on Wi-Fi address " << wifiAddress << ":" << this->port));
+        if (wifiAddress == "10.42.0.1")
+        {
+            Lv2Log::info(SS("Listening on Wi-Fi hotspot address " << wifiAddress << ":" << this->port));
+        }
+        else
+        {
+            Lv2Log::info(SS("Listening on Wi-Fi address " << wifiAddress << ":" << this->port));
+        }
     }
 }

@@ -909,6 +909,9 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
     }
     try
     {
+        // apply policy changes we dropped into the polkit configuration files (allows pipedal_d to use NetworkManager dbus apis).
+        silentSysExec(SYSTEMCTL_BIN " restart polkit"); 
+
         DeployVarConfig();
 
         if (sysExec(GROUPADD_BIN " -f " AUDIO_SERVICE_GROUP_NAME) != EXIT_SUCCESS)

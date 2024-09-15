@@ -75,12 +75,12 @@ namespace pipedal {
         bool hasPassword_ = false;
         std::string password_;
         std::string channel_ = "";
+        std::string mdnsName_ = "pipedal";
 
         bool wifiWarningGiven_ = false;  // Do not use. Present only for backward compatibility.
         bool valid_ = false; // Do not use. Present only for backward compatibility.
     private:
         bool rebootRequired_ = false;  // Do not use. Present only for backward compatibility.
-        std::string mdnsName_ = "pipedal";
         bool enable_ = false; // Do not use. Present only for backward compatibility.
     public:
         bool IsEnabled() const { return autoStartMode_ != 0; }

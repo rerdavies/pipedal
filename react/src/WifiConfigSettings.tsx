@@ -28,6 +28,7 @@ export default class WifiConfigSettings {
 
         this.wifiWarningGiven = input.wifiWarningGiven;
         this.hotspotName = input.hotspotName;
+        this.mdnsName = input.mdnsName;
         this.hasPassword = input.hasPassword;
         this.password = input.password;
         this.countryCode = input.countryCode;
@@ -40,6 +41,7 @@ export default class WifiConfigSettings {
     autoStartMode: number = 0;
     hasSavedPassword: boolean = false;
     homeNetwork: string = "";
+    mdnsName: string = "";
     wifiWarningGiven: boolean = false;
     hasPassword: boolean = false;
     valid: boolean = false;

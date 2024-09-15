@@ -960,7 +960,7 @@ bool Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings
     if (!copyToSave.hasPassword_)
     {
         copyToSave.hasPassword_ = previousValue.hasPassword_;
-        copyToSave.password_ = previousValue.hasPassword_;
+        copyToSave.password_ = previousValue.password_;
         copyToSave.hasSavedPassword_ = previousValue.hasPassword_;
     } else {
         if (copyToSave.IsEnabled())
@@ -1409,7 +1409,7 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
 
 void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
 {
-    std::filesystem::path fileName = this->dataRoot / "SystemMidiBindings.json";
+    std::filesystem::path fileName = this->dataRoot / "config" / "SystemMidiBindings.json";
     pipedal::ofstream_synced f;
     f.open(fileName);
     if (f.is_open())
@@ -1422,19 +1422,39 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
 {
     std::vector<MidiBinding> result;
 
-    std::filesystem::path fileName = this->dataRoot / "SystemMidiBindings.json";
+    std::filesystem::path fileName = this->dataRoot / "config" / "SystemMidiBindings.json";
+    if (!std::filesystem::exists(fileName)) {
+        // pick up from legacy location?
+        fileName = this->configRoot / "config" / "SystemMidiBindings.json";
+    }
     std::ifstream f;
     f.open(fileName);
     if (f.is_open())
     {
-        json_reader reader(f);
-        reader.read(&result);
+        try {
+            json_reader reader(f);
+            reader.read(&result);
+            if (result.size() == 2)
+            {
+                result.push_back(MidiBinding::SystemBinding("stopHotspot"));
+                result.push_back(MidiBinding::SystemBinding("startHotspot"));
+                result.push_back(MidiBinding::SystemBinding("shutdown"));
+                result.push_back(MidiBinding::SystemBinding("reboot"));
+            }
+            return result;
+        }
+        catch (const std::exception&e)
+        {
+            Lv2Log::warning(SS("Can't read file " << fileName << ". " << e.what()));
+        }
     }
-    else
-    {
-        result.push_back(MidiBinding::SystemBinding("prevProgram"));
-        result.push_back(MidiBinding::SystemBinding("nextProgram"));
-    }
+    result.clear();
+    result.push_back(MidiBinding::SystemBinding("prevProgram"));
+    result.push_back(MidiBinding::SystemBinding("nextProgram"));
+    result.push_back(MidiBinding::SystemBinding("stopHotspot"));
+    result.push_back(MidiBinding::SystemBinding("startHotspot"));
+    result.push_back(MidiBinding::SystemBinding("shutdown"));
+    result.push_back(MidiBinding::SystemBinding("reboot"));
     return result;
 }
 

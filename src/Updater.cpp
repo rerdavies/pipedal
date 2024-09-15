@@ -35,6 +35,9 @@
 #include "UpdaterSecurity.hpp"
 #include "SysExec.hpp"
 #include "ofstream_synced.hpp"
+#include "TemporaryFile.hpp"
+#include "ofstream_synced.hpp"
+#include  <limits>
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -165,6 +168,15 @@ void Updater::SetUpdateListener(UpdateListener &&listener)
     }
 }
 
+static void LogNextStartTime(const std::chrono::steady_clock::time_point &clockTime) {
+    using namespace std::chrono;
+    // convert to system_clock;
+    auto delay = clockTime-steady_clock::now();
+    auto systemTime = system_clock::now() + duration_cast<system_clock::duration>(delay);
+    auto t = system_clock::to_time_t(systemTime);
+    Lv2Log::info(SS("Updater: Next update check at " << std::put_time(std::localtime(&t),"%Y-%m-%d %H:%M:%S")));
+
+}
 void Updater::ThreadProc()
 {
     SetThreadName("UpdateMonitor");
@@ -172,10 +184,28 @@ void Updater::ThreadProc()
     pfd.fd = this->event_reader;
     pfd.events = POLLIN;
 
+    auto lastRetryTime = clock::time_point();
+    this->updateRetryTime = LoadRetryTime();
     try {
         while (true)
         {
-            int ret = poll(&pfd, 1, std::chrono::duration_cast<std::chrono::milliseconds>(updateRate).count()); // 1000 ms timeout
+            if (updateRetryTime != lastRetryTime) // has retry time changed?
+            {
+                lastRetryTime = updateRetryTime;
+                if (updateRetryTime > clock::now())
+                {
+                    LogNextStartTime(updateRetryTime);
+                }
+            }
+            auto clockDelay = this->updateRetryTime-clock::now();
+            auto delayMs = std::chrono::duration_cast<std::chrono::milliseconds>(clockDelay).count();
+            if (delayMs > std::numeric_limits<int>::max()) // could be as little as 32 seconds on a 16-bit int system.
+            {
+                delayMs = std::numeric_limits<int>::max();
+            }
+
+
+            int ret = poll(&pfd, 1, (int)delayMs); // 1000 ms timeout
 
             if (ret == -1)
             {
@@ -184,7 +214,10 @@ void Updater::ThreadProc()
             }
             else if (ret == 0)
             {
-                CheckForUpdate(true);
+                if (clock::now() >= this->updateRetryTime)
+                {
+                    CheckForUpdate(true);
+                }
             }
             else
             {
@@ -195,6 +228,7 @@ void Updater::ThreadProc()
                 {
                     if (value == CHECK_NOW_EVENT)
                     {
+                        
                         CheckForUpdate(true);
                     }
                     else if (value == UNCACHED_CHECK_NOW_EVENT)
@@ -418,31 +452,145 @@ static void CheckUpdateHttpResponse(std::string errorCode)
     }
 }
 
+
+static std::chrono::system_clock::time_point http_date_to_time_point(const std::string& http_date) {
+    std::tm tm = {};
+    std::istringstream ss(http_date);
+    
+    ss >> std::get_time(&tm, "%a, %d %b %Y %H:%M:%S GMT");
+    
+    if (ss.fail()) {
+        throw std::runtime_error("Failed to parse HTTP date: " + http_date);
+    }
+    
+    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+}
+class GitResponseHeaders {
+public:
+    GitResponseHeaders(const std::filesystem::path path)
+    {
+        // HTTP/2 403 
+        // date: Fri, 13 Sep 2024 17:31:22 GMT
+        //...
+        // x-ratelimit-limit: 60
+        // x-ratelimit-remaining: 0
+        // x-ratelimit-reset: 1726250807
+        // x-ratelimit-resource: core
+        // x-ratelimit-used: 60
+        std::ifstream f {path};
+        if (!f.is_open())
+        {
+            throw std::runtime_error(SS("Can't open file " << path << "."));
+        }
+        std::string http;
+        f >> http >> code;
+        std::string line;
+        std::getline(f,line);
+
+        while (true)
+        {
+            std::getline(f,line);
+            auto trimPos  = line.find_last_not_of("\r\n");
+            if (trimPos != std::string::npos) {
+                line = line.substr(trimPos+1);
+            }
+
+            if (!f) break;
+            auto pos = line.find(':');
+            if (pos != std::string::npos)
+            {
+                std::string tag = line.substr(0,pos);
+                ++pos;
+                while (pos < line.length() && line[pos] == ' ')
+                {
+                    ++pos;
+                }
+                std::string value = line.substr(pos);
+                uint64_t *pResult = nullptr;
+                if (tag =="date")
+                {
+                    this->date = http_date_to_time_point(value);
+                } else if (tag == "x-ratelimit-limit")
+                {
+                    pResult =  &ratelimit_limit;
+                } else if (tag == "x-ratelimit-remaining")
+                {
+                    pResult = &ratelimit_remaining;
+                } else if (tag == "x-ratelimit-reset")
+                {
+                    std::istringstream ss {value};
+                    uint64_t reset = 0;
+                    ss >> reset;
+                    auto secs = std::chrono::seconds(reset); // value is seconds in UTC Unix epoch.
+                    this->ratelimit_reset = std::chrono::system_clock::time_point(secs);
+                } else if (tag == "x-ratelimit-resource")
+                {
+                    ratelimit_resource = value;
+                } else if (tag == "x-ratelimit-used")
+                {
+                    pResult = &ratelimit_used;
+                }
+                if (pResult)
+                {
+                    std::istringstream ss { value};
+                    ss >> *pResult;
+                }
+            }
+        }
+    }
+    int code = -1;
+    std::chrono::system_clock::time_point date;
+    std::chrono::system_clock::time_point ratelimit_reset;
+    uint64_t ratelimit_limit = 0;
+    uint64_t ratelimit_remaining = 0;
+    uint64_t ratelimit_used = 0;
+    std::string ratelimit_resource;
+    bool limit_exceeded() const { return code != 200 && ratelimit_limit != 0 && ratelimit_limit == ratelimit_used; }
+
+};
 void Updater::CheckForUpdate(bool useCache)
 {
     UpdateStatus updateResult;
 
+    if (useCache)
     {
         std::lock_guard lock{mutex};
-        if (useCache && IsCacheValid(cachedUpdateStatus))
         {
-            this->currentResult = cachedUpdateStatus;
-            this->currentResult.UpdatePolicy(this->updatePolicy);
-            if (listener)
+            if (IsCacheValid(cachedUpdateStatus))
             {
-                listener(this->currentResult);
+                this->currentResult = cachedUpdateStatus;
+                this->currentResult.UpdatePolicy(this->updatePolicy);
+                if (listener)
+                {
+                    listener(this->currentResult);
+                }
+                return;
             }
-            return;
         }
-        updateResult = this->currentResult;
+    }
+    if (clock::now() < this->updateRetryTime)
+    {
+        // forced or not, do NOT hit the githup api before we're supposed to.
+        std::lock_guard lock(mutex);
+        this->currentResult = cachedUpdateStatus;
+        this->currentResult.UpdatePolicy(this->updatePolicy);
+        if (listener)
+        {
+            listener(this->currentResult);
+        }
+        return;
     }
 
+    // set default next retry time.  github failures may postpone even further.
+
+    Lv2Log::info("Checking for updates.");
     // const std::string responseOption = "-w \"%{response_code}\"";
 #ifdef WIN32
     responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
 #endif
 
-    std::string args = SS("-s -L " << GITHUB_RELEASES_URL);
+    TemporaryFile headerFile { WORKING_DIRECTORY };
+    std::string args = SS("-s -L " << GITHUB_RELEASES_URL << " -D " << headerFile.str());
 
     updateResult.errorMessage_ = "";
 
@@ -451,10 +599,33 @@ void Updater::CheckForUpdate(bool useCache)
         auto result = sysExecForOutput("curl", args);
         if (result.exitCode != EXIT_SUCCESS)
         {
+            RetryAfter(std::chrono::duration_cast<clock::duration>(std::chrono::hours(4)));
             throw std::runtime_error("Server has no internet access.");
         }
         else
         {
+            // hard throttling for github.
+            RetryAfter(std::chrono::duration_cast<clock::duration>(std::chrono::hours(8)));
+
+            GitResponseHeaders githubHeaders { headerFile.Path()};
+
+            if (githubHeaders.code != 200)
+            {
+                if (
+                    githubHeaders.ratelimit_limit != 0 && 
+                    githubHeaders.ratelimit_limit == githubHeaders.ratelimit_used)
+                {
+                    std::time_t time = std::chrono::system_clock::to_time_t(githubHeaders.ratelimit_reset);
+                    std::string strTime = std::ctime(&time);
+
+
+                    Lv2Log::warning(SS("Updater: github rate limit exceeded. Retry at " << strTime));
+
+                    this->RetryAfter(githubHeaders.ratelimit_reset-githubHeaders.date);
+                    return;
+                }
+            }
+
             if (result.output.length() == 0)
             {
                 throw std::runtime_error("Server has no internet access.");
@@ -468,11 +639,16 @@ void Updater::CheckForUpdate(bool useCache)
                 // an HTML error.
                 updateResult.isOnline_ = false;
                 auto o = vResult.as_object();
-                std::string message = o->at("message").as_string();
-                auto status_code = o->at("status_code").as_int64();
-                throw std::runtime_error(SS("Service error. ()" << status_code << ": " << message << ")"));
-            }
-            else
+                std::string message = "Unknown error."; 
+                if (o->at("message").is_string())
+                {
+                    message  = o->at("message").as_string();
+                }
+                throw std::runtime_error(SS("Github Service error: " <<  message ));
+            } else if (!vResult.is_array())
+            {
+                throw std::runtime_error("Invalid file format error.");
+            } else
             {
                 json_variant::array_ptr vArray = vResult.as_array();
 
@@ -534,7 +710,7 @@ void Updater::CheckForUpdate(bool useCache)
     }
     catch (const std::exception &e)
     {
-        Lv2Log::error(SS("Failed to fetch update info. " << e.what()));
+        Lv2Log::error(SS("Updater: Failed to fetch update info. " << e.what()));
         updateResult.errorMessage_ = e.what();
         updateResult.isValid_ = false;
         updateResult.isOnline_ = false;
@@ -897,6 +1073,65 @@ static void checkCurlHttpResponse(std::string errorCode)
         throw std::runtime_error(message);
     }
 }
+void Updater::RetryAfter(clock::duration delay)
+{
+    namespace chron = std::chrono;
+    clock::duration hours24 = chron::duration_cast<clock::duration>(chron::hours(24));
+    if (delay.count() < 0 || delay >= hours24) // non-synced system clock (as Raspberry Pis are prone to without network connections)
+    {
+        delay = chron::duration_cast<clock::duration>(chron::hours(6));
+    }
+    SaveRetryTime(chron::system_clock::now()+std::chrono::duration_cast<chron::system_clock::duration>(delay));
+
+    clock::time_point myRetryTime = clock::now() + delay;
+
+    if (this->updateRetryTime < myRetryTime) 
+    {
+        this->updateRetryTime = myRetryTime;
+    }
+}
+void Updater::SaveRetryTime(const std::chrono::system_clock::time_point &time)
+{
+    fs::path retryTimePath = WORKING_DIRECTORY / "retryTime.json";
+    pipedal::ofstream_synced f {retryTimePath};
+    if (f.is_open())
+    {
+        json_writer writer(f);
+        auto rep = time.time_since_epoch().count();
+        writer.write(rep);
+    }
+
+}
+Updater::clock::time_point Updater::LoadRetryTime()
+{
+    using namespace std::chrono;
+
+    fs::path retryTimePath = WORKING_DIRECTORY / "retryTime.json";
+    std::ifstream f {retryTimePath};
+    if (f.is_open())
+    {
+        system_clock::duration::rep tRep = 0;
+        json_reader reader(f);
+        reader.read(&tRep);
+
+        system_clock::duration duration(tRep);
+
+        system_clock::time_point systemTime = system_clock::time_point(duration);
+
+        // now convert to stead_clock time with the understanding that system_clock time may be blown.
+        system_clock::duration systemDuration = systemTime - system_clock::now();
+        clock::duration clockDuration = duration_cast<clock::duration>(systemDuration);
+        if (clockDuration > duration_cast<clock::duration>(hours(48))) // is system clock blown?
+        {
+            clockDuration = duration_cast<clock::duration>(hours(6));
+        }
+        return clock::now() + clockDuration;
+
+    }
+    return clock::now();
+
+}
+
 void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file, std::filesystem::path *signatureFile)
 {
     std::string filename, signatureUrl;
