@@ -4,7 +4,7 @@ project(pipedal
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
-set (DISPLAY_VERSION "PiPedal v1.2.49-Release")
+set (DISPLAY_VERSION "PiPedal v1.2.49-Development")
 set (PACKAGE_ARCHITECTURE "arm64")
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
@@ -21,7 +21,6 @@ add_subdirectory("src")
 
 # Replaced with hotspot.
 #add_subdirectory("NetworkManagerP2P")
-
 
 # install (TARGETS pipedal_p2pd DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
 #    )
@@ -56,7 +55,7 @@ install(
 #)
 
 install (
-    FILES ${PROJECT_SOURCE_DIR}/src/polkit-1/rules/55-pipedal-networkmanager.rule DESTINATION /etc/polkit-1/rules.d/
+    FILES ${PROJECT_SOURCE_DIR}/src/polkit-1/rules/10-pipedal-networkmanager.rules DESTINATION /etc/polkit-1/rules.d/
 )
 install (
     DIRECTORY ${REACT_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react

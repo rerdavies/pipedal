@@ -48,7 +48,8 @@ namespace fs = std::filesystem;
 #undef TEST_UPDATE // do NOT leat this leak into a production build!
 #endif
 
-namespace pipedal {
+namespace pipedal
+{
     class GithubResponseHeaders
     {
     public:
@@ -62,8 +63,8 @@ namespace pipedal {
         uint64_t ratelimit_used_ = 0;
         std::string ratelimit_resource_;
         bool limit_exceeded() const { return code_ != 200 && ratelimit_limit_ != 0 && ratelimit_limit_ == ratelimit_used_; }
-        void Load();
-        void Save();
+        void Load(const std::filesystem::path &filename);
+        void Save(const std::filesystem::path &filename);
         DECLARE_JSON_MAP(GithubResponseHeaders);
 
     private:
@@ -74,23 +75,36 @@ namespace pipedal {
 class pipedal::UpdaterImpl : public Updater
 {
 public:
-    UpdaterImpl();
+    UpdaterImpl(const std::filesystem::path &workingDirectory);
+    UpdaterImpl() : UpdaterImpl("/var/pipedal/updates") {}
+
     virtual ~UpdaterImpl() noexcept;
 
     virtual void SetUpdateListener(UpdateListener &&listener) override;
+    virtual void Start() override;
+    virtual void Stop() override;
+
     virtual void CheckNow() override;
-    virtual void Stop();
 
     virtual UpdatePolicyT GetUpdatePolicy() override;
     virtual void SetUpdatePolicy(UpdatePolicyT updatePolicy) override;
     virtual void ForceUpdateCheck() override;
     virtual void DownloadUpdate(const std::string &url, std::filesystem::path *file, std::filesystem::path *signatureFile) override;
     virtual UpdateStatus GetCurrentStatus() const override { return this->currentResult; }
+    virtual UpdateStatus GetReleaseGeneratorStatus() override;
 
 private:
+    std::filesystem::path workingDirectory;
+    std::filesystem::path updateStatusCacheFile;
+    std::filesystem::path githubResponseHeaderFilename;
+
     GithubResponseHeaders githubResponseHeaders;
 
     using clock = std::chrono::steady_clock;
+
+    void SetCachedUpdateStatus(UpdateStatus &updateStatus);
+
+    UpdateStatus GetCachedUpdateStatus();
 
     void RetryAfter(clock::duration delay);
 
@@ -120,6 +134,7 @@ private:
     int event_reader = -1;
     int event_writer = -1;
     void ThreadProc();
+    UpdateStatus DoUpdate(bool forReleaseGenerator);
     void CheckForUpdate(bool useCache);
     UpdateListener listener;
 
@@ -135,26 +150,27 @@ Updater::ptr Updater::Create()
 {
     return std::make_unique<UpdaterImpl>();
 }
+Updater::ptr Updater::Create(const std::filesystem::path &workingDirectory)
+{
+    return std::make_unique<UpdaterImpl>(workingDirectory);
+}
 
 static constexpr uint64_t CLOSE_EVENT = 0;
 static constexpr uint64_t CHECK_NOW_EVENT = 1;
 static constexpr uint64_t UNCACHED_CHECK_NOW_EVENT = 2;
 
-static std::filesystem::path WORKING_DIRECTORY = "/var/pipedal/updates";
-static std::filesystem::path UPDATE_STATUS_CACHE_FILE = WORKING_DIRECTORY / "updateStatus.json";
-
 UpdaterImpl::clock::duration UpdaterImpl::updateRate = std::chrono::duration_cast<UpdaterImpl::clock::duration>(std::chrono::days(1));
 static std::chrono::system_clock::duration CACHE_DURATION = std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::minutes(30));
 
 std::mutex cacheMutex;
-static UpdateStatus GetCachedUpdateStatus()
+UpdateStatus UpdaterImpl::GetCachedUpdateStatus()
 {
     std::lock_guard lock{cacheMutex};
     try
     {
-        if (std::filesystem::exists(UPDATE_STATUS_CACHE_FILE))
+        if (std::filesystem::exists(updateStatusCacheFile))
         {
-            std::ifstream f{UPDATE_STATUS_CACHE_FILE};
+            std::ifstream f{updateStatusCacheFile};
             if (f.is_open())
             {
                 json_reader reader(f);
@@ -174,13 +190,13 @@ static UpdateStatus GetCachedUpdateStatus()
     return UpdateStatus();
 }
 
-static void SetCachedUpdateStatus(UpdateStatus &updateStatus)
+void UpdaterImpl::SetCachedUpdateStatus(UpdateStatus &updateStatus)
 {
     std::lock_guard lock{cacheMutex};
     updateStatus.LastUpdateTime(std::chrono::system_clock::now());
     try
     {
-        pipedal::ofstream_synced f{UPDATE_STATUS_CACHE_FILE};
+        pipedal::ofstream_synced f{updateStatusCacheFile};
         json_writer writer{f};
         writer.write(updateStatus);
     }
@@ -189,13 +205,22 @@ static void SetCachedUpdateStatus(UpdateStatus &updateStatus)
         Lv2Log::error(SS("Unable to write cached UpdateStatus. " << e.what()));
     }
 }
-UpdaterImpl::UpdaterImpl()
+
+UpdaterImpl::UpdaterImpl(const std::filesystem::path &workingDirectory)
+    : workingDirectory(workingDirectory),
+      updateStatusCacheFile(workingDirectory / "updateStatus.json"),
+      githubResponseHeaderFilename(workingDirectory / "githubHeaders.json")
 {
-    this->githubResponseHeaders.Load();
+    this->githubResponseHeaders.Load(githubResponseHeaderFilename);
     cachedUpdateStatus = GetCachedUpdateStatus();
     this->updatePolicy = cachedUpdateStatus.UpdatePolicy();
     currentResult = cachedUpdateStatus;
-
+}
+void UpdaterImpl::Start()
+{
+    #if !ENABLE_AUTO_UPDATE
+    return;
+    #endif
     int fds[2];
     int rc = pipe(fds);
     if (rc != 0)
@@ -225,6 +250,9 @@ void UpdaterImpl::Stop()
     {
         return;
     }
+    #if !ENABLE_AUTO_UPDATE
+    return;
+    #endif
     stopped = true;
 
     if (event_writer != -1)
@@ -563,8 +591,7 @@ JSON_MAP_REFERENCE(GithubResponseHeaders, ratelimit_used)
 JSON_MAP_REFERENCE(GithubResponseHeaders, ratelimit_resource)
 JSON_MAP_END();
 
-std::filesystem::path GithubResponseHeaders::FILENAME = WORKING_DIRECTORY / "githubHeaders.json";
-void GithubResponseHeaders::Load()
+void GithubResponseHeaders::Load(const std::filesystem::path &FILENAME)
 {
     std::ifstream f(FILENAME);
     if (f.is_open())
@@ -581,9 +608,9 @@ void GithubResponseHeaders::Load()
         }
     }
 }
-void GithubResponseHeaders::Save()
+void GithubResponseHeaders::Save(const std::filesystem::path &FILENAME)
 {
-    std::filesystem::create_directories(WORKING_DIRECTORY);
+    std::filesystem::create_directories(FILENAME.parent_path());
     ofstream_synced f(FILENAME);
     if (!f.is_open())
     {
@@ -622,7 +649,7 @@ GithubResponseHeaders::GithubResponseHeaders(const std::filesystem::path path)
         auto trimPos = line.find_last_not_of("\r\n");
         if (trimPos != std::string::npos)
         {
-            line = line.substr(0,trimPos + 1);
+            line = line.substr(0, trimPos + 1);
         }
 
         if (!f)
@@ -675,6 +702,12 @@ GithubResponseHeaders::GithubResponseHeaders(const std::filesystem::path path)
     }
 }
 
+UpdateStatus UpdaterImpl::GetReleaseGeneratorStatus()
+{
+    UpdateStatus result = DoUpdate(true);
+    return result;
+}
+
 void UpdaterImpl::CheckForUpdate(bool useCache)
 {
     UpdateStatus updateResult;
@@ -702,133 +735,11 @@ void UpdaterImpl::CheckForUpdate(bool useCache)
         }
     }
 
-    // set default next retry time.  github failures may postpone even further.
-
-    Lv2Log::info("Checking for updates.");
-    // const std::string responseOption = "-w \"%{response_code}\"";
-#ifdef WIN32
-    responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
-#endif
-
-    TemporaryFile headerFile{WORKING_DIRECTORY};
-    std::string args = SS("-s -L " << GITHUB_RELEASES_URL << " -D " << headerFile.str());
-
-    updateResult.errorMessage_ = "";
 
     try
     {
-        auto result = sysExecForOutput("curl", args);
-        if (result.exitCode != EXIT_SUCCESS)
-        {
-            RetryAfter(std::chrono::duration_cast<clock::duration>(std::chrono::hours(4)));
-            throw std::runtime_error("Server has no internet access.");
-        }
-        else
-        {
-            // hard throttling for github.
-            RetryAfter(std::chrono::duration_cast<clock::duration>(std::chrono::hours(8)));
 
-            GithubResponseHeaders githubHeaders{headerFile.Path()};
-            this->githubResponseHeaders = githubHeaders;
-            this->githubResponseHeaders.Save();
-
-            if (githubHeaders.code_ != 200)
-            {
-                if (
-                    githubHeaders.ratelimit_limit_ != 0 &&
-                    githubHeaders.ratelimit_limit_ == githubHeaders.ratelimit_used_)
-                {
-                    std::time_t time = std::chrono::system_clock::to_time_t(githubHeaders.ratelimit_reset_);
-                    std::string strTime = std::ctime(&time);
-
-                    this->RetryAfter(githubHeaders.ratelimit_reset_ - githubHeaders.date_);
-                    throw std::runtime_error(SS("Github API rate limit exceeded. Retrying at " << strTime));
-                }
-            }
-
-            if (result.output.length() == 0)
-            {
-                throw std::runtime_error("Server has no internet access.");
-            }
-            std::stringstream ss(result.output);
-            json_reader reader(ss);
-            json_variant vResult(reader);
-
-            if (vResult.is_object())
-            {
-                // an HTML error.
-                updateResult.isOnline_ = false;
-                auto o = vResult.as_object();
-                std::string message = "Unknown error.";
-                if (o->at("message").is_string())
-                {
-                    message = o->at("message").as_string();
-                }
-                throw std::runtime_error(SS("Github Service error: " << message));
-            }
-            else if (!vResult.is_array())
-            {
-                throw std::runtime_error("Invalid file format error.");
-            }
-            else
-            {
-                json_variant::array_ptr vArray = vResult.as_array();
-
-                std::vector<GithubRelease> releases;
-                for (size_t i = 0; i < vArray->size(); ++i)
-                {
-                    auto &el = vArray->at(i);
-                    GithubRelease release{el};
-                    if (!release.draft && release.GetDownloadForCurrentArchitecture() != nullptr)
-                    {
-                        if (release.name.find("Experimental") == std::string::npos) // experimental releases do not participate in auto-updates (not even for dev stream)
-                        {
-                            releases.push_back(std::move(release));
-                        }
-                    }
-                }
-                std::sort(
-                    releases.begin(),
-                    releases.end(),
-                    [](const GithubRelease &left, const GithubRelease &right)
-                    {
-                        return left.published_at > right.published_at; // latest date first.
-                    });
-                updateResult.releaseOnlyRelease_ = getUpdateRelease(
-                    releases,
-                    updateResult.currentVersion_,
-                    [](const GithubRelease &githubRelease)
-                    {
-                        return !githubRelease.prerelease &&
-                               githubRelease.name.find("Release") != std::string::npos;
-                    });
-
-                updateResult.releaseOrBetaRelease_ = getUpdateRelease(
-                    releases,
-                    updateResult.currentVersion_,
-                    [](const GithubRelease &githubRelease)
-                    {
-                        return !githubRelease.prerelease &&
-                               (githubRelease.name.find("Release") != std::string::npos ||
-                                githubRelease.name.find("Beta") != std::string::npos);
-                    });
-                updateResult.devRelease_ = getUpdateRelease(
-                    releases,
-                    updateResult.currentVersion_,
-                    [](const GithubRelease &githubRelease)
-                    {
-                        return true;
-                    });
-#ifdef TEST_UPDATE
-                updateResult.releaseOrBetaRelease_.upgradeVersionDisplayName_ = "PiPedal v1.2.41-Beta";
-                updateResult.devRelease_.upgradeVersionDisplayName_ = "PiPedal v1.2.39-Experimental";
-                updateResult.devRelease_.upgradeVersion_ = "1.2.39";
-                updateResult.devRelease_.updateAvailable_ = false;
-#endif
-                updateResult.isValid_ = true;
-                updateResult.isOnline_ = true;
-            }
-        }
+        updateResult = DoUpdate(false);
     }
     catch (const std::exception &e)
     {
@@ -850,6 +761,142 @@ void UpdaterImpl::CheckForUpdate(bool useCache)
             listener(this->currentResult);
         }
     }
+}
+
+UpdateStatus UpdaterImpl::DoUpdate(bool forReleaseGenerator)
+{
+    UpdateStatus updateResult;
+    if (forReleaseGenerator)
+    {
+        updateResult.currentVersion_ = "0.0.0";
+    }
+
+    // set default next retry time.  github failures may postpone even further.
+
+    Lv2Log::info("Checking for updates.");
+    // const std::string responseOption = "-w \"%{response_code}\"";
+#ifdef WIN32
+    responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
+#endif
+
+    TemporaryFile headerFile{workingDirectory};
+    std::string args = SS("-s -L " << GITHUB_RELEASES_URL << " -D " << headerFile.str());
+
+    updateResult.errorMessage_ = "";
+
+    auto result = sysExecForOutput("curl", args);
+    if (result.exitCode != EXIT_SUCCESS)
+    {
+        RetryAfter(std::chrono::duration_cast<clock::duration>(std::chrono::hours(4)));
+        throw std::runtime_error("Server has no internet access.");
+    }
+    else
+    {
+        // hard throttling for github.
+        RetryAfter(std::chrono::duration_cast<clock::duration>(std::chrono::hours(8)));
+
+        GithubResponseHeaders githubHeaders{headerFile.Path()};
+        this->githubResponseHeaders = githubHeaders;
+        this->githubResponseHeaders.Save(githubResponseHeaderFilename);
+
+        if (githubHeaders.code_ != 200)
+        {
+            if (
+                githubHeaders.ratelimit_limit_ != 0 &&
+                githubHeaders.ratelimit_limit_ == githubHeaders.ratelimit_used_)
+            {
+                std::time_t time = std::chrono::system_clock::to_time_t(githubHeaders.ratelimit_reset_);
+                std::string strTime = std::ctime(&time);
+
+                this->RetryAfter(githubHeaders.ratelimit_reset_ - githubHeaders.date_);
+                throw std::runtime_error(SS("Github API rate limit exceeded. Retrying at " << strTime));
+            }
+        }
+
+        if (result.output.length() == 0)
+        {
+            throw std::runtime_error("Server has no internet access.");
+        }
+        std::stringstream ss(result.output);
+        json_reader reader(ss);
+        json_variant vResult(reader);
+
+        if (vResult.is_object())
+        {
+            // an HTML error.
+            updateResult.isOnline_ = false;
+            auto o = vResult.as_object();
+            std::string message = "Unknown error.";
+            if (o->at("message").is_string())
+            {
+                message = o->at("message").as_string();
+            }
+            throw std::runtime_error(SS("Github Service error: " << message));
+        }
+        else if (!vResult.is_array())
+        {
+            throw std::runtime_error("Invalid file format error.");
+        }
+        else
+        {
+            json_variant::array_ptr vArray = vResult.as_array();
+
+            std::vector<GithubRelease> releases;
+            for (size_t i = 0; i < vArray->size(); ++i)
+            {
+                auto &el = vArray->at(i);
+                GithubRelease release{el};
+                if (!release.draft && release.GetDownloadForCurrentArchitecture() != nullptr)
+                {
+                    if (release.name.find("Experimental") == std::string::npos) // experimental releases do not participate in auto-updates (not even for dev stream)
+                    {
+                        releases.push_back(std::move(release));
+                    }
+                }
+            }
+            std::sort(
+                releases.begin(),
+                releases.end(),
+                [](const GithubRelease &left, const GithubRelease &right)
+                {
+                    return left.published_at > right.published_at; // latest date first.
+                });
+            updateResult.releaseOnlyRelease_ = getUpdateRelease(
+                releases,
+                updateResult.currentVersion_,
+                [](const GithubRelease &githubRelease)
+                {
+                    return !githubRelease.prerelease &&
+                           githubRelease.name.find("Release") != std::string::npos;
+                });
+
+            updateResult.releaseOrBetaRelease_ = getUpdateRelease(
+                releases,
+                updateResult.currentVersion_,
+                [](const GithubRelease &githubRelease)
+                {
+                    return !githubRelease.prerelease &&
+                           (githubRelease.name.find("Release") != std::string::npos ||
+                            githubRelease.name.find("Beta") != std::string::npos);
+                });
+            updateResult.devRelease_ = getUpdateRelease(
+                releases,
+                updateResult.currentVersion_,
+                [](const GithubRelease &githubRelease)
+                {
+                    return true;
+                });
+#ifdef TEST_UPDATE
+            updateResult.releaseOrBetaRelease_.upgradeVersionDisplayName_ = "PiPedal v1.2.41-Beta";
+            updateResult.devRelease_.upgradeVersionDisplayName_ = "PiPedal v1.2.39-Experimental";
+            updateResult.devRelease_.upgradeVersion_ = "1.2.39";
+            updateResult.devRelease_.updateAvailable_ = false;
+#endif
+            updateResult.isValid_ = true;
+            updateResult.isOnline_ = true;
+        }
+    }
+    return updateResult;
 }
 bool UpdateRelease::operator==(const UpdateRelease &other) const
 {
@@ -1216,7 +1263,7 @@ void UpdaterImpl::RetryAfter(clock::duration delay)
 }
 void UpdaterImpl::SaveRetryTime(const std::chrono::system_clock::time_point &time)
 {
-    fs::path retryTimePath = WORKING_DIRECTORY / "retryTime.json";
+    fs::path retryTimePath = workingDirectory / "retryTime.json";
     pipedal::ofstream_synced f{retryTimePath};
     if (f.is_open())
     {
@@ -1229,7 +1276,7 @@ UpdaterImpl::clock::time_point UpdaterImpl::LoadRetryTime()
 {
     using namespace std::chrono;
 
-    fs::path retryTimePath = WORKING_DIRECTORY / "retryTime.json";
+    fs::path retryTimePath = workingDirectory / "retryTime.json";
     std::ifstream f{retryTimePath};
     if (f.is_open())
     {
@@ -1273,7 +1320,7 @@ void UpdaterImpl::DownloadUpdate(const std::string &url, std::filesystem::path *
     {
         throw std::runtime_error(SS("Invalid update url. Downloads from this address are not permitted: " << signatureUrl));
     }
-    auto downloadDirectory = WORKING_DIRECTORY / "downloads";
+    auto downloadDirectory = workingDirectory / "downloads";
     std::filesystem::create_directories(downloadDirectory);
 
     auto downloadFilePath = downloadDirectory / filename;
@@ -1336,6 +1383,14 @@ void UpdaterImpl::DownloadUpdate(const std::string &url, std::filesystem::path *
         throw;
     }
 }
+
+
+void UpdateStatus::AddRelease(const std::string&packageName)
+{
+    this->isValid_ = true;
+    this->errorMessage_ = "";
+}
+        
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 JSON_MAP_BEGIN(UpdateRelease)

@@ -1,7 +1,11 @@
+- X test reconnect sequence in client.
+
+-X remove 10-pipedal-networkmanager.rules before testing installer.
+
+- new signing procedure.
 
 - verify that scanning doesn't cause overruns.
-- address change handlers in client (and browser?)
-- Keybaord escape for hotspotManager.
+- verify address change behaviour in client
 - verify stripping in installer.
 - verify update with no keyring.
 -verify clean removal of dhcpcd and nm_p2p2d
@@ -14,12 +18,11 @@ Localisation: support non-UTF8 code pages.
 - unicode commandline arguments.
 - review unicode filenames (this is probably ok)
 
-
-
-- make app use the same theme settings as the website.
+- make app use the same theme settings as the website. (make the website use the same theme as the app)
 - BUG: gcs when we have an animated output control
 - versioning.
-- do we want to take a second crack at establishin multi-p2p connections with the driver_param?
+
+
 
 
 

@@ -47,18 +47,22 @@ namespace pipedal
         using ptr = std::unique_ptr<self>;
 
         static Updater::ptr Create();
+        static Updater::ptr Create(const std::filesystem::path & workingDirectory);
         static void ValidateSignature(const std::filesystem::path&file, const std::filesystem::path&signatureFile);
         
         using UpdateListener = std::function<void(const UpdateStatus &upateResult)>;
         virtual void SetUpdateListener(UpdateListener &&listener) = 0;
-        virtual void CheckNow() = 0;
+        virtual void Start() = 0;
         virtual void Stop() = 0;
+
+        virtual void CheckNow() = 0;
 
         virtual UpdatePolicyT GetUpdatePolicy() = 0;
         virtual void SetUpdatePolicy(UpdatePolicyT updatePolicy) = 0;
         virtual void ForceUpdateCheck() = 0;
         virtual void DownloadUpdate(const std::string &url, std::filesystem::path*file, std::filesystem::path*signatureFile) = 0;
-        UpdateStatus virtual GetCurrentStatus() const = 0;
+        virtual UpdateStatus GetCurrentStatus() const = 0;
+        virtual UpdateStatus GetReleaseGeneratorStatus() = 0; // only used when generating releases. Absolutely no caching.
 
 
     };

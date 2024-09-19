@@ -66,7 +66,6 @@ namespace pipedal::impl
         {
             Initial,
             WaitingForNetworkManager,
-            Disabled,
             Monitoring,
             HotspotConnecting,
             HotspotConnected,
@@ -82,7 +81,6 @@ namespace pipedal::impl
         void onDevicesChanged();
         void onDisconnect();
         void onReload();
-        void onDisableHotspot();
 
         void DisableHotspot();
         void EnableHotspot();
@@ -169,7 +167,7 @@ void HotspotManagerImpl::Open()
 
 void HotspotManagerImpl::onClose()
 {
-    onDisableHotspot();
+    StopHotspot();
     ReleaseNetworkManager();
 
     Lv2Log::debug("HotspotManager: state=Closed");
@@ -201,14 +199,7 @@ void HotspotManagerImpl::onInitialize()
     {
         wifiConfigSettings.Load();
 
-        if (wifiConfigSettings.valid_ && wifiConfigSettings.IsEnabled())
-        {
-            onStartMonitoring();
-        }
-        else
-        {
-            onDisableHotspot();
-        }
+        onStartMonitoring();
     }
     catch (const std::exception &e)
     {
@@ -431,17 +422,6 @@ void HotspotManagerImpl::WaitForNetworkManager()
     ReleaseNetworkManager();
     StartWaitForNetworkManagerTimer();
 }
-void HotspotManagerImpl::onDisableHotspot()
-{
-    if (this->state != State::Disabled)
-    {
-        ReleaseNetworkManager();
-
-        Lv2Log::debug("HotspotManager: state=Disabled");
-        SetState(State::Disabled);
-        Lv2Log::info("HotspotManager: Hotspot disabled.");
-    }
-}
 void HotspotManagerImpl::onReload()
 {
     if (closed)
@@ -453,17 +433,12 @@ void HotspotManagerImpl::onReload()
     switch (state)
     {
     case State::Initial:
+    case State::Error:
         // ignore.
         return;
-    case State::Disabled:
-        if (wifiConfigSettings.valid_ && wifiConfigSettings.IsEnabled())
-        {
-            onStartMonitoring();
-        }
+    default: 
+        MaybeStartHotspot();
         return;
-    default:
-        this->onDisableHotspot();
-        break;
     }
 }
 
@@ -726,10 +701,12 @@ static std::vector<std::vector<uint8_t>> GetAccessPointSsids(std::vector<AccessP
 void HotspotManagerImpl::MaybeStartHotspot()
 {
     if (this->state == State::Error) return;
+    if (this->closed) return;
 
     if (!wlanDevice || !wlanWirelessDevice)
     {
         // devices are transitioning. Do nothing.
+        return;
     }
     std::vector<AccessPoint::ptr> allAccessPoints = GetAllAccessPoints();
     std::vector<std::vector<uint8_t>> allAccessPointSsids = GetAccessPointSsids(allAccessPoints);
@@ -787,6 +764,7 @@ Connection::ptr HotspotManagerImpl::FindExistingConnection()
             }
         }
     }
+    
     return nullptr;
 }
 

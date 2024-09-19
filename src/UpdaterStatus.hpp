@@ -92,6 +92,8 @@ namespace pipedal {
         const UpdateRelease &DevRelease() const { return devRelease_; }
         bool operator==(const UpdateStatus &other) const;
 
+        void AddRelease(const std::string&packageName); // Release Generator ONLY
+        
         DECLARE_JSON_MAP(UpdateStatus);
     };
 

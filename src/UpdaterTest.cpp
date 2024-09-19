@@ -43,6 +43,8 @@ TEST_CASE( "updater test", "[updater]" ) {
                 ++nCalls;
             }
         );
+        updater->Start();
+
     }
     REQUIRE(nCalls == 1);
 

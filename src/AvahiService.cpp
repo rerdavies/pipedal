@@ -45,6 +45,12 @@ void AvahiService::Announce(
     const std::string &mdnsName,
     bool addTestGroup)
 {
+    // We should update an existing group if the name doesn't change.
+    // but in practice, the name is the only thing that's going to change without restarting the server.
+    if (this->name && strcmp(name.c_str(),this->name) == 0) 
+    {
+        return;
+    }
     Unannounce();
 
     this->portNumber = portNumber;
@@ -162,7 +168,7 @@ void AvahiService::create_group(AvahiClient *c)
         if ((ret = avahi_entry_group_add_service(
                  group,
                  AVAHI_IF_UNSPEC,
-                 AVAHI_PROTO_UNSPEC, // IPv4 for now, until we figure out why dnsqmasq borks IPv6 routing.)
+                 AVAHI_PROTO_INET, // IPv4 for now, until we figure out why dnsqmasq borks IPv6 routing.)
                  (AvahiPublishFlags)0,
                  name,
                  PIPEDAL_SERVICE_TYPE,
@@ -307,41 +313,32 @@ void AvahiService::Start()
     while (true)
     {
         /* Allocate main loop object */
-        if (!(this->threadedPoll = avahi_threaded_poll_new()))
+        if (!this->threadedPoll)
         {
-            Lv2Log::error("Failed to create Avahi poll object.");
-            goto fail;
+            if (!(this->threadedPoll = avahi_threaded_poll_new()))
+            {
+                Lv2Log::error("Failed to create Avahi poll object.");
+                goto fail;
+            }
+            avahi_threaded_poll_start(threadedPoll);
         }
 
-        /* Allocate a new client */
-        client = avahi_client_new(avahi_threaded_poll_get(threadedPoll), AvahiClientFlags::AVAHI_CLIENT_NO_FAIL, client_callback, (void *)this, &error);
-        /* Check wether creating the client object succeeded */
         if (!client)
         {
-            Lv2Log::error(SS("Failed to create client: " << avahi_strerror(error)));
-            goto fail;
+            /* Allocate a new client */
+            client = avahi_client_new(avahi_threaded_poll_get(threadedPoll), AvahiClientFlags::AVAHI_CLIENT_NO_FAIL, client_callback, (void *)this, &error);
+            /* Check wether creating the client object succeeded */
+            if (!client)
+            {
+                Lv2Log::error(SS("Failed to create client: " << avahi_strerror(error)));
+                goto fail;
+            }
         }
 
-        avahi_threaded_poll_start(threadedPoll);
         ret = 0;
         return;
     fail:
-        /* Cleanup things */
-        if (client)
-        {
-            avahi_client_free(client);
-            client = nullptr;
-        }
-        if (group)
-        {
-            avahi_entry_group_reset(group);
-            group = nullptr;
-        }
-        if (threadedPoll)
-        {
-            avahi_threaded_poll_free(threadedPoll);
-            threadedPoll = nullptr;
-        }
+        Stop();
     }
     return;
 }
@@ -349,27 +346,23 @@ void AvahiService::Start()
 void AvahiService::Stop()
 {
 
-    if (threadedPoll)
+        /* Cleanup things */
+    if (group)
     {
-        avahi_threaded_poll_stop(threadedPoll);
+        avahi_entry_group_reset(group);
+        avahi_entry_group_free(group);
+        group = nullptr;
     }
-    /* Cleanup things */
-    // client owns the group?
-    // if (group)
-    // {
-    //     avahi_entry_group_reset(group);
-    //     group = nullptr;
-    // }`
-
     if (client)
     {
         avahi_client_free(client);
         client = nullptr;
     }
+
     if (threadedPoll)
     {
+        avahi_threaded_poll_stop(threadedPoll);
         avahi_threaded_poll_free(threadedPoll);
         threadedPoll = nullptr;
     }
-    group = nullptr;
 }

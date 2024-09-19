@@ -29,6 +29,7 @@
 #include "ZipFile.hpp"
 #include "PiPedalUI.hpp"
 #include "ofstream_synced.hpp"
+#include "UpdaterSecurity.hpp"
 
 
 #define PRESET_EXTENSION ".piPreset"
@@ -524,8 +525,10 @@ public:
         std::stringstream s;
 
         s << "{ \"socket_server_port\": " << portNumber
-          << ", \"socket_server_address\": \"" << webSocketAddress << 
-          "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize << " }";
+          << ", \"socket_server_address\": \"" << webSocketAddress 
+          << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
+          << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true": "false")
+           << " }";
 
         return s.str();
     }

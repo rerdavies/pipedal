@@ -43,7 +43,6 @@ namespace pipedal {
             int portNumber, const std::string &name, const std::string &instanceId, const std::string&mdnsName,bool addTestGroup = false);
 
         void Unannounce();
-
     private: 
         void Start();
         void Stop();
@@ -55,8 +54,6 @@ namespace pipedal {
 
 
         void create_group(AvahiClient *c);
-
-        void threadProc();
 
         int clientErrno = 0;
 

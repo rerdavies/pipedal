@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <string>
 /*
     PiPedal uses whitelisting and GPG signatures to verify that updates are valid.
     You must modify these defines appropriately if you want to host a fork.
@@ -32,6 +33,9 @@
     installs published on github/rerdavies/pipedal.
 */
 
+#ifndef ENABLE_AUTO_UPDATE
+#define ENABLE_AUTO_UPDATE 1
+#endif
 #ifndef GITHUB_PROJECT
 #define GITHUB_PROJECT "rerdavies/pipedal"
 #endif
@@ -43,7 +47,7 @@
 #define UPDATE_GPG_ADDRESS "Robin Davies <rerdavies@gmail.com>"
 #endif 
 #ifndef UPDATE_GPG_ADDRESS2
-#define UPDATE_GPG_ADDRESS2 "PiPedal Project  <rerdavies@gmail.com>"
+#define UPDATE_GPG_ADDRESS2 "PiPedal Project <rerdavies@gmail.com>"
 #endif 
 
 

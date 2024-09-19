@@ -301,6 +301,9 @@ add_executable(hotspotManagerTest
 
 target_link_libraries(hotspotManagerTest PRIVATE ${PIPEDAL_LIBS})
 
+set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL true)
+
+
 
 add_executable(pipedaltest testMain.cpp
 
@@ -329,6 +332,8 @@ target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
 
+set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL true)
+
 if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
 
 
@@ -339,6 +344,9 @@ if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action se
 
     target_include_directories(profilePlugin PRIVATE ${PIPEDAL_INCLUDES}
         )
+
+    set_target_properties(profilePlugin PROPERTIES EXCLUDE_FROM_ALL true)
+
 endif()
 add_executable(jsonTest
      testMain.cpp
@@ -356,7 +364,12 @@ target_link_libraries(jsonTest PRIVATE PiPedalCommon)
 target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES}
     ) 
 
+set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL true)
+
+
 target_link_libraries(jsonTest PRIVATE pthread)
+
+
 add_test(NAME jsonTest COMMAND jsonTest)
 
 
@@ -561,18 +574,18 @@ if(ENABLE_VST3)
     )
 
     
-    add_executable(vst3test Vst3test.cpp
+    # add_executable(vst3test Vst3test.cpp
 
-        MemDebug.cpp
-        MemDebug.hpp
+    #     MemDebug.cpp
+    #     MemDebug.hpp
 
-        Vst3SdkRepro.cpp
+    #     Vst3SdkRepro.cpp
 
-        ${VST3_FILES}
+    #     ${VST3_FILES}
     
-        #vst3/Vst3PresetFile.hpp Vst3PresetFile.cpp
-        asan_options.cpp
-    )
+    #     #vst3/Vst3PresetFile.hpp Vst3PresetFile.cpp
+    #     asan_options.cpp
+    # )
 
     target_include_directories(vst3test PRIVATE ${PIPEDAL_INCLUDES} 
         )
@@ -641,6 +654,17 @@ add_executable(capturepresets
 target_include_directories(capturepresets PRIVATE ${PIPEDAL_INCLUDES})
 
 target_link_libraries(capturepresets ${PIPEDAL_LIBS})
+
+add_executable(makeRelease
+    makeReleaseMain.cpp
+    CommandLineParser.hpp
+) 
+target_include_directories(makeRelease PRIVATE ${PIPEDAL_INCLUDES})
+
+target_link_libraries(makeRelease ${PIPEDAL_LIBS})
+
+
+
 
 
 add_executable(pipedal_update

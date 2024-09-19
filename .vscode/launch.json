@@ -67,6 +67,32 @@
             ]
         },
         {
+            "name": "(gdb) makeRelease",
+            "type": "cppdbg",
+            "request": "launch",
+            // Resolved by CMake Tools:
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [    ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/../..",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
             "name": "(gdb) pipedal_nm_p2pd",
             "type": "cppdbg",
             "request": "launch",

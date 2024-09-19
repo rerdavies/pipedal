@@ -71,6 +71,7 @@ PiPedalModel::PiPedalModel()
       atomConverter(pluginHost.GetMapFeature())
 {
     this->updater = Updater::Create();
+    this->updater->Start();
     this->currentUpdateStatus = updater->GetCurrentStatus();
     this->pedalboard = Pedalboard::MakeDefault();
 #if JACK_HOST
@@ -980,6 +981,7 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
         {
             this->hotspotManager->Reload();
         }
+        this->UpdateDnsSd();
     }
 #else
     this->storage.SetWifiConfigSettings(wifiConfigSettings);
@@ -1020,7 +1022,7 @@ static std::string GetP2pdName()
 
 void PiPedalModel::UpdateDnsSd()
 {
-    avahiService.Unannounce();
+    // avahiService.Unannounce(); let Announce decide whether it wants to unannounce or update.
 
     ServiceConfiguration deviceIdFile;
     deviceIdFile.Load();
