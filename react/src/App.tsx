@@ -56,6 +56,17 @@ const theme = createTheme(
         {
             components: {
                 MuiButton: {
+                    styleOverrides: {
+                        containedPrimary: {
+                            borderRadius: '9999px',
+                            paddingLeft: "14px", paddingRight: "16px"
+                        },
+                        containedSecondary: {
+                            borderRadius: '9999px',
+                            paddingLeft: "14px", paddingRight: "16px"
+                        }
+
+                    },
                     variants: [
                         {
                             props: { variant: 'dialogPrimary' },
@@ -89,6 +100,17 @@ const theme = createTheme(
         {
             components: {
                 MuiButton: {
+                    styleOverrides: {
+                        containedPrimary: {
+                            borderRadius: '9999px',
+                            paddingLeft: "14px", paddingRight: "16px"
+                        },
+                        containedSecondary: {
+                            borderRadius: '9999px',
+                            paddingLeft: "14px", paddingRight: "16px"
+                        }
+
+                    },
                     variants: [
                         {
                             props: { variant: 'dialogPrimary' },

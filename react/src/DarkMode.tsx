@@ -17,6 +17,8 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import { AndroidHostInterface } from "./AndroidHost";
+
 export enum ColorTheme {
     Light,
     Dark,
@@ -26,16 +28,20 @@ export enum ColorTheme {
 
 
 export function getColorScheme(): ColorTheme {
-    const androidHosted = !!((window as any).AndroidHost);
-
+    let androidHost = (window as any).AndroidHost as AndroidHostInterface;
+    if (androidHost) {
+        switch (androidHost.getThemePreference() as number)
+        {
+            case 0: return ColorTheme.Light;
+            case 1: return ColorTheme.Dark;
+            default:
+            case 2: return ColorTheme.System;
+        }
+    }
     switch (localStorage.getItem('colorScheme')) {
         case null:
         default:
-            if (androidHosted) {
-                return ColorTheme.System;
-            } else {
-                return ColorTheme.Light;
-            }
+            return ColorTheme.Light;
         case "Light":
             return ColorTheme.Light;
         case "Dark":
@@ -45,6 +51,23 @@ export function getColorScheme(): ColorTheme {
     }
 }
 export function setColorScheme(value: ColorTheme): void {
+    let androidHost = (window as any).AndroidHost as AndroidHostInterface;
+    if (androidHost) {
+        switch (value) {
+            case ColorTheme.Light:
+                androidHost.setThemePreference(0);
+                break;
+            case ColorTheme.Dark:
+                androidHost.setThemePreference(1);
+                break;
+            default:
+            case ColorTheme.System:
+                androidHost.setThemePreference(2);
+                break;
+
+        }
+    }
+
     var storageValue;
     switch (value) {
         default:

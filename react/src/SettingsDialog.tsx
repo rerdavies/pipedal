@@ -688,7 +688,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
                                         <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Wi-Fi auto hotspot</Typography>
+                                            Wi-Fi auto-hotspot</Typography>
                                         <Typography display="block" variant="caption" noWrap color="textSecondary">
                                             {this.state.wifiConfigSettings.getSummaryText()}
                                         </Typography>
@@ -779,15 +779,21 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         </div>
                                     </ButtonBase>
 
-                                    <ButtonBase
-                                        className={classes.setting}
-                                        onClick={() => { this.handleCheckForUpdates(); }}  >
-                                        <SelectHoverBackground selected={false} showHover={true} />
-                                        <div style={{ width: "100%" }}>
-                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                Check for updates...</Typography>
-                                        </div>
-                                    </ButtonBase>
+                                    {
+                                        this.model.enableAutoUpdate && (
+                                            <ButtonBase
+                                                className={classes.setting}
+                                                onClick={() => { this.handleCheckForUpdates(); }}  >
+                                                <SelectHoverBackground selected={false} showHover={true} />
+                                                <div style={{ width: "100%" }}>
+                                                    <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                        Check for updates...</Typography>
+                                                </div>
+                                            </ButtonBase>
+
+                                        )
+                                    }
+
 
 
 

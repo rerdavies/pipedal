@@ -29,6 +29,8 @@ export interface  AndroidHostInterface {
     chooseNewDevice() : void;
     setDisconnected(isDisconnected: boolean): void;
     launchExternalUrl(url:string): boolean;
+    setThemePreference(theme: number): void;
+    getThemePreference(): number;
 };
 
 export class FakeAndroidHost implements AndroidHostInterface
@@ -50,5 +52,12 @@ export class FakeAndroidHost implements AndroidHostInterface
     launchExternalUrl(url:string): boolean
     {
         return false;
+    }
+    private theme = 1;
+    setThemePreference(theme: number): void{
+        this.theme = theme;
+    }
+    getThemePreference(): number {
+        return this.theme;
     }
 }

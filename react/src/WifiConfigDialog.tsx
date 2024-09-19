@@ -338,7 +338,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     fullScreen={this.state.fullScreen}
                 >
                     {(this.state.fullScreen || !this.state.compactHeight) && (
-                        <DialogTitle>Wi-fi Hotspot</DialogTitle>
+                        <DialogTitle>Wi-fi Auto-Hotspot</DialogTitle>
                     )}
                     <DialogContent>
                         <div style={
@@ -514,6 +514,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                                     onChange={(event, value) => { if (value) { this.setState({ countryCode: value.id }) } }}
                                     options={this.getCountryCodeOptions()}
                                     renderInput={(params) => (<TextField {...params} variant="standard" label="Regulatory Domain" />)}
+                                    disabled={!enabled}
                                 />
                                 {/*
                                     <Select variant="standard" label="Regulatory Domain" id="countryCodeSelect" 

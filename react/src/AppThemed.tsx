@@ -163,7 +163,6 @@ const appStyles = (theme: Theme) => createStyles({
     loadingBox: {
         position: "relative",
         top: "20%",
-        width: "240px",
         color: isDarkMode() ? theme.palette.text.secondary : "#888",
         marginLeft: "auto",
         marginRight: "auto",
@@ -525,9 +524,12 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         return undefined;
     }
     promptForUpdateHandler(newValue: boolean) {
-        if (this.state.updateDialogOpen !== newValue)
+        if (this.model_.enableAutoUpdate)
         {
-            this.setState({updateDialogOpen: newValue});
+            if (this.state.updateDialogOpen !== newValue)
+            {
+                this.setState({updateDialogOpen: newValue});
+            }
         }
     }
     componentDidMount() {
@@ -959,7 +961,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                             </p>
                         </div>
                         <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
-                            <Button variant='contained' color="primary" component='button'
+                            <Button variant='contained' color="primary" 
                                 onClick={() => this.handleReload()} >
                                 Reload
                             </Button>

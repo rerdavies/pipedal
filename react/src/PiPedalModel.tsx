@@ -687,6 +687,10 @@ export class PiPedalModel //implements PiPedalModel
     private lastCanUpdateNow: boolean = false;
     private updatePromptForUpdate() {
         this.clearPromptForUpdateTimer();
+        if (!this.enableAutoUpdate)
+        {
+            return;
+        }
 
         let stateEnabled = true; // must be present to accept alerts.  this.state.get() === State.Ready;
         let timeEnabled = false;
@@ -909,7 +913,7 @@ export class PiPedalModel //implements PiPedalModel
     maxFileUploadSize: number = 512 * 1024 * 1024;
     maxPresetUploadSize: number = 1024 * 1024;
     debug: boolean = false;
-
+    enableAutoUpdate: boolean = false;
 
     requestConfig(): Promise<boolean> {
         const myRequest = new Request(this.varRequest('config.json'));
@@ -920,6 +924,7 @@ export class PiPedalModel //implements PiPedalModel
                 }
             )
             .then(data => {
+                this.enableAutoUpdate = !!data.enable_auto_update;
                 if (data.max_upload_size) {
                     this.maxPresetUploadSize = data.max_upload_size;
                 }
