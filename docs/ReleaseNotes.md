@@ -1,17 +1,33 @@
 # Release Notes
-## PiPedal 1.2.49 Release
+## PiPedal 1.2.51 Release
 
-The theme for this release: fixing big, embarassing bugs.
+<b>Important notice:</b> Changes to the Auto-update code prevent previous versions from automatically updating to this version. You will have to install this version by downloading [debian package](https://rerdavies.github.io/pipedal/download.html) and installing it manually.
 
-URGENT: PiPedal 1.2.47 fixed a significant and dangerous defect that may cause loss of presets, banks or configuration data if you remove power from your Raspberry Pi within up to five minutes of last saving data instead of performing an orderly shutdown or reboot. Users of PiPedal should upgrade to at least version 1.2.47 immediately, if they have not alread done so.
+This release replaces Wi-Fi Direct connections with Wi-Fi hotspots. Support for Wi-Fi Direct on Linux and Android has been fragile for some time. An update to Raspberry Pi OS in early September broke Wi-Fi Direct support completely. As it turns out, Auto-hotspots work much better. 
 
-In addition, a bug in the Auto Update code prevents PiPedal from seeing PiPedal Release or Beta builds if the most recent build is a Development or Experimental build. If you want to stay in sync with Release or Beta update streams, please install this version right away.
+The new Auto-Hostpot feature in PiPedal allows you to configure your Raspberry Pi so it automatically starts a Wi-Fi hotspot whenever you are away from home. The updated Android PiPedal Client will automatically detect and connect to your Raspberry PI whenever it is visible on the current Wi-Fi network. An updated Android [PiPedal Remote](https://play.google.com/store/apps/details?id=com.twoplay.pipedal&hl=en_US&pli=1) app has been posted on Google Play. Make sure you are using the updated version.
+
+New MIDI system bindings allow you to enable or disable the Wi-Fi hotspot, and to shut down or reboot your Raspberry Pi using MIDI-triggered events.
+
+NOTICE: PiPedal 1.2.47 fixed a significant and dangerous defect that may cause loss of presets, banks or configuration data if you remove power from your Raspberry Pi within up to five minutes of last saving data instead of performing an orderly shutdown or reboot. Users of PiPedal should upgrade to at least version 1.2.47 immediately, if they have not alread done so.
+
 
 Bug fixes:
-- Unable to configure Wi-Fi direct connections.
-- Update checks do not see Release or Beta updates if there is a later Development build.
+- PiPedal Remote client theme native pages do not match the selected PiPedal UI theme.
 - Unable to configure audio buffers properly for devices with minBufferSize=256.
-- Ongoing improvements to TooB Neural Amp Modeler.
+- Release and Beta updates not visible if the most recent release is a development build.
+- Revised auto-update procedure, including a new signing procedure.
+- Ongoing improvements to TooB Neural Amp Modeler (bug fixes, performance improvements)
+- pipedald service hangs and/or throws exceptions on shutdown.
+- Update DNS/SD service announcements when the device name is changed. 
+- Unannounce DNS/DS services when the pipedal services shuts down.
+- Auto-uprade checks may exceed the throttling rate of Github API calls when checking for updates.
+- Memory corruption when ALSA device creation fails.
+- MIDI input causing audio glitches and underruns.
+- Unable to connect when using IPv6 connections and mDNS name resolution.
+- Default web port configuration overwritten by upgrades.
+- Remove dependencies on old pre-NetworkManager network services required by Wifi-Direct code.
+- Refuse to install on versions of Raspberry Pi OS prior to bookworm.
 
 Known issues:
 - TooB Neural Amp Modeler runs 5% slower than Mike Oliphant's Neural Amp Modeler, despite running virtually identical code from Steven Atkins' NeuralAmpModelerCore project. Investigation continues.

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.2.49
+    VERSION 1.2.51
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
-set (DISPLAY_VERSION "PiPedal v1.2.49-Development")
+set (DISPLAY_VERSION "PiPedal v1.2.51-Release")
 set (PACKAGE_ARCHITECTURE "arm64")
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
@@ -92,7 +92,7 @@ install(CODE
 
 
 set(CPACK_GENERATOR "DEB")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Robin Davies<rerdavies@gmail.com>") # required
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Robin E. R. Davies<rerdavies@gmail.com>") # required
 set(CPACK_PACKAGE_VENDOR "Robin Davies")
 set(CPACK_PACKAGE_DESCRIPTION "IoT guitar effect pedal for Raspberry Pi, with phone-friendly web interface.")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IoT guitar effect pedal for Raspberry Pi")
@@ -100,13 +100,13 @@ set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
 #set(CPACK_DEBIAN_PACKAGE_DEPENDS "jackd2, hostapd, dhcpcd, dnsmasq" )
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, hostapd, authbind, gpg" )
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, authbind, gpg" )
 #set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
-set (CPACK_STRIP_FILES ON)
+set (CPACK_STRIP_FILES true)
 
 set(CPACK_DEBIAN_PACKAGE_SIGN_ALGORITHM "detached")
 set(CPACK_DEBIAN_PACKAGE_SIGN_TYPE "origin")
