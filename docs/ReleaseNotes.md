@@ -1,7 +1,7 @@
 # Release Notes
 ## PiPedal 1.2.51 Release
 
-<b>Important notice:</b> Changes to the Auto-update code prevent previous versions from automatically updating to this version. You will have to install this version by downloading [debian package](https://rerdavies.github.io/pipedal/download.html) and installing it manually.
+<b>Important notice:</b> Changes to the Auto-update code prevent previous versions from automatically updating to this version. You will have to install this version by downloading the [debian package](https://rerdavies.github.io/pipedal/download.html) and installing it manually.
 
 This release replaces Wi-Fi Direct connections with Wi-Fi hotspots. Support for Wi-Fi Direct on Linux and Android has been fragile for some time. An update to Raspberry Pi OS in early September broke Wi-Fi Direct support completely. As it turns out, Auto-hotspots work much better. 
 
@@ -9,7 +9,7 @@ The new Auto-Hostpot feature in PiPedal allows you to configure your Raspberry P
 
 New MIDI system bindings allow you to enable or disable the Wi-Fi hotspot, and to shut down or reboot your Raspberry Pi using MIDI-triggered events.
 
-NOTICE: PiPedal 1.2.47 fixed a significant and dangerous defect that may cause loss of presets, banks or configuration data if you remove power from your Raspberry Pi within up to five minutes of last saving data instead of performing an orderly shutdown or reboot. Users of PiPedal should upgrade to at least version 1.2.47 immediately, if they have not alread done so.
+NOTICE: PiPedal 1.2.47 fixed a significant and dangerous defect that may cause loss of presets, banks or configuration data if you remove power from your Raspberry Pi within up to five minutes of last saving data instead of performing an orderly shutdown or reboot. Users of PiPedal should upgrade to at least version 1.2.47 immediately, if they have not already done so.
 
 
 Bug fixes:
