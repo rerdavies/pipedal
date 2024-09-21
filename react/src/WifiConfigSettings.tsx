@@ -21,11 +21,14 @@
 
 export default class WifiConfigSettings {
     deserialize(input: any) : WifiConfigSettings{
+        this.autoStartMode = input.autoStartMode;
+        this.hasSavedPassword = input.hasSavedPassword;
+        this.homeNetwork = input.homeNetwork;
         this.valid = input.valid;
+
         this.wifiWarningGiven = input.wifiWarningGiven;
-        this.rebootRequired = input.rebootRequired;
-        this.enable = input.enable;
         this.hotspotName = input.hotspotName;
+        this.mdnsName = input.mdnsName;
         this.hasPassword = input.hasPassword;
         this.password = input.password;
         this.countryCode = input.countryCode;
@@ -35,28 +38,27 @@ export default class WifiConfigSettings {
     clone() : WifiConfigSettings {
         return new WifiConfigSettings().deserialize(this);
     }
-    valid: boolean =  true;
+    autoStartMode: number = 0;
+    hasSavedPassword: boolean = false;
+    homeNetwork: string = "";
+    mdnsName: string = "";
     wifiWarningGiven: boolean = false;
-    enable: boolean = true;
     hasPassword: boolean = false;
-    rebootRequired = false;
+    valid: boolean = false;
     hotspotName: string = "pipedal";
     password: string = "";
     countryCode: string = "US";
-    channel: string = "g6";
+    channel: string = "0";
 
+    isEnabled() { return this.autoStartMode !== 0;}
     getSummaryText() {
         let result: string;
         if (!this.valid) {
             result =  "Not available.";
-        } else if (!this.enable) {
+        } else if (this.autoStartMode === 0) {
             result = "Disabled.";
         } else {
             result = this.hotspotName;
-        }
-        if (this.rebootRequired)
-        {
-            result += " (Restart required)";
         }
         return result;
     }

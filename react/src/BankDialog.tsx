@@ -392,7 +392,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
 
         getSelectedBankName() {
             try {
-                return this.model.banks.get().getEntry(this.state.selectedItem)!.name;
+                return this.model.banks.get()?.getEntry(this.state.selectedItem)?.name??"";
             } catch (error) {
                 return "";
             }

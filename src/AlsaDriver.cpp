@@ -202,8 +202,16 @@ namespace pipedal
         {
             Close();
 #ifdef ALSADRIVER_CONFIG_DBG
-            snd_output_close(snd_output);
-            snd_pcm_status_free(snd_status);
+            if (snd_output)
+            {
+                snd_output_close(snd_output);
+                snd_output = nullptr;
+            }
+            if (snd_status)
+            {
+                snd_pcm_status_free(snd_status);
+                snd_status = nullptr;
+            }
 #endif
         }
 
@@ -248,17 +256,15 @@ namespace pipedal
 
         std::mutex terminateSync;
 
-        bool terminateAudio_ = false;
+        std::atomic<bool> terminateAudio_ = false;
 
         void terminateAudio(bool terminate)
         {
-            std::lock_guard lock{terminateSync};
             this->terminateAudio_ = terminate;
         }
 
         bool terminateAudio()
         {
-            std::lock_guard lock{terminateSync};
             return this->terminateAudio_;
         }
 
@@ -1289,10 +1295,10 @@ namespace pipedal
                 FillOutputBuffer();
 
                 err = snd_pcm_start(handle);
-                // if (err < 0)
-                // {
-                //     throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
-                // }
+                if (err < 0)
+                {
+                    throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
+                }
                 return;
             }
             else if (err == -ESTRPIPE)
@@ -1312,10 +1318,10 @@ namespace pipedal
                 }
                 return;
             }
-            throw PiPedalStateException(SS("ALSA error:" << snd_strerror(err)));
+            throw PiPedalStateException(SS("ALSA error: " << snd_strerror(err)));
         }
 
-        std::jthread *audioThread;
+        std::jthread *audioThread = nullptr;
         bool audioRunning;
 
         bool block = false;
@@ -1422,45 +1428,58 @@ namespace pipedal
                     }
 
                     // snd_pcm_wait(captureHandle, 1);
-
-                    ssize_t framesRead;
-                    if ((framesRead = ReadBuffer(captureHandle, this->rawCaptureBuffer, bufferSize)) < 0)
+                    ssize_t framesToRead = bufferSize;
+                    ssize_t framesRead = 0;
+                    bool xrun = false;
+                    while (framesToRead != 0)
                     {
-                        this->driverHost->OnUnderrun();
-                        auto state = snd_pcm_state(playbackHandle);
-                        XrunRecoverInputUnderrun(captureHandle, framesRead);
-                        continue;
-                    }
-                    else
-                    {
-                        cpuUse.AddSample(ProfileCategory::Read);
-                        if (framesRead == 0)
-                            continue;
-                        if (framesRead != bufferSize)
-                        {
-                            throw PiPedalStateException("Invalid read.");
-                        }
-
-                        (this->*copyInputFn)(framesRead);
-                        cpuUse.AddSample(ProfileCategory::Driver);
-
-                        this->driverHost->OnProcess(framesRead);
-
-                        cpuUse.AddSample(ProfileCategory::Execute);
-
-                        (this->*copyOutputFn)(framesRead);
-                        cpuUse.AddSample(ProfileCategory::Driver);
-                        // process.
-
-                        ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer, framesRead);
-
-                        if (err < 0)
+                        ssize_t thisTime = framesToRead;
+                        ssize_t nFrames;
+                        if ((nFrames = ReadBuffer(
+                            captureHandle, 
+                            this->rawCaptureBuffer + this->captureFrameSize*framesRead, 
+                            bufferSize)) < 0)
                         {
                             this->driverHost->OnUnderrun();
-                            XrunRecoverOutputOverrun(playbackHandle, err);
+                            auto state = snd_pcm_state(playbackHandle);
+                            XrunRecoverInputUnderrun(captureHandle, nFrames);
+                            xrun = true;
+                            break;
                         }
-                        cpuUse.AddSample(ProfileCategory::Write);
+                        framesRead += nFrames;
+                        framesToRead -= nFrames; 
                     }
+                    if (xrun)
+                    {
+                        continue;
+                    }
+                    cpuUse.AddSample(ProfileCategory::Read);
+                    if (framesRead == 0)
+                        continue;
+                    if (framesRead != bufferSize)
+                    {
+                        throw PiPedalStateException("Invalid read.");
+                    }
+
+                    (this->*copyInputFn)(framesRead);
+                    cpuUse.AddSample(ProfileCategory::Driver);
+
+                    this->driverHost->OnProcess(framesRead);
+
+                    cpuUse.AddSample(ProfileCategory::Execute);
+
+                    (this->*copyOutputFn)(framesRead);
+                    cpuUse.AddSample(ProfileCategory::Driver);
+                    // process.
+
+                    ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer, framesRead);
+
+                    if (err < 0)
+                    {
+                        this->driverHost->OnUnderrun();
+                        XrunRecoverOutputOverrun(playbackHandle, err);
+                    }
+                    cpuUse.AddSample(ProfileCategory::Write);
                 }
             }
             catch (const std::exception &e)
@@ -1593,8 +1612,8 @@ namespace pipedal
             int dataLength = 0;
             int dataIndex = 0;
             size_t statusBytesRemaining = 0;
-            size_t data0;
-            size_t data1;
+            size_t data0 =0;
+            size_t data1 = 0;
 
             size_t eventCount = 0;
             MidiEvent events[MAX_MIDI_EVENT];
@@ -1862,14 +1881,21 @@ namespace pipedal
         {
             const auto &devices = channelSelection.GetInputMidiDevices();
 
-            midiStates.resize(devices.size());
+            midiStates.reserve(devices.size());
 
             for (size_t i = 0; i < devices.size(); ++i)
             {
                 const auto &device = devices[i];
-                MidiState *state = new MidiState();
-                midiStates[i] = state;
-                state->Open(device);
+                MidiState *midiState = nullptr;
+                try {
+                    midiState = new MidiState();
+                    midiState->Open(device);
+                    midiStates.push_back(midiState);
+                } catch (const std::exception &e)
+                {
+                    // logged already.
+                    delete midiState;
+                }
             }
         }
 
@@ -2085,16 +2111,26 @@ namespace pipedal
             throw;
         }
         if (playbackHwParams)
+        {
             snd_pcm_hw_params_free(playbackHwParams);
-        if (captureHwParams)
+            playbackHwParams = nullptr;
+        }
+
+        if (captureHwParams) {
             snd_pcm_hw_params_free(captureHwParams);
+            captureHwParams = nullptr;
+        }
 
         if (playbackHandle)
         {
             snd_pcm_close(playbackHandle);
+            playbackHandle = nullptr;
         }
         if (captureHandle)
+        {
             snd_pcm_close(captureHandle);
+            captureHandle = nullptr;
+        }
         return result;
     }
 

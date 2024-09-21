@@ -123,7 +123,7 @@ void WifiDirectConfigSettings::ParseArguments(const std::vector<std::string> &ar
 
     if (!WifiConfigSettings::ValidateChannel(this->countryCode_,channel_))
     {
-        throw invalid_argument(SS("Invalid WiFi channel: " << channel_));
+        throw invalid_argument(SS("Invalid Wi-Fi channel: " << channel_));
     }
 }
 

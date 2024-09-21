@@ -81,9 +81,17 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
+
+static void AsanCheck()
+{
+    char *t = new char[5];
+    t[5] = 'x';
+    delete t;
+    exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[])
 {
-
 
 #ifndef WIN32
     umask(002); // newly created files in /var/pipedal get 775-ish permissions, which improves debugging/live-service interaction.
@@ -117,7 +125,7 @@ int main(int argc, char *argv[])
         if (help || parser.Arguments().size() == 0)
         {
             std::cout << "pipedald - Pipedal web socket server.\n"
-                         "Copyright (c) 2022 Robin Davies.\n"
+                         "Copyright (c) 2022-2024 Robin Davies.\n"
                          "\n";
         }
     }
@@ -220,7 +228,35 @@ int main(int argc, char *argv[])
                 return EXIT_SUCCESS; // tell systemd not to auto-restart.
             }
         }
+        // only accept signals on the main thread.
+        // block now so that threads spawned by model inherit the block mask.
+        int sig;
+        sigset_t sigSet;
+        int s;
+        sigemptyset(&sigSet);
+        sigaddset(&sigSet, SIGINT);
+        sigaddset(&sigSet, SIGTERM);
+        sigaddset(&sigSet, SIGUSR1);
+
+        s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
+        if (s != 0)
+        {
+            throw std::logic_error("pthread_sigmask failed.");
+        }
+
+
+
         PiPedalModel model;
+
+
+        model.SetNetworkChangedListener(
+            [&server]() mutable {
+                if (server) 
+                {
+                    server->DisplayIpAddresses();
+                }
+            }
+        );
 
         model.SetRestartListener(
             []()
@@ -243,20 +279,6 @@ int main(int argc, char *argv[])
 
         model.WaitForAudioDeviceToComeOnline();
 
-        // only accept signals on the main thread.
-        int sig;
-        sigset_t sigSet;
-        int s;
-        sigemptyset(&sigSet);
-        sigaddset(&sigSet, SIGINT);
-        sigaddset(&sigSet, SIGTERM);
-        sigaddset(&sigSet, SIGUSR1);
-
-        s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
-        if (s != 0)
-        {
-            throw std::logic_error("pthread_sigmask failed.");
-        }
 
 #if JACK_HOST
         if (systemd)
@@ -302,9 +324,9 @@ int main(int argc, char *argv[])
         {
             server->RunInBackground(-1);
 
-            SetThreadName("avahi");
-            model.UpdateDnsSd(); // now that the server is running, publish a  DNS-SD announcement.
-            SetThreadName("main");
+
+            model.StartHotspotMonitoring();
+
 
             {
                 sigwait(&sigSet, &sig);

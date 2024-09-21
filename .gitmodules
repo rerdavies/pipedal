@@ -3,5 +3,5 @@
 	url = https://github.com/rerdavies/pipedal_p2pd
 [submodule "modules/websocketpp"]
 	path = modules/websocketpp
-	url = https://github.com/zaphoyd/websocketpp.git
+	url = https://github.com/rerdavies/websocketpp.git
 	branch = develop

@@ -19,6 +19,7 @@
 
 #pragma once
 #include <mutex>
+#include "UpdaterStatus.hpp"
 #include "PluginHost.hpp"
 #include "GovernorSettings.hpp"
 #include "Pedalboard.hpp"
@@ -30,13 +31,11 @@
 #include <functional>
 #include <filesystem>
 #include "Banks.hpp"
-#include "Updater.hpp"
 #include "PiPedalConfiguration.hpp"
 #include "JackServerSettings.hpp"
 #include "WifiConfigSettings.hpp"
 #include "WifiDirectConfigSettings.hpp"
 #include "AdminClient.hpp"
-#include "AvahiService.hpp"
 #include <thread>
 #include "Promise.hpp"
 #include "AtomConverter.hpp"
@@ -48,6 +47,8 @@ namespace pipedal
     struct RealtimeMidiProgramRequest;
     struct RealtimeNextMidiProgramRequest;
     class Lv2PluginChangeMonitor;
+    class Updater;
+    class AvahiService;
 
     class IPiPedalModelSubscriber
     {
@@ -78,18 +79,31 @@ namespace pipedal
         virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites) = 0;
         virtual void OnShowStatusMonitorChanged(bool show) = 0;
         virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) = 0;
+
         //virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
         virtual void OnErrorMessage(const std::string&message) = 0;
         virtual void OnLv2PluginsChanging() = 0;
+        virtual void OnNetworkChanging(bool hotspotConnected) = 0;
         virtual void Close() = 0;
     };
 
+    class HotspotManager;
+
     class PiPedalModel : private IAudioHostCallbacks
     {
-    private:
+    public:
+        using clock = std::chrono::steady_clock;
 
+        using PostHandle = uint64_t;
+        using PostCallback = std::function<void()>;
+        using NetworkChangedListener = std::function<void(void)>;
+        
+
+    private:
+        std::unique_ptr<HotspotManager> hotspotManager;
+
+        std::unique_ptr<Updater> updater;
         UpdateStatus currentUpdateStatus;
-        Updater updater;
         void OnUpdateStatusChanged(const UpdateStatus&updateStatus);
         std::function<void(void)> restartListener;
 
@@ -99,7 +113,7 @@ namespace pipedal
 
         std::vector<MidiBinding> systemMidiBindings;
 
-        AvahiService avahiService;
+        std::unique_ptr<AvahiService> avahiService;
         uint16_t webPort;
 
         PiPedalAlsaDevices alsaDevices;
@@ -140,6 +154,14 @@ namespace pipedal
         Storage storage;
         bool hasPresetChanged = false;
 
+        NetworkChangedListener networkChangedListener;
+        void FireNetworkChanged() {
+            if (networkChangedListener)
+            {
+                networkChangedListener();
+            }
+        }
+
         std::unique_ptr<AudioHost> audioHost;
         JackConfiguration jackConfiguration;
         std::shared_ptr<Lv2Pedalboard> lv2Pedalboard;
@@ -175,6 +197,7 @@ namespace pipedal
         std::vector<RealtimePatchPropertyRequest *> outstandingParameterRequests;
 
         IPiPedalModelSubscriber *GetNotificationSubscriber(int64_t clientId);
+        std::atomic<bool> closed = false;
 
     private: // IAudioHostCallbacks
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;
@@ -184,6 +207,8 @@ namespace pipedal
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
         virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) override;
         virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom*atomValue) override;
+        virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
+
 
         void OnNotifyPatchProperty(uint64_t instanceId, LV2_URID outputAtomProperty, const std::string &atomJson);
 
@@ -193,6 +218,11 @@ namespace pipedal
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) override;
         virtual void OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) override;
 
+        PostHandle networkChangingDelayHandle = 0;
+        void CancelNetworkChangingTimer();
+        
+        void OnNetworkChanging(bool ethernetConnected,bool hotspotConnected);
+        void OnNetworkChanged(bool ethernetConnected, bool hotspotConnected);
 
         void UpdateVst3Settings(Pedalboard &pedalboard);
 
@@ -202,6 +232,26 @@ namespace pipedal
     public:
         PiPedalModel();
         virtual ~PiPedalModel();
+
+        void RequestShutdown(bool restart);
+
+        virtual PostHandle Post(PostCallback&&fn);
+        virtual PostHandle PostDelayed(const clock::duration&delay,PostCallback&&fn);
+        virtual bool CancelPost(PostHandle handle);
+
+        template<class REP,class PERIOD> 
+        PostHandle PostDelayed(const std::chrono::duration<REP,PERIOD>&delay,PostCallback&&fn)
+        {
+            return PostDelayed(
+                std::chrono::duration_cast<clock::duration,REP,PERIOD>(delay),
+                std::move(fn));
+        }
+
+        void SetNetworkChangedListener(NetworkChangedListener listener) {
+            networkChangedListener = listener;
+        }
+
+        void StartHotspotMonitoring();
 
         void WaitForAudioDeviceToComeOnline();
 
@@ -291,6 +341,7 @@ namespace pipedal
 
         void SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings);
         WifiConfigSettings GetWifiConfigSettings();
+        std::vector<std::string> GetKnownWifiNetworks();
 
         void SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiConfigSettings);
         WifiDirectConfigSettings GetWifiDirectConfigSettings();

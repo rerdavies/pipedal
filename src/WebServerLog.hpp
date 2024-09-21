@@ -117,7 +117,7 @@ public:
 
     /// Write a string message to the given channel
     /**
-     * @param channel The channel to write to
+     * @param channel The channel to write tosu
      * @param msg The message to write
      */
     void write(level channel, std::string const & msg) {
@@ -126,19 +126,19 @@ public:
         {
             case elevel::devel:
             case elevel::library:
-                Lv2Log::debug(msg);
+                Lv2Log::debug("WebServer: %s",msg.c_str());
                 break;
             case elevel::info:
-                Lv2Log::info(msg);
+                Lv2Log::info("WebServer: %s",msg.c_str());
                 break;
             case elevel::warn:
-                Lv2Log::warning(msg);
+                Lv2Log::warning("WebServer: %s",msg.c_str());
                 break;
             case elevel::rerror:
-                Lv2Log::error(msg);
+                Lv2Log::error("WebServer: %s",msg.c_str());
                 break;
             case elevel::fatal:
-                Lv2Log::error("Fatal error: " + msg);
+                Lv2Log::error("WebServer fatal error: %s",msg.c_str());
                 break;
             default:
                 break;
@@ -159,7 +159,7 @@ public:
     }
 
     bool dynamic_test(level channel) {
-        return (m_channels) & channel != 0;
+        return (m_channels & channel) != 0;
     }
 
 protected:

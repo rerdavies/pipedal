@@ -31,21 +31,17 @@ interface DialogExState {
 }
 
 class DialogStackEntry {
-    constructor(tag: string)
+    constructor(dialog: DialogEx)
     {
-        this.tag = tag;
+        this.tag = dialog.props.tag;
+        this.dialog = dialog;
     }
     tag: string;
+    dialog: DialogEx;
 };
 
 let dialogStack: DialogStackEntry[] = [];
 
-function peekDialogStack(): string {
-    if (dialogStack.length !== 0) {
-        return dialogStack[dialogStack.length-1].tag;
-    }
-    return "";
-}
 
 function popDialogStack(): void {
     if (dialogStack.length !== 0)
@@ -53,12 +49,33 @@ function popDialogStack(): void {
         dialogStack.splice(dialogStack.length-1,1);
     }
 }
-function pushDialogStack(tag: string): void {
-    dialogStack.push(new DialogStackEntry(tag));
+function pushDialogStack(dialog: DialogEx): void {
+    dialogStack.push(new DialogStackEntry(dialog));
 }
 
+export interface DialogStackState{
+    tag: String;
+    previousState: DialogStackState | null;
+};
 
 
+// Close all dialogs higher in the dialog stack than "tag".
+export function removeDialogStackEntriesAbove(tag: string)
+{
+    for (let i = dialogStack.length-1; i >= 0; --i)
+    {
+        let entry = dialogStack[i];
+        if (entry.tag === tag)
+        {
+            return;
+        }
+        popDialogStack();
+        if (entry.dialog.props.open && entry.dialog.props.onClose)
+        {
+            entry.dialog.props.onClose({}, "backdropClick");
+        }
+    }
+}
 class DialogEx extends React.Component<DialogExProps,DialogExState>  {
     constructor(props: DialogExProps)
     {
@@ -75,22 +92,28 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
     hasHooks: boolean = false;
     stateWasPopped: boolean = false;
 
-    handlePopState(e: any): any 
+    handlePopState(ev: PopStateEvent): any 
     {
-        let shouldClose = (peekDialogStack() === this.props.tag);
-        if (shouldClose)
-        {
+        let evTag: DialogStackState | null = ev.state as DialogStackState | null;
+        if (evTag && evTag.tag === this.props.tag) {
+            removeDialogStackEntriesAbove(this.props.tag);
 
             if (!this.stateWasPopped)
             {
                 this.stateWasPopped = true;
                 popDialogStack();
                 if (this.props.open) {
-                    this.props.onClose?.(e,"backdropClick");
+                    this.props.onClose?.(ev,"backdropClick");
                 }
             }
+            window.history.replaceState(evTag.previousState,"",window.location.href);
             window.removeEventListener("popstate",this.handlePopState);
-            e.stopPropagation();
+
+            if (window.location.hash === "#menu") // The menu popstate is next?
+            {
+                window.history.back(); // then clear off the menu popstate too.
+            }
+            ev.stopPropagation();
         }
     }
 
@@ -105,19 +128,18 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
                 this.stateWasPopped = false;
                 window.addEventListener("popstate",this.handlePopState);
                 
-                pushDialogStack(this.props.tag);
-                let state: {tag: string} = {tag: this.props.tag};
-                // eslint-disable-next-line no-restricted-globals
-                history.pushState(
-                    state,
+                pushDialogStack(this);
+                let dialogStackState: DialogStackState = {tag: this.props.tag,previousState: window.history.state as DialogStackState | null};
+                window.history.replaceState(dialogStackState,"",window.location.href);
+                window.history.pushState(
+                    null,
                     "",
                     "#" + this.props.tag
                 );
             } else {
                 if (!this.stateWasPopped)
                 {
-                    // eslint-disable-next-line no-restricted-globals
-                    history.back();
+                    window.history.back();
                 }
             }
         }

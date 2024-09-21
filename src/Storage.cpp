@@ -38,7 +38,6 @@ using namespace pipedal;
 const char *BANK_EXTENSION = ".bank";
 const char *BANKS_FILENAME = "index.banks";
 
-#define WIFI_CONFIG_SETTINGS_FILENAME "wifiConfigSettings.json";
 #define USER_SETTINGS_FILENAME "userSettings.json";
 
 Storage::Storage()
@@ -953,43 +952,29 @@ std::string Storage::GetGovernorSettings() const
     return this->userSettings.governor_;
 }
 
-void Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings)
+bool Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings)
 {
     WifiConfigSettings copyToSave = wifiConfigSettings;
-    copyToSave.rebootRequired_ = false;
-    if (!copyToSave.enable_)
+    WifiConfigSettings previousValue;
+    previousValue.Load();
+    if (!copyToSave.hasPassword_)
     {
-        copyToSave.hasPassword_ = false;
-    }
-    copyToSave.password_ = "";
-
-    std::filesystem::path path = this->dataRoot / WIFI_CONFIG_SETTINGS_FILENAME;
-    {
-        pipedal::ofstream_synced f(path);
-        if (!f.is_open())
+        copyToSave.hasPassword_ = previousValue.hasPassword_;
+        copyToSave.password_ = previousValue.password_;
+        copyToSave.hasSavedPassword_ = previousValue.hasPassword_;
+    } else {
+        if (copyToSave.IsEnabled())
         {
-            throw PiPedalException("Unable to write to " + ((std::string)path));
+            copyToSave.hasSavedPassword_ = copyToSave.hasPassword_;
         }
-        json_writer writer(f, false);
-        writer.write(&copyToSave);
     }
-
-    WifiConfigSettings copyToStore = wifiConfigSettings;
-    if (copyToStore.enable_)
-    {
-        copyToStore.hasPassword_ = copyToStore.password_.length() != 0 || this->wifiConfigSettings.hasPassword_;
-    }
-    else
-    {
-        copyToStore.hasPassword_ = false;
-    }
-    copyToStore.password_ = "";
-    copyToStore.rebootRequired_ = false;
-    if (copyToStore.enable_ && !copyToStore.hasPassword_)
-    {
-        copyToStore.hasPassword_ = this->wifiConfigSettings.hasPassword_;
-    }
-    this->wifiConfigSettings = copyToStore;
+    bool configChanged = copyToSave.ConfigurationChanged(previousValue);
+    copyToSave.Save();
+    this->wifiConfigSettings = copyToSave;
+    this->wifiConfigSettings.hasPassword_ = false;
+    this->wifiConfigSettings.password_ = "";
+    
+    return configChanged;
 }
 
 void Storage::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiDirectConfigSettings)
@@ -1030,27 +1015,8 @@ void Storage::LoadUserSettings()
 }
 void Storage::LoadWifiConfigSettings()
 {
-    std::filesystem::path path = this->dataRoot / WIFI_CONFIG_SETTINGS_FILENAME;
-
-    try
-    {
-        if (std::filesystem::is_regular_file(path))
-        {
-            std::ifstream f(path);
-            if (!f.is_open())
-            {
-                throw PiPedalException("Unable to write to " + ((std::string)path));
-            }
-            json_reader reader(f);
-            WifiConfigSettings wifiConfigSettings;
-            reader.read(&wifiConfigSettings);
-            this->wifiConfigSettings = wifiConfigSettings;
-        }
-    }
-    catch (const std::exception &)
-    {
-    }
-    this->wifiConfigSettings.valid_ = true;
+    this->wifiConfigSettings.Load();
+    this->wifiConfigSettings.valid_ = this->wifiConfigSettings.hasPassword_ && !this->wifiConfigSettings.countryCode_.empty();
 }
 void Storage::LoadWifiDirectConfigSettings()
 {
@@ -1065,7 +1031,10 @@ void Storage::LoadWifiDirectConfigSettings()
 
 WifiConfigSettings Storage::GetWifiConfigSettings()
 {
-    return this->wifiConfigSettings;
+    WifiConfigSettings result = this->wifiConfigSettings;
+    result.hasPassword_ = false;
+    result.password_ = "";
+    return result;
 }
 WifiDirectConfigSettings Storage::GetWifiDirectConfigSettings()
 {
@@ -1440,7 +1409,7 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
 
 void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
 {
-    std::filesystem::path fileName = this->dataRoot / "SystemMidiBindings.json";
+    std::filesystem::path fileName = this->dataRoot / "config" / "SystemMidiBindings.json";
     pipedal::ofstream_synced f;
     f.open(fileName);
     if (f.is_open())
@@ -1453,19 +1422,39 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
 {
     std::vector<MidiBinding> result;
 
-    std::filesystem::path fileName = this->dataRoot / "SystemMidiBindings.json";
+    std::filesystem::path fileName = this->dataRoot / "config" / "SystemMidiBindings.json";
+    if (!std::filesystem::exists(fileName)) {
+        // pick up from legacy location?
+        fileName = this->configRoot / "config" / "SystemMidiBindings.json";
+    }
     std::ifstream f;
     f.open(fileName);
     if (f.is_open())
     {
-        json_reader reader(f);
-        reader.read(&result);
+        try {
+            json_reader reader(f);
+            reader.read(&result);
+            if (result.size() == 2)
+            {
+                result.push_back(MidiBinding::SystemBinding("stopHotspot"));
+                result.push_back(MidiBinding::SystemBinding("startHotspot"));
+                result.push_back(MidiBinding::SystemBinding("shutdown"));
+                result.push_back(MidiBinding::SystemBinding("reboot"));
+            }
+            return result;
+        }
+        catch (const std::exception&e)
+        {
+            Lv2Log::warning(SS("Can't read file " << fileName << ". " << e.what()));
+        }
     }
-    else
-    {
-        result.push_back(MidiBinding::SystemBinding("prevProgram"));
-        result.push_back(MidiBinding::SystemBinding("nextProgram"));
-    }
+    result.clear();
+    result.push_back(MidiBinding::SystemBinding("prevProgram"));
+    result.push_back(MidiBinding::SystemBinding("nextProgram"));
+    result.push_back(MidiBinding::SystemBinding("stopHotspot"));
+    result.push_back(MidiBinding::SystemBinding("startHotspot"));
+    result.push_back(MidiBinding::SystemBinding("shutdown"));
+    result.push_back(MidiBinding::SystemBinding("reboot"));
     return result;
 }
 

@@ -100,3 +100,15 @@ std::u32string pipedal::ToUtf32(const std::string &s)
     }
     return result.str();
 }
+
+
+std::string pipedal::GetHostName()
+{
+    char buffer[1024];
+    if (gethostname(buffer,1024) != 0)
+    {
+        buffer[0] = '\0';
+    }
+    buffer[1023] = '\0';
+    return buffer;
+}

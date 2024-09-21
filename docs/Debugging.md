@@ -68,8 +68,9 @@ The React app will display the message "Error: Failed to connect to the server",
         ...
     }
 
-Setting socket_server_address to "*" configures the web app to reconnect using the host address the browser
-request used to connect to the web app. (e.g. 127.0.0.1, pipedal.local, the address of the Wi-Fi Direct connection &c). If you choose to provide an explicit address, remember that it is to that address that the web browser will connect.
+Setting socket_server_address to "*" configures the web app to using the host address of the current 
+web page. If you set it to a specific address, the web app will attempt to establish a websocket connection
+son that specific address instead. (Not sure what that's useful for, but it's there if you ever need it).
 
 The original development for this app was done with Visual Studio Code. Open the root project directory in
 Visual Studio Code, and it will detect the CMake build files, and configure itself appropriately. Wait for 

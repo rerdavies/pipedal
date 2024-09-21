@@ -47,6 +47,7 @@ public:
     bool HasValue(const std::string&key) const;
     bool Get(const std::string&key,std::string*pResult) const;
     std::string Get(const std::string&key) const;
+    const std::string& Get(int position) const { return lines[position]; }
     void Set(const std::string&key,const std::string &value);
     void Set(const std::string&key,const std::string &value, const std::string&comment);
     void SetDefault(const std::string&key, const std::string &value);
@@ -66,6 +67,10 @@ public:
     void InsertLine(int position, const std::string&line);
     void AppendLine(const std::string&line);
     void SetLineValue(int index, const std::string&line) { lines[index] = line; }
+
+    void UndoableReplaceLine(int line,const std::string&text);
+    int UndoableAddLine(int line,const std::string&text);
+    bool RemoveUndoableActions();
 };
 
 };

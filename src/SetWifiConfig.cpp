@@ -70,10 +70,46 @@ const std::string &pipedal::GetWifiConfigWlanAddress()
     return gWlanAddress;
 }
 
+static bool gNetworkManagerTestExecuted = false;
+static bool gUsingNetworkManager = false;
+
+void pipedal::PretendNetworkManagerIsInstalled()
+{
+    gNetworkManagerTestExecuted = true;
+    gUsingNetworkManager = true;
+}
 bool pipedal::UsingNetworkManager()
 {
+    if (gNetworkManagerTestExecuted)
+    {
+        return gUsingNetworkManager;
+    }
+    bool bResult = false;
+    auto result = sysExecForOutput("systemctl","is-active NetworkManager");
+    if (result.exitCode == EXIT_SUCCESS)
+    {
+        std::string text = result.output.erase(result.output.find_last_not_of(" \n\r\t")+1);
+        if (text == "active")
+        {
+            bResult = true;
+        } else if (text == "inactive")
+        {
+            bResult = false;
+        } else {
+            throw std::runtime_error(SS("UsingNetworkManager: unexpected result (" << text << ")"));
+        }
+        gNetworkManagerTestExecuted = true;
+        gUsingNetworkManager = bResult;
+        return bResult;
+    }
+
     // does the neworkManager service path exists?
     return std::filesystem::exists(NETWORK_MANAGER_SERVICE_PATH);
+}
+
+static bool IsP2pInstalled()
+{
+    return std::filesystem::exists(DNSMASQ_P2P_PATH) | std::filesystem::exists(NETWORK_MANAGER_DNSMASQ_P2P_PATH);
 }
 
 static bool IsApdInstalled()
@@ -81,11 +117,9 @@ static bool IsApdInstalled()
 
     return std::filesystem::exists(DNSMASQ_APD_PATH);
 }
-static bool IsP2pInstalled()
-{
-    return std::filesystem::exists(DNSMASQ_P2P_PATH) | std::filesystem::exists(NETWORK_MANAGER_DNSMASQ_P2P_PATH);
-}
 
+
+#if !NEW_WIFI_CONFIG
 static void restoreApdDhcpdConfFile()
 {
     // remove the interface wlan0 section.
@@ -123,6 +157,7 @@ static void restoreApdDhcpdConfFile()
         dhcpcd.Save(dhcpcdConfig);
     }
 }
+#endif
 
 static void restoreP2pDhcpdConfFile()
 {
@@ -170,6 +205,7 @@ static void restoreP2pDhcpdConfFile()
     }
 }
 
+#if !NEW_WIFI_CONFIG
 static void restoreApdDnsmasqConfFile()
 {
     std::filesystem::path path(DNSMASQ_APD_PATH);
@@ -178,6 +214,7 @@ static void restoreApdDnsmasqConfFile()
         std::filesystem::remove(path);
     }
 }
+#endif
 static void restoreP2pDnsmasqConfFile()
 {
     {
@@ -196,6 +233,7 @@ static void restoreP2pDnsmasqConfFile()
     }
 }
 
+#if !NEW_WIFI_CONFIG
 static void UninstallHostApd()
 {
     if (IsApdInstalled())
@@ -213,6 +251,7 @@ static void UninstallHostApd()
         sysExec(SYSTEMCTL_BIN " start wpa_supplicant");
     }
 }
+#endif
 
 static void InstallP2p(const WifiDirectConfigSettings &settings)
 {
@@ -299,7 +338,8 @@ static void InstallP2p(const WifiDirectConfigSettings &settings)
 
 static void UninstallP2p();
 
-void pipedal::SetWifiConfig(const WifiConfigSettings &settings)
+#if !NEW_WIFI_CONFIG
+static void SetHostapdWifiConfig(const WifiConfigSettings &settings)
 {
     char band;
     if (!settings.enable_)
@@ -476,6 +516,25 @@ void pipedal::SetWifiConfig(const WifiConfigSettings &settings)
     }
     ::sync();
 }
+#endif
+
+#if NEW_WIFI_CONFIG
+
+static void SetNetworkManagerWifiConfig(WifiConfigSettings &settings)
+{
+    settings.Save();
+}
+#endif
+
+void pipedal::SetWifiConfig(WifiConfigSettings &settings)
+{
+#if NEW_WIFI_CONFIG
+    SetNetworkManagerWifiConfig(settings);
+#else 
+    SetHostapdWifiConfig(const WifiConfigSettings &settings);
+#endif
+}
+
 
 /*********************************************************************************
 
@@ -559,10 +618,12 @@ void UninstallP2p()
 
         }
 
-        WifiDirectConfigSettings wifiDirectConfigSettings;
-        wifiDirectConfigSettings.Load();
-        wifiDirectConfigSettings.enable_ = false;
-        SetWifiDirectConfig(wifiDirectConfigSettings);
+    }
+    if (UsingNetworkManager())
+    {
+        // dhcpcd comes up enabled after an install, so stop it always.
+        sysExec(SYSTEMCTL_BIN " stop dhcpcd");
+        sysExec(SYSTEMCTL_BIN " disable dhcpcd");
 
     }
     ::sync();
@@ -655,7 +716,7 @@ static void ConfigDhcpcdForP2p()
 }
 void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
 {
-
+    settings.Save();
     try
     {
         char band;
@@ -675,7 +736,6 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
         else
         {
             InstallP2p(settings);
-            sysExec(SYSTEMCTL_BIN " restart pipedald");
         }
     }
     catch (const std::exception &e)
@@ -685,6 +745,7 @@ void pipedal::SetWifiDirectConfig(const WifiDirectConfigSettings &settings)
     ::sync();
 }
 void pipedal::OnWifiReinstall() {
+#if ENABLE_WIFI_P2P // Do not enable P2P going forward.
     WifiDirectConfigSettings settings;
     settings.Load();
     if (settings.enable_)
@@ -692,14 +753,30 @@ void pipedal::OnWifiReinstall() {
         SetWifiDirectConfig(settings);
         ::sync();
     }
+#endif
+#if NEW_WIFI_CONFIG
+    {
+        // no action required.
+        // pipedald will pick up the old settings at runtime.
+    }
+
+#endif
 }
 void pipedal::OnWifiUninstall(bool preserveState)
 {
     // intaller hook
+#if NEW_WIFI_CONFIG
+    {
+
+        // no action required.
+        // shutting down pipedald is sufficient.
+    }
+#else
     if (IsApdInstalled())
     {
         UninstallHostApd();
     }
+#endif
     if (IsP2pInstalled())
     {
         WifiDirectConfigSettings settings;

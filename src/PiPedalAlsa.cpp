@@ -118,7 +118,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                         if (err == 0)
                         {
                             unsigned int minRate = 0, maxRate = 0;
-                            snd_pcm_uframes_t minBufferSize, maxBufferSize;
+                        snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
                             int dir;
                             err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                             if (err == 0)
@@ -143,6 +143,10 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                                         info.sampleRates_.push_back(rate);
                                     }
                                 }
+                                if (minBufferSize < 16) {
+                                    minBufferSize = 16;
+                                }
+
                                 info.minBufferSize_ = (uint32_t)minBufferSize;
                                 info.maxBufferSize_ = (uint32_t)maxBufferSize;
                                 cacheDevice(info.name_, info);
@@ -169,15 +173,14 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
     snd_config_update_free_global();
 
     Lv2Log::debug("GetAlsaDevices --");
-    for (auto& device: result)
+    for (auto &device : result)
     {
         Lv2Log::debug(SS("   " << device.name_ << " " << device.longName_ << " " << device.cardId_));
     }
     return result;
 }
 
-
-static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char*devname, const char*direction)
+static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char *devname, const char *direction)
 {
     std::vector<AlsaMidiDeviceInfo> result;
     {
@@ -206,9 +209,9 @@ static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char*devname, const 
 
             if (desc != nullptr) // skip virtual device
             {
-                if (ioid == nullptr || strcmp(ioid,direction) == 0)
+                if (ioid == nullptr || strcmp(ioid, direction) == 0)
                 {
-                    result.push_back(AlsaMidiDeviceInfo(name,desc));
+                    result.push_back(AlsaMidiDeviceInfo(name, desc));
                 }
             }
             if (name && strcmp("null", name) != 0)
@@ -226,39 +229,36 @@ static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char*devname, const 
     return result;
 }
 
-
 std::vector<AlsaMidiDeviceInfo> pipedal::GetAlsaMidiInputDevices()
 {
-    return GetAlsaDevices("rawmidi","Input");
+    return GetAlsaDevices("rawmidi", "Input");
 }
 std::vector<AlsaMidiDeviceInfo> pipedal::GetAlsaMidiOutputDevices()
 {
-    return GetAlsaDevices("rawmidi","Output");
+    return GetAlsaDevices("rawmidi", "Output");
 }
 
-AlsaMidiDeviceInfo::AlsaMidiDeviceInfo(const char*name, const char*description)
-:name_(name)
+AlsaMidiDeviceInfo::AlsaMidiDeviceInfo(const char *name, const char *description)
+    : name_(name)
 {
     // extract just the display name from description.
     // undocumented but e.g.:   M2, M2\nM2 Raw Midi
     const char *p = description;
     const char *pEnd = p;
     // undocumented but e.g.:   M2, M2\nM2 Raw Midi
-    while (pEnd != nullptr && *pEnd != 0
-     && *pEnd != ','
-     && *pEnd != '\n'
-     )
+    while (pEnd != nullptr && *pEnd != 0 && *pEnd != ',' && *pEnd != '\n')
     {
         ++pEnd;
     }
     if (p != pEnd)
     {
-        description_ = std::string(p,pEnd);
-    } else {
+        description_ = std::string(p, pEnd);
+    }
+    else
+    {
         description = name;
     }
 }
-
 
 JSON_MAP_BEGIN(AlsaDeviceInfo)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, cardId)

@@ -41,6 +41,34 @@ message(STATUS "NMPIPEDAL CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 # Use the sdbus-c++ target in SDBusCpp namespace
 add_library(PiPedalCommon STATIC
+  include/dbus/org.freedesktop.NetworkManager.Device.Statistics.hpp
+  include/dbus/org.freedesktop.NetworkManager.Settings.Connection.hpp
+  include/dbus/org.freedesktop.NetworkManager.IP6Config.hpp
+  include/dbus/org.freedesktop.NetworkManager.Connection.Active.hpp
+  include/dbus/org.freedesktop.NetworkManager.DnsManager.hpp
+  include/dbus/org.freedesktop.NetworkManager.IP4Config.hpp
+  include/dbus/org.freedesktop.NetworkManager.Settings.hpp
+  include/dbus/org.freedesktop.NetworkManager.Device.hpp
+  include/dbus/org.freedesktop.NetworkManager.DHCP6Config.hpp
+  include/dbus/org.freedesktop.NetworkManager.AccessPoint.hpp
+  include/dbus/org.freedesktop.NetworkManager.Device.WifiP2P.hpp
+  include/dbus/org.freedesktop.NetworkManager.WifiP2PPeer.hpp  
+  include/dbus/org.freedesktop.NetworkManager.hpp
+  include/dbus/org.freedesktop.NetworkManager.Device.Wireless.hpp
+  include/dbus/org.freedesktop.NetworkManager.DHCP4Config.hpp
+
+  NetworkManagerInterfaces.cpp
+  include/NetworkManagerInterfaces.hpp
+  Lv2Log.cpp include/Lv2Log.hpp
+  DBusEvent.cpp
+  DBusVariantHelper.cpp
+  DBusLog.cpp
+  DBusDispatcher.cpp
+  include/DBusDispatcher.hpp
+  include/DBusEvent.hpp
+  include/DBusLog.hpp
+  include/DBusVariantHelper.hpp
+
   ofstream_synced.cpp include/ofstream_synced.hpp
   ConfigSerializer.cpp include/ConfigSerializer.hpp
   WifiRegs.cpp include/WifiRegs.hpp
@@ -66,7 +94,7 @@ add_library(PiPedalCommon STATIC
   ss.hpp
 )
 target_include_directories(PiPedalCommon PUBLIC "include" ${LIBNL3_INCLUDE_DIRS})
-target_link_libraries(PiPedalCommon PUBLIC ${LIBNL3_LIBRARIES} )
+target_link_libraries(PiPedalCommon PUBLIC ${LIBNL3_LIBRARIES} SDBusCpp::sdbus-c++ )
 
 
 

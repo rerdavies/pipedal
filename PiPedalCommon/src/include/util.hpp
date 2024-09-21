@@ -35,4 +35,7 @@ namespace pipedal {
     std::u32string ToUtf32(const std::string &s);
 
     inline bool isPathSeperator(char c) { return c == '/' || c == std::filesystem::path::preferred_separator;}
+
+    std::string GetHostName();
+
 }

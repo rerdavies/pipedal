@@ -215,6 +215,11 @@ void LogTrace(const std::string&path,const char*method,const std::string&message
     }
 }
 
+void SetDBusLogger(std::unique_ptr<IDBusLogger> && logger)
+{
+    loggers.clear();
+    loggers.push_back(std::move(logger));
+}
 
 void SetDBusConsoleLogger()
 {

@@ -2,7 +2,7 @@
 build/
 
 #VS Code config files.
-.vscode/
+# .vscode/  Sort this out later. .gitignore-ing an already tracked file doesn't actually work.
 #settings
 
 Testing/

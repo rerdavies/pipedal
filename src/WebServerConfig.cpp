@@ -29,6 +29,7 @@
 #include "ZipFile.hpp"
 #include "PiPedalUI.hpp"
 #include "ofstream_synced.hpp"
+#include "UpdaterSecurity.hpp"
 
 
 #define PRESET_EXTENSION ".piPreset"
@@ -401,7 +402,6 @@ public:
 
                 if (patchProperty.length() == 0 && directory.length() == 0)
                 {
-                    // yyy no throwing!
                     throw PiPedalException("Malformed request.");
 
                 }
@@ -473,6 +473,33 @@ public:
     }
 };
 
+
+static std::string StripPortNumber(const std::string &fromAddress)
+{
+    std::string address = fromAddress;
+
+    if (address.size() == 0)
+        return fromAddress;
+
+    char lastChar = address[address.size() - 1];
+    size_t pos = address.find_last_of(':');
+
+    // if ipv6, make sure we found an actual port address.
+    size_t posBracket = address.find_last_of(']');
+    if (posBracket != std::string::npos && pos != std::string::npos)
+    {
+        if (posBracket > pos)
+        {
+            pos = std::string::npos;
+        }
+    }
+    if (pos != std::string::npos)
+    {
+        address = address.substr(0, pos);
+    }
+    return address;
+}
+
 /* When hosting a react app, replace /var/config.json with
    data that will connect the react app with our socket server.
 */
@@ -492,19 +519,16 @@ public:
     }
     std::string GetConfig(const std::string &fromAddress)
     {
-        #define LINK_LOCAL_WEB_SOCKET 1
-        #if LINK_LOCAL_WEB_SOCKET 
-        std::string webSocketAddress = GetLinkLocalAddress(fromAddress);
+        std::string webSocketAddress = GetNonLinkLocalAddress(StripPortNumber(fromAddress));
         Lv2Log::info(SS("Web Socket Address: " << webSocketAddress << ":" << portNumber));
-        #else
-        std::string webSocketAddress = "*";
-        #endif
 
         std::stringstream s;
 
         s << "{ \"socket_server_port\": " << portNumber
-          << ", \"socket_server_address\": \"" << webSocketAddress << 
-          "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize << " }";
+          << ", \"socket_server_address\": \"" << webSocketAddress 
+          << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
+          << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true": "false")
+           << " }";
 
         return s.str();
     }

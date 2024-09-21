@@ -96,7 +96,8 @@
         "nm-device-wifi-p2p.h": "c",
         "strstream": "cpp",
         "p2p_i.h": "c",
-        "p2p.h": "c"
+        "p2p.h": "c",
+        "hash_set": "cpp"
     },
     "cSpell.words": [
         "Guitarix",

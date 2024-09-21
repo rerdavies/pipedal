@@ -131,7 +131,24 @@ export const SystemMidiBindingDialog =
                     {
                         displayName = "Next Preset";
                         instanceId = 2;
+                    } else if (item.symbol === "startHotspot")
+                    {
+                        displayName = "Enable Hotspot";
+                        instanceId = 3;
+                    } else if (item.symbol === "stopHotspot")
+                    {
+                        displayName = "Disable Hotspot";
+                        instanceId = 4;
+                    } else if (item.symbol === "shutdown")
+                    {
+                        displayName = "Shutdown";
+                        instanceId = 5;
+                    } else if (item.symbol === "reboot")
+                    {
+                        displayName = "Reboot";
+                        instanceId = 6;
                     }
+
                     if (instanceId !== -1)
                     {
                         result.push(new BindingEntry(displayName,instanceId,item));

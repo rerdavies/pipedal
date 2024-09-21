@@ -24,7 +24,7 @@ import ListSelectDialog from './ListSelectDialog';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
-import {ColorTheme} from './DarkMode';
+import { ColorTheme } from './DarkMode';
 import ButtonBase from "@mui/material/ButtonBase";
 import AppBar from '@mui/material/AppBar';
 import Button from '@mui/material/Button';
@@ -394,11 +394,10 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             });
         }
 
-        handleCheckForUpdates()
-        {
+        handleCheckForUpdates() {
             this.model.showUpdateDialog();
         }
-        
+
         handleMidiMessageSettings() {
             this.setState({
                 showSystemMidiBindingsDialog: true
@@ -572,7 +571,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     (
                                         <div>
                                             <Typography display="block" variant="body1" color="textSecondary" style={{ paddingLeft: 24, paddingBottom: 8 }}>
-                                                Select and configure an audio device. You may optionally configure MIDI inputs, and set up a Wi-Fi Direct Hotspot now as well.
+                                                Select and configure an audio device. You may optionally configure MIDI inputs, and configure up a Wi-Fi Auto-Hotspot as well.
+                                                The Auto-Hotspot feature allows you to connect to Pipedal even if you don't have access to a Wi-Fi router.
                                             </Typography>
                                             <Typography display="block" variant="body1" color="textSecondary" style={{ paddingLeft: 24, paddingBottom: 8 }}>
                                                 Access and modify these settings later by selecting the <i>Settings</i> menu item on the main menu.
@@ -682,6 +682,20 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                             <div >
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">CONNECTION</Typography>
 
+                                <ButtonBase
+                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                    onClick={() => this.handleShowWifiConfigDialog()}  >
+                                    <SelectHoverBackground selected={false} showHover={true} />
+                                    <div style={{ width: "100%" }}>
+                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                            Wi-Fi auto-hotspot</Typography>
+                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
+                                            {this.state.wifiConfigSettings.getSummaryText()}
+                                        </Typography>
+
+                                    </div>
+                                </ButtonBase>
+
                                 {
                                     this.state.isAndroidHosted &&
                                     (
@@ -700,33 +714,6 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     )
                                 }
 
-                                <ButtonBase
-                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    onClick={() => this.handleShowWifiDirectConfigDialog()}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Configure Wi-Fi Direct hotspot</Typography>
-                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            {this.state.wifiDirectConfigSettings.getSummaryText()}
-                                        </Typography>
-
-                                    </div>
-                                </ButtonBase>
-
-                                <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    style={{ display: "none" }}
-                                    onClick={() => this.handleShowWifiConfigDialog()}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Configure Wi-Fi hotspot</Typography>
-                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            {this.state.wifiConfigSettings.getSummaryText()}
-                                        </Typography>
-
-                                    </div>
-                                </ButtonBase>
                             </div>
                             {(!this.props.onboarding) ? (
                                 <div >
@@ -756,8 +743,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
                                                 Color theme</Typography>
                                             <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>
-                                                { this.model.getTheme() === ColorTheme.Dark ? "Dark" :
-                                                (this.model.getTheme() ===  ColorTheme.Light ? "Light": "System")}
+                                                {this.model.getTheme() === ColorTheme.Dark ? "Dark" :
+                                                    (this.model.getTheme() === ColorTheme.Light ? "Light" : "System")}
                                             </Typography>
                                         </div>
                                     </ButtonBase>
@@ -765,9 +752,9 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                                     <ButtonBase
                                         className={classes.setting}
-                                        onClick={() => { 
+                                        onClick={() => {
                                             this.model.setShowStatusMonitor(!this.state.showStatusMonitor)
-                                         }}  >
+                                        }}  >
                                         <SelectHoverBackground selected={false} showHover={true} />
                                         <div style={{ width: "100%" }}>
                                             <div style={{
@@ -792,15 +779,21 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         </div>
                                     </ButtonBase>
 
-                                    <ButtonBase
-                                        className={classes.setting}
-                                        onClick={() => { this.handleCheckForUpdates(); }}  >
-                                        <SelectHoverBackground selected={false} showHover={true} />
-                                        <div style={{ width: "100%" }}>
-                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                Check for updates...</Typography>
-                                        </div>
-                                    </ButtonBase>
+                                    {
+                                        this.model.enableAutoUpdate && (
+                                            <ButtonBase
+                                                className={classes.setting}
+                                                onClick={() => { this.handleCheckForUpdates(); }}  >
+                                                <SelectHoverBackground selected={false} showHover={true} />
+                                                <div style={{ width: "100%" }}>
+                                                    <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                        Check for updates...</Typography>
+                                                </div>
+                                            </ButtonBase>
+
+                                        )
+                                    }
+
 
 
 
@@ -900,20 +893,26 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         (this.state.showThemeSelectDialog) &&
                         (
                             <SelectThemeDialog open={this.state.showThemeSelectDialog}
-                                onClose={()=> { this.setState({showThemeSelectDialog: false});} }
+                                onClose={() => { this.setState({ showThemeSelectDialog: false }); }}
                                 onOk={(selectedTheme: ColorTheme) => {
                                     this.model.setTheme(selectedTheme);
-                                    this.setState({showThemeSelectDialog: false});
+                                    this.setState({ showThemeSelectDialog: false });
                                 }}
                                 defaultTheme={this.model.getTheme()}
                             />
 
                         )
                     }
-                    <WifiConfigDialog wifiConfigSettings={this.state.wifiConfigSettings} open={this.state.showWifiConfigDialog}
-                        onClose={() => this.setState({ showWifiConfigDialog: false })}
-                        onOk={(wifiConfigSettings) => this.handleApplyWifiConfig(wifiConfigSettings)}
-                    />
+                    {
+                        (this.state.showWifiConfigDialog) &&
+                        (
+                            <WifiConfigDialog wifiConfigSettings={this.state.wifiConfigSettings} open={this.state.showWifiConfigDialog}
+                                onClose={() => this.setState({ showWifiConfigDialog: false })}
+                                onOk={(wifiConfigSettings) => this.handleApplyWifiConfig(wifiConfigSettings)}
+                            />
+
+                        )
+                    }
                     <WifiDirectConfigDialog wifiDirectConfigSettings={this.state.wifiDirectConfigSettings} open={this.state.showWifiDirectConfigDialog}
                         onClose={() => this.setState({ showWifiDirectConfigDialog: false })}
                         onOk={(wifiDirectConfigSettings: WifiDirectConfigSettings) => this.handleApplyWifiDirectConfig(wifiDirectConfigSettings)}

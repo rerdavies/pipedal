@@ -158,7 +158,8 @@ public:
     void SetJackChannelSelection(const JackChannelSelection&channelSelection);
     const JackChannelSelection&GetJackChannelSelection(const JackConfiguration &jackConfiguration);
 
-    void SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings);
+    // returns true if services needs to be updated.
+    bool SetWifiConfigSettings(const WifiConfigSettings & wifiConfigSettings);
     WifiConfigSettings GetWifiConfigSettings();
 
     void SetWifiDirectConfigSettings(const WifiDirectConfigSettings & wifiDirectConfigSettings);

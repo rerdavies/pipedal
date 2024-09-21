@@ -53,12 +53,12 @@ static std::vector<OpClassChannels> opClasses = {
      * care of removing invalid channels.
      */
 
-        // WiFi 5.
+        // Wi-Fi 5.
         // {WifiMode::IEEE80211A, 128, 36, 177, 4, WifiBandwidth::BW80, true},
         // {WifiMode::IEEE80211A, 129, 36, 177, 4, WifiBandwidth::BW160, true},
         // {WifiMode::IEEE80211A, 130, 36, 177, 4, WifiBandwidth::BW80P80, true},
 
-        // WiFi 6.
+        // Wi-Fi 6.
     // {WifiMode::IEEE80211AX, 131, 1, 233, 4, WifiBandwidth::BW20, true},
     // {WifiMode::IEEE80211AX, 132, 1, 233, 8, WifiBandwidth::BW40PLUS, true},
     // {WifiMode::IEEE80211AX, 133, 1, 233, 16, WifiBandwidth::BW80, true},

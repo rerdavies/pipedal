@@ -222,6 +222,7 @@ public:
     virtual ~WebServer() { }
 
     virtual void SetLogHttpRequests(bool enableLogging) = 0;
+    virtual void DisplayIpAddresses() = 0;
 
     virtual void AddRequestHandler(std::shared_ptr<RequestHandler> requestHandler) = 0;
     virtual void AddSocketFactory(std::shared_ptr<ISocketFactory> &socketHandler) = 0;

@@ -28,6 +28,8 @@ namespace pipedal {
         TemporaryFile(const std::filesystem::path&parentDirectory);
         ~TemporaryFile();
         const std::filesystem::path&Path()const { return path;}
+        std::string str() const { return path.c_str(); }
+        const char*c_str() const { return path.c_str(); }
     private:
         std::filesystem::path path;
     };

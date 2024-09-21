@@ -30,6 +30,7 @@
 #include "PiPedalAlsa.hpp"
 #include "Promise.hpp"
 #include "json_variant.hpp"
+#include "RealtimeMidiEventType.hpp"
 
 namespace pipedal {
 
@@ -160,6 +161,7 @@ public:
     virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest&midiProgramRequest) = 0;
     virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) = 0;
     virtual void OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) = 0;
+    virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) = 0;
 
 };
 

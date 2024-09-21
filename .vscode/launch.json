@@ -11,6 +11,33 @@
     "version": "0.2.0",
     "configurations": [
     
+    {
+        "name": "Attach to Edge",
+        "port": 9222,
+        "request": "attach",
+        "type": "msedge",
+        "webRoot": "${workspaceFolder}"
+    },
+    {
+        "name": "(gdb) Attach",
+        "type": "cppdbg",
+        "request": "attach",
+        "program": "enter program name, for example ${workspaceFolder}/a.out",
+        "MIMode": "gdb",
+        "setupCommands": [
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            },
+            {
+                "description": "Set Disassembly Flavor to Intel",
+                "text": "-gdb-set disassembly-flavor intel",
+                "ignoreFailures": true
+            }
+        ]
+    },
+    
 
 
 
@@ -40,6 +67,32 @@
                 }
             ]
         },
+        {
+            "name": "(gdb) makeRelease",
+            "type": "cppdbg",
+            "request": "launch",
+            // Resolved by CMake Tools:
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [    ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/../..",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
         {
             "name": "(gdb) pipedal_nm_p2pd",
             "type": "cppdbg",
@@ -96,7 +149,13 @@
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
+                },
+                {
+                    "description": "Add alsa source directories.",
+                    "text": "directory $cd:$cwd:/usr/src/alsa-lib-1.2.8",
+                    "ignoreFailures": true
                 }
+
             ]
         },
 
@@ -179,7 +238,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
 
-            "args": [            "Nam_Profile", "--no-profile","-w" ],
+            "args": [            "ToobNam_Profile", "--no-profile","-w" ],
 
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -289,10 +348,13 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
+                "--prefix",
+                "/usr/sbin",
                 "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
-                "--prefix", "/usr",
-                //"--get-current-port"
                 "--install"
+
+                //"--get-current-port"
+                //"--install"
                 //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
                 //"--list-p2p-channels"
             ],

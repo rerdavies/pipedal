@@ -24,6 +24,7 @@
 #include "VuUpdate.hpp"
 #include "AudioHost.hpp"
 #include "lv2/atom/atom.h"
+#include "RealtimeMidiEventType.hpp"
 #include <chrono>
 namespace pipedal
 {
@@ -65,9 +66,15 @@ namespace pipedal
         SetOutputVolume,
         Lv2ErrorMessage,
 
+        RealtimeMidiEvent,
+
 
     };
 
+
+    struct RealtimeMidiEventRequest {
+        RealtimeMidiEventType eventType;
+    };
     struct RealtimeNextMidiProgramRequest {
         int64_t requestId;
         int32_t direction;
@@ -370,6 +377,11 @@ namespace pipedal
 
 
             write(RingBufferCommand::MidiProgramChange,msg);
+        }
+        void OnRealtimeMidiEvent(RealtimeMidiEventType eventType)
+        {
+            RealtimeMidiEventRequest msg { eventType};
+            write(RingBufferCommand::RealtimeMidiEvent,msg);
         }
         void OnNextMidiProgram(int64_t requestId,int32_t direction)
         {

@@ -33,6 +33,7 @@
 #include <concepts>
 #include <limits>
 #include <stdexcept>
+#include <chrono>
 
 #define DECLARE_JSON_MAP(CLASSNAME) \
     static pipedal::json_map::storage_type<CLASSNAME> jmap
@@ -327,6 +328,22 @@ namespace pipedal
         bool allowNaN() const { return allowNaN_; }
         void allowNaN(bool allow) { allowNaN_ = allow; }
 
+        void write(uint8_t value)
+        {
+            os << value;
+        }
+        void write(int8_t value)
+        {
+            os << value;
+        }
+        void write(short value)
+        {
+            os << value;
+        }
+        void write(unsigned short value)
+        {
+            os << value;
+        }
         void write(long long value)
         {
             os << value;
@@ -351,6 +368,7 @@ namespace pipedal
         {
             os << value;
         }
+        void write (const std::chrono::system_clock::time_point &time);
 
     private:
         static void throw_encoding_error();
@@ -882,6 +900,29 @@ namespace pipedal
             skip_whitespace();
             *value = read_boolean();
         }
+        void read(uint8_t*value)
+        {
+            skip_whitespace();
+            is_ >> *value;
+            if (is_.fail())
+                throw JsonException("Invalid format.");
+        }
+        void read(short * value)
+        {
+            skip_whitespace();
+            is_ >> *value;
+            if (is_.fail())
+                throw JsonException("Invalid format.");
+        }
+
+        void read(unsigned short * value)
+        {
+            skip_whitespace();
+            is_ >> *value;
+            if (is_.fail())
+                throw JsonException("Invalid format.");
+        }
+
         void read(int *value)
         {
             skip_whitespace();
@@ -956,6 +997,8 @@ namespace pipedal
             if (is_.fail())
                 throw JsonException("Invalid format.");
         }
+        void read(std::chrono::system_clock::time_point *value);
+
         template <typename T>
         void read(std::vector<T> *value)
         {

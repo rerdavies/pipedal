@@ -26,7 +26,7 @@ export type ReconnectHandler = () => void;
 export type ReconnectingHandler = (retry: number, maxRetries: number) => void;
 
 const MAX_RETRIES = 6;
-const MAX_RETRY_TIME = 90*1000;
+const MAX_RETRY_TIME = 90 * 1000;
 
 export type PiPedalMessageHeader = {
     replyTo?: number;
@@ -37,10 +37,10 @@ type ReplyHandler = (header: PiPedalMessageHeader, body: any | null) => void;
 
 
 export interface PiPedalSocketListener {
-    onMessageReceived : (header: PiPedalMessageHeader, body: any | null) => void;
+    onMessageReceived: (header: PiPedalMessageHeader, body: any | null) => void;
     onError: (message: string, exception?: Error) => void;
     onConnectionLost: () => void;
-    onReconnect:  () => void;
+    onReconnect: () => void;
     onReconnecting: (retry: number, maxRetries: number) => boolean;
 };
 
@@ -60,7 +60,7 @@ class PiPedalSocket {
     constructor(
         url: string,
         listener: PiPedalSocketListener
-        ) {
+    ) {
         this.url = url;
         this.listener = listener;
     }
@@ -103,8 +103,7 @@ class PiPedalSocket {
 
     _replyMap: Map<number, ReplyHandler> = new Map<number, ReplyHandler>();
 
-    _discardReplyReservations()
-    {
+    _discardReplyReservations() {
         // it's ok. All pending reservations disappear into the GC.
         this._replyMap = new Map<number, ReplyHandler>();
     }
@@ -193,8 +192,7 @@ class PiPedalSocket {
             return;
 
         }
-        if (this.canReconnect)
-        {
+        if (this.canReconnect) {
             this.listener.onConnectionLost();
             this._reconnect();
         }
@@ -212,26 +210,23 @@ class PiPedalSocket {
 
     isBackground: boolean = false;
 
-    enterBackgroundState()
-    {
+    enterBackgroundState() {
         this.isBackground = true;
         this.close();
 
     }
-    exitBackgroundState()
-    {
+    exitBackgroundState() {
         this.isBackground = false;
         this._reconnect();
     }
 
     reconnect() {
 
-        if (this.socket)
-        {
+        if (this.socket) {
             this.close();
         }
 
-        if (!this.listener.onReconnecting(this.retryCount,MAX_RETRIES)) {
+        if (!this.listener.onReconnecting(this.retryCount, MAX_RETRIES)) {
             return;
         }
         ++this.retryCount;
@@ -243,8 +238,7 @@ class PiPedalSocket {
                 this.listener.onReconnect();
             })
             .catch(error => {
-                if (this.totalRetryDelay === MAX_RETRY_TIME)
-                {
+                if (this.totalRetryDelay >= MAX_RETRY_TIME) {
                     this.listener.onError("Server connection lost.");
                     return;
                 } else {
@@ -258,8 +252,7 @@ class PiPedalSocket {
 
     close(): void {
         try {
-            if (this.socket)
-            {
+            if (this.socket) {
                 this.socket.onclose = null;
                 this.socket.onerror = null;
                 this.socket.onmessage = null;
@@ -267,50 +260,53 @@ class PiPedalSocket {
                 this.socket.close();
                 this.socket = undefined;
             }
-        } catch  (ignored)
-        {
+        } catch (ignored) {
 
         }
         this.socket = undefined;
     }
     connectInternal_(): Promise<WebSocket> {
         return new Promise<WebSocket>((resolve, reject) => {
-            let ws = new WebSocket(this.url);
+            try {
+                let ws = new WebSocket(this.url);
 
-            let self = this;
+                let self = this;
 
-            ws.onmessage = this.handleMessage.bind(this);
-            ws.onclose = (event: Event) => {
-                ws.onclose = null;
-                ws.onerror = null;
-                reject("Connection closed unexpectedly.");
-            };
-            ws.onerror = (event: Event) => {
-                ws.onclose = null;
-                ws.onerror = null;
-                reject("Failed to connect.");
-            };
-            ws.onopen = (event: Event) => {
-                ws.onerror = self.handleError.bind(self);
-                ws.onclose = self.handleClose.bind(self);
-                ws.onopen = null;
-                resolve(ws);
+                ws.onmessage = this.handleMessage.bind(this);
+                ws.onclose = (event: Event) => {
+                    ws.onclose = null;
+                    ws.onerror = null;
+                    reject("Connection closed unexpectedly.");
+                };
+                ws.onerror = (evt: Event) => {
+                    ws.onclose = null;
+                    ws.onerror = null;
+                    reject("Failed to connect.");
+                };
+                ws.onopen = (event: Event) => {
+                    ws.onerror = self.handleError.bind(self);
+                    ws.onclose = self.handleClose.bind(self);
+                    ws.onopen = null;
+                    resolve(ws);
+                };
+            } catch (e: any){
+                reject("Failed to connect. " + e.toString());
             };
         });
-    }
-    connect(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+}
+connect(): Promise < void> {
+    return new Promise<void>((resolve, reject) => {
 
-            this.connectInternal_()
-                .then((socket) => {
-                    this.socket = socket;
-                    resolve();
-                })
-                .catch((reason) => {
-                    reject(reason);
-                });
-        });
-    }
+        this.connectInternal_()
+            .then((socket) => {
+                this.socket = socket;
+                resolve();
+            })
+            .catch((reason) => {
+                reject(reason);
+            });
+    });
+}
 
 }
 

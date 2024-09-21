@@ -458,7 +458,10 @@ void PluginHost::Load(const char *lv2Path)
 
     for (const std::string &s : messages)
     {
-        Lv2Log::info("lilv: " + s);
+        if (s.length() != 0)
+        {
+            Lv2Log::info("lilv: " + s);
+        }
     }
 
     auto collator = Locale::GetInstance()->GetCollator();

@@ -35,6 +35,9 @@
 #include "UpdaterSecurity.hpp"
 #include "SysExec.hpp"
 #include "ofstream_synced.hpp"
+#include <fstream>
+#include "TemporaryFile.hpp"
+#include <limits>
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -45,25 +48,129 @@ namespace fs = std::filesystem;
 #undef TEST_UPDATE // do NOT leat this leak into a production build!
 #endif
 
+namespace pipedal
+{
+    class GithubResponseHeaders
+    {
+    public:
+        GithubResponseHeaders() {}
+        GithubResponseHeaders(const std::filesystem::path path);
+        int code_ = -1;
+        std::chrono::system_clock::time_point date_;
+        std::chrono::system_clock::time_point ratelimit_reset_;
+        uint64_t ratelimit_limit_ = 60;
+        uint64_t ratelimit_remaining_ = 60;
+        uint64_t ratelimit_used_ = 0;
+        std::string ratelimit_resource_;
+        bool limit_exceeded() const { return code_ != 200 && ratelimit_limit_ != 0 && ratelimit_limit_ == ratelimit_used_; }
+        void Load(const std::filesystem::path &filename);
+        void Save(const std::filesystem::path &filename);
+        DECLARE_JSON_MAP(GithubResponseHeaders);
+
+    private:
+        static std::filesystem::path FILENAME;
+    };
+}
+
+class pipedal::UpdaterImpl : public Updater
+{
+public:
+    UpdaterImpl(const std::filesystem::path &workingDirectory);
+    UpdaterImpl() : UpdaterImpl("/var/pipedal/updates") {}
+
+    virtual ~UpdaterImpl() noexcept;
+
+    virtual void SetUpdateListener(UpdateListener &&listener) override;
+    virtual void Start() override;
+    virtual void Stop() override;
+
+    virtual void CheckNow() override;
+
+    virtual UpdatePolicyT GetUpdatePolicy() override;
+    virtual void SetUpdatePolicy(UpdatePolicyT updatePolicy) override;
+    virtual void ForceUpdateCheck() override;
+    virtual void DownloadUpdate(const std::string &url, std::filesystem::path *file, std::filesystem::path *signatureFile) override;
+    virtual UpdateStatus GetCurrentStatus() const override { return this->currentResult; }
+    virtual UpdateStatus GetReleaseGeneratorStatus() override;
+
+private:
+    std::filesystem::path workingDirectory;
+    std::filesystem::path updateStatusCacheFile;
+    std::filesystem::path githubResponseHeaderFilename;
+
+    GithubResponseHeaders githubResponseHeaders;
+
+    using clock = std::chrono::steady_clock;
+
+    void SetCachedUpdateStatus(UpdateStatus &updateStatus);
+
+    UpdateStatus GetCachedUpdateStatus();
+
+    void RetryAfter(clock::duration delay);
+
+    template <typename REP, typename PERIOD>
+    void RetryAfter(std::chrono::duration<REP, PERIOD> duration)
+    {
+        RetryAfter(std::chrono::duration_cast<clock::duration>(duration));
+    }
+
+    void SaveRetryTime(const std::chrono::system_clock::time_point &time);
+    clock::time_point LoadRetryTime();
+
+    std::string GetUpdateFilename(const std::string &url);
+    std::string GetSignatureUrl(const std::string &url);
+
+    UpdatePolicyT updatePolicy = UpdatePolicyT::ReleaseOrBeta;
+    using UpdateReleasePredicate = std::function<bool(const GithubRelease &githubRelease)>;
+
+    UpdateRelease getUpdateRelease(
+        const std::vector<GithubRelease> &githubReleases,
+        const std::string &currentVersion,
+        const UpdateReleasePredicate &predicate);
+
+    UpdateStatus cachedUpdateStatus;
+    bool stopped = false;
+
+    int event_reader = -1;
+    int event_writer = -1;
+    void ThreadProc();
+    UpdateStatus DoUpdate(bool forReleaseGenerator);
+    void CheckForUpdate(bool useCache);
+    UpdateListener listener;
+
+    std::unique_ptr<std::thread> thread;
+    std::mutex mutex;
+
+    bool hasInfo = false;
+    UpdateStatus currentResult;
+    static clock::duration updateRate;
+    clock::time_point updateRetryTime;
+};
+Updater::ptr Updater::Create()
+{
+    return std::make_unique<UpdaterImpl>();
+}
+Updater::ptr Updater::Create(const std::filesystem::path &workingDirectory)
+{
+    return std::make_unique<UpdaterImpl>(workingDirectory);
+}
+
 static constexpr uint64_t CLOSE_EVENT = 0;
 static constexpr uint64_t CHECK_NOW_EVENT = 1;
 static constexpr uint64_t UNCACHED_CHECK_NOW_EVENT = 2;
 
-static std::filesystem::path WORKING_DIRECTORY = "/var/pipedal/updates";
-static std::filesystem::path UPDATE_STATUS_CACHE_FILE = WORKING_DIRECTORY / "updateStatus.json";
-
-Updater::clock::duration Updater::updateRate = std::chrono::duration_cast<Updater::clock::duration>(std::chrono::days(1));
+UpdaterImpl::clock::duration UpdaterImpl::updateRate = std::chrono::duration_cast<UpdaterImpl::clock::duration>(std::chrono::days(1));
 static std::chrono::system_clock::duration CACHE_DURATION = std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::minutes(30));
 
 std::mutex cacheMutex;
-static UpdateStatus GetCachedUpdateStatus()
+UpdateStatus UpdaterImpl::GetCachedUpdateStatus()
 {
     std::lock_guard lock{cacheMutex};
     try
     {
-        if (std::filesystem::exists(UPDATE_STATUS_CACHE_FILE))
+        if (std::filesystem::exists(updateStatusCacheFile))
         {
-            std::ifstream f{UPDATE_STATUS_CACHE_FILE};
+            std::ifstream f{updateStatusCacheFile};
             if (f.is_open())
             {
                 json_reader reader(f);
@@ -83,13 +190,13 @@ static UpdateStatus GetCachedUpdateStatus()
     return UpdateStatus();
 }
 
-static void SetCachedUpdateStatus(UpdateStatus &updateStatus)
+void UpdaterImpl::SetCachedUpdateStatus(UpdateStatus &updateStatus)
 {
     std::lock_guard lock{cacheMutex};
     updateStatus.LastUpdateTime(std::chrono::system_clock::now());
     try
     {
-        pipedal::ofstream_synced f{UPDATE_STATUS_CACHE_FILE};
+        pipedal::ofstream_synced f{updateStatusCacheFile};
         json_writer writer{f};
         writer.write(updateStatus);
     }
@@ -98,12 +205,22 @@ static void SetCachedUpdateStatus(UpdateStatus &updateStatus)
         Lv2Log::error(SS("Unable to write cached UpdateStatus. " << e.what()));
     }
 }
-Updater::Updater()
+
+UpdaterImpl::UpdaterImpl(const std::filesystem::path &workingDirectory)
+    : workingDirectory(workingDirectory),
+      updateStatusCacheFile(workingDirectory / "updateStatus.json"),
+      githubResponseHeaderFilename(workingDirectory / "githubHeaders.json")
 {
+    this->githubResponseHeaders.Load(githubResponseHeaderFilename);
     cachedUpdateStatus = GetCachedUpdateStatus();
     this->updatePolicy = cachedUpdateStatus.UpdatePolicy();
     currentResult = cachedUpdateStatus;
-
+}
+void UpdaterImpl::Start()
+{
+    #if !ENABLE_AUTO_UPDATE
+    return;
+    #endif
     int fds[2];
     int rc = pipe(fds);
     if (rc != 0)
@@ -117,16 +234,25 @@ Updater::Updater()
                                                  { ThreadProc(); });
     CheckNow();
 }
-Updater::~Updater()
+UpdaterImpl::~UpdaterImpl()
 {
-    Stop();
+    try
+    {
+        Stop();
+    }
+    catch (const std::exception & /*ignored*/)
+    {
+    }
 }
-void Updater::Stop()
+void UpdaterImpl::Stop()
 {
     if (stopped)
     {
         return;
     }
+    #if !ENABLE_AUTO_UPDATE
+    return;
+    #endif
     stopped = true;
 
     if (event_writer != -1)
@@ -149,13 +275,13 @@ void Updater::Stop()
     }
 }
 
-void Updater::CheckNow()
+void UpdaterImpl::CheckNow()
 {
     uint64_t value = CHECK_NOW_EVENT;
     write(this->event_writer, &value, sizeof(uint64_t));
 }
 
-void Updater::SetUpdateListener(UpdateListener &&listener)
+void UpdaterImpl::SetUpdateListener(UpdateListener &&listener)
 {
     std::lock_guard lock{mutex};
     this->listener = listener;
@@ -165,75 +291,115 @@ void Updater::SetUpdateListener(UpdateListener &&listener)
     }
 }
 
-void Updater::ThreadProc()
+static void LogNextStartTime(const std::chrono::steady_clock::time_point &clockTime)
+{
+    using namespace std::chrono;
+    // convert to system_clock;
+    auto delay = clockTime - steady_clock::now();
+    auto systemTime = system_clock::now() + duration_cast<system_clock::duration>(delay);
+    auto t = system_clock::to_time_t(systemTime);
+    Lv2Log::info(SS("Updater: Next update check at " << std::put_time(std::localtime(&t), "%Y-%m-%d %H:%M:%S")));
+}
+void UpdaterImpl::ThreadProc()
 {
     SetThreadName("UpdateMonitor");
     struct pollfd pfd;
     pfd.fd = this->event_reader;
     pfd.events = POLLIN;
 
-    while (true)
+    auto lastRetryTime = clock::time_point();
+    this->updateRetryTime = LoadRetryTime();
+    try
     {
-        int ret = poll(&pfd, 1, std::chrono::duration_cast<std::chrono::milliseconds>(updateRate).count()); // 1000 ms timeout
-
-        if (ret == -1)
+        while (true)
         {
-            Lv2Log::error("Updater: Poll error.");
-            break;
-        }
-        else if (ret == 0)
-        {
-            CheckForUpdate(true);
-        }
-        else
-        {
-            // Event occurred
-            uint64_t value;
-            ssize_t s = read(event_reader, &value, sizeof(uint64_t));
-            if (s == sizeof(uint64_t))
+            if (updateRetryTime != lastRetryTime) // has retry time changed?
             {
-                if (value == CHECK_NOW_EVENT)
+                lastRetryTime = updateRetryTime;
+                if (updateRetryTime > clock::now())
+                {
+                    LogNextStartTime(updateRetryTime);
+                }
+            }
+            auto clockDelay = this->updateRetryTime - clock::now();
+            auto delayMs = std::chrono::duration_cast<std::chrono::milliseconds>(clockDelay).count();
+            if (delayMs > std::numeric_limits<int>::max()) // could be as little as 32 seconds on a 16-bit int system.
+            {
+                delayMs = std::numeric_limits<int>::max();
+            }
+
+            int ret = poll(&pfd, 1, (int)delayMs); // 1000 ms timeout
+
+            if (ret == -1)
+            {
+                Lv2Log::error("Updater: Poll error.");
+                break;
+            }
+            else if (ret == 0)
+            {
+                if (clock::now() >= this->updateRetryTime)
                 {
                     CheckForUpdate(true);
                 }
-                else if (value == UNCACHED_CHECK_NOW_EVENT)
+            }
+            else
+            {
+                // Event occurred
+                uint64_t value;
+                ssize_t s = read(event_reader, &value, sizeof(uint64_t));
+                if (s == sizeof(uint64_t))
                 {
-                    CheckForUpdate(false);
-                }
-                else
-                {
-                    break;
+                    if (value == CHECK_NOW_EVENT)
+                    {
+
+                        CheckForUpdate(true);
+                    }
+                    else if (value == UNCACHED_CHECK_NOW_EVENT)
+                    {
+                        CheckForUpdate(false);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }
     }
+    catch (const std::exception &e)
+    {
+        Lv2Log::error(SS("Updater: Service thread terminated abnormally: " << e.what()));
+    }
 }
 
-class GithubAsset
+namespace pipedal
 {
-public:
-    GithubAsset(json_variant &v);
-    std::string name;
-    std::string browser_download_url;
-    std::string updated_at;
-};
-class GithubRelease
-{
-public:
-    GithubRelease(json_variant &v);
+    class GithubAsset
+    {
+    public:
+        GithubAsset(json_variant &v);
+        std::string name;
+        std::string browser_download_url;
+        std::string updated_at;
+    };
+    class GithubRelease
+    {
+    public:
+        GithubRelease(json_variant &v);
 
-    const GithubAsset *GetDownloadForCurrentArchitecture() const;
-    const GithubAsset *GetGpgKeyForAsset(const std::string &name) const;
+        const GithubAsset *GetDownloadForCurrentArchitecture() const;
+        const GithubAsset *GetGpgKeyForAsset(const std::string &name) const;
 
-    bool draft = true;
-    bool prerelease = true;
-    std::string name;
-    std::string url;
-    std::string version;
-    std::string body;
-    std::vector<GithubAsset> assets;
-    std::string published_at;
-};
+        bool draft = true;
+        bool prerelease = true;
+        std::string name;
+        std::string url;
+        std::string version;
+        std::string body;
+        std::vector<GithubAsset> assets;
+        std::string published_at;
+    };
+}
 
 GithubAsset::GithubAsset(json_variant &v)
 {
@@ -281,7 +447,7 @@ static std::string justTheVersion(const std::string &assetName)
     return t[1];
 }
 
-int compareVersions(const std::string &l, const std::string &r)
+static int compareVersions(const std::string &l, const std::string &r)
 {
     std::stringstream sl(l);
     std::stringstream sr(r);
@@ -341,19 +507,7 @@ static std::string normalizeReleaseName(const std::string &releaseName)
     return result;
 }
 
-static bool IsCacheValid(const UpdateStatus &updateStatus)
-{
-    if (!updateStatus.IsValid() || !updateStatus.IsOnline())
-    {
-        return false;
-    }
-    auto now = std::chrono::system_clock::now();
-    auto validStart = updateStatus.LastUpdateTime();
-    auto validEnd = validStart + CACHE_DURATION;
-    return now >= validStart && now < validEnd;
-}
-
-UpdateRelease Updater::getUpdateRelease(
+UpdateRelease UpdaterImpl::getUpdateRelease(
     const std::vector<GithubRelease> &githubReleases,
     const std::string &currentVersion,
     const UpdateReleasePredicate &predicate)
@@ -413,123 +567,183 @@ static void CheckUpdateHttpResponse(std::string errorCode)
     }
 }
 
-void Updater::CheckForUpdate(bool useCache)
+static std::chrono::system_clock::time_point http_date_to_time_point(const std::string &http_date)
+{
+    std::tm tm = {};
+    std::istringstream ss(http_date);
+
+    ss >> std::get_time(&tm, "%a, %d %b %Y %H:%M:%S GMT");
+
+    if (ss.fail())
+    {
+        throw std::runtime_error("Failed to parse HTTP date: " + http_date);
+    }
+    auto tt = timegm(&tm);
+    return std::chrono::system_clock::from_time_t(tt);
+}
+
+JSON_MAP_BEGIN(GithubResponseHeaders)
+JSON_MAP_REFERENCE(GithubResponseHeaders, date)
+JSON_MAP_REFERENCE(GithubResponseHeaders, ratelimit_reset)
+JSON_MAP_REFERENCE(GithubResponseHeaders, ratelimit_limit)
+JSON_MAP_REFERENCE(GithubResponseHeaders, ratelimit_remaining)
+JSON_MAP_REFERENCE(GithubResponseHeaders, ratelimit_used)
+JSON_MAP_REFERENCE(GithubResponseHeaders, ratelimit_resource)
+JSON_MAP_END();
+
+void GithubResponseHeaders::Load(const std::filesystem::path &FILENAME)
+{
+    std::ifstream f(FILENAME);
+    if (f.is_open())
+    {
+        try
+        {
+            json_reader reader(f);
+            reader.read(this);
+        }
+        catch (const std::exception &e)
+        {
+            Lv2Log::error(SS("Invalid file format: " << FILENAME << "."));
+            *this = GithubResponseHeaders();
+        }
+    }
+}
+void GithubResponseHeaders::Save(const std::filesystem::path &FILENAME)
+{
+    std::filesystem::create_directories(FILENAME.parent_path());
+    ofstream_synced f(FILENAME);
+    if (!f.is_open())
+    {
+        Lv2Log::error(SS("Can't write to " << FILENAME << "."));
+    }
+    else
+    {
+        json_writer writer(f);
+        writer.write(this);
+    }
+}
+
+GithubResponseHeaders::GithubResponseHeaders(const std::filesystem::path path)
+{
+    // HTTP/2 403
+    // date: Fri, 13 Sep 2024 17:31:22 GMT
+    //...
+    // x-ratelimit-limit: 60
+    // x-ratelimit-remaining: 0
+    // x-ratelimit-reset: 1726250807
+    // x-ratelimit-resource: core
+    // x-ratelimit-used: 60
+    std::ifstream f{path};
+    if (!f.is_open())
+    {
+        throw std::runtime_error(SS("Can't open file " << path << "."));
+    }
+    std::string http;
+    f >> http >> code_;
+    std::string line;
+    std::getline(f, line);
+
+    while (true)
+    {
+        std::getline(f, line);
+        auto trimPos = line.find_last_not_of("\r\n");
+        if (trimPos != std::string::npos)
+        {
+            line = line.substr(0, trimPos + 1);
+        }
+
+        if (!f)
+            break;
+        auto pos = line.find(':');
+        if (pos != std::string::npos)
+        {
+            std::string tag = line.substr(0, pos);
+            ++pos;
+            while (pos < line.length() && line[pos] == ' ')
+            {
+                ++pos;
+            }
+            std::string value = line.substr(pos);
+            uint64_t *pResult = nullptr;
+            if (tag == "date")
+            {
+                this->date_ = http_date_to_time_point(value);
+            }
+            else if (tag == "x-ratelimit-limit")
+            {
+                pResult = &ratelimit_limit_;
+            }
+            else if (tag == "x-ratelimit-remaining")
+            {
+                pResult = &ratelimit_remaining_;
+            }
+            else if (tag == "x-ratelimit-reset")
+            {
+                std::istringstream ss{value};
+                uint64_t reset = 0;
+                ss >> reset;
+                auto secs = std::chrono::seconds(reset); // value is seconds in UTC Unix epoch.
+                this->ratelimit_reset_ = std::chrono::system_clock::time_point(secs);
+            }
+            else if (tag == "x-ratelimit-resource")
+            {
+                ratelimit_resource_ = value;
+            }
+            else if (tag == "x-ratelimit-used")
+            {
+                pResult = &ratelimit_used_;
+            }
+            if (pResult)
+            {
+                std::istringstream ss{value};
+                ss >> *pResult;
+            }
+        }
+    }
+}
+
+UpdateStatus UpdaterImpl::GetReleaseGeneratorStatus()
+{
+    UpdateStatus result = DoUpdate(true);
+    return result;
+}
+
+void UpdaterImpl::CheckForUpdate(bool useCache)
 {
     UpdateStatus updateResult;
 
+    // if we've used up too many actual github requests, used the cached version even if the request is non-cached.
+    if (githubResponseHeaders.ratelimit_remaining_ < 3 * githubResponseHeaders.ratelimit_limit_ / 4)
     {
-        std::lock_guard lock{mutex};
-        if (useCache && IsCacheValid(cachedUpdateStatus))
-        {
-            this->currentResult = cachedUpdateStatus;
-            this->currentResult.UpdatePolicy(this->updatePolicy);
-            if (listener)
-            {
-                listener(this->currentResult);
-            }
-            return;
-        }
-        updateResult = this->currentResult;
+        useCache = true;
     }
 
-    // const std::string responseOption = "-w \"%{response_code}\"";
-#ifdef WIN32
-    responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
-#endif
+    if (useCache)
+    {
+        if (clock::now() < this->updateRetryTime)
+        {
+            std::lock_guard lock{mutex};
+            {
+                this->currentResult = cachedUpdateStatus;
+                this->currentResult.UpdatePolicy(this->updatePolicy);
+                if (listener)
+                {
+                    listener(this->currentResult);
+                }
+                return;
+            }
+        }
+    }
 
-    std::string args = SS("-s -L " << GITHUB_RELEASES_URL);
-
-    updateResult.errorMessage_ = "";
 
     try
     {
-        auto result = sysExecForOutput("curl", args);
-        if (result.exitCode != EXIT_SUCCESS)
-        {
-            throw std::runtime_error("Server has no internet access.");
-        }
-        else
-        {
-            if (result.output.length() == 0)
-            {
-                throw std::runtime_error("Server has no internet access.");
-            }
-            std::stringstream ss(result.output);
-            json_reader reader(ss);
-            json_variant vResult(reader);
 
-            if (vResult.is_object())
-            {
-                // an HTML error.
-                updateResult.isOnline_ = false;
-                auto o = vResult.as_object();
-                std::string message = o->at("message").as_string();
-                auto status_code = o->at("status_code").as_int64();
-                throw std::runtime_error(SS("Service error. ()" << status_code << ": " << message << ")"));
-            }
-            else
-            {
-                json_variant::array_ptr vArray = vResult.as_array();
-
-                std::vector<GithubRelease> releases;
-                for (size_t i = 0; i < vArray->size(); ++i)
-                {
-                    auto &el = vArray->at(0);
-                    GithubRelease release{el};
-                    if (!release.draft && release.GetDownloadForCurrentArchitecture() != nullptr)
-                    {
-                        if (release.name.find("Experimental") == std::string::npos) // experimental releases do not participate in auto-updates (not even for dev stream)
-                        {
-                            releases.push_back(std::move(release));
-                        }
-                    }
-                }
-                std::sort(
-                    releases.begin(),
-                    releases.end(),
-                    [](const GithubRelease &left, const GithubRelease &right)
-                    {
-                        return left.published_at > right.published_at; // latest date first.
-                    });
-                updateResult.releaseOnlyRelease_ = getUpdateRelease(
-                    releases,
-                    updateResult.currentVersion_,
-                    [](const GithubRelease &githubRelease)
-                    {
-                        return !githubRelease.prerelease &&
-                               githubRelease.name.find("Release") != std::string::npos;
-                    });
-
-                updateResult.releaseOrBetaRelease_ = getUpdateRelease(
-                    releases,
-                    updateResult.currentVersion_,
-                    [](const GithubRelease &githubRelease)
-                    {
-                        return !githubRelease.prerelease &&
-                               (githubRelease.name.find("Release") != std::string::npos ||
-                                githubRelease.name.find("Beta") != std::string::npos);
-                    });
-                updateResult.devRelease_ = getUpdateRelease(
-                    releases,
-                    updateResult.currentVersion_,
-                    [](const GithubRelease &githubRelease)
-                    {
-                        return true;
-                    });
-#ifdef TEST_UPDATE
-                updateResult.releaseOrBetaRelease_.upgradeVersionDisplayName_ = "PiPedal v1.2.41-Beta";
-                updateResult.devRelease_.upgradeVersionDisplayName_ = "PiPedal v1.2.39-Experimental";
-                updateResult.devRelease_.upgradeVersion_ = "1.2.39";
-                updateResult.devRelease_.updateAvailable_ = false;
-#endif
-                updateResult.isValid_ = true;
-                updateResult.isOnline_ = true;
-            }
-        }
+        updateResult = DoUpdate(false);
     }
     catch (const std::exception &e)
     {
-        Lv2Log::error(SS("Failed to fetch update info. " << e.what()));
+        Lv2Log::error(SS("Updater: Failed to fetch update info. " << e.what()));
         updateResult.errorMessage_ = e.what();
         updateResult.isValid_ = false;
         updateResult.isOnline_ = false;
@@ -537,13 +751,152 @@ void Updater::CheckForUpdate(bool useCache)
     {
         std::lock_guard lock{mutex};
         updateResult.UpdatePolicy(this->updatePolicy);
-        this->currentResult = updateResult;
+        if (updateResult.isOnline_ && updateResult.isValid_)
+        {
+            this->currentResult = updateResult;
+        }
         SetCachedUpdateStatus(this->currentResult);
         if (listener)
         {
             listener(this->currentResult);
         }
     }
+}
+
+UpdateStatus UpdaterImpl::DoUpdate(bool forReleaseGenerator)
+{
+    UpdateStatus updateResult;
+    if (forReleaseGenerator)
+    {
+        updateResult.currentVersion_ = "0.0.0";
+    }
+
+    // set default next retry time.  github failures may postpone even further.
+
+    Lv2Log::info("Checking for updates.");
+    // const std::string responseOption = "-w \"%{response_code}\"";
+#ifdef WIN32
+    responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
+#endif
+
+    TemporaryFile headerFile{workingDirectory};
+    std::string args = SS("-s -L " << GITHUB_RELEASES_URL << " -D " << headerFile.str());
+
+    updateResult.errorMessage_ = "";
+
+    auto result = sysExecForOutput("curl", args);
+    if (result.exitCode != EXIT_SUCCESS)
+    {
+        RetryAfter(std::chrono::duration_cast<clock::duration>(std::chrono::hours(4)));
+        throw std::runtime_error("Server has no internet access.");
+    }
+    else
+    {
+        // hard throttling for github.
+        RetryAfter(std::chrono::duration_cast<clock::duration>(std::chrono::hours(8)));
+
+        GithubResponseHeaders githubHeaders{headerFile.Path()};
+        this->githubResponseHeaders = githubHeaders;
+        this->githubResponseHeaders.Save(githubResponseHeaderFilename);
+
+        if (githubHeaders.code_ != 200)
+        {
+            if (
+                githubHeaders.ratelimit_limit_ != 0 &&
+                githubHeaders.ratelimit_limit_ == githubHeaders.ratelimit_used_)
+            {
+                std::time_t time = std::chrono::system_clock::to_time_t(githubHeaders.ratelimit_reset_);
+                std::string strTime = std::ctime(&time);
+
+                this->RetryAfter(githubHeaders.ratelimit_reset_ - githubHeaders.date_);
+                throw std::runtime_error(SS("Github API rate limit exceeded. Retrying at " << strTime));
+            }
+        }
+
+        if (result.output.length() == 0)
+        {
+            throw std::runtime_error("Server has no internet access.");
+        }
+        std::stringstream ss(result.output);
+        json_reader reader(ss);
+        json_variant vResult(reader);
+
+        if (vResult.is_object())
+        {
+            // an HTML error.
+            updateResult.isOnline_ = false;
+            auto o = vResult.as_object();
+            std::string message = "Unknown error.";
+            if (o->at("message").is_string())
+            {
+                message = o->at("message").as_string();
+            }
+            throw std::runtime_error(SS("Github Service error: " << message));
+        }
+        else if (!vResult.is_array())
+        {
+            throw std::runtime_error("Invalid file format error.");
+        }
+        else
+        {
+            json_variant::array_ptr vArray = vResult.as_array();
+
+            std::vector<GithubRelease> releases;
+            for (size_t i = 0; i < vArray->size(); ++i)
+            {
+                auto &el = vArray->at(i);
+                GithubRelease release{el};
+                if (!release.draft && release.GetDownloadForCurrentArchitecture() != nullptr)
+                {
+                    if (release.name.find("Experimental") == std::string::npos) // experimental releases do not participate in auto-updates (not even for dev stream)
+                    {
+                        releases.push_back(std::move(release));
+                    }
+                }
+            }
+            std::sort(
+                releases.begin(),
+                releases.end(),
+                [](const GithubRelease &left, const GithubRelease &right)
+                {
+                    return left.published_at > right.published_at; // latest date first.
+                });
+            updateResult.releaseOnlyRelease_ = getUpdateRelease(
+                releases,
+                updateResult.currentVersion_,
+                [](const GithubRelease &githubRelease)
+                {
+                    return !githubRelease.prerelease &&
+                           githubRelease.name.find("Release") != std::string::npos;
+                });
+
+            updateResult.releaseOrBetaRelease_ = getUpdateRelease(
+                releases,
+                updateResult.currentVersion_,
+                [](const GithubRelease &githubRelease)
+                {
+                    return !githubRelease.prerelease &&
+                           (githubRelease.name.find("Release") != std::string::npos ||
+                            githubRelease.name.find("Beta") != std::string::npos);
+                });
+            updateResult.devRelease_ = getUpdateRelease(
+                releases,
+                updateResult.currentVersion_,
+                [](const GithubRelease &githubRelease)
+                {
+                    return true;
+                });
+#ifdef TEST_UPDATE
+            updateResult.releaseOrBetaRelease_.upgradeVersionDisplayName_ = "PiPedal v1.2.41-Beta";
+            updateResult.devRelease_.upgradeVersionDisplayName_ = "PiPedal v1.2.39-Experimental";
+            updateResult.devRelease_.upgradeVersion_ = "1.2.39";
+            updateResult.devRelease_.updateAvailable_ = false;
+#endif
+            updateResult.isValid_ = true;
+            updateResult.isOnline_ = true;
+        }
+    }
+    return updateResult;
 }
 bool UpdateRelease::operator==(const UpdateRelease &other) const
 {
@@ -568,12 +921,12 @@ bool UpdateStatus::operator==(const UpdateStatus &other) const
            (devRelease_ == other.devRelease_);
 }
 
-UpdatePolicyT Updater::GetUpdatePolicy()
+UpdatePolicyT UpdaterImpl::GetUpdatePolicy()
 {
     std::lock_guard lock{mutex};
     return updatePolicy;
 }
-void Updater::SetUpdatePolicy(UpdatePolicyT updatePolicy)
+void UpdaterImpl::SetUpdatePolicy(UpdatePolicyT updatePolicy)
 {
     std::lock_guard lock{mutex};
     if (updatePolicy == this->updatePolicy)
@@ -586,7 +939,7 @@ void Updater::SetUpdatePolicy(UpdatePolicyT updatePolicy)
         listener(currentResult);
     }
 }
-void Updater::ForceUpdateCheck()
+void UpdaterImpl::ForceUpdateCheck()
 {
     uint64_t value = UNCACHED_CHECK_NOW_EVENT;
     write(this->event_writer, &value, sizeof(uint64_t));
@@ -664,7 +1017,7 @@ UpdateRelease::UpdateRelease()
 {
 }
 
-std::string Updater::GetSignatureUrl(const std::string &url)
+std::string UpdaterImpl::GetSignatureUrl(const std::string &url)
 {
 
     // partialy whitelisting, partly avoiding having to parse a URL.
@@ -683,7 +1036,7 @@ std::string Updater::GetSignatureUrl(const std::string &url)
     throw std::runtime_error("Permission denied. No signature URL.");
 }
 
-std::string Updater::GetUpdateFilename(const std::string &url)
+std::string UpdaterImpl::GetUpdateFilename(const std::string &url)
 {
 
     // partialy whitelisting, partly avoiding having to parse a URL.
@@ -828,7 +1181,7 @@ void Updater::ValidateSignature(const std::filesystem::path &file, const std::fi
        << " --verify "
        << signatureFile << " " << file;
 
-    Lv2Log::info(SS("/usr/bin/gpg " << ss.str()));
+    Lv2Log::debug(SS("/usr/bin/gpg " << ss.str()));
     auto gpgOutput = sysExecForOutput("/usr/bin/gpg", ss.str());
     if (gpgOutput.exitCode != EXIT_SUCCESS)
     {
@@ -838,19 +1191,20 @@ void Updater::ValidateSignature(const std::filesystem::path &file, const std::fi
 
     if (!IsSignatureGood(gpgText))
     {
+        Lv2Log::error(gpgOutput.output);
         throw std::runtime_error("Update signature is not valid.");
     }
     std::string keyId = getFingerprint(gpgText);
 
-    Lv2Log::info(unCRLF(gpgText)); // yyy delete me.
-
-    if (keyId != UPDATE_GPG_FINGERPRINT)
+    if (keyId != UPDATE_GPG_FINGERPRINT && keyId != UPDATE_GPG_FINGERPRINT2)
     {
-        throw std::runtime_error(SS("Update signature has the wrong fingerprint: " << keyId));
+        Lv2Log::error(gpgOutput.output);
+        throw std::runtime_error(SS("Update signature has the wrong id: " << keyId));
     }
     std::string origin = getAddress(gpgText);
-    if (origin != UPDATE_GPG_ADDRESS)
+    if (origin != UPDATE_GPG_ADDRESS && origin != UPDATE_GPG_ADDRESS2)
     {
+        Lv2Log::error(gpgOutput.output);
         throw std::runtime_error(SS("Update signature has an incorrect address." << origin));
     }
 }
@@ -893,7 +1247,63 @@ static void checkCurlHttpResponse(std::string errorCode)
         throw std::runtime_error(message);
     }
 }
-void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file, std::filesystem::path *signatureFile)
+void UpdaterImpl::RetryAfter(clock::duration delay)
+{
+    namespace chron = std::chrono;
+    clock::duration hours24 = chron::duration_cast<clock::duration>(chron::hours(24));
+    if (delay.count() < 0 || delay >= hours24) // non-synced system clock (as Raspberry Pis are prone to without network connections)
+    {
+        delay = chron::duration_cast<clock::duration>(chron::hours(6));
+    }
+    SaveRetryTime(chron::system_clock::now() + std::chrono::duration_cast<chron::system_clock::duration>(delay));
+
+    clock::time_point myRetryTime = clock::now() + delay;
+
+    if (this->updateRetryTime < myRetryTime)
+    {
+        this->updateRetryTime = myRetryTime;
+    }
+}
+void UpdaterImpl::SaveRetryTime(const std::chrono::system_clock::time_point &time)
+{
+    fs::path retryTimePath = workingDirectory / "retryTime.json";
+    pipedal::ofstream_synced f{retryTimePath};
+    if (f.is_open())
+    {
+        json_writer writer(f);
+        auto rep = time.time_since_epoch().count();
+        writer.write(rep);
+    }
+}
+UpdaterImpl::clock::time_point UpdaterImpl::LoadRetryTime()
+{
+    using namespace std::chrono;
+
+    fs::path retryTimePath = workingDirectory / "retryTime.json";
+    std::ifstream f{retryTimePath};
+    if (f.is_open())
+    {
+        system_clock::duration::rep tRep = 0;
+        json_reader reader(f);
+        reader.read(&tRep);
+
+        system_clock::duration duration(tRep);
+
+        system_clock::time_point systemTime = system_clock::time_point(duration);
+
+        // now convert to stead_clock time with the understanding that system_clock time may be blown.
+        system_clock::duration systemDuration = systemTime - system_clock::now();
+        clock::duration clockDuration = duration_cast<clock::duration>(systemDuration);
+        if (clockDuration > duration_cast<clock::duration>(hours(48))) // is system clock blown?
+        {
+            clockDuration = duration_cast<clock::duration>(hours(6));
+        }
+        return clock::now() + clockDuration;
+    }
+    return clock::now();
+}
+
+void UpdaterImpl::DownloadUpdate(const std::string &url, std::filesystem::path *file, std::filesystem::path *signatureFile)
 {
     std::string filename, signatureUrl;
     {
@@ -913,7 +1323,7 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
     {
         throw std::runtime_error(SS("Invalid update url. Downloads from this address are not permitted: " << signatureUrl));
     }
-    auto downloadDirectory = WORKING_DIRECTORY / "downloads";
+    auto downloadDirectory = workingDirectory / "downloads";
     std::filesystem::create_directories(downloadDirectory);
 
     auto downloadFilePath = downloadDirectory / filename;
@@ -929,7 +1339,6 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
         responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
 #endif
         std::string args = SS("-s -L " << responseOption << " " << url << " -o " << downloadFilePath.c_str());
-        Lv2Log::info(SS("/usr/bin/curl " << args)); // yyy delete me.
         auto curlOutput = sysExecForOutput("/usr/bin/curl", args);
         if (curlOutput.exitCode != EXIT_SUCCESS || badOutput(downloadFilePath))
         {
@@ -939,7 +1348,6 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
         checkCurlHttpResponse(curlOutput.output);
 
         args = SS("-s -L " << responseOption << " " << signatureUrl << " -o " << downloadSignaturePath.c_str());
-        Lv2Log::info(SS("/usr/bin/curl " << args));
 
         curlOutput = sysExecForOutput("/usr/bin/curl", args);
         if (curlOutput.exitCode != EXIT_SUCCESS || badOutput(downloadSignaturePath))
@@ -978,6 +1386,14 @@ void Updater::DownloadUpdate(const std::string &url, std::filesystem::path *file
         throw;
     }
 }
+
+
+void UpdateStatus::AddRelease(const std::string&packageName)
+{
+    this->isValid_ = true;
+    this->errorMessage_ = "";
+}
+        
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 JSON_MAP_BEGIN(UpdateRelease)

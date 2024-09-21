@@ -9,6 +9,8 @@ set(CXX_STANDARD 20)
 
 include(FindPkgConfig)
 
+find_package(sdbus-c++ REQUIRED)
+
 
 if(DEFINED ENV{GITHUB_ACTIONS})
   message(STATUS "Building in GitHub Actions environment")
@@ -94,7 +96,7 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set (USE_SANITIZE False)
+set (USE_SANITIZE true)
 
 
 if (!ENABLE_VST3)
@@ -144,9 +146,12 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    RealtimeMidiEventType.hpp
+    DBusToLv2Log.cpp DBusToLv2Log.hpp
+    HotspotManager.cpp HotspotManager.hpp
     UpdateResults.cpp UpdateResults.hpp
     UpdaterSecurity.hpp
-    Updater.cpp Updater.hpp
+    Updater.cpp Updater.hpp UpdaterStatus.hpp
     Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp
@@ -190,7 +195,6 @@ set (PIPEDAL_SOURCES
     RequestHandler.hpp 
     Scratch.cpp PluginHost.hpp PluginHost.cpp
     PluginType.hpp PluginType.cpp
-    Lv2Log.hpp Lv2Log.cpp
     PiPedalSocket.hpp PiPedalSocket.cpp
     PiPedalVersion.hpp PiPedalVersion.cpp
     PiPedalModel.hpp PiPedalModel.cpp 
@@ -252,6 +256,7 @@ set (PIPEDAL_INCLUDES
 )
 
 set(PIPEDAL_LIBS libpipedald zip
+    PiPedalCommon
     icui18n
     icuuc
     icudata
@@ -290,6 +295,16 @@ target_link_libraries(pipedald PRIVATE PiPedalCommon
     )
 
 #################################
+add_executable(hotspotManagerTest 
+    hotspotManagerTestMain.cpp
+    HotspotManager.cpp HotspotManager.hpp)
+
+target_link_libraries(hotspotManagerTest PRIVATE ${PIPEDAL_LIBS})
+
+set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL true)
+
+
+
 add_executable(pipedaltest testMain.cpp
 
     InvertingMutexTest.cpp
@@ -313,9 +328,11 @@ add_executable(pipedaltest testMain.cpp
     MemDebug.cpp
     MemDebug.hpp
     )
-target_link_libraries(pipedaltest PRIVATE PiPedalCommon)
+target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
+
+set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL true)
 
 if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
 
@@ -327,6 +344,9 @@ if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action se
 
     target_include_directories(profilePlugin PRIVATE ${PIPEDAL_INCLUDES}
         )
+
+    set_target_properties(profilePlugin PROPERTIES EXCLUDE_FROM_ALL true)
+
 endif()
 add_executable(jsonTest
      testMain.cpp
@@ -344,7 +364,12 @@ target_link_libraries(jsonTest PRIVATE PiPedalCommon)
 target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES}
     ) 
 
+set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL true)
+
+
 target_link_libraries(jsonTest PRIVATE pthread)
+
+
 add_test(NAME jsonTest COMMAND jsonTest)
 
 
@@ -549,18 +574,18 @@ if(ENABLE_VST3)
     )
 
     
-    add_executable(vst3test Vst3test.cpp
+    # add_executable(vst3test Vst3test.cpp
 
-        MemDebug.cpp
-        MemDebug.hpp
+    #     MemDebug.cpp
+    #     MemDebug.hpp
 
-        Vst3SdkRepro.cpp
+    #     Vst3SdkRepro.cpp
 
-        ${VST3_FILES}
+    #     ${VST3_FILES}
     
-        #vst3/Vst3PresetFile.hpp Vst3PresetFile.cpp
-        asan_options.cpp
-    )
+    #     #vst3/Vst3PresetFile.hpp Vst3PresetFile.cpp
+    #     asan_options.cpp
+    # )
 
     target_include_directories(vst3test PRIVATE ${PIPEDAL_INCLUDES} 
         )
@@ -596,7 +621,6 @@ add_executable(pipedalconfig
     SystemConfigFile.hpp SystemConfigFile.cpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp
     asan_options.cpp
-    Lv2Log.cpp Lv2Log.hpp
 
     )
 
@@ -609,7 +633,6 @@ add_executable(pipedal_latency_test
     PiLatencyMain.cpp
     PiPedalAlsa.hpp PiPedalAlsa.cpp
     asan_options.cpp
-    Lv2Log.cpp Lv2Log.hpp
     AlsaDriver.cpp AlsaDriver.hpp
     JackConfiguration.hpp JackConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
@@ -632,13 +655,23 @@ target_include_directories(capturepresets PRIVATE ${PIPEDAL_INCLUDES})
 
 target_link_libraries(capturepresets ${PIPEDAL_LIBS})
 
+add_executable(makeRelease
+    makeReleaseMain.cpp
+    CommandLineParser.hpp
+) 
+target_include_directories(makeRelease PRIVATE ${PIPEDAL_INCLUDES})
+
+target_link_libraries(makeRelease ${PIPEDAL_LIBS})
+
+
+
+
 
 add_executable(pipedal_update
     UpdateMain.cpp 
     UpdateResults.cpp UpdateResults.hpp
-    Lv2Log.hpp Lv2Log.cpp
     Lv2SystemdLogger.cpp Lv2SystemdLogger.hpp
-    UpdateResults.cpp UpdateResults.hpp
+    TemporaryFile.cpp TemporaryFile.hpp
     AdminInstallUpdate.cpp AdminInstallUpdate.hpp
 )
 
@@ -652,7 +685,6 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     JackServerSettings.hpp JackServerSettings.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
 
-    Lv2Log.cpp Lv2Log.hpp
     SystemConfigFile.hpp SystemConfigFile.cpp    
     CpuGovernor.cpp CpuGovernor.hpp
     asan_options.cpp

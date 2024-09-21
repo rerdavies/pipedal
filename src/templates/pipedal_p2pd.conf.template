@@ -1,4 +1,4 @@
-# WiFi regdomain 2-letter country code.
+# Wi-Fi regdomain 2-letter country code.
 # see: http://www.davros.org/misc/iso3166.txt
 country_code=${COUNTRY_CODE}
 

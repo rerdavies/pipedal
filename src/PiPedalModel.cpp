@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Robin Davies
+// Copyright (c) 2022-2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -35,6 +35,13 @@
 #include "PiPedalUI.hpp"
 #include "atom_object.hpp"
 #include "Lv2PluginChangeMonitor.hpp"
+#include "HotspotManager.hpp"
+#include "DBusToLv2Log.hpp"
+#include "SysExec.hpp"
+#include "Updater.hpp"
+#include "util.hpp"
+#include "DBusLog.hpp"
+#include "AvahiService.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -66,7 +73,9 @@ PiPedalModel::PiPedalModel()
     : pluginHost(),
       atomConverter(pluginHost.GetMapFeature())
 {
-    this->currentUpdateStatus = updater.GetCurrentStatus();
+    this->updater = Updater::Create();
+    this->updater->Start();
+    this->currentUpdateStatus = updater->GetCurrentStatus();
     this->pedalboard = Pedalboard::MakeDefault();
 #if JACK_HOST
     this->jackServerSettings = this->storage.GetJackServerSettings(); // to get onboarding flag.
@@ -74,39 +83,71 @@ PiPedalModel::PiPedalModel()
 #else
     this->jackServerSettings = this->storage.GetJackServerSettings();
 #endif
-    updater.SetUpdateListener(
+    updater->SetUpdateListener(
         [this](const UpdateStatus &updateStatus)
         {
             this->OnUpdateStatusChanged(updateStatus);
         });
+
+
+    DbusLogToLv2Log();
+    SetDBusLogLevel(DBusLogLevel::Info);
+
+    hotspotManager = HotspotManager::Create();
+    hotspotManager->SetNetworkChangingListener(
+        [this](bool ethernetConnected, bool hotspotEnabling) {
+            OnNetworkChanging(ethernetConnected,hotspotEnabling);
+        }
+    );
+    // don't actuall start the hotspotManager until after LV2 is initialized (in order to avoid logging oddities)
 }
 
 void PiPedalModel::Close()
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    std::unique_ptr<AudioHost> oldAudioHost;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (closed) 
+        {
+            return;
+        }
+        closed = true;
 
-    // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-    for (size_t i = 0; i < subscribers.size(); ++i)
-    {
-        t[i] = this->subscribers[i];
-    }
-    size_t n = this->subscribers.size();
-    for (size_t i = 0; i < n; ++i)
-    {
-        t[i]->Close();
-    }
-    delete[] t;
+        if (avahiService) {
+            this->avahiService = nullptr; // and close.
+        }
 
-    if (audioHost)
+        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+        for (size_t i = 0; i < n; ++i)
+        {
+            t[i]->Close();
+        }
+        delete[] t;
+
+        this->subscribers.resize(0);
+
+        oldAudioHost = std::move(this->audioHost);
+    } // end lock.
+
+    // lockless to avoid deadlocks while shutting down the audio thread.
+    if (oldAudioHost)
     {
-        audioHost->Close();
+        oldAudioHost->Close();
     }
 }
 
 PiPedalModel::~PiPedalModel()
 {
-    pluginChangeMonitor = nullptr;
+    CancelNetworkChangingTimer();
+    hotspotManager = nullptr; // turn off the hotspot.
+
+    pluginChangeMonitor = nullptr; // stop monitorin LV2 directories.
     try
     {
         adminClient.UnmonitorGovernor();
@@ -952,11 +993,24 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
-    adminClient.SetWifiConfig(wifiConfigSettings);
 
+    
+#if NEW_WIFI_CONFIG
+    if (this->storage.SetWifiConfigSettings(wifiConfigSettings))
+    {
+        this->UpdateDnsSd();
+        if (this->hotspotManager)
+        {
+            this->hotspotManager->Reload();
+        }
+    }
+#else
     this->storage.SetWifiConfigSettings(wifiConfigSettings);
+    adminClient.SetWifiConfig(wifiConfigSettings);
+#endif
 
     {
+        // yyy: review locking semantics here. This is wrong. Convert to shared pointers?
         IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
         for (size_t i = 0; i < subscribers.size(); ++i)
         {
@@ -964,11 +1018,11 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
         }
         size_t n = this->subscribers.size();
 
-        WifiConfigSettings tWifiConfigSettings = storage.GetWifiConfigSettings(); // (the passwordless version)
+        WifiConfigSettings settingsWithNoSecrets = storage.GetWifiConfigSettings(); // (the passwordless version)
 
         for (size_t i = 0; i < n; ++i)
         {
-            t[i]->OnWifiConfigSettingsChanged(tWifiConfigSettings);
+            t[i]->OnWifiConfigSettingsChanged(settingsWithNoSecrets);
         }
         delete[] t;
     }
@@ -989,20 +1043,28 @@ static std::string GetP2pdName()
 
 void PiPedalModel::UpdateDnsSd()
 {
-    avahiService.Unannounce();
-
+    if (!avahiService)
+    {
+        throw std::runtime_error("Not ready.");
+    }
     ServiceConfiguration deviceIdFile;
     deviceIdFile.Load();
-
-    std::string p2pdName = GetP2pdName();
-    if (p2pdName != "")
+    WifiConfigSettings wifiSettings;
+    wifiSettings.Load();
+    std::string serviceName = wifiSettings.hotspotName_;
+    if (serviceName == "")
     {
-        deviceIdFile.deviceName = p2pdName;
+        serviceName = deviceIdFile.deviceName;
+    }
+    if (serviceName == "")
+    {
+        serviceName = "pipedal";
     }
 
-    if (deviceIdFile.deviceName != "" && deviceIdFile.uuid != "")
+    std::string hostName = GetHostName();
+    if (serviceName != "" && deviceIdFile.uuid != "")
     {
-        avahiService.Announce(webPort, deviceIdFile.deviceName, deviceIdFile.uuid, "pipedal");
+        avahiService->Announce(webPort, serviceName, deviceIdFile.uuid, hostName,true);
     }
     else
     {
@@ -1343,12 +1405,19 @@ void PiPedalModel::UpdateRealtimeVuSubscriptions()
             addedInstances.insert(activeVuSubscriptions[i].instanceid);
         }
     }
-    std::vector<int64_t> instanceids(addedInstances.begin(), addedInstances.end());
-    audioHost->SetVuSubscriptions(instanceids);
+    if (audioHost)
+    {
+        std::vector<int64_t> instanceids(addedInstances.begin(), addedInstances.end());
+        audioHost->SetVuSubscriptions(instanceids);
+    }
 }
 
 void PiPedalModel::UpdateRealtimeMonitorPortSubscriptions()
 {
+    if (!audioHost)
+    {
+        return;
+    }
     audioHost->SetMonitorPortSubscriptions(this->activeMonitorPortSubscriptions);
 }
 
@@ -1451,7 +1520,10 @@ void PiPedalModel::SendSetPatchProperty(
         clientId, instanceId, urid, atomValue, nullptr, onError);
 
     outstandingParameterRequests.push_back(request);
-    this->audioHost->sendRealtimeParameterRequest(request);
+    if (this->audioHost)
+    {
+        this->audioHost->sendRealtimeParameterRequest(request);
+    }
 }
 
 void PiPedalModel::SendGetPatchProperty(
@@ -1512,7 +1584,10 @@ void PiPedalModel::SendGetPatchProperty(
 
     std::lock_guard<std::recursive_mutex> lock(mutex);
     outstandingParameterRequests.push_back(request);
-    this->audioHost->sendRealtimeParameterRequest(request);
+    if (this->audioHost)
+    {
+        this->audioHost->sendRealtimeParameterRequest(request);
+    }
 }
 
 BankIndex PiPedalModel::GetBankIndex() const
@@ -1769,7 +1844,10 @@ void PiPedalModel::DeleteAtomOutputListeners(int64_t clientId)
             --i;
         }
     }
-    audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    if (audioHost)
+    {
+        audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    }
 }
 
 void PiPedalModel::DeleteMidiListeners(int64_t clientId)
@@ -1783,7 +1861,10 @@ void PiPedalModel::DeleteMidiListeners(int64_t clientId)
             --i;
         }
     }
-    audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+    if (audioHost)
+    {
+        audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+    }
 }
 
 void PiPedalModel::OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue)
@@ -1929,7 +2010,7 @@ void PiPedalModel::CancelMonitorPatchProperty(int64_t clientId, int64_t clientHa
             atomOutputListeners.erase(atomOutputListeners.begin() + i);
             break;
         }
-    }
+    } 
     if (midiEventListeners.size() == 0)
     {
         audioHost->SetListenForMidiEvent(false);
@@ -2183,24 +2264,24 @@ void PiPedalModel::FireUpdateStatusChanged(const UpdateStatus &updateStatus)
 UpdateStatus PiPedalModel::GetUpdateStatus()
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    return updater.GetCurrentStatus();
+    return updater->GetCurrentStatus();
 }
 
 void PiPedalModel::UpdateNow(const std::string &updateUrl)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     std::filesystem::path fileName, signatureName;
-    updater.DownloadUpdate(updateUrl, &fileName, &signatureName);
+    updater->DownloadUpdate(updateUrl, &fileName, &signatureName);
 
     adminClient.InstallUpdate(fileName);
 }
 void PiPedalModel::ForceUpdateCheck()
 {
-    updater.ForceUpdateCheck();
+    updater->ForceUpdateCheck();
 }
 void PiPedalModel::SetUpdatePolicy(UpdatePolicyT updatePolicy)
 {
-    updater.SetUpdatePolicy(updatePolicy);
+    updater->SetUpdatePolicy(updatePolicy);
 }
 
 static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::string &deviceId)
@@ -2211,6 +2292,17 @@ static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::
             return true;
     }
     return false;
+}
+
+void PiPedalModel::StartHotspotMonitoring()
+{
+    this->avahiService = std::make_unique<AvahiService>();
+
+    SetThreadName("avahi"); // hack to name the avahi service thread.
+    UpdateDnsSd(); // now that the server is running, publish a  DNS-SD announcement.
+    SetThreadName("main");
+
+    this->hotspotManager->Open();
 }
 
 void PiPedalModel::WaitForAudioDeviceToComeOnline()
@@ -2258,4 +2350,159 @@ void PiPedalModel::WaitForAudioDeviceToComeOnline()
 
     // pre-cache device info before we let audio services run.
     GetAlsaDevices();
+}
+
+PiPedalModel::PostHandle PiPedalModel::Post(PostCallback&&fn)
+{
+    // I know. odd place to forward this to, but it's a very serviceable dispatcher implementation.
+    // Why? because it's there, and PiPedalModel has no thread of its own to do dispatching.
+    if (!hotspotManager)
+    {
+        throw std::runtime_error("Too early. It's not ready yet.");
+    }
+    return hotspotManager->Post(std::move(fn));
+}
+PiPedalModel::PostHandle PiPedalModel::PostDelayed(const clock::duration&delay,PostCallback&&fn)
+{
+    if (!hotspotManager)
+    {
+        throw std::runtime_error("Too early. It's not ready yet.");
+    }
+    return hotspotManager->PostDelayed(delay,std::move(fn));
+
+}
+bool PiPedalModel::CancelPost(PostHandle handle) {
+    if (!hotspotManager)
+    {
+        throw std::runtime_error("Too early. It's not ready yet.");
+    }
+    return hotspotManager->CancelPost(handle);
+}
+
+void PiPedalModel::CancelNetworkChangingTimer()
+{
+    if (networkChangingDelayHandle)
+    {
+        CancelPost(networkChangingDelayHandle);
+        networkChangingDelayHandle = 0;
+    }
+}
+        
+
+std::vector<std::string> PiPedalModel::GetKnownWifiNetworks()
+{
+    if (!this->hotspotManager)
+    {
+        return std::vector<std::string>();
+    }
+    return this->hotspotManager->GetKnownWifiNetworks();
+}
+
+void PiPedalModel::OnNetworkChanging(bool ethernetConnected,bool hotspotConnected)
+{
+    CancelNetworkChangingTimer();
+    this->networkChangingDelayHandle = 
+        PostDelayed(std::chrono::seconds(10), // takes a while for network configuration to be fully applied.
+        [this,ethernetConnected,hotspotConnected]() {
+            this->networkChangingDelayHandle = 0;
+            OnNetworkChanged(ethernetConnected,hotspotConnected);
+        }
+        );
+
+    // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+    std::vector<IPiPedalModelSubscriber *> t;
+    t.reserve(this->subscribers.size());
+
+    for (size_t i = 0; i < subscribers.size(); ++i)
+    {
+        t.push_back(this->subscribers[i]);
+    }
+    for (size_t i = 0; i < t.size(); ++i)
+    {
+        t[i]->OnNetworkChanging(hotspotConnected);
+    }
+
+}
+void PiPedalModel::OnNetworkChanged(bool ethernetConnected, bool hotspotConnected)
+{
+    FireNetworkChanged();
+}
+
+void PiPedalModel::OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) 
+{
+    try {
+        switch (eventType)
+        {
+            case RealtimeMidiEventType::Shutdown:
+                {
+                    this->RequestShutdown(false);
+                }
+                break;
+            case RealtimeMidiEventType::Reboot:
+                {
+                    this->RequestShutdown(true);
+                }
+                break;
+            case RealtimeMidiEventType::StartHotspot:
+            {
+                WifiConfigSettings settings = storage.GetWifiConfigSettings();
+                if (!settings.hasSavedPassword_)
+                {
+                    throw std::runtime_error("Can't start Wi-Fi hotspot because no password has been configured.");
+                }
+                settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Always;
+                this->SetWifiConfigSettings(settings);
+            }
+            break;
+            case RealtimeMidiEventType::StopHotspot:
+            {
+                WifiConfigSettings settings = storage.GetWifiConfigSettings();
+                settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Never;
+                this->SetWifiConfigSettings(settings);
+            }
+            break;
+
+            default:
+                break;
+        }
+    } catch (const std::exception&e)
+    {
+        Lv2Log::error(SS("Failed to process realtime MIDI event. " << e.what()));
+    }
+}
+
+void PiPedalModel::RequestShutdown(bool restart)
+{
+    if (GetAdminClient().CanUseAdminClient())
+    {
+        GetAdminClient().RequestShutdown(restart);
+    }
+    else
+    {
+        // ONLY works when interactively logged in.
+        std::stringstream s;
+        s << "/usr/sbin/shutdown ";
+        if (restart)
+        {
+            s << "-r";
+        }
+        else
+        {
+            s << "-P";
+        }
+        s << " now";
+
+        if (sysExec(s.str().c_str()) != EXIT_SUCCESS)
+        {
+            Lv2Log::error("shutdown failed.");
+            if (restart)
+            {
+                throw new PiPedalStateException("Restart request failed.");
+            }
+            else
+            {
+                throw new PiPedalStateException("Shutdown request failed.");
+            }
+        }
+    }
 }

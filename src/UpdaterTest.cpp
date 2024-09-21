@@ -29,10 +29,10 @@ using namespace pipedal;
 TEST_CASE( "updater test", "[updater]" ) {
     int nCalls = 0;
     cout << "------ upater test ----" << endl;
-    {    Updater updater;
+    {    Updater::ptr updater = Updater::Create();
 
 
-        updater.SetUpdateListener(
+        updater->SetUpdateListener(
             [&nCalls](const UpdateStatus&updateStatus) mutable
             {
 
@@ -43,6 +43,8 @@ TEST_CASE( "updater test", "[updater]" ) {
                 ++nCalls;
             }
         );
+        updater->Start();
+
     }
     REQUIRE(nCalls == 1);
 
