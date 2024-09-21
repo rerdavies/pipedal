@@ -54,12 +54,11 @@ namespace pipedal::impl
 
         std::vector<std::string> GetKnownWifiNetworks();
 
-        virtual PostHandle Post(PostCallback&&fn) override;
-        virtual PostHandle PostDelayed(const clock::duration&delay,PostCallback&&fn) override;
+        virtual PostHandle Post(PostCallback &&fn) override;
+        virtual PostHandle PostDelayed(const clock::duration &delay, PostCallback &&fn) override;
         virtual bool CancelPost(PostHandle handle) override;
 
         virtual void SetNetworkChangingListener(NetworkChangingListener &&listener) override;
-
 
     private:
         enum class State
@@ -104,8 +103,7 @@ namespace pipedal::impl
 
         void UpdateKnownNetworks(
             std::vector<ssid_t> &knownSsids,
-            std::vector<AccessPoint::ptr> &allAccessPoints
-        );
+            std::vector<AccessPoint::ptr> &allAccessPoints);
 
         void FireNetworkChanging();
 
@@ -151,7 +149,6 @@ using namespace pipedal::impl;
 
 HotspotManagerImpl::HotspotManagerImpl()
 {
-    SetDBusLogLevel(DBusLogLevel::None);
 }
 
 void HotspotManagerImpl::Open()
@@ -167,7 +164,24 @@ void HotspotManagerImpl::Open()
 
 void HotspotManagerImpl::onClose()
 {
-    StopHotspot();
+    this->closed  = true; // avoids a memory barrier probelm.
+
+    CancelDeviceChangedTimer();
+    CancelWaitForNetworkManagerTimer();
+    CancelAccessPointsChangedTimer();
+
+
+    if (networkManager && activeConnection)
+    {
+        try {
+            networkManager->DeactivateConnection(activeConnection->getObjectPath());
+            activeConnection = nullptr;
+        } catch (const std::exception&e)
+        {
+            // nothrow.
+        }
+    }
+
     ReleaseNetworkManager();
 
     Lv2Log::debug("HotspotManager: state=Closed");
@@ -250,6 +264,7 @@ void HotspotManagerImpl::UpdateNetworkManagerStatus()
         this->StartWaitForNetworkManagerTimer();
     }
 }
+
 void HotspotManagerImpl::CancelDeviceChangedTimer()
 {
     if (devicesChangedTimerHandle)
@@ -386,7 +401,6 @@ void HotspotManagerImpl::onStartMonitoring()
 
         StartScanTimer();
         onAccessPointChanged();
-
     }
     catch (const std::exception &e)
     {
@@ -397,6 +411,7 @@ void HotspotManagerImpl::onStartMonitoring()
 
 void HotspotManagerImpl::StartWaitForNetworkManagerTimer()
 {
+
     CancelWaitForNetworkManagerTimer();
     networkManagerTimerHandle = dbusDispatcher.PostDelayed(
         std::chrono::seconds(5),
@@ -408,6 +423,7 @@ void HotspotManagerImpl::StartWaitForNetworkManagerTimer()
 }
 void HotspotManagerImpl::CancelWaitForNetworkManagerTimer()
 {
+
     if (networkManagerTimerHandle)
     {
         dbusDispatcher.CancelPost(networkManagerTimerHandle);
@@ -436,7 +452,7 @@ void HotspotManagerImpl::onReload()
     case State::Error:
         // ignore.
         return;
-    default: 
+    default:
         MaybeStartHotspot();
         return;
     }
@@ -473,8 +489,6 @@ void HotspotManagerImpl::Close()
     }
 }
 
-
-
 HotspotManager::ptr HotspotManager::Create()
 {
     return std::make_unique<HotspotManagerImpl>();
@@ -496,8 +510,8 @@ public:
     }
 };
 
-
-struct NetworkSortRecord {
+struct NetworkSortRecord
+{
     std::string ssid;
     bool connected = false;
     bool knownNetwork = false;
@@ -506,12 +520,11 @@ struct NetworkSortRecord {
 };
 void HotspotManagerImpl::UpdateKnownNetworks(
     std::vector<ssid_t> &knownSsids,
-    std::vector<AccessPoint::ptr> & allAccessPoints
-) 
+    std::vector<AccessPoint::ptr> &allAccessPoints)
 {
-    std::map<std::string,NetworkSortRecord> map;
+    std::map<std::string, NetworkSortRecord> map;
 
-    for (auto &knownSsid: knownSsids)
+    for (auto &knownSsid : knownSsids)
     {
         std::string ssid = ssidToString(knownSsid);
         if (ssid.length() != 0)
@@ -521,17 +534,22 @@ void HotspotManagerImpl::UpdateKnownNetworks(
             record.knownNetwork = true;
         }
     }
-    for (auto&accessPoint: allAccessPoints)
+    for (auto &accessPoint : allAccessPoints)
     {
-        uint8_t strength = accessPoint->Strength();
-        auto vSsid = accessPoint->Ssid();
-        std::string ssid = ssidToString(vSsid);
-        if (ssid.length() != 0)
+        try {
+            uint8_t strength = accessPoint->Strength();
+            auto vSsid = accessPoint->Ssid();
+            std::string ssid = ssidToString(vSsid);
+            if (ssid.length() != 0)
+            {
+                NetworkSortRecord &record = map[ssid];
+                record.ssid = ssid;
+                record.visibleNetwork = true;
+                record.strength = strength;
+            }
+        } catch (const std::exception&ignored)
         {
-            NetworkSortRecord&record = map[ssid];
-            record.ssid = ssid;
-            record.visibleNetwork = true;
-            record.strength = strength;
+            // race to get the info before it changes. np.
         }
     }
     if (this->wlanDevice)
@@ -539,24 +557,23 @@ void HotspotManagerImpl::UpdateKnownNetworks(
         auto activeConnectionPath = this->wlanDevice->ActiveConnection();
         if (activeConnectionPath.length() > 2) // "/" -> no connection. Be paranoid about "".
         {
-            auto activeConnection = ActiveConnection::Create(dbusDispatcher,activeConnectionPath);
+            auto activeConnection = ActiveConnection::Create(dbusDispatcher, activeConnectionPath);
             std::string activeSsid = activeConnection->Id();
             auto it = map.find(activeSsid);
             if (it != map.end())
             {
                 it->second.connected = true;
             }
-
         }
     }
     std::vector<NetworkSortRecord> records;
     records.reserve(map.size());
-    for (auto & mapEntry: map)
+    for (auto &mapEntry : map)
     {
         records.push_back(mapEntry.second);
     }
-    std::sort(records.begin(),records.end(), [](const NetworkSortRecord&left, const NetworkSortRecord &right)
-    {
+    std::sort(records.begin(), records.end(), [](const NetworkSortRecord &left, const NetworkSortRecord &right)
+              {
         if (left.connected != right.connected)
         {
             return left.connected > right.connected;
@@ -573,27 +590,25 @@ void HotspotManagerImpl::UpdateKnownNetworks(
         {
             return left.strength > right.strength;
         }
-        return false;
-    });
+        return false; });
     if (records.size() > 10)
     {
         records.resize(10);
     }
     std::vector<std::string> result;
     result.reserve(records.size());
-    for (auto &record: records)
+    for (auto &record : records)
     {
         result.push_back(std::move(record.ssid));
     }
     {
-        std::lock_guard lock { this->knownWifiNetworksMutex };
+        std::lock_guard lock{this->knownWifiNetworksMutex};
         this->knownWifiNetworks = std::move(result);
     }
-
 }
 
-
-std::vector<AccessPoint::ptr> HotspotManagerImpl::GetAllAccessPoints() {
+std::vector<AccessPoint::ptr> HotspotManagerImpl::GetAllAccessPoints()
+{
     std::vector<AccessPoint::ptr> accessPoints;
 
     for (const auto &accessPointPath : wlanWirelessDevice->AccessPoints())
@@ -602,15 +617,14 @@ std::vector<AccessPoint::ptr> HotspotManagerImpl::GetAllAccessPoints() {
         accessPoints.push_back(std::move(accessPoint));
     }
     return accessPoints;
-
 }
-std::vector<std::vector<uint8_t>> HotspotManagerImpl::GetKnownVisibleAccessPoints(const std::vector<ssid_t>&allAccessPoints)
+std::vector<std::vector<uint8_t>> HotspotManagerImpl::GetKnownVisibleAccessPoints(const std::vector<ssid_t> &allAccessPoints)
 {
     std::vector<std::vector<uint8_t>> knownSsids = this->GetAllAutoConnectSsids();
 
     std::unordered_set<std::vector<uint8_t>, VectorHash<uint8_t>> index{knownSsids.begin(), knownSsids.end()};
 
-    std::vector<ssid_t> result; 
+    std::vector<ssid_t> result;
     std::vector<AccessPoint::ptr> accessPoints;
 
     for (const auto &accessPoint : allAccessPoints)
@@ -684,14 +698,16 @@ void HotspotManagerImpl::onAccessPointChanged()
     }
 }
 
-static std::vector<std::vector<uint8_t>> GetAccessPointSsids(std::vector<AccessPoint::ptr>&accessPoints)
+static std::vector<std::vector<uint8_t>> GetAccessPointSsids(std::vector<AccessPoint::ptr> &accessPoints)
 {
     std::vector<std::vector<uint8_t>> result;
-    for (const auto&accessPoint: accessPoints)
+    for (const auto &accessPoint : accessPoints)
     {
-        try {
+        try
+        {
             result.push_back(accessPoint->Ssid());
-        } catch (const std::exception&ignored)
+        }
+        catch (const std::exception &ignored)
         {
             // race to get a disappearing ssid. Ignore the error.
         }
@@ -700,8 +716,10 @@ static std::vector<std::vector<uint8_t>> GetAccessPointSsids(std::vector<AccessP
 }
 void HotspotManagerImpl::MaybeStartHotspot()
 {
-    if (this->state == State::Error) return;
-    if (this->closed) return;
+    if (this->state == State::Error)
+        return;
+    if (this->closed)
+        return;
 
     if (!wlanDevice || !wlanWirelessDevice)
     {
@@ -711,12 +729,12 @@ void HotspotManagerImpl::MaybeStartHotspot()
     std::vector<AccessPoint::ptr> allAccessPoints = GetAllAccessPoints();
     std::vector<std::vector<uint8_t>> allAccessPointSsids = GetAccessPointSsids(allAccessPoints);
     std::vector<std::vector<uint8_t>> connectableSsids = GetKnownVisibleAccessPoints(allAccessPointSsids); // all the ssids currently visible for which we have credentials.
-    
-    this->UpdateKnownNetworks(connectableSsids,allAccessPoints);
 
-    bool wantsHotspot =  this->wifiConfigSettings.WantsHotspot(
+    this->UpdateKnownNetworks(connectableSsids, allAccessPoints);
 
-        this->ethernetConnected,connectableSsids,allAccessPointSsids);
+    bool wantsHotspot = this->wifiConfigSettings.WantsHotspot(
+
+        this->ethernetConnected, connectableSsids, allAccessPointSsids);
 
     if (this->state == State::Monitoring && wantsHotspot)
     {
@@ -764,7 +782,7 @@ Connection::ptr HotspotManagerImpl::FindExistingConnection()
             }
         }
     }
-    
+
     return nullptr;
 }
 
@@ -874,28 +892,26 @@ void HotspotManagerImpl::StopHotspot()
     {
         if (activeConnection)
         {
+            FireNetworkChanging();
             networkManager->DeactivateConnection(activeConnection->getObjectPath());
             activeConnection = nullptr;
-
-            FireNetworkChanging();
-
         }
     }
     catch (const std::exception &e)
     {
-        Lv2Log::error("HotspotManager: Failed to deactivate hotspot.");
+        Lv2Log::error(SS("HotspotManager: Failed to deactivate hotspot. " << e.what()));
         activeConnection = nullptr;
     }
     if (this->state == State::HotspotConnected || this->state == State::HotspotConnecting)
     {
-        Lv2Log::info("HotspotManager: state=HotspotMonitoring");
+        Lv2Log::debug("HotspotManager: state=HotspotMonitoring");
         SetState(State::Monitoring);
 
         Lv2Log::info("HotspotManager: PiPedal hotspot disabled.");
     }
 }
 
-static const std::chrono::seconds scanInterval { 60};
+static const std::chrono::seconds scanInterval{60};
 
 void HotspotManagerImpl::StartScanTimer()
 {
@@ -904,7 +920,8 @@ void HotspotManagerImpl::StartScanTimer()
 }
 void HotspotManagerImpl::StopScanTimer()
 {
-    if (this->scanTimerHandle) {
+    if (this->scanTimerHandle)
+    {
         dbusDispatcher.CancelPost(this->scanTimerHandle);
         this->scanTimerHandle = 0;
     }
@@ -913,14 +930,17 @@ void HotspotManagerImpl::ScanNow()
 {
     this->scanTimerHandle = 0;
 
-    if (wlanWirelessDevice) {
+    if (wlanWirelessDevice)
+    {
 
         std::map<std::string, sdbus::Variant> options;
 
-        try {
+        try
+        {
             Lv2Log::debug("Scanning");
             wlanWirelessDevice->RequestScan(options);
-        } catch (const std::exception &e)
+        }
+        catch (const std::exception &e)
         {
             Lv2Log::error(SS("HotspotMonitor: Wi-Fi RequestScan failed." << e.what()));
             return;
@@ -928,44 +948,42 @@ void HotspotManagerImpl::ScanNow()
 
         this->scanTimerHandle = this->dbusDispatcher.PostDelayed(
             std::chrono::duration_cast<std::chrono::steady_clock::duration>(scanInterval),
-            [this]() {
+            [this]()
+            {
                 ScanNow();
-            }
-        );
+            });
     }
 }
 
-HotspotManagerImpl::PostHandle HotspotManagerImpl::Post(PostCallback&&fn)
+HotspotManagerImpl::PostHandle HotspotManagerImpl::Post(PostCallback &&fn)
 {
     return dbusDispatcher.Post(std::move(fn));
 }
-HotspotManagerImpl::PostHandle HotspotManagerImpl::PostDelayed(const clock::duration&delay,PostCallback&&fn)
+HotspotManagerImpl::PostHandle HotspotManagerImpl::PostDelayed(const clock::duration &delay, PostCallback &&fn)
 {
-    return dbusDispatcher.PostDelayed(delay,std::move(fn));
-
+    return dbusDispatcher.PostDelayed(delay, std::move(fn));
 }
-bool HotspotManagerImpl::CancelPost(PostHandle handle) {
+bool HotspotManagerImpl::CancelPost(PostHandle handle)
+{
     return dbusDispatcher.CancelPost(handle);
 }
 
-void HotspotManagerImpl::SetNetworkChangingListener(NetworkChangingListener &&listener) 
+void HotspotManagerImpl::SetNetworkChangingListener(NetworkChangingListener &&listener)
 {
-    std::lock_guard<std::recursive_mutex> lock { this->networkChangingListenerMutex};
+    std::lock_guard<std::recursive_mutex> lock{this->networkChangingListenerMutex};
     this->networkChangingListener = std::move(listener);
 }
-void HotspotManagerImpl::FireNetworkChanging() {
-    std::lock_guard<std::recursive_mutex> lock { this->networkChangingListenerMutex};
+void HotspotManagerImpl::FireNetworkChanging()
+{
+    std::lock_guard<std::recursive_mutex> lock{this->networkChangingListenerMutex};
     if (this->networkChangingListener)
     {
-        this->networkChangingListener(this->ethernetConnected,!!activeConnection);
+        this->networkChangingListener(this->ethernetConnected, !!activeConnection);
     }
-
 }
 
-std::vector<std::string> HotspotManagerImpl::GetKnownWifiNetworks() 
+std::vector<std::string> HotspotManagerImpl::GetKnownWifiNetworks()
 {
     std::lock_guard lock(knownWifiNetworksMutex); // pushed off the service thread.
     return this->knownWifiNetworks;
-
 }
-

@@ -278,7 +278,7 @@ class PiPedalSocket {
                     ws.onerror = null;
                     reject("Connection closed unexpectedly.");
                 };
-                ws.onerror = (evWheent: Event) => {
+                ws.onerror = (evt: Event) => {
                     ws.onclose = null;
                     ws.onerror = null;
                     reject("Failed to connect.");

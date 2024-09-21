@@ -349,17 +349,14 @@ private:
 
     virtual void Close()
     {
-        std::lock_guard guard{mutex};
-        if (!isOpen)
-            return;
-
-        isOpen = false;
-
-        if (realtimeMonitorPortSubscriptions != nullptr)
         {
-            delete realtimeMonitorPortSubscriptions;
-            realtimeMonitorPortSubscriptions = nullptr;
+            std::lock_guard guard{mutex};
+            if (!isOpen)
+                return;
+
+            isOpen = false;
         }
+
         if (active)
         {
             audioDriver->Deactivate();
@@ -370,6 +367,7 @@ private:
         audioDriver->Close();
 
         StopReaderThread();
+
 
         // release any pdealboards owned by the process thread.
         this->activePedalboards.resize(0);
@@ -815,7 +813,7 @@ private:
     virtual void OnAudioTerminated() override
     {
         this->active = false;
-        Lv2Log::info("Audio stopped.");
+        Lv2Log::info("Audio thread terminated.");
     }
 
 

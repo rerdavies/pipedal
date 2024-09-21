@@ -1181,7 +1181,7 @@ void Updater::ValidateSignature(const std::filesystem::path &file, const std::fi
        << " --verify "
        << signatureFile << " " << file;
 
-    Lv2Log::info(SS("/usr/bin/gpg " << ss.str()));
+    Lv2Log::debug(SS("/usr/bin/gpg " << ss.str()));
     auto gpgOutput = sysExecForOutput("/usr/bin/gpg", ss.str());
     if (gpgOutput.exitCode != EXIT_SUCCESS)
     {
@@ -1191,17 +1191,20 @@ void Updater::ValidateSignature(const std::filesystem::path &file, const std::fi
 
     if (!IsSignatureGood(gpgText))
     {
+        Lv2Log::error(gpgOutput.output);
         throw std::runtime_error("Update signature is not valid.");
     }
     std::string keyId = getFingerprint(gpgText);
 
     if (keyId != UPDATE_GPG_FINGERPRINT && keyId != UPDATE_GPG_FINGERPRINT2)
     {
+        Lv2Log::error(gpgOutput.output);
         throw std::runtime_error(SS("Update signature has the wrong id: " << keyId));
     }
     std::string origin = getAddress(gpgText);
     if (origin != UPDATE_GPG_ADDRESS && origin != UPDATE_GPG_ADDRESS2)
     {
+        Lv2Log::error(gpgOutput.output);
         throw std::runtime_error(SS("Update signature has an incorrect address." << origin));
     }
 }

@@ -30,7 +30,7 @@
 #include <sdbus-c++/sdbus-c++.h>
 #include <iostream>
 #include <memory>
-#include <unistd.h> // for gethostname()
+#include "util.hpp"
 
 using namespace pipedal;
 using namespace std;
@@ -89,16 +89,6 @@ bool WifiConfigSettings::ValidateCountryCode(const std::string &text)
     return std::isalpha(text[0]) && std::isalpha(text[1]);
 }
 
-static std::string GetHostName()
-{
-    char buffer[1024];
-    if (gethostname(buffer,1024) != 0)
-    {
-        buffer[0] = '\0';
-    }
-    buffer[1023] = '\0';
-    return buffer;
-}
 
 void WifiConfigSettings::Load()
 {

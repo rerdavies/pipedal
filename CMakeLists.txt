@@ -11,7 +11,7 @@ set (CMAKE_INSTALL_PREFIX "/usr/")
 include(CTest)
 enable_testing()
 
-add_subdirectory("submodules/pipedal_p2pd")
+#add_subdirectory("submodules/pipedal_p2pd")
 
 add_subdirectory("PiPedalCommon")
 
@@ -82,8 +82,9 @@ install(CODE
     EXECUTABLES 
     ${CMAKE_INSTALL_PREFIX}/sbin/pipedaladmind
     ${CMAKE_INSTALL_PREFIX}/sbin/pipedald 
-    ${CMAKE_INSTALL_PREFIX}/sbin/pipedal_nm_p2pd
-    ${CMAKE_INSTALL_PREFIX}/sbin/pipedal_p2pd
+    ${CMAKE_INSTALL_PREFIX}/sbin/pipedal_update 
+    #${CMAKE_INSTALL_PREFIX}/sbin/pipedal_nm_p2pd
+    #${CMAKE_INSTALL_PREFIX}/sbin/pipedal_p2pd
     ${CMAKE_INSTALL_PREFIX}/bin/pipedalconfig
     )
 ]]

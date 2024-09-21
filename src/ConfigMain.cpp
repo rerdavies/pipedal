@@ -1295,6 +1295,7 @@ void RequireNetworkManager()
         throw std::runtime_error("The current OS is not using NetworkManager.");
     }
 }
+
 int main(int argc, char **argv)
 {
     CommandLineParser parser;

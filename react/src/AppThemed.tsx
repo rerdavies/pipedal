@@ -48,7 +48,7 @@ import SettingsDialog from './SettingsDialog';
 import AboutDialog from './AboutDialog';
 import BankDialog from './BankDialog';
 
-import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo,wantsLoadingScreen } from './PiPedalModel';
+import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo, wantsLoadingScreen } from './PiPedalModel';
 import ZoomedUiControl from './ZoomedUiControl'
 import MainPage from './MainPage';
 import DialogContent from '@mui/material/DialogContent';
@@ -67,7 +67,7 @@ import { ReactComponent as SaveBankAsIcon } from './svg/ic_save_bank_as.svg';
 import { ReactComponent as EditBanksIcon } from './svg/ic_edit_banks.svg';
 import { ReactComponent as SettingsIcon } from './svg/ic_settings.svg';
 import { ReactComponent as HelpOutlineIcon } from './svg/ic_help_outline.svg';
-import DialogEx from './DialogEx';
+import DialogEx, { DialogStackState } from './DialogEx';
 
 
 const appStyles = (theme: Theme) => createStyles({
@@ -139,10 +139,11 @@ const appStyles = (theme: Theme) => createStyles({
         marginTop: 0,
         fontWeight: 500,
         fontSize: "13pt",
-        maxWidth: 350,
         opacity: 1,
         zIndex: 2010,
         paddingTop: 12,
+        gravity: "center",
+        textAlign: "center"
     },
 
     errorMessageBox: {
@@ -164,8 +165,6 @@ const appStyles = (theme: Theme) => createStyles({
         position: "relative",
         top: "20%",
         color: isDarkMode() ? theme.palette.text.secondary : "#888",
-        marginLeft: "auto",
-        marginRight: "auto",
         // border: "3px solid #888",
         borderRadius: "12px",
         padding: "12px",
@@ -351,9 +350,40 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         this.handleCloseAlert = this.handleCloseAlert.bind(this);
         this.banksChangedHandler = this.banksChangedHandler.bind(this);
         this.showStatusMonitorHandler = this.showStatusMonitorHandler.bind(this);
-
+        this.onPopStateHandler = this.onPopStateHandler.bind(this);
     }
 
+    showDrawer() {
+        if (!this.state.isDrawerOpen) {
+            this.setState({ isDrawerOpen: true })
+            this.pushOpenMenuState();
+        }
+    }
+    hideDrawer(loadingDialog: boolean = false) {
+        if (!loadingDialog && window.location.hash === "#menu") {
+            window.history.back();
+        } else {
+            this.setState({ isDrawerOpen: false })
+        }
+    }
+
+    pushOpenMenuState() {
+        let stackState = { tag: "OpenMenu", previousState: null };
+        window.history.replaceState(stackState, "", window.location.href);
+        window.history.pushState({}, "", "#menu");
+    }
+    onPopStateHandler(ev: PopStateEvent) {
+        let stackState: DialogStackState | null = ev.state as (DialogStackState | null);
+        if (stackState && stackState.tag === "OpenMenu") {
+            if (this.state.isDrawerOpen) {
+                this.setState({ isDrawerOpen: false });
+            }
+            ev.stopPropagation();
+            window.history.replaceState(stackState.previousState, "", window.location.href);
+            return true;
+        }
+        return false;
+    }
 
     onOpenBank(bankId: number) {
         this.model_.openBank(bankId)
@@ -524,11 +554,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         return undefined;
     }
     promptForUpdateHandler(newValue: boolean) {
-        if (this.model_.enableAutoUpdate)
-        {
-            if (this.state.updateDialogOpen !== newValue)
-            {
-                this.setState({updateDialogOpen: newValue});
+        if (this.model_.enableAutoUpdate) {
+            if (this.state.updateDialogOpen !== newValue) {
+                this.setState({ updateDialogOpen: newValue });
             }
         }
     }
@@ -537,6 +565,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         super.componentDidMount();
         window.addEventListener("beforeunload", this.beforeUnloadListener);
         window.addEventListener("unload", this.unloadListener);
+        window.addEventListener("popstate", this.onPopStateHandler);
 
         this.model_.errorMessage.addOnChangedHandler(this.errorChangeHandler_);
         this.model_.state.addOnChangedHandler(this.stateChangeHandler_);
@@ -546,6 +575,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         this.model_.showStatusMonitor.addOnChangedHandler(this.showStatusMonitorHandler);
         this.model_.promptForUpdate.addOnChangedHandler(this.promptForUpdateHandler);
         this.alertMessageChangedHandler();
+
     }
 
 
@@ -567,6 +597,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     componentWillUnmount() {
         super.componentWillUnmount();
         window.removeEventListener("beforeunload", this.beforeUnloadListener);
+
+        window.removeEventListener("popstate", this.onPopStateHandler);
+
 
         this.model_.promptForUpdate.removeOnChangedHandler(this.promptForUpdateHandler);
         this.model_.errorMessage.removeOnChangedHandler(this.errorChangeHandler_);
@@ -634,12 +667,6 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         }
     }
 
-    showDrawer() {
-        this.setState({ isDrawerOpen: true })
-    }
-    hideDrawer() {
-        this.setState({ isDrawerOpen: false })
-    }
     shortBankList(banks: BankIndex): BankIndexEntry[] {
         let n = this.state.bankDisplayItems;
         let entries = banks.entries;
@@ -796,7 +823,11 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                         {
                             showBankSelectDialog && (
                                 <ListItem button key={'bankDOTDOTDOT'} selected={false}
-                                    onClick={() => this.handleDrawerSelectBank()}
+                                    onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerSelectBank();
+                                    }}
                                 >
 
                                     <ListItemText primary={"..."} />
@@ -808,19 +839,34 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     </List>
                     <Divider />
                     <List>
-                        <ListItem button key='RenameBank' onClick={() => { this.handleDrawerRenameBank() }}>
+                        <ListItem button key='RenameBank'
+                            onClick={(ev) => {
+                                ev.stopPropagation();
+                                this.hideDrawer(true);
+                                this.handleDrawerRenameBank()
+                            }}>
                             <ListItemIcon >
                                 <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
                             </ListItemIcon>
                             <ListItemText primary='Rename bank' />
                         </ListItem>
-                        <ListItem button key='SaveBank' onClick={() => { this.handleDrawerSaveBankAs() }} >
+                        <ListItem button key='SaveBank'
+                            onClick={(ev) => {
+                                ev.stopPropagation();
+                                this.hideDrawer(true);
+                                this.handleDrawerSaveBankAs();
+                            }} >
                             <ListItemIcon>
                                 <SaveBankAsIcon color="inherit" className={classes.menuIcon} />
                             </ListItemIcon>
                             <ListItemText primary='Save as new bank' />
                         </ListItem>
-                        <ListItem button key='EditBanks' onClick={() => { this.handleDrawerManageBanks(); }}>
+                        <ListItem button key='EditBanks'
+                            onClick={(ev) => {
+                                ev.stopPropagation();
+                                this.hideDrawer(true);
+                                this.handleDrawerManageBanks();
+                            }}>
                             <ListItemIcon>
                                 <EditBanksIcon color="inherit" className={classes.menuIcon} />
                             </ListItemIcon>
@@ -829,19 +875,34 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     </List>
                     <Divider />
                     <List>
-                        <ListItem button key='Settings' onClick={() => { this.handleDrawerSettingsClick() }}>
+                        <ListItem button key='Settings'
+                            onClick={(ev) => {
+                                ev.stopPropagation();
+                                this.hideDrawer(true);
+                                this.handleDrawerSettingsClick()
+                            }}>
                             <ListItemIcon>
                                 <SettingsIcon color="inherit" className={classes.menuIcon} />
                             </ListItemIcon>
                             <ListItemText primary='Settings' />
                         </ListItem>
-                        <ListItem button key='About' onClick={() => { this.handleDrawerAboutClick() }}>
+                        <ListItem button key='About'
+                            onClick={(ev) => {
+                                ev.stopPropagation();
+                                this.hideDrawer(true);
+                                this.handleDrawerAboutClick();
+                            }}>
                             <ListItemIcon>
                                 <HelpOutlineIcon color="inherit" className={classes.menuIcon} />
                             </ListItemIcon>
                             <ListItemText primary='About' />
                         </ListItem>
-                        <ListItem button key='Donations' onClick={() => { this.handleDrawerDonationClick() }}>
+                        <ListItem button key='Donations' 
+                        onClick={(ev) => { 
+                            ev.stopPropagation();
+                            this.hideDrawer(true);
+                            this.handleDrawerDonationClick();
+                             }}>
                             <ListItemIcon >
                                 <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
                             </ListItemIcon>
@@ -865,10 +926,10 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     </div>
                 </main>
                 <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
-                { (this.state.aboutDialogOpen)&&
-                (
-                    <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
-                )}
+                {(this.state.aboutDialogOpen) &&
+                    (
+                        <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
+                    )}
                 <SettingsDialog
                     open={this.state.isSettingsDialogOpen}
                     onboarding={this.state.onboarding}
@@ -931,7 +992,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 <div className={classes.errorContent} style={{
                     display: (
                         wantsLoadingScreen(this.state.displayState)
-                        ? "block" : "none"
+                            ? "block" : "none"
                     )
                 }}
                 >
@@ -941,7 +1002,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                         <div className={classes.loadingBoxItem}>
                             <CircularProgress color="inherit" className={classes.loadingBoxItem} />
                         </div>
-                        <Typography noWrap variant="body2" className={classes.progressText}>
+                        <Typography display="block" noWrap variant="body2" className={classes.progressText}>
                             {this.getReloadingMessage()}
                         </Typography>
                     </div>
@@ -961,7 +1022,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                             </p>
                         </div>
                         <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
-                            <Button variant='contained' color="primary" 
+                            <Button variant='contained' color="primary"
                                 onClick={() => this.handleReload()} >
                                 Reload
                             </Button>

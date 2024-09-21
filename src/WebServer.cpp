@@ -557,16 +557,6 @@ pipedal::last_modified(const std::filesystem::path &path)
     }
 }
 
-static std::string getHostName()
-{
-    char buff[512];
-    if (gethostname(buff, sizeof(buff)) == 0)
-    {
-        buff[511] = '\0';
-        return buff;
-    }
-    return "";
-}
 
 static std::string getIpv4Address(const std::string interface)
 {
@@ -1165,7 +1155,7 @@ namespace pipedal
 
                 std::stringstream ss;
                 ss << port;
-                // m_endpoint.listen(this->address, ss.str());
+                //m_endpoint.listen(this->address, ss.str());
                 m_endpoint.listen(tcp::v6(), (uint16_t)port);
                 m_endpoint.start_accept();
 
@@ -1305,7 +1295,7 @@ std::shared_ptr<WebServer> pipedal::WebServer::create(
 
 void WebServerImpl::DisplayIpAddresses()
 {
-    std::string hostName = getHostName();
+    std::string hostName = GetHostName();
     if (hostName.length() != 0)
     {
         std::stringstream ss;

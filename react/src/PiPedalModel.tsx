@@ -793,17 +793,47 @@ export class PiPedalModel //implements PiPedalModel
         return this.webSocket;
     }
 
+    androidReconnectTimeout?: NodeJS.Timeout = undefined;
+
+    cancelAndroidReconnectTimer()
+    {
+        if (this.androidReconnectTimeout) {
+            clearTimeout(this.androidReconnectTimeout);
+            this.androidReconnectTimeout = undefined;
+        }
+    }
+
+    startAndroidReconnectTimer()
+    {
+        this.cancelAndroidReconnectTimer();
+        this.androidReconnectTimeout = setTimeout(()=>{
+            this.androidReconnectTimeout = undefined;
+            this.androidHost?.setDisconnected(true);
+        },20*1000);
+    }
     onSocketConnectionLost() {
         // remove all the events and subscriptions we have.
+        if (this.isClosed)
+        {
+            return; // page unloading. do NOT change the UI.
+        }
         this.vuSubscriptions = [];
         this.monitorPatchPropertyListeners = [];
 
         if (this.isAndroidHosted()) {
-            this.androidHost?.setDisconnected(true);
+            // if unexpected, go back to the device browser immediately.
+            if (this.reconnectReason === ReconnectReason.Disconnected)
+            {
+                this.androidHost?.setDisconnected(true);
+            } else {
+                this.startAndroidReconnectTimer();
+            }
         }
     }
     onSocketReconnected() {
         this.cancelOnNetworkChanging();
+        this.cancelAndroidReconnectTimer();
+
         if (this.isAndroidHosted()) {
             this.androidHost?.setDisconnected(false);
         }

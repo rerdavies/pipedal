@@ -96,7 +96,7 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set (USE_SANITIZE False)
+set (USE_SANITIZE true)
 
 
 if (!ENABLE_VST3)

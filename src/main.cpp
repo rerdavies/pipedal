@@ -81,9 +81,17 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
+
+static void AsanCheck()
+{
+    char *t = new char[5];
+    t[5] = 'x';
+    delete t;
+    exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[])
 {
-
 
 #ifndef WIN32
     umask(002); // newly created files in /var/pipedal get 775-ish permissions, which improves debugging/live-service interaction.
@@ -269,7 +277,6 @@ int main(int argc, char *argv[])
                        (unsigned long)getpid());
         }
 
-        model.StartHotspotMonitoring();
         model.WaitForAudioDeviceToComeOnline();
 
 
@@ -317,9 +324,9 @@ int main(int argc, char *argv[])
         {
             server->RunInBackground(-1);
 
-            SetThreadName("avahi");
-            model.UpdateDnsSd(); // now that the server is running, publish a  DNS-SD announcement.
-            SetThreadName("main");
+
+            model.StartHotspotMonitoring();
+
 
             {
                 sigwait(&sigSet, &sig);

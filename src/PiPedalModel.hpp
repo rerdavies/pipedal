@@ -36,7 +36,6 @@
 #include "WifiConfigSettings.hpp"
 #include "WifiDirectConfigSettings.hpp"
 #include "AdminClient.hpp"
-#include "AvahiService.hpp"
 #include <thread>
 #include "Promise.hpp"
 #include "AtomConverter.hpp"
@@ -49,6 +48,7 @@ namespace pipedal
     struct RealtimeNextMidiProgramRequest;
     class Lv2PluginChangeMonitor;
     class Updater;
+    class AvahiService;
 
     class IPiPedalModelSubscriber
     {
@@ -113,7 +113,7 @@ namespace pipedal
 
         std::vector<MidiBinding> systemMidiBindings;
 
-        AvahiService avahiService;
+        std::unique_ptr<AvahiService> avahiService;
         uint16_t webPort;
 
         PiPedalAlsaDevices alsaDevices;
@@ -197,6 +197,7 @@ namespace pipedal
         std::vector<RealtimePatchPropertyRequest *> outstandingParameterRequests;
 
         IPiPedalModelSubscriber *GetNotificationSubscriber(int64_t clientId);
+        std::atomic<bool> closed = false;
 
     private: // IAudioHostCallbacks
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;

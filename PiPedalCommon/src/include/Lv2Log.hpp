@@ -150,7 +150,7 @@ namespace pipedal
 
         static void error(const char *format, ...)
         {
-            if (Lv2Log::log_level_ >= LogLevel::Warning)
+            if (Lv2Log::log_level_ >= LogLevel::Error)
             {
                 va_list arglist;
                 va_start(arglist, format);

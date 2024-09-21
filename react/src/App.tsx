@@ -59,11 +59,13 @@ const theme = createTheme(
                     styleOverrides: {
                         containedPrimary: {
                             borderRadius: '9999px',
-                            paddingLeft: "14px", paddingRight: "16px"
+                            paddingLeft: "16px", paddingRight: "16px",
+                            textTransform: "none"
                         },
                         containedSecondary: {
                             borderRadius: '9999px',
-                            paddingLeft: "14px", paddingRight: "16px"
+                            paddingLeft: "16px", paddingRight: "16px",
+                            textTransform: "none"
                         }
 
                     },
@@ -103,11 +105,13 @@ const theme = createTheme(
                     styleOverrides: {
                         containedPrimary: {
                             borderRadius: '9999px',
-                            paddingLeft: "14px", paddingRight: "16px"
+                            paddingLeft: "16px", paddingRight: "16px",
+                            textTransform: "none"
                         },
                         containedSecondary: {
                             borderRadius: '9999px',
-                            paddingLeft: "14px", paddingRight: "16px"
+                            paddingLeft: "16px", paddingRight: "16px",
+                            textTransform: "none"
                         }
 
                     },

@@ -26,10 +26,12 @@
 
 #include <thread>
 #include <string>
+#include <atomic>
 
 // forward declarations.
 class AvahiEntryGroup;
 class AvahiThreadedPoll;
+#include <atomic>
 
 #include <avahi-client/client.h>
 
@@ -38,12 +40,37 @@ namespace pipedal {
 
     class AvahiService {
     public:
-        ~AvahiService() { Unannounce(); }
+        ~AvahiService() { Stop(); }
         void Announce(
-            int portNumber, const std::string &name, const std::string &instanceId, const std::string&mdnsName,bool addTestGroup = false);
+            int portNumber, const std::string &name, const std::string &instanceId, const std::string&mdnsName, bool wait);
 
-        void Unannounce();
+        void Unannounce(bool wait);
     private: 
+        enum class ServiceState {
+            Unitialized,
+            Initializing,
+            Settling,
+            Requested,
+            Uncommited,
+            Registering,
+            Collision,
+            Reset,
+            Established,
+            Failed,
+            Closed
+        };
+
+        std::atomic<ServiceState> serviceState;
+        void Wait();
+        void WaitForUnannounce();
+        void SetState(ServiceState serviceState);
+
+        std::atomic<bool> terminated = false;
+        bool stopped = false;
+        bool started = false;
+        bool createPending = false;
+        bool makeAnnouncement = false;
+
         void Start();
         void Stop();
         static void entry_group_callback(AvahiEntryGroup*g, AvahiEntryGroupState state, void *userData);
@@ -59,13 +86,13 @@ namespace pipedal {
 
         int portNumber = -1;
         std::string instanceId;
+        std::string serviceName;
         std::string mdnsName;
-        bool addTestGroup = false;
 
         AvahiClient *client = NULL;
         AvahiEntryGroup *group = NULL;
         AvahiThreadedPoll *threadedPoll = NULL;
-        char*name = NULL;
+        char*avahiNameString = NULL;
 
     };
 

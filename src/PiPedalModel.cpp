@@ -39,6 +39,9 @@
 #include "DBusToLv2Log.hpp"
 #include "SysExec.hpp"
 #include "Updater.hpp"
+#include "util.hpp"
+#include "DBusLog.hpp"
+#include "AvahiService.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -88,6 +91,7 @@ PiPedalModel::PiPedalModel()
 
 
     DbusLogToLv2Log();
+    SetDBusLogLevel(DBusLogLevel::Info);
 
     hotspotManager = HotspotManager::Create();
     hotspotManager->SetNetworkChangingListener(
@@ -100,24 +104,41 @@ PiPedalModel::PiPedalModel()
 
 void PiPedalModel::Close()
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    std::unique_ptr<AudioHost> oldAudioHost;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (closed) 
+        {
+            return;
+        }
+        closed = true;
 
-    // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-    for (size_t i = 0; i < subscribers.size(); ++i)
-    {
-        t[i] = this->subscribers[i];
-    }
-    size_t n = this->subscribers.size();
-    for (size_t i = 0; i < n; ++i)
-    {
-        t[i]->Close();
-    }
-    delete[] t;
+        if (avahiService) {
+            this->avahiService = nullptr; // and close.
+        }
 
-    if (audioHost)
+        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+        for (size_t i = 0; i < n; ++i)
+        {
+            t[i]->Close();
+        }
+        delete[] t;
+
+        this->subscribers.resize(0);
+
+        oldAudioHost = std::move(this->audioHost);
+    } // end lock.
+
+    // lockless to avoid deadlocks while shutting down the audio thread.
+    if (oldAudioHost)
     {
-        audioHost->Close();
+        oldAudioHost->Close();
     }
 }
 
@@ -977,11 +998,11 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
 #if NEW_WIFI_CONFIG
     if (this->storage.SetWifiConfigSettings(wifiConfigSettings))
     {
+        this->UpdateDnsSd();
         if (this->hotspotManager)
         {
             this->hotspotManager->Reload();
         }
-        this->UpdateDnsSd();
     }
 #else
     this->storage.SetWifiConfigSettings(wifiConfigSettings);
@@ -1022,20 +1043,28 @@ static std::string GetP2pdName()
 
 void PiPedalModel::UpdateDnsSd()
 {
-    // avahiService.Unannounce(); let Announce decide whether it wants to unannounce or update.
-
+    if (!avahiService)
+    {
+        throw std::runtime_error("Not ready.");
+    }
     ServiceConfiguration deviceIdFile;
     deviceIdFile.Load();
-
-    std::string p2pdName = GetP2pdName();
-    if (p2pdName != "")
+    WifiConfigSettings wifiSettings;
+    wifiSettings.Load();
+    std::string serviceName = wifiSettings.hotspotName_;
+    if (serviceName == "")
     {
-        deviceIdFile.deviceName = p2pdName;
+        serviceName = deviceIdFile.deviceName;
+    }
+    if (serviceName == "")
+    {
+        serviceName = "pipedal";
     }
 
-    if (deviceIdFile.deviceName != "" && deviceIdFile.uuid != "")
+    std::string hostName = GetHostName();
+    if (serviceName != "" && deviceIdFile.uuid != "")
     {
-        avahiService.Announce(webPort, deviceIdFile.deviceName, deviceIdFile.uuid, "pipedal");
+        avahiService->Announce(webPort, serviceName, deviceIdFile.uuid, hostName,true);
     }
     else
     {
@@ -1376,12 +1405,19 @@ void PiPedalModel::UpdateRealtimeVuSubscriptions()
             addedInstances.insert(activeVuSubscriptions[i].instanceid);
         }
     }
-    std::vector<int64_t> instanceids(addedInstances.begin(), addedInstances.end());
-    audioHost->SetVuSubscriptions(instanceids);
+    if (audioHost)
+    {
+        std::vector<int64_t> instanceids(addedInstances.begin(), addedInstances.end());
+        audioHost->SetVuSubscriptions(instanceids);
+    }
 }
 
 void PiPedalModel::UpdateRealtimeMonitorPortSubscriptions()
 {
+    if (!audioHost)
+    {
+        return;
+    }
     audioHost->SetMonitorPortSubscriptions(this->activeMonitorPortSubscriptions);
 }
 
@@ -1484,7 +1520,10 @@ void PiPedalModel::SendSetPatchProperty(
         clientId, instanceId, urid, atomValue, nullptr, onError);
 
     outstandingParameterRequests.push_back(request);
-    this->audioHost->sendRealtimeParameterRequest(request);
+    if (this->audioHost)
+    {
+        this->audioHost->sendRealtimeParameterRequest(request);
+    }
 }
 
 void PiPedalModel::SendGetPatchProperty(
@@ -1545,7 +1584,10 @@ void PiPedalModel::SendGetPatchProperty(
 
     std::lock_guard<std::recursive_mutex> lock(mutex);
     outstandingParameterRequests.push_back(request);
-    this->audioHost->sendRealtimeParameterRequest(request);
+    if (this->audioHost)
+    {
+        this->audioHost->sendRealtimeParameterRequest(request);
+    }
 }
 
 BankIndex PiPedalModel::GetBankIndex() const
@@ -1802,7 +1844,10 @@ void PiPedalModel::DeleteAtomOutputListeners(int64_t clientId)
             --i;
         }
     }
-    audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    if (audioHost)
+    {
+        audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    }
 }
 
 void PiPedalModel::DeleteMidiListeners(int64_t clientId)
@@ -1816,7 +1861,10 @@ void PiPedalModel::DeleteMidiListeners(int64_t clientId)
             --i;
         }
     }
-    audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+    if (audioHost)
+    {
+        audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+    }
 }
 
 void PiPedalModel::OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue)
@@ -2248,6 +2296,12 @@ static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::
 
 void PiPedalModel::StartHotspotMonitoring()
 {
+    this->avahiService = std::make_unique<AvahiService>();
+
+    SetThreadName("avahi"); // hack to name the avahi service thread.
+    UpdateDnsSd(); // now that the server is running, publish a  DNS-SD announcement.
+    SetThreadName("main");
+
     this->hotspotManager->Open();
 }
 

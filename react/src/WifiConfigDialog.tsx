@@ -451,7 +451,6 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                                 InputLabelProps={{
                                     shrink: true
                                 }}
-                                disabled={!enabled}
                             />
                             <div style={{ marginBottom: 8, flexGrow: 1, flexBasis: 1 }}>
                                 <form autoComplete='off' onSubmit={() => false}> {/*Prevents chrome from saving passwords */}
@@ -477,7 +476,9 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                                         }}
                                         InputProps={{
                                             startAdornment:
-                                                this.props.wifiConfigSettings.hasSavedPassword && !this.state.hasPassword && !this.state.showPassword ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" : ""
+                                                    !this.state.hasPassword && !this.state.showPassword ? 
+                                                        (this.props.wifiConfigSettings.hasSavedPassword? "(Unchanged)" : "(Required)")
+                                                    : ""
                                             ,
                                             endAdornment: (
                                                 <IconButton size="small"

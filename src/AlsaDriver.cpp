@@ -256,17 +256,15 @@ namespace pipedal
 
         std::mutex terminateSync;
 
-        bool terminateAudio_ = false;
+        std::atomic<bool> terminateAudio_ = false;
 
         void terminateAudio(bool terminate)
         {
-            std::lock_guard lock{terminateSync};
             this->terminateAudio_ = terminate;
         }
 
         bool terminateAudio()
         {
-            std::lock_guard lock{terminateSync};
             return this->terminateAudio_;
         }
 
@@ -1297,10 +1295,10 @@ namespace pipedal
                 FillOutputBuffer();
 
                 err = snd_pcm_start(handle);
-                // if (err < 0)
-                // {
-                //     throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
-                // }
+                if (err < 0)
+                {
+                    throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
+                }
                 return;
             }
             else if (err == -ESTRPIPE)
@@ -1320,7 +1318,7 @@ namespace pipedal
                 }
                 return;
             }
-            throw PiPedalStateException(SS("ALSA error:" << snd_strerror(err)));
+            throw PiPedalStateException(SS("ALSA error: " << snd_strerror(err)));
         }
 
         std::jthread *audioThread = nullptr;
@@ -1663,15 +1661,15 @@ namespace pipedal
             }
             void Close()
             {
-                if (hInParams)
-                {
-                    snd_rawmidi_params_free(hInParams);
-                    hInParams = 0;
-                }
                 if (hIn)
                 {
                     snd_rawmidi_close(hIn);
                     hIn = nullptr;
+                }
+                if (hInParams)
+                {
+                    snd_rawmidi_params_free(hInParams);
+                    hInParams = 0;
                 }
             }
 

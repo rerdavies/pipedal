@@ -6,7 +6,7 @@ import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Divider from '@mui/material/Divider';
-import ArrowBackIcon from '@mui/icons-material//ArrowBack';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import JackHostStatus from './JackHostStatus';
 import { PiPedalError } from './PiPedalError';
@@ -16,12 +16,9 @@ import { Theme, createStyles } from '@mui/material/styles';
 import { withStyles, WithStyles } from '@mui/styles';
 import Slide, { SlideProps } from '@mui/material/Slide';
 
-
 interface AboutDialogProps extends WithStyles<typeof styles> {
     open: boolean;
     onClose: () => void;
-
-
 };
 
 interface AboutDialogState {
@@ -75,6 +72,15 @@ const styles = (theme: Theme) => createStyles({
 
     },
     secondaryItem: {
+
+    },
+    can_select: {
+        userSelect: "text",
+        cursor: "text"
+    },
+    no_select: {
+        userSelect: "none",
+        cursor: "text"
 
     }
 
@@ -173,7 +179,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
             this.updateNotifications();
         }
         componentDidUpdate(prevProps: Readonly<AboutDialogProps>, prevState: Readonly<AboutDialogState>, snapshot: any): void {
-            super.componentDidUpdate?.(prevProps,prevState,snapshot);
+            super.componentDidUpdate?.(prevProps, prevState, snapshot);
             this.updateNotifications();
         }
 
@@ -185,6 +191,11 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
         render() {
             let classes = this.props.classes;
             let addressKey = 0;
+            let serverVersion = this.model.serverVersion?.serverVersion ?? "";
+            let nPos = serverVersion.indexOf(' ');
+            if (nPos !== -1) {
+                serverVersion = serverVersion.substring(nPos + 1);
+            }
             return (
                 <DialogEx tag="about" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
@@ -210,13 +221,16 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                             overflowX: "hidden", overflowY: "auto", userSelect: "text"
                         }}
                         >
-                            <div style={{ margin: 24 }}>
-                                <Typography noWrap display="block" variant="h6" color="textPrimary">
-                                    PiPedal <span style={{ fontSize: "0.7em" }}>
-                                        {(this.model.serverVersion ? this.model.serverVersion.serverVersion : "")
-                                            + (this.model.serverVersion?.debug ? " (Debug)" : "")}
-                                    </span>
-                                </Typography>
+                            <div id="debug_info" className={classes.can_select} style={{ margin: 24 }}>
+                                <div style={{ display: "flex", flexFlow: "row nowrap" }}>
+                                    <Typography noWrap display="block" variant="h6" color="textPrimary" style={{flexGrow: 1, flexShrink: 1}}>
+                                        PiPedal <span style={{ fontSize: "0.7em" }}>
+                                            {serverVersion
+                                                + (this.model.serverVersion?.debug ? " (Debug)" : "")}
+                                        </span>
+                                    </Typography>
+
+                                </div>
                                 <Typography noWrap display="block" variant="body2" style={{ marginBottom: 12 }}  >
                                     Copyright &#169; 2022-2024 Robin Davies.
                                 </Typography>
@@ -235,24 +249,34 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
                                 <Typography noWrap display="block" variant="caption"  >
                                     ADDRESSES
                                 </Typography>
-                                <div style={{marginBottom: 16}}>
-                                {
-                                    this.model.serverVersion?.webAddresses.map((address) =>
-                                    (
-                                        <Typography key={addressKey++} display="block" variant="body2" style={{ marginBottom: 0, marginLeft: 24 }}  >
-                                            {address}
-                                        </Typography>
-                                    ))
+                                <div style={{ marginBottom: 16 }}>
+                                    {
+                                        this.model.serverVersion?.webAddresses.map((address) =>
+                                        (
+                                            <Typography key={addressKey++} display="block" variant="body2" style={{ marginBottom: 0, marginLeft: 24 }}  >
+                                                {address}
+                                            </Typography>
+                                        ))
 
-                                }
+                                    }
                                 </div>
 
+                                <Divider />
+                                <Typography noWrap display="block" variant="caption"  >
+                                    SERVER OS
+                                </Typography>
+                                <div style={{ marginBottom: 16 }}>
+                                    <Typography display="block" variant="body2" style={{ marginBottom: 0, marginLeft: 24 }}  >
+                                        {this.model.serverVersion?.osVersion ?? ""}
+                                    </Typography>
+                                </div>
+                            </div><div>
 
                                 <Divider />
                                 <Typography display="block" variant="caption"  >
                                     LEGAL NOTICES
                                 </Typography>
-                                <div dangerouslySetInnerHTML={{ __html: this.state.openSourceNotices }} style={{ fontSize: "0.8em",maxWidth: 400 }}>
+                                <div dangerouslySetInnerHTML={{ __html: this.state.openSourceNotices }} style={{ fontSize: "0.8em", maxWidth: 400 }}>
                                 </div>
 
                             </div>

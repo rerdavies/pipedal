@@ -516,26 +516,47 @@ private:
 
     std::mutex activePortMonitorsMutex;
     std::vector<std::shared_ptr<PortMonitorSubscription>> activePortMonitors;
+    std::atomic<bool> closed = false;
 
 public:
     virtual int64_t GetClientId() { return clientId; }
 
     virtual ~PiPedalSocketHandler()
     {
+        if (!closed)
+        {
+            FinalCleanup();
+        }
+    }
+
+    bool finalCleanup = false;
+    void FinalCleanup()
+    {
+        if (finalCleanup) return;
+        finalCleanup = true;
+        // avoid use after free.
         for (int i = 0; i < this->activePortMonitors.size(); ++i)
         {
             model.UnmonitorPort(activePortMonitors[i]->subscriptionHandle);
         }
+        activePortMonitors.resize(0);
         for (int i = 0; i < this->activeVuSubscriptions.size(); ++i)
         {
             model.RemoveVuSubscription(activeVuSubscriptions[i].subscriptionHandle);
         }
+        activeVuSubscriptions.resize(0);
 
         model.RemoveNotificationSubsription(this);
+
     }
 
     virtual void Close()
     {
+        if (closed) return;
+        closed = true;
+
+        FinalCleanup(); // do it while we can.  &model will no longer be valid after this. ( :-( )
+
         SocketHandler::Close();
     }
 
@@ -934,6 +955,10 @@ public:
                 Lv2Log::warning("Socket: Reply '%s' with nobody waiting.", message.c_str());
             }
             return;
+        }
+        if (closed)
+        {
+            this->SendError(replyTo, "Server has shut down.");
         }
         if (message == "setControl")
         {

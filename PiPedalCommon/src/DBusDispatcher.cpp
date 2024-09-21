@@ -6,6 +6,7 @@
 #include "ss.hpp"
 #include <chrono>
 #include <cassert>
+#include "util.hpp"
 
 DBusDispatcher::DBusDispatcher(bool systemBus)
 {
@@ -87,6 +88,7 @@ void DBusDispatcher::WakeThread()
 }
 void DBusDispatcher::ThreadProc()
 {
+    pipedal::SetThreadName("dbusd");
     try
     {
 
