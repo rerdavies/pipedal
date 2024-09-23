@@ -10,8 +10,13 @@
 #include "UpdaterSecurity.hpp"
 #include "Updater.hpp"
 #include <fstream>
+#include "SysExec.hpp"
+#include "TemporaryFile.hpp"
+#include "json_variant.hpp"
+#include "GithubResponseHeaders.hpp"
 
 using namespace std;
+using namespace pipedal;
 namespace fs = std::filesystem;
 
 std::string getVersionString()
@@ -59,7 +64,6 @@ void SignPackage()
     {
         throw std::runtime_error(SS("File does not exist: " << packagePath));
     }
-
 
     // sign the package.
     // gpg --armor --output "$filename".asc -b "$filename"
@@ -172,12 +176,205 @@ void GenerateUpdateJson()
     UpdateStatus updateStatus = updater->GetReleaseGeneratorStatus();
     updateStatus.AddRelease(packageName);
 }
+
+class DownloadCountAsset
+{
+public:
+    DownloadCountAsset(const json_variant &v)
+    {
+        auto o = v.as_object();
+        this->name = o->at("name").as_string();
+        this->browser_download_url = o->at("browser_download_url").as_string();
+        this->updated_at = o->at("updated_at").as_string();
+        this->downloads = (uint64_t)(o->at("download_count").as_number());
+    }
+    std::string name;
+    std::string browser_download_url;
+    std::string updated_at;
+    uint64_t downloads;
+};
+class DownloadCountRelease
+{
+public:
+    DownloadCountRelease(const json_variant &v)
+    {
+        auto o = v.as_object();
+        this->name = o->at("name").as_string();
+        this->draft = o->at("draft").as_bool();
+        this->prerelease = o->at("prerelease").as_bool();
+
+        auto assets = o->at("assets").as_array();
+        for (size_t i = 0; i < assets->size(); ++i)
+        {
+            auto &el = assets->at(i);
+            this->assets.push_back(DownloadCountAsset(el));
+        }
+        this->published_at = o->at("published_at").as_string();
+    }
+    std::string name;
+    bool draft = false, prerelease = false;
+    std::vector<DownloadCountAsset> assets;
+    std::string published_at;
+};
+
+static std::string timePointToISO8601(const std::chrono::system_clock::time_point &tp)
+{
+    auto tt = std::chrono::system_clock::to_time_t(tp);
+    std::tm tm = *std::gmtime(&tt);
+    std::stringstream ss;
+    ss << std::put_time(&tm,"%Y-%m-%dT%H:%M:%S") << "Z";
+    return ss.str();
+    
+}
+
+void GetDownloadCounts(bool gplotDownloads)
+{
+    // error handling and temporary file use is different enough that it justifies
+    // not including this code in production code.
+
+    // const std::string responseOption = "-w \"%{response_code}\"";
+#ifdef WIN32
+    responseOption = "-w \"%%{response_code}\""; // windows shell requires doubling of the %%.
+#endif
+
+    TemporaryFile headerFile{"/tmp"};
+    std::string args = SS("-s -L " << GITHUB_RELEASES_URL << " -D " << headerFile.str());
+
+    auto result = sysExecForOutput("curl", args);
+    if (result.exitCode != EXIT_SUCCESS)
+    {
+        throw std::runtime_error("Github APIs not available.");
+    }
+    else
+    {
+        // hard throttling for github.
+
+        GithubResponseHeaders githubHeaders{headerFile.Path()};
+
+        if (githubHeaders.code_ != 200)
+        {
+            if (
+                githubHeaders.ratelimit_limit_ != 0 &&
+                githubHeaders.ratelimit_limit_ == githubHeaders.ratelimit_used_)
+            {
+                std::time_t time = std::chrono::system_clock::to_time_t(githubHeaders.ratelimit_reset_);
+                std::string strTime = std::ctime(&time);
+
+                throw std::runtime_error(SS("Github API rate limit exceeded. Try again at " << strTime));
+            }
+        }
+
+        if (result.output.length() == 0)
+        {
+            throw std::runtime_error("No internet access.");
+        }
+        std::stringstream ss(result.output);
+        json_reader reader(ss);
+        json_variant vResult(reader);
+
+        if (vResult.is_object())
+        {
+            auto o = vResult.as_object();
+            std::string message = "Unknown error.";
+            if (o->at("message").is_string())
+            {
+                message = o->at("message").as_string();
+            }
+            throw std::runtime_error(SS("Github Service error: " << message));
+        }
+        else if (!vResult.is_array())
+        {
+            throw std::runtime_error("Invalid file format error.");
+        }
+        else
+        {
+            json_variant::array_ptr vArray = vResult.as_array();
+
+            std::vector<DownloadCountRelease> releases;
+            for (size_t i = 0; i < vArray->size(); ++i)
+            {
+                auto &el = vArray->at(i);
+                DownloadCountRelease release{el};
+                if (!release.draft)
+                {
+                    releases.push_back(std::move(release));
+                }
+            }
+            if (gplotDownloads)
+            {
+                std::sort(
+                    releases.begin(),
+                    releases.end(),
+                    [](const DownloadCountRelease &left, const DownloadCountRelease &right)
+                    {
+                        return left.published_at < right.published_at; // date ascending
+                    });
+
+                for (size_t i = 0; i < releases.size()-1; ++i)
+                {
+                    releases[i].published_at = releases[i+1].published_at;
+                }
+                if (releases.size() >= 1)
+                {
+                    releases[releases.size()-1].published_at = timePointToISO8601(std::chrono::system_clock::now());
+                }
+                uint64_t cumulativeCount = 0;
+                for (const auto &release : releases)
+                {
+                    for (const auto &asset : release.assets)
+                    {
+                        if (asset.name.ends_with(".deb"))
+                        {
+                            cumulativeCount += asset.downloads;
+                        }
+                    }
+                    cout << release.published_at << " " << cumulativeCount << endl;
+                }
+            }
+            else
+            {
+                std::sort(
+                    releases.begin(),
+                    releases.end(),
+                    [](const DownloadCountRelease &left, const DownloadCountRelease &right)
+                    {
+                        return left.published_at > right.published_at; // latest date first.
+                    });
+                for (const auto &release : releases)
+                {
+                    cout << release.name << endl;
+                    for (const auto &asset : release.assets)
+                    {
+                        cout << "    " << asset.name << ": " << asset.downloads << endl;
+                    }
+                }
+            }
+        }
+    }
+}
 int main(int argc, char **argv)
 {
     CommandLineParser commandLine;
+    bool getDownloadCounts = false;
+    bool gPlotDownloads = false;
+
     try
     {
-        SignPackage();
+        commandLine.AddOption("--downloads", &getDownloadCounts);
+        commandLine.AddOption("--gplot-downloads", &gPlotDownloads);
+        commandLine.Parse(argc, (const char **)argv);
+        if (commandLine.Arguments().size() != 0)
+        {
+            throw std::runtime_error("Invalid arguments.");
+        }
+        if (getDownloadCounts || gPlotDownloads)
+        {
+            GetDownloadCounts(gPlotDownloads);
+        }
+        else
+        {
+            SignPackage();
+        }
     }
     catch (const std::exception &e)
     {

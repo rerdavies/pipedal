@@ -152,6 +152,7 @@ set (PIPEDAL_SOURCES
     UpdateResults.cpp UpdateResults.hpp
     UpdaterSecurity.hpp
     Updater.cpp Updater.hpp UpdaterStatus.hpp
+    GithubResponseHeaders.hpp
     Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp

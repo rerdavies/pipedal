@@ -48,29 +48,7 @@ namespace fs = std::filesystem;
 #undef TEST_UPDATE // do NOT leat this leak into a production build!
 #endif
 
-namespace pipedal
-{
-    class GithubResponseHeaders
-    {
-    public:
-        GithubResponseHeaders() {}
-        GithubResponseHeaders(const std::filesystem::path path);
-        int code_ = -1;
-        std::chrono::system_clock::time_point date_;
-        std::chrono::system_clock::time_point ratelimit_reset_;
-        uint64_t ratelimit_limit_ = 60;
-        uint64_t ratelimit_remaining_ = 60;
-        uint64_t ratelimit_used_ = 0;
-        std::string ratelimit_resource_;
-        bool limit_exceeded() const { return code_ != 200 && ratelimit_limit_ != 0 && ratelimit_limit_ == ratelimit_used_; }
-        void Load(const std::filesystem::path &filename);
-        void Save(const std::filesystem::path &filename);
-        DECLARE_JSON_MAP(GithubResponseHeaders);
-
-    private:
-        static std::filesystem::path FILENAME;
-    };
-}
+#include "GithubResponseHeaders.hpp"
 
 class pipedal::UpdaterImpl : public Updater
 {
@@ -372,35 +350,6 @@ void UpdaterImpl::ThreadProc()
     }
 }
 
-namespace pipedal
-{
-    class GithubAsset
-    {
-    public:
-        GithubAsset(json_variant &v);
-        std::string name;
-        std::string browser_download_url;
-        std::string updated_at;
-    };
-    class GithubRelease
-    {
-    public:
-        GithubRelease(json_variant &v);
-
-        const GithubAsset *GetDownloadForCurrentArchitecture() const;
-        const GithubAsset *GetGpgKeyForAsset(const std::string &name) const;
-
-        bool draft = true;
-        bool prerelease = true;
-        std::string name;
-        std::string url;
-        std::string version;
-        std::string body;
-        std::vector<GithubAsset> assets;
-        std::string published_at;
-    };
-}
-
 GithubAsset::GithubAsset(json_variant &v)
 {
     auto o = v.as_object();
@@ -424,6 +373,8 @@ GithubRelease::GithubRelease(json_variant &v)
     }
     this->published_at = o->at("published_at").as_string();
 }
+
+
 
 static std::vector<std::string> split(const std::string &s, char delimiter)
 {
