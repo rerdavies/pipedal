@@ -1,6 +1,13 @@
 # Release Notes
 ## PiPedal 1.2.51 Release
 
+Modest performance improvements for TooB Neural Amp Modeler (about 8% faster).
+
+Bug fixes:
+- Unnecessary exported symbols stripped from ToobAmp.so.
+
+## PiPedal 1.2.51 Release
+
 <b>Important notice:</b> Changes to the Auto-update code prevent previous versions from automatically updating to this version. You will have to install this version by downloading the [debian package](https://rerdavies.github.io/pipedal/download.html) and installing it manually.
 
 This release replaces Wi-Fi Direct connections with Wi-Fi hotspots. Support for Wi-Fi Direct on Linux and Android has been fragile for some time. An update to Raspberry Pi OS in early September broke Wi-Fi Direct support completely. As it turns out, Auto-hotspots work much better. 
