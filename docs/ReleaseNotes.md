@@ -1,5 +1,5 @@
 # Release Notes
-## PiPedal 1.2.51 Release
+## PiPedal 1.2.52 Release
 
 Modest performance improvements for TooB Neural Amp Modeler (about 8% faster).
 
