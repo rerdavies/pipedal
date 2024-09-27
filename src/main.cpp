@@ -53,8 +53,6 @@ using namespace pipedal;
 #define AARCH64
 #endif
 
-
-
 class application_category : public boost::system::error_category
 {
 public:
@@ -80,7 +78,6 @@ static bool isJackServiceRunning()
     std::filesystem::path path = "/dev/shm/jack_default_0";
     return std::filesystem::exists(path);
 }
-
 
 static void AsanCheck()
 {
@@ -216,139 +213,135 @@ int main(int argc, char *argv[])
     try
     {
         {
-            auto locale = Locale::GetInstance();
-            Lv2Log::info(SS("Locale: " << locale->CurrentLocale()));
-            try
             {
-                auto collator = locale->GetCollator();
-            }
-            catch (std::exception &e)
-            {
-                Lv2Log::error(e.what());
-                return EXIT_SUCCESS; // tell systemd not to auto-restart.
-            }
-        }
-        // only accept signals on the main thread.
-        // block now so that threads spawned by model inherit the block mask.
-        int sig;
-        sigset_t sigSet;
-        int s;
-        sigemptyset(&sigSet);
-        sigaddset(&sigSet, SIGINT);
-        sigaddset(&sigSet, SIGTERM);
-        sigaddset(&sigSet, SIGUSR1);
-
-        s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
-        if (s != 0)
-        {
-            throw std::logic_error("pthread_sigmask failed.");
-        }
-
-
-
-        PiPedalModel model;
-
-
-        model.SetNetworkChangedListener(
-            [&server]() mutable {
-                if (server) 
+                auto locale = Locale::GetInstance();
+                Lv2Log::info(SS("Locale: " << locale->CurrentLocale()));
+                try
                 {
-                    server->DisplayIpAddresses();
+                    auto collator = locale->GetCollator();
+                }
+                catch (std::exception &e)
+                {
+                    Lv2Log::error(e.what());
+                    return EXIT_SUCCESS; // tell systemd not to auto-restart.
                 }
             }
-        );
+            // only accept signals on the main thread.
+            // block now so that threads spawned by model inherit the block mask.
+            int sig;
+            sigset_t sigSet;
+            int s;
+            sigemptyset(&sigSet);
+            sigaddset(&sigSet, SIGINT);
+            sigaddset(&sigSet, SIGTERM);
+            sigaddset(&sigSet, SIGUSR1);
 
-        model.SetRestartListener(
-            []()
+            s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
+            if (s != 0)
             {
-                g_restart = true;
-                raise(SIGTERM); // throws an exception under gdb, but correctly restarts the service when running live.
-            });
+                throw std::logic_error("pthread_sigmask failed.");
+            }
 
-        model.Init(configuration);
+            PiPedalModel model;
 
-        // Get heavy IO out of the way before letting dependent (Jack/ALSA) services run.
-        model.LoadLv2PluginInfo();
-        if (systemd)
-        {
-            // Tell systemd we're done.
-            sd_notifyf(0, "READY=1\n"
-                          "MAINPID=%lu",
-                       (unsigned long)getpid());
-        }
+            model.SetNetworkChangedListener(
+                [&server]() mutable
+                {
+                    if (server)
+                    {
+                        server->DisplayIpAddresses();
+                    }
+                });
 
-        model.WaitForAudioDeviceToComeOnline();
+            model.SetRestartListener(
+                []()
+                {
+                    g_restart = true;
+                    raise(SIGTERM); // throws an exception under gdb, but correctly restarts the service when running live.
+                });
 
+            model.Init(configuration);
+
+            // Get heavy IO out of the way before letting dependent (Jack/ALSA) services run.
+            model.LoadLv2PluginInfo();
+            if (systemd)
+            {
+                // Tell systemd we're done.
+                sd_notifyf(0, "READY=1\n"
+                              "MAINPID=%lu",
+                           (unsigned long)getpid());
+            }
+
+            model.WaitForAudioDeviceToComeOnline();
 
 #if JACK_HOST
-        if (systemd)
-        {
-
-            if (!isJackServiceRunning())
+            if (systemd)
             {
-                Lv2Log::info("Waiting for Jack service.");
-                // wait up to 15 seconds for the jack service to come online.
-                for (int i = 0; i < 15; ++i)
-                {
-                    // use the time to prepopulate ALSA device cache before jack
-                    // opens the device and we can't read properties.
-                    model.GetAlsaDevices();
 
-                    sleep(1);
-                    if (isJackServiceRunning())
+                if (!isJackServiceRunning())
+                {
+                    Lv2Log::info("Waiting for Jack service.");
+                    // wait up to 15 seconds for the jack service to come online.
+                    for (int i = 0; i < 15; ++i)
                     {
-                        break;
+                        // use the time to prepopulate ALSA device cache before jack
+                        // opens the device and we can't read properties.
+                        model.GetAlsaDevices();
+
+                        sleep(1);
+                        if (isJackServiceRunning())
+                        {
+                            break;
+                        }
+                    }
+                }
+                if (isJackServiceRunning())
+                {
+                    Lv2Log::info("Found  Jack service.");
+                    sleep(3); // jack needs a little time to get up to speed.
+                }
+                else
+                {
+                    Lv2Log::info("Jack service not started.");
+                }
+                model.GetAlsaDevices();
+            }
+#endif
+
+            model.Load();
+
+            auto pipedalSocketFactory = MakePiPedalSocketFactory(model);
+
+            server->AddSocketFactory(pipedalSocketFactory);
+
+            ConfigureWebServer(*server, model, port, configuration.GetMaxUploadSize());
+            {
+                server->RunInBackground(-1);
+
+                model.StartHotspotMonitoring();
+
+                {
+                    sigwait(&sigSet, &sig);
+
+                    if (systemd)
+                    {
+                        sd_notify(0, "STOPPING=1");
                     }
                 }
             }
-            if (isJackServiceRunning())
-            {
-                Lv2Log::info("Found  Jack service.");
-                sleep(3); // jack needs a little time to get up to speed.
-            }
-            else
-            {
-                Lv2Log::info("Jack service not started.");
-            }
-            model.GetAlsaDevices();
+
+            Lv2Log::info("Closing audio session.");
+            server->StopListening(); // prevents premature reconnect attempts while we're shutting down clients in an orderly manner.
+            model.Close();
+
+            Lv2Log::info("Stopping web server.");
+            server->ShutDown(5000);
+            server->Join();
         }
-#endif
-
-        model.Load();
-
-        auto pipedalSocketFactory = MakePiPedalSocketFactory(model);
-
-        server->AddSocketFactory(pipedalSocketFactory);
-
-        ConfigureWebServer(*server, model, port, configuration.GetMaxUploadSize());
-        {
-            server->RunInBackground(-1);
-
-
-            model.StartHotspotMonitoring();
-
-
-            {
-                sigwait(&sigSet, &sig);
-
-                if (systemd)
-                {
-                    sd_notify(0, "STOPPING=1");
-                }
-            }
-        }
-
-        Lv2Log::info("Closing audio session.");
-        server->StopListening(); // prevents premature reconnect attempts while we're shutting down clients in an orderly manner.
-        model.Close();
-
-        Lv2Log::info("Stopping web server.");
-        server->ShutDown(5000);
-        server->Join();
-
         Lv2Log::info("Shutdown complete.");
 
-        if (g_restart) return EXIT_FAILURE; // indicate to systemd that we want a restart.
+        if (g_restart)
+            return EXIT_FAILURE; // indicate to systemd that we want a restart.
     }
     catch (const std::exception &e)
     {
