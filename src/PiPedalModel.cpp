@@ -113,6 +113,7 @@ void PiPedalModel::Close()
         }
         closed = true;
 
+
         if (avahiService) {
             this->avahiService = nullptr; // and close.
         }

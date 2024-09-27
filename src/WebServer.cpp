@@ -38,6 +38,7 @@
 #include "util.hpp"
 #include "ofstream_synced.hpp"
 
+#include <mutex>
 #include "WebServer.hpp"
 
 #include "Uri.hpp"
@@ -557,7 +558,6 @@ pipedal::last_modified(const std::filesystem::path &path)
     }
 }
 
-
 static std::string getIpv4Address(const std::string interface)
 {
     int fd = -1;
@@ -635,6 +635,7 @@ namespace pipedal
     class WebServerImpl : public WebServer
     {
     private:
+        std::atomic<bool> stoppedListening = false;
         int signalOnDone = -1;
         std::string address;
         int port = -1;
@@ -792,13 +793,15 @@ namespace pipedal
             }
         };
 
+        std::recursive_mutex m_sessionsMutex;
         std::set<WebSocketSession::ptr, std::owner_less<WebSocketSession::ptr>> m_sessions;
 
         void on_session_closed(WebSocketSession::ptr &session, connection_hdl hConnection)
         {
+            std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
             m_sessions.erase(session);
-            session = nullptr; // probably delete here.
             m_connections.erase(hConnection);
+            session = nullptr; // probably delete here.
         }
 
         void NotFound(server::connection_type &connection, const std::string &filename)
@@ -1102,27 +1105,38 @@ namespace pipedal
 
         void on_open(connection_hdl hdl)
         {
-            m_connections.insert(hdl);
 
             try
             {
-                server::connection_ptr webSocket = m_endpoint.get_con_from_hdl(hdl);
-                WebSocketSession::ptr socketSession = std::make_shared<WebSocketSession>(this, webSocket);
-                socketSession->Open();
-                m_sessions.insert(socketSession);
+                if (!this->stoppedListening)
+                {
+                    server::connection_ptr webSocket = m_endpoint.get_con_from_hdl(hdl);
+                    WebSocketSession::ptr socketSession = std::make_shared<WebSocketSession>(this, webSocket);
+                    socketSession->Open();
+                    {
+                        std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
+                        m_connections.insert(hdl);
+                        m_sessions.insert(std::move(socketSession));
+                        return;
+                    }
+                }
             }
             catch (const std::exception &e)
             {
+
                 Lv2Log::error("Failed to open session: %s", e.what());
             }
+            m_endpoint.close(hdl,websocketpp::close::status::abnormal_close, "");
         }
 
         void on_fail(connection_hdl hdl)
         {
+            std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
             m_connections.erase(hdl);
         }
         void on_close(connection_hdl hdl)
         {
+            std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
             m_connections.erase(hdl);
         }
 
@@ -1155,7 +1169,7 @@ namespace pipedal
 
                 std::stringstream ss;
                 ss << port;
-                //m_endpoint.listen(this->address, ss.str());
+                // m_endpoint.listen(this->address, ss.str());
                 m_endpoint.listen(tcp::v6(), (uint16_t)port);
                 m_endpoint.start_accept();
 
@@ -1218,24 +1232,77 @@ namespace pipedal
             this->logHttpRequests = enableLogging;
         }
 
+        virtual void StopListening()
+        {
+            if (!stoppedListening)
+            {
+                stoppedListening = true;
+                try
+                {
+                    m_endpoint.stop_listening();
+                }
+                catch (const std::exception &e)
+                {
+                    Lv2Log::warning(SS("WebServer:StopListening: " << e.what()));
+                }
+            }
+        }
+
+    private:
+        bool WaitForAllEndpointsClosed(int timeoutMs)
+        {
+            using clock = std::chrono::steady_clock;
+
+            clock::time_point endWait = clock::now() + std::chrono::milliseconds(timeoutMs/2);
+            while (true)
+            {
+                {
+                    if (clock::now() > endWait) 
+                    {
+                        break;
+                    }
+                    std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
+                    if (m_connections.size() ==0)
+                    {
+                        return true;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                }
+            }
+            return false;
+
+        }
+    public:
         virtual void ShutDown(int timeoutMs)
         {
+            StopListening();
 
-            m_endpoint.stop_listening();
-            for (auto &connection : m_connections)
+            //linger bit to see of connections will shut down normally
+            if(WaitForAllEndpointsClosed(timeoutMs/2))
             {
+                return;
+            }
+            Lv2Log::warning("WebServer: forcibly closing connections");
 
+            {
+                std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
                 for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
                 {
                     try
                     {
-                        m_endpoint.close(*it, websocketpp::close::status::normal, "");
+                        m_endpoint.close(*it, websocketpp::close::status::abnormal_close, "Shutting down");
                     }
                     catch (const std::exception &ignored)
                     {
                     }
                 }
             }
+            if(WaitForAllEndpointsClosed(timeoutMs/2))
+            {
+                return;
+            }
+            Lv2Log::warning("WebServer: failed to close all connections.");
+
         }
         virtual void Join()
         {

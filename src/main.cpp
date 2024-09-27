@@ -339,6 +339,7 @@ int main(int argc, char *argv[])
         }
 
         Lv2Log::info("Closing audio session.");
+        server->StopListening(); // prevents premature reconnect attempts while we're shutting down clients in an orderly manner.
         model.Close();
 
         Lv2Log::info("Stopping web server.");

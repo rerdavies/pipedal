@@ -227,6 +227,7 @@ public:
     virtual void AddRequestHandler(std::shared_ptr<RequestHandler> requestHandler) = 0;
     virtual void AddSocketFactory(std::shared_ptr<ISocketFactory> &socketHandler) = 0;
 
+    virtual void StopListening() = 0;
     virtual void ShutDown(int timeoutMs) = 0;
     virtual void Join() = 0;
 
