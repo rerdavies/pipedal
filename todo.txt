@@ -1,8 +1,8 @@
 ToobFreeverb has a big memory leak!
 
-Do we have to deactivate both Audio handles after an underrun? I think so.
+Convert subscribers to shared_ptr's.
 
-Error and message and loading overlays have to go above PerformanceView
+Do we have to deactivate both Audio handles after an underrun? I think so.
 
 Back Button sequence for performance view.
 
