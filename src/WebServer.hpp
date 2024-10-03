@@ -12,6 +12,7 @@
 #include "Uri.hpp"
 #include <string_view>
 #include <filesystem>
+#include "TemporaryFile.hpp"
 
 
 
@@ -40,6 +41,9 @@ public:
     virtual void set(const std::string&key, const std::string&value) = 0;
     virtual void setContentLength(size_t size) = 0;
     virtual void setBody(const std::string&body) = 0;
+    virtual void setBodyFile(std::shared_ptr<TemporaryFile>&temporaryFile) = 0;
+    virtual void setBodyFile(std::filesystem::path&path, bool deleteWhenDone) = 0;
+
     virtual void  keepAlive(bool value)  = 0;
 };
 

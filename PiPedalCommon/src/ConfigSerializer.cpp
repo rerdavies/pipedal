@@ -23,6 +23,7 @@
  */
 
 #include "ConfigSerializer.hpp"
+#include "util.hpp"
 
 
 using namespace config_serializer;
@@ -36,29 +37,6 @@ std::string config_serializer::detail::trim(const std::string &v)
     if (start >= end+1)
         return "";
     return v.substr(start, end+1 - start);
-}
-
-std::vector<std::string> config_serializer::detail::split(const std::string &value, char delimiter)
-{
-    size_t start = 0;
-    std::vector<std::string> result;
-    while (start < value.length())
-    {
-        size_t pos = value.find_first_of(delimiter, start);
-        if (pos == std::string::npos)
-        {
-            result.push_back(value.substr(start));
-            break;
-        }
-        result.push_back(value.substr(start, pos - start));
-        start = pos + 1;
-        if (start == value.length())
-        {
-            // ends with delimieter? Then there's an empty-length value at the end.
-            result.push_back("");
-        }
-    }
-    return result;
 }
 
 

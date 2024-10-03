@@ -23,6 +23,8 @@
 #include "PiPedalException.hpp"
 #include "PiPedalMath.hpp"
 #include <assert.h>
+#include <string>
+#include <unordered_map>
 
 namespace pipedal
 {
@@ -75,6 +77,9 @@ namespace pipedal
 
         const double MIX_TRANSITION_TIME_S = 0.1;
         double sampleRate;
+
+        std::unordered_map<std::string,int> controlIndex;
+
         std::vector<float *> inputs;
         std::vector<float *> topInputs;
         std::vector<float *> bottomInputs;
@@ -111,6 +116,8 @@ namespace pipedal
         float blendDxLBottom = 0;
         float blendDxRBottom = 0;
 
+        std::vector<float> defaultInputControlValues;
+        
         int32_t blendFadeSamples;
 
         bool selectA = true;
@@ -288,27 +295,23 @@ namespace pipedal
             }
         }
         uint64_t instanceId;
+        virtual bool IsLv2Effect() const override { return true; }
 
         virtual uint8_t *GetAtomInputBuffer() { return nullptr; }
         virtual uint8_t *GetAtomOutputBuffer() { return nullptr; }
-        virtual void RequestPatchProperty(LV2_URID uridUri) {}
         virtual void GatherPatchProperties(RealtimePatchPropertyRequest *pRequest) {}
         virtual std::string AtomToJson(uint8_t *pAtom) { return ""; }
         virtual std::string GetAtomObjectType(uint8_t*pData) { return "not implemented";}
-        virtual bool GetLv2State(Lv2PluginState*state) { return false; }
+        virtual bool GetLv2State(Lv2PluginState*state) override { return false; }
+        virtual void SetLv2State(Lv2PluginState&state) override { }
         virtual bool HasErrorMessage() const { return false; }
         const char* TakeErrorMessage() { return ""; }
         virtual bool IsVst3() const { return false; }
-
     public:
         SplitEffect(
             uint64_t instanceId,
             double sampleRate,
-            const std::vector<float *> &inputs)
-            : instanceId(instanceId), inputs(inputs), sampleRate(sampleRate)
-
-        {
-        }
+            const std::vector<float *> &inputs);
         ~SplitEffect()
         {
         }
@@ -321,6 +324,12 @@ namespace pipedal
         static constexpr int VOLL_CTL = 4;
         static constexpr int PANR_CTL = 5;
         static constexpr int VOLR_CTL = 6;
+        static constexpr int MAX_INPUT_CONTROL =7;
+
+        virtual uint64_t GetMaxInputControl() const override;
+        virtual bool IsInputControl(uint64_t index) const override;
+        virtual float GetDefaultInputControlValue(uint64_t index) const override;
+
 
 
         virtual uint64_t GetInstanceId() const
@@ -356,7 +365,10 @@ namespace pipedal
             return GetControlValue(index);
         }
         virtual float GetControlValue(int portIndex) const;
-        virtual void SetControl(int index, float value);
+        virtual void SetControl(int index, float value) override;
+        virtual void SetPatchProperty(LV2_URID uridUri, size_t size, LV2_Atom *value) override {}
+        virtual void RequestPatchProperty(LV2_URID uridUri) {}
+        virtual void RequestAllPathPatchProperties() {}
 
 
         virtual int GetNumberOfOutputAudioPorts() const

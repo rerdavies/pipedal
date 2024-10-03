@@ -25,6 +25,8 @@
 #include <lilv/lilv.h>
 #include "BufferPool.hpp"
 #include "FileBrowserFilesFeature.hpp"
+#include "PatchPropertyWriter.hpp"
+#include <unordered_map>
 
 #include "IEffect.hpp"
 #include "Worker.hpp"
@@ -42,6 +44,7 @@ namespace pipedal
 {
 
     class RealtimeRingBufferWriter;    
+    class IPatchWriterCallback;
 
     class Lv2Effect : public IEffect, private LogFeature::LogMessageListener
     {
@@ -52,6 +55,8 @@ namespace pipedal
         virtual void OnLogDebug(const char*message);
 
     private:
+        std::unordered_map<std::string,int> controlIndex;
+
         FileBrowserFilesFeature fileBrowserFilesFeature;
         std::unique_ptr<StateInterface> stateInterface;
         void RestoreState(PedalboardItem&pedalboardItem);
@@ -86,6 +91,11 @@ namespace pipedal
         std::vector<const LV2_Feature *> features;
         LV2_Feature *work_schedule_feature = nullptr;
 
+
+        uint64_t maxInputControlPort = 0;
+        std::vector<bool> isInputControlPort;
+        std::vector<float> defaultInputControlValues;
+
         virtual std::string GetUri() const { return info->uri(); }
 
         std::vector<const Lv2PortInfo *> realtimePortInfo;
@@ -99,6 +109,10 @@ namespace pipedal
 
         LV2_Atom_Forge outputForgeRt;
 
+        std::vector<LV2_URID> pathProperties;
+        std::vector<PatchPropertyWriter> pathPropertyWriters;
+
+        std::unordered_map<std::string,std::string> mainThreadPathProperties;
 
         class Urids
         {
@@ -164,6 +178,7 @@ namespace pipedal
                                                     uint32_t size,
                                                     const void *data);
 
+
         void ResetInputAtomBuffer(char*data);
         void ResetOutputAtomBuffer(char*data);
 
@@ -179,17 +194,29 @@ namespace pipedal
 
         void BypassTo(float value);
 
+
     public:
 
-        virtual bool GetLv2State(Lv2PluginState*state);
-        virtual void RequestPatchProperty(LV2_URID uridUri);
-        virtual void SetPatchProperty(LV2_URID uridUri,size_t size, LV2_Atom*value);
-        virtual bool GetRequestStateChangedNotification() const;
-        virtual void SetRequestStateChangedNotification(bool value);
+        // non RT-thread use only.
+        std::string GetPathPatchProperty(const std::string&propertyUri);
+        // non RT-thread use only.
+        void SetPathPatchProperty(const std::string &propertyUri, const std::string&jsonAtom);
+
+        virtual bool IsLv2Effect() const { return true; }
+        virtual bool GetLv2State(Lv2PluginState*state) override;
+        virtual void SetLv2State(Lv2PluginState&state) override;
+
+        virtual void RequestPatchProperty(LV2_URID uridUri) ;
+        virtual void SetPatchProperty(LV2_URID uridUri,size_t size, LV2_Atom*value) override;
+        virtual void RequestAllPathPatchProperties();
+
+        virtual bool GetRequestStateChangedNotification() const override;
+        virtual void SetRequestStateChangedNotification(bool value)  override;
 
         virtual void GatherPatchProperties(RealtimePatchPropertyRequest*pRequest);
+        void GatherPathPatchProperties(IPatchWriterCallback *cbPatchWriter);        
         virtual bool IsVst3() const { return false; }
-        virtual void RelayPatchSetMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter);
+        virtual void RelayPatchSetMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter) ;
 
         virtual uint8_t*GetAtomInputBuffer() {
             if (this->inputAtomBuffers.size() == 0) return nullptr;
@@ -240,7 +267,7 @@ namespace pipedal
 
         virtual int GetControlIndex(const std::string &symbol) const;
 
-        virtual void SetControl(int index, float value)
+        virtual void SetControl(int index, float value) override
         {
             if (index == -1)
             {
@@ -249,6 +276,11 @@ namespace pipedal
                 controlValues[index] = value;
             }
         }
+
+        virtual uint64_t GetMaxInputControl() const override;
+        virtual bool IsInputControl(uint64_t index) const override;
+        virtual float GetDefaultInputControlValue(uint64_t index) const override;
+
 
         virtual float GetControlValue(int index) const {
             if (index == -1) 

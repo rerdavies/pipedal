@@ -23,6 +23,9 @@
 #pragma once 
 #include <string>
 #include <filesystem>
+#include <vector>
+#include <barrier>
+#include <atomic>
 
 namespace pipedal {
 
@@ -37,5 +40,31 @@ namespace pipedal {
     inline bool isPathSeperator(char c) { return c == '/' || c == std::filesystem::path::preferred_separator;}
 
     std::string GetHostName();
+
+    std::vector<std::string> split(const std::string &value, char delimiter);
+
+    inline void ReadBarrier() {
+        std::atomic_thread_fence(std::memory_order::acquire);
+    }
+    inline void WriteBarrier() {
+        std::atomic_thread_fence(std::memory_order::release);
+
+    }
+
+    class NoCopy {
+    public:
+        NoCopy() { }
+        NoCopy(const NoCopy&) = delete;
+        NoCopy&operator=(const NoCopy&) = delete;
+        ~NoCopy() {}
+    };
+    class NoMove {
+    public:
+        NoMove() { }
+        NoMove(NoMove&&) = delete;
+        NoMove&operator=(NoMove&&) = delete;
+        ~NoMove() { }
+
+    };
 
 }

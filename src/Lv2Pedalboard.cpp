@@ -507,6 +507,19 @@ void Lv2Pedalboard::ResetAtomBuffers()
     }
 }
 
+
+void Lv2Pedalboard::GatherPathPatchProperties(IPatchWriterCallback*cbPatchWriter)
+{
+    for (auto& pEffect : this->effects) {
+        if (pEffect->IsLv2Effect())
+        {
+            Lv2Effect *pLv2Effect = (Lv2Effect*)pEffect.get();
+            pLv2Effect->GatherPathPatchProperties(cbPatchWriter);
+        }
+    }
+}
+
+
 void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pParameterRequests)
 {
     while (pParameterRequests != nullptr)
@@ -522,24 +535,28 @@ void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pPara
         }
         else
         {
-            Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect *>(pEffect);
+            if (pEffect->IsLv2Effect())
+            {
+                Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect *>(pEffect);
 
-            if (pParameterRequests->requestType == RealtimePatchPropertyRequest::RequestType::PatchGet)
-            {
-                pLv2Effect->RequestPatchProperty(pParameterRequests->uridUri);
-            }
-            else if (pParameterRequests->requestType == RealtimePatchPropertyRequest::RequestType::PatchSet)
-            {
-                pLv2Effect->SetPatchProperty(
-                    pParameterRequests->uridUri,
-                    pParameterRequests->GetSize(),
-                    (LV2_Atom *)pParameterRequests->GetBuffer());
-                pLv2Effect->SetRequestStateChangedNotification(true);
+                if (pParameterRequests->requestType == RealtimePatchPropertyRequest::RequestType::PatchGet)
+                {
+                    pLv2Effect->RequestPatchProperty(pParameterRequests->uridUri);
+                }
+                else if (pParameterRequests->requestType == RealtimePatchPropertyRequest::RequestType::PatchSet)
+                {
+                    pLv2Effect->SetPatchProperty(
+                        pParameterRequests->uridUri,
+                        pParameterRequests->GetSize(),
+                        (LV2_Atom *)pParameterRequests->GetBuffer());
+                    pLv2Effect->SetRequestStateChangedNotification(true);
+                }
             }
         }
         pParameterRequests = pParameterRequests->pNext;
     }
 }
+
 
 void Lv2Pedalboard::GatherPatchProperties(RealtimePatchPropertyRequest *pParameterRequests)
 {
@@ -558,8 +575,11 @@ void Lv2Pedalboard::GatherPatchProperties(RealtimePatchPropertyRequest *pParamet
             }
             else
             {
-                Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect *>(effect);
-                pLv2Effect->GatherPatchProperties(pParameterRequests);
+                if (effect->IsLv2Effect())
+                {
+                    Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect *>(effect);
+                    pLv2Effect->GatherPatchProperties(pParameterRequests);
+                }
             }
         }
 

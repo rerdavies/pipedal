@@ -40,6 +40,7 @@
 #include "Promise.hpp"
 #include "AtomConverter.hpp"
 #include "FileEntry.hpp"
+#include <unordered_map>
 
 namespace pipedal
 {
@@ -58,11 +59,13 @@ namespace pipedal
         virtual void OnControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value) = 0;
         virtual void OnInputVolumeChanged(float value) = 0;
         virtual void OnOutputVolumeChanged(float value) = 0;
-        virtual void OnUpdateStatusChanged(const UpdateStatus&updateStatus) = 0;
-        virtual void OnLv2StateChanged(int64_t pedalItemId,const Lv2PluginState&newState ) = 0;
+        virtual void OnUpdateStatusChanged(const UpdateStatus &updateStatus) = 0;
+        virtual void OnLv2StateChanged(int64_t pedalItemId, const Lv2PluginState &newState) = 0;
         virtual void OnVst3ControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value, const std::string &state) = 0;
         virtual void OnPedalboardChanged(int64_t clientId, const Pedalboard &pedalboard) = 0;
         virtual void OnPresetsChanged(int64_t clientId, const PresetIndex &presets) = 0;
+        virtual void OnPresetChanged(bool changed) = 0;
+        virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) = 0;
         virtual void OnPluginPresetsChanged(const std::string &pluginUri) = 0;
         virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection) = 0;
         virtual void OnVuMeterUpdate(const std::vector<VuUpdate> &updates) = 0;
@@ -78,10 +81,11 @@ namespace pipedal
         virtual void OnGovernorSettingsChanged(const std::string &governor) = 0;
         virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites) = 0;
         virtual void OnShowStatusMonitorChanged(bool show) = 0;
-        virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) = 0;
+        virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding> &bindings) = 0;
+        virtual void OnNotifyPathPatchPropertyChanged(int64_t instanceId, const std::string &pathPatchPropertyString, const std::string &atomString) = 0;
 
-        //virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
-        virtual void OnErrorMessage(const std::string&message) = 0;
+        // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
+        virtual void OnErrorMessage(const std::string &message) = 0;
         virtual void OnLv2PluginsChanging() = 0;
         virtual void OnNetworkChanging(bool hotspotConnected) = 0;
         virtual void Close() = 0;
@@ -97,14 +101,13 @@ namespace pipedal
         using PostHandle = uint64_t;
         using PostCallback = std::function<void()>;
         using NetworkChangedListener = std::function<void(void)>;
-        
 
     private:
         std::unique_ptr<HotspotManager> hotspotManager;
 
         std::unique_ptr<Updater> updater;
         UpdateStatus currentUpdateStatus;
-        void OnUpdateStatusChanged(const UpdateStatus&updateStatus);
+        void OnUpdateStatusChanged(const UpdateStatus &updateStatus);
         std::function<void(void)> restartListener;
 
         std::unique_ptr<Lv2PluginChangeMonitor> pluginChangeMonitor;
@@ -131,8 +134,10 @@ namespace pipedal
         class AtomOutputListener
         {
         public:
-            bool WantsProperty(uint64_t instanceId,LV2_URID patchProperty) const {
-                if (instanceId != this->instanceId) return false;
+            bool WantsProperty(uint64_t instanceId, LV2_URID patchProperty) const
+            {
+                if (instanceId != this->instanceId)
+                    return false;
                 return this->propertyUrid == 0 || patchProperty == this->propertyUrid;
             }
             int64_t clientId;
@@ -151,11 +156,14 @@ namespace pipedal
         AtomConverter atomConverter; // must be AFTER pluginHost!
 
         Pedalboard pedalboard;
+        bool previousPedalboardLoaded = false;
+        Pedalboard previousPedalboard;
         Storage storage;
         bool hasPresetChanged = false;
 
         NetworkChangedListener networkChangedListener;
-        void FireNetworkChanged() {
+        void FireNetworkChanged()
+        {
             if (networkChangedListener)
             {
                 networkChangedListener();
@@ -168,15 +176,18 @@ namespace pipedal
         std::filesystem::path webRoot;
 
         std::vector<IPiPedalModelSubscriber *> subscribers;
-        void SetPresetChanged(int64_t clientId, bool value);
+        void SetPresetChanged(int64_t clientId, bool value, bool changeSnapshotSelect = true);
+        void FireSelectedSnapshotChanged(int64_t selectedSnapshot);
         void FirePresetsChanged(int64_t clientId);
+        void FirePresetChanged(bool changed);
         void FirePluginPresetsChanged(const std::string &pluginUri);
         void FirePedalboardChanged(int64_t clientId, bool reloadAudioThread = true);
         void FireChannelSelectionChanged(int64_t clientId);
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
 
-        void UpdateDefaults(PedalboardItem *pedalboardItem);
+        void UpdateDefaults(Snapshot *snapshot, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
+        void UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
         void UpdateDefaults(Pedalboard *pedalboard);
         class VuSubscription
         {
@@ -206,22 +217,22 @@ namespace pipedal
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) override;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
         virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) override;
-        virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom*atomValue) override;
+        virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) override;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
 
-
-        void OnNotifyPatchProperty(uint64_t instanceId, LV2_URID outputAtomProperty, const std::string &atomJson);
-
-
+        void OnNotifyPathPatchPropertyReceived(
+            int64_t instanceId,
+            LV2_URID pathPatchProperty,
+            LV2_Atom *pathProperty) override;
 
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) override;
-        virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest&request) override;
-        virtual void OnNotifyLv2RealtimeError(int64_t instanceId,const std::string &error) override;
+        virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request) override;
+        virtual void OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error) override;
 
         PostHandle networkChangingDelayHandle = 0;
         void CancelNetworkChangingTimer();
-        
-        void OnNetworkChanging(bool ethernetConnected,bool hotspotConnected);
+
+        void OnNetworkChanging(bool ethernetConnected, bool hotspotConnected);
         void OnNetworkChanged(bool ethernetConnected, bool hotspotConnected);
 
         void UpdateVst3Settings(Pedalboard &pedalboard);
@@ -229,25 +240,39 @@ namespace pipedal
         PiPedalConfiguration configuration;
 
         void CheckForResourceInitialization(Pedalboard &pedalboard);
+
     public:
         PiPedalModel();
         virtual ~PiPedalModel();
 
+        enum class Direction
+        {
+            Increase,
+            Decrease
+        };
+        void NextBank(Direction direction = Direction::Increase);
+        void PreviousBank() { NextBank(Direction::Decrease); }
+        void NextPreset(Direction direction = Direction::Increase);
+        void PreviousPreset() { NextPreset(Direction::Decrease); }
+
         void RequestShutdown(bool restart);
 
-        virtual PostHandle Post(PostCallback&&fn);
-        virtual PostHandle PostDelayed(const clock::duration&delay,PostCallback&&fn);
+        virtual PostHandle Post(PostCallback &&fn);
+        virtual PostHandle PostDelayed(const clock::duration &delay, PostCallback &&fn);
         virtual bool CancelPost(PostHandle handle);
 
-        template<class REP,class PERIOD> 
-        PostHandle PostDelayed(const std::chrono::duration<REP,PERIOD>&delay,PostCallback&&fn)
+        template <class REP, class PERIOD>
+        PostHandle PostDelayed(const std::chrono::duration<REP, PERIOD> &delay, PostCallback &&fn)
         {
             return PostDelayed(
-                std::chrono::duration_cast<clock::duration,REP,PERIOD>(delay),
+                std::chrono::duration_cast<clock::duration, REP, PERIOD>(delay),
                 std::move(fn));
         }
 
-        void SetNetworkChangedListener(NetworkChangedListener listener) {
+        std::shared_ptr<Lv2PluginInfo> GetPluginInfo(const std::string &uri);
+
+        void SetNetworkChangedListener(NetworkChangedListener listener)
+        {
             networkChangedListener = listener;
         }
 
@@ -256,8 +281,8 @@ namespace pipedal
         void WaitForAudioDeviceToComeOnline();
 
         UpdateStatus GetUpdateStatus();
-        void UpdateNow(const std::string&updateUrl);
-        void FireUpdateStatusChanged(const UpdateStatus&updateStatus);
+        void UpdateNow(const std::string &updateUrl);
+        void FireUpdateStatusChanged(const UpdateStatus &updateStatus);
         uint16_t GetWebPort() const { return webPort; }
         std::filesystem::path GetPluginUploadDirectory() const;
         void Close();
@@ -297,17 +322,18 @@ namespace pipedal
         void SetOutputVolume(float value);
         void PreviewInputVolume(float value);
         void PreviewOutputVolume(float value);
-        
-
 
         void SetPedalboard(int64_t clientId, Pedalboard &pedalboard);
-        Pedalboard&GetPedalboard();
+        Pedalboard &GetPedalboard();
         std::shared_ptr<Lv2Pedalboard> GetLv2Pedalboard();
 
         void UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalboard);
 
+        void SetSnapshots(std::vector<std::shared_ptr<Snapshot>> &snapshots, int64_t selectedSnapshot);
+        void SetSnapshot(int64_t selectedSnapshot);
+
         void GetPresets(PresetIndex *pResult);
-        
+
         Pedalboard GetPreset(int64_t instanceId);
         void GetBank(int64_t instanceId, BankFile *pBank);
 
@@ -369,10 +395,9 @@ namespace pipedal
             int64_t clientId,
             int64_t instanceId,
             const std::string uri,
-            const json_variant&value,
+            const json_variant &value,
             std::function<void()> onSuccess,
             std::function<void(const std::string &error)> onError);
-            
 
         BankIndex GetBankIndex() const;
         void RenameBank(int64_t clientId, int64_t bankId, const std::string &newName);
@@ -389,7 +414,7 @@ namespace pipedal
         void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
 
-        void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId,const std::string&propertyUri);
+        void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri);
         void CancelMonitorPatchProperty(int64_t clientId, int64_t clientHandle);
 
         std::vector<AlsaDeviceInfo> GetAlsaDevices();
@@ -399,15 +424,15 @@ namespace pipedal
         void SetFavorites(const std::map<std::string, bool> &favorites);
         void SetUpdatePolicy(UpdatePolicyT updatePolicy);
         void ForceUpdateCheck();
-        std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
-        std::vector<FileEntry> GetFileList2(const std::string &relativePath,const UiFileProperty&fileProperty);
+        std::vector<std::string> GetFileList(const UiFileProperty &fileProperty);
+        std::vector<FileEntry> GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty);
 
         void DeleteSampleFile(const std::filesystem::path &fileName);
-        std::string CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty);
-        std::string RenameFilePropertyFile(const std::string&oldRelativePath,const std::string&newRelativePath,const UiFileProperty&uiFileProperty);
-        FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty);
+        std::string CreateNewSampleDirectory(const std::string &relativePath, const UiFileProperty &uiFileProperty);
+        std::string RenameFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty);
+        FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty);
 
-        std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,std::istream&inputStream,size_t streamLength);
+        std::string UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, std::istream &inputStream, size_t streamLength);
         uint64_t CreateNewPreset();
 
         bool LoadCurrentPedalboard();

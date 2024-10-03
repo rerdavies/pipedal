@@ -146,6 +146,8 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    PatchPropertyWriter.hpp
+    PresetBundle.cpp PresetBundle.hpp
     RealtimeMidiEventType.hpp
     DBusToLv2Log.cpp DBusToLv2Log.hpp
     HotspotManager.cpp HotspotManager.hpp

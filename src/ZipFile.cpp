@@ -27,14 +27,20 @@
 
 using namespace pipedal;
 
-ZipFile::ZipFile()
+ZipFileReader::ZipFileReader()
 {
 }
-ZipFile::~ZipFile()
+ZipFileReader::~ZipFileReader()
+{
+}
+ZipFileWriter::ZipFileWriter()
+{
+}
+ZipFileWriter::~ZipFileWriter()
 {
 }
 
-class ZipFileImpl : public ZipFile
+class ZipFileImpl : public ZipFileReader
 {
 public:
     ZipFileImpl(const std::filesystem::path &path)
@@ -49,6 +55,7 @@ public:
     }
     virtual ~ZipFileImpl();
     virtual std::vector<std::string> GetFiles() override;
+    virtual bool CompareFiles(const std::string &zipName, const std::filesystem::path& path) override;
     virtual void ExtractTo(const std::string &zipName, const std::filesystem::path &path) override;
     virtual zip_file_input_stream GetFileInputStream(const std::string& filename,size_t bufferSize = 16*1024) override;
     virtual size_t GetFileSize(const std::string&filename) override;
@@ -59,9 +66,9 @@ private:
     zip_t *zipFile = nullptr;
 };
 
-ZipFile::ptr ZipFile::Create(const std::filesystem::path &path)
+ZipFileReader::ptr ZipFileReader::Create(const std::filesystem::path &path)
 {
-    return std::shared_ptr<ZipFile>(new ZipFileImpl(path));
+    return std::shared_ptr<ZipFileReader>(new ZipFileImpl(path));
 }
 ZipFileImpl::~ZipFileImpl()
 {
@@ -87,6 +94,85 @@ std::vector<std::string> ZipFileImpl::GetFiles()
     }
     return result;
 }
+
+
+bool ZipFileImpl::CompareFiles(const std::string &zipName, const std::filesystem::path &path)
+{
+    auto fi = nameMap.find(zipName);
+    if (fi == nameMap.end())
+    {
+        // must call GetFiles() firest.
+        throw std::runtime_error("Zip content file not found.");
+    }
+    zip_int64_t fileIndex = fi->second;
+
+    zip_stat_t zip_stat;
+    if (zip_stat_index(zipFile, fileIndex, 0, &zip_stat) < 0) {
+        throw std::runtime_error(SS("Failed to get file stats: " << zip_strerror(zipFile)));
+    }    
+
+    auto targetSize = std::filesystem::file_size(path);
+    if (targetSize != zip_stat.size)
+    {
+        return false;
+    }
+
+    zip_file_t *fIn = zip_fopen_index(this->zipFile, fileIndex, 0);
+    if (fIn == nullptr)
+    {
+        zip_error_t *error = zip_get_error(this->zipFile);
+        const char *strError = zip_error_strerror(error);
+
+        throw std::runtime_error(SS("Failed to read zip content file. " << strError));
+    }
+    Finally t{[fIn]() mutable
+              {
+                  zip_fclose(fIn);
+              }};
+
+    FILE*fTarget = fopen(path.c_str(),"r");
+    if (fTarget == nullptr) 
+    {
+        throw std::runtime_error(SS("Failed to read  file " << path << "."));
+    }
+    Finally ffTarget{[fTarget]() mutable {
+       fclose(fTarget); 
+    }};
+
+    constexpr int BUFFER_SIZE = 16 * 1024;
+    std::vector<char> vBuff(BUFFER_SIZE);
+    std::vector<char> vBuff2(BUFFER_SIZE);
+    char *pBuff = (char *)&(vBuff[0]);
+    char *pBuff2 = (char *)&(vBuff2[0]);
+    while (true)
+    {
+        zip_int64_t nRead = zip_fread(fIn, pBuff, BUFFER_SIZE);
+        if (nRead == -1)
+        {
+            zip_error_t *error = zip_file_get_error(fIn);
+            const char *strError = zip_error_strerror(error);
+            throw std::runtime_error(SS("Error reading zip content file." << strError));
+        }
+        auto nTargetRead = fread(pBuff2,1,BUFFER_SIZE,fTarget);
+
+        if ((zip_int64_t)nTargetRead != nRead)
+        {
+            return false;
+        }
+        if (nRead == 0) 
+        {
+            return true;
+        }
+        for (zip_int64_t i = 0; i < nRead; ++i)
+        {
+            if (pBuff2[i] != pBuff[i])
+            {
+                return false;
+            }
+        }
+    }
+}
+
 
 void ZipFileImpl::ExtractTo(const std::string &zipName, const std::filesystem::path &path)
 {
@@ -120,7 +206,7 @@ void ZipFileImpl::ExtractTo(const std::string &zipName, const std::filesystem::p
     while (true)
     {
         zip_int64_t nRead = zip_fread(fIn, pBuff, BUFFER_SIZE);
-        if (nRead = 0)
+        if (nRead == 0)
             break;
         if (nRead == -1)
         {
@@ -214,4 +300,69 @@ size_t ZipFileImpl::GetFileSize(const std::string&filename)
         throw std::runtime_error("Failed to get file size.");
     }
     return stat.size;
+}
+
+class ZipFileWriterImpl : public ZipFileWriter
+{
+public:
+    ZipFileWriterImpl(const std::filesystem::path &path)
+        : path(path)
+    {
+        int errorOp = 0;
+        zipFile = zip_open(path.c_str(), ZIP_CREATE | ZIP_TRUNCATE, &errorOp);
+        if (zipFile == nullptr)
+        {
+            throw std::runtime_error("Can't open zip file.");
+        }
+    }
+    virtual ~ZipFileWriterImpl();
+
+    virtual void Close() override; 
+
+    virtual void WriteFile(const std::string &zipFilename,  const std::filesystem::path&sourceFilePath) override;
+    virtual void WriteFile(const std::string&filename, const void*buffer, size_t length) override;
+private:
+    std::map<std::string, zip_int64_t> nameMap; // avoid o(2) extraction operations.
+    const std::filesystem::path path;
+    zip_t *zipFile = nullptr;
+};
+
+ZipFileWriter::ptr ZipFileWriter::Create(const std::filesystem::path &path)
+{
+    return std::make_unique<ZipFileWriterImpl>(path);
+}
+
+void ZipFileWriterImpl::Close() {
+    if (zipFile) {
+        zip_close(zipFile);
+        zipFile = nullptr;
+    }
+}
+ZipFileWriterImpl::~ZipFileWriterImpl()
+{
+    Close();
+}
+
+void ZipFileWriterImpl::WriteFile(const std::string &filename, const std::filesystem::path &path)
+{
+    zip_error_t error;
+    zip_source_t *source = zip_source_file_create(path.c_str(),0,-1,&error);
+    if (!source) {
+        throw std::runtime_error(SS("Unable to create zip source for file " << path));
+    }
+    if (zip_file_add(zipFile,filename.c_str(),source,ZIP_FL_ENC_UTF_8) < 0)
+    {
+        zip_source_free(source);
+        throw std::runtime_error(SS("Unable to create add file  " << path));
+    }
+}
+void ZipFileWriterImpl::WriteFile(const std::string&filename, const void*buffer, size_t length) 
+{
+    zip_source_t *source = zip_source_buffer(zipFile,buffer,length,0);
+
+    if (zip_file_add(zipFile,filename.c_str(),source,ZIP_FL_ENC_UTF_8) < 0)
+    {
+        zip_source_free(source);
+        throw std::runtime_error(SS("Failed to add file to zip: " << zip_strerror(zipFile)));
+    }
 }

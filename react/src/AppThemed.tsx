@@ -21,6 +21,7 @@ import { SyntheticEvent } from 'react';
 import { WithStyles } from '@mui/styles';
 
 import './AppThemed.css';
+
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -48,7 +49,7 @@ import SettingsDialog from './SettingsDialog';
 import AboutDialog from './AboutDialog';
 import BankDialog from './BankDialog';
 
-import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo, wantsLoadingScreen } from './PiPedalModel';
+import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo, wantsReloadingScreen } from './PiPedalModel';
 import ZoomedUiControl from './ZoomedUiControl'
 import MainPage from './MainPage';
 import DialogContent from '@mui/material/DialogContent';
@@ -67,6 +68,9 @@ import { ReactComponent as SaveBankAsIcon } from './svg/ic_save_bank_as.svg';
 import { ReactComponent as EditBanksIcon } from './svg/ic_edit_banks.svg';
 import { ReactComponent as SettingsIcon } from './svg/ic_settings.svg';
 import { ReactComponent as HelpOutlineIcon } from './svg/ic_help_outline.svg';
+import { ReactComponent as FxAmplifierIcon } from './svg/fx_amplifier.svg';
+import { PerformanceView } from './PerformanceView';
+
 import DialogEx, { DialogStackState } from './DialogEx';
 
 
@@ -264,6 +268,8 @@ type AppState = {
     errorMessage: string;
     displayState: State;
 
+    performanceView: boolean;
+
     canFullScreen: boolean;
     isFullScreen: boolean;
     tinyToolBar: boolean;
@@ -313,6 +319,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         );
 
         this.state = {
+            performanceView: false,
             zoomedControlInfo: this.model_.zoomedUiControl.get(),
             isDrawerOpen: false,
             errorMessage: this.model_.errorMessage.get(),
@@ -729,8 +736,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             <div style={{
                 colorScheme: isDarkMode() ? "dark" : "light", // affects scrollbar color
                 minHeight: 345, minWidth: 390,
-                position: "absolute", width: "100%", height: "100%", background: "#F88", userSelect: "none",
-                display: "flex", flexDirection: "column", flexWrap: "nowrap",
+                position: "absolute", left:0, top: 0, right:0,bottom:0,
                 overscrollBehavior: this.state.isDebug ? "auto" : "none"
             }}
                 onContextMenu={(e) => {
@@ -740,234 +746,267 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 }}
             >
                 <CssBaseline />
-                {(!this.state.tinyToolBar) ?
-                    (
-                        <AppBar position="absolute"  >
-                            <Toolbar variant="dense" className={classes.toolBar}  >
-                                <IconButton
-                                    edge="start"
-                                    aria-label="menu"
-                                    color="inherit"
-                                    onClick={() => { this.showDrawer() }}
-                                    size="large">
-                                    <MenuButton style={{ opacity: 0.75 }} />
-                                </IconButton>
-                                <div style={{ flex: "0 1 400px", minWidth: 100 }}>
-                                    <PresetSelector />
-                                </div>
-                                <div style={{ flex: "2 2 30px" }} />
-                                {this.state.canFullScreen &&
+                {this.state.performanceView ? (
+                    <PerformanceView
+                        onClose={() => { this.setState({ performanceView: false }); }}
+                    />
+                ) : (
+                    <div style={{
+                        position: "absolute", width: "100%", height: "100%", userSelect: "none",
+                        display: "flex", flexDirection: "column", flexWrap: "nowrap"
+                    }}
+                    >
+
+
+                        {(!this.state.tinyToolBar) && !this.state.performanceView ?
+                            (
+                                <AppBar position="absolute"  >
+                                    <Toolbar variant="dense" className={classes.toolBar}  >
+                                        <IconButton
+                                            edge="start"
+                                            aria-label="menu"
+                                            color="inherit"
+                                            onClick={() => { this.showDrawer() }}
+                                            size="large">
+                                            <MenuButton style={{ opacity: 0.75 }} />
+                                        </IconButton>
+                                        <div style={{ flex: "0 1 400px", minWidth: 100 }}>
+                                            <PresetSelector />
+                                        </div>
+                                        <div style={{ flex: "2 2 30px" }} />
+                                        {this.state.canFullScreen &&
+                                            <IconButton
+                                                aria-label="menu"
+                                                onClick={() => { this.toggleFullScreen(); }}
+                                                color="inherit"
+                                                size="large">
+                                                {this.state.isFullScreen ? (
+                                                    <FullscreenExitIcon style={{ opacity: 0.75 }} />
+                                                ) : (
+                                                    <FullscreenIcon style={{ opacity: 0.75 }} />
+
+                                                )}
+
+                                            </IconButton>
+                                        }
+                                    </Toolbar>
+                                </AppBar>
+                            ) : (
+                                <div className={classes.toolBarContent} >
                                     <IconButton
+                                        style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
                                         aria-label="menu"
-                                        onClick={() => { this.toggleFullScreen(); }}
+                                        onClick={() => { this.showDrawer() }}
                                         color="inherit"
                                         size="large">
-                                        {this.state.isFullScreen ? (
-                                            <FullscreenExitIcon style={{ opacity: 0.75 }} />
-                                        ) : (
-                                            <FullscreenIcon style={{ opacity: 0.75 }} />
-
-                                        )}
-
+                                        <MenuButton />
                                     </IconButton>
-                                }
-                            </Toolbar>
-                        </AppBar>
-                    ) : (
-                        <div className={classes.toolBarContent} >
-                            <IconButton
-                                style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
-                                aria-label="menu"
-                                onClick={() => { this.showDrawer() }}
-                                color="inherit"
-                                size="large">
-                                <MenuButton />
-                            </IconButton>
-                            {this.state.canFullScreen && (
-                                <IconButton
-                                    style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
-                                    aria-label="menu"
-                                    color="inherit"
-                                    onClick={() => { this.toggleFullScreen(); }}
-                                    size="large">
-                                    {this.state.isFullScreen ? (
-                                        <FullscreenExitIcon />
-                                    ) : (
-                                        <FullscreenIcon />
+                                    {this.state.canFullScreen && (
+                                        <IconButton
+                                            style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
+                                            aria-label="menu"
+                                            color="inherit"
+                                            onClick={() => { this.toggleFullScreen(); }}
+                                            size="large">
+                                            {this.state.isFullScreen ? (
+                                                <FullscreenExitIcon />
+                                            ) : (
+                                                <FullscreenIcon />
 
+                                            )}
+
+                                        </IconButton>
                                     )}
-
-                                </IconButton>
+                                </div>
                             )}
-                        </div>
-                    )}
-                <TemporaryDrawer position='left' title="PiPedal"
-                    is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
-                    <ListSubheader className="listSubheader" component="div" id="xnested-list-subheader" style={{ background: "rgba(12,12,12,0.0)" }}>
-                        <Typography variant="caption" style={{ position: "relative", top: 15 }}>Banks</Typography></ListSubheader>
+                        <TemporaryDrawer position='left' title="PiPedal"
+                            is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
 
-                    <List >
-                        {
-                            shortBankList.map((bank) => {
-                                return (
-                                    <ListItem button key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
-                                        onClick={() => this.onOpenBank(bank.instanceId)}
-                                    >
-
-                                        <ListItemText primary={bank.name} />
-                                    </ListItem>
-
-                                );
-                            })
-                        }
-                        {
-                            showBankSelectDialog && (
-                                <ListItem button key={'bankDOTDOTDOT'} selected={false}
+                            <List>
+                                <ListItem button key='PerformanceView'
                                     onClick={(ev) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
-                                        this.handleDrawerSelectBank();
-                                    }}
-                                >
-
-                                    <ListItemText primary={"..."} />
+                                        this.setState({ performanceView: true });
+                                    }}>
+                                    <ListItemIcon >
+                                        <FxAmplifierIcon color='inherit' className={classes.menuIcon} style={{ width: 24, height: 24 }} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Performance View' />
                                 </ListItem>
+                            </List>
+                            <Divider />
+                            <ListSubheader className="listSubheader" component="div" id="xnested-list-subheader" style={{ lineHeight: "24px", height: 24, background: "rgba(12,12,12,0.0)" }}
+                                disableSticky={true}
+                            >
+                                <Typography variant="caption" style={{}}>Banks</Typography></ListSubheader>
+
+                            <List >
+                                {
+                                    shortBankList.map((bank) => {
+                                        return (
+                                            <ListItem button key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
+                                                onClick={() => this.onOpenBank(bank.instanceId)}
+                                            >
+
+                                                <ListItemText primary={bank.name} />
+                                            </ListItem>
+
+                                        );
+                                    })
+                                }
+                                {
+                                    showBankSelectDialog && (
+                                        <ListItem button key={'bankDOTDOTDOT'} selected={false}
+                                            onClick={(ev) => {
+                                                ev.stopPropagation();
+                                                this.hideDrawer(true);
+                                                this.handleDrawerSelectBank();
+                                            }}
+                                        >
+
+                                            <ListItemText primary={"..."} />
+                                        </ListItem>
 
 
-                            )
-                        }
-                    </List>
-                    <Divider />
-                    <List>
-                        <ListItem button key='RenameBank'
-                            onClick={(ev) => {
-                                ev.stopPropagation();
-                                this.hideDrawer(true);
-                                this.handleDrawerRenameBank()
-                            }}>
-                            <ListItemIcon >
-                                <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
-                            </ListItemIcon>
-                            <ListItemText primary='Rename bank' />
-                        </ListItem>
-                        <ListItem button key='SaveBank'
-                            onClick={(ev) => {
-                                ev.stopPropagation();
-                                this.hideDrawer(true);
-                                this.handleDrawerSaveBankAs();
-                            }} >
-                            <ListItemIcon>
-                                <SaveBankAsIcon color="inherit" className={classes.menuIcon} />
-                            </ListItemIcon>
-                            <ListItemText primary='Save as new bank' />
-                        </ListItem>
-                        <ListItem button key='EditBanks'
-                            onClick={(ev) => {
-                                ev.stopPropagation();
-                                this.hideDrawer(true);
-                                this.handleDrawerManageBanks();
-                            }}>
-                            <ListItemIcon>
-                                <EditBanksIcon color="inherit" className={classes.menuIcon} />
-                            </ListItemIcon>
-                            <ListItemText primary='Manage banks...' />
-                        </ListItem>
-                    </List>
-                    <Divider />
-                    <List>
-                        <ListItem button key='Settings'
-                            onClick={(ev) => {
-                                ev.stopPropagation();
-                                this.hideDrawer(true);
-                                this.handleDrawerSettingsClick()
-                            }}>
-                            <ListItemIcon>
-                                <SettingsIcon color="inherit" className={classes.menuIcon} />
-                            </ListItemIcon>
-                            <ListItemText primary='Settings' />
-                        </ListItem>
-                        <ListItem button key='About'
-                            onClick={(ev) => {
-                                ev.stopPropagation();
-                                this.hideDrawer(true);
-                                this.handleDrawerAboutClick();
-                            }}>
-                            <ListItemIcon>
-                                <HelpOutlineIcon color="inherit" className={classes.menuIcon} />
-                            </ListItemIcon>
-                            <ListItemText primary='About' />
-                        </ListItem>
-                        <ListItem button key='Donations' 
-                        onClick={(ev) => { 
-                            ev.stopPropagation();
-                            this.hideDrawer(true);
-                            this.handleDrawerDonationClick();
-                             }}>
-                            <ListItemIcon >
-                                <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
-                            </ListItemIcon>
-                            <ListItemText primary='Donations' />
-                        </ListItem>
-                    </List>
+                                    )
+                                }
+                            </List>
+                            <Divider />
+                            <List>
+                                <ListItem button key='RenameBank'
+                                    onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerRenameBank()
+                                    }}>
+                                    <ListItemIcon >
+                                        <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Rename bank' />
+                                </ListItem>
+                                <ListItem button key='SaveBank'
+                                    onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerSaveBankAs();
+                                    }} >
+                                    <ListItemIcon>
+                                        <SaveBankAsIcon color="inherit" className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Save as new bank' />
+                                </ListItem>
+                                <ListItem button key='EditBanks'
+                                    onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerManageBanks();
+                                    }}>
+                                    <ListItemIcon>
+                                        <EditBanksIcon color="inherit" className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Manage banks...' />
+                                </ListItem>
+                            </List>
+                            <Divider />
+                            <List>
+                                <ListItem button key='Settings'
+                                    onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerSettingsClick()
+                                    }}>
+                                    <ListItemIcon>
+                                        <SettingsIcon color="inherit" className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Settings' />
+                                </ListItem>
+                                <ListItem button key='About'
+                                    onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerAboutClick();
+                                    }}>
+                                    <ListItemIcon>
+                                        <HelpOutlineIcon color="inherit" className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='About' />
+                                </ListItem>
+                                <ListItem button key='Donations'
+                                    onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerDonationClick();
+                                    }}>
+                                    <ListItemIcon >
+                                        <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Donations' />
+                                </ListItem>
+                            </List>
 
-                </TemporaryDrawer>
-                {!this.state.tinyToolBar && (
-                    <Toolbar className={classes.toolBarSpacer} variant="dense"
-                    />
-                )}
-                <main className={classes.mainFrame} >
-                    <div className={classes.mainSizingPosition}>
-                        <div className={classes.heroContent}>
-                            {(this.state.displayState !== State.Loading) && (
-                                <MainPage hasTinyToolBar={this.state.tinyToolBar} />
+                        </TemporaryDrawer>
+                        {!this.state.tinyToolBar && (
+                            <Toolbar className={classes.toolBarSpacer} variant="dense"
+                            />
+                        )}
+                        <main className={classes.mainFrame} >
+                            <div className={classes.mainSizingPosition}>
+                                <div className={classes.heroContent}>
+                                    {(this.state.displayState !== State.Loading) &&
+                                        (
+                                            <MainPage hasTinyToolBar={this.state.tinyToolBar} enableStructureEditing={true} />
+                                        )
+                                    }
+                                </div>
+
+                            </div>
+                        </main>
+                        <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
+                        {(this.state.aboutDialogOpen) &&
+                            (
+                                <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
                             )}
-                        </div>
+                        <SettingsDialog
+                            open={this.state.isSettingsDialogOpen}
+                            onboarding={this.state.onboarding}
+                            onClose={() => this.handleSettingsDialogClose()} />
+                        <RenameDialog
+                            open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
+                            defaultName={this.model_.banks.get().getSelectedEntryName()}
+                            acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
+                            onClose={() => {
+                                this.setState({
+                                    renameBankDialogOpen: false,
+                                    saveBankAsDialogOpen: false
+                                })
+                            }}
+                            onOk={(text: string) => {
+                                if (this.state.renameBankDialogOpen) {
+                                    this.handleBankRenameOk(text);
+                                } else if (this.state.saveBankAsDialogOpen) {
+                                    this.handleSaveBankAsOk(text);
+                                }
+                            }
+                            }
+                        />
 
+                        <ZoomedUiControl
+                            dialogOpen={this.state.zoomedControlOpen}
+                            controlInfo={this.state.zoomedControlInfo}
+                            onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
+                            onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
+                            }
+                        />
+                        <UpdateDialog open={this.state.updateDialogOpen} />
+                        {this.state.showStatusMonitor && (<JackStatusView />)}
                     </div>
-                </main>
-                <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
-                {(this.state.aboutDialogOpen) &&
-                    (
-                        <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
-                    )}
-                <SettingsDialog
-                    open={this.state.isSettingsDialogOpen}
-                    onboarding={this.state.onboarding}
-                    onClose={() => this.handleSettingsDialogClose()} />
-                <RenameDialog
-                    open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
-                    defaultName={this.model_.banks.get().getSelectedEntryName()}
-                    acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
-                    onClose={() => {
-                        this.setState({
-                            renameBankDialogOpen: false,
-                            saveBankAsDialogOpen: false
-                        })
-                    }}
-                    onOk={(text: string) => {
-                        if (this.state.renameBankDialogOpen) {
-                            this.handleBankRenameOk(text);
-                        } else if (this.state.saveBankAsDialogOpen) {
-                            this.handleSaveBankAsOk(text);
-                        }
-                    }
-                    }
-                />
-
-                <ZoomedUiControl
-                    dialogOpen={this.state.zoomedControlOpen}
-                    controlInfo={this.state.zoomedControlInfo}
-                    onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
-                    onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
-                    }
-                />
-                <UpdateDialog open={this.state.updateDialogOpen} />
-                {this.state.showStatusMonitor && (<JackStatusView />)}
+                )
+                }
 
 
 
-                <DialogEx
-                    tag="Alert"
+                <DialogEx tag="Alert"
                     open={this.state.alertDialogOpen}
                     onClose={this.handleCloseAlert}
                     aria-describedby="alert-dialog-description"
@@ -989,24 +1028,6 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 </DialogEx>
 
 
-                <div className={classes.errorContent} style={{
-                    display: (
-                        wantsLoadingScreen(this.state.displayState)
-                            ? "block" : "none"
-                    )
-                }}
-                >
-                    <div className={classes.errorContentMask} />
-
-                    <div className={classes.loadingBox}>
-                        <div className={classes.loadingBoxItem}>
-                            <CircularProgress color="inherit" className={classes.loadingBoxItem} />
-                        </div>
-                        <Typography display="block" noWrap variant="body2" className={classes.progressText}>
-                            {this.getReloadingMessage()}
-                        </Typography>
-                    </div>
-                </div>
                 <div className={classes.errorContent} style={{ display: this.state.displayState === State.Error ? "flex" : "none" }}
                     onMouseDown={preventDefault} onKeyDown={preventDefault}
                 >
@@ -1034,6 +1055,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
 
                 </div>
+                {/* initial load mask*/}
                 <div className={classes.errorContent} style={{ display: this.state.displayState === State.Loading ? "block" : "none" }}>
                     <div className={classes.errorContentMask} />
                     <div className={classes.loadingBox}>
@@ -1045,11 +1067,30 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                         </Typography>
                     </div>
                 </div>
+                {/* Reloading mask */}
+                <div className={classes.errorContent} style={{
+                    zIndex: 501,
+                    display: (
+                        wantsReloadingScreen(this.state.displayState)
+                            ? "block" : "none"
+                    )
+                }}
+                >
+                    <div className={classes.errorContentMask} />
+
+                    <div className={classes.loadingBox}>
+                        <div className={classes.loadingBoxItem}>
+                            <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                        </div>
+                        <Typography display="block" noWrap variant="body2" className={classes.progressText}>
+                            {this.getReloadingMessage()}
+                        </Typography>
+                    </div>
+                </div>
 
             </div >
         );
     }
-}
-);
+});
 
 export default AppThemed;

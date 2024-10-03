@@ -70,6 +70,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
         this.stateUpdateCount = input.stateUpdateCount;
         this.lv2State = input.lv2State;
         this.lilvPresetUri = input.lilvPresetUri;
+        this.pathProperties = input.pathProperties;
         return this;
     }
     deserialize(input: any): PedalboardItem {
@@ -200,8 +201,81 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     stateUpdateCount: number = 0;
     lv2State: [boolean,any] = [false,{}];
     lilvPresetUri: string = "";
+    pathProperties: {[Name: string]: string} = {};
 };
 
+export class SnapshotValue {
+    deserialize(input: any): SnapshotValue {
+        this.instanceId = input.instanceId;
+        this.controlValues = ControlValue.deserializeArray(input.controlValues);
+        this.lv2State = input.lv2state;
+        this.pathProperties = input.pathProperties;
+        return this;
+    }
+    static deserializeArray(input: any): SnapshotValue[] {
+        let result: SnapshotValue[] = [];
+        for (let i = 0; i < input.length; ++i) {
+            let inputItem: any = input[i];
+            let outputItem = new SnapshotValue().deserialize(inputItem);
+            result[i] = outputItem;
+
+        }
+        return result;
+    }
+    static createFromPedalboardItem(item: PedalboardItem)
+    {
+        let result = new SnapshotValue();
+        result.instanceId = item.instanceId;
+        result.controlValues = ControlValue.deserializeArray(item.controlValues); 
+        result.lv2State = item.lv2State; // we can do this, because lv2State is immutable.
+        result.pathProperties = {... item.pathProperties}; // clone the dictionary.
+        return result;
+    }
+    instanceId: number = -1;
+    controlValues: ControlValue[] = ControlValue.EmptyArray;
+    lv2State: [boolean,any] = [false,{}];
+    pathProperties: {[Name: string]: string} = {};
+}
+export class Snapshot {
+    deserialize(input: any): Snapshot {
+        this.values = SnapshotValue.deserializeArray(input.values);
+        this.name = input.name;
+        this.color = input.color;
+        return this;
+    }
+    static deserializeArray(input: any): (Snapshot| null)[] {
+        let result: (Snapshot|null)[] = [];
+        for (let i = 0; i < input.length; ++i) {
+            let inputItem: any = input[i];
+            let outputItem: (Snapshot|null) = null;
+            if (inputItem !== null)
+            {
+                outputItem = new Snapshot().deserialize(inputItem);
+            }
+            result[i] = outputItem;
+        }
+        return result;
+    }
+    static readonly  MAX_SNAPSHOTS: number = 6;
+
+    static cloneSnapshots(snapshots: (Snapshot|null)[]): (Snapshot|null)[]
+    {
+        let result: (Snapshot|null)[] = [];
+        for (let i = 0; i < Snapshot.MAX_SNAPSHOTS; ++i)
+        {
+            if (i >= snapshots.length) 
+            {
+                result.push(null);
+            } else {
+                result.push(snapshots[i]);
+            }
+        }
+        return result;
+    }
+    name: string = "";
+    color: string = "";
+    values: SnapshotValue[] = [];
+};
 
 export enum SplitType {
     Ab = 0,
@@ -277,6 +351,9 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         this.output_volume_db = input.output_volume_db;
         this.items = PedalboardItem.deserializeArray(input.items);
         this.nextInstanceId = input.nextInstanceId ?? -1;
+        this.snapshots = input.snapshots ? Snapshot.deserializeArray(input.snapshots): [];
+        this.selectedSnapshot = input.selectedSnapshot;
+        this.pathProperties = input.pathProperties;
         return this;
     }
 
@@ -289,6 +366,10 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     items: PedalboardItem[] = [];
     nextInstanceId: number = -1;
 
+    snapshots: (Snapshot | null)[] = [];
+    selectedSnapshot: number = -1;
+    pathProperties: {[Name: string]: string} = {};
+
     *itemsGenerator(): Generator<PedalboardItem, void, undefined> {
         let it = itemGenerator_(this.items);
         while (true)
@@ -299,6 +380,19 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         }
     }
 
+    makeSnapshot(): Snapshot {
+        let result = new Snapshot();
+        let it = this.itemsGenerator();
+        while (true)
+        {
+            let v = it.next();
+            if (v.done) break;
+            let pedalboardItem = v.value;
+            let snapshotValue =  SnapshotValue.createFromPedalboardItem(pedalboardItem);
+            result.values.push(snapshotValue);
+        }
+        return result;
+    }
     hasItem(instanceId: number): boolean
     {
         let it = this.itemsGenerator();
@@ -570,6 +664,8 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         item.pluginName = "";
         item.isEnabled = true;
         item.controlValues = [];
+        item.vstState = "";
+        item.lv2State = [false,{}];
 
     }
 

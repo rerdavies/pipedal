@@ -352,7 +352,7 @@ void Storage::SavePluginPresetIndex()
             throw PiPedalException(SS("Can't write to " << path));
         }
 
-        json_writer writer(os, false);
+        json_writer writer(os, true);
         writer.write(this->pluginPresetIndex);
     }
 }
@@ -361,7 +361,7 @@ void Storage::SaveBankIndex()
 {
     pipedal::ofstream_synced os;
     os.open(GetIndexFileName(), std::ios_base::trunc);
-    json_writer writer(os, false);
+    json_writer writer(os, true);
     writer.write(this->bankIndex);
 }
 
@@ -436,7 +436,7 @@ void Storage::SaveBankFile(const std::string &name, const BankFile &bankFile)
     {
         pipedal::ofstream_synced s;
         s.open(fileName, std::ios_base::trunc);
-        json_writer writer(s, false);
+        json_writer writer(s, true);
         writer.write(bankFile);
         if (std::filesystem::exists(backupFile))
         {
@@ -722,7 +722,7 @@ void Storage::SaveChannelSelection()
     try
     {
         pipedal::ofstream_synced s(fileName);
-        json_writer writer(s, false);
+        json_writer writer(s, true);
         writer.write(this->jackChannelSelection);
     }
     catch (const std::exception &e)
@@ -911,7 +911,7 @@ int64_t Storage::UploadBank(BankFile &bankFile, int64_t uploadAfter)
     {
         throw PiPedalException("Can't write to bank file.");
     }
-    json_writer writer(f, false);
+    json_writer writer(f, true);
     writer.write(bankFile);
 
     lastBank = this->bankIndex.addBank(lastBank, bankFile.name());
@@ -933,7 +933,7 @@ void Storage::SaveUserSettings()
         {
             throw PiPedalException("Unable to write to " + ((std::string)path));
         }
-        json_writer writer(f, false);
+        json_writer writer(f, true);
         writer.write(userSettings);
     }
 }
@@ -1048,7 +1048,7 @@ void Storage::SaveCurrentPreset(const CurrentPreset &currentPreset)
         std::filesystem::path path = GetCurrentPresetPath();
 
         pipedal::ofstream_synced f(path);
-        json_writer writer(f, false);
+        json_writer writer(f, true);
         writer.write(currentPreset);
     }
     catch (std::exception &)
@@ -1128,7 +1128,7 @@ void Storage::SavePluginPresets(const std::string &pluginUri, const PluginPreset
         {
             throw PiPedalException(SS("Can't write to " << path));
         }
-        json_writer writer(os, false);
+        json_writer writer(os, true);
         writer.write(presets);
     }
     if (std::filesystem::exists(path))
@@ -1370,7 +1370,7 @@ void Storage::SetFavorites(const std::map<std::string, bool> &favorites)
     f.open(fileName);
     if (f.is_open())
     {
-        json_writer writer(f, false);
+        json_writer writer(f, true);
         writer.write(favorites);
     }
 }
@@ -1399,7 +1399,7 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
     f.open(fileName);
     if (f.is_open())
     {
-        json_writer writer(f, false);
+        json_writer writer(f, true);
         writer.write(jackConfiguration);
     }
 #if JACK_HOST
@@ -1414,7 +1414,7 @@ void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
     f.open(fileName);
     if (f.is_open())
     {
-        json_writer writer(f, false);
+        json_writer writer(f, true);
         writer.write(bindings);
     }
 }

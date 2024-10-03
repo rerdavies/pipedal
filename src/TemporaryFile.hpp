@@ -22,10 +22,16 @@
 namespace pipedal {
     class TemporaryFile {
     public:
+        TemporaryFile() {}
         TemporaryFile(const TemporaryFile&) = delete;
         TemporaryFile&operator=(const TemporaryFile&) = delete;
 
+        TemporaryFile(TemporaryFile&&other) {
+            this->path = std::move(other.path);
+        }
         TemporaryFile(const std::filesystem::path&parentDirectory);
+
+        void Detach();
         ~TemporaryFile();
         const std::filesystem::path&Path()const { return path;}
         std::string str() const { return path.c_str(); }

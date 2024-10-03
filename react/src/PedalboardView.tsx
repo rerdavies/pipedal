@@ -191,6 +191,7 @@ interface PedalboardProps extends WithStyles<typeof pedalboardStyles> {
     onSelectionChanged?: OnSelectHandler;
     onDoubleClick?: OnSelectHandler;
     hasTinyToolBar: boolean;
+    enableStructureEditing: boolean;
 
 }
 interface LayoutSize {
@@ -392,6 +393,10 @@ const PedalboardView =
             }
 
             onDragEnd(instanceId: number, clientX: number, clientY: number) {
+                if (!this.props.enableStructureEditing)
+                {
+                    return;
+                }
                 if (!this.currentLayout) return;
 
                 if (!this.frameRef.current) return;
@@ -670,18 +675,27 @@ const PedalboardView =
                 event.preventDefault();
                 event.stopPropagation();
 
-                if (this.props.onDoubleClick && instanceId) {
+                if (this.props.onDoubleClick && instanceId && this.props.enableStructureEditing) {
                     this.props.onDoubleClick(instanceId);
                 }
 
             }
 
             onItemLongClick(event: SyntheticEvent, instanceId?: number): void {
+                if (!instanceId)
+                {
+                    return;
+                }
                 event.preventDefault();
                 event.stopPropagation();
 
+                if (!this.props.enableStructureEditing)
+                {
+                    this.setSelection(instanceId);
+                    return;
+                }
                 if (!Utility.needsZoomedControls()) {
-                    if (this.props.onDoubleClick && instanceId) {
+                    if (this.props.onDoubleClick && this.props.enableStructureEditing && instanceId) {
                         this.props.onDoubleClick(instanceId);
                     }
                 }
@@ -927,7 +941,7 @@ const PedalboardView =
                             onContextMenu={(e: SyntheticEvent) => { this.onItemLongClick(e, instanceId); }}
                         >
                             <SelectHoverBackground selected={instanceId === this.props.selectedId} showHover={true} borderRadius={6} >
-                                <Draggable  draggable={draggable} getScrollContainer={() => this.getScrollContainer()}
+                                <Draggable  draggable={draggable && (this.props.enableStructureEditing)} getScrollContainer={() => this.getScrollContainer()}
                                     onDragEnd={(x, y) => { this.onDragEnd(instanceId, x, y) }}
                                 >
                                     <PluginIcon pluginType={iconType} size={24} pluginMissing={pluginNotFound} opacity={enabled? 0.99:0.6}  />                                    

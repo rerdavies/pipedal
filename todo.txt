@@ -1,53 +1,55 @@
-- X test reconnect sequence in client.
+ToobFreeverb has a big memory leak!
 
--X remove 10-pipedal-networkmanager.rules before testing installer.
+Do we have to deactivate both Audio handles after an underrun? I think so.
 
-- new signing procedure.
+Error and message and loading overlays have to go above PerformanceView
+
+Back Button sequence for performance view.
+
+Review state changing code. Do we need this anymmore? I think not.
+
+
+Review current handleNotifyPatchProperty. I tink server-side support needs to be
+removed, and rely on handleNotifyPathPatchPropertyChanged instead.
+
+private handleNotifyPatchProperty(clientHandle: number, instanceId: number, propertyUri: string, jsonObject: any) {
+
+Midi bindings.    
+
+SEGV at void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
+            bool changed = this->audioHost->UpdatePluginState(*item);
+            PiPedalModel.cpp:375
+
+       because audioHost is gone.
+       revamp shutdown procedure for the audio thread. 
+       write a marker on exit, and don't  release 
+       audioHost UNTIL the service thread has read the close marker.
+       
+- continuing corrupt memory.
+- LV2 STATE and properties DO NOT MATCH in saved files.
+- LV2_STATE is not populated wiht properties are.
+- properties are not popluate when LV_sate Is.
+- FINISH PATH property running updates code.
+  Maybe we should be using LV2_State (if we can capture it  
+  propertly. ) 
+         
+
+
 
 - verify that scanning doesn't cause overruns.
 - verify address change behaviour in client
-- verify stripping in installer.
-- verify update with no keyring.
 -verify clean removal of dhcpcd and nm_p2p2d
 
 X Review docs changes once we go live.
 
-- Back button after reloads on Android.
-
-Localisation: support non-UTF8 code pages.
+- Localisation: support non-UTF8 code pages.
 - unicode commandline arguments.
 - review unicode filenames (this is probably ok)
 
-- make app use the same theme settings as the website. (make the website use the same theme as the app)
 - BUG: gcs when we have an animated output control
-- versioning.
-
-
-
-
-
-
-Package: raspi-firmware
-Version: 1:1.20240902-1
-
-Package: raspi-firmware
-Version: 1.20220830+ds-1
-
-
-Package: firmware-brcm80211
-Source: firmware-nonfree
-Version: 1:20230625-2+rpt3
-
-Package: f
-
-
-downgrade:
-sudo apt install raspi-firmware=1.20220830+ds-1
-sudo apt install firmware-brcm80211=1:20230625-2+rpt2
-
 
 
 Pri Description
 -----------------
-8 Migrate to Vite toolchain.
 5 Re-use plugin instances when rebuilding pedalboard.
+8 Migrate to Vite toolchain.

@@ -31,14 +31,15 @@
 #include <unordered_map>
 #include <fstream>
 #include "ofstream_synced.hpp"
+#include "util.hpp"
+
+using namespace pipedal;
 
 namespace config_serializer
 {
     namespace detail
     {
         std::string trim(const std::string &v);
-
-        std::vector<std::string> split(const std::string &v, char seperator);
 
         /**
          * @brief Convert string to config file format.

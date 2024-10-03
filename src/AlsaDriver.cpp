@@ -953,9 +953,12 @@ namespace pipedal
             {
                 OpenMidi(jackServerSettings, channelSelection);
                 OpenAudio(jackServerSettings, channelSelection);
+                std::atomic_thread_fence(std::memory_order::release);
             }
             catch (const std::exception &e)
             {
+                std::atomic_thread_fence(std::memory_order::release);
+
                 Close();
                 throw;
             }
@@ -1359,7 +1362,7 @@ namespace pipedal
         long WriteBuffer(snd_pcm_t *handle, uint8_t *buf, size_t frames)
         {
             long framesRead;
-            auto frame_bytes = this->captureFrameSize;
+            auto frame_bytes = this->playbackFrameSize;
 
             while (frames > 0)
             {
@@ -1969,6 +1972,8 @@ namespace pipedal
         }
         virtual void Close()
         {
+            std::atomic_thread_fence(std::memory_order::acquire);
+
             if (!open)
             {
                 return;
@@ -1977,6 +1982,7 @@ namespace pipedal
             Deactivate();
             AlsaCleanup();
             DeleteBuffers();
+            std::atomic_thread_fence(std::memory_order::release);
         }
 
         virtual float CpuUse()

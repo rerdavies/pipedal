@@ -112,3 +112,27 @@ std::string pipedal::GetHostName()
     buffer[1023] = '\0';
     return buffer;
 }
+
+
+std::vector<std::string> pipedal::split(const std::string &value, char delimiter)
+{
+    size_t start = 0;
+    std::vector<std::string> result;
+    while (start < value.length())
+    {
+        size_t pos = value.find_first_of(delimiter, start);
+        if (pos == std::string::npos)
+        {
+            result.push_back(value.substr(start));
+            break;
+        }
+        result.push_back(value.substr(start, pos - start));
+        start = pos + 1;
+        if (start == value.length())
+        {
+            // ends with delimieter? Then there's an empty-length value at the end.
+            result.push_back("");
+        }
+    }
+    return result;
+}

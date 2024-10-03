@@ -292,8 +292,11 @@ export const LoadPluginDialog =
                     }
                 );
             }
+            mounted: boolean = false;
+
             componentDidMount() {
                 super.componentDidMount();
+                this.mounted = true;
                 this.updateWindowSize();
                 window.addEventListener('resize', this.updateWindowSize);
 
@@ -307,10 +310,12 @@ export const LoadPluginDialog =
                 });
             }
             componentWillUnmount() {
+                this.cancelSearchTimeout();
                 this.model.ui_plugins.removeOnChangedHandler(this.handlePluginsChanged);
                 this.model.favorites.removeOnChangedHandler(this.handleFavoritesChanged);
-                super.componentWillUnmount();
                 window.removeEventListener('resize', this.updateWindowSize);
+                this.mounted = false;
+                super.componentWillUnmount();
             }
 
             componentDidUpdate(oldProps: PluginGridProps) {
@@ -574,6 +579,10 @@ export const LoadPluginDialog =
 
 
             handleSearchStringReady() {
+                if (!this.mounted) 
+                {
+                    return;
+                }
                 if (this.changedSearchString !== undefined) {
                     this.requestScrollTo();
                     this.setState({
@@ -584,12 +593,17 @@ export const LoadPluginDialog =
                 this.hSearchTimeout = undefined;
             }
 
-
-            handleSearchStringChanged(text: string): void {
+            cancelSearchTimeout()
+            {
                 if (this.hSearchTimeout) {
                     clearTimeout(this.hSearchTimeout);
                     this.hSearchTimeout = undefined;
                 }
+
+            }
+
+            handleSearchStringChanged(text: string): void {
+                this.cancelSearchTimeout();
                 this.changedSearchString = text;
                 this.hSearchTimeout = setTimeout(
                     this.handleSearchStringReady,

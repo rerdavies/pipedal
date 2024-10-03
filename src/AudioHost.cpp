@@ -19,6 +19,7 @@
 
 #include "AudioHost.hpp"
 #include "util.hpp"
+#include <lv2/atom/atom.h>
 
 #include "Lv2Log.hpp"
 
@@ -26,6 +27,9 @@
 #include "AlsaDriver.hpp"
 #include "DummyAudioDriver.hpp"
 #include "AtomConverter.hpp"
+#include <unordered_map>
+#include "PluginHost.hpp"
+#include "PatchPropertyWriter.hpp"
 
 using namespace pipedal;
 
@@ -105,6 +109,167 @@ static void GetCpuFrequency(uint64_t *freqMin, uint64_t *freqMax)
 static std::string GetGovernor()
 {
     return pipedal::GetCpuGovernor();
+}
+
+namespace pipedal
+{
+
+    struct PathPatchProperty
+    {
+        LV2_URID propertyUrid = 0;
+        std::vector<uint8_t> atomBuffer;
+    };
+
+    class IndexedSnapshotValue
+    {
+    private:
+        struct InputControlEntry
+        {
+            bool isInputControl = false;
+            float value = 0;
+        };
+
+    public:
+        IndexedSnapshotValue(IEffect *effect, SnapshotValue *snapshotValue, PluginHost &pluginHost)
+            : pEffect(effect)
+        {
+            auto maxInputControl = effect->GetMaxInputControl();
+            inputControlValues.resize(maxInputControl);
+
+            for (uint64_t i = 0; i < maxInputControl; ++i)
+            {
+                bool isInputControl = effect->IsInputControl(i);
+                if (isInputControl)
+                {
+                    inputControlValues[i] = InputControlEntry{isInputControl : true, value : effect->GetDefaultInputControlValue(i)};
+                }
+                else
+                {
+                    inputControlValues[i] = InputControlEntry{isInputControl : false, value : 0};
+                }
+            }
+            if (snapshotValue)
+            {
+                for (auto &controlValue : snapshotValue->controlValues_)
+                {
+                    auto index = effect->GetControlIndex(controlValue.key());
+                    if (index >= 0 && index < inputControlValues.size())
+                    {
+                        inputControlValues[index].value = controlValue.value();
+                    }
+                }
+                this->lv2State = snapshotValue->lv2State_;
+
+                if (effect->IsLv2Effect())
+                {
+                    Lv2Effect *lv2Effect = (Lv2Effect *)effect;
+                    for (auto &pathProperty : snapshotValue->pathProperties_)
+                    {
+                        // only transmit changed path patch properties.
+                        if (lv2Effect->GetPathPatchProperty(pathProperty.first) != pathProperty.second)
+                        {
+                            lv2Effect->SetPathPatchProperty(pathProperty.first, pathProperty.second);
+
+                            PathPatchProperty pathPatchProperty;
+                            pathPatchProperty.propertyUrid = pluginHost.GetLv2Urid(pathProperty.first.c_str());
+                            // convert to json variant so we do a mappath operation.
+                            json_variant vProperty;
+                            std::istringstream ss(pathProperty.second);
+                            json_reader reader(ss);
+                            reader.read(&vProperty);
+                            vProperty = pluginHost.MapPath(vProperty);
+
+                            // now to atom format (what we want on the rt thread0)
+                            AtomConverter atomConverter(pluginHost.GetMapFeature());
+                            LV2_Atom *atomValue = atomConverter.ToAtom(vProperty);
+
+                            size_t atomBufferSize = (atomValue->size + sizeof(LV2_Atom) + 3) / 4 * 4;
+                            pathPatchProperty.atomBuffer.resize(atomValue->size + sizeof(LV2_Atom));
+                            memcpy(pathPatchProperty.atomBuffer.data(), atomValue, pathPatchProperty.atomBuffer.size());
+                            this->pathPatchProperties.push_back(std::move(pathPatchProperty));
+                        }
+                    }
+                }
+            }
+        }
+        void ApplyValues(IEffect *effect)
+        {
+            if (effect != pEffect)
+            {
+                throw std::runtime_error("Wrong effect");
+            }
+            for (size_t i = 0; i < inputControlValues.size(); ++i)
+            {
+                InputControlEntry &e = inputControlValues[i];
+                if (e.isInputControl)
+                {
+                    effect->SetControl((int)i, e.value);
+                }
+            }
+
+            for (const auto &patchProperty : pathPatchProperties)
+            {
+                effect->SetPatchProperty(
+                    patchProperty.propertyUrid, patchProperty.atomBuffer.size(), (LV2_Atom *)patchProperty.atomBuffer.data());
+            }
+            // effect->SetLv2State(lv2State);
+        }
+
+    private:
+        IEffect *pEffect;
+        Lv2PluginState lv2State;
+        std::vector<InputControlEntry> inputControlValues;
+        std::vector<PathPatchProperty> pathPatchProperties;
+    };
+    class IndexedSnapshot
+    {
+    public:
+        IndexedSnapshot(Snapshot *snapshot, std::shared_ptr<Lv2Pedalboard> currentPedalboard, PluginHost &pluginHost)
+        {
+            std::unordered_map<uint64_t, SnapshotValue *> index;
+            for (auto &value : snapshot->values_)
+            {
+                index[value.instanceId_] = &value;
+            }
+            std::vector<IEffect *> &effects = currentPedalboard->GetEffects();
+            snapshotValues.reserve(effects.size());
+
+            for (size_t i = 0; i < effects.size(); ++i)
+            {
+                auto &effect = effects[i];
+
+                SnapshotValue *snapshotValue = getSnapshotValue(index, effect->GetInstanceId());
+                snapshotValues.push_back(IndexedSnapshotValue(effect, snapshotValue, pluginHost));
+            }
+        }
+        static SnapshotValue *getSnapshotValue(std::unordered_map<uint64_t, SnapshotValue *> &index, uint64_t instanceId)
+        {
+            auto iter = index.find(instanceId);
+            if (iter == index.end())
+            {
+                return nullptr;
+            }
+            return iter->second;
+        }
+
+        void Apply(std::vector<IEffect *> &effects)
+        {
+            if (effects.size() != snapshotValues.size())
+            {
+                throw std::runtime_error("Effects and values don't match");
+            }
+            for (size_t i = 0; i < snapshotValues.size(); ++i)
+            {
+                snapshotValues[i].ApplyValues(effects[i]);
+            }
+        }
+        ~IndexedSnapshot()
+        {
+        }
+
+    private:
+        std::vector<IndexedSnapshotValue> snapshotValues;
+    };
 }
 
 class SystemMidiBinding
@@ -192,9 +357,12 @@ bool SystemMidiBinding::IsMatch(const MidiEvent &event)
     }
 }
 
-class AudioHostImpl : public AudioHost, private AudioDriverHost
+class AudioHostImpl : public AudioHost, private AudioDriverHost, private IPatchWriterCallback
 {
 private:
+    void OnWritePatchPropertyBuffer(
+        PatchPropertyWriter::Buffer *);
+
     IHost *pHost = nullptr;
     LV2_Atom_Forge inputWriterForge;
 
@@ -368,6 +536,8 @@ private:
 
         StopReaderThread();
 
+        // delete any leaked snapshots.
+        CleanUpSnapshots();
 
         // release any pdealboards owned by the process thread.
         this->activePedalboards.resize(0);
@@ -489,8 +659,26 @@ private:
 
     RealtimePatchPropertyRequest *pParameterRequests = nullptr;
 
+    void cancelParameterRequests()
+    {
+        return;
+
+        // auto p = this->pParameterRequests;
+        // while (pParameterRequests != nullptr)
+        // {
+        //     auto nextParameterRequest = p->pNext;
+        //     if (p->requestType ==  RealtimePatchPropertyRequest::RequestType::PatchGet) {
+        //         p->errorMessage = "Effect unloaded.";
+        //     }
+        //     p = nextParameterRequest;
+        // }
+        // this->realtimeWriter.ParameterRequestComplete(pParameterRequests);
+        // this->pParameterRequests = nullptr;
+    }
+
     bool reEntered = false;
-    void ProcessInputCommands()
+    // returns false if the current effect has been replaced.
+    bool ProcessInputCommands()
     {
         if (reEntered)
         {
@@ -586,6 +774,14 @@ private:
                 }
                 break;
             }
+            case RingBufferCommand::LoadSnapshot:
+            {
+                IndexedSnapshot *snapshot;
+                realtimeReader.readComplete(&snapshot);
+                ApplySnapshot(snapshot);
+                realtimeWriter.FreeSnapshot(snapshot);
+                break;
+            }
             case RingBufferCommand::SetVuSubscriptions:
             {
                 RealtimeVuBuffers *configuration;
@@ -622,16 +818,35 @@ private:
                     // invalidate the possibly no-good subscriptions. Model will update them shortly.
                     freeRealtimeVuConfiguration();
                     freeRealtimeMonitorPortSubscriptions();
+                    cancelParameterRequests();
+
+                    if (realtimeActivePedalboard)
+                    {
+                        realtimeActivePedalboard->ResetAtomBuffers();
+                        // issue patch gets for all writable path properties.
+                        for (auto pEffect : realtimeActivePedalboard->GetEffects())
+                        {
+                            pEffect->RequestAllPathPatchProperties();
+                        }
+                    }
                 }
-                break;
+                reEntered = false;
+
+                return false; // signal to caller that the effect has been replaced, and processing needs to start again.
             }
             default:
                 throw PiPedalStateException("Unknown Ringbuffer command.");
             }
         }
         reEntered = false;
+        return true;
     }
 
+    void ApplySnapshot(IndexedSnapshot *snapshot)
+    {
+        auto &effects = this->realtimeActivePedalboard->GetEffects();
+        snapshot->Apply(effects);
+    }
     virtual void AckMidiProgramRequest(uint64_t requestId)
     {
         hostWriter.AckMidiProgramRequest(requestId);
@@ -799,8 +1014,6 @@ private:
 
     std::mutex audioStoppedMutex;
 
-
-
     bool IsAudioRunning()
     {
         return this->active && (!this->audioStopped) && !this->isDummyAudioDriver;
@@ -816,20 +1029,31 @@ private:
         Lv2Log::info("Audio thread terminated.");
     }
 
-
     virtual void OnProcess(size_t nframes)
     {
         try
         {
             float *in, *out;
 
-            pParameterRequests = nullptr;
+            Lv2Pedalboard *pedalboard = nullptr;
+            pedalboard = this->realtimeActivePedalboard;
+            if (pedalboard)
+            {
+                pedalboard->ResetAtomBuffers();
+            }
+            while (true)
+            {
 
-            ProcessInputCommands();
+                if (ProcessInputCommands())
+                {
+                    break;
+                }
+                // else a new pedalboard was installed. start again.
+                pedalboard = this->realtimeActivePedalboard;
+            }
 
             bool processed = false;
 
-            Lv2Pedalboard *pedalboard = this->realtimeActivePedalboard;
             if (pedalboard != nullptr)
             {
                 ProcessMidiInput();
@@ -862,7 +1086,6 @@ private:
 
                 if (buffersValid)
                 {
-                    pedalboard->ResetAtomBuffers();
                     pedalboard->ProcessParameterRequests(pParameterRequests);
 
                     processed = pedalboard->Run(inputBuffers, outputBuffers, (uint32_t)nframes, &realtimeWriter);
@@ -885,6 +1108,7 @@ private:
                         }
                     }
                     pedalboard->GatherPatchProperties(pParameterRequests);
+                    pedalboard->GatherPathPatchProperties(this);
                 }
             }
 
@@ -896,6 +1120,7 @@ private:
             if (pParameterRequests != nullptr)
             {
                 this->realtimeWriter.ParameterRequestComplete(pParameterRequests);
+                pParameterRequests = nullptr;
             }
             // provide a grace period for undderruns, while spinning up. (15 second-ish)
             if (currentSample <= this->overrunGracePeriodSamples && currentSample + nframes > this->overrunGracePeriodSamples)
@@ -926,7 +1151,6 @@ public:
     {
         realtimeAtomBuffer.resize(32 * 1024);
         lv2_atom_forge_init(&inputWriterForge, pHost->GetMapFeature().GetMap());
-
     }
     virtual ~AudioHostImpl()
     {
@@ -1193,6 +1417,18 @@ public:
                                 hostReader.read(&body);
                                 OnActivePedalboardReleased(body.oldEffect);
                             }
+                            else if (command == RingBufferCommand::FreeSnapshot)
+                            {
+                                IndexedSnapshot *snapshot;
+                                hostReader.read(&snapshot);
+                                OnFreeSnapshot(snapshot);
+                            }
+                            else if (command == RingBufferCommand::SendPathPropertyBuffer)
+                            {
+                                PatchPropertyWriter::Buffer *buffer = nullptr;
+                                hostReader.read(&buffer);
+                                OnPathPropertyReceived(buffer);
+                            }
                             else if (command == RingBufferCommand::AudioStopped)
                             {
                                 AudioStoppedBody body;
@@ -1200,7 +1436,8 @@ public:
                                 OnAudioComplete();
                                 return;
                             }
-                            else if (command == RingBufferCommand::MidiProgramChange)
+                            else if (command == RingBufferCommand::
+                                                    MidiProgramChange)
                             {
                                 RealtimeMidiProgramRequest programRequest;
                                 hostReader.read(&programRequest);
@@ -1307,7 +1544,9 @@ public:
         {
             this->isDummyAudioDriver = true;
             this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this));
-        } else {
+        }
+        else
+        {
             this->isDummyAudioDriver = false;
             this->audioDriver = std::unique_ptr<AudioDriver>(CreateAlsaDriver(this));
         }
@@ -1319,7 +1558,6 @@ public:
 
         this->currentSample = 0;
         this->underruns = 0;
-
 
         this->inputRingBuffer.reset();
         this->outputRingBuffer.reset();
@@ -1363,6 +1601,18 @@ public:
     void OnMidiProgramRequest(RealtimeMidiProgramRequest &programRequest)
     {
         pNotifyCallbacks->OnNotifyMidiProgramChange(programRequest);
+    }
+
+    void OnPathPropertyReceived(PatchPropertyWriter::Buffer *buffer)
+    {
+        if (pNotifyCallbacks)
+        {
+            pNotifyCallbacks->OnNotifyPathPatchPropertyReceived(
+                buffer->instanceId,
+                buffer->patchPropertyUrid,
+                (LV2_Atom *)(buffer->memory.data()));
+        }
+        buffer->OnBufferReadComplete();
     }
     void OnActivePedalboardReleased(Lv2Pedalboard *pPedalboard)
     {
@@ -1463,6 +1713,49 @@ public:
         {
             hostWriter.SetOutputVolume(value);
         }
+    }
+
+    std::vector<IndexedSnapshot *> pendingSnapshots;
+
+    virtual void LoadSnapshot(Snapshot &snapshot, PluginHost &pluginHost) override
+    {
+        std::lock_guard guard(mutex);
+        if (active && this->currentPedalboard)
+        {
+            IndexedSnapshot *indexedSnapshot = new IndexedSnapshot(&snapshot, this->currentPedalboard, pluginHost);
+            pendingSnapshots.push_back(indexedSnapshot);
+            this->hostWriter.LoadSnapshot(indexedSnapshot);
+        }
+    }
+
+    void OnNotifyPathPatchPropertyReceived(
+        int64_t instanceId,
+        const std::string &pathPatchPropertyUri,
+        const std::string &jsonAtom) override;
+
+    void OnFreeSnapshot(IndexedSnapshot *snapshot)
+    {
+        {
+            std::lock_guard guard(mutex);
+            for (auto i = pendingSnapshots.begin(); i != pendingSnapshots.end(); ++i)
+            {
+                if (*i == snapshot)
+                {
+                    pendingSnapshots.erase(i);
+                    break;
+                }
+            }
+        }
+        delete snapshot;
+    }
+    void CleanUpSnapshots()
+    {
+        for (auto i = pendingSnapshots.begin(); i != pendingSnapshots.end(); ++i)
+        {
+            IndexedSnapshot *snapshot = *i;
+            delete snapshot;
+        }
+        pendingSnapshots.clear();
     }
 
     virtual void SetVuSubscriptions(const std::vector<int64_t> &instanceIds)
@@ -1754,19 +2047,25 @@ void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindin
         else if (i->symbol() == "prevProgram")
         {
             this->prevMidiBinding.SetBinding(*i);
-        } else if (i->symbol() == "startHotspot")
+        }
+        else if (i->symbol() == "startHotspot")
         {
             this->startHotspotMidiBinding.SetBinding(*i);
-        } else if (i->symbol() == "stopHotspot")
+        }
+        else if (i->symbol() == "stopHotspot")
         {
             this->stopHotspotMidiBinding.SetBinding(*i);
-        } else if (i->symbol() == "reboot")
+        }
+        else if (i->symbol() == "reboot")
         {
             this->rebootMidiBinding.SetBinding(*i);
-        } else if (i->symbol() == "shutdown")
+        }
+        else if (i->symbol() == "shutdown")
         {
             this->shutdownMidiBinding.SetBinding(*i);
-        } else {
+        }
+        else
+        {
             Lv2Log::error(SS("Invalid system midi binding: " << i->symbol()));
         }
     }
@@ -1793,6 +2092,27 @@ bool AudioHostImpl::UpdatePluginStates(Pedalboard &pedalboard)
     }
     return true;
 }
+
+void AudioHostImpl::OnNotifyPathPatchPropertyReceived(
+    int64_t instanceId,
+    const std::string &pathPatchPropertyUri,
+    const std::string &jsonAtom)
+{
+    if (this->currentPedalboard)
+    {
+        IEffect*effect =  this->currentPedalboard->GetEffect(instanceId);
+        if (!effect)
+        {
+            return;
+        }
+        if (effect->IsLv2Effect())
+        {
+            Lv2Effect*lv2Effect = (Lv2Effect*)effect;
+            lv2Effect->SetPathPatchProperty(pathPatchPropertyUri,jsonAtom);
+        }
+    }
+}
+
 bool AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
 {
     IEffect *effect = currentPedalboard->GetEffect(pedalboardItem.instanceId());
@@ -1819,6 +2139,12 @@ bool AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
         }
     }
     return false;
+}
+
+void AudioHostImpl::OnWritePatchPropertyBuffer(
+    PatchPropertyWriter::Buffer *buffer)
+{
+    this->realtimeWriter.SendPathPropertyBuffer(buffer);
 }
 
 JSON_MAP_BEGIN(JackHostStatus)

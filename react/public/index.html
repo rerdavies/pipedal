@@ -36,7 +36,7 @@
 
   <style id="bgStyle">
     BODY {
-      background: #333;
+      background: #333; overscroll-behavior: "none"
     }
   </style>
   <script>
@@ -97,9 +97,9 @@
   </script>
 </head>
 
-<body>
+<body style="overscroll-behavior: none; overflow: hidden">
   <noscript>You need to enable JavaScript to run this app.</noscript>
-  <div id="root"></div>
+  <div id="root" style="height: 100%;position: absolute;left: 0px;right: 0px;top:0px;bottom: 0px"></div>
   <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

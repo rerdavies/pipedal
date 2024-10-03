@@ -24,6 +24,7 @@ import Dialog, {DialogProps} from '@mui/material/Dialog';
 
 interface DialogExProps extends DialogProps {
     tag: string;
+    fullwidth?: boolean;
 }
 
 interface DialogExState {
@@ -171,7 +172,7 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
     render() {
         let { tag,onClose, ...extra} = this.props;
         return (
-            <Dialog {...extra} onClose={(event,reason)=>{ this.myOnClose(event,reason);}}>
+            <Dialog fullWidth={this.props.fullWidth??false} maxWidth={this.props.fullWidth ? false: undefined} {...extra} onClose={(event,reason)=>{ this.myOnClose(event,reason);}}>
                 {this.props.children}
             </Dialog>
         );

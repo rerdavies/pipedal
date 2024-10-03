@@ -45,13 +45,25 @@ import PluginInfoDialog from './PluginInfoDialog';
 import { GetControlView } from './ControlViewFactory';
 import MidiBindingsDialog from './MidiBindingsDialog';
 import PluginPresetSelector from './PluginPresetSelector';
-import {ReactComponent as OldDeleteIcon} from "./svg/old_delete_outline_24dp.svg";
-import {ReactComponent as MidiIcon} from "./svg/ic_midi.svg";
-import {isDarkMode} from './DarkMode';
+import { ReactComponent as OldDeleteIcon } from "./svg/old_delete_outline_24dp.svg";
+import { ReactComponent as MidiIcon } from "./svg/ic_midi.svg";
+import { isDarkMode } from './DarkMode';
+import { ReactComponent as Snapshot0Icon } from "./svg/snapshot_0.svg";
+import { ReactComponent as Snapshot1Icon } from "./svg/snapshot_1.svg";
+import { ReactComponent as Snapshot2Icon } from "./svg/snapshot_2.svg";
+import { ReactComponent as Snapshot3Icon } from "./svg/snapshot_3.svg";
+import { ReactComponent as Snapshot4Icon } from "./svg/snapshot_4.svg";
+import { ReactComponent as Snapshot5Icon } from "./svg/snapshot_5.svg";
+import { ReactComponent as Snapshot6Icon } from "./svg/snapshot_6.svg";
 
-const SPLIT_CONTROLBAR_THRESHHOLD = 650;
+import SnapshotDialog from './SnapshotDialog';
 
+
+const SPLIT_CONTROLBAR_THRESHHOLD = 750;
+const DISPLAY_AUTHOR_THRESHHOLD = 750;
+const DISPLAY_AUTHOR_SPLIT_THRESHOLD = 500;
 const HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK = 500;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const HORIZONTAL_LAYOUT_MQ = "@media (max-height: " + HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK + "px)";
 
@@ -86,7 +98,7 @@ const styles = ({ palette }: Theme) => createStyles({
         flex: "0 0 162px", width: "100%", height: 162, overflowY: "hidden",
     },
     title: { fontSize: "1.1em", fontWeight: 700, marginRight: 8, textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.75 },
-    author: { fontWeight: 500, marginRight: 8, textOverflow: "ellipsis", whiteSpace: "nowrap",opacity: 0.75 }
+    author: { fontWeight: 500, marginRight: 8, textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.75 }
 });
 
 
@@ -94,14 +106,18 @@ const styles = ({ palette }: Theme) => createStyles({
 interface MainProps extends WithStyles<typeof styles> {
     hasTinyToolBar: boolean;
     theme: Theme;
+    enableStructureEditing: boolean;
 }
 
 interface MainState {
     selectedPedal: number;
+    selectedSnapshot: number;
     loadDialogOpen: boolean;
+    snapshotDialogOpen: boolean;
     pedalboard: Pedalboard;
     addMenuAnchorEl: HTMLElement | null;
     splitControlBar: boolean;
+    displayAuthor: boolean;
     horizontalScrollLayout: boolean;
     showMidiBindingsDialog: boolean;
     screenHeight: number;
@@ -111,10 +127,21 @@ interface MainState {
 
 export const MainPage =
     withStyles(styles, { withTheme: true })(
-        class extends ResizeResponsiveComponent<MainProps, MainState>
-        {
+        class extends ResizeResponsiveComponent<MainProps, MainState> {
             model: PiPedalModel;
 
+            getSplitToolbar() {
+                return this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD;
+            }
+            getDisplayAuthor()
+            {
+                if (this.getSplitToolbar())
+                {
+                    return this.windowSize.width >= DISPLAY_AUTHOR_SPLIT_THRESHOLD;
+                } else {
+                    return this.windowSize.width >=  DISPLAY_AUTHOR_THRESHHOLD;
+                }
+            }
             constructor(props: MainProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
@@ -123,13 +150,17 @@ export const MainPage =
 
                 this.state = {
                     selectedPedal: selectedPedal,
+                    selectedSnapshot: -1,
                     loadDialogOpen: false,
+                    snapshotDialogOpen: false,
                     pedalboard: pedalboard,
                     addMenuAnchorEl: null,
-                    splitControlBar: this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD,
+                    splitControlBar: this.getSplitToolbar(),
+                    displayAuthor: this.getDisplayAuthor(),
                     horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
                     showMidiBindingsDialog: false,
                     screenHeight: this.windowSize.height
+
 
                 };
                 this.onSelectionChanged = this.onSelectionChanged.bind(this);
@@ -138,6 +169,7 @@ export const MainPage =
                 this.onLoadOk = this.onLoadOk.bind(this);
                 this.onLoadCancel = this.onLoadCancel.bind(this);
                 this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
+                this.onSelectedSnapshotChanged = this.onSelectedSnapshotChanged.bind(this);
                 this.handleEnableCurrentItemChanged = this.handleEnableCurrentItemChanged.bind(this);
             }
 
@@ -204,8 +236,15 @@ export const MainPage =
                 }
                 this.setState({
                     pedalboard: value,
-                    selectedPedal: selectedItem
+                    selectedPedal: selectedItem,
+                    selectedSnapshot: value.selectedSnapshot
                 });
+            }
+            onSelectedSnapshotChanged(selectedSnapshot: number) {
+                this.setState({
+                    selectedSnapshot: selectedSnapshot
+                });
+
             }
             onDeletePedal(instanceId: number): void {
                 let result = this.model.deletePedalboardPedal(instanceId);
@@ -217,14 +256,17 @@ export const MainPage =
             componentDidMount() {
                 super.componentDidMount();
                 this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
+                this.model.selectedSnapshot.addOnChangedHandler(this.onSelectedSnapshotChanged);
             }
             componentWillUnmount() {
+                this.model.selectedSnapshot.removeOnChangedHandler(this.onSelectedSnapshotChanged);
                 this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
                 super.componentWillUnmount();
             }
             updateResponsive() {
                 this.setState({
-                    splitControlBar: this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD,
+                    splitControlBar: this.getSplitToolbar(),
+                    displayAuthor: this.getDisplayAuthor(),
                     horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
                     screenHeight: this.windowSize.height
                 });
@@ -267,9 +309,15 @@ export const MainPage =
                 let newSelectedItem = this.model.loadPedalboardPlugin(itemId, selectedUri);
                 this.setState({ selectedPedal: newSelectedItem });
             }
+            onSnapshotDialogOk(): void {
+                this.setState({ snapshotDialogOpen: false });
+            }
 
             onLoadClick(e: SyntheticEvent) {
                 this.setState({ loadDialogOpen: true });
+            }
+            onSnapshotClick() {
+                this.setState({ snapshotDialogOpen: true });
             }
 
             getPedalboardItem(selectedId?: number): PedalboardItem | null {
@@ -352,8 +400,8 @@ export const MainPage =
                             display: "flex", flexDirection: "row", height: 48, flexWrap: "nowrap",
                             alignItems: "center"
                         }}>
-                            <div style={{ flex: "0 1 auto",minWidth: 0 }}>
-                                <span style={{ color: isDarkMode()? "#F02020": "#800000" }}>
+                            <div style={{ flex: "0 1 auto", minWidth: 0 }}>
+                                <span style={{ color: isDarkMode() ? "#F02020" : "#800000" }}>
                                     <span className={classes.title}>{title}</span>
                                 </span>
                             </div>
@@ -363,13 +411,15 @@ export const MainPage =
                 } else {
                     return (
                         <div style={{
-                            flex: "1 1 auto", minWidth: 0,overflow: "hidden", marginRight: 8,
+                            flex: "1 1 auto", minWidth: 0, overflow: "hidden", marginRight: 8,
                             display: "flex", flexDirection: "row", height: 48, flexWrap: "nowrap",
                             alignItems: "center"
                         }}>
-                            <div style={{ flex: "0 1 auto", minWidth: 0,overflow: "hidden",textOverflow: "ellipsis" }}>
+                            <div style={{ flex: "0 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
                                 <span className={classes.title}>{title}</span>
-                                <span className={classes.author}>{author}</span>
+                                {this.state.displayAuthor&&(
+                                    <span className={classes.author}>{author}</span>
+                                )}
                             </div>
                             <div style={{ flex: "0 0 auto", verticalAlign: "center" }}>
                                 <PluginInfoDialog plugin_uri={pluginUri} />
@@ -383,6 +433,25 @@ export const MainPage =
                 }
             }
 
+            snapshotIcon(theme: Theme, snapshotNumber: number) {
+                switch (snapshotNumber + 1) {
+                    case 0:
+                    default:
+                        return (<Snapshot0Icon style={{ height: 24, width: 24, fill: theme.palette.text.primary, opacity: 0.6 }} />);
+                    case 1:
+                        return (<Snapshot1Icon style={{ height: 24, width: 24, fill: theme.palette.text.primary, opacity: 0.6 }} />);
+                    case 2:
+                        return (<Snapshot2Icon style={{ height: 24, width: 24, fill: theme.palette.text.primary, opacity: 0.6 }} />);
+                    case 3:
+                        return (<Snapshot3Icon style={{ height: 24, width: 24, fill: theme.palette.text.primary, opacity: 0.6 }} />);
+                    case 4:
+                        return (<Snapshot4Icon style={{ height: 24, width: 24, fill: theme.palette.text.primary, opacity: 0.6 }} />);
+                    case 5:
+                        return (<Snapshot5Icon style={{ height: 24, width: 24, fill: theme.palette.text.primary, opacity: 0.6 }} />);
+                    case 6:
+                        return (<Snapshot6Icon style={{ height: 24, width: 24, fill: theme.palette.text.primary, opacity: 0.6 }} />);
+                }
+            }
 
             render() {
                 let classes = this.props.classes;
@@ -438,6 +507,7 @@ export const MainPage =
                         <div id="pedalboardScroll" className={horizontalScrollLayout ? classes.pedalboardScrollSmall : classes.pedalboardScroll}
                             style={{ maxHeight: horizontalScrollLayout ? undefined : this.state.screenHeight / 2 }}>
                             <PedalboardView key={pluginUri} selectedId={this.state.selectedPedal}
+                                enableStructureEditing={this.props.enableStructureEditing}
                                 onSelectionChanged={this.onSelectionChanged}
                                 onDoubleClick={this.onPedalDoubleClick}
                                 hasTinyToolBar={this.props.hasTinyToolBar}
@@ -455,63 +525,75 @@ export const MainPage =
                                     </div>
                                 </div>
                                 {
-                                    (!this.state.splitControlBar) && this.titleBar(pedalboardItem)
+                                    (!this.state.splitControlBar || !this.props.enableStructureEditing) && this.titleBar(pedalboardItem)
                                 }
                                 <div style={{ flex: "1 1 1px" }}>
 
                                 </div>
-                                <div style={{ flex: "0 0 auto", display: (canInsert || canAppend) ? "block" : "none", paddingRight: 8 }}>
-                                    <IconButton onClick={(e) => { this.onAddClick(e) }} size="large">
-                                        <AddIcon style={{height: 24, width: 24,fill: this.props.theme.palette.text.primary, opacity: 0.6}} />
-                                    </IconButton>
-                                    <Menu
-                                        id="add-menu"
-                                        anchorEl={this.state.addMenuAnchorEl}
-                                        keepMounted
-                                        open={Boolean(this.state.addMenuAnchorEl)}
-                                        onClose={() => this.handleAddClose()}
-                                        TransitionComponent={Fade}
-                                    >
-                                        {canInsert && (<MenuItem onClick={() => this.onInsertPedal(instanceId)}>Insert pedal</MenuItem>)}
-                                        {canAppend && (<MenuItem onClick={() => this.onAppendPedal(instanceId)}>Append pedal</MenuItem>)}
-                                        <Divider />
-                                        {canInsert && (<MenuItem onClick={() => this.onInsertSplit(instanceId)}>Insert split</MenuItem>)}
-                                        {canAppend && (<MenuItem onClick={() => this.onAppendSplit(instanceId)}>Append split</MenuItem>)}
-                                    </Menu>
-                                </div>
-                                <div style={{ flex: "0 0 auto", display: canDelete ? "block" : "none", paddingRight: 8 }}>
-                                    <IconButton
-                                        onClick={() => { this.onDeletePedal(pedalboardItem?.instanceId ?? -1) }}
-                                        size="large">
-                                        <OldDeleteIcon style={{height: 24, width: 24,fill: this.props.theme.palette.text.primary, opacity: 0.6}} />
-                                    </IconButton>
-                                </div>
-                                <div style={{ flex: "0 0 auto" }}>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        size="small"
-                                        onClick={this.onLoadClick}
-                                        disabled={this.state.selectedPedal === -1 || (!canLoad) || (this.getSelectedPedalboardItem()?.isSplit() ?? true)}
-                                        startIcon={<InputIcon />}
-                                        style={{ textTransform: "none", 
-                                            background: (isDarkMode() ? "#6750A4": undefined) }}
-                                    >
-                                        Load
-                                    </Button>
-                                </div>
-                                <div style={{ flex: "0 0 auto" }}>
-                                    <IconButton
-                                        onClick={(e) => { this.handleMidiConfiguration(instanceId); }}
-                                        size="large">
-                                        <MidiIcon style={{height: 24, width: 24,fill: this.props.theme.palette.text.primary, opacity: 0.6}} />
-                                    </IconButton>
-
-                                </div>
+                                {this.props.enableStructureEditing && (
+                                    <div style={{ flex: "0 0 auto", display: "flex", flexFlow: "row nowrap",alignItems: "center" }}>
+                                        <div style={{ flex: "0 0 auto", display: (canInsert || canAppend) ? "block" : "none", paddingRight: 8 }}>
+                                            <IconButton onClick={(e) => { this.onAddClick(e) }} size="large">
+                                                <AddIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
+                                            </IconButton>
+                                            <Menu
+                                                id="add-menu"
+                                                anchorEl={this.state.addMenuAnchorEl}
+                                                keepMounted
+                                                open={Boolean(this.state.addMenuAnchorEl)}
+                                                onClose={() => this.handleAddClose()}
+                                                TransitionComponent={Fade}
+                                            >
+                                                {canInsert && (<MenuItem onClick={() => this.onInsertPedal(instanceId)}>Insert pedal</MenuItem>)}
+                                                {canAppend && (<MenuItem onClick={() => this.onAppendPedal(instanceId)}>Append pedal</MenuItem>)}
+                                                <Divider />
+                                                {canInsert && (<MenuItem onClick={() => this.onInsertSplit(instanceId)}>Insert split</MenuItem>)}
+                                                {canAppend && (<MenuItem onClick={() => this.onAppendSplit(instanceId)}>Append split</MenuItem>)}
+                                            </Menu>
+                                        </div>
+                                        <div style={{ flex: "0 0 auto", display: canDelete ? "block" : "none", paddingRight: 8 }}>
+                                            <IconButton
+                                                onClick={() => { this.onDeletePedal(pedalboardItem?.instanceId ?? -1) }}
+                                                size="large">
+                                                <OldDeleteIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
+                                            </IconButton>
+                                        </div>
+                                        <div style={{ flex: "0 0 auto" }}>
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                size="small"
+                                                onClick={this.onLoadClick}
+                                                disabled={this.state.selectedPedal === -1 || (!canLoad) || (this.getSelectedPedalboardItem()?.isSplit() ?? true)}
+                                                startIcon={<InputIcon />}
+                                                style={{
+                                                    textTransform: "none",
+                                                    background: (isDarkMode() ? "#6750A4" : undefined)
+                                                }}
+                                            >
+                                                Load
+                                            </Button>
+                                        </div>
+                                        <div style={{ flex: "0 0 auto" }}>
+                                            <IconButton
+                                                onClick={(e) => { this.handleMidiConfiguration(instanceId); }}
+                                                size="large">
+                                                <MidiIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
+                                            </IconButton>
+                                        </div>
+                                        <div style={{ flex: "0 0 auto" }}>
+                                            <IconButton
+                                                onClick={(e) => { this.setState({ snapshotDialogOpen: true }); }}
+                                                size="large">
+                                                {this.snapshotIcon(this.props.theme, this.state.selectedSnapshot)}
+                                            </IconButton>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         {
-                            this.state.splitControlBar && (
+                            this.state.splitControlBar && this.props.enableStructureEditing && (
                                 <div className={classes.splitControlBar}>
                                     {
                                         this.titleBar(pedalboardItem)
@@ -544,6 +626,9 @@ export const MainPage =
 
                             )
                         }
+                        {(this.state.snapshotDialogOpen) && (
+                            <SnapshotDialog open={this.state.snapshotDialogOpen} onOk={() => this.onSnapshotDialogOk()} />
+                        )}
                     </div>
                 );
             }

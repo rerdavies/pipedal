@@ -17,49 +17,39 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "TemporaryFile.hpp"
-#include <fstream>
+#pragma once
 
-using namespace pipedal;
+#include <string>
+
+namespace pipedal {
+    class PiPedalModel;
+
+    class PresetBundleWriter {
+    public:
+        using self = PresetBundleWriter;
+        using ptr = std::unique_ptr<self>;
+
+        virtual ~PresetBundleWriter() noexcept = 0;
+
+        virtual void WriteToFile(const std::filesystem::path&filePath) = 0;
 
 
-TemporaryFile::TemporaryFile(const std::filesystem::path&directory)
-{
-    namespace fs = std::filesystem;
-    fs::create_directories(directory);
+        static ptr CreatePresetsFile(PiPedalModel&model,const std::string&presetJson);
+        static ptr CreatePluginPresetsFile(PiPedalModel&model,const std::string&presetJson);
+    };
 
-    // Generate a unique filename
-    std::string filename;
-    do {
-        std::string random_string(8, '\0');
-        const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-        
-        srand(static_cast<unsigned int>(time(nullptr)));
-        for (int i = 0; i < 8; ++i) {
-            random_string[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
-        }
-        
-        filename = directory / ("temp_" + random_string + ".tmp");
-    } while (fs::exists(filename));
+    class PresetBundleReader {
+    public:
+        using self = PresetBundleReader;
+        using ptr = std::unique_ptr<self>;
 
-    // Create the file
-    std::ofstream file(filename);
-    if (!file) {
-        throw std::runtime_error("Failed to create temporary file");
-    }
-    file.close();
+        virtual ~PresetBundleReader() noexcept = 0;
 
-    this->path = filename;
+        virtual void ExtractMediaFiles() = 0;
+        virtual std::string GetPresetJson() = 0;
+        virtual std::string GetPluginPresetsJson() = 0;
+        static ptr LoadPresetsFile(PiPedalModel&model,const std::filesystem::path &path);
+        static ptr LoadPluginPresetsFile(PiPedalModel&model,const std::filesystem::path &path);
+    };
 
 }
-void TemporaryFile::Detach() {
-    this->path.clear();
-}
-TemporaryFile::~TemporaryFile()
-{
-    if (!path.empty())
-    {
-        std::filesystem::remove(path);
-    }
-}
-

@@ -526,6 +526,7 @@ const PluginControlView =
                 return false;
             }
 
+            controlKeyIndex : number = 0;
             controlNodesToNodes(nodes: (ReactNode | ControlGroup)[]): ReactNode[] {
                 let classes = this.props.classes;
                 let isLandscapeGrid = this.state.landscapeGrid;
@@ -542,7 +543,7 @@ const PluginControlView =
                             let item = controlGroup.controls[j];
                             controls.push(
                                 (
-                                    <div className={classes.controlPadding}>
+                                    <div key={"ctl"+(this.controlKeyIndex++)} className={classes.controlPadding}>
                                         {item}
                                     </div>
 
@@ -551,7 +552,7 @@ const PluginControlView =
                         }
 
                         result.push((
-                            <div className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
+                            <div key={"ctl"+(this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
                                 <div className={classes.portGroupTitle}>
                                     <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
                                 </div>
@@ -565,7 +566,7 @@ const PluginControlView =
 
                     } else {
                         result.push((
-                            <div className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
+                            <div key={"ctl"+(this.controlKeyIndex++)} className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
                                 {node as ReactNode}
                             </div>
                         ));
@@ -583,6 +584,7 @@ const PluginControlView =
 
 
             render(): ReactNode {
+                this.controlKeyIndex = 0; 
                 let classes = this.props.classes;
                 let pedalboardItem: PedalboardItem;
                 let pedalboard = this.model.pedalboard.get();

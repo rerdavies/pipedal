@@ -5,3 +5,4 @@
 	path = modules/websocketpp
 	url = https://github.com/rerdavies/websocketpp.git
 	branch = develop
+	update = merge

@@ -586,7 +586,11 @@ namespace pipedal
         template <typename T>
         void write(const std::shared_ptr<T> &obj)
         {
-            write(obj.get());
+            if (!obj) {
+                write_raw("null");
+            } else {
+                write(obj.get());
+            }
         }
         template <typename T>
         void write(const std::weak_ptr<T> &obj)
@@ -865,10 +869,18 @@ namespace pipedal
         template <typename T>
         void read(std::shared_ptr<T> *pUniquePtr)
         {
-            std::shared_ptr<T> p = std::make_shared<T>();
+            if (peek() == 'n')
+            {
+                consumeToken("null", "Expecting '{' or 'null'.");
+                *pUniquePtr = nullptr;
 
-            read(p.get());
-            (*pUniquePtr) = std::move(p);
+            } else 
+            {
+                std::shared_ptr<T> p = std::make_shared<T>();
+
+                read(p.get());
+                (*pUniquePtr) = std::move(p);
+            }
         }
         template <typename T>
         void read(std::weak_ptr<T> *pUniquePtr)

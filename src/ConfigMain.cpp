@@ -691,6 +691,10 @@ void SetVarPermissions(
     {
         if (fs::exists(path))
         {
+            if (fs::is_symlink(path))
+            {
+                return;
+            }
             std::ignore = chown(path.c_str(), uid, gid);
             if (fs::is_directory(path))
             {

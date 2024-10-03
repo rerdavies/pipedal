@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2023 Robin E. R. Davies
+ * Copyright (c) 2023-2024 Robin E. R. Davies
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -29,6 +29,7 @@
 #include "json.hpp"
 #include "ss.hpp"
 #include "lv2/atom/util.h"
+#include "ss.hpp"
 
 using namespace pipedal;
 
@@ -69,6 +70,76 @@ json_variant AtomConverter::ToJson(const LV2_Atom *atom)
     json_variant variant = ToVariant(const_cast<LV2_Atom*>(atom));
     return std::move(variant);
 }
+
+LV2_Atom*AtomConverter::ToAtom(const std::string&jsonString)
+{
+    json_variant jvValue;
+    std::istringstream ss(jsonString);
+    json_reader reader(ss);
+    reader.read(&jvValue);
+    return ToAtom(jvValue);
+}
+
+std::string AtomConverter::ToString(const LV2_Atom*atom)
+{
+    json_variant v = ToJson(atom);
+    std::ostringstream ss;
+    json_writer writer(ss);
+    writer.write(v);
+    return ss.str();
+}
+json_variant AtomConverter::MapPath(const json_variant&json, const std::string &pluginStoragePath)
+{
+    std::string oType = json[OTYPE_TAG].as_string();
+    if (oType == SHORT_ATOM__Path)
+    {
+        std::string path = json["value"].as_string().c_str();
+        if (path.length() == 0 || path[0] == '/')
+        {
+            return json;
+        }
+        std::string newPath = SS(pluginStoragePath << "/" << path);
+        json_variant result = json_variant::make_object();
+        result[OTYPE_TAG] = json_variant(SHORT_ATOM__Path);
+        result["value"] = newPath;
+
+        return result;
+    }
+    else {
+        return json;
+    }
+}
+json_variant AtomConverter::AbstractPath(const json_variant&json, const std::string &pluginStoragePath)
+{
+    std::string oType = json[OTYPE_TAG].as_string();
+    if (oType == SHORT_ATOM__Path)
+    {
+        std::string path = json["value"].as_string().c_str();
+        if (path.length() == 0)
+        {
+            return json;
+        }
+        if (path.starts_with(pluginStoragePath))
+        {
+            auto pos = pluginStoragePath.length();
+            if (pos < path.length() && path[pos] == '/')
+            {
+                ++pos;
+            }
+            path = path.substr(pos);
+        }
+        json_variant result = json_variant::make_object();
+        result[OTYPE_TAG] = json_variant(SHORT_ATOM__Path);
+        result["value"] = path;
+        return result;
+    }
+    else {
+        return json;
+    }
+
+}
+
+
 LV2_Atom*AtomConverter::ToAtom(const json_variant&json)
 {
     if (outputBuffer.size() == 0)
@@ -516,6 +587,29 @@ std::string AtomConverter::TypeUridToString(LV2_URID urid)
     }
     return map.UridToString(urid);
 }
+
+static bool gEmptyPathInitialized = false;
+static std::mutex gInitMutex;
+std::string gEmptyPathstring;
+
+std::string AtomConverter::EmptyPathstring()
+{
+    std::lock_guard lock{gInitMutex};
+
+    if (!gEmptyPathInitialized)
+    {
+        json_variant v = TypedProperty(SHORT_ATOM__Path,std::string("",0));
+        std::ostringstream ss;
+        json_writer writer(ss);
+        writer.write(v);
+
+        gEmptyPathstring = ss.str();
+
+    }
+    return gEmptyPathstring;
+
+}
+
 
 void AtomConverter::InitUrids()
 {

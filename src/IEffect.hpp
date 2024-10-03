@@ -32,8 +32,19 @@ namespace pipedal {
     public:
         virtual ~IEffect() {}
         virtual uint64_t GetInstanceId() const = 0;
+        virtual bool IsLv2Effect() const = 0;
+        virtual uint64_t GetMaxInputControl() const = 0;
+        virtual bool IsInputControl(uint64_t index) const = 0;
+        virtual float GetDefaultInputControlValue(uint64_t index) const = 0;
+
         virtual int GetControlIndex(const std::string&symbol) const = 0;
         virtual void SetControl(int index, float value)  = 0;
+
+        virtual void SetPatchProperty(LV2_URID uridUri, size_t size, LV2_Atom *value) = 0;
+        virtual void RequestPatchProperty(LV2_URID uridUri) = 0;
+        virtual void RequestAllPathPatchProperties() = 0;
+
+
         virtual float GetControlValue(int index) const = 0;
         virtual void SetBypass(bool enable)  = 0;
         virtual float GetOutputControlValue(int controlIndex) const = 0;
@@ -47,9 +58,6 @@ namespace pipedal {
         virtual bool GetRequestStateChangedNotification() const = 0;
         virtual void SetRequestStateChangedNotification(bool value) = 0;
 
-        //virtual std::string AtomToJson(uint8_t*pAtom) = 0;
-        //virtual std::string GetAtomObjectType(uint8_t*pData) = 0;
-
 
         virtual void SetAudioInputBuffer(int index, float *buffer) = 0;
         virtual void SetAudioOutputBuffer(int index, float*buffer) = 0;
@@ -62,6 +70,7 @@ namespace pipedal {
 
         virtual bool IsVst3() const = 0;
         virtual bool GetLv2State(Lv2PluginState*state) = 0;
+        virtual void SetLv2State(Lv2PluginState&state) = 0;
         
         virtual bool HasErrorMessage() const = 0;
         virtual const char*TakeErrorMessage()  = 0;

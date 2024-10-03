@@ -50,7 +50,7 @@ Lv2Effect::Lv2Effect(
     IHost *pHost_,
     const std::shared_ptr<Lv2PluginInfo> &info_,
     PedalboardItem &pedalboardItem)
-    : pHost(pHost_), pInstance(nullptr), info(info_), urids(pHost)
+    : pHost(pHost_), pInstance(nullptr), info(info_), urids(pHost), instanceId(pedalboardItem.instanceId())
 {
     auto pWorld = pHost_->getWorld();
 
@@ -59,6 +59,23 @@ Lv2Effect::Lv2Effect(
     this->bypassStartingSamples = (uint32_t)(pHost->GetSampleRate() * BYPASS_TIME_S);
 
     this->bypass = pedalboardItem.isEnabled();
+
+    // stash a list of known file properties that we want to keep synced.
+    if (info->piPedalUI())
+    {
+        for (auto fileProperty : info->piPedalUI()->fileProperties())
+        {
+            LV2_URID filePropertyUrid = pHost->GetLv2Urid(fileProperty->patchProperty().c_str());
+            this->pathProperties.push_back(filePropertyUrid);
+
+            this->pathPropertyWriters.push_back(PatchPropertyWriter(instanceId, filePropertyUrid));
+            std::vector<PatchPropertyWriter> pathPropertyWriters;
+        }
+    }
+    for (auto &pathProperty: pedalboardItem.pathProperties_)
+    {
+        SetPathPatchProperty(pathProperty.first,pathProperty.second);
+    }
 
     // initialize the atom forge used on the realtime thread.
     LV2_URID_Map *map = this->pHost->GetLv2UridMap();
@@ -146,9 +163,28 @@ Lv2Effect::Lv2Effect(
 
     this->instanceId = pedalboardItem.instanceId();
 
-    this->controlValues.resize(info->ports().size());
+    PreparePortIndices();
 
     // Copy default pedalboard settings.
+    size_t maxPortIndex = 0;
+    std::vector<std::shared_ptr<Lv2PortInfo>> &t = info->ports();
+    for (std::shared_ptr<Lv2PortInfo> &port : info->ports())
+    {
+        if (port->is_control_port())
+        {
+            auto index = port->index();
+            if (index + 1 > maxPortIndex)
+            {
+                maxPortIndex = index + 1;
+            }
+        }
+    }
+    if (maxPortIndex > info->ports().size())
+    {
+        throw std::runtime_error("Ports are not consecutive");
+    }
+
+    this->controlValues.resize(info->ports().size());
     for (auto i = pedalboardItem.controlValues().begin(); i != pedalboardItem.controlValues().end(); ++i)
     {
         auto &v = (*i);
@@ -158,7 +194,7 @@ Lv2Effect::Lv2Effect(
             this->controlValues[index] = v.value();
         }
     }
-    PreparePortIndices();
+
     ConnectControlPorts();
 
     if (!pedalboardItem.lilvPresetUri().empty())
@@ -194,7 +230,9 @@ void Lv2Effect::RestoreState(PedalboardItem &pedalboardItem)
             if (pedalboardItem.lv2State().isValid_)
             {
                 this->stateInterface->Restore(pedalboardItem.lv2State());
-            } else {
+            }
+            else
+            {
                 // set the state to default state.
                 auto savedState = this->stateInterface->Save();
                 pedalboardItem.lv2State(savedState);
@@ -234,6 +272,9 @@ void Lv2Effect::ConnectControlPorts()
 }
 void Lv2Effect::PreparePortIndices()
 {
+    size_t nPorts = info->ports().size();
+    isInputControlPort.resize(nPorts);
+    this->defaultInputControlValues.resize(nPorts);
 
     for (int i = 0; i < info->ports().size(); ++i)
     {
@@ -270,7 +311,23 @@ void Lv2Effect::PreparePortIndices()
                 }
             }
         }
+        else if (port->is_control_port())
+        {
+            controlIndex[port->symbol()] = port->index();
+            if (port->is_input())
+            {
+                this->isInputControlPort[i] = true;
+                this->defaultInputControlValues[i] = port->default_value();
+            }
+        }
     }
+    size_t maxInputControlPort = isInputControlPort.size();
+    while (maxInputControlPort != 0 && !isInputControlPort[maxInputControlPort - 1])
+    {
+        --maxInputControlPort;
+    }
+    this->maxInputControlPort = maxInputControlPort;
+
     inputAudioBuffers.resize(inputAudioPortIndices.size());
     outputAudioBuffers.resize(outputAudioPortIndices.size());
     inputAtomBuffers.resize(inputAtomPortIndices.size());
@@ -323,13 +380,12 @@ void Lv2Effect::SetAudioOutputBuffer(int index, float *buffer)
 
 int Lv2Effect::GetControlIndex(const std::string &key) const
 {
-    for (int i = 0; i < info->ports().size(); ++i)
+    auto i = controlIndex.find(key);
+    if (i == controlIndex.end())
     {
-        auto &port = info->ports()[i];
-        if (port->symbol() == key)
-            return port->index();
+        return -1;
     }
-    return -1;
+    return i->second;
 }
 
 Lv2Effect::~Lv2Effect()
@@ -437,7 +493,6 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
         // relay worker response
         worker->EmitResponses();
     }
-
 
     // do soft bypass.
     if (this->bypassSamplesRemaining == 0)
@@ -610,6 +665,14 @@ void Lv2Effect::RequestPatchProperty(LV2_URID uridUri)
     lv2_atom_forge_urid(&inputForgeRt, uridUri);
     lv2_atom_forge_pop(&inputForgeRt, &objectFrame);
 }
+void Lv2Effect::RequestAllPathPatchProperties()
+{
+    for (LV2_URID urid : this->pathProperties)
+    {
+        RequestPatchProperty(urid);
+    }
+}
+
 void Lv2Effect::SetPatchProperty(LV2_URID uridUri, size_t size, LV2_Atom *value)
 {
     lv2_atom_forge_frame_time(&inputForgeRt, 0);
@@ -660,9 +723,65 @@ void Lv2Effect::RelayPatchSetMessages(uint64_t instanceId, RealtimeRingBufferWri
     {
         requestStateChangedNotification = false;
         realtimeRingBufferWriter->Lv2StateChanged(instanceId);
-    } else if (maybeStateChanged)
+    }
+    else if (maybeStateChanged)
     {
         realtimeRingBufferWriter->MaybeLv2StateChanged(instanceId);
+    }
+}
+
+void Lv2Effect::GatherPathPatchProperties(IPatchWriterCallback *cbPatchWriter)
+{
+    if (pathPropertyWriters.size() != 0)
+    {
+        LV2_Atom_Sequence *controlInput = (LV2_Atom_Sequence *)GetAtomOutputBuffer();
+        if (controlInput == nullptr)
+        {
+            return;
+        }
+        LV2_ATOM_SEQUENCE_FOREACH(controlInput, ev)
+        {
+
+            auto frame_offset = ev->time.frames; // not really interested.
+
+            if (lv2_atom_forge_is_object_type(&this->outputForgeRt, ev->body.type))
+            {
+                const LV2_Atom_Object *obj = (const LV2_Atom_Object *)&ev->body;
+                if (obj->body.otype == urids.patch__Set)
+                {
+                    // Get the property and value of the set message
+                    const LV2_Atom *property = NULL;
+                    const LV2_Atom *value = NULL;
+
+                    lv2_atom_object_get(
+                        obj,
+                        urids.patch__property, &property,
+                        urids.patch__value, &value,
+                        0);
+
+                    if (property && property->type == urids.atom__URID && value)
+                    {
+                        LV2_URID key = ((const LV2_Atom_URID *)property)->body;
+
+                        for (PatchPropertyWriter &pathPropertyWriter : pathPropertyWriters)
+                        {
+                            if (key == pathPropertyWriter.patchPropertyUrid)
+                            {
+                                auto buffer = pathPropertyWriter.AquireWriteBuffer();
+                                size_t atom_size = value->size + sizeof(LV2_Atom);
+                                buffer->memory.resize(atom_size);
+                                memcpy(buffer->memory.data(), value, atom_size);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (auto &writer : this->pathPropertyWriters)
+        {
+            writer.FlushWrites(cbPatchWriter);
+        }
     }
 }
 
@@ -711,6 +830,27 @@ void Lv2Effect::GatherPatchProperties(RealtimePatchPropertyRequest *pRequest)
         }
     }
 }
+
+void Lv2Effect::SetLv2State(Lv2PluginState &state)
+{
+    if (state.isValid_)
+    {
+        return;
+    }
+    if (!this->stateInterface)
+    {
+        return;
+    }
+    try
+    {
+
+        this->stateInterface->Restore(state);
+    }
+    catch (const std::exception &e)
+    {
+        Lv2Log::error("Failed to restore LV2 state.");
+    }
+}
 bool Lv2Effect::GetLv2State(Lv2PluginState *state)
 {
     if (!this->stateInterface)
@@ -755,5 +895,31 @@ void Lv2Effect::OnLogDebug(const char *message)
     Lv2Log::debug(message);
 }
 
-bool Lv2Effect::GetRequestStateChangedNotification() const{ return requestStateChangedNotification; }
+bool Lv2Effect::GetRequestStateChangedNotification() const { return requestStateChangedNotification; }
 void Lv2Effect::SetRequestStateChangedNotification(bool value) { requestStateChangedNotification = value; }
+
+uint64_t Lv2Effect::GetMaxInputControl() const { return maxInputControlPort; }
+
+bool Lv2Effect::IsInputControl(uint64_t index) const
+{
+    if (index < 0 || index >= isInputControlPort.size())
+        return false;
+    return isInputControlPort[index];
+}
+float Lv2Effect::GetDefaultInputControlValue(uint64_t index) const
+{
+    return defaultInputControlValues[index];
+}
+
+std::string Lv2Effect::GetPathPatchProperty(const std::string &propertyUri)
+{
+    if (!this->mainThreadPathProperties.contains(propertyUri))
+    {
+        return "";
+    }
+    return this->mainThreadPathProperties[propertyUri];
+}
+void Lv2Effect::SetPathPatchProperty(const std::string &propertyUri, const std::string &jsonAtom)
+{
+    mainThreadPathProperties[propertyUri] = jsonAtom;
+}

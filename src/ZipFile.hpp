@@ -28,6 +28,12 @@
 
 namespace pipedal {
 
+    class ZipFileFileReader {
+    public:
+    private:
+        zip_file_t*file = nullptr;
+    };
+    
     class zip_file_input_stream_buf : public std::streambuf {
     private:
         zip_file_t* file;
@@ -51,21 +57,44 @@ namespace pipedal {
 
         }
     };
-    class ZipFile {
+    class ZipFileReader {
     protected:
-        ZipFile();
+        ZipFileReader();
 
     public:
-        using ptr = std::shared_ptr<ZipFile>;
+        using ptr = std::shared_ptr<ZipFileReader>;
         static ptr Create(const std::filesystem::path &path);
-        ZipFile(const ZipFile&) = delete;
-        ZipFile&operator=(const ZipFile&) = delete;
-        virtual ~ZipFile();
+        ZipFileReader(const ZipFileReader&) = delete;
+        ZipFileReader&operator=(const ZipFileReader&) = delete;
+        virtual ~ZipFileReader();
 
         virtual std::vector<std::string> GetFiles() = 0;
         virtual void ExtractTo(const std::string &zipName, const std::filesystem::path& path) = 0;
+        virtual bool CompareFiles(const std::string &zipName, const std::filesystem::path& path) = 0;
         virtual zip_file_input_stream GetFileInputStream(const std::string& filename,size_t bufferSize = 16*1024) = 0;
         virtual size_t GetFileSize(const std::string&filename) = 0;
 
+    };
+
+    class ZipFileWriter;
+
+    
+    class ZipFileWriter {
+    protected:
+        ZipFileWriter();
+
+    public:
+        using self = ZipFileWriter();
+        using ptr = std::shared_ptr<ZipFileWriter>;
+        static ptr Create(const std::filesystem::path &path);
+
+        ZipFileWriter(const ZipFileReader&) = delete;
+        ZipFileWriter&operator=(const ZipFileWriter&) = delete;
+        virtual ~ZipFileWriter();
+
+        virtual void Close() = 0;
+
+        virtual void WriteFile(const std::string &filename, const std::filesystem::path&path) =  0;
+        virtual void WriteFile(const std::string&filename, const void*buffer, size_t length) = 0;
     };
 }

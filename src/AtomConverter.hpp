@@ -31,6 +31,7 @@
 #include "lv2/atom/forge.h"
 #include "json_variant.hpp"
 #include "atom_object.hpp"
+#include "json_variant.hpp"
 
 namespace pipedal
 {
@@ -139,11 +140,25 @@ namespace pipedal
 
         /// @brief Convert a json variant to an atom.
         /// @param json Json variant that matches the structure of the prototype.
-        /// @return An atom.
-        /// @remarks
-        /// The json variant must match the structure of the LV2_Atom prototype supplied to 
-        /// the constructor. 
+        /// @return An atom. Not valid beyond the lifetime of the AtomConverter. Memory is owned by the AtomConverter.
         LV2_Atom*ToAtom(const json_variant& json);
+
+
+        /// @brief Convert a json string to an atom.
+        /// @param json Json string that matches the structure of the prototype.
+        /// @return An atom. Not valid beyond the lifetime of the AtomConverter. Memory is owned by the AtomConverter.
+        /// @remarks
+
+        LV2_Atom*ToAtom(const std::string &jsonString);
+
+        std::string ToString(const LV2_Atom*atom);
+
+        json_variant MapPath(const json_variant&json, const std::string &pluginStoragePath);
+        json_variant AbstractPath(const json_variant&json, const std::string &pluginStoragePath);
+
+
+        static std::string EmptyPathstring();
+
     private:
         static const std::string OTYPE_TAG;
         static const std::string VTYPE_TAG;
@@ -160,14 +175,14 @@ namespace pipedal
         LV2_URID InitUrid(const char*uri, const char*shortUri);
 
         template <typename U>
-        json_variant TypedProperty(const std::string type,U value)
+        static json_variant TypedProperty(const std::string type,U value)
         {
             json_variant result = json_variant::make_object();
             result[OTYPE_TAG] = type;
             result["value"] = json_variant(value);
             return result;
         }
-        json_variant TypedProperty(const std::string type,const json_variant&& value)
+        static json_variant TypedProperty(const std::string type,const json_variant&& value)
         {
             json_variant result = json_variant::make_object();
             result[OTYPE_TAG] = type;

@@ -93,7 +93,7 @@ const theme = createTheme(
                 },
                 secondary: {
                     main: "#FF6060"
-                },
+                }
             },
             mainBackground: "#222",
             toolbarColor: '#222'

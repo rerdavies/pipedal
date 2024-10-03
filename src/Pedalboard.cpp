@@ -19,6 +19,7 @@
 
 #include "pch.h"
 #include "Pedalboard.hpp"
+#include "AtomConverter.hpp"
 
 
 using namespace pipedal;
@@ -177,9 +178,200 @@ bool IsPedalboardSplitItem(const PedalboardItem*self, const std::vector<Pedalboa
     return self->uri() == SPLIT_PEDALBOARD_ITEM_URI;
 }
 
+bool Pedalboard::ApplySnapshot(int64_t snapshotIndex)
+{
+    if (snapshotIndex < 0 || 
+        snapshotIndex >= this->snapshots_.size() || 
+        this->snapshots_[snapshotIndex] == nullptr ||
+        this->selectedSnapshot() == snapshotIndex)
+    {
+        return false;
+    }
+    std::map<int64_t, SnapshotValue*> indexedValues;
+    Snapshot *snapshot = this->snapshots_[snapshotIndex].get();
+
+    for (auto &value: snapshot->values_)
+    {
+        indexedValues[value.instanceId_] = &value;
+    }
+
+    auto plugins = this->GetAllPlugins();
+    for (PedalboardItem *pedalboardItem: plugins)
+    {
+        SnapshotValue*snapshotValue = indexedValues[pedalboardItem->instanceId()];
+        if (snapshotValue)
+        {
+            pedalboardItem->ApplySnapshotValue(snapshotValue);
+        }
+    }
+    return true;
+}
+
+void PedalboardItem::ApplySnapshotValue(SnapshotValue*snapshotValue)
+{
+    std::map<std::string,float> cumulativeValues;
+    for (auto &controlValue: this->controlValues())
+    {
+        cumulativeValues[controlValue.key()] = controlValue.value();
+    }
+    for (auto&controlValue : snapshotValue->controlValues_)
+    {
+        cumulativeValues[controlValue.key()] = controlValue.value();
+    }
+    this->controlValues().clear();
+    for (auto&pair: cumulativeValues)
+    {
+        this->controlValues_.push_back(ControlValue(pair.first.c_str(),pair.second));
+    }
+    if (this->lv2State() != snapshotValue->lv2State_)
+    {
+        this->lv2State(snapshotValue->lv2State_);
+        this->stateUpdateCount(this->stateUpdateCount()+1);
+    }
+
+}
 
 
+// can we just send a snapshot-style uddate instead of reloading plugins? All settings are ignored.
+bool Pedalboard::IsStructureIdentical(const Pedalboard &other) const
+{
+    if (this->nextInstanceId_ != other.nextInstanceId_) // quick check that catches 95% of structural changes.
+    {
+        return false;
+    }
+    if (this->items_.size() != other.items_.size()) 
+    {
+        return false;
+    }
+    for (size_t i = 0; i < this->items_.size();++i) 
+    {
+        if (!this->items_[i].IsStructurallyIdentical(other.items_[i]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
 
+bool PedalboardItem::IsStructurallyIdentical(const PedalboardItem&other) const
+{
+    if (this->instanceId() != other.instanceId()) // must match in order to ensure that realtime message passing works.
+    {
+        return false;
+    }
+    if (this->uri() != other.uri())
+    {
+        return false;
+    }
+    if (this->isSplit()) // so is the other by virtue of idential uris.
+    {
+        if (topChain().size() != other.topChain().size())
+        {
+            return false;
+        }
+        for (size_t i = 0; i < topChain().size(); ++i)
+        {
+            if (!topChain()[i].IsStructurallyIdentical(other.topChain()[i] ))
+            {
+                return false;
+            }
+        }
+        if (bottomChain().size() != other.bottomChain().size())
+        {
+            for (size_t i = 0; i < bottomChain().size(); ++i)
+            {
+                if (!bottomChain()[i].IsStructurallyIdentical(other.bottomChain()[i]))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+void PedalboardItem::AddToSnapshotFromCurrentSettings(Snapshot&snapshot) const
+{
+    SnapshotValue snapshotValue;
+    snapshotValue.instanceId_ = this->instanceId_;
+
+    for (const ControlValue &value: this->controlValues_)
+    {
+        snapshotValue.controlValues_.push_back(value);
+    }
+    for (const auto&pathProperty: this->pathProperties_)
+    {
+        snapshotValue.pathProperties_[pathProperty.first] = pathProperty.second;
+    }
+    snapshotValue.lv2State_ = this->lv2State_;
+    snapshot.values_.push_back(std::move(snapshotValue));
+
+    if (this->isSplit())
+    {
+        for (auto&item: this->topChain_)
+        {
+            item.AddToSnapshotFromCurrentSettings(snapshot);;
+        }
+        for (auto&item: this->bottomChain_)
+        {
+            item.AddToSnapshotFromCurrentSettings(snapshot);
+        }
+    }
+}
+
+void PedalboardItem::AddResetsForMissingProperties(Snapshot&snapshot, size_t*index) const
+{
+    // structure must be identical
+    // items must be enumerated in the same order as AddToSnapshotFromCurrentSettings
+    SnapshotValue&snapshotValue = snapshot.values_[*index];
+    
+    if (snapshotValue.instanceId_ != this->instanceId())
+    {
+        throw std::runtime_error("Pedalboard structure does not match.");
+    }
+
+    for (auto&property: this->pathProperties_)
+    {
+        auto f = snapshotValue.pathProperties_.find(property.first);
+        if (f == snapshotValue.pathProperties_.end())
+        {
+            snapshotValue.pathProperties_[property.first] = AtomConverter::EmptyPathstring();
+        }
+    }   
+    ++(*index);
+
+    if (this->isSplit())
+    {
+        for (auto&item: this->topChain())
+        {
+            item.AddResetsForMissingProperties(snapshot,index);
+        }
+        for (auto&item: this->bottomChain())
+        {
+            item.AddResetsForMissingProperties(snapshot,index);
+        }
+    }
+
+}
+
+Snapshot Pedalboard::MakeSnapshotFromCurrentSettings(const Pedalboard &previousPedalboard)
+{
+    Snapshot snapshot;
+    // name and color don't matter. this is strictly for loading purposes.
+    for (auto &item : this->items())
+    {
+        item.AddToSnapshotFromCurrentSettings(snapshot);
+    }
+    // a neccesary precondition: the previous pedalboard must have identical structure, 
+    // so we can just 
+    size_t index = 0;
+    for (auto&item: previousPedalboard.items_)
+    {
+        item.AddResetsForMissingProperties(snapshot,&index);
+    }
+    return snapshot;
+
+}
 
 
 
@@ -202,6 +394,7 @@ JSON_MAP_BEGIN(PedalboardItem)
     JSON_MAP_REFERENCE(PedalboardItem,stateUpdateCount)
     JSON_MAP_REFERENCE(PedalboardItem,lv2State)
     JSON_MAP_REFERENCE(PedalboardItem,lilvPresetUri)
+    JSON_MAP_REFERENCE(PedalboardItem,pathProperties)
 JSON_MAP_END()
 
 
@@ -211,5 +404,21 @@ JSON_MAP_BEGIN(Pedalboard)
     JSON_MAP_REFERENCE(Pedalboard,output_volume_db)
     JSON_MAP_REFERENCE(Pedalboard,items)
     JSON_MAP_REFERENCE(Pedalboard,nextInstanceId)
+    JSON_MAP_REFERENCE(Pedalboard,snapshots)
+    JSON_MAP_REFERENCE(Pedalboard,selectedSnapshot)
 JSON_MAP_END()
+
+JSON_MAP_BEGIN(SnapshotValue)
+    JSON_MAP_REFERENCE(SnapshotValue,instanceId)
+    JSON_MAP_REFERENCE(SnapshotValue,controlValues)
+    JSON_MAP_REFERENCE(SnapshotValue,lv2State)
+    JSON_MAP_REFERENCE(SnapshotValue,pathProperties)
+JSON_MAP_END()
+
+JSON_MAP_BEGIN(Snapshot)
+    JSON_MAP_REFERENCE(Snapshot,name)
+    JSON_MAP_REFERENCE(Snapshot,color)
+    JSON_MAP_REFERENCE(Snapshot,values)
+JSON_MAP_END()
+
 

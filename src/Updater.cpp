@@ -376,17 +376,6 @@ GithubRelease::GithubRelease(json_variant &v)
 
 
 
-static std::vector<std::string> split(const std::string &s, char delimiter)
-{
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream tokenStream(s);
-    while (std::getline(tokenStream, token, delimiter))
-    {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
 static std::string justTheVersion(const std::string &assetName)
 {
     // eg. pipedal_1.2.41_arm64.deb

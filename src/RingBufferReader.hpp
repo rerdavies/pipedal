@@ -26,8 +26,12 @@
 #include "lv2/atom/atom.h"
 #include "RealtimeMidiEventType.hpp"
 #include <chrono>
+
+
+
 namespace pipedal
 {
+    class IndexedSnapshot;
 
     enum class RingBufferCommand : int64_t
     {
@@ -39,6 +43,10 @@ namespace pipedal
         AudioStopped,
         SetVuSubscriptions,
         FreeVuSubscriptions,
+
+        LoadSnapshot,
+        FreeSnapshot,
+
         SendVuUpdate,
         AckVuUpdate,
 
@@ -67,6 +75,8 @@ namespace pipedal
         Lv2ErrorMessage,
 
         RealtimeMidiEvent,
+
+        SendPathPropertyBuffer,
 
 
     };
@@ -449,6 +459,11 @@ namespace pipedal
         {
             write(RingBufferCommand::SetVuSubscriptions, configuration);
         }
+        void LoadSnapshot(IndexedSnapshot*snapshot)
+        {
+            write(RingBufferCommand::LoadSnapshot,snapshot);
+        }
+        
         void AckMidiProgramRequest(int64_t requestId)
         {
             write(RingBufferCommand::AckMidiProgramChange,requestId);
@@ -485,10 +500,19 @@ namespace pipedal
             write(RingBufferCommand::EffectReplaced, pedalboard);
         }
 
+        void FreeSnapshot(IndexedSnapshot*snapshot)
+        {
+            write(RingBufferCommand::FreeSnapshot,snapshot);
+        }
+
         void WriteLv2ErrorMessage(int64_t instanceId, const char*message)
         {
             size_t length = strlen(message);
             write(RingBufferCommand::Lv2ErrorMessage,instanceId,length,(uint8_t*)message);
+        }
+        void SendPathPropertyBuffer(PatchPropertyWriter::Buffer*buffer)
+        {
+            write(RingBufferCommand::SendPathPropertyBuffer,buffer);
         }
     };
 

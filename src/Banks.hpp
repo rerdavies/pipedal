@@ -100,6 +100,7 @@ public:
         presets_.clear();
         selectedPreset_ = -1;
     }
+    
     void move(size_t from, size_t to)
     {
         if (from >= this->presets_.size()) {

@@ -89,16 +89,15 @@ PiPedalModel::PiPedalModel()
             this->OnUpdateStatusChanged(updateStatus);
         });
 
-
     DbusLogToLv2Log();
     SetDBusLogLevel(DBusLogLevel::Info);
 
     hotspotManager = HotspotManager::Create();
     hotspotManager->SetNetworkChangingListener(
-        [this](bool ethernetConnected, bool hotspotEnabling) {
-            OnNetworkChanging(ethernetConnected,hotspotEnabling);
-        }
-    );
+        [this](bool ethernetConnected, bool hotspotEnabling)
+        {
+            OnNetworkChanging(ethernetConnected, hotspotEnabling);
+        });
     // don't actuall start the hotspotManager until after LV2 is initialized (in order to avoid logging oddities)
 }
 
@@ -107,14 +106,14 @@ void PiPedalModel::Close()
     std::unique_ptr<AudioHost> oldAudioHost;
     {
         std::lock_guard<std::recursive_mutex> lock(mutex);
-        if (closed) 
+        if (closed)
         {
             return;
         }
         closed = true;
 
-
-        if (avahiService) {
+        if (avahiService)
+        {
             this->avahiService = nullptr; // and close.
         }
 
@@ -361,7 +360,7 @@ void PiPedalModel::OnNotifyLv2StateChanged(uint64_t instanceId)
 {
     // a sent PATCH_Set, or an explicit state changed notification.
     OnNotifyMaybeLv2StateChanged(instanceId);
-    this->SetPresetChanged(-1, true);
+    this->SetPresetChanged(-1, true, false);
 }
 
 void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
@@ -566,6 +565,69 @@ void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
         this->SetPresetChanged(clientId, true);
     }
 }
+
+void PiPedalModel::SetSnapshot(int64_t selectedSnapshot)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    if (this->pedalboard.selectedSnapshot() == selectedSnapshot)
+    {
+        return;
+    }
+    if (this->pedalboard.ApplySnapshot(selectedSnapshot))
+    {
+        if (this->audioHost)
+        {
+            this->audioHost->LoadSnapshot(*(this->pedalboard.snapshots()[selectedSnapshot]), this->pluginHost); // no longer own it.
+        }
+        SetPresetChanged(-1, true, false);
+        this->pedalboard.selectedSnapshot(selectedSnapshot);
+        FirePedalboardChanged(-1, false);
+    }
+}
+
+void PiPedalModel::SetSnapshots(std::vector<std::shared_ptr<Snapshot>> &snapshots, int64_t selectedSnapshot)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    // notionally, snapshots are saved whenever they are modified, but pedalboards are not.
+    // so we must add the current snapshots BOTH to the current pedalbaoard, AND to the
+    // current saved instance of the pedalboard to create the illusion that the are stored separately.
+    // In practice, snapshots have to track structure changes (delete pedalboard items that have been deleted,
+    // and set default settings for pedalboard items that have ben added since the snapshots was last saved.
+    //
+    // This is acheived by:
+    // 1. updating BOTH the current pedalboard, and its saved instance.
+    // 2. discarding references to dangling instances as plugins are loaded (see UpdateDefaults).
+    // 3. Setting missing snapshot controls to default values (NOT the current pedalboard values)
+    // 4. (We currently don't do the right thing with patch properties if the patch property has never been set).
+
+    UpdateVst3Settings(pedalboard);
+
+    {
+        // stealth update of the saved snapshots.
+        auto savedPedalboard = storage.GetCurrentPreset();
+        savedPedalboard.snapshots(snapshots); // makes a shallow copy
+
+        if (selectedSnapshot != -1)
+        {
+            // implies that this is a snapshot of the currently running pedalboard. so we can mark it as the selected pedalboard.
+            this->pedalboard.selectedSnapshot(selectedSnapshot);
+        }
+        // UpdateDefaults(&savedPedalboard); // The update is awfully fresh. wait until it gets loaded again before pruning.
+        storage.SaveCurrentPreset(savedPedalboard);
+    }
+
+    this->pedalboard.snapshots(std::move(snapshots));
+    if (selectedSnapshot != -1)
+    {
+        this->pedalboard.selectedSnapshot(selectedSnapshot);
+    }
+
+    this->FirePedalboardChanged(-1, false); // notify clients (but don't change the running pedalboard, because it's still the same)
+                                            // this means that all clients get an up-to-date copy of the snapshots AND the currently selected snapshot if that applies
+                                            // (and a fresh copy of the pedalboard settings as well, which is harmless, since they have not changed)
+}
+
 void PiPedalModel::UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalboard)
 {
     {
@@ -628,12 +690,60 @@ void PiPedalModel::GetBank(int64_t instanceId, BankFile *pResult)
     this->storage.GetBankFile(instanceId, pResult);
 }
 
-void PiPedalModel::SetPresetChanged(int64_t clientId, bool value)
+void PiPedalModel::SetPresetChanged(int64_t clientId, bool value, bool changeSnapshotSelect)
 {
+    if (changeSnapshotSelect && value && this->pedalboard.selectedSnapshot() != -1)
+    {
+        this->pedalboard.selectedSnapshot(-1);
+        FireSelectedSnapshotChanged(-1);
+    }
     if (value != this->hasPresetChanged)
     {
         hasPresetChanged = value;
-        FirePresetsChanged(clientId);
+        FirePresetChanged(value);
+    }
+}
+
+void PiPedalModel::FireSelectedSnapshotChanged(int64_t selectedSnapshot)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    {
+        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            t[i]->OnSelectedSnapshotChanged(selectedSnapshot);
+        }
+        delete[] t;
+    }
+}
+
+void PiPedalModel::FirePresetChanged(bool changed)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    {
+        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+        for (size_t i = 0; i < subscribers.size(); ++i)
+        {
+            t[i] = this->subscribers[i];
+        }
+        size_t n = this->subscribers.size();
+
+        PresetIndex presets;
+        GetPresets(&presets);
+
+        for (size_t i = 0; i < n; ++i)
+        {
+            t[i]->OnPresetChanged(changed);
+        }
+        delete[] t;
     }
 }
 
@@ -776,48 +886,65 @@ int64_t PiPedalModel::UploadBank(BankFile &bankFile, int64_t uploadAfter)
     return newPreset;
 }
 
+void PiPedalModel::NextBank(Direction direction)
+{
+
+}
+void PiPedalModel::NextPreset(Direction direction)
+{
+    PresetIndex index;
+
+    storage.GetPresetIndex(&index);
+    auto currentPresetId = storage.GetCurrentPresetId();
+    size_t currentPresetIndex = 0;
+
+    for (size_t i = 0; i < index.presets().size(); ++i)
+    {
+        if (index.presets()[i].instanceId() == currentPresetId)
+        {
+            currentPresetIndex = i;
+            break;
+        }
+    }
+    if (index.presets().size() == 0)
+    {
+        return;
+    }
+    if (direction == Direction::Decrease)
+    {
+        if (currentPresetIndex == 0)
+        {
+            currentPresetIndex = index.presets().size() - 1;
+        }
+        else
+        {
+            --currentPresetIndex;
+        }
+    }
+    else
+    {
+        ++currentPresetIndex;
+        if (currentPresetIndex >= index.presets().size())
+        {
+            currentPresetIndex = 0;
+        }
+    }
+    LoadPreset(-1, index.presets()[currentPresetIndex].instanceId());
+}
+
+
 void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
     try
     {
-        PresetIndex index;
-        storage.GetPresetIndex(&index);
-        auto currentPresetId = storage.GetCurrentPresetId();
-        size_t currentPresetIndex = 0;
 
-        for (size_t i = 0; i < index.presets().size(); ++i)
-        {
-            if (index.presets()[i].instanceId() == currentPresetId)
-            {
-                currentPresetIndex = i;
-                break;
-            }
-        }
-        if (index.presets().size() == 0)
-        {
-            throw PiPedalException("No presets loaded.");
-        }
         if (request.direction < 0)
         {
-            if (currentPresetIndex == 0)
-            {
-                currentPresetIndex = index.presets().size() - 1;
-            }
-            else
-            {
-                --currentPresetIndex;
-            }
+            NextPreset();
+        } else {
+            PreviousPreset();
         }
-        else
-        {
-            ++currentPresetIndex;
-            if (currentPresetIndex >= index.presets().size())
-            {
-                currentPresetIndex = 0;
-            }
-        }
-        LoadPreset(-1, index.presets()[currentPresetIndex].instanceId());
     }
     catch (std::exception &e)
     {
@@ -994,8 +1121,6 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
-
-    
 #if NEW_WIFI_CONFIG
     if (this->storage.SetWifiConfigSettings(wifiConfigSettings))
     {
@@ -1065,7 +1190,7 @@ void PiPedalModel::UpdateDnsSd()
     std::string hostName = GetHostName();
     if (serviceName != "" && deviceIdFile.uuid != "")
     {
-        avahiService->Announce(webPort, serviceName, deviceIdFile.uuid, hostName,true);
+        avahiService->Announce(webPort, serviceName, deviceIdFile.uuid, hostName, true);
     }
     else
     {
@@ -1475,6 +1600,18 @@ void PiPedalModel::SendSetPatchProperty(
 
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
+    // save the property to the preset (currently used to reconstruct snapshots only)
+    PedalboardItem *pedalboardItem = this->pedalboard.GetItem(instanceId);
+    if (pedalboardItem)
+    {
+        json_variant abstractPath = pluginHost.AbstractPath(value);
+        std::ostringstream ss;
+        json_writer writer(ss);
+        writer.write(abstractPath);
+        std::string atomString = ss.str();
+        pedalboardItem->pathProperties_[propertyUri] = atomString;
+    }
+    this->SetPresetChanged(clientId, true);
     LV2_Atom *atomValue = atomConverter.ToAtom(value);
 
     std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
@@ -1727,11 +1864,19 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 #endif
 }
 
-void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem)
+std::shared_ptr<Lv2PluginInfo> PiPedalModel::GetPluginInfo(const std::string &uri)
 {
+    return pluginHost.GetPluginInfo(uri);
+}
+
+void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered_map<int64_t, PedalboardItem *> &itemMap)
+{
+    itemMap[pedalboardItem->instanceId()] = pedalboardItem;
+
     std::shared_ptr<Lv2PluginInfo> pPlugin = pluginHost.GetPluginInfo(pedalboardItem->uri());
     if (!pPlugin)
     {
+        pedalboardItem->instanceId();
         if (pedalboardItem->uri() == SPLIT_PEDALBOARD_ITEM_URI)
         {
             pPlugin = GetSplitterPluginInfo();
@@ -1753,21 +1898,74 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem)
                 }
             }
         }
+        if (pPlugin->piPedalUI())
+        {
+            PiPedalUI::ptr piPedalUI = pPlugin->piPedalUI();
+            for (auto &fileProperty : piPedalUI->fileProperties())
+            {
+                if (!pedalboardItem->pathProperties_.contains(fileProperty->patchProperty()))
+                {
+                    // make sure each pedalboard item has a complete list of path properties, even if it doesn't yet have values.
+                    pedalboardItem->pathProperties_[fileProperty->patchProperty()] = "null";
+                }
+            }
+        }
+    }
+    else
+    {
+        // an old bug leaks lv2states.  Clean it up here.
+        if (pedalboardItem->uri() == EMPTY_PEDALBOARD_ITEM_URI)
+        {
+            pedalboardItem->lv2State(Lv2PluginState());
+        }
     }
     for (size_t i = 0; i < pedalboardItem->topChain().size(); ++i)
     {
-        UpdateDefaults(&(pedalboardItem->topChain()[i]));
+        UpdateDefaults(&(pedalboardItem->topChain()[i]), itemMap);
     }
     for (size_t i = 0; i < pedalboardItem->bottomChain().size(); ++i)
     {
-        UpdateDefaults(&(pedalboardItem->bottomChain()[i]));
+        UpdateDefaults(&(pedalboardItem->bottomChain()[i]), itemMap);
     }
 }
+
+void PiPedalModel::UpdateDefaults(Snapshot *snapshot, std::unordered_map<int64_t, PedalboardItem *> &itemMap)
+{
+    if (!snapshot)
+        return;
+    for (size_t i = 0; i < snapshot->values_.size(); ++i)
+    {
+        SnapshotValue &value = snapshot->values_[i];
+        auto f = itemMap.find(value.instanceId_);
+        if (f == itemMap.end())
+        {
+            // plugin is no longer present. Remove from the snapshot.
+            snapshot->values_.erase(snapshot->values_.begin() + i);
+            --i;
+        }
+        // missing values in snapshots get filled in with plugin defaults at load time,
+        // so we don't need to actually populate the missing values.
+    }
+    for (auto &snapshotValue : snapshot->values_)
+    {
+    }
+}
+
 void PiPedalModel::UpdateDefaults(Pedalboard *pedalboard)
 {
+    // add missing values.
+    std::unordered_map<int64_t, PedalboardItem *> itemMap;
     for (size_t i = 0; i < pedalboard->items().size(); ++i)
     {
-        UpdateDefaults(&(pedalboard->items()[i]));
+        UpdateDefaults(&(pedalboard->items()[i]), itemMap);
+    }
+    // set all missiong values on snapshots to default values.
+    for (auto snapshot : pedalboard->snapshots())
+    {
+        if (snapshot)
+        {
+            UpdateDefaults(snapshot.get(), itemMap);
+        }
     }
 }
 
@@ -1919,6 +2117,56 @@ void PiPedalModel::OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetPropert
     audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
 }
 
+void PiPedalModel::OnNotifyPathPatchPropertyReceived(
+    int64_t instanceId,
+    LV2_URID pathPatchProperty,
+    LV2_Atom *pathProperty)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    std::string pathPatchPropertyUri = this->pluginHost.Lv2UridToString(pathPatchProperty);
+    std::string atomString = atomConverter.ToString(pathProperty);
+    auto pedalboardItem = this->pedalboard.GetItem(instanceId);
+
+    if (this->audioHost)
+    {
+        this->audioHost->OnNotifyPathPatchPropertyReceived(instanceId,pathPatchPropertyUri,atomString);
+    }
+
+
+
+
+    if (pedalboardItem == nullptr)
+    {
+        Lv2Log::error(SS("OnNotifyPathPatchPropertyReceived: " << pathPatchPropertyUri << " discarded."));
+        return; 
+    }
+    Lv2Log::error(SS("OnNotifyPathPatchPropertyReceived: " << pathPatchPropertyUri <<": " << atomString));
+
+    auto i = pedalboardItem->pathProperties_.find(pathPatchPropertyUri);
+    if (i != pedalboardItem->pathProperties_.end())
+    {
+        pedalboardItem->pathProperties_[pathPatchPropertyUri] = atomString;
+
+        std::vector<IPiPedalModelSubscriber *> t;
+        t.reserve(subscribers.size());
+
+        for (auto subscriber : subscribers)
+        {
+            t.push_back(subscriber);
+        }
+
+        for (auto subscriber : t)
+        {
+            subscriber->OnNotifyPathPatchPropertyChanged(
+                instanceId,
+                pathPatchPropertyUri,
+                atomString);
+        }
+
+    }
+}
+
 void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -2011,7 +2259,7 @@ void PiPedalModel::CancelMonitorPatchProperty(int64_t clientId, int64_t clientHa
             atomOutputListeners.erase(atomOutputListeners.begin() + i);
             break;
         }
-    } 
+    }
     if (midiEventListeners.size() == 0)
     {
         audioHost->SetListenForMidiEvent(false);
@@ -2169,6 +2417,15 @@ std::shared_ptr<Lv2Pedalboard> PiPedalModel::GetLv2Pedalboard()
 }
 bool PiPedalModel::LoadCurrentPedalboard()
 {
+    if (previousPedalboardLoaded && pedalboard.IsStructureIdentical(previousPedalboard))
+    {
+        // then we can send a snapshot update instead!
+        Snapshot snapshot = pedalboard.MakeSnapshotFromCurrentSettings(previousPedalboard);
+        audioHost->LoadSnapshot(snapshot,pluginHost);
+        this->previousPedalboard = this->pedalboard;
+        return true;
+    }
+
     Lv2PedalboardErrorList errorMessages;
     std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{this->pluginHost.CreateLv2Pedalboard(this->pedalboard, errorMessages)};
     this->lv2Pedalboard = lv2Pedalboard;
@@ -2300,7 +2557,7 @@ void PiPedalModel::StartHotspotMonitoring()
     this->avahiService = std::make_unique<AvahiService>();
 
     SetThreadName("avahi"); // hack to name the avahi service thread.
-    UpdateDnsSd(); // now that the server is running, publish a  DNS-SD announcement.
+    UpdateDnsSd();          // now that the server is running, publish a  DNS-SD announcement.
     SetThreadName("main");
 
     this->hotspotManager->Open();
@@ -2353,7 +2610,7 @@ void PiPedalModel::WaitForAudioDeviceToComeOnline()
     GetAlsaDevices();
 }
 
-PiPedalModel::PostHandle PiPedalModel::Post(PostCallback&&fn)
+PiPedalModel::PostHandle PiPedalModel::Post(PostCallback &&fn)
 {
     // I know. odd place to forward this to, but it's a very serviceable dispatcher implementation.
     // Why? because it's there, and PiPedalModel has no thread of its own to do dispatching.
@@ -2363,16 +2620,16 @@ PiPedalModel::PostHandle PiPedalModel::Post(PostCallback&&fn)
     }
     return hotspotManager->Post(std::move(fn));
 }
-PiPedalModel::PostHandle PiPedalModel::PostDelayed(const clock::duration&delay,PostCallback&&fn)
+PiPedalModel::PostHandle PiPedalModel::PostDelayed(const clock::duration &delay, PostCallback &&fn)
 {
     if (!hotspotManager)
     {
         throw std::runtime_error("Too early. It's not ready yet.");
     }
-    return hotspotManager->PostDelayed(delay,std::move(fn));
-
+    return hotspotManager->PostDelayed(delay, std::move(fn));
 }
-bool PiPedalModel::CancelPost(PostHandle handle) {
+bool PiPedalModel::CancelPost(PostHandle handle)
+{
     if (!hotspotManager)
     {
         throw std::runtime_error("Too early. It's not ready yet.");
@@ -2388,7 +2645,6 @@ void PiPedalModel::CancelNetworkChangingTimer()
         networkChangingDelayHandle = 0;
     }
 }
-        
 
 std::vector<std::string> PiPedalModel::GetKnownWifiNetworks()
 {
@@ -2399,16 +2655,16 @@ std::vector<std::string> PiPedalModel::GetKnownWifiNetworks()
     return this->hotspotManager->GetKnownWifiNetworks();
 }
 
-void PiPedalModel::OnNetworkChanging(bool ethernetConnected,bool hotspotConnected)
+void PiPedalModel::OnNetworkChanging(bool ethernetConnected, bool hotspotConnected)
 {
     CancelNetworkChangingTimer();
-    this->networkChangingDelayHandle = 
+    this->networkChangingDelayHandle =
         PostDelayed(std::chrono::seconds(10), // takes a while for network configuration to be fully applied.
-        [this,ethernetConnected,hotspotConnected]() {
-            this->networkChangingDelayHandle = 0;
-            OnNetworkChanged(ethernetConnected,hotspotConnected);
-        }
-        );
+                    [this, ethernetConnected, hotspotConnected]()
+                    {
+                        this->networkChangingDelayHandle = 0;
+                        OnNetworkChanged(ethernetConnected, hotspotConnected);
+                    });
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
     std::vector<IPiPedalModelSubscriber *> t;
@@ -2422,51 +2678,52 @@ void PiPedalModel::OnNetworkChanging(bool ethernetConnected,bool hotspotConnecte
     {
         t[i]->OnNetworkChanging(hotspotConnected);
     }
-
 }
 void PiPedalModel::OnNetworkChanged(bool ethernetConnected, bool hotspotConnected)
 {
     FireNetworkChanged();
 }
 
-void PiPedalModel::OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) 
+void PiPedalModel::OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType)
 {
-    try {
+    try
+    {
         switch (eventType)
         {
-            case RealtimeMidiEventType::Shutdown:
-                {
-                    this->RequestShutdown(false);
-                }
-                break;
-            case RealtimeMidiEventType::Reboot:
-                {
-                    this->RequestShutdown(true);
-                }
-                break;
-            case RealtimeMidiEventType::StartHotspot:
-            {
-                WifiConfigSettings settings = storage.GetWifiConfigSettings();
-                if (!settings.hasSavedPassword_)
-                {
-                    throw std::runtime_error("Can't start Wi-Fi hotspot because no password has been configured.");
-                }
-                settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Always;
-                this->SetWifiConfigSettings(settings);
-            }
-            break;
-            case RealtimeMidiEventType::StopHotspot:
-            {
-                WifiConfigSettings settings = storage.GetWifiConfigSettings();
-                settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Never;
-                this->SetWifiConfigSettings(settings);
-            }
-            break;
-
-            default:
-                break;
+        case RealtimeMidiEventType::Shutdown:
+        {
+            this->RequestShutdown(false);
         }
-    } catch (const std::exception&e)
+        break;
+        case RealtimeMidiEventType::Reboot:
+        {
+            this->RequestShutdown(true);
+        }
+        break;
+        case RealtimeMidiEventType::StartHotspot:
+        {
+            WifiConfigSettings settings = storage.GetWifiConfigSettings();
+            if (!settings.hasSavedPassword_)
+            {
+                throw std::runtime_error("Can't start Wi-Fi hotspot because no password has been configured.");
+            }
+            settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Always;
+            this->SetWifiConfigSettings(settings);
+        }
+        break;
+        case RealtimeMidiEventType::StopHotspot:
+        {
+            WifiConfigSettings settings = storage.GetWifiConfigSettings();
+            settings.autoStartMode_ = (uint16_t)HotspotAutoStartMode::Never;
+            this->SetWifiConfigSettings(settings);
+        }
+        break;
+
+        default:
+            break;
+        }
+    }
+    catch (const std::exception &e)
     {
         Lv2Log::error(SS("Failed to process realtime MIDI event. " << e.what()));
     }
@@ -2507,3 +2764,5 @@ void PiPedalModel::RequestShutdown(bool restart)
         }
     }
 }
+
+

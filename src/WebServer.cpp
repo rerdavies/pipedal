@@ -54,14 +54,17 @@
 using namespace pipedal;
 using namespace std;
 
-const bool ENABLE_KEEP_ALIVE = true;
-const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
+static const bool ENABLE_KEEP_ALIVE = true;
+static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
 
 using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
 
 const size_t MAX_READ_SIZE = 512 * 1024 * 1024;
 ;
 using namespace boost;
+using namespace websocketpp::http;
+
+
 
 class request_with_file_upload : public websocketpp::http::parser::parser
 {
@@ -516,12 +519,14 @@ inline std::error_code request_with_file_upload::process(std::string::iterator b
 class CustomPpConfig : public websocketpp::config::asio
 {
 public:
+    using super = websocketpp::config::asio;
     typedef CustomPpConfig type;
     typedef websocketpp::config::asio base;
 
     static size_t max_http_body_size; // websocketpp::config::asio::max_http_body_size;
     typedef pipedal_elog elog_type;
     typedef pipedal_alog alog_type;
+
 
     typedef request_with_file_upload request_type;
 
@@ -538,6 +543,8 @@ public:
 
     typedef websocketpp::transport::asio::endpoint<transport_config>
         transport_type;
+
+        typedef transport_type::transport_con_type x;
 };
 
 size_t CustomPpConfig::max_http_body_size = MAX_READ_SIZE;
@@ -693,8 +700,19 @@ namespace pipedal
                 ss << size;
                 request.replace_header(HttpField::content_length, ss.str());
             }
-            virtual void setBody(const std::string &body) { request.set_body(body); }
-            virtual void keepAlive(bool value)
+            virtual void setBody(const std::string &body) override{ request.set_body(body); }
+            virtual void setBodyFile(std::shared_ptr<TemporaryFile>&bodyFile) override { 
+                // cast away const to do what ther request would do if it had that method.
+
+                request.set_body_file(bodyFile->Path(),true);
+                bodyFile->Detach();
+            }
+            virtual void setBodyFile(std::filesystem::path&path, bool deleteWhenDone) override { 
+                // cast away const to do what ther request would do if it had that method.
+                request.set_body_file(path,deleteWhenDone);
+            }
+
+            virtual void keepAlive(bool value) override
             {
                 if ((!value) || (!ENABLE_KEEP_ALIVE))
                 {
@@ -1126,7 +1144,7 @@ namespace pipedal
 
                 Lv2Log::error("Failed to open session: %s", e.what());
             }
-            m_endpoint.close(hdl,websocketpp::close::status::abnormal_close, "");
+            //m_endpoint.close(hdl,websocketpp::close::status::abnormal_close, "");
         }
 
         void on_fail(connection_hdl hdl)

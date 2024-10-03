@@ -319,6 +319,7 @@ const GxTunerControl =
                 return this.makeTick(pitchInfo,cents,r0,r1,"#666", width);
             }
 
+            nextKey() { return "key" + (this.keyCounter++)}
             makeTick(pitchInfo: PitchInfo, cents: number, r0: number, r1: number, stroke: string,width: number): React.ReactNode
             {
                 let range = pitchInfo.semitoneCents;
@@ -335,7 +336,7 @@ const GxTunerControl =
                 let cy = NEEDLE_CY;
                 let path = new SvgPathBuilder().moveTo(r0*sin_+cx,r0*cos_+cy).lineTo(r1*sin_+cx,r1*cos_+cy).toString();
 
-                return (<path d={path} stroke={stroke} strokeWidth={width+""} />);
+                return (<path key={this.nextKey()} d={path} stroke={stroke} strokeWidth={width+""} />);
             }
 
             lastValidTime: number =  0;
@@ -406,7 +407,10 @@ const GxTunerControl =
                 )
             }
 
+            keyCounter: number = 0;
+
             render() {
+                this.keyCounter = 0;
                 let textColor = isDarkMode() ? "#999": "#444";
                 return (<div ref={this.refRoot} style={{width: DIAL_WIDTH, height: DIAL_HEIGHT, fontSize: "2em", fontWeight: 700, position: "relative",
                     boxShadow: isDarkMode() ? 

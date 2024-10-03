@@ -165,23 +165,55 @@ Lv2PluginInfo::ptr g_splitterPluginInfo = std::make_shared<Lv2PluginInfo>(makeSp
 
 Lv2PluginInfo::ptr pipedal::GetSplitterPluginInfo() { return g_splitterPluginInfo; }
 
+SplitEffect::SplitEffect(
+    uint64_t instanceId,
+    double sampleRate,
+    const std::vector<float *> &inputs)
+    : instanceId(instanceId), inputs(inputs), sampleRate(sampleRate)
+
+{
+    controlIndex["splitType"] = SPLIT_TYPE_CTL;
+    controlIndex["select"] = SELECT_CTL;
+    controlIndex["mix"] = MIX_CTL;
+    controlIndex["panL"] = PANL_CTL;
+    controlIndex["volL"]  = VOLL_CTL;
+    controlIndex["panR"] = PANR_CTL;
+    controlIndex["volR"] = VOLR_CTL;
+
+    Lv2PluginInfo::ptr puginInfo = g_splitterPluginInfo;
+
+    for (auto&port:  puginInfo->ports())
+    {   
+        if (port->is_control_port()  && port->is_input())
+        {
+            auto index = port->index();
+            if (index < defaultInputControlValues.size()) {
+                defaultInputControlValues[index] = port->default_value();
+            } 
+        }
+    } 
+}
+
+uint64_t SplitEffect::GetMaxInputControl() const  { return MAX_INPUT_CONTROL;}
+bool SplitEffect::IsInputControl(uint64_t index) const 
+{
+    return index >= 0 && index < MAX_INPUT_CONTROL;
+}
+float SplitEffect::GetDefaultInputControlValue(uint64_t index) const
+{
+    if (index < 0 || index >= MAX_INPUT_CONTROL) return 0;
+    return defaultInputControlValues[index];
+}
+
+
 int SplitEffect::GetControlIndex(const std::string &symbol) const
 {
-    if (symbol == "splitType")
-        return SPLIT_TYPE_CTL;
-    if (symbol == "select")
-        return SELECT_CTL;
-    if (symbol == "mix")
-        return MIX_CTL;
-    if (symbol == "panL")
-        return PANL_CTL;
-    if (symbol == "volL")
-        return VOLL_CTL;
-    if (symbol == "panR")
-        return PANR_CTL;
-    if (symbol == "volR")
-        return VOLR_CTL;
-    return -1;
+    auto i = controlIndex.find(symbol);
+    if (i == controlIndex.end())
+    {
+        return -1;
+    }
+    return i->second;
 }
 
 void SplitEffect::Activate()
@@ -343,6 +375,8 @@ float SplitEffect::GetControlValue(int portIndex) const
         throw PiPedalArgumentException("Invalid argument");
     }
 }
+
+
 
 void SplitEffect::SetControl(int index, float value)
 {

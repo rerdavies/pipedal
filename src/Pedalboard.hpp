@@ -26,7 +26,9 @@
 #include "atom_object.hpp"
 
 namespace pipedal {
-
+    class SnapshotValue;
+    class Snapshot;
+    
 #define SPLIT_PEDALBOARD_ITEM_URI  "uri://two-play/pipedal/pedalboard#Split"
 #define EMPTY_PEDALBOARD_ITEM_URI  "uri://two-play/pipedal/pedalboard#Empty"
 
@@ -45,7 +47,9 @@ namespace pipedal {
 
 #define GETTER_SETTER_VEC(name) \
     decltype(name##_)& name()  { return name##_;}  \
-    const decltype(name##_)& name() const  { return name##_;} 
+    const decltype(name##_)& name() const  { return name##_;} \
+    void name(decltype(name##_)&&value) { this->name##_ = std::move(value); }\
+    void name(const decltype(name##_)&value) { this->name##_ = value; }
 
 
 
@@ -91,12 +95,16 @@ public:
     uint32_t stateUpdateCount_ = 0;
     Lv2PluginState lv2State_;
     std::string lilvPresetUri_;
+    std::map<std::string,std::string> pathProperties_;
 
     // non persistent state.
     PropertyMap patchProperties;
 public:
     ControlValue*GetControlValue(const std::string&symbol);
-    
+
+    bool IsStructurallyIdentical(const PedalboardItem&other) const;
+
+    void ApplySnapshotValue(SnapshotValue*snapshotValue);
     bool hasLv2State() const {
         return lv2State_.isValid_ != 0;
     }
@@ -124,6 +132,10 @@ public:
         return uri_ == EMPTY_PEDALBOARD_ITEM_URI;
     }
 
+    void AddToSnapshotFromCurrentSettings(Snapshot&snapshot) const;
+    void AddResetsForMissingProperties(Snapshot&snapshot, size_t*index) const;
+
+
     virtual void write_members(json_writer&writer) const {
         writer.write_member("instanceId",instanceId_);
         writer.write_member("uri",uri_);
@@ -139,6 +151,25 @@ public:
     DECLARE_JSON_MAP(PedalboardItem);
 };
 
+class SnapshotValue {
+public:
+    uint64_t instanceId_;
+    std::vector<ControlValue> controlValues_;
+    Lv2PluginState lv2State_;
+    std::map<std::string,std::string> pathProperties_;
+    DECLARE_JSON_MAP(SnapshotValue);
+    
+};
+
+class Snapshot {
+public:
+    std::string name_;
+    std::string color_;
+    std::vector<SnapshotValue> values_;
+
+    DECLARE_JSON_MAP(Snapshot);
+
+};
 
 class Pedalboard {
     std::string name_;
@@ -149,22 +180,31 @@ class Pedalboard {
     uint64_t nextInstanceId_ = 0;
     uint64_t NextInstanceId() { return ++nextInstanceId_; }
 
+    std::vector<std::shared_ptr<Snapshot>> snapshots_;
+    int64_t selectedSnapshot_ = -1;
+
 public:
     static constexpr int64_t INPUT_VOLUME_ID = -2; // synthetic PedalboardItem for input volume.
     static constexpr int64_t OUTPUT_VOLUME_ID = -3; // synthetic PedalboardItem for output volume.
     bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
     bool SetItemEnabled(int64_t pedalItemId, bool enabled);
 
+    bool IsStructureIdentical(const Pedalboard &other) const; // caan we just send a snapshot-style uddate instead of reloading plugins? All settings are ignored.
+    Snapshot MakeSnapshotFromCurrentSettings(const Pedalboard &previousPedalboard);
+
     PedalboardItem*GetItem(int64_t pedalItemId);
     const PedalboardItem*GetItem(int64_t pedalItemId) const;
     std::vector<PedalboardItem*>GetAllPlugins();
 
     bool HasItem(int64_t pedalItemid) const { return GetItem(pedalItemid) != nullptr; }
+    bool ApplySnapshot(int64_t snapshotIndex);
 
     GETTER_SETTER_REF(name)
     GETTER_SETTER_VEC(items)
     GETTER_SETTER(input_volume_db)
     GETTER_SETTER(output_volume_db)
+    GETTER_SETTER_VEC(snapshots)
+    GETTER_SETTER(selectedSnapshot)
 
 
     DECLARE_JSON_MAP(Pedalboard);

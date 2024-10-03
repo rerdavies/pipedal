@@ -30,24 +30,41 @@
 #include "PiPedalUI.hpp"
 #include "ofstream_synced.hpp"
 #include "UpdaterSecurity.hpp"
+#include "TemporaryFile.hpp"
+#include "PresetBundle.hpp"
 
 
+#define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
-#define BANK_EXTENSION ".piBank"
+#define OLD_BANK_EXTENSION ".piBank"
+#define BANK_EXTENSION ".piBankBundle"
 #define PLUGIN_PRESETS_EXTENSION ".piPluginPresets"
 
+static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
+
+static const std::string PLUGIN_PRESETS_MIME_TYPE = "application/vnd.pipedal.pluginPresets";
+static const std::string PRESET_MIME_TYPE = "application/vnd.pipedal.preset";
+static const std::string BANK_MIME_TYPE = "application/vnd.pipedal.bank";
 
 using namespace pipedal;
 using namespace boost::system;
+namespace fs = std::filesystem;
 
-static std::vector<std::string> split(const std::string& s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream tokenStream(s);
-    while (std::getline(tokenStream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-    return tokens;
+
+static bool IsZipFile(const std::filesystem::path &path)
+{
+    std::ifstream f(path);
+    if (!f.is_open()) return false;
+
+    char c[4];
+    memset(c,0,sizeof(c));
+
+    f >> c[0] >> c[1] >> c[2] >> c[3];
+
+    // official file header according to PKware documetnation.
+    return c[0] == 0x50 && c[1] == 0x4B && c[2] == 0x03 && c[3] == 0x04;
+
+
 }
 
 class ExtensionChecker {
@@ -192,7 +209,14 @@ public:
                 std::string name;
                 std::string content;
                 GetPluginPresets(request_uri, &name, &content);
-                res.set(HttpField::content_type, "application/json");
+
+                TemporaryFile tmpFile { WEB_TEMP_DIR};
+                PresetBundleWriter::ptr presetbundleWriter  = PresetBundleWriter::CreatePluginPresetsFile(*(this->model),content);
+                presetbundleWriter->WriteToFile(tmpFile.Path());
+                size_t contentLength = std::filesystem::file_size(tmpFile.Path());
+
+
+                res.set(HttpField::content_type, PLUGIN_PRESETS_MIME_TYPE);
                 res.set(HttpField::cache_control, "no-cache");
                 res.setContentLength(content.length());
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PLUGIN_PRESETS_EXTENSION));
@@ -204,9 +228,14 @@ public:
                 std::string content;
                 GetPreset(request_uri, &name, &content);
 
-                res.set(HttpField::content_type, "application/json");
+                TemporaryFile tmpFile { WEB_TEMP_DIR};
+                PresetBundleWriter::ptr presetbundleWriter  = PresetBundleWriter::CreatePresetsFile(*(this->model),content);
+                presetbundleWriter->WriteToFile(tmpFile.Path());
+                size_t contentLength = std::filesystem::file_size(tmpFile.Path());
+
+                res.set(HttpField::content_type, PRESET_MIME_TYPE);
                 res.set(HttpField::cache_control, "no-cache");
-                res.setContentLength(content.length());
+                res.setContentLength(contentLength);
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
                 return;
             }
@@ -216,10 +245,18 @@ public:
                 std::string content;
                 GetBank(request_uri, &name, &content);
 
-                res.set(HttpField::content_type, "application/json");
+                TemporaryFile tmpFile { WEB_TEMP_DIR};
+                PresetBundleWriter::ptr presetbundleWriter  = PresetBundleWriter::CreatePresetsFile(*(this->model),content);
+                presetbundleWriter->WriteToFile(tmpFile.Path());
+                size_t contentLength = std::filesystem::file_size(tmpFile.Path());
+
+
+
+
+                res.set(HttpField::content_type, BANK_MIME_TYPE);
                 res.set(HttpField::cache_control, "no-cache");
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
-                res.setContentLength(content.length());
+                res.setContentLength(contentLength);
                 return;
             }
             throw PiPedalException("Not found.");
@@ -252,11 +289,18 @@ public:
                 std::string name;
                 std::string content;
                 GetPluginPresets(request_uri, &name, &content);
-                res.set(HttpField::content_type, "application/json");
+
+                std::shared_ptr<TemporaryFile> tmpFile =std::make_shared<TemporaryFile>(WEB_TEMP_DIR);
+                PresetBundleWriter::ptr presetbundleWriter  = PresetBundleWriter::CreatePluginPresetsFile(*(this->model),content);
+                presetbundleWriter->WriteToFile(tmpFile->Path());
+                size_t contentLength = std::filesystem::file_size(tmpFile->Path());
+
+
+                res.set(HttpField::content_type, PLUGIN_PRESETS_MIME_TYPE);
                 res.set(HttpField::cache_control, "no-cache");
-                res.setContentLength(content.length());
+                res.setContentLength(contentLength);
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PLUGIN_PRESETS_EXTENSION));
-                res.setBody(content);
+                res.setBodyFile(tmpFile);
             }
             else if (segment == "downloadPreset")
             {
@@ -264,11 +308,17 @@ public:
                 std::string content;
                 GetPreset(request_uri, &name, &content);
 
-                res.set(HttpField::content_type, "application/json");
+                std::shared_ptr<TemporaryFile> tmpFile =std::make_shared<TemporaryFile>(WEB_TEMP_DIR);
+                PresetBundleWriter::ptr presetbundleWriter  = PresetBundleWriter::CreatePresetsFile(*(this->model),content);
+                presetbundleWriter->WriteToFile(tmpFile->Path());
+                size_t contentLength = std::filesystem::file_size(tmpFile->Path());
+
+
+                res.set(HttpField::content_type, PRESET_MIME_TYPE);
                 res.set(HttpField::cache_control, "no-cache");
-                res.setContentLength(content.length());
+                res.setContentLength(contentLength);
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PRESET_EXTENSION));
-                res.setBody(content);
+                res.setBodyFile(tmpFile);
             }
             else if (segment == "downloadBank")
             {
@@ -276,11 +326,18 @@ public:
                 std::string content;
                 GetBank(request_uri, &name, &content);
 
-                res.set(HttpField::content_type, "application/json");
+                std::shared_ptr<TemporaryFile> tmpFile =std::make_shared<TemporaryFile>(WEB_TEMP_DIR);
+                PresetBundleWriter::ptr presetbundleWriter  = PresetBundleWriter::CreatePresetsFile(*(this->model),content);
+                presetbundleWriter->WriteToFile(tmpFile->Path());
+                size_t contentLength = std::filesystem::file_size(tmpFile->Path());
+
+
+
+                res.set(HttpField::content_type, BANK_MIME_TYPE);
                 res.set(HttpField::cache_control, "no-cache");
-                res.setContentLength(content.length());
+                res.setContentLength(contentLength);
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
-                res.setBody(content);
+                res.setBodyFile(tmpFile);
             }
             else
             {
@@ -315,6 +372,32 @@ public:
             return fileNames[0];
         }
     }
+    static bool HasSingleRootDirectory(ZipFileReader&zipFile) {
+        bool hasDirectory = false;
+        std::string previousDirectory;
+        for (auto& file: zipFile.GetFiles())
+        {
+            auto pos = file.find('/');
+            if (pos == std::string::npos) {
+                // a file in the root.
+                return false;
+            } else 
+            {
+                std::string currentRootDirectory  = file.substr(0,pos);
+                if (hasDirectory) {
+                    if (currentRootDirectory != previousDirectory)
+                    {
+                        return false;
+                    }
+                } else {
+                    hasDirectory = true;
+                    previousDirectory = currentRootDirectory;
+                }
+            }
+        }
+        return true;
+    }
+
     virtual void post_response(
         const uri &request_uri,
         HttpRequest &req,
@@ -327,10 +410,27 @@ public:
 
             if (segment == "uploadPluginPresets")
             {
-                json_reader reader(req.get_body_input_stream());
                 PluginPresets presets;
-                reader.read(&presets);
+                fs::path filePath = req.get_body_temporary_file();
+                if (filePath.empty()) 
+                {
+                    throw std::runtime_error("Unexpected.");
+                }
+                if (IsZipFile(filePath))
+                {
+                    auto presetReader = PresetBundleReader::LoadPluginPresetsFile(*(this->model),filePath);
+                    presetReader->ExtractMediaFiles();
+
+                    std::stringstream ss(presetReader->GetPluginPresetsJson());
+                    json_reader reader(ss);
+                    reader.read(&presets);
+
+                } else {
+                    json_reader reader(req.get_body_input_stream());
+                    reader.read(&presets);
+                }
                 model->UploadPluginPresets(presets);
+
 
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
@@ -343,7 +443,27 @@ public:
             }
             else if (segment == "uploadPreset")
             {
-                json_reader reader(req.get_body_input_stream());
+
+                BankFile bankFile;
+
+                fs::path filePath = req.get_body_temporary_file();
+                if (filePath.empty()) 
+                {
+                    throw std::runtime_error("Unexpected.");
+                }
+                if (IsZipFile(filePath))
+                {   
+                    auto presetReader = PresetBundleReader::LoadPresetsFile(*(this->model),filePath);
+                    presetReader->ExtractMediaFiles();
+
+                    std::stringstream ss(presetReader->GetPresetJson());
+                    json_reader reader(ss);
+                    reader.read(&bankFile);
+                } else {
+                    // legacy json format, no zip, no media files.
+                    json_reader reader(req.get_body_input_stream());
+                    reader.read(&bankFile);
+                }
 
                 uint64_t uploadAfter = -1;
                 std::string strUploadAfter = request_uri.query("uploadAfter");
@@ -351,10 +471,6 @@ public:
                 {
                     uploadAfter = std::stol(strUploadAfter);
                 }
-
-                BankFile bankFile;
-                reader.read(&bankFile);
-
                 uint64_t instanceId = model->UploadPreset(bankFile, uploadAfter);
 
                 res.set(HttpField::content_type, "application/json");
@@ -363,12 +479,31 @@ public:
                 sResult << instanceId;
                 std::string result = sResult.str();
                 res.setContentLength(result.length());
-
                 res.setBody(result);
             }
             else if (segment == "uploadBank")
             {
-                json_reader reader(req.get_body_input_stream());
+
+                BankFile bankFile;
+
+                fs::path filePath = req.get_body_temporary_file();
+                if (filePath.empty()) 
+                {
+                    throw std::runtime_error("Unexpected.");
+                }
+                if (IsZipFile(filePath))
+                {   
+                    auto presetReader = PresetBundleReader::LoadPresetsFile(*(this->model),filePath);
+                    presetReader->ExtractMediaFiles();
+
+                    std::stringstream ss(presetReader->GetPresetJson());
+                    json_reader reader(ss);
+                    reader.read(&bankFile);
+                } else {
+                    // legacy json format, no zip, no media files.
+                    json_reader reader(req.get_body_input_stream());
+                    reader.read(&bankFile);
+                }
 
                 uint64_t uploadAfter = -1;
                 std::string strUploadAfter = request_uri.query("uploadAfter");
@@ -376,9 +511,6 @@ public:
                 {
                     uploadAfter = std::stol(strUploadAfter);
                 }
-
-                BankFile bankFile;
-                reader.read(&bankFile);
 
                 uint64_t instanceId = model->UploadBank(bankFile, uploadAfter);
 
@@ -394,10 +526,10 @@ public:
             {
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
-                const std::string instanceId = request_uri.query("id");
-                const std::string directory = request_uri.query("directory");
-                const std::string filename = request_uri.query("filename");
-                const std::string patchProperty = request_uri.query("property");
+                std::string instanceId = request_uri.query("id");
+                std::string directory = request_uri.query("directory");
+                std::string filename = request_uri.query("filename");
+                std::string patchProperty = request_uri.query("property");
 
 
                 if (patchProperty.length() == 0 && directory.length() == 0)
@@ -415,9 +547,14 @@ public:
                 {
                     ExtensionChecker extensionChecker { request_uri.query("ext") };
                     namespace fs = std::filesystem;
+
                     try {
-                        auto zipFile = ZipFile::Create(req.get_body_temporary_file());
+                        auto zipFile = ZipFileReader::Create(req.get_body_temporary_file());
                         std::vector<std::string> files = zipFile->GetFiles();
+                        bool hasSingleRootDirectory = HasSingleRootDirectory(*zipFile);
+                        if (!hasSingleRootDirectory) {
+                            directory = (fs::path(directory) / fs::path(filename).filename().replace_extension("")).string();
+                        }
                         for (const auto&inputFile : files)
                         {
                             if (!inputFile.ends_with("/")) // don't process directory entries.

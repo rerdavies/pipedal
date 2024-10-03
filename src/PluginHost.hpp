@@ -729,6 +729,10 @@ namespace pipedal
             AutoLilvNode mod__label;
 
             AutoLilvNode dc__format;
+
+            AutoLilvNode mod__fileTypes;
+
+            
         };
         LilvUris* lilvUris = nullptr;
 
@@ -814,6 +818,12 @@ namespace pipedal
         virtual MapFeature &GetMapFeature() { return this->mapFeature; }
         void CheckForResourceInitialization(const std::string& pluginUri,const std::filesystem::path& pluginUploadDirectory);
         void ReloadPlugins();
+
+        // equivalent to LV2 MapPath AbstractPath features.
+        std::string MapPath(const std::string &abstractPath);
+        std::string AbstractPath(const std::string&path);
+        json_variant MapPath(const json_variant&json);
+        json_variant AbstractPath(const json_variant&json);
 
     private:
 

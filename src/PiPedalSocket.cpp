@@ -46,8 +46,23 @@
 using namespace std;
 using namespace pipedal;
 
+class PathPatchPropertyChangedBody
+{
+public:
+    int64_t instanceId_;
+    std::string propertyUri_;
+    std::string atomJson_;
+    DECLARE_JSON_MAP(PathPatchPropertyChangedBody);
+};
+JSON_MAP_BEGIN(PathPatchPropertyChangedBody)
+JSON_MAP_REFERENCE(PathPatchPropertyChangedBody, instanceId)
+JSON_MAP_REFERENCE(PathPatchPropertyChangedBody, propertyUri)
+JSON_MAP_REFERENCE(PathPatchPropertyChangedBody, atomJson)
+JSON_MAP_END()
 
-class GetPatchPropertyBody {
+
+class GetPatchPropertyBody
+{
 public:
     uint64_t instanceId_;
     std::string propertyUri_;
@@ -59,8 +74,8 @@ JSON_MAP_REFERENCE(GetPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, propertyUri)
 JSON_MAP_END()
 
-
-class CreateNewSampleDirectoryArgs {
+class CreateNewSampleDirectoryArgs
+{
 public:
     std::string relativePath_;
     UiFileProperty uiFileProperty_;
@@ -72,7 +87,8 @@ JSON_MAP_REFERENCE(CreateNewSampleDirectoryArgs, relativePath)
 JSON_MAP_REFERENCE(CreateNewSampleDirectoryArgs, uiFileProperty)
 JSON_MAP_END()
 
-class RenameSampleFileArgs {
+class RenameSampleFileArgs
+{
 public:
     std::string oldRelativePath_;
     std::string newRelativePath_;
@@ -86,8 +102,8 @@ JSON_MAP_REFERENCE(RenameSampleFileArgs, newRelativePath)
 JSON_MAP_REFERENCE(RenameSampleFileArgs, uiFileProperty)
 JSON_MAP_END()
 
-
-class Lv2StateChangedBody {
+class Lv2StateChangedBody
+{
 public:
     uint64_t instanceId_;
     Lv2PluginState state_;
@@ -99,9 +115,8 @@ JSON_MAP_REFERENCE(Lv2StateChangedBody, instanceId)
 JSON_MAP_REFERENCE(Lv2StateChangedBody, state)
 JSON_MAP_END()
 
-
-
-class SetPatchPropertyBody {
+class SetPatchPropertyBody
+{
 public:
     uint64_t instanceId_;
     std::string propertyUri_;
@@ -171,7 +186,7 @@ public:
 JSON_MAP_BEGIN(MonitorPatchPropertyBody)
 JSON_MAP_REFERENCE(MonitorPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(MonitorPatchPropertyBody, clientHandle)
-JSON_MAP_REFERENCE(MonitorPatchPropertyBody,propertyUri)
+JSON_MAP_REFERENCE(MonitorPatchPropertyBody, propertyUri)
 JSON_MAP_END()
 
 class OnLoadPluginPresetBody
@@ -239,9 +254,6 @@ JSON_MAP_BEGIN(FileRequestArgs)
 JSON_MAP_REFERENCE(FileRequestArgs, relativePath)
 JSON_MAP_REFERENCE(FileRequestArgs, fileProperty)
 JSON_MAP_END()
-
-
-
 
 class MonitorPortBody
 {
@@ -370,6 +382,20 @@ JSON_MAP_REFERENCE(UpdateCurrentPedalboardBody, clientId)
 JSON_MAP_REFERENCE(UpdateCurrentPedalboardBody, pedalboard)
 JSON_MAP_END()
 
+class SetSnapshotsBody
+{
+public:
+    std::vector<std::shared_ptr<Snapshot>> snapshots_;
+    int64_t selectedSnapshot_;
+
+    DECLARE_JSON_MAP(SetSnapshotsBody);
+};
+
+JSON_MAP_BEGIN(SetSnapshotsBody)
+JSON_MAP_REFERENCE(SetSnapshotsBody, snapshots)
+JSON_MAP_REFERENCE(SetSnapshotsBody, selectedSnapshot)
+JSON_MAP_END()
+
 class ChannelSelectionChangedBody
 {
 public:
@@ -451,7 +477,6 @@ JSON_MAP_REFERENCE(Vst3ControlChangedBody, value)
 JSON_MAP_REFERENCE(Vst3ControlChangedBody, state)
 JSON_MAP_END()
 
-
 class PiPedalSocketHandler : public SocketHandler, public IPiPedalModelSubscriber
 {
 private:
@@ -480,24 +505,24 @@ private:
         PortMonitorSubscription(
             int64_t subscriptionHandle,
             int64_t instanceId,
-            const std::string& key)
-        :subscriptionHandle(subscriptionHandle),
-        instanceId(instanceId),
-        key(key)
+            const std::string &key)
+            : subscriptionHandle(subscriptionHandle),
+              instanceId(instanceId),
+              key(key)
         {
-
         }
-        ~PortMonitorSubscription() {
+        ~PortMonitorSubscription()
+        {
             Close();
         }
         PortMonitorSubscription() {}
-        PortMonitorSubscription(const PortMonitorSubscription&) = delete;
-        PortMonitorSubscription& operator=(const PortMonitorSubscription&) = delete;
-        void Close() {
-            std::lock_guard lock {pmMutex};
+        PortMonitorSubscription(const PortMonitorSubscription &) = delete;
+        PortMonitorSubscription &operator=(const PortMonitorSubscription &) = delete;
+        void Close()
+        {
+            std::lock_guard lock{pmMutex};
             closed = true;
         }
-
 
         std::mutex pmMutex;
 
@@ -532,7 +557,8 @@ public:
     bool finalCleanup = false;
     void FinalCleanup()
     {
-        if (finalCleanup) return;
+        if (finalCleanup)
+            return;
         finalCleanup = true;
         // avoid use after free.
         for (int i = 0; i < this->activePortMonitors.size(); ++i)
@@ -547,12 +573,12 @@ public:
         activeVuSubscriptions.resize(0);
 
         model.RemoveNotificationSubsription(this);
-
     }
 
     virtual void Close()
     {
-        if (closed) return;
+        if (closed)
+            return;
         closed = true;
 
         FinalCleanup(); // do it while we can.  &model will no longer be valid after this. ( :-( )
@@ -566,7 +592,8 @@ public:
         std::stringstream imageList;
         const std::filesystem::path &webRoot = model.GetWebRoot() / "img";
         bool firstTime = true;
-        try {
+        try
+        {
             for (const auto &entry : std::filesystem::directory_iterator(webRoot))
             {
                 if (!firstTime)
@@ -576,7 +603,8 @@ public:
                 firstTime = false;
                 imageList << entry.path().filename().string();
             }
-        } catch (const std::exception&)
+        }
+        catch (const std::exception &)
         {
             Lv2Log::error("Can't list files in %s. Image files will not be pre-loaded in the client.", webRoot.c_str());
         }
@@ -814,7 +842,7 @@ public:
     {
         std::shared_ptr<PortMonitorSubscription> result;
         {
-            std::lock_guard lock (activePortMonitorsMutex);
+            std::lock_guard lock(activePortMonitorsMutex);
 
             for (int i = 0; i < this->activePortMonitors.size(); ++i)
             {
@@ -832,9 +860,10 @@ public:
     {
         // running on RT_output thread, or on Socket thread.
         {
-            std::lock_guard lock {subscription->pmMutex};
-            if (subscription->closed) return;
-            if (value == subscription->currentValue) 
+            std::lock_guard lock{subscription->pmMutex};
+            if (subscription->closed)
+                return;
+            if (value == subscription->currentValue)
                 return;
             if (subscription->waitingForAck)
             {
@@ -846,7 +875,7 @@ public:
             subscription->lastValue = value;
             subscription->waitingForAck = true;
         }
-        SendMonitorPortMessage_Inner(subscription,value);
+        SendMonitorPortMessage_Inner(subscription, value);
     }
 
     // post-sync send.
@@ -863,12 +892,14 @@ public:
             {
                 // running on PiPedalSocket thread.
                 std::shared_ptr<PortMonitorSubscription> subscription = getPortMonitorSubscription(subscriptionHandle_);
-                if (!subscription) return;
+                if (!subscription)
+                    return;
 
                 float value;
                 {
-                    std::unique_lock lock {subscription->pmMutex};
-                    if (subscription->closed) return;
+                    std::unique_lock lock{subscription->pmMutex};
+                    if (subscription->closed)
+                        return;
                     if (subscription->pendingValue)
                     {
                         value = subscription->currentValue;
@@ -892,7 +923,7 @@ public:
                 Lv2Log::debug("Failed to monitor port output. (%s)", e.what());
             });
     }
-    void MonitorPort(int replyTo,MonitorPortBody &body)
+    void MonitorPort(int replyTo, MonitorPortBody &body)
     {
         std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
         int64_t subscriptionHandle = model.MonitorPort(
@@ -965,18 +996,19 @@ public:
             ControlChangedBody message;
             pReader->read(&message);
             this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-        } 
+        }
         else if (message == "previewControl")
         {
             ControlChangedBody message;
             pReader->read(&message);
             this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-        } else if (message == "setControl")
+        }
+        else if (message == "setControl")
         {
             ControlChangedBody message;
             pReader->read(&message);
             this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-        } 
+        }
         else if (message == "setInputVolume")
         {
             float value;
@@ -1029,7 +1061,7 @@ public:
         else if (message == "getUpdateStatus")
         {
             UpdateStatus updateStatus = model.GetUpdateStatus();
-            this->Reply(replyTo,"getUpdateStatus",updateStatus);
+            this->Reply(replyTo, "getUpdateStatus", updateStatus);
         }
         else if (message == "updateNow")
         {
@@ -1037,7 +1069,7 @@ public:
             pReader->read(&updateUrl);
             model.UpdateNow(updateUrl);
             bool result = true;
-            this->Reply(replyTo,"updateNow",result);
+            this->Reply(replyTo, "updateNow", result);
         }
         else if (message == "getJackStatus")
         {
@@ -1053,7 +1085,6 @@ public:
         {
             std::vector<std::string> channels = this->model.GetKnownWifiNetworks();
             this->Reply(replyTo, "getWifiChannels", channels);
-
         }
         else if (message == "getWifiChannels")
         {
@@ -1198,6 +1229,18 @@ public:
                 pReader->read(&body);
                 this->model.UpdateCurrentPedalboard(body.clientId_, body.pedalboard_);
             }
+        }
+        else if (message == "setSnapshot")
+        {
+            int64_t snapshotIndex = -1;
+            pReader->read(&snapshotIndex);
+            this->model.SetSnapshot(snapshotIndex);
+        }
+        else if (message == "setSnapshots")
+        {
+            SetSnapshotsBody body;
+            pReader->read(&body);
+            this->model.SetSnapshots(body.snapshots_, body.selectedSnapshot_);
         }
         else if (message == "currentPedalboard")
         {
@@ -1347,6 +1390,23 @@ public:
                 this->SendError(replyTo, std::string(e.what()));
             }
         }
+        else if (message == "nextBank")
+        {
+            model.NextBank();
+        }
+        else if (message == "previousBank")
+        {
+            model.PreviousBank();
+        }
+        else if (message == "nextPreset")
+        {
+            model.NextPreset();
+        }
+        else if (message == "previousPreset")
+        {
+            model.PreviousPreset();
+        }
+
         else if (message == "renamePresetItem")
         {
             RenamePresetBody body;
@@ -1373,19 +1433,16 @@ public:
         {
             SetPatchPropertyBody body;
             pReader->read(&body);
-            model.SendSetPatchProperty(clientId,body.instanceId_,body.propertyUri_,body.value_,
-                [this, replyTo] () {
-                    this->JsonReply(replyTo, "setPatchProperty", "true");
-
-                },
-                [this, replyTo] (const std::string&error) {
-                    this->SendError(replyTo, error.c_str());
-
-                }
-            );
-
+            model.SendSetPatchProperty(clientId, body.instanceId_, body.propertyUri_, body.value_, [this, replyTo]()
+                                       {
+                                           this->JsonReply(replyTo, "setPatchProperty", "true");
+                                       },
+                                       [this, replyTo](const std::string &error)
+                                       {
+                                           this->SendError(replyTo, error.c_str());
+                                       });
         }
-        
+
         else if (message == "getPatchProperty")
         {
             GetPatchPropertyBody body;
@@ -1410,7 +1467,7 @@ public:
             MonitorPortBody body;
             pReader->read(&body);
 
-            MonitorPort(replyTo,body);
+            MonitorPort(replyTo, body);
         }
         else if (message == "unmonitorPort")
         {
@@ -1418,7 +1475,7 @@ public:
             pReader->read(&subscriptionHandle);
             {
                 {
-                    std::lock_guard  guard(activePortMonitorsMutex);
+                    std::lock_guard guard(activePortMonitorsMutex);
                     for (auto i = this->activePortMonitors.begin(); i != this->activePortMonitors.end(); ++i)
                     {
                         if ((*i)->subscriptionHandle == subscriptionHandle)
@@ -1490,9 +1547,8 @@ public:
             this->model.SetUpdatePolicy((UpdatePolicyT)iPolicy);
         }
         else if (message == "forceUpdateCheck")
-        {   
+        {
             this->model.ForceUpdateCheck();
-
         }
         else if (message == "setSystemMidiBindings")
         {
@@ -1503,56 +1559,57 @@ public:
         else if (message == "getSystemMidiBindings")
         {
             std::vector<MidiBinding> bindings = this->model.GetSystemMidiBidings();
-            this->Reply(replyTo,"getSystemMidiBindings",bindings);
+            this->Reply(replyTo, "getSystemMidiBindings", bindings);
         }
         else if (message == "requestFileList")
         {
             UiFileProperty fileProperty;
             pReader->read(&fileProperty);
             std::vector<std::string> list = this->model.GetFileList(fileProperty);
-            this->Reply(replyTo,"requestFileList",list);
-        } 
+            this->Reply(replyTo, "requestFileList", list);
+        }
         else if (message == "requestFileList2")
         {
             FileRequestArgs requestArgs;
             pReader->read(&requestArgs);
             std::vector<FileEntry> list = this->model.GetFileList2(requestArgs.relativePath_, requestArgs.fileProperty_);
-            this->Reply(replyTo,"requestFileList2",list);
-        } 
+            this->Reply(replyTo, "requestFileList2", list);
+        }
         else if (message == "newPreset")
         {
             int64_t presetId = this->model.CreateNewPreset();
-            this->Reply(replyTo,"newPreset",presetId);
-        } 
+            this->Reply(replyTo, "newPreset", presetId);
+        }
         else if (message == "deleteUserFile")
         {
             std::string fileName;
             pReader->read(&fileName);
 
             this->model.DeleteSampleFile(fileName);
-            this->Reply(replyTo,"deleteUserFile",true);
+            this->Reply(replyTo, "deleteUserFile", true);
         }
         else if (message == "createNewSampleDirectory")
         {
             CreateNewSampleDirectoryArgs args;
             pReader->read(&args);
 
-            std::string newFileName = this->model.CreateNewSampleDirectory(args.relativePath_,args.uiFileProperty_);
-            this->Reply(replyTo,"createNewSampleDirectory",newFileName);
+            std::string newFileName = this->model.CreateNewSampleDirectory(args.relativePath_, args.uiFileProperty_);
+            this->Reply(replyTo, "createNewSampleDirectory", newFileName);
         }
         else if (message == "renameFilePropertyFile")
         {
             RenameSampleFileArgs args;
             pReader->read(&args);
 
-            std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_,args.newRelativePath_,args.uiFileProperty_);
-            this->Reply(replyTo,"renameFilePropertyFile",newFileName);
-        } else if (message == "getFilePropertyDirectoryTree"){
+            std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_);
+            this->Reply(replyTo, "renameFilePropertyFile", newFileName);
+        }
+        else if (message == "getFilePropertyDirectoryTree")
+        {
             UiFileProperty uiFileProperty;
             pReader->read(&uiFileProperty);
             FilePropertyDirectoryTree::ptr result = model.GetFilePropertydirectoryTree(uiFileProperty);
-            this->Reply(replyTo,"GetFilePropertydirectoryTree",result);
-
+            this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
         }
 
         else if (message == "setOnboarding")
@@ -1633,37 +1690,37 @@ protected:
     }
 
 private:
-    virtual void OnUpdateStatusChanged(const UpdateStatus&updateStatus) {
-        Send("onUpdateStatusChanged",updateStatus);
+    virtual void OnUpdateStatusChanged(const UpdateStatus &updateStatus)
+    {
+        Send("onUpdateStatusChanged", updateStatus);
     }
 
     virtual void OnLv2StateChanged(int64_t instanceId, const Lv2PluginState &state)
     {
-        Lv2StateChangedBody message { (uint64_t)instanceId, state};
-        Send("onLv2StateChanged",message);
-
+        Lv2StateChangedBody message{(uint64_t)instanceId, state};
+        Send("onLv2StateChanged", message);
     }
 
-    virtual void OnLv2PluginsChanging() override {
-        Send("onLv2PluginsChanging",true);
+    virtual void OnLv2PluginsChanging() override
+    {
+        Send("onLv2PluginsChanging", true);
         Flush();
     }
-    virtual void OnNetworkChanging(bool hotspotConnected) override {
-        try {
-            Send("onNetworkChanging",hotspotConnected);
-            Flush();
-
-        } catch (const std::exception&ignored)
+    virtual void OnNetworkChanging(bool hotspotConnected) override
+    {
+        try
         {
-
+            Send("onNetworkChanging", hotspotConnected);
+            Flush();
         }
-
+        catch (const std::exception &ignored)
+        {
+        }
     }
 
-
-    virtual void OnErrorMessage(const std::string&message)
+    virtual void OnErrorMessage(const std::string &message)
     {
-        Send("onErrorMessage",message);
+        Send("onErrorMessage", message);
     }
     // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
     // {
@@ -1675,8 +1732,9 @@ private:
     //     Send("onPatchPropertyChanged",body);
     // }
 
-    virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding>&bindings) {
-        Send("onSystemMidiBindingsChanged",bindings);
+    virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding> &bindings)
+    {
+        Send("onSystemMidiBindingsChanged", bindings);
     }
 
     virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites)
@@ -1696,6 +1754,16 @@ private:
         body.jackChannelSelection_ = const_cast<JackChannelSelection *>(&channelSelection);
         Send("onChannelSelectionChanged", body);
     }
+    virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) override
+    {
+        Send("onSelectedSnapshotChanged", selectedSnapshot);
+    }
+
+    virtual void OnPresetChanged(bool changed) override
+    {
+        Send("onPresetChanged", changed);
+    }
+
     virtual void OnPresetsChanged(int64_t clientId, const PresetIndex &presets)
     {
         PresetsChangedBody body;
@@ -1852,8 +1920,8 @@ private:
         }
     }
 
-    void Flush() {
-        
+    void Flush()
+    {
     }
     int outstandingNotifyAtomOutputs = 0;
 
@@ -1896,7 +1964,7 @@ private:
         body.atomJson_.Set(atomJson);
 
         // flow control. We can only have one in-flight NotifyAtomOutput at a time.
-        // Subsequent notifications are held until we receive an ack. 
+        // Subsequent notifications are held until we receive an ack.
         //
         // If a duplicate atomProperty is queued, overwrite the previous value.
         {
@@ -1910,7 +1978,7 @@ private:
                     if (output.clientHandle == clientHandle && output.instanceId == instanceId && output.propertyUri == atomProperty)
                     {
                         // better to erase than overwrite, since it provides better idempotence.
-                        pendingNotifyAtomOutputs.erase(pendingNotifyAtomOutputs.begin()+i);
+                        pendingNotifyAtomOutputs.erase(pendingNotifyAtomOutputs.begin() + i);
                         break;
                     }
                 }
@@ -1930,6 +1998,16 @@ private:
 
             });
     }
+    virtual void OnNotifyPathPatchPropertyChanged(int64_t instanceId, const std::string &pathPatchPropertyString, const std::string &atomString)
+    {
+        PathPatchPropertyChangedBody body;
+        body.instanceId_ = instanceId;
+        body.propertyUri_ = pathPatchPropertyString;
+        body.atomJson_ = atomString;
+
+        Send("onNotifyPathPatchPropertyChanged", body);
+    }
+
     virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl)
     {
         NotifyMidiListenerBody body;
@@ -2014,4 +2092,3 @@ std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &
 {
     return std::make_shared<PiPedalSocketFactory>(model);
 }
-

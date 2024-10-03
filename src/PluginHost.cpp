@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
+#include "AtomConverter.hpp"
 #include "PluginHost.hpp"
 #include <lilv/lilv.h>
 #include <stdexcept>
@@ -44,6 +45,7 @@
 #include <fstream>
 #include "PiPedalException.hpp"
 #include "StdErrorCapture.hpp"
+#include "util.hpp"
 
 #include "Locale.hpp"
 
@@ -188,6 +190,9 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     patch__readable = lilv_new_uri(pWorld, LV2_PATCH__readable);
 
     dc__format = lilv_new_uri(pWorld, "http://purl.org/dc/terms/format");
+
+    mod__fileTypes = lilv_new_uri(pWorld,"http://moddevices.com/ns/mod#fileTypes");
+
 }
 
 void PluginHost::LilvUris::Free()
@@ -618,13 +623,28 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
                             std::make_shared<UiFileProperty>(
                                 strLabel, propertyUri.AsUri(), lv2DirectoryName);
 
-                        AutoLilvNodes dc_types = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->dc__format, nullptr);
-                        LILV_FOREACH(nodes, i, dc_types)
+                        AutoLilvNodes mod__fileTypes = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->mod__fileTypes, nullptr);
+                        LILV_FOREACH(nodes,i,mod__fileTypes)
                         {
-                            AutoLilvNode dc_type = lilv_nodes_get(dc_types, i);
-                            std::string fileType = dc_type.AsString();
-                            std::string label = "";
-                            fileProperty->fileTypes().push_back(UiFileType(label, fileType));
+                                // "nam,nammodel"
+                            AutoLilvNode lilvfileType  {lilv_nodes_get(mod__fileTypes, i)};
+                            std::string fileTypes = lilvfileType.AsString();
+
+                            for (std::string&type: split(fileTypes,','))
+                            {
+                                fileProperty->fileTypes().push_back(UiFileType(SS(type << " file"),SS('.' << type)));
+                            }
+                        }
+                        if (!mod__fileTypes)
+                        {
+                            AutoLilvNodes dc_types = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->dc__format, nullptr);
+                            LILV_FOREACH(nodes, i, dc_types)
+                            {
+                                AutoLilvNode dc_type = lilv_nodes_get(dc_types, i);
+                                std::string fileType = dc_type.AsString();
+                                std::string label = "";
+                                fileProperty->fileTypes().push_back(UiFileType(label, fileType));
+                            }
                         }
 
                         fileProperties.push_back(
@@ -1477,6 +1497,46 @@ void PluginHost::CheckForResourceInitialization(const std::string &pluginUri,con
             }
         }
     }
+}
+
+json_variant PluginHost::MapPath(const json_variant&json)
+{
+    AtomConverter converter(GetMapFeature());
+    return converter.MapPath(json,GetPluginStoragePath());
+
+}
+json_variant PluginHost::AbstractPath(const json_variant&json)
+{
+    AtomConverter converter(GetMapFeature());
+    return converter.AbstractPath(json,GetPluginStoragePath());
+
+}
+
+
+std::string PluginHost::MapPath(const std::string &abstractPath)
+{
+    auto storagePath = GetPluginStoragePath();
+    if (abstractPath.length() == 0)
+    {
+        return "";
+    }
+    return SS(storagePath << '/' << abstractPath);
+
+
+}
+std::string PluginHost::AbstractPath(const std::string&path)
+{
+    auto storagePath = GetPluginStoragePath();
+    if (path.starts_with(storagePath))
+    {
+        auto start = storagePath.length();
+        if (start < path.length() && path[start] == '/')
+        {
+            ++start;
+        }
+        return path.substr(start);
+    }
+    return path;
 }
 
 // void PiPedalHostLogError(const std::string &error)
