@@ -200,7 +200,7 @@ const FullScreenIME =
                         <div style={{
                             width: "100%", height: "100%", position: "relative",
                             display: "flex", flexDirection: "column", flexWrap: "nowrap",
-                            justifyContent: "center", alignItems: "center"
+                            justifyContent: "start", alignItems: "center", marginTop:12
                         }}
                         >
                             <Typography noWrap variant="body2">{this.props.caption}</Typography>

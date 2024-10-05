@@ -519,8 +519,8 @@ export const MainPage =
                                 display: "flex", flexFlow: "row nowrap", alignItems: "center", justifyContent: "center", minWidth: 0,
                                 width: "100%", height: 48, paddingLeft: 16, paddingRight: 16
                             }} >
-                                <div style={{ flex: "0 0 auto", width: 80 }} >
-                                    <div style={{ display: bypassVisible ? "block" : "none", width: 80 }} >
+                                <div style={{ flex: "0 0 auto", width: this.state.splitControlBar? undefined:  80 }} >
+                                    <div style={{ display: bypassVisible ? "block" : "none", width: this.state.splitControlBar? undefined:  80 }} >
                                         <Switch color="secondary" checked={bypassChecked} onChange={this.handleEnableCurrentItemChanged} />
                                     </div>
                                 </div>

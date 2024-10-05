@@ -7,14 +7,21 @@ import { useTheme } from '@mui/styles';
 
 const colors: string[] = colorKeys;
 
+
+export enum DropdownAlignment {
+    SE, SW
+}
+
 interface ColorDropdownButtonProps {
     currentColor?: string;
     onColorChange: (color: string) => void;
+    dropdownAlignment: DropdownAlignment;
 }
 
 const ColorDropdownButton: React.FC<ColorDropdownButtonProps> = ({
     currentColor = colors[0],
     onColorChange,
+    dropdownAlignment = DropdownAlignment.SE
 }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedColor, setSelectedColor] = useState<string>(currentColor);
@@ -38,7 +45,6 @@ const ColorDropdownButton: React.FC<ColorDropdownButtonProps> = ({
         setSelectedColor(color);
         onColorChange(color);
     };
-
     return (
         <div>
             <ButtonBase
@@ -63,11 +69,11 @@ const ColorDropdownButton: React.FC<ColorDropdownButtonProps> = ({
                 onClose={handleClose}
                 anchorOrigin={{
                     vertical: 'bottom',
-                    horizontal: 'right',
+                    horizontal: (dropdownAlignment === DropdownAlignment.SW ?  'right' : 'left')
                 }}
                 transformOrigin={{
                     vertical: 'top',
-                    horizontal: 'right',
+                    horizontal: (dropdownAlignment === DropdownAlignment.SW ?  'right' : 'left'),
                 }}
             >
                 <div style={{ display: "flex", flexFlow: "row wrap", width: 56 * 4 + 2 }}>

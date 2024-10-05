@@ -20,6 +20,7 @@
 import React from 'react';
 import { ThemeProvider, createTheme, StyledEngineProvider, Theme } from '@mui/material/styles';
 
+import VirtualKeyboardHandler from './VirtualKeyboardHandler';
 import AppThemed from "./AppThemed";
 import { isDarkMode } from './DarkMode';
 
@@ -152,6 +153,8 @@ const theme = createTheme(
 type AppThemeProps = {
 
 };
+
+
 const App = (class extends React.Component {
     // Before the component mounts, we initialise our state
 
@@ -159,13 +162,19 @@ const App = (class extends React.Component {
         super(props);
         this.state = {
         };
+        if (!App.virtualKeyboardHandler)
+        {   
+            App.virtualKeyboardHandler = new VirtualKeyboardHandler();
+        }
     }
+
+    static virtualKeyboardHandler?: VirtualKeyboardHandler;
 
     render() {
         return (
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={theme}>
-                    <AppThemed />
+                        <AppThemed />
                 </ThemeProvider>
             </StyledEngineProvider>
         );

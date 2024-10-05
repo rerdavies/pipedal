@@ -653,7 +653,9 @@ const PluginControlView =
                         <FilePropertyDialog open={this.state.showFileDialog}
                             fileProperty={this.state.dialogFileProperty}
                             selectedFile={this.state.dialogFileValue}
-                            onCancel={() => { this.setState({ showFileDialog: false }); }}
+                            onCancel={() => { 
+                                this.setState({ showFileDialog: false }); 
+                            }}
                             onOk={(fileProperty, selectedFile) => {
 
                                 this.model.setPatchProperty(

@@ -348,9 +348,9 @@ export function getBorderColor(colorKey: string): string {
     } else {
         if (colorKey === "grey")
         {
-            return list[300];
+            return list[500];
         }
-        return list[200];
+        return list[400];
     }
 
 }

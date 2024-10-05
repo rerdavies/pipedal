@@ -230,15 +230,14 @@ const ToobFrequencyResponseView =
             currentPath: string = "";
 
             majorGridLine(x0: number, y0: number, x1: number, y1: number): React.ReactNode {
-                return (<line x1={x0} y1={y0} x2={x1} y2={y1} fill='none' stroke="#FFF" strokeWidth="0.75" opacity="1" />);
+                return (<line key={"l" + this.nextKey++} x1={x0} y1={y0} x2={x1} y2={y1} fill='none' stroke="#FFF" strokeWidth="0.75" opacity="1" />);
             }
 
             gridLine(x0: number, y0: number, x1: number, y1: number): React.ReactNode {
-                return (<line x1={x0} y1={y0} x2={x1} y2={y1} fill='none' stroke="#FFF" strokeWidth="0.25" opacity="1" />);
+                return (<line key={"l" + this.nextKey++} x1={x0} y1={y0} x2={x1} y2={y1} fill='none' stroke="#FFF" strokeWidth="0.25" opacity="1" />);
             }
             grid(): React.ReactNode[] {
                 let result: React.ReactNode[] = [];
-
 
                 for (var db = Math.ceil(this.dbMax / this.dbTickSpacing) * this.dbTickSpacing; db < this.dbMin; db += this.dbTickSpacing) {
                     var y = (db - this.dbMin) / (this.dbMax - this.dbMin) * (this.yMax - this.yMin);
@@ -274,8 +273,10 @@ const ToobFrequencyResponseView =
             dbMin: number = 5;
             dbMax: number = -35;
 
+            private nextKey: number = 0;
             render() {
                 // deliberately reversed to flip up and down.
+                this.nextKey = 0;
                 this.dbMax = this.state.minDb;
                 this.dbMin = this.state.maxDb;
 

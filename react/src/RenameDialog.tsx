@@ -19,13 +19,14 @@
 
 import React from 'react';
 import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
 import DialogEx from './DialogEx';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import { nullCast } from './Utility';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
+//import TextFieldEx from './TextFieldEx';
+import TextField from '@mui/material/TextField';
 
 
 export interface RenameDialogProps {
@@ -113,15 +114,19 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
             }
         };
         return (
-            <DialogEx tag="nameDialog" open={open} fullWidth onClose={handleClose} aria-labelledby="Rename-dialog-title" 
+            <DialogEx tag="nameDialog" open={open} fullWidth maxWidth="sm" onClose={handleClose} aria-labelledby="Rename-dialog-title" 
                 fullScreen={this.state.fullScreen}
                 style={{userSelect: "none"}}
                 >
-                <DialogContent>
+                <DialogContent style={{minHeight: 96}}>
                     <TextField
-                        autoFocus
+                    
                         onKeyDown={handleKeyDown}
                         margin="dense"
+                        variant="outlined"
+                        inputProps={{
+                            scrollMargin: 24,
+                        }}
                         id="name"
                         label="Name"
                         type="text"
@@ -130,7 +135,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                         inputRef={this.refText}
                     />
                 </DialogContent>
-                <DialogActions>
+                <DialogActions style={{flexShrink: 1}}>
                     <Button onClick={handleClose} variant="dialogSecondary" >
                         Cancel
                     </Button>

@@ -232,10 +232,11 @@ const appStyles = (theme: Theme) => createStyles({
 });
 
 
+
 function supportsFullScreen(): boolean {
     let doc: any = window.document;
     let docEl: any = doc.documentElement;
-    var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+    var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullScreen;
     return (!!requestFullScreen);
 
 }
@@ -244,10 +245,20 @@ function setFullScreen(value: boolean) {
     let doc: any = window.document;
     let docEl: any = doc.documentElement;
 
-    var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
-    var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+    if (docEl.requestFullscren) // the latest offical api.
+    {
+        if (value)
+        {
+            window.document.documentElement.requestFullscreen({navigationUI: "show"});
+        } else {
+            window.document.exitFullscreen();
+        }
+    }
 
-    if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+    var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullScreen;
+    var cancelFullScreen = docEl.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+    if (value) {
         requestFullScreen.call(docEl);
     }
     else {
@@ -547,7 +558,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         });
     }
     toggleFullScreen(): void {
-        setFullScreen(this.state.isFullScreen);
+        setFullScreen(!this.state.isFullScreen);
         this.setState({ isFullScreen: !this.state.isFullScreen });
     }
 
@@ -735,7 +746,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         return (
             <div style={{
                 colorScheme: isDarkMode() ? "dark" : "light", // affects scrollbar color
-                minHeight: 345, minWidth: 390,
+                minHeight: 300, minWidth: 300,
                 position: "absolute", left:0, top: 0, right:0,bottom:0,
                 overscrollBehavior: this.state.isDebug ? "auto" : "none"
             }}
@@ -747,7 +758,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             >
                 <CssBaseline />
                 {this.state.performanceView ? (
-                    <PerformanceView
+                    <PerformanceView open={this.state.performanceView}
                         onClose={() => { this.setState({ performanceView: false }); }}
                     />
                 ) : (
@@ -1028,8 +1039,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 </DialogEx>
 
 
-                <div className={classes.errorContent} style={{ display: this.state.displayState === State.Error ? "flex" : "none" }}
-                    onMouseDown={preventDefault} onKeyDown={preventDefault}
+                <div className={classes.errorContent} style={{ zIndex: 1200, display: this.state.displayState === State.Error ? "flex" : "none" }}
+                    onMouseDown={preventDefault} onKeyDown={preventDefault} 
                 >
                     <div className={classes.errorContentMask} />
                     <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
@@ -1056,7 +1067,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
                 </div>
                 {/* initial load mask*/}
-                <div className={classes.errorContent} style={{ display: this.state.displayState === State.Loading ? "block" : "none" }}>
+                <div className={classes.errorContent} style={{ display: this.state.displayState === State.Loading ? "block" : "none",zIndex: 1201 }}>
                     <div className={classes.errorContentMask} />
                     <div className={classes.loadingBox}>
                         <div className={classes.loadingBoxItem}>
@@ -1069,7 +1080,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 </div>
                 {/* Reloading mask */}
                 <div className={classes.errorContent} style={{
-                    zIndex: 501,
+                    zIndex: 1201,
                     display: (
                         wantsReloadingScreen(this.state.displayState)
                             ? "block" : "none"

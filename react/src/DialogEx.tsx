@@ -28,29 +28,34 @@ interface DialogExProps extends DialogProps {
 }
 
 interface DialogExState {
+}
 
+export interface IDialogStackable {
+    getTag: ()=> string;
+    isOpen: ()=> boolean;
+    onDialogStackClose(): void;
 }
 
 class DialogStackEntry {
-    constructor(dialog: DialogEx)
+    constructor(dialog: IDialogStackable)
     {
-        this.tag = dialog.props.tag;
+        this.tag = dialog.getTag();
         this.dialog = dialog;
     }
     tag: string;
-    dialog: DialogEx;
+    dialog: IDialogStackable;
 };
 
 let dialogStack: DialogStackEntry[] = [];
 
 
-function popDialogStack(): void {
+export function popDialogStack(): void {
     if (dialogStack.length !== 0)
     {
         dialogStack.splice(dialogStack.length-1,1);
     }
 }
-function pushDialogStack(dialog: DialogEx): void {
+export function pushDialogStack(dialog: IDialogStackable): void {
     dialogStack.push(new DialogStackEntry(dialog));
 }
 
@@ -66,18 +71,19 @@ export function removeDialogStackEntriesAbove(tag: string)
     for (let i = dialogStack.length-1; i >= 0; --i)
     {
         let entry = dialogStack[i];
-        if (entry.tag === tag)
+        if (entry.dialog.getTag() === tag)
         {
             return;
         }
         popDialogStack();
-        if (entry.dialog.props.open && entry.dialog.props.onClose)
+        if (entry.dialog.isOpen()) 
         {
-            entry.dialog.props.onClose({}, "backdropClick");
+            entry.dialog.onDialogStackClose();
         }
+
     }
 }
-class DialogEx extends React.Component<DialogExProps,DialogExState>  {
+class DialogEx extends React.Component<DialogExProps,DialogExState> implements IDialogStackable  {
     constructor(props: DialogExProps)
     {
         super(props);
@@ -92,6 +98,16 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
 
     hasHooks: boolean = false;
     stateWasPopped: boolean = false;
+
+    getTag() {
+        return this.props.tag;
+    }
+    isOpen():  boolean {
+        return this.props.open;
+    }
+    onDialogStackClose() {
+        this.props.onClose?.({},"backdropClick");
+    }
 
     handlePopState(ev: PopStateEvent): any 
     {
@@ -169,11 +185,25 @@ class DialogEx extends React.Component<DialogExProps,DialogExState>  {
         if (this.props.onClose) this.props.onClose(event,reason);
     }
 
+    onEnterKey() {
+
+    }
+    onKeyDown(evt: React.KeyboardEvent<HTMLDivElement>)
+    {
+        if (evt.key === 'Enter')
+        {
+            this.onEnterKey();
+        }
+    }
     render() {
-        let { tag,onClose, ...extra} = this.props;
+        let { tag,onClose,...extra} = this.props;
         return (
-            <Dialog fullWidth={this.props.fullWidth??false} maxWidth={this.props.fullWidth ? false: undefined} {...extra} onClose={(event,reason)=>{ this.myOnClose(event,reason);}}>
-                {this.props.children}
+            <Dialog fullWidth={this.props.fullWidth??false} 
+                maxWidth={this.props.fullWidth ? false: undefined} {...extra} 
+                onClose={(event,reason)=>{ this.myOnClose(event,reason);}}
+                onKeyDown={(evt)=>{ this.onKeyDown(evt); }}
+                >
+                {this.props.children} 
             </Dialog>
         );
     }

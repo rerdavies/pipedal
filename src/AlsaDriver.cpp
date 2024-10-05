@@ -184,8 +184,8 @@ namespace pipedal
         std::vector<float *> captureBuffers;
         std::vector<float *> playbackBuffers;
 
-        uint8_t *rawCaptureBuffer = nullptr;
-        uint8_t *rawPlaybackBuffer = nullptr;
+        std::vector<uint8_t> rawCaptureBuffer;
+        std::vector<uint8_t> rawPlaybackBuffer;
 
         AudioDriverHost *driverHost = nullptr;
 
@@ -547,10 +547,12 @@ namespace pipedal
             int32_t v = EndianSwap(*(int32_t *)&v_);
             *(int32_t *)p = v;
         }
+        template <typename T>
+        static T *getCaptureBuffer(std::vector<uint8_t> &buffer) { return (T *)(buffer.data()); }
 
         void CopyCaptureFloatBe(size_t frames)
         {
-            int32_t *p = (int32_t *)rawCaptureBuffer;
+            int32_t *p = getCaptureBuffer<int32_t>(rawCaptureBuffer);
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -568,7 +570,7 @@ namespace pipedal
 
         void CopyCaptureFloatLe(size_t frames)
         {
-            float *p = (float *)rawCaptureBuffer;
+            float *p = getCaptureBuffer<float>(rawCaptureBuffer);
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -584,7 +586,7 @@ namespace pipedal
 
         void CopyCaptureS16Le(size_t frames)
         {
-            int16_t *p = (int16_t *)rawCaptureBuffer;
+            int16_t *p = getCaptureBuffer<int16_t>(rawCaptureBuffer);
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -600,7 +602,7 @@ namespace pipedal
         }
         void CopyCaptureS16Be(size_t frames)
         {
-            int16_t *p = (int16_t *)rawCaptureBuffer;
+            int16_t *p = getCaptureBuffer<int16_t>(rawCaptureBuffer);
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -617,7 +619,7 @@ namespace pipedal
 
         void CopyCaptureS32Le(size_t frames)
         {
-            int32_t *p = (int32_t *)rawCaptureBuffer;
+            int32_t *p = getCaptureBuffer<int32_t>(rawCaptureBuffer);
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -633,7 +635,7 @@ namespace pipedal
         }
         void CopyCaptureS24_3Le(size_t frames)
         {
-            uint8_t *p = (uint8_t *)rawCaptureBuffer;
+            uint8_t *p = getCaptureBuffer<uint8_t>(rawCaptureBuffer);
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -650,7 +652,7 @@ namespace pipedal
         }
         void CopyCaptureS24_3Be(size_t frames)
         {
-            uint8_t *p = (uint8_t *)rawCaptureBuffer;
+            uint8_t *p = (uint8_t *)rawCaptureBuffer.data();
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -667,7 +669,7 @@ namespace pipedal
         }
         void CopyCaptureS24Le(size_t frames)
         {
-            int32_t *p = (int32_t *)rawCaptureBuffer;
+            int32_t *p = (int32_t *)rawCaptureBuffer.data();
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -683,7 +685,7 @@ namespace pipedal
         }
         void CopyCaptureS24Be(size_t frames)
         {
-            int32_t *p = (int32_t *)rawCaptureBuffer;
+            int32_t *p = (int32_t *)rawCaptureBuffer.data();
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -699,7 +701,7 @@ namespace pipedal
         }
         void CopyCaptureS32Be(size_t frames)
         {
-            int32_t *p = (int32_t *)rawCaptureBuffer;
+            int32_t *p = (int32_t *)rawCaptureBuffer.data();
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
@@ -715,7 +717,7 @@ namespace pipedal
         }
         void CopyPlaybackS16Le(size_t frames)
         {
-            int16_t *p = (int16_t *)rawPlaybackBuffer;
+            int16_t *p = (int16_t *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
@@ -735,7 +737,7 @@ namespace pipedal
         }
         void CopyPlaybackS16Be(size_t frames)
         {
-            int16_t *p = (int16_t *)rawPlaybackBuffer;
+            int16_t *p = (int16_t *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
@@ -755,7 +757,7 @@ namespace pipedal
         }
         void CopyPlaybackS32Le(size_t frames)
         {
-            int32_t *p = (int32_t *)rawPlaybackBuffer;
+            int32_t *p = (int32_t *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
@@ -777,7 +779,7 @@ namespace pipedal
         {
             // 24 bits in low bits of an int32_t.
 
-            int32_t *p = (int32_t *)rawPlaybackBuffer;
+            int32_t *p = (int32_t *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
@@ -799,7 +801,7 @@ namespace pipedal
         {
             // 24 bits in low bits of an int32_t.
 
-            int32_t *p = (int32_t *)rawPlaybackBuffer;
+            int32_t *p = (int32_t *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
@@ -819,7 +821,7 @@ namespace pipedal
         }
         void CopyPlaybackS32Be(size_t frames)
         {
-            int32_t *p = (int32_t *)rawPlaybackBuffer;
+            int32_t *p = (int32_t *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
@@ -839,7 +841,7 @@ namespace pipedal
         }
         void CopyPlaybackS24_3Be(size_t frames)
         {
-            uint8_t *p = (uint8_t *)rawPlaybackBuffer;
+            uint8_t *p = (uint8_t *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
@@ -864,7 +866,7 @@ namespace pipedal
         }
         void CopyPlaybackS24_3Le(size_t frames)
         {
-            uint8_t *p = (uint8_t *)rawPlaybackBuffer;
+            uint8_t *p = (uint8_t *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
@@ -890,7 +892,7 @@ namespace pipedal
 
         void CopyPlaybackFloatLe(size_t frames)
         {
-            float *p = (float *)rawPlaybackBuffer;
+            float *p = (float *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->captureChannels;
@@ -905,7 +907,7 @@ namespace pipedal
         }
         void CopyPlaybackFloatBe(size_t frames)
         {
-            float *p = (float *)rawPlaybackBuffer;
+            float *p = (float *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->captureChannels;
@@ -922,6 +924,7 @@ namespace pipedal
 
     public:
         void TestFormatEncodeDecode(snd_pcm_format_t captureFormat);
+
     private:
         void AllocateBuffers(std::vector<float *> &buffers, size_t n)
         {
@@ -1020,8 +1023,8 @@ namespace pipedal
             }
 
             captureFrameSize = captureSampleSize * captureChannels;
-            rawCaptureBuffer = new uint8_t[captureFrameSize * bufferSize];
-            memset(rawCaptureBuffer, 0, captureFrameSize * bufferSize);
+            rawCaptureBuffer.resize(captureFrameSize * bufferSize);
+            memset(rawCaptureBuffer.data(), 0, captureFrameSize * bufferSize);
 
             AllocateBuffers(captureBuffers, captureChannels);
         }
@@ -1092,8 +1095,8 @@ namespace pipedal
             }
 
             playbackFrameSize = playbackSampleSize * playbackChannels;
-            rawPlaybackBuffer = new uint8_t[playbackFrameSize * bufferSize];
-            memset(rawPlaybackBuffer, 0, playbackFrameSize * bufferSize);
+            rawPlaybackBuffer.resize(playbackFrameSize * bufferSize);
+            memset(rawPlaybackBuffer.data(), 0, playbackFrameSize * bufferSize);
 
             AllocateBuffers(playbackBuffers, playbackChannels);
         }
@@ -1231,7 +1234,7 @@ namespace pipedal
 
         void FillOutputBuffer()
         {
-            memset(rawPlaybackBuffer, 0, playbackFrameSize * bufferSize);
+            memset(rawPlaybackBuffer.data(), 0, playbackFrameSize * bufferSize);
             while (true)
             {
                 auto avail = snd_pcm_avail(this->playbackHandle);
@@ -1249,24 +1252,93 @@ namespace pipedal
                 if (avail > this->bufferSize)
                     avail = this->bufferSize;
 
-                ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer, avail);
+                ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer.data(), avail);
                 if (err < 0)
                 {
                     throw PiPedalStateException(SS("Audio playback failed. " << snd_strerror(err)));
                 }
             }
         }
-        void XrunRecoverOutputOverrun(snd_pcm_t *handle, int err)
+        void recover_from_output_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
         {
             if (err == -EPIPE)
             {
-                err = snd_pcm_prepare(handle);
+                err = snd_pcm_prepare(playback_handle);
+                if (err < 0)
+                {
+                    throw PiPedalStateException(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
+                }
+                FillOutputBuffer();
+            } else {
+                throw PiPedalStateException(SS("Can't recover from ALSA output error. (" << snd_strerror(err) << ")"));
+            }
+
+        }
+        void recover_from_input_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
+        {
+            if (err == -EPIPE)
+            {
+
+                // Unlink the streams before recovery
+                snd_pcm_unlink(capture_handle);
+
+                err = snd_pcm_drop(capture_handle);
                 if (err < 0)
                 {
                     throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
                 }
+                err = snd_pcm_drop(playback_handle);
+                if (err < 0)
+                {
+                    throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
+                }
+
+                // Prepare both streams
+                if ((err = snd_pcm_prepare(playback_handle)) < 0)
+                {
+                    throw std::runtime_error(SS("Cannot prepare playback stream: " << snd_strerror(err)));
+                }
+                if ((err = snd_pcm_prepare(capture_handle)) < 0)
+                {
+                    throw std::runtime_error(SS("Cannot prepare capture stream: " << snd_strerror(err)));
+                }
+
+                // Fill the playback buffer with silence
+                FillOutputBuffer();
+
+                // Resynchronize the streams
+                if ((err = snd_pcm_link(capture_handle, playback_handle)) < 0)
+                {
+                    throw std::runtime_error(SS("Cannot relink streams: " << snd_strerror(err)));
+                }
+
+                // Start the streams
+                if ((err = snd_pcm_start(capture_handle)) < 0)
+                {
+                    throw std::runtime_error(SS("Cannot restart capture stream: " << snd_strerror(err)));
+                }
             }
-            FillOutputBuffer();
+            else if (err == ESTRPIPE)
+            {
+                audioRunning = false;
+                while ((err = snd_pcm_resume(capture_handle)) == -EAGAIN)
+                {
+                    sleep(1);
+                }
+                if (err < 0)
+                {
+                    err = snd_pcm_prepare(capture_handle);
+                    if (err < 0)
+                    {
+                        throw PiPedalStateException(SS("Can't recover from ALSA suspend. (" << snd_strerror(err) << ")"));
+                    }
+                }
+                audioRunning = true;
+
+
+            } else {
+                throw std::runtime_error(SS("Can't restart audio: " << snd_strerror(err)));
+            }
         }
 
         void DumpStatus(snd_pcm_t *handle)
@@ -1275,53 +1347,6 @@ namespace pipedal
             snd_pcm_status(handle, snd_status);
             snd_pcm_status_dump(snd_status, snd_output);
 #endif
-        }
-
-        void XrunRecoverInputUnderrun(snd_pcm_t *handle, int err)
-        {
-            if (err == -EPIPE)
-            { /* underrun */
-
-                this->driverHost->OnUnderrun();
-
-                // DumpStatus(handle);
-                err = snd_pcm_drop(handle);
-                if (err < 0)
-                {
-                    throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
-                }
-                err = snd_pcm_prepare(handle);
-                if (err < 0)
-                {
-                    throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
-                }
-                FillOutputBuffer();
-
-                err = snd_pcm_start(handle);
-                if (err < 0)
-                {
-                    throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
-                }
-                return;
-            }
-            else if (err == -ESTRPIPE)
-            {
-                audioRunning = false;
-                while ((err = snd_pcm_resume(handle)) == -EAGAIN)
-                {
-                    sleep(1);
-                }
-                if (err < 0)
-                {
-                    err = snd_pcm_prepare(handle);
-                    if (err < 0)
-                    {
-                        throw PiPedalStateException(SS("Can't recover from ALSA suspend. (" << snd_strerror(err) << ")"));
-                    }
-                }
-                return;
-            }
-            throw PiPedalStateException(SS("ALSA error: " << snd_strerror(err)));
         }
 
         std::jthread *audioThread = nullptr;
@@ -1439,18 +1464,17 @@ namespace pipedal
                         ssize_t thisTime = framesToRead;
                         ssize_t nFrames;
                         if ((nFrames = ReadBuffer(
-                            captureHandle, 
-                            this->rawCaptureBuffer + this->captureFrameSize*framesRead, 
-                            bufferSize)) < 0)
+                                 captureHandle,
+                                 this->rawCaptureBuffer.data() + this->captureFrameSize * framesRead,
+                                 bufferSize)) < 0)
                         {
                             this->driverHost->OnUnderrun();
-                            auto state = snd_pcm_state(playbackHandle);
-                            XrunRecoverInputUnderrun(captureHandle, nFrames);
+                            recover_from_input_underrun(captureHandle, playbackHandle,nFrames);
                             xrun = true;
                             break;
                         }
                         framesRead += nFrames;
-                        framesToRead -= nFrames; 
+                        framesToRead -= nFrames;
                     }
                     if (xrun)
                     {
@@ -1475,12 +1499,12 @@ namespace pipedal
                     cpuUse.AddSample(ProfileCategory::Driver);
                     // process.
 
-                    ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer, framesRead);
+                    ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer.data(), framesRead);
 
                     if (err < 0)
                     {
                         this->driverHost->OnUnderrun();
-                        XrunRecoverOutputOverrun(playbackHandle, err);
+                        recover_from_output_underrun(captureHandle, playbackHandle,err);
                     }
                     cpuUse.AddSample(ProfileCategory::Write);
                 }
@@ -1498,25 +1522,20 @@ namespace pipedal
                 // zero out input buffers.
                 for (size_t i = 0; i < this->captureBuffers.size(); ++i)
                 {
-                    float*pBuffer = captureBuffers[i];
+                    float *pBuffer = captureBuffers[i];
                     for (size_t j = 0; j < this->bufferSize; ++j)
                     {
                         pBuffer[j] = 0;
                     }
-
                 }
-                while(!terminateAudio())
+                while (!terminateAudio())
                 {
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     // zero out input buffers.
                     this->driverHost->OnProcess(this->bufferSize);
-
                 }
             }
             this->driverHost->OnAudioTerminated();
-
-
-            
         }
 
         bool alsaActive = false;
@@ -1615,7 +1634,7 @@ namespace pipedal
             int dataLength = 0;
             int dataIndex = 0;
             size_t statusBytesRemaining = 0;
-            size_t data0 =0;
+            size_t data0 = 0;
             size_t data1 = 0;
 
             size_t eventCount = 0;
@@ -1890,11 +1909,13 @@ namespace pipedal
             {
                 const auto &device = devices[i];
                 MidiState *midiState = nullptr;
-                try {
+                try
+                {
                     midiState = new MidiState();
                     midiState->Open(device);
                     midiStates.push_back(midiState);
-                } catch (const std::exception &e)
+                }
+                catch (const std::exception &e)
                 {
                     // logged already.
                     delete midiState;
@@ -1959,16 +1980,6 @@ namespace pipedal
             activePlaybackBuffers.clear();
             FreeBuffers(this->playbackBuffers);
             FreeBuffers(this->captureBuffers);
-            if (rawCaptureBuffer)
-            {
-                delete[] rawCaptureBuffer;
-                rawCaptureBuffer = nullptr;
-            }
-            if (rawPlaybackBuffer)
-            {
-                delete[] rawPlaybackBuffer;
-                rawPlaybackBuffer = nullptr;
-            }
         }
         virtual void Close()
         {
@@ -2122,7 +2133,8 @@ namespace pipedal
             playbackHwParams = nullptr;
         }
 
-        if (captureHwParams) {
+        if (captureHwParams)
+        {
             snd_pcm_hw_params_free(captureHwParams);
             captureHwParams = nullptr;
         }
@@ -2172,18 +2184,17 @@ namespace pipedal
 
         // make sure encode decode round-trips with reasonable accuracy.
 
-        for (size_t i= 0; i < bufferSize; ++i)
+        for (size_t i = 0; i < bufferSize; ++i)
         {
             for (size_t c = 0; c < captureChannels; ++c)
             {
                 // provide a rich set of approximately readable bits in the output.
-                float value = 1.0f*i/bufferSize
-                +1.0f*(i)/(128.0*256.0);
+                float value = 1.0f * i / bufferSize + 1.0f * (i) / (128.0 * 256.0);
 
                 // only 16-bits of precision in data for 16-bit formats
                 if (captureFormat != snd_pcm_format_t::SND_PCM_FORMAT_S16_BE && captureFormat != snd_pcm_format_t::SND_PCM_FORMAT_S16_LE)
                 {
-                    value += 1.0f*(c)/(128.0*256.0*256.0);
+                    value += 1.0f * (c) / (128.0 * 256.0 * 256.0);
                 }
                 this->playbackBuffers[c][i] = value;
             }
@@ -2192,25 +2203,23 @@ namespace pipedal
         (this->*copyOutputFn)(bufferSize);
 
         assert(captureFrameSize == playbackFrameSize);
-        memcpy(this->rawCaptureBuffer,this->rawPlaybackBuffer,captureFrameSize*bufferSize);
+        memcpy(this->rawCaptureBuffer.data(), this->rawPlaybackBuffer.data(), captureFrameSize * bufferSize);
 
         (this->*copyInputFn)(bufferSize);
 
-        for (size_t i= 0; i < bufferSize; ++i)
+        for (size_t i = 0; i < bufferSize; ++i)
         {
             for (size_t c = 0; c < captureChannels; ++c)
             {
-                float error = 
+                float error =
                     this->captureBuffers[c][i] - this->playbackBuffers[c][i];
 
                 assert(std::abs(error) < 4e-5);
             }
         }
-
-
     }
 
-    void AlsaFormatEncodeDecodeTest(AudioDriverHost*testDriverHost)
+    void AlsaFormatEncodeDecodeTest(AudioDriverHost *testDriverHost)
     {
         static snd_pcm_format_t formats[] = {
             snd_pcm_format_t::SND_PCM_FORMAT_S16_LE,
@@ -2223,16 +2232,14 @@ namespace pipedal
             snd_pcm_format_t::SND_PCM_FORMAT_FLOAT_LE,
         };
 
-        for (auto format:  formats)
+        for (auto format : formats)
         {
             // Check audio encode/decode.
-            std::unique_ptr<AlsaDriverImpl> alsaDriver {
-                (AlsaDriverImpl*)new AlsaDriverImpl(testDriverHost)
-            };
+            std::unique_ptr<AlsaDriverImpl> alsaDriver{
+                (AlsaDriverImpl *)new AlsaDriverImpl(testDriverHost)};
 
             alsaDriver->TestFormatEncodeDecode(format);
         }
-
     }
     void MidiDecoderTest()
     {

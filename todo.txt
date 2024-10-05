@@ -1,18 +1,12 @@
 ToobFreeverb has a big memory leak!
 
-Convert subscribers to shared_ptr's.
-
-Do we have to deactivate both Audio handles after an underrun? I think so.
-
-Back Button sequence for performance view.
-
-Review state changing code. Do we need this anymmore? I think not.
+Review state changing code. Do we need this anymmore? I think not. It is a bit sus.
 
 
 Review current handleNotifyPatchProperty. I tink server-side support needs to be
 removed, and rely on handleNotifyPathPatchPropertyChanged instead.
 
-private handleNotifyPatchProperty(clientHandle: number, instanceId: number, propertyUri: string, jsonObject: any) {
+`private handleNotifyPatchProperty(clientHandle: number, instanceId: number, propertyUri: string, jsonObject: any) {
 
 Midi bindings.    
 
@@ -26,14 +20,6 @@ SEGV at void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
        audioHost UNTIL the service thread has read the close marker.
        
 - continuing corrupt memory.
-- LV2 STATE and properties DO NOT MATCH in saved files.
-- LV2_STATE is not populated wiht properties are.
-- properties are not popluate when LV_sate Is.
-- FINISH PATH property running updates code.
-  Maybe we should be using LV2_State (if we can capture it  
-  propertly. ) 
-         
-
 
 
 - verify that scanning doesn't cause overruns.

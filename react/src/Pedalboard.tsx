@@ -228,7 +228,7 @@ export class SnapshotValue {
         result.instanceId = item.instanceId;
         result.controlValues = ControlValue.deserializeArray(item.controlValues); 
         result.lv2State = item.lv2State; // we can do this, because lv2State is immutable.
-        result.pathProperties = {... item.pathProperties}; // clone the dictionary.
+        result.pathProperties = {...item.pathProperties}; // clone the dictionary.
         return result;
     }
     instanceId: number = -1;

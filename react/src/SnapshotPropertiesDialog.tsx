@@ -25,7 +25,6 @@
 import React from 'react';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import ButtonBase from "@mui/material/ButtonBase"
 import Typography from '@mui/material/Typography';
 import DialogEx from './DialogEx';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -33,8 +32,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import { colorKeys, getBackgroundColor } from "./MaterialColors";
+import { colorKeys } from "./MaterialColors";
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
+import ColorDropdownButton, { DropdownAlignment } from './ColorDropdownButton';
 
 const snapshotColors = colorKeys.slice(0,100);
 const NBSP = "\u00A0";
@@ -111,7 +111,7 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
 
         let okButtonText = this.props.editing ? "OK" : "Save";
         return (
-            <DialogEx maxWidth={false} tag="snapshotProps" open={this.props.open} onClose={handleClose} 
+            <DialogEx maxWidth="sm" fullWidth={true} tag="snapshotProps" open={this.props.open} onClose={handleClose} 
                 style={{ userSelect: "none" }} fullScreen={this.state.compactVertical}
             >
                 <DialogTitle>
@@ -126,7 +126,7 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
                     </div>
 
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent style={{paddingBottom: 0}}>
 
                     <TextField variant="standard" style={{ flexGrow: 1, flexBasis: 1 }}
                         autoComplete="off"
@@ -144,40 +144,11 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
                         }}
                     />
                     <Typography variant="caption" color="textSecondary">Color</Typography>
-                    <div style={{ margin: 4,display: "flex", flexFlow: "row wrap", gap: 8 }}>
-                        {
-                            snapshotColors.map((colorKey, index) => {
-                                let selected = this.state.color === colorKey;
-                                let color = getBackgroundColor(colorKey);
-                                return (
-                                    <ButtonBase
-                                        key={"colorTag" + index}
-                                        style={{
-                                            width: 48, height: 48,
-                                            borderRadius: 8,
-                                            borderStyle: "solid",
-                                            borderColor: selected ? color : "transparent",
-                                            borderWidth: 2,
-                                        }}
-                                        onClick={()=> { 
-                                            this.setState({color: colorKey});
-                                        }}
-
-                                    >
-                                    <div style={{
-                                        width: 40, height: 40,
-                                        borderRadius: 4,
-                                        margin: 2,
-                                        background: color
-                                    }}>
-                                    </div>
-
-                                    </ButtonBase>
-
-                                );
-                            })
-                        }
-                    </div>
+                    <ColorDropdownButton aria-label="color" currentColor={this.state.color} dropdownAlignment={DropdownAlignment.SE}
+                          onColorChange={(newcolor) => {
+                            this.setState({color: newcolor});
+                          }} />
+                          
                 </DialogContent>
                 <DialogActions>
                     <Button variant="dialogSecondary" onClick={handleClose} >

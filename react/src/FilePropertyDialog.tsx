@@ -26,7 +26,6 @@ import MenuItem from '@mui/material/MenuItem';
 import Menu from '@mui/material/Menu';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import { PiPedalModel, PiPedalModelFactory, FileEntry } from './PiPedalModel';
-import Link from '@mui/material/Link';
 import { isDarkMode } from './DarkMode';
 import Button from '@mui/material/Button';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
@@ -36,6 +35,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import DialogActions from '@mui/material/DialogActions';
 import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import OldDeleteIcon from './OldDeleteIcon';
 import Toolbar from '@mui/material/Toolbar';
@@ -49,7 +49,6 @@ import Typography from '@mui/material/Typography';
 import DialogEx from './DialogEx';
 import UploadFileDialog from './UploadFileDialog';
 import OkCancelDialog from './OkCancelDialog';
-import Breadcrumbs from '@mui/material/Breadcrumbs';
 import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
 
@@ -73,6 +72,7 @@ export interface FilePropertyDialogProps extends WithStyles<typeof styles>  {
 export interface FilePropertyDialogState {
     fullScreen: boolean;
     selectedFile: string;
+    selectedFileIsDirectory: boolean;
     navDirectory: string;
     hasSelection: boolean;
     canDelete: boolean;
@@ -165,8 +165,9 @@ export default withStyles(styles, { withTheme: true })(
         this.model = PiPedalModelFactory.getInstance();
 
         this.state = {
-            fullScreen: false,
+            fullScreen: this.getFullScreen(),
             selectedFile: props.selectedFile,
+            selectedFileIsDirectory: false,
             navDirectory: this.getNavDirectoryFromFile(props.selectedFile, props.fileProperty),
             hasSelection: false,
             canDelete: false,
@@ -181,6 +182,9 @@ export default withStyles(styles, { withTheme: true })(
             moveDialogOpen: false
         };
         this.requestScroll = true;
+    }
+    getFullScreen() {  
+        return window.innerWidth < 450 || window.innerHeight < 450;
     }
 
     private scrollRef: HTMLDivElement | null = null;
@@ -244,7 +248,7 @@ export default withStyles(styles, { withTheme: true })(
     onWindowSizeChanged(width: number, height: number): void {
 
         this.setState({
-            fullScreen: height < 200
+            fullScreen: this.getFullScreen()
         })
         if (this.lastDivRef !== null) {
             this.onMeasureRef(this.lastDivRef);
@@ -302,9 +306,9 @@ export default withStyles(styles, { withTheme: true })(
         return hasSelection;
     }
 
-    onSelectValue(selectedFile: string) {
+    onSelectValue(selectedFile: string, isDirectory: boolean) {
         this.requestScroll = true;
-        this.setState({ selectedFile: selectedFile, hasSelection: this.isFileInList(this.state.fileEntries, selectedFile) })
+        this.setState({ selectedFile: selectedFile, selectedFileIsDirectory: isDirectory, hasSelection: this.isFileInList(this.state.fileEntries, selectedFile) })
     }
     onDoubleClickValue(selectedFile: string) {
         this.openSelectedFile();
@@ -364,17 +368,17 @@ export default withStyles(styles, { withTheme: true })(
     }
     renderBreadcrumbs() {
         if (this.state.navDirectory === "") {
-            return (<div style={{ height: 0 }} />);
+            return (<Divider />);
         }
         let breadcrumbs: React.ReactElement[] = [(
-            <Link underline="hover"
+            <Button variant="text" 
                 color="inherit"
-                key="1" onClick={() => { this.navigate(""); }}
-                sx={{ display: 'flex', alignItems: 'center',cursor: "default" }}
+                key="h" onClick={() => { this.navigate(""); }}
+                style={{ textTransform: "none", flexShrink: 0  }}
+                startIcon={(<HomeIcon sx={{ mr: 0.6 }} fontSize="inherit" />)}
             >
-                <HomeIcon sx={{ mr: 0.6 }} fontSize="inherit" />
-                Home
-            </Link>
+                <Typography style={{}} variant="body2" noWrap>Home</Typography>
+            </Button>
         )
         ];
         let directories = this.state.navDirectory.split("/");
@@ -383,25 +387,48 @@ export default withStyles(styles, { withTheme: true })(
             target = pathConcat(target, directories[i]);
             let myTarget = target;
             breadcrumbs.push((
-                <Link underline="hover" key={(i + 1).toString()} style={{cursor: "default"}}
-                    color="inherit" onClick={() => { this.navigate(myTarget) }}>
-                    {directories[i]}
-                </Link>
+                <Typography key={"x"+(i)} variant="body2" style={{marginTop: 6, marginBottom: 6}} noWrap>/</Typography>
+
+            )
+            );
+            breadcrumbs.push((
+                <Button variant="text"  
+                    key={(i).toString()} 
+                    color="inherit" 
+                    onClick={() => { this.navigate(myTarget) }}
+                    style={{ minWidth: 0,textTransform: "none" , flexShrink: 0 }}
+                    >
+                    <Typography variant="body2" style={{}} noWrap>{directories[i]}</Typography>
+
+                    
+                </Button>
             ));
         }
         {
             let lastdirectory = directories[directories.length - 1];
             breadcrumbs.push((
-                <Typography noWrap key={directories.length.toString()} 
-                    style={{cursor: "default"}}
+                <Typography key={"x"+(directories.length)} variant="body2" style={{userSelect: "none",marginTop: 6, marginBottom: 6}} noWrap>/</Typography>
+
+            )
+            );
+            breadcrumbs.push((
+                <div style={{flexShrink: 0,paddingLeft: 8, paddingRight: 8, paddingTop: 6, paddingBottom: 6, overflowX:"clip"}}>
+                <Typography  key={directories.length.toString()}  noWrap
+                    style={{}} variant="body2" 
                     color="text.secondary"> {lastdirectory}</Typography>
+                </div>
             ));
 
         }
         return (
-            <Breadcrumbs separator='/' aria-label="breadcrumb" style={{ marginLeft: 24 }}>
-                {breadcrumbs}
-            </Breadcrumbs>
+            <div>
+
+                <div aria-label="breadcrumb" 
+                    style={{ marginLeft: 16, marginBottom: 8, marginRight:8, textOverflow: "",display: "flex",flexFlow: "row wrap",alignItems: "center",justifyContent: "start" }}>
+                    {breadcrumbs}
+                </div>
+                <Divider/>
+            </div>
         );
     }
 
@@ -446,12 +473,30 @@ export default withStyles(styles, { withTheme: true })(
     render() {
         let classes = this.props.classes;
         let columnWidth = this.state.columnWidth;
+        let okButtonText = "Select";
+        if (this.state.hasSelection && this.state.selectedFileIsDirectory)
+        {
+            okButtonText = "Open";
+        }
         return this.props.open &&
             (
-                <DialogEx onClose={() => this.props.onCancel()} open={this.props.open} tag="fileProperty" fullWidth maxWidth="xl" style={{ height: "90%" }}
-                    PaperProps={{ style: { minHeight: "90%", maxHeight: "90%", overflowY: "visible" } }}
+                <DialogEx 
+                    fullScreen={this.state.fullScreen} 
+                    onClose={() => {
+                        this.props.onCancel();
+                    }} 
+                    open={this.props.open} tag="fileProperty" 
+                    fullWidth maxWidth="xl" 
+                    PaperProps={
+                        this.state.fullScreen ? 
+                        {}
+                        :
+                        { style: { 
+                        minHeight: "90%", 
+                        maxHeight: "90%", 
+                        } }}
                 >
-                    <DialogTitle >
+                    <DialogTitle style={{paddingBottom: 0}} >
                         <Toolbar style={{ padding: 0 }}>
                             <IconButton
                                 edge="start"
@@ -507,17 +552,17 @@ export default withStyles(styles, { withTheme: true })(
                                 {this.hasSelectedFileOrFolder() && (<MenuItem onClick={() => { this.handleMenuClose();this.onRename(); }}>Rename</MenuItem>)}
                             </Menu>
                         </Toolbar>
-                        <div style={{ flex: "0 0 auto", marginLeft: "auto", marginRight: "auto" }}>
+                        <div style={{ flex: "0 0 auto", marginLeft: 0, marginRight: 0, overflowX: "clip" }}>
                             {this.renderBreadcrumbs()}
                         </div>
                     </DialogTitle>
-                    <div style={{ flex: "0 0 auto", height: "1px", background: isDarkMode() ? "rgba(255,255,255,0.1" : "rgba(0,0,0,0.2" }}>&nbsp;</div>
-                    <div style={{ flex: "1 1 auto", height: "300", display: "flex", flexFlow: "row wrap", overflowX: "hidden", overflowY: "auto" }}>
+                    <DialogContent style={{paddingLeft: 0, paddingRight: 0, paddingTop: 0,colorScheme: (isDarkMode() ? "dark" : "light")}}>
+                        
                         <div
                             ref={(element) => this.onMeasureRef(element)}
                             style={{
                                 flex: "1 1 100%", display: "flex", flexFlow: "row wrap",
-                                justifyContent: "flex-start", alignContent: "flex-start", paddingLeft: 16, paddingTop: 16, paddingBottom: 16
+                                justifyContent: "flex-start", alignContent: "flex-start", paddingLeft: 16, paddingBottom: 16
                             }}>
                             {
                                 (this.state.columns !== 0) && // don't render until we have number of columns derived from layout.
@@ -549,7 +594,7 @@ export default withStyles(styles, { withTheme: true })(
                                             <ButtonBase key={value.filename}
 
                                                 style={{ width: columnWidth, flex: "0 0 auto", height: 48, position: "relative" }}
-                                                onClick={() => this.onSelectValue(value.filename)} onDoubleClick={() => { this.onDoubleClickValue(value.filename); }}
+                                                onClick={() => this.onSelectValue(value.filename,value.isDirectory)} onDoubleClick={() => { this.onDoubleClickValue(value.filename); }}
                                             >
                                                 <div ref={scrollRef} style={{ position: "absolute", background: selectBg, width: "100%", height: "100%", borderRadius: 4 }} />
                                                 <div style={{ display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis", justifyContent: "start", alignItems: "center", width: "100%", height: "100%" }}>
@@ -569,8 +614,8 @@ export default withStyles(styles, { withTheme: true })(
                                 )
                             }
                         </div>
-                    </div>
-                    <div style={{ flex: "0 0 auto", height: "1px", background: "rgba(0,0,0,0.2" }}>&nbsp;</div>
+                    </DialogContent>
+                    <Divider/>
                     <DialogActions style={{ justifyContent: "stretch" }}>
                         <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
                             <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
@@ -594,7 +639,7 @@ export default withStyles(styles, { withTheme: true })(
                                 
                                 disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
                             >
-                                Select
+                                {okButtonText}
                             </Button>
                         </div>
                     </DialogActions>

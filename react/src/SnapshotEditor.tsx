@@ -38,7 +38,8 @@ import { isDarkMode } from './DarkMode';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { Snapshot } from './Pedalboard';
-import ColorDropdownButton from './ColorDropdownButton';
+import ColorDropdownButton, { DropdownAlignment } from './ColorDropdownButton';
+import { getBackgroundColor } from './MaterialColors';
 
 
 const selectColor = isDarkMode() ? "#888" : "#FFFFFF";
@@ -252,7 +253,7 @@ const SnapshotEditor = withStyles(appStyles)(class extends ResizeResponsiveCompo
                 }}
             >
                 <CssBaseline />
-                <AppBar position="static" sx={{ bgcolor: isDarkMode() ? "#100020" : "#200040" }} >
+                <AppBar position="static" sx={{ bgcolor: isDarkMode() ? getBackgroundColor("purple") : "#200040" }} >
                     <Toolbar variant="dense"  >
                         <IconButton
                             edge="start"
@@ -288,6 +289,7 @@ const SnapshotEditor = withStyles(appStyles)(class extends ResizeResponsiveCompo
                         </div>
                         <ColorDropdownButton
                             currentColor={this.state.color}
+                            dropdownAlignment={DropdownAlignment.SW}
                             onColorChange={(newColor) => {
                                 this.setState({ color: newColor });
                             }} />
@@ -335,7 +337,7 @@ const SnapshotEditor = withStyles(appStyles)(class extends ResizeResponsiveCompo
                     onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
                     }
                 />
-                {this.state.showStatusMonitor && (<JackStatusView />)}
+                { this.state.showStatusMonitor && (<JackStatusView />)}
             </div >
         );
     }

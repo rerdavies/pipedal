@@ -28,14 +28,18 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
 import AppBar from '@mui/material/AppBar';
 import SnapshotPanel from './SnapshotPanel';
-import ArrowLeftOutlined from '@mui/icons-material/ArrowLeft';
-import ArrowRightOutlined from '@mui/icons-material/ArrowRight';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+//import ArrowLeftOutlined from '@mui/icons-material/ArrowLeft';
+//import ArrowRightOutlined from '@mui/icons-material/ArrowRight';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import { isDarkMode } from './DarkMode';
 import { BankIndex } from './Banks';
 import SnapshotEditor from './SnapshotEditor';
 import { Snapshot } from './Pedalboard';
+import JackStatusView from './JackStatusView';
+import {IDialogStackable, DialogStackState, removeDialogStackEntriesAbove, popDialogStack, pushDialogStack} from './DialogEx';
 
 
 const selectColor = isDarkMode() ? "#888" : "#FFFFFF";
@@ -63,6 +67,7 @@ const styles = (theme: Theme) => createStyles({
 
 
 interface PerformanceViewProps extends WithStyles<typeof styles> {
+    open: boolean,
     onClose: () => void,
     theme: Theme
 }
@@ -78,7 +83,7 @@ interface PerformanceViewState {
 
 export const PerformanceView =
     withStyles(styles, { withTheme: true })(
-        class extends ResizeResponsiveComponent<PerformanceViewProps, PerformanceViewState> {
+        class extends ResizeResponsiveComponent<PerformanceViewProps, PerformanceViewState> implements IDialogStackable {
             model: PiPedalModel;
 
             constructor(props: PerformanceViewProps) {
@@ -96,7 +101,76 @@ export const PerformanceView =
                 };
                 this.onPresetsChanged = this.onPresetsChanged.bind(this);
                 this.onBanksChanged = this.onBanksChanged.bind(this);
+                this.handlePopState = this.handlePopState.bind(this);
+
             }
+
+            getTag() { return "performView"}
+            isOpen() { return this.props.open }
+            onDialogStackClose() {
+                this.props.onClose();
+            }
+
+            private stateWasPopped: boolean = false;
+            
+
+            private hasHooks: boolean = false;
+
+            updateHooks() : void {
+                let wantHooks = this.mounted && this.props.open;
+
+                if (wantHooks !== this.hasHooks)
+                {
+                    this.hasHooks = wantHooks;
+        
+                    if (this.hasHooks)
+                    {
+                        this.stateWasPopped = false;
+                        window.addEventListener("popstate",this.handlePopState);
+                        
+                        pushDialogStack(this);
+                        let dialogStackState: DialogStackState = {tag: this.getTag(),previousState: window.history.state as DialogStackState | null};
+                        window.history.replaceState(dialogStackState,"",window.location.href);
+                        window.history.pushState(
+                            null,
+                            "",
+                            "#" + this.getTag()
+                        );
+                    } else {
+                        if (!this.stateWasPopped)
+                        {
+                            window.history.back();
+                        }
+                    }
+                }
+            }
+        
+            handlePopState(ev: PopStateEvent): any 
+            {
+                let evTag: DialogStackState | null = ev.state as DialogStackState | null;
+                if (evTag && evTag.tag === this.getTag()) {
+                    removeDialogStackEntriesAbove(this.getTag());
+        
+                    if (!this.stateWasPopped)
+                    {
+                        this.stateWasPopped = true;
+                        popDialogStack  ();
+                        if (this.props.open) {
+                            this.props.onClose();
+                        }
+                    }
+                    window.history.replaceState(evTag.previousState,"",window.location.href);
+                    window.removeEventListener("popstate",this.handlePopState);
+        
+                    if (window.location.hash === "#menu") // The menu popstate is next?
+                    {
+                        window.history.back(); // then clear off the menu popstate too.
+                    }
+                    ev.stopPropagation();
+                }
+            }
+        
+
             onWindowSizeChanged(width: number, height: number): void {
                 this.setState({ wrapSelects: width < 700 });
             }
@@ -107,19 +181,34 @@ export const PerformanceView =
             onBanksChanged(newValue: BankIndex) {
                 this.setState({ banks: this.model.banks.get() })
             }
+
+            private mounted: boolean = false;
             componentDidMount(): void {
                 super.componentDidMount();
+                this.mounted = true;
                 this.model.presets.addOnChangedHandler(this.onPresetsChanged);
                 this.model.banks.addOnChangedHandler(this.onBanksChanged);
                 this.setState({
                     presets: this.model.presets.get(),
                     banks: this.model.banks.get()
                 });
+
+                this.updateHooks();
+
             }
+
+
+
             componentWillUnmount(): void {
+
                 this.model.presets.removeOnChangedHandler(this.onPresetsChanged);
                 this.model.banks.removeOnChangedHandler(this.onBanksChanged);
+
+                this.mounted = false;
+                this.updateHooks();
+
                 super.componentWillUnmount();
+
             }
             handlePresetSelectClose(event: any): void {
                 let value = event.currentTarget.getAttribute("data-value");
@@ -178,7 +267,7 @@ export const PerformanceView =
                         <div className={this.props.classes.frame} style={{ overflow: "clip", height: "100%" }} >
                             <AppBar id="select-plugin-dialog-title"
                                 style={{
-                                    position: "static", flex: "0 0 auto", height: wrapSelects ? 104 : 54,
+                                    position: "static", flex: "0 0 auto", height: wrapSelects ? 108 : 58,
                                     display: this.state.showSnapshotEditor ? "none" : undefined
                                 }}
                             >
@@ -188,7 +277,10 @@ export const PerformanceView =
                                     alignItems: "start"
                                 }}>
                                     <IconButton aria-label="menu" color="inherit"
-                                        onClick={() => { this.props.onClose(); }} style={{ flex: "0 0 auto" }} >
+                                        onClick={() => {  this.props.onClose(); }} 
+                                        style={{ 
+                                            position: "relative",top: 3,
+                                            flex: "0 0 auto" }} >
                                         <ArrowBackIcon />
                                     </IconButton>
 
@@ -206,12 +298,13 @@ export const PerformanceView =
                                             <IconButton
                                                 aria-label="previous-bank"
                                                 onClick={() => { this.handlePreviousBank(); }}
+                                                size="medium"
                                                 color="inherit"
                                                 style={{
                                                     borderTopRightRadius: "3px", borderBottomRightRadius: "3px", marginRight: 4
                                                 }}
                                             >
-                                                <ArrowLeftOutlined style={{ opacity: 0.75 }} />
+                                                <ArrowBackIosIcon style={{ opacity: 0.75 }} />
                                             </IconButton>
 
                                             <Select variant="standard"
@@ -239,10 +332,11 @@ export const PerformanceView =
                                             <IconButton
                                                 aria-label="next-bank"
                                                 onClick={() => { this.handleNextBank(); }}
+                                                size="large"
                                                 color="inherit"
                                                 style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
                                             >
-                                                <ArrowRightOutlined style={{ opacity: 0.75 }} />
+                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
                                             </IconButton>
 
                                         </div>
@@ -254,7 +348,7 @@ export const PerformanceView =
                                                 color="inherit"
                                                 style={{ borderTopRightRadius: "3px", borderBottomRightRadius: "3px", marginRight: 4 }}
                                             >
-                                                <ArrowLeftOutlined style={{ opacity: 0.75 }} />
+                                                <ArrowBackIosIcon style={{ opacity: 0.75 }} />
                                             </IconButton>
                                             <Select variant="standard"
                                                 className={classes.select}
@@ -288,16 +382,21 @@ export const PerformanceView =
                                                 color="inherit"
                                                 style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
                                             >
-                                                <ArrowRightOutlined style={{ opacity: 0.75 }} />
+                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
                                             </IconButton>
 
                                         </div>
                                     </div>
                                 </div>
                             </AppBar >
-                            <div style={{ flex: "1 0 auto", display: "flex", marginTop: 16 }}>
+                            <div style={{ flex: "1 0 auto", display: "flex", marginTop: 16,marginBottom: 20 }}>
                                 <SnapshotPanel onEdit={(index) => { return this.handleOnEdit(index); }} />
                             </div>
+
+                                                
+                            {!this.state.showSnapshotEditor && (
+                                <JackStatusView />)
+                            }
                         </div>
                         {this.state.showSnapshotEditor && (
                             <SnapshotEditor snapshotIndex={this.state.snapshotEditorIndex} 
