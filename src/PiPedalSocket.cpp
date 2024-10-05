@@ -477,7 +477,7 @@ JSON_MAP_REFERENCE(Vst3ControlChangedBody, value)
 JSON_MAP_REFERENCE(Vst3ControlChangedBody, state)
 JSON_MAP_END()
 
-class PiPedalSocketHandler : public SocketHandler, public IPiPedalModelSubscriber
+class PiPedalSocketHandler : public SocketHandler, public IPiPedalModelSubscriber, public std::enable_shared_from_this<PiPedalSocketHandler>
 {
 private:
     AdminClient &GetAdminClient() const
@@ -552,6 +552,8 @@ public:
         {
             FinalCleanup();
         }
+        Lv2Log::error("PiPedalSocketHandler deleted");
+
     }
 
     bool finalCleanup = false;
@@ -572,18 +574,21 @@ public:
         }
         activeVuSubscriptions.resize(0);
 
-        model.RemoveNotificationSubsription(this);
+        model.RemoveNotificationSubsription(shared_from_this());
+        // Warning: potentially deleted after return.
     }
 
     virtual void Close()
     {
         if (closed)
             return;
-        closed = true;
+        {
+            auto selfHolder = shared_from_this(); // keep ourselves alive until we return.
+            closed = true;
 
-        FinalCleanup(); // do it while we can.  &model will no longer be valid after this. ( :-( )
-
-        SocketHandler::Close();
+            FinalCleanup(); // do it while we can.  &model will no longer be valid after this. ( :-( )
+            SocketHandler::Close();
+        }
     }
 
     PiPedalSocketHandler(PiPedalModel &model)
@@ -1259,7 +1264,7 @@ public:
         }
         else if (message == "hello")
         {
-            this->model.AddNotificationSubscription(this);
+            this->model.AddNotificationSubscription(shared_from_this());
             Reply(replyTo, "ehlo", clientId);
         }
         else if (message == "setJackSettings")
@@ -1626,6 +1631,10 @@ public:
     }
 
 protected:
+    virtual void onSocketClosed() override {
+        SocketHandler::OnSocketClosed();
+        this->Close();
+    }
     virtual void onReceive(const std::string_view &text)
     {
         view_istream<char> s(text);
@@ -2061,6 +2070,7 @@ private:
 
 std::atomic<uint64_t> PiPedalSocketHandler::nextClientId = 0;
 
+
 class PiPedalSocketFactory : public ISocketFactory
 {
 private:
@@ -2087,6 +2097,7 @@ public:
         return std::make_shared<PiPedalSocketHandler>(model);
     }
 };
+
 
 std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &model)
 {

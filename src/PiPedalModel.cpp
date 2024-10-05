@@ -118,18 +118,11 @@ void PiPedalModel::Close()
         }
 
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t {subscribers.begin(),subscribers.end()};
+        for (auto&subscriber: t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->Close();
         }
-        size_t n = this->subscribers.size();
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->Close();
-        }
-        delete[] t;
-
         this->subscribers.resize(0);
 
         oldAudioHost = std::move(this->audioHost);
@@ -299,25 +292,25 @@ IPiPedalModelSubscriber *PiPedalModel::GetNotificationSubscriber(int64_t clientI
     {
         if (subscribers[i]->GetClientId() == clientId)
         {
-            return subscribers[i];
+            return subscribers[i].get();
         }
     }
     return nullptr;
 }
 
-void PiPedalModel::AddNotificationSubscription(IPiPedalModelSubscriber *pSubscriber)
+void PiPedalModel::AddNotificationSubscription(std::shared_ptr<IPiPedalModelSubscriber> pSubscriber)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     this->subscribers.push_back(pSubscriber);
 }
-void PiPedalModel::RemoveNotificationSubsription(IPiPedalModelSubscriber *pSubscriber)
+void PiPedalModel::RemoveNotificationSubsription(std::shared_ptr<IPiPedalModelSubscriber> pSubscriber)
 {
     {
         std::lock_guard<std::recursive_mutex> lock(mutex);
 
         for (auto it = this->subscribers.begin(); it != this->subscribers.end(); ++it)
         {
-            if ((*it) == pSubscriber)
+            if ((*it).get() == pSubscriber.get())
             {
                 this->subscribers.erase(it);
                 break;
@@ -378,19 +371,11 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
             item->stateUpdateCount(item->stateUpdateCount() + 1);
 
             Lv2PluginState newState = item->lv2State();
-            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-            for (size_t i = 0; i < subscribers.size(); ++i)
+            std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+            for (auto &subscriber : t)
             {
-                t[i] = this->subscribers[i];
+                subscriber->OnLv2StateChanged(instanceId, newState);
             }
-            size_t n = this->subscribers.size();
-            {
-                for (size_t i = 0; i < n; ++i)
-                {
-                    t[i]->OnLv2StateChanged(instanceId, newState);
-                }
-            }
-            delete[] t;
         }
     }
 }
@@ -403,19 +388,11 @@ void PiPedalModel::SetInputVolume(float value)
 
         this->pedalboard.input_volume_db(value);
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->OnInputVolumeChanged(value);
         }
-        size_t n = this->subscribers.size();
-        {
-            for (size_t i = 0; i < n; ++i)
-            {
-                t[i]->OnInputVolumeChanged(value);
-            }
-        }
-        delete[] t;
 
         this->SetPresetChanged(-1, true);
     }
@@ -427,19 +404,11 @@ void PiPedalModel::SetOutputVolume(float value)
         std::lock_guard<std::recursive_mutex> lock(mutex);
         this->pedalboard.output_volume_db(value);
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->OnOutputVolumeChanged(value);
         }
-        size_t n = this->subscribers.size();
-        {
-            for (size_t i = 0; i < n; ++i)
-            {
-                t[i]->OnOutputVolumeChanged(value);
-            }
-        }
-        delete[] t;
 
         this->SetPresetChanged(-1, true);
     }
@@ -477,19 +446,11 @@ void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::
         {
 
             // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-            for (size_t i = 0; i < subscribers.size(); ++i)
+            std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+            for (auto &subscriber : t)
             {
-                t[i] = this->subscribers[i];
+                subscriber->OnControlChanged(clientId, pedalItemId, symbol, value);
             }
-            size_t n = this->subscribers.size();
-            {
-                for (size_t i = 0; i < n; ++i)
-                {
-                    t[i]->OnControlChanged(clientId, pedalItemId, symbol, value);
-                }
-            }
-            delete[] t;
 
             this->SetPresetChanged(clientId, true);
         }
@@ -499,33 +460,21 @@ void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::
 void PiPedalModel::FireJackConfigurationChanged(const JackConfiguration &jackConfiguration)
 {
     // noify subscribers.
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-    for (size_t i = 0; i < subscribers.size(); ++i)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        t[i] = this->subscribers[i];
+        subscriber->OnJackConfigurationChanged(jackConfiguration);
     }
-    size_t n = this->subscribers.size();
-    for (size_t i = 0; i < n; ++i)
-    {
-        t[i]->OnJackConfigurationChanged(jackConfiguration);
-    }
-    delete[] t;
 }
 
 void PiPedalModel::FireBanksChanged(int64_t clientId)
 {
     // noify subscribers.
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-    for (size_t i = 0; i < subscribers.size(); ++i)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        t[i] = this->subscribers[i];
+        subscriber->OnBankIndexChanged(this->storage.GetBanks());
     }
-    size_t n = this->subscribers.size();
-    for (size_t i = 0; i < n; ++i)
-    {
-        t[i]->OnBankIndexChanged(this->storage.GetBanks());
-    }
-    delete[] t;
 }
 
 void PiPedalModel::FirePedalboardChanged(int64_t clientId, bool loadAudioThread)
@@ -542,17 +491,11 @@ void PiPedalModel::FirePedalboardChanged(int64_t clientId, bool loadAudioThread)
         }
     }
     // noify subscribers.
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-    for (size_t i = 0; i < subscribers.size(); ++i)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        t[i] = this->subscribers[i];
+        subscriber->OnPedalboardChanged(clientId, this->pedalboard);
     }
-    size_t n = this->subscribers.size();
-    for (size_t i = 0; i < n; ++i)
-    {
-        t[i]->OnPedalboardChanged(clientId, this->pedalboard);
-    }
-    delete[] t;
 }
 void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
 {
@@ -653,17 +596,11 @@ void PiPedalModel::SetPedalboardItemEnable(int64_t clientId, int64_t pedalItemId
         this->pedalboard.SetItemEnabled(pedalItemId, enabled);
 
         // Notify clients.
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->OnItemEnabledChanged(clientId, pedalItemId, enabled);
         }
-        size_t n = this->subscribers.size();
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->OnItemEnabledChanged(clientId, pedalItemId, enabled);
-        }
-        delete[] t;
         this->SetPresetChanged(clientId, true);
 
         // Notify audo thread.
@@ -709,18 +646,11 @@ void PiPedalModel::FireSelectedSnapshotChanged(int64_t selectedSnapshot)
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->OnSelectedSnapshotChanged(selectedSnapshot);
         }
-        size_t n = this->subscribers.size();
-
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->OnSelectedSnapshotChanged(selectedSnapshot);
-        }
-        delete[] t;
     }
 }
 
@@ -729,21 +659,15 @@ void PiPedalModel::FirePresetChanged(bool changed)
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
-        {
-            t[i] = this->subscribers[i];
-        }
-        size_t n = this->subscribers.size();
 
         PresetIndex presets;
         GetPresets(&presets);
 
-        for (size_t i = 0; i < n; ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i]->OnPresetChanged(changed);
+            subscriber->OnPresetChanged(changed);
         }
-        delete[] t;
     }
 }
 
@@ -751,22 +675,15 @@ void PiPedalModel::FirePresetsChanged(int64_t clientId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
-        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
-        {
-            t[i] = this->subscribers[i];
-        }
-        size_t n = this->subscribers.size();
 
         PresetIndex presets;
         GetPresets(&presets);
 
-        for (size_t i = 0; i < n; ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i]->OnPresetsChanged(clientId, presets);
+            subscriber->OnPresetsChanged(clientId, presets);
         }
-        delete[] t;
     }
 }
 void PiPedalModel::FirePluginPresetsChanged(const std::string &pluginUri)
@@ -774,18 +691,11 @@ void PiPedalModel::FirePluginPresetsChanged(const std::string &pluginUri)
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->OnPluginPresetsChanged(pluginUri);
         }
-        size_t n = this->subscribers.size();
-
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->OnPluginPresetsChanged(pluginUri);
-        }
-        delete[] t;
     }
 }
 
@@ -888,7 +798,39 @@ int64_t PiPedalModel::UploadBank(BankFile &bankFile, int64_t uploadAfter)
 
 void PiPedalModel::NextBank(Direction direction)
 {
+    std::lock_guard<std::recursive_mutex> guard{mutex};
 
+    auto bankIndex = this->GetBankIndex();
+    if (bankIndex.entries().size() == 0)
+    {
+        return;
+    }
+    size_t index = 0;
+    for (size_t i = 0; i < bankIndex.entries().size(); ++i)
+    {   
+        auto&entry = bankIndex.entries()[i];
+        if (entry.instanceId() == bankIndex.selectedBank())
+        {
+            index = i;
+            break;
+        }
+    }
+    if (direction == Direction::Increase)
+    {
+        ++index;
+        if (index >= bankIndex.entries().size())
+        {
+            index = 0;
+        }
+    } else {
+        if (index == 0)
+        {
+            index = bankIndex.entries().size()-1;
+        } else {
+            --index;
+        }
+    }
+    this->OpenBank(-1,bankIndex.entries()[index].instanceId());
 }
 void PiPedalModel::NextPreset(Direction direction)
 {
@@ -932,7 +874,6 @@ void PiPedalModel::NextPreset(Direction direction)
     LoadPreset(-1, index.presets()[currentPresetIndex].instanceId());
 }
 
-
 void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
@@ -942,7 +883,9 @@ void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest 
         if (request.direction < 0)
         {
             NextPreset();
-        } else {
+        }
+        else
+        {
             PreviousPreset();
         }
     }
@@ -1102,18 +1045,10 @@ void PiPedalModel::SetGovernorSettings(const std::string &governor)
 
     this->storage.SetGovernorSettings(governor);
 
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        for (size_t i = 0; i < subscribers.size(); ++i)
-        {
-            t[i] = this->subscribers[i];
-        }
-        size_t n = this->subscribers.size();
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->OnGovernorSettingsChanged(governor);
-        }
-        delete[] t;
+        subscriber->OnGovernorSettingsChanged(governor);
     }
 }
 
@@ -1136,21 +1071,13 @@ void PiPedalModel::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSet
 #endif
 
     {
-        // yyy: review locking semantics here. This is wrong. Convert to shared pointers?
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
-        {
-            t[i] = this->subscribers[i];
-        }
-        size_t n = this->subscribers.size();
-
         WifiConfigSettings settingsWithNoSecrets = storage.GetWifiConfigSettings(); // (the passwordless version)
 
-        for (size_t i = 0; i < n; ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i]->OnWifiConfigSettingsChanged(settingsWithNoSecrets);
+            subscriber->OnWifiConfigSettingsChanged(settingsWithNoSecrets);
         }
-        delete[] t;
     }
 }
 
@@ -1209,20 +1136,13 @@ void PiPedalModel::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &w
     this->storage.SetWifiDirectConfigSettings(wifiDirectConfigSettings);
 
     {
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
-        {
-            t[i] = this->subscribers[i];
-        }
-        size_t n = this->subscribers.size();
-
         WifiDirectConfigSettings tWifiDirectConfigSettings = storage.GetWifiDirectConfigSettings(); // (the passwordless version)
 
-        for (size_t i = 0; i < n; ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i]->OnWifiDirectConfigSettingsChanged(tWifiDirectConfigSettings);
+            subscriber->OnWifiDirectConfigSettingsChanged(tWifiDirectConfigSettings);
         }
-        delete[] t;
 
         // update NSD-SD announement.
         UpdateDnsSd();
@@ -1242,25 +1162,16 @@ WifiDirectConfigSettings PiPedalModel::GetWifiDirectConfigSettings()
 
 void PiPedalModel::SetShowStatusMonitor(bool show)
 {
-    IPiPedalModelSubscriber **t;
-    size_t n;
     {
         std::lock_guard<std::recursive_mutex> lock(mutex); // copy atomically.
-        t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        n = this->subscribers.size();
         storage.SetShowStatusMonitor(show);
 
         // Notify clients.
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->OnShowStatusMonitorChanged(show);
         }
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->OnShowStatusMonitorChanged(show);
-        }
-        delete[] t;
     }
 }
 bool PiPedalModel::GetShowStatusMonitor()
@@ -1376,20 +1287,13 @@ void PiPedalModel::FireChannelSelectionChanged(int64_t clientId)
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
-        {
-            t[i] = this->subscribers[i];
-        }
-        size_t n = this->subscribers.size();
-
         JackChannelSelection channelSelection = storage.GetJackChannelSelection(this->jackConfiguration);
 
-        for (size_t i = 0; i < n; ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i]->OnChannelSelectionChanged(clientId, channelSelection);
+            subscriber->OnChannelSelectionChanged(clientId, channelSelection);
         }
-        delete[] t;
     }
 }
 
@@ -1449,17 +1353,11 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
             {
                 this->pedalboard.SetItemEnabled(instanceId, value != 0);
                 // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-                IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-                for (size_t i = 0; i < subscribers.size(); ++i)
+                std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+                for (auto &subscriber : t)
                 {
-                    t[i] = this->subscribers[i];
+                    subscriber->OnItemEnabledChanged(-1, instanceId, value != 0);
                 }
-                size_t n = this->subscribers.size();
-                for (size_t i = 0; i < n; ++i)
-                {
-                    t[i]->OnItemEnabledChanged(-1, instanceId, value != 0);
-                }
-                delete[] t;
 
                 this->SetPresetChanged(-1, true);
                 return;
@@ -1477,17 +1375,11 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
                         {
 
                             // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-                            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-                            for (size_t i = 0; i < subscribers.size(); ++i)
-                            {
-                                t[i] = this->subscribers[i];
-                            }
-                            size_t n = this->subscribers.size();
-                            for (size_t i = 0; i < n; ++i)
+                            std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+                            for (auto &subscriber : t)
                             {
                                 t[i]->OnMidiValueChanged(instanceId, symbol, value);
                             }
-                            delete[] t;
 
                             this->SetPresetChanged(-1, true);
                             return;
@@ -1505,17 +1397,11 @@ void PiPedalModel::OnNotifyVusSubscription(const std::vector<VuUpdate> &updates)
     for (size_t i = 0; i < updates.size(); ++i)
     {
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-        for (size_t i = 0; i < subscribers.size(); ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->OnVuMeterUpdate(updates);
         }
-        size_t n = this->subscribers.size();
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->OnVuMeterUpdate(updates);
-        }
-        delete[] t;
     }
 }
 
@@ -1792,17 +1678,11 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     this->jackServerSettings = jackServerSettings;
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-    for (size_t i = 0; i < subscribers.size(); ++i)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        t[i] = this->subscribers[i];
+        subscriber->OnJackServerSettingsChanged(jackServerSettings);
     }
-    size_t n = this->subscribers.size();
-    for (size_t i = 0; i < n; ++i)
-    {
-        t[i]->OnJackServerSettingsChanged(jackServerSettings);
-    }
-    delete[] t;
 
 #if ALSA_HOST
     storage.SetJackServerSettings(jackServerSettings);
@@ -2009,17 +1889,11 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
         {
             audioHost->SetPluginPreset(pluginInstanceId, presetValues.controls);
 
-            IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-            for (size_t i = 0; i < subscribers.size(); ++i)
+            std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+            for (auto &subscriber : t)
             {
-                t[i] = this->subscribers[i];
+                subscriber->OnLoadPluginPreset(pluginInstanceId, presetValues.controls);
             }
-            size_t n = this->subscribers.size();
-            for (size_t i = 0; i < n; ++i)
-            {
-                t[i]->OnLoadPluginPreset(pluginInstanceId, presetValues.controls);
-            }
-            delete[] t;
         }
         else
         {
@@ -2130,40 +2004,27 @@ void PiPedalModel::OnNotifyPathPatchPropertyReceived(
 
     if (this->audioHost)
     {
-        this->audioHost->OnNotifyPathPatchPropertyReceived(instanceId,pathPatchPropertyUri,atomString);
+        this->audioHost->OnNotifyPathPatchPropertyReceived(instanceId, pathPatchPropertyUri, atomString);
     }
-
-
-
 
     if (pedalboardItem == nullptr)
     {
-        Lv2Log::error(SS("OnNotifyPathPatchPropertyReceived: " << pathPatchPropertyUri << " discarded."));
-        return; 
+        return;
     }
-    Lv2Log::error(SS("OnNotifyPathPatchPropertyReceived: " << pathPatchPropertyUri <<": " << atomString));
 
     auto i = pedalboardItem->pathProperties_.find(pathPatchPropertyUri);
     if (i != pedalboardItem->pathProperties_.end())
     {
         pedalboardItem->pathProperties_[pathPatchPropertyUri] = atomString;
 
-        std::vector<IPiPedalModelSubscriber *> t;
-        t.reserve(subscribers.size());
-
-        for (auto subscriber : subscribers)
-        {
-            t.push_back(subscriber);
-        }
-
-        for (auto subscriber : t)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
             subscriber->OnNotifyPathPatchPropertyChanged(
                 instanceId,
                 pathPatchPropertyUri,
                 atomString);
         }
-
     }
 }
 
@@ -2287,16 +2148,10 @@ void PiPedalModel::SetFavorites(const std::map<std::string, bool> &favorites)
     storage.SetFavorites(favorites);
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-    std::vector<IPiPedalModelSubscriber *> t;
-    t.reserve(this->subscribers.size());
-
-    for (size_t i = 0; i < subscribers.size(); ++i)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        t.push_back(this->subscribers[i]);
-    }
-    for (size_t i = 0; i < t.size(); ++i)
-    {
-        t[i]->OnFavoritesChanged(favorites);
+        subscriber->OnFavoritesChanged(favorites);
     }
 }
 std::vector<MidiBinding> PiPedalModel::GetSystemMidiBidings()
@@ -2314,17 +2169,11 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
         this->audioHost->SetSystemMidiBindings(bindings);
     }
 
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[this->subscribers.size()];
-    for (size_t i = 0; i < subscribers.size(); ++i)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        t[i] = this->subscribers[i];
+        subscriber->OnSystemMidiBindingsChanged(bindings);
     }
-    size_t n = this->subscribers.size();
-    for (size_t i = 0; i < n; ++i)
-    {
-        t[i]->OnSystemMidiBindingsChanged(bindings);
-    }
-    delete[] t;
 }
 
 std::vector<std::string> PiPedalModel::GetFileList(const UiFileProperty &fileProperty)
@@ -2421,7 +2270,7 @@ bool PiPedalModel::LoadCurrentPedalboard()
     {
         // then we can send a snapshot update instead!
         Snapshot snapshot = pedalboard.MakeSnapshotFromCurrentSettings(previousPedalboard);
-        audioHost->LoadSnapshot(snapshot,pluginHost);
+        audioHost->LoadSnapshot(snapshot, pluginHost);
         this->previousPedalboard = this->pedalboard;
         return true;
     }
@@ -2443,16 +2292,11 @@ void PiPedalModel::OnNotifyLv2RealtimeError(int64_t instanceId, const std::strin
 
     // Notify clients.
     size_t n = subscribers.size();
-    IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[n];
-    for (size_t i = 0; i < n; ++i)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        t[i] = this->subscribers[i];
+        subscriber->OnErrorMessage(error);
     }
-    for (size_t i = 0; i < n; ++i)
-    {
-        t[i]->OnErrorMessage(error);
-    }
-    delete[] t;
 }
 std::filesystem::path PiPedalModel::GetPluginUploadDirectory() const
 {
@@ -2465,17 +2309,11 @@ void PiPedalModel::OnLv2PluginsChanged()
     std::lock_guard<std::recursive_mutex> lock(mutex);
     {
         // Notify clients.
-        size_t n = subscribers.size();
-        IPiPedalModelSubscriber **t = new IPiPedalModelSubscriber *[n];
-        for (size_t i = 0; i < n; ++i)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
         {
-            t[i] = this->subscribers[i];
+            subscriber->OnLv2PluginsChanging();
         }
-        for (size_t i = 0; i < n; ++i)
-        {
-            t[i]->OnLv2PluginsChanging();
-        }
-        delete[] t;
     }
     std::thread(
         [this]()
@@ -2506,15 +2344,8 @@ void PiPedalModel::FireUpdateStatusChanged(const UpdateStatus &updateStatus)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
-    std::vector<IPiPedalModelSubscriber *> t;
-    t.reserve(subscribers.size());
-
-    for (auto subscriber : subscribers)
-    {
-        t.push_back(subscriber);
-    }
-
-    for (auto subscriber : t)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
         subscriber->OnUpdateStatusChanged(updateStatus);
     }
@@ -2667,16 +2498,10 @@ void PiPedalModel::OnNetworkChanging(bool ethernetConnected, bool hotspotConnect
                     });
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-    std::vector<IPiPedalModelSubscriber *> t;
-    t.reserve(this->subscribers.size());
-
-    for (size_t i = 0; i < subscribers.size(); ++i)
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    for (auto &subscriber : t)
     {
-        t.push_back(this->subscribers[i]);
-    }
-    for (size_t i = 0; i < t.size(); ++i)
-    {
-        t[i]->OnNetworkChanging(hotspotConnected);
+        subscriber->OnNetworkChanging(hotspotConnected);
     }
 }
 void PiPedalModel::OnNetworkChanged(bool ethernetConnected, bool hotspotConnected)
@@ -2764,5 +2589,3 @@ void PiPedalModel::RequestShutdown(bool restart)
         }
     }
 }
-
-
