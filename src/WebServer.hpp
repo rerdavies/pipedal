@@ -81,7 +81,6 @@ class WebServerImpl;
 class SocketHandler {
     friend class WebServerImpl;
 public:
-
     class IWriteCallback {
     public:
         virtual void close() = 0;
@@ -100,6 +99,7 @@ public:
     }
 
 public:
+    virtual void onSocketClosed() = 0;
     virtual void onReceive(const std::string_view&text) = 0;
 public:
     std::string getFromAddress() const { return writeCallback_->getFromAddress(); }
@@ -112,12 +112,20 @@ public:
             writeCallback_->writeCallback(text);
         }
     }
+    virtual void OnSocketClosed()
+    {
+        writeCallback_ = nullptr;
+    }
     virtual void Close()
     {
-        writeCallback_->close();
+        if (writeCallback_ != nullptr)
+        {
+            writeCallback_->close();
+            writeCallback_ =  nullptr;
+        }
     }
 
-    virtual ~SocketHandler() = default;
+    virtual ~SocketHandler() {}
 
     virtual void onAttach() { }
 

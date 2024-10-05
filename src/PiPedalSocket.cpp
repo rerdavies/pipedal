@@ -552,7 +552,6 @@ public:
         {
             FinalCleanup();
         }
-        Lv2Log::error("PiPedalSocketHandler deleted");
 
     }
 

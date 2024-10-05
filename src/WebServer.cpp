@@ -754,7 +754,11 @@ namespace pipedal
         public:
             ~WebSocketSession()
             {
-                this->socketHandler = nullptr;
+                if (this->socketHandler)
+                {
+                    this->socketHandler->onSocketClosed();
+                    this->socketHandler = nullptr;
+                }
                 webSocket = nullptr;
                 pServer = nullptr;
                 Lv2Log::info(SS("WebSocketSession closed. " << fromAddress));
@@ -819,7 +823,10 @@ namespace pipedal
             std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
             m_sessions.erase(session);
             m_connections.erase(hConnection);
-            session = nullptr; // probably delete here.
+            if (session != nullptr)
+            {
+                session = nullptr; // probably delete here.
+            }
         }
 
         void NotFound(server::connection_type &connection, const std::string &filename)
