@@ -6,13 +6,13 @@
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.2.52</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.3.53</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
 &nbsp;
 
-#### NEW version 1.2.52 Release, providing support for Raspberry Pi OS Bookworm. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.3.53 Release, providing [snapshots](https://rerdavies.github.io/pipedal/Snaphots.html), and a new Performance View. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 
@@ -38,6 +38,7 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 ### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.html)
 ### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.html)
 ### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.html)
+### [An Intro to Snapshots](https://rerdavies.github.io/pipedal/Snapshots.html)
 ### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.html)
 ### [Optimizing Audio Latency](https://rerdavies.github.io/pipedal/AudioLatency.html)
 ### [Command-Line Configuration of PiPedal](https://rerdavies.github.io/pipedal/CommandLine.html)
