@@ -4,7 +4,8 @@ import {isAndroidHosted} from './AndroidHost';
 var validScales = [1.0,1.10,1.25,1.35,1.50,1.75,2.0,2.5];
 
 export function canScaleWindow(): boolean {
-    return getValidWindowScales().length > 1;
+    return false;
+    // return getValidWindowScales().length > 1;
 }
 
 export function getValidWindowScales(): number[]
@@ -45,4 +46,19 @@ export function getWindowScaleText(scale?: number)
     }
     let iValue = Math.round(value*100);
     return iValue.toString() + "%";
+}
+
+var gOptions: {key: number, text: string}[] = [];
+export function getWindowScaleOptions() {
+    if (gOptions.length !== 0)
+    {
+        return gOptions;
+    }
+    let result: {key: number, text: string}[] = [];
+    for (let value of getValidWindowScales())
+    {
+        result.push({key: value, text: getWindowScaleText(value)});
+    }
+    gOptions = result;
+    return result
 }

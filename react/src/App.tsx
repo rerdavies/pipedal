@@ -102,6 +102,19 @@ const theme = createTheme(
         :
         {
             components: {
+                /* make the selection state for MuiListItemButtons a smidgen darker (light theme only) */
+                MuiListItemButton: {
+                    styleOverrides: {
+                    root: ({ theme }) => ({
+                        '&.Mui-selected': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.2)', // Adjust for desired darkness
+                        '&:hover': {
+                            backgroundColor: 'rgba(0, 0, 0, 0.25)', // Slightly darker on hover
+                        },
+                        },
+                    }),
+                    },
+                },
                 MuiButton: {
                     styleOverrides: {
                         containedPrimary: {

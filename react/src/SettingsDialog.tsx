@@ -51,7 +51,8 @@ import SelectThemeDialog from './SelectThemeDialog';
 import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
 import { WithStyles, withStyles } from '@mui/styles';
-import { canScaleWindow, getWindowScaleText } from './WindowScale';
+import { canScaleWindow, getWindowScaleOptions, getWindowScaleText, setWindowScale, getWindowScale } from './WindowScale';
+import OptionsDialog from './OptionsDialog';
 
 
 
@@ -76,6 +77,7 @@ interface SettingsDialogState {
     wifiConfigSettings: WifiConfigSettings;
     wifiDirectConfigSettings: WifiDirectConfigSettings;
 
+    showWindowScaleDialog: boolean;
     showWifiConfigDialog: boolean;
     showWifiDirectConfigDialog: boolean;
     showGovernorSettingsDialog: boolean;
@@ -182,6 +184,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 wifiDirectConfigSettings: this.model.wifiDirectConfigSettings.get(),
                 governorSettings: this.model.governorSettings.get(),
                 continueDisabled: true,
+
+                showWindowScaleDialog: false,
                 showWifiConfigDialog: false,
                 showWifiDirectConfigDialog: false,
                 showGovernorSettingsDialog: false,
@@ -711,7 +715,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                             (
                                                 <ButtonBase
                                                     className={classes.setting}
-                                                    onClick={() => { this.handleThemeSelection(); }}  >
+                                                    onClick={() => { this.setState({ showWindowScaleDialog: true }); }}  >
                                                     <SelectHoverBackground selected={false} showHover={true} />
                                                     <div style={{ width: "100%" }}>
                                                         <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
@@ -953,6 +957,19 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         open={this.state.showSystemMidiBindingsDialog}
                         onClose={() => { this.setState({ showSystemMidiBindingsDialog: false }); }}
                     />
+                    {this.state.showWindowScaleDialog && (
+                        <OptionsDialog open={this.state.showWindowScaleDialog} options={getWindowScaleOptions()} value={getWindowScale()}
+                            onClose={(() => this.setState({ showWindowScaleDialog: false }))}
+                            title="Window Scale"
+
+                            onOk={(item) => {
+                                this.setState({ showWindowScaleDialog: false });
+                                setWindowScale(item.key as number);
+
+                            }}
+                        />
+
+                    )}
                 </DialogEx >
 
             );
