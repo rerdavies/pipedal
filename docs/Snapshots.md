@@ -3,7 +3,7 @@ page_icon: img/snapshots.jpg
 icon_width: 320px
 icon_float: right
 ---
-{% include pageIconR.html %}  
+{% include pageIconL.html %}  
 ## An Intro to Snapshots
 
 
