@@ -228,6 +228,7 @@ void PedalboardItem::ApplySnapshotValue(SnapshotValue*snapshotValue)
         this->lv2State(snapshotValue->lv2State_);
         this->stateUpdateCount(this->stateUpdateCount()+1);
     }
+    this->isEnabled(snapshotValue->isEnabled_);
 
 }
 
@@ -294,6 +295,7 @@ void PedalboardItem::AddToSnapshotFromCurrentSettings(Snapshot&snapshot) const
 {
     SnapshotValue snapshotValue;
     snapshotValue.instanceId_ = this->instanceId_;
+    snapshotValue.isEnabled_ = this->isEnabled_;
 
     for (const ControlValue &value: this->controlValues_)
     {
@@ -410,6 +412,7 @@ JSON_MAP_END()
 
 JSON_MAP_BEGIN(SnapshotValue)
     JSON_MAP_REFERENCE(SnapshotValue,instanceId)
+    JSON_MAP_REFERENCE(SnapshotValue,isEnabled)
     JSON_MAP_REFERENCE(SnapshotValue,controlValues)
     JSON_MAP_REFERENCE(SnapshotValue,lv2State)
     JSON_MAP_REFERENCE(SnapshotValue,pathProperties)
@@ -417,6 +420,7 @@ JSON_MAP_END()
 
 JSON_MAP_BEGIN(Snapshot)
     JSON_MAP_REFERENCE(Snapshot,name)
+    JSON_MAP_REFERENCE(Snapshot,isModified)
     JSON_MAP_REFERENCE(Snapshot,color)
     JSON_MAP_REFERENCE(Snapshot,values)
 JSON_MAP_END()

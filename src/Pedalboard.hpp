@@ -154,6 +154,7 @@ public:
 class SnapshotValue {
 public:
     uint64_t instanceId_;
+    bool isEnabled_ = true;
     std::vector<ControlValue> controlValues_;
     Lv2PluginState lv2State_;
     std::map<std::string,std::string> pathProperties_;
@@ -165,6 +166,7 @@ class Snapshot {
 public:
     std::string name_;
     std::string color_;
+    bool isModified_ = true;
     std::vector<SnapshotValue> values_;
 
     DECLARE_JSON_MAP(Snapshot);
