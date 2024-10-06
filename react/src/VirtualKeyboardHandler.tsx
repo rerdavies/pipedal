@@ -21,6 +21,7 @@
 
 // converts android handling of the virtual keyboard to use pan instead of zoom.
 
+import { isAndroidHosted } from './AndroidHost';
 import Rectangle from './Rectangle';
 
 
@@ -45,7 +46,7 @@ export default class VirtualKeyboardHandler
             }
         }   
 
-        if ('visualViewport' in window) {
+        if ('visualViewport' in window && isAndroidHosted()) {
             window.visualViewport?.addEventListener('resize', this.handleVisualViewportResize.bind(this));
         } else {
             enabled = false;

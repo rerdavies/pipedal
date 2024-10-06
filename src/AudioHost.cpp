@@ -291,6 +291,10 @@ public:
 
 bool SystemMidiBinding::IsTriggered(const MidiEvent &event)
 {
+    if (!IsMatch(event))
+    {
+        return false;
+    }
     switch (currentBinding.bindingType())
     {
     case BINDING_TYPE_NOTE:
@@ -374,6 +378,9 @@ private:
     uint8_t deferredMidiMessages[DEFERRED_MIDI_BUFFER_SIZE];
     size_t deferredMidiMessageCount = 0;
     bool midiProgramChangePending = false;
+    bool midiSnapshotRequestPending = false;
+    int64_t snapshotRequestId = 0;
+
     int selectedBank = -1;
     int64_t midiProgramChangeId = 0;
 
@@ -462,8 +469,18 @@ private:
     HostRingBufferReader hostReader;
     HostRingBufferWriter hostWriter;
 
-    SystemMidiBinding nextMidiBinding;
-    SystemMidiBinding prevMidiBinding;
+    SystemMidiBinding prevBankMidiBinding;
+    SystemMidiBinding nextBankMidiBinding;
+    SystemMidiBinding nextPresetMidiBinding;
+    SystemMidiBinding prevPresetMidiBinding;
+
+    SystemMidiBinding snapshot1MidiBinding;
+    SystemMidiBinding snapshot2MidiBinding;
+    SystemMidiBinding snapshot3MidiBinding;
+    SystemMidiBinding snapshot4MidiBinding;
+    SystemMidiBinding snapshot5MidiBinding;
+    SystemMidiBinding snapshot6MidiBinding;
+
     SystemMidiBinding startHotspotMidiBinding;
     SystemMidiBinding stopHotspotMidiBinding;
     SystemMidiBinding rebootMidiBinding;
@@ -477,8 +494,6 @@ private:
     std::shared_ptr<Lv2Pedalboard> currentPedalboard;
     std::vector<std::shared_ptr<Lv2Pedalboard>> activePedalboards; // pedalboards that have been sent to the audio queue.
     Lv2Pedalboard *realtimeActivePedalboard = nullptr;
-
-    std::vector<uint8_t *> midiLv2Buffers;
 
     uint32_t sampleRate = 0;
     uint64_t currentSample = 0;
@@ -558,11 +573,6 @@ private:
         this->inputRingBuffer.reset();
         this->outputRingBuffer.reset();
 
-        for (size_t i = 0; i < midiLv2Buffers.size(); ++i)
-        {
-            delete[] midiLv2Buffers[i];
-        }
-        midiLv2Buffers.resize(0);
         audioDriver = nullptr;
     }
 
@@ -579,7 +589,7 @@ private:
     {
         for (size_t i = 0; i < audioDriver->OutputBufferCount(); ++i)
         {
-            float *out = (float *)audioDriver->GetOutputBuffer(i, nframes);
+            float *out = (float *)audioDriver->GetOutputBuffer(i);
             if (out)
             {
                 ZeroBuffer(out, nframes);
@@ -774,6 +784,16 @@ private:
                 }
                 break;
             }
+            case RingBufferCommand::AckMidiSnapshotRequest:
+            {
+                int64_t requestId;
+                realtimeReader.readComplete(&requestId);
+                if (requestId == this->snapshotRequestId)
+                {
+                    this->midiSnapshotRequestPending = false;
+                }
+                break;
+            }
             case RingBufferCommand::LoadSnapshot:
             {
                 IndexedSnapshot *snapshot;
@@ -851,6 +871,10 @@ private:
     {
         hostWriter.AckMidiProgramRequest(requestId);
     }
+    virtual void AckSnapshotRequest(uint64_t snapshotRequestId)
+    {
+        hostWriter.AckMidiSnapshotRequest(snapshotRequestId);
+    }
 
     void OnMidiValueChanged(uint64_t instanceId, int controlIndex, float value)
     {
@@ -867,7 +891,7 @@ private:
 
     bool onMidiEvent(Lv2EventBufferWriter &eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent &event)
     {
-        eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
+        //eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
 
         this->realtimeActivePedalboard->OnMidiMessage(event.size, event.buffer, this, fnMidiValueChanged);
         if (listenForMidiEvent)
@@ -886,126 +910,168 @@ private:
         return true;
     }
 
+    void OnSnapshotTriggered(int snapshotIndex)
+    {
+        // midiProgramChangePending = true;
+        this->midiSnapshotRequestPending = true;
+        this->realtimeWriter.OnRealtimeMidiSnapshotRequest(snapshotIndex, ++snapshotRequestId);
+    }
+
+    void ProcessMidiEvent(Lv2EventBufferWriter &eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent &event)
+    {
+        uint8_t midiCommand = (uint8_t)(event.buffer[0] & 0xF0);
+        if (midiCommand == 0xC0) // midi program change.
+        {
+            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
+            midiProgramChangePending = true;
+
+            this->realtimeWriter.OnMidiProgramChange(++(this->midiProgramChangeId), selectedBank, event.buffer[1]);
+        }
+        else if (isBankChange(event))
+        {
+            this->selectedBank = event.buffer[2];
+        }
+        else if (this->nextBankMidiBinding.IsTriggered(event))
+        {
+            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
+            midiProgramChangePending = true;
+
+            this->realtimeWriter.OnNextMidiBank(++(this->midiProgramChangeId), 1);
+        }
+        else if (this->prevBankMidiBinding.IsTriggered(event))
+        {
+            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
+            midiProgramChangePending = true;
+
+            this->realtimeWriter.OnNextMidiBank(++(this->midiProgramChangeId), -1);
+        }
+        else if (nextPresetMidiBinding.IsTriggered(event))
+        {
+            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
+            midiProgramChangePending = true;
+
+            midiProgramChangePending = true;
+            this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId), 1);
+        }
+        else if (prevPresetMidiBinding.IsTriggered(event))
+        {
+            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
+            midiProgramChangePending = true;
+            this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId), -1);
+        }
+
+        else if (shutdownMidiBinding.IsTriggered(event))
+        {
+            this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::Shutdown);
+        }
+        if (rebootMidiBinding.IsTriggered(event))
+        {
+            this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::Reboot);
+        }
+        if (startHotspotMidiBinding.IsTriggered(event))
+        {
+            this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::StartHotspot);
+        }
+        if (stopHotspotMidiBinding.IsTriggered(event))
+        {
+            this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::StopHotspot);
+        }
+        else if (midiProgramChangePending)
+        {
+            // defer the message for processing after the program change has completed discarding messages that don't fit in our buffer.
+            if (event.size > 0 && event.size < 128 && event.size + 2 + this->deferredMidiMessageCount < DEFERRED_MIDI_BUFFER_SIZE)
+            {
+                this->deferredMidiMessages[deferredMidiMessageCount++] = (uint8_t)event.size;
+                for (size_t i = 0; i < event.size; ++i)
+                {
+                    this->deferredMidiMessages[deferredMidiMessageCount++] = event.buffer[i];
+                }
+            }
+            return;
+        }
+        else if (this->snapshot1MidiBinding.IsTriggered(event))
+        {
+            OnSnapshotTriggered(0);
+        }
+        else if (this->snapshot2MidiBinding.IsTriggered(event))
+        {
+            OnSnapshotTriggered(1);
+        }
+        else if (this->snapshot3MidiBinding.IsTriggered(event))
+        {
+            OnSnapshotTriggered(2);
+        }
+        else if (this->snapshot4MidiBinding.IsTriggered(event))
+        {
+            OnSnapshotTriggered(3);
+        }
+        else if (this->snapshot5MidiBinding.IsTriggered(event))
+        {
+            OnSnapshotTriggered(4);
+        }
+        else if (this->snapshot6MidiBinding.IsTriggered(event))
+        {
+            OnSnapshotTriggered(5);
+        }
+        else
+        {
+            onMidiEvent(eventBufferWriter, iterator, event);
+        }
+    }
+
+    void ProcessDeferredMidiMessages(
+        Lv2EventBufferWriter eventBufferWriter,
+        Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator)
+    {
+        MidiEvent event;
+
+        // write all deferred midi messages.
+        if (!midiProgramChangePending && !midiSnapshotRequestPending)
+        {
+            for (size_t i = 0; i < deferredMidiMessageCount; /**/)
+            {
+                int8_t deviceIndex = deferredMidiMessages[i++];
+                int8_t messageCount = deferredMidiMessages[i++];
+                event.size = messageCount;
+                event.buffer = deferredMidiMessages + i;
+                event.time = 0;
+
+                ProcessMidiEvent(eventBufferWriter, iterator, event);
+
+                if (midiProgramChangePending)
+                {
+                    break;
+                }
+                i += messageCount;
+
+                if (midiSnapshotRequestPending)
+                {
+                    // consume what has been written so far, leaving what follows for future processing.
+                    size_t remaining = deferredMidiMessageCount - i;
+                    for (size_t j = 0; j < remaining; ++i)
+                    {
+                        deferredMidiMessages[j] = deferredMidiMessages[i + j];
+                    }
+                    deferredMidiMessageCount = remaining;
+                    break;
+                }
+            }
+        }
+    }
     void ProcessMidiInput()
     {
         Lv2EventBufferWriter eventBufferWriter(this->eventBufferUrids);
+        Lv2EventBufferWriter::LV2_EvBuf_Iterator iterator = eventBufferWriter.begin();
 
-        size_t midiInputBufferCount = audioDriver->MidiInputBufferCount();
+        ProcessDeferredMidiMessages(eventBufferWriter, iterator);
 
-        audioDriver->FillMidiBuffers();
-
-        for (size_t midiDeviceIx = 0; midiDeviceIx < midiInputBufferCount; ++midiDeviceIx)
         {
+            size_t n = audioDriver->GetMidiInputEventCount();
+            MidiEvent *events = audioDriver->GetMidiEvents();
 
-            void *portBuffer = audioDriver->GetMidiInputBuffer(midiDeviceIx, 0);
-            if (portBuffer)
+            for (size_t i = 0; i < n; ++i)
             {
-                uint8_t *lv2Buffer = this->midiLv2Buffers[midiDeviceIx];
-                size_t n = audioDriver->GetMidiInputEventCount(portBuffer);
-
-                eventBufferWriter.Reset(lv2Buffer, MIDI_LV2_BUFFER_SIZE);
-                Lv2EventBufferWriter::LV2_EvBuf_Iterator iterator = eventBufferWriter.begin();
-                MidiEvent event;
-
-                // write all deferred midi messages.
-                if (deferredMidiMessageCount != 0 && !midiProgramChangePending)
-                {
-                    for (size_t i = 0; i < deferredMidiMessageCount; /**/)
-                    {
-                        int8_t deviceIndex = deferredMidiMessages[i++];
-                        int8_t messageCount = deferredMidiMessages[i++];
-                        if (deviceIndex == midiDeviceIx)
-                        {
-                            event.size = messageCount;
-                            event.buffer = deferredMidiMessages + i;
-                            event.time = 0;
-
-                            onMidiEvent(eventBufferWriter, iterator, event);
-                        }
-
-                        i += messageCount;
-                    }
-                }
-
-                for (size_t frame = 0; frame < n; ++frame)
-                {
-                    if (audioDriver->GetMidiInputEvent(&event, portBuffer, frame))
-                    {
-                        uint8_t midiCommand = (uint8_t)(event.buffer[0] & 0xF0);
-                        if (midiCommand == 0xC0) // midi program change.
-                        {
-                            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
-                            midiProgramChangePending = true;
-
-                            this->realtimeWriter.OnMidiProgramChange(++(this->midiProgramChangeId), selectedBank, event.buffer[1]);
-                        }
-                        else if (isBankChange(event))
-                        {
-                            this->selectedBank = event.buffer[2];
-                        }
-                        else if (this->nextMidiBinding.IsMatch(event))
-                        {
-                            if (nextMidiBinding.IsTriggered(event))
-                            {
-                                midiProgramChangePending = true;
-                                this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId), 1);
-                            }
-                        }
-                        else if (this->prevMidiBinding.IsMatch(event))
-                        {
-                            if (prevMidiBinding.IsTriggered(event))
-                            {
-                                midiProgramChangePending = true;
-                                this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId), -1);
-                            }
-                        }
-                        else if (this->shutdownMidiBinding.IsMatch(event))
-                        {
-                            if (shutdownMidiBinding.IsTriggered(event))
-                            {
-                                this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::Shutdown);
-                            }
-                        }
-                        else if (this->rebootMidiBinding.IsMatch(event))
-                        {
-                            if (rebootMidiBinding.IsTriggered(event))
-                            {
-                                this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::Reboot);
-                            }
-                        }
-                        else if (this->startHotspotMidiBinding.IsMatch(event))
-                        {
-                            if (startHotspotMidiBinding.IsTriggered(event))
-                            {
-                                this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::StartHotspot);
-                            }
-                        }
-                        else if (this->stopHotspotMidiBinding.IsMatch(event))
-                        {
-                            if (stopHotspotMidiBinding.IsTriggered(event))
-                            {
-                                this->realtimeWriter.OnRealtimeMidiEvent(RealtimeMidiEventType::StopHotspot);
-                            }
-                        }
-                        else if (midiProgramChangePending)
-                        {
-                            // defer the message for processing after the program change has completed.
-                            if (event.size > 0 && event.size < 128 && event.size + 2 + this->deferredMidiMessageCount < DEFERRED_MIDI_BUFFER_SIZE)
-                            {
-                                this->deferredMidiMessages[deferredMidiMessageCount++] = midiDeviceIx;
-                                this->deferredMidiMessages[deferredMidiMessageCount++] = (uint8_t)event.size;
-                                for (size_t i = 0; i < event.size; ++i)
-                                {
-                                    this->deferredMidiMessages[deferredMidiMessageCount++] = event.buffer[i];
-                                }
-                            }
-                        }
-                        else
-                        {
-                            onMidiEvent(eventBufferWriter, iterator, event);
-                        }
-                    }
-                }
+                ProcessMidiEvent(eventBufferWriter, iterator, events[i]);
             }
         }
     }
@@ -1062,7 +1128,7 @@ private:
                 bool buffersValid = true;
                 for (int i = 0; i < audioDriver->InputBufferCount(); ++i)
                 {
-                    float *input = (float *)audioDriver->GetInputBuffer(i, nframes);
+                    float *input = (float *)audioDriver->GetInputBuffer(i);
                     if (input == nullptr)
                     {
                         buffersValid = false;
@@ -1074,7 +1140,7 @@ private:
 
                 for (int i = 0; i < audioDriver->OutputBufferCount(); ++i)
                 {
-                    float *output = audioDriver->GetOutputBuffer(i, nframes);
+                    float *output = audioDriver->GetOutputBuffer(i);
                     if (output == nullptr)
                     {
                         buffersValid = false;
@@ -1393,7 +1459,7 @@ public:
                                             {
                                                 LV2_URID propertyUrid = ((LV2_Atom_URID *)property)->body;
                                                 this->pNotifyCallbacks->OnPatchSetReply(instanceId, propertyUrid, value);
-                                                this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
+                                                //this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
                                             }
                                         }
                                     }
@@ -1449,11 +1515,26 @@ public:
                                 hostReader.read(&request);
                                 pNotifyCallbacks->OnNotifyNextMidiProgram(request);
                             }
+                            else if (command == RingBufferCommand::NextMidiBank)
+                            {
+                                RealtimeNextMidiProgramRequest request;
+                                hostReader.read(&request);
+                                pNotifyCallbacks->OnNotifyNextMidiBank(request);
+                            }
+
                             else if (command == RingBufferCommand::RealtimeMidiEvent)
                             {
                                 RealtimeMidiEventRequest request;
                                 hostReader.read(&request);
                                 pNotifyCallbacks->OnNotifyMidiRealtimeEvent(request.eventType);
+                            }
+                            else if (command == RingBufferCommand::RealtimeMidiSnapshotRequest)
+                            {
+                                RealtimeMidiSnapshotRequest request;
+                                hostReader.read(&request);
+                                pNotifyCallbacks->OnNotifyMidiRealtimeSnapshotRequest(
+                                    request.snapshotIndex,
+                                    request.snapshotRequestId);
                             }
                             else if (command == RingBufferCommand::Lv2ErrorMessage)
                             {
@@ -1578,12 +1659,6 @@ public:
 
             this->overrunGracePeriodSamples = (uint64_t)(((uint64_t)this->sampleRate) * OVERRUN_GRACE_PERIOD_S);
             this->vuSamplesPerUpdate = (size_t)(sampleRate * VU_UPDATE_RATE_S);
-
-            midiLv2Buffers.resize(audioDriver->MidiInputBufferCount());
-            for (size_t i = 0; i < audioDriver->MidiInputBufferCount(); ++i)
-            {
-                midiLv2Buffers[i] = AllocateRealtimeBuffer(MIDI_LV2_BUFFER_SIZE);
-            }
 
             active = true;
             audioStopped = false;
@@ -1855,7 +1930,7 @@ public:
     }
 
 private:
-    virtual bool UpdatePluginStates(Pedalboard &pedalboard) override;
+    //virtual bool UpdatePluginStates(Pedalboard &pedalboard) override;
     virtual bool UpdatePluginState(PedalboardItem &pedalboardItem) override;
 
     class RestartThread
@@ -2040,13 +2115,21 @@ void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindin
     for (auto i = bindings.begin(); i != bindings.end(); ++i)
     {
 
-        if (i->symbol() == "nextProgram")
+        if (i->symbol() == "nextBank")
         {
-            this->nextMidiBinding.SetBinding(*i);
+            this->nextBankMidiBinding.SetBinding(*i);
+        }
+        else if (i->symbol() == "prevBank")
+        {
+            this->prevBankMidiBinding.SetBinding(*i);
+        } 
+        else if (i->symbol() == "nextProgram")
+        {
+            this->nextPresetMidiBinding.SetBinding(*i);
         }
         else if (i->symbol() == "prevProgram")
         {
-            this->prevMidiBinding.SetBinding(*i);
+            this->prevPresetMidiBinding.SetBinding(*i);
         }
         else if (i->symbol() == "startHotspot")
         {
@@ -2064,6 +2147,30 @@ void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindin
         {
             this->shutdownMidiBinding.SetBinding(*i);
         }
+        else if (i->symbol() == "snapshot1")
+        {
+            this->snapshot1MidiBinding.SetBinding(*i);
+        }
+        else if (i->symbol() == "snapshot2")
+        {
+            this->snapshot2MidiBinding.SetBinding(*i);
+        }
+        else if (i->symbol() == "snapshot3")
+        {
+            this->snapshot3MidiBinding.SetBinding(*i);
+        }
+        else if (i->symbol() == "snapshot4")
+        {
+            this->snapshot4MidiBinding.SetBinding(*i);
+        }
+        else if (i->symbol() == "snapshot5")
+        {
+            this->snapshot5MidiBinding.SetBinding(*i);
+        }
+        else if (i->symbol() == "snapshot6")
+        {
+            this->snapshot6MidiBinding.SetBinding(*i);
+        }
         else
         {
             Lv2Log::error(SS("Invalid system midi binding: " << i->symbol()));
@@ -2076,22 +2183,24 @@ AudioHost *AudioHost::CreateInstance(IHost *pHost)
     return new AudioHostImpl(pHost);
 }
 
-bool AudioHostImpl::UpdatePluginStates(Pedalboard &pedalboard)
-{
-    bool changed = false;
-    auto pedalboardItems = pedalboard.GetAllPlugins();
-    for (PedalboardItem *item : pedalboardItems)
-    {
-        if (!item->isSplit())
-        {
-            if (UpdatePluginState(*item))
-            {
-                changed = true;
-            }
-        }
-    }
-    return true;
-}
+// Removed because any updates to state have to be sent to clients as well,
+// so this functionality was moved to PiPedalModel::SyncLv2States();
+// bool AudioHostImpl::UpdatePluginStates(Pedalboard &pedalboard)
+// {
+//     bool changed = false;
+//     auto pedalboardItems = pedalboard.GetAllPlugins();
+//     for (PedalboardItem *item : pedalboardItems)
+//     {
+//         if (!item->isSplit())
+//         {
+//             if (UpdatePluginState(*item))
+//             {
+//                 changed = true;
+//             }
+//         }
+//     }
+//     return changed;
+// }
 
 void AudioHostImpl::OnNotifyPathPatchPropertyReceived(
     int64_t instanceId,
@@ -2100,15 +2209,15 @@ void AudioHostImpl::OnNotifyPathPatchPropertyReceived(
 {
     if (this->currentPedalboard)
     {
-        IEffect*effect =  this->currentPedalboard->GetEffect(instanceId);
+        IEffect *effect = this->currentPedalboard->GetEffect(instanceId);
         if (!effect)
         {
             return;
         }
         if (effect->IsLv2Effect())
         {
-            Lv2Effect*lv2Effect = (Lv2Effect*)effect;
-            lv2Effect->SetPathPatchProperty(pathPatchPropertyUri,jsonAtom);
+            Lv2Effect *lv2Effect = (Lv2Effect *)effect;
+            lv2Effect->SetPathPatchProperty(pathPatchPropertyUri, jsonAtom);
         }
     }
 }

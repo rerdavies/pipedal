@@ -133,7 +133,6 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
         } else {
             return window.innerWidth < 800;
         }
-        return window.innerWidth < 500;
     }
     getPortraitOrientation() {
         return window.innerWidth * 2 < window.innerHeight * 3;

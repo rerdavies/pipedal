@@ -50,6 +50,7 @@ namespace pipedal
     class Lv2PluginChangeMonitor;
     class Updater;
     class AvahiService;
+    class Lv2PluginState;
 
     class IPiPedalModelSubscriber
     {
@@ -187,7 +188,7 @@ namespace pipedal
         void FireChannelSelectionChanged(int64_t clientId);
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
-
+        void FireLv2StateChanged(int64_t instanceId, const Lv2PluginState &lv2State);
         void UpdateDefaults(Snapshot *snapshot, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
         void UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
         void UpdateDefaults(Pedalboard *pedalboard);
@@ -211,7 +212,7 @@ namespace pipedal
 
         IPiPedalModelSubscriber *GetNotificationSubscriber(int64_t clientId);
         std::atomic<bool> closed = false;
-
+        bool SyncLv2State();
     private: // IAudioHostCallbacks
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;
         virtual void OnNotifyMaybeLv2StateChanged(uint64_t instanceId) override;
@@ -221,6 +222,7 @@ namespace pipedal
         virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) override;
         virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) override;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
+        virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) override;
 
         void OnNotifyPathPatchPropertyReceived(
             int64_t instanceId,
@@ -229,6 +231,7 @@ namespace pipedal
 
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) override;
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request) override;
+        virtual void OnNotifyNextMidiBank(const RealtimeNextMidiProgramRequest &request) override;
         virtual void OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error) override;
 
         PostHandle networkChangingDelayHandle = 0;

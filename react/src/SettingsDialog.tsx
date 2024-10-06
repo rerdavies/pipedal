@@ -51,6 +51,7 @@ import SelectThemeDialog from './SelectThemeDialog';
 import Slide, { SlideProps } from '@mui/material/Slide';
 import { createStyles, Theme } from '@mui/material/styles';
 import { WithStyles, withStyles } from '@mui/styles';
+import { canScaleWindow, getWindowScaleText } from './WindowScale';
 
 
 
@@ -466,8 +467,15 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
         midiSummary(): string {
             let ports = this.state.jackSettings.inputMidiDevices;
             if (ports.length === 0) return "Disabled";
-            if (ports.length === 1) return ports[0].description;
-            return ports.length + " channels";
+
+            let result = "";
+            for (let port of ports) {
+                if (result.length !== 0) {
+                    result += ", ";
+                }
+                result += port.description;
+            }
+            return result;
         }
         handleShowWifiConfigDialog() {
             this.setState({
@@ -571,7 +579,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     (
                                         <div>
                                             <Typography display="block" variant="body1" color="textSecondary" style={{ paddingLeft: 24, paddingBottom: 8 }}>
-                                                Select and configure an audio device. You may optionally configure MIDI inputs, and configure up a Wi-Fi Auto-Hotspot as well.
+                                                Select and configure an audio device. You may optionally configure MIDI inputs, and configure a Wi-Fi Auto-Hotspot as well.
                                                 The Auto-Hotspot feature allows you to connect to Pipedal even if you don't have access to a Wi-Fi router.
                                             </Typography>
                                             <Typography display="block" variant="body1" color="textSecondary" style={{ paddingLeft: 24, paddingBottom: 8 }}>
@@ -679,6 +687,79 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                 </div>
                             </div>
                             <Divider />
+                            {(!this.props.onboarding) &&
+                                (
+                                    <div>
+                                        <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">
+                                            DISPLAY
+                                        </Typography>
+                                        <ButtonBase
+                                            className={classes.setting}
+                                            onClick={() => { this.handleThemeSelection(); }}  >
+                                            <SelectHoverBackground selected={false} showHover={true} />
+                                            <div style={{ width: "100%" }}>
+                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                    Color theme</Typography>
+                                                <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>
+                                                    {this.model.getTheme() === ColorTheme.Dark ? "Dark" :
+                                                        (this.model.getTheme() === ColorTheme.Light ? "Light" : "System")}
+                                                </Typography>
+                                            </div>
+                                        </ButtonBase>
+
+                                        {(canScaleWindow()) &&
+                                            (
+                                                <ButtonBase
+                                                    className={classes.setting}
+                                                    onClick={() => { this.handleThemeSelection(); }}  >
+                                                    <SelectHoverBackground selected={false} showHover={true} />
+                                                    <div style={{ width: "100%" }}>
+                                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                            Scale</Typography>
+                                                        <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>
+                                                            {getWindowScaleText()}
+                                                        </Typography>
+                                                    </div>
+                                                </ButtonBase>
+
+                                            )
+                                        }
+
+
+                                        <ButtonBase
+                                            className={classes.setting}
+                                            onClick={() => {
+                                                this.model.setShowStatusMonitor(!this.state.showStatusMonitor)
+                                            }}  >
+                                            <SelectHoverBackground selected={false} showHover={true} />
+                                            <div style={{ width: "100%" }}>
+                                                <div style={{
+                                                    width: "100%", display: "flex", flexDirection: "row", flexWrap: "nowrap",
+                                                    alignItems: "center", maxWidth: 400
+                                                }}>
+                                                    <div style={{ flex: "1 1 auto" }}>
+                                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                            Show status monitor on main screen.</Typography>
+                                                    </div>
+
+                                                    <div style={{ flex: "0 0 auto" }}>
+                                                        <Switch
+                                                            checked={this.state.showStatusMonitor}
+                                                            onChange={
+                                                                (e) => { this.model.setShowStatusMonitor(e.target.checked); }
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </ButtonBase>
+                                    </div>
+
+                                )
+                            }
+
+                            <Divider />
                             <div >
                                 <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">CONNECTION</Typography>
 
@@ -719,65 +800,6 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                 <div >
                                     <Divider />
                                     <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">SYSTEM</Typography>
-
-                                    <ButtonBase
-                                        style={{ display: "none" }}
-                                        className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                        onClick={() => this.handleShowGovernorSettingsDialogDialog()}  >
-                                        <SelectHoverBackground selected={false} showHover={true} />
-                                        <div style={{ width: "100%" }}>
-                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                CPU Governor</Typography>
-                                            <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                                {this.state.governorSettings.governor}
-                                            </Typography>
-
-                                        </div>
-                                    </ButtonBase>
-
-                                    <ButtonBase
-                                        className={classes.setting}
-                                        onClick={() => { this.handleThemeSelection(); }}  >
-                                        <SelectHoverBackground selected={false} showHover={true} />
-                                        <div style={{ width: "100%" }}>
-                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                Color theme</Typography>
-                                            <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>
-                                                {this.model.getTheme() === ColorTheme.Dark ? "Dark" :
-                                                    (this.model.getTheme() === ColorTheme.Light ? "Light" : "System")}
-                                            </Typography>
-                                        </div>
-                                    </ButtonBase>
-
-
-                                    <ButtonBase
-                                        className={classes.setting}
-                                        onClick={() => {
-                                            this.model.setShowStatusMonitor(!this.state.showStatusMonitor)
-                                        }}  >
-                                        <SelectHoverBackground selected={false} showHover={true} />
-                                        <div style={{ width: "100%" }}>
-                                            <div style={{
-                                                width: "100%", display: "flex", flexDirection: "row", flexWrap: "nowrap",
-                                                alignItems: "center", maxWidth: 400
-                                            }}>
-                                                <div style={{ flex: "1 1 auto" }}>
-                                                    <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                        Show status monitor on main screen.</Typography>
-                                                </div>
-
-                                                <div style={{ flex: "0 0 auto" }}>
-                                                    <Switch
-                                                        checked={this.state.showStatusMonitor}
-                                                        onChange={
-                                                            (e) => { this.model.setShowStatusMonitor(e.target.checked); }
-                                                        }
-                                                    />
-                                                </div>
-
-                                            </div>
-                                        </div>
-                                    </ButtonBase>
 
                                     {
                                         this.model.enableAutoUpdate && (

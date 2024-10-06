@@ -189,14 +189,23 @@ namespace pipedal
 
         AudioDriverHost *driverHost = nullptr;
 
+
+        void validate_capture_handle() { // leftover debugging for a buffer overrun :-/
+            // if (snd_pcm_type(captureHandle) != SND_PCM_TYPE_HW)
+            // {
+            //     throw std::runtime_error("Capture handle has been overwritten");
+            // }
+        }
     public:
         AlsaDriverImpl(AudioDriverHost *driverHost)
             : driverHost(driverHost)
         {
-#ifdef ALSADRIVER_CONFIG_DBG
-            snd_output_stdio_attach(&snd_output, stdout, 0);
-            snd_pcm_status_malloc(&snd_status);
-#endif
+            midiEventMemory.resize(MAX_MIDI_EVENT * MAX_MIDI_EVENT_SIZE);
+            midiEvents.resize(MAX_MIDI_EVENT);
+            for (size_t i = 0; i < midiEvents.size(); ++i)
+            {
+                midiEvents[i].buffer = midiEventMemory.data() + i * MAX_MIDI_EVENT_SIZE;
+            }
         }
         virtual ~AlsaDriverImpl()
         {
@@ -302,15 +311,14 @@ namespace pipedal
                 snd_pcm_sw_params_free(playbackSwParams);
                 playbackSwParams = nullptr;
             }
-            for (auto *midiState : this->midiStates)
+            for (auto &midiState : this->midiDevices)
             {
-                if (midiState != nullptr)
+                if (midiState)
                 {
                     midiState->Close();
-                    delete midiState;
                 }
             }
-            midiStates.resize(0);
+            midiDevices.resize(0);
         }
 
         std::string discover_alsa_using_apps()
@@ -1234,17 +1242,25 @@ namespace pipedal
 
         void FillOutputBuffer()
         {
+            validate_capture_handle();
+
             memset(rawPlaybackBuffer.data(), 0, playbackFrameSize * bufferSize);
+            int retry = 0;
             while (true)
             {
                 auto avail = snd_pcm_avail(this->playbackHandle);
                 if (avail < 0)
                 {
+                    if (++retry >= 5) // kinda sus code. let's make sure we don't spin forever.
+                    {
+                        throw std::runtime_error("Timed out trying to fill the audio output buffer.");
+                    }
                     int err = snd_pcm_prepare(playbackHandle);
                     if (err < 0)
                     {
                         throw PiPedalStateException(SS("Audio playback failed. " << snd_strerror(err)));
                     }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     continue;
                 }
                 if (avail == 0)
@@ -1258,9 +1274,12 @@ namespace pipedal
                     throw PiPedalStateException(SS("Audio playback failed. " << snd_strerror(err)));
                 }
             }
+            validate_capture_handle();
+
         }
         void recover_from_output_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
         {
+            validate_capture_handle();
             if (err == -EPIPE)
             {
                 err = snd_pcm_prepare(playback_handle);
@@ -1269,13 +1288,17 @@ namespace pipedal
                     throw PiPedalStateException(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
                 }
                 FillOutputBuffer();
-            } else {
+            }
+            else
+            {
                 throw PiPedalStateException(SS("Can't recover from ALSA output error. (" << snd_strerror(err) << ")"));
             }
-
+            validate_capture_handle();
         }
         void recover_from_input_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
         {
+            validate_capture_handle();
+
             if (err == -EPIPE)
             {
 
@@ -1317,10 +1340,13 @@ namespace pipedal
                 {
                     throw std::runtime_error(SS("Cannot restart capture stream: " << snd_strerror(err)));
                 }
+                validate_capture_handle();
             }
             else if (err == ESTRPIPE)
             {
                 audioRunning = false;
+                validate_capture_handle();
+
                 while ((err = snd_pcm_resume(capture_handle)) == -EAGAIN)
                 {
                     sleep(1);
@@ -1334,9 +1360,11 @@ namespace pipedal
                     }
                 }
                 audioRunning = true;
+                validate_capture_handle();
 
-
-            } else {
+            }
+            else
+            {
                 throw std::runtime_error(SS("Can't restart audio: " << snd_strerror(err)));
             }
         }
@@ -1359,8 +1387,9 @@ namespace pipedal
             // transcode to jack format.
             // expand running status if neccessary.
             // deal with regular and sysex messages split across
-            // buffer boundaries.
+            // buffer boundaries (but discard them)
             snd_pcm_sframes_t framesRead;
+
 
             auto state = snd_pcm_state(handle);
             auto frame_bytes = this->captureFrameSize;
@@ -1382,6 +1411,18 @@ namespace pipedal
                 }
             } while (frames > 0);
             return framesRead;
+        }
+
+        void ReadMidiData(uint32_t audioFrame)
+        {
+            for (size_t i = 0; i < midiDevices.size(); ++i)
+            {
+                size_t nRead = midiDevices[i]->ReadMidiEvents(
+                    this->midiEvents,
+                    midiEventCount,
+                    audioFrame);
+                midiEventCount += nRead;
+            }
         }
 
         long WriteBuffer(snd_pcm_t *handle, uint8_t *buf, size_t frames)
@@ -1448,34 +1489,42 @@ namespace pipedal
                 cpuUse.SetStartTime(cpuUse.Now());
                 while (true)
                 {
+                    validate_capture_handle();
                     cpuUse.UpdateCpuUse();
 
                     if (terminateAudio())
                     {
                         break;
                     }
+                    this->midiEventCount = 0;
 
                     // snd_pcm_wait(captureHandle, 1);
                     ssize_t framesToRead = bufferSize;
                     ssize_t framesRead = 0;
                     bool xrun = false;
+                    validate_capture_handle();
+
                     while (framesToRead != 0)
                     {
+                        ReadMidiData((uint32_t)framesRead);
+
                         ssize_t thisTime = framesToRead;
                         ssize_t nFrames;
                         if ((nFrames = ReadBuffer(
                                  captureHandle,
                                  this->rawCaptureBuffer.data() + this->captureFrameSize * framesRead,
-                                 bufferSize)) < 0)
+                                 framesToRead)) < 0)
                         {
                             this->driverHost->OnUnderrun();
-                            recover_from_input_underrun(captureHandle, playbackHandle,nFrames);
+                            recover_from_input_underrun(captureHandle, playbackHandle, nFrames);
                             xrun = true;
                             break;
                         }
                         framesRead += nFrames;
                         framesToRead -= nFrames;
                     }
+                    validate_capture_handle();
+
                     if (xrun)
                     {
                         continue;
@@ -1504,7 +1553,7 @@ namespace pipedal
                     if (err < 0)
                     {
                         this->driverHost->OnUnderrun();
-                        recover_from_output_underrun(captureHandle, playbackHandle,err);
+                        recover_from_output_underrun(captureHandle, playbackHandle, err);
                     }
                     cpuUse.AddSample(ProfileCategory::Write);
                 }
@@ -1618,11 +1667,16 @@ namespace pipedal
             Lv2Log::debug("Audio thread joined.");
         }
 
+        static constexpr size_t MAX_MIDI_EVENT_SIZE = 3;
         static constexpr size_t MIDI_BUFFER_SIZE = 16 * 1024;
         static constexpr size_t MAX_MIDI_EVENT = 4 * 1024;
 
+        size_t midiEventCount = 0;
+        std::vector<MidiEvent> midiEvents;
+        std::vector<uint8_t> midiEventMemory;
+
     public:
-        class MidiState
+        class AlsaMidiDeviceImpl
         {
         private:
             snd_rawmidi_t *hIn = nullptr;
@@ -1637,14 +1691,11 @@ namespace pipedal
             size_t data0 = 0;
             size_t data1 = 0;
 
-            size_t eventCount = 0;
-            MidiEvent events[MAX_MIDI_EVENT];
-            size_t bufferCount = 0;
-            uint8_t buffer[MIDI_BUFFER_SIZE];
+            bool inputProcessingSysex = false;
+            size_t inputSysexBufferCount = 0;
+            std::vector<uint8_t> inputSysexBuffer;
 
             uint8_t readBuffer[1024];
-
-            ssize_t sysexStartIndex = -1;
 
             void checkError(int result, const char *message)
             {
@@ -1655,12 +1706,16 @@ namespace pipedal
             }
 
         public:
+            AlsaMidiDeviceImpl()
+            {
+                inputSysexBuffer.resize(1024);
+            }
             void Open(const AlsaMidiDeviceInfo &device)
             {
-                bufferCount = 0;
-                eventCount = 0;
-                sysexStartIndex = -1;
                 runningStatus = 0;
+                inputProcessingSysex = false;
+                inputSysexBufferCount = 0;
+
                 dataIndex = 0;
                 dataLength = 0;
 
@@ -1701,73 +1756,29 @@ namespace pipedal
                 return sDataLength[cc >> 4];
             }
 
-            size_t GetMidiInputEventCount()
-            {
-                return eventCount;
-            }
-
-            void NextEventBuffer()
-            {
-                // xxx preserve unflushed sysex data.
-                if (sysexStartIndex != -1)
-                {
-                    int end = bufferCount;
-                    bufferCount = 0;
-                    eventCount = 0;
-                    for (int i = sysexStartIndex; i < end; ++i)
-                    {
-                        buffer[bufferCount++] = buffer[i];
-                    }
-                    sysexStartIndex = 0;
-                }
-                else
-                {
-                    bufferCount = 0;
-                    eventCount = 0;
-                }
-            }
-            bool GetMidiInputEvent(MidiEvent *event, size_t nFrame)
-            {
-                if (nFrame >= eventCount)
-                    return false;
-                *event = this->events[nFrame];
-                return true;
-            }
-
             void MidiPut(uint8_t cc, uint8_t d0, uint8_t d1)
             {
                 if (cc == 0)
                     return;
 
                 // check for overrun.
-                if (bufferCount + 1 + dataLength >= sizeof(buffer))
-                {
-                    bufferCount = sizeof(buffer);
-                    return;
-                }
-                if (eventCount >= MAX_MIDI_EVENT)
+                if (inputEventBufferIndex >= pInputEventBuffer->size())
                 {
                     return;
                 }
 
-                auto *event = &(this->events[eventCount++]);
+                auto &event = (*pInputEventBuffer)[inputEventBufferIndex];
 
-                event->time = 0;
-                event->buffer = &buffer[bufferCount];
-                event->size = dataLength + 1;
-
-                buffer[bufferCount++] = cc;
-                if (dataLength >= 1)
-                {
-                    buffer[bufferCount++] = d0;
-                    if (dataLength >= 2)
-                    {
-                        buffer[bufferCount++] = d1;
-                    }
-                }
+                event.time = inputSampleFrame;
+                event.size = dataLength + 1;
+                assert(dataLength + 1 <= MAX_MIDI_EVENT_SIZE);
+                event.buffer[0] = cc;
+                event.buffer[1] = d0;
+                event.buffer[2] = d1;
+                ++inputEventBufferIndex;
             }
 
-            void FillBuffer()
+            void FillInputBuffer()
             {
                 while (true)
                 {
@@ -1778,23 +1789,42 @@ namespace pipedal
                     {
                         checkError(nRead, SS(this->deviceName << "MIDI event read failed. (" << snd_strerror(nRead)).c_str());
                     }
-                    WriteBuffer(readBuffer, nRead); // expose write to test code.
+                    ProcessInputBuffer(readBuffer, nRead); // expose write to test code.
                 }
+            }
+
+            uint32_t inputSampleFrame = -1;
+            size_t inputEventBufferIndex;
+            std::vector<MidiEvent> *pInputEventBuffer = nullptr;
+
+            size_t ReadMidiEvents(
+                std::vector<MidiEvent> &outputBuffer,
+                size_t startIndex,
+                uint32_t sampleFrame)
+            {
+                inputSampleFrame = sampleFrame;
+                inputEventBufferIndex = startIndex;
+                pInputEventBuffer = &outputBuffer;
+                FillInputBuffer();
+                pInputEventBuffer = nullptr;
+                return inputEventBufferIndex - startIndex;
             }
 
             void FlushSysex()
             {
-                if (sysexStartIndex != -1)
+                if (inputProcessingSysex)
                 {
-                    if (this->eventCount != MAX_MIDI_EVENT)
-                    {
-                        auto *event = &(events[eventCount++]);
-                        event->size = this->bufferCount - sysexStartIndex;
-                        event->buffer = &(this->buffer[this->sysexStartIndex]);
-                        event->time = 0;
-                    }
-                    sysexStartIndex = -1;
+                    // just discard it. :-/
+                    // if (this->eventCount != MAX_MIDI_EVENT)
+                    // {
+                    //     auto *event = &(events[eventCount++]);
+                    //     event->size = this->bufferCount - sysexStartIndex;
+                    //     event->buffer = &(this->buffer[this->sysexStartIndex]);
+                    //     event->time = 0;
+                    // }
+                    // sysexStartIndex = -1;
                 }
+                inputProcessingSysex = false;
             }
 
             int GetSystemCommonLength(uint8_t cc)
@@ -1802,7 +1832,7 @@ namespace pipedal
                 static int sizes[] = {-1, 1, 2, 1, -1, -1, 0, 0};
                 return sizes[(cc >> 4) & 0x07];
             }
-            void WriteBuffer(uint8_t *readBuffer, size_t nRead)
+            void ProcessInputBuffer(uint8_t *readBuffer, size_t nRead)
             {
                 for (ssize_t i = 0; i < nRead; ++i)
                 {
@@ -1814,13 +1844,10 @@ namespace pipedal
                         {
                             if (v == 0xF0)
                             {
-                                if (bufferCount == sizeof(buffer))
-                                {
-                                    break;
-                                }
-                                sysexStartIndex = bufferCount;
+                                inputProcessingSysex = true;
+                                inputSysexBufferCount = 0;
 
-                                buffer[bufferCount++] = 0xF0;
+                                inputSysexBuffer[inputSysexBufferCount++] = 0xF0;
 
                                 runningStatus = 0; // discard subsequent data.
                                 dataLength = -2;   // indefinitely.
@@ -1863,11 +1890,11 @@ namespace pipedal
                     }
                     else
                     {
-                        if (sysexStartIndex != -1)
+                        if (inputProcessingSysex)
                         {
-                            if (bufferCount != sizeof(buffer))
+                            if (inputSysexBufferCount != inputSysexBuffer.size())
                             {
-                                buffer[bufferCount++] = v;
+                                inputSysexBuffer[inputSysexBufferCount++] = v;
                             }
                         }
                         else
@@ -1888,7 +1915,7 @@ namespace pipedal
                             }
                         }
                     }
-                    if (dataIndex == dataLength)
+                    if (dataIndex == dataLength && dataLength >= 0 && runningStatus != 0)
                     {
                         MidiPut(runningStatus, data0, data1);
                         dataIndex = 0;
@@ -1897,70 +1924,40 @@ namespace pipedal
             }
         };
 
-        std::vector<MidiState *> midiStates;
+        std::vector<std::unique_ptr<AlsaMidiDeviceImpl>> midiDevices;
 
         void OpenMidi(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
         {
             const auto &devices = channelSelection.GetInputMidiDevices();
 
-            midiStates.reserve(devices.size());
+            midiDevices.reserve(devices.size());
 
             for (size_t i = 0; i < devices.size(); ++i)
             {
                 const auto &device = devices[i];
-                MidiState *midiState = nullptr;
-                try
-                {
-                    midiState = new MidiState();
-                    midiState->Open(device);
-                    midiStates.push_back(midiState);
-                }
-                catch (const std::exception &e)
-                {
-                    // logged already.
-                    delete midiState;
-                }
-            }
-        }
-
-        virtual size_t MidiInputBufferCount() const
-        {
-            return this->midiStates.size();
-        }
-        virtual void *GetMidiInputBuffer(size_t channel, size_t nFrames)
-        {
-            return (void *)midiStates[channel];
-        }
-
-        virtual size_t GetMidiInputEventCount(void *portBuffer)
-        {
-            MidiState *state = (MidiState *)portBuffer;
-            return state->GetMidiInputEventCount();
-        }
-        virtual bool GetMidiInputEvent(MidiEvent *event, void *portBuf, size_t nFrame)
-        {
-            MidiState *state = (MidiState *)portBuf;
-            return state->GetMidiInputEvent(event, nFrame);
-        }
-
-        virtual void FillMidiBuffers()
-        {
-            for (size_t i = 0; i < this->midiStates.size(); ++i)
-            {
-                auto *state = midiStates[i];
-                state->NextEventBuffer();
-                state->FillBuffer();
+                auto midiDevice = std::make_unique<AlsaMidiDeviceImpl>();
+                midiDevice->Open(device);
+                midiDevices.push_back(std::move(midiDevice));
             }
         }
 
         virtual size_t InputBufferCount() const { return activeCaptureBuffers.size(); }
-        virtual float *GetInputBuffer(size_t channel, size_t nFrames)
+        virtual float *GetInputBuffer(size_t channel) override
         {
             return activeCaptureBuffers[channel];
         }
 
+        virtual size_t GetMidiInputEventCount() override
+        {
+            return midiEventCount;
+        }
+        virtual MidiEvent *GetMidiEvents() override
+        {
+            return this->midiEvents.data();
+        }
+
         virtual size_t OutputBufferCount() const { return activePlaybackBuffers.size(); }
-        virtual float *GetOutputBuffer(size_t channel, size_t nFrames)
+        virtual float *GetOutputBuffer(size_t channel) override
         {
             return activePlaybackBuffers[channel];
         }
@@ -2158,7 +2155,8 @@ namespace pipedal
             throw PiPedalStateException("Assert failed.");
     }
 
-    static void ExpectEvent(AlsaDriverImpl::MidiState &m, int event, const std::vector<uint8_t> message)
+#ifdef JUNK
+    static void ExpectEvent(AlsaDriverImpl::AlsaMidiDeviceImpl &m, int event, const std::vector<uint8_t> message)
     {
         MidiEvent e;
         m.GetMidiInputEvent(&e, event);
@@ -2168,6 +2166,7 @@ namespace pipedal
             AlsaAssert(message[i] == e.buffer[i]);
         }
     }
+#endif
 
     void AlsaDriverImpl::TestFormatEncodeDecode(snd_pcm_format_t captureFormat)
     {
@@ -2243,8 +2242,8 @@ namespace pipedal
     }
     void MidiDecoderTest()
     {
-
-        AlsaDriverImpl::MidiState midiState;
+#ifdef JUNK
+        AlsaDriverImpl::AlsaMidiDeviceImpl midiState;
 
         MidiEvent event;
 
@@ -2252,7 +2251,7 @@ namespace pipedal
         {
             static uint8_t m0[] = {0x80, 0x1, 0x2, 0x3, 0x4, 0x5};
             midiState.NextEventBuffer();
-            midiState.WriteBuffer(m0, sizeof(m0));
+            midiState.ProcessInputBuffer(m0, sizeof(m0));
             AlsaAssert(midiState.GetMidiInputEventCount() == 2);
             AlsaAssert(midiState.GetMidiInputEvent(&event, 0));
 
@@ -2261,7 +2260,7 @@ namespace pipedal
 
             static uint8_t m1[] = {0x06, 0xC0, 0x1, 0x2};
             midiState.NextEventBuffer();
-            midiState.WriteBuffer(m1, sizeof(m1));
+            midiState.ProcessInputBuffer(m1, sizeof(m1));
             AlsaAssert(midiState.GetMidiInputEventCount() == 3);
             ExpectEvent(midiState, 0, {0x80, 0x05, 0x06});
             ExpectEvent(midiState, 1, {0xC0, 0x1});
@@ -2272,7 +2271,7 @@ namespace pipedal
         {
             static uint8_t m0[] = {0xF0, 0x76, 0xF7, 0xA};
             midiState.NextEventBuffer();
-            midiState.WriteBuffer(m0, 4);
+            midiState.ProcessInputBuffer(m0, 4);
             AlsaAssert(midiState.GetMidiInputEventCount() == 2);
             AlsaAssert(midiState.GetMidiInputEvent(&event, 0));
             AlsaAssert(event.size == 2);
@@ -2284,11 +2283,11 @@ namespace pipedal
         {
             static uint8_t m0[] = {0xF0, 0x76, 0x3B};
             midiState.NextEventBuffer();
-            midiState.WriteBuffer(m0, sizeof(m0));
+            midiState.ProcessInputBuffer(m0, sizeof(m0));
             AlsaAssert(midiState.GetMidiInputEventCount() == 0);
             static uint8_t m1[] = {0x77, 0xF7};
             midiState.NextEventBuffer();
-            midiState.WriteBuffer(m1, sizeof(m1));
+            midiState.ProcessInputBuffer(m1, sizeof(m1));
             AlsaAssert(midiState.GetMidiInputEventCount() == 2);
 
             AlsaAssert(midiState.GetMidiInputEvent(&event, 0));
@@ -2298,5 +2297,6 @@ namespace pipedal
             AlsaAssert(event.buffer[2] == 0x3B);
             AlsaAssert(event.buffer[3] == 0x77);
         }
+#endif
     }
 } // namespace

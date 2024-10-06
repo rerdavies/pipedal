@@ -295,7 +295,7 @@ namespace pipedal
             }
         }
         uint64_t instanceId;
-        virtual bool IsLv2Effect() const override { return true; }
+        virtual bool IsLv2Effect() const override { return false; }
 
         virtual uint8_t *GetAtomInputBuffer() { return nullptr; }
         virtual uint8_t *GetAtomOutputBuffer() { return nullptr; }

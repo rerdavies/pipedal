@@ -150,6 +150,14 @@ namespace pipedal
             }
         }
 
+        virtual size_t GetMidiInputEventCount() override {
+            return 0;
+        }
+        virtual MidiEvent*GetMidiEvents() {
+            return nullptr;
+        }
+
+
         JackChannelSelection channelSelection;
         bool open = false;
         virtual void Open(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
@@ -166,7 +174,6 @@ namespace pipedal
             open = true;
             try
             {
-                OpenMidi(jackServerSettings, channelSelection);
                 OpenAudio(jackServerSettings, channelSelection);
             }
             catch (const std::exception &e)
@@ -348,128 +355,17 @@ namespace pipedal
         static constexpr size_t MAX_MIDI_EVENT = 4 * 1024;
 
     public:
-        class MidiState
-        {
-        private:
-            snd_rawmidi_t *hIn = nullptr;
-            snd_rawmidi_params_t *hInParams = nullptr;
-            std::string deviceName;
-
-            // running status state.
-            uint8_t runningStatus = 0;
-            int dataLength = 0;
-            int dataIndex = 0;
-            size_t statusBytesRemaining = 0;
-            size_t data0;
-            size_t data1;
-
-            size_t eventCount = 0;
-            MidiEvent events[MAX_MIDI_EVENT];
-            size_t bufferCount = 0;
-            uint8_t buffer[MIDI_BUFFER_SIZE];
-
-            uint8_t readBuffer[1024];
-
-            ssize_t sysexStartIndex = -1;
-
-            void checkError(int result, const char *message)
-            {
-                if (result < 0)
-                {
-                    throw PiPedalStateException(SS("Unexpected error: " << message << " (" << this->deviceName));
-                }
-            }
-
-        public:
-            void Open(const AlsaMidiDeviceInfo &device)
-            {
-                bufferCount = 0;
-                eventCount = 0;
-                sysexStartIndex = -1;
-                runningStatus = 0;
-                dataIndex = 0;
-                dataLength = 0;
-
-                this->deviceName = device.description_;
-
-            }
-            void Close()
-            {
-            }
 
 
-            size_t GetMidiInputEventCount()
-            {
-                return 0;
-            }
-
-            bool GetMidiInputEvent(MidiEvent *event, size_t nFrame)
-            {
-                return false;
-            }
-
-            void MidiPut(uint8_t cc, uint8_t d0, uint8_t d1)
-            {
-            }
-
-            void FillBuffer()
-            {
-            }
-
-            void WriteBuffer(uint8_t *readBuffer, size_t nRead)
-            {
-            }
-        };
-
-        std::vector<MidiState *> midiStates;
-
-        void OpenMidi(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
-        {
-            const auto &devices = channelSelection.GetInputMidiDevices();
-
-            midiStates.resize(devices.size());
-
-            for (size_t i = 0; i < devices.size(); ++i)
-            {
-                const auto &device = devices[i];
-                MidiState *state = new MidiState();
-                midiStates[i] = state;
-                state->Open(device);
-            }
-        }
-
-        virtual size_t MidiInputBufferCount() const
-        {
-            return this->midiStates.size();
-        }
-        virtual void *GetMidiInputBuffer(size_t channel, size_t nFrames)
-        {
-            return (void *)midiStates[channel];
-        }
-
-        virtual size_t GetMidiInputEventCount(void *portBuffer)
-        {
-            MidiState *state = (MidiState *)portBuffer;
-            return state->GetMidiInputEventCount();
-        }
-        virtual bool GetMidiInputEvent(MidiEvent *event, void *portBuf, size_t nFrame)
-        {
-            MidiState *state = (MidiState *)portBuf;
-            return state->GetMidiInputEvent(event, nFrame);
-        }
-
-        virtual void FillMidiBuffers()
-        {
-        }
-
+   
         virtual size_t InputBufferCount() const { return activeCaptureBuffers.size(); }
-        virtual float *GetInputBuffer(size_t channel, size_t nFrames)
+        virtual float *GetInputBuffer(size_t channel)
         {
             return activeCaptureBuffers[channel];
         }
 
         virtual size_t OutputBufferCount() const { return activePlaybackBuffers.size(); }
-        virtual float *GetOutputBuffer(size_t channel, size_t nFrames)
+        virtual float *GetOutputBuffer(size_t channel)
         {
             return activePlaybackBuffers[channel];
         }

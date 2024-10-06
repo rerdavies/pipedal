@@ -37,7 +37,7 @@ using namespace dbus::networkmanager;
 namespace pipedal::impl
 {
 
-    constexpr std::string PIPEDAL_HOTSPOT_NAME = "PiPedal Hotspot";
+    #define PIPEDAL_HOTSPOT_NAME "PiPedal Hotspot"
 
     class HotspotManagerImpl : public HotspotManager
     {

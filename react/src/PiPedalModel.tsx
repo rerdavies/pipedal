@@ -624,7 +624,7 @@ export class PiPedalModel //implements PiPedalModel
             let atomJson = body.atomJson as any;
             this.handleNotifyPathPatchPropertyChanged(instanceId, propertyUri, atomJson);
             if (header.replyTo) {
-                this.webSocket?.reply(header.replyTo, "onNotifyPatchProperty", true);
+                this.webSocket?.reply(header.replyTo, "onNotifyPathPatchPropertyChanged", true);
             }
         } else if (message === "onNotifyPatchProperty") {
             let clientHandle = body.clientHandle as number;

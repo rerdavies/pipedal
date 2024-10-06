@@ -27,8 +27,6 @@
 #include "RealtimeMidiEventType.hpp"
 #include <chrono>
 
-
-
 namespace pipedal
 {
     class IndexedSnapshot;
@@ -65,8 +63,10 @@ namespace pipedal
 
         MidiProgramChange, // program change requested via midi.
         AckMidiProgramChange,
+        AckMidiSnapshotRequest,
 
         NextMidiProgram,
+        NextMidiBank,
 
         Lv2StateChanged,
         MaybeLv2StateChanged,
@@ -75,27 +75,35 @@ namespace pipedal
         Lv2ErrorMessage,
 
         RealtimeMidiEvent,
+        RealtimeMidiSnapshotRequest,
 
         SendPathPropertyBuffer,
 
-
     };
 
-
-    struct RealtimeMidiEventRequest {
+    struct RealtimeMidiEventRequest
+    {
         RealtimeMidiEventType eventType;
     };
-    struct RealtimeNextMidiProgramRequest {
+
+    struct RealtimeMidiSnapshotRequest
+    {
+        int32_t snapshotIndex;
+        int64_t snapshotRequestId;
+    };
+
+    struct RealtimeNextMidiProgramRequest
+    {
         int64_t requestId;
         int32_t direction;
     };
 
-    struct RealtimeMidiProgramRequest {
+    struct RealtimeMidiProgramRequest
+    {
         int64_t requestId;
         int8_t bank;
         uint8_t program;
     };
-
 
     class RealtimeMonitorPortSubscription
     {
@@ -169,7 +177,6 @@ namespace pipedal
         float value;
     };
 
-
     class SetControlValueBody
     {
     public:
@@ -201,36 +208,38 @@ namespace pipedal
     {
 
     private:
-        RingBuffer<MULTI_WRITE,SEMAPHORE_READ> *ringBuffer = nullptr;
+        RingBuffer<MULTI_WRITE, SEMAPHORE_READ> *ringBuffer = nullptr;
 
     public:
         RingBufferReader()
             : ringBuffer(nullptr)
         {
         }
-        RingBufferReader(RingBuffer<MULTI_WRITE,SEMAPHORE_READ> *ringBuffer)
+        RingBufferReader(RingBuffer<MULTI_WRITE, SEMAPHORE_READ> *ringBuffer)
             : ringBuffer(ringBuffer)
         {
         }
         void Reset() { ringBuffer->reset(); }
         // 0 -> ready. -1: timed out. -2: closing.
-        template <class Rep, class Period> 
-        RingBufferStatus wait_for(const std::chrono::duration<Rep,Period>& timeout) {
+        template <class Rep, class Period>
+        RingBufferStatus wait_for(const std::chrono::duration<Rep, Period> &timeout)
+        {
             return ringBuffer->readWait_for(timeout);
         }
 
         template <typename Clock, typename Duration>
-        RingBufferStatus wait_until(std::chrono::time_point<Clock,Duration>&time_point)
+        RingBufferStatus wait_until(std::chrono::time_point<Clock, Duration> &time_point)
         {
             return ringBuffer->readWait_until(time_point);
         }
         template <typename Clock, typename Duration>
-        RingBufferStatus wait_until(size_t size,std::chrono::time_point<Clock,Duration>&time_point)
+        RingBufferStatus wait_until(size_t size, std::chrono::time_point<Clock, Duration> &time_point)
         {
-            return ringBuffer->readWait_until(size,time_point);
+            return ringBuffer->readWait_until(size, time_point);
         }
 
-        bool wait() {
+        bool wait()
+        {
             return ringBuffer->readWait();
         }
         size_t readSpace() const
@@ -240,33 +249,29 @@ namespace pipedal
         template <typename T>
         bool read(T *output)
         {
-            if (!ringBuffer->read(sizeof(T),(uint8_t*)output))
+            if (!ringBuffer->read(sizeof(T), (uint8_t *)output))
             {
                 throw PiPedalStateException("Ringbuffer read failed. Did you forget to check for space?");
             }
             return true;
         }
 
-        bool read(size_t size, uint8_t*data)
+        bool read(size_t size, uint8_t *data)
         {
-            if (!ringBuffer->read(size,data))
+            if (!ringBuffer->read(size, data))
             {
                 throw PiPedalStateException("Ringbuffer read failed. Did you forget to check for space?");
             }
             return true;
-
         }
         template <typename T>
         void readComplete(T *output)
         {
-            if (!ringBuffer->read(sizeof(T),(uint8_t*)output))
+            if (!ringBuffer->read(sizeof(T), (uint8_t *)output))
             {
                 throw PiPedalStateException("Ringbuffer read failed. Did you forget to check for space?");
             }
         }
-
-
-
     };
 
     template <typename T>
@@ -290,19 +295,19 @@ namespace pipedal
         T value;
     };
 
-    template<bool MULTI_WRITER, bool SEMAPHORE_READER>
+    template <bool MULTI_WRITER, bool SEMAPHORE_READER>
     class RingBufferWriter
     {
 
     private:
-        RingBuffer<MULTI_WRITER,SEMAPHORE_READER>* ringBuffer;
+        RingBuffer<MULTI_WRITER, SEMAPHORE_READER> *ringBuffer;
 
     public:
         RingBufferWriter()
             : ringBuffer(nullptr)
         {
         }
-        RingBufferWriter(RingBuffer<MULTI_WRITER,SEMAPHORE_READER>*ringBuffer)
+        RingBufferWriter(RingBuffer<MULTI_WRITER, SEMAPHORE_READER> *ringBuffer)
             : ringBuffer(ringBuffer)
         {
         }
@@ -315,88 +320,99 @@ namespace pipedal
             // the goal: to atomically write the command and associated data.
             CommandBuffer<T> buffer(command, value);
 
-            if (!ringBuffer->write(buffer.size(),(uint8_t *)&buffer))
+            if (!ringBuffer->write(buffer.size(), (uint8_t *)&buffer))
             {
                 Lv2Log::error("No space in audio service ringbuffer.");
                 return;
-
             }
         }
         template <typename T>
-        void write(RingBufferCommand command, const T &value, size_t dataLength, uint8_t*variableData)
+        void write(RingBufferCommand command, const T &value, size_t dataLength, uint8_t *variableData)
         {
 
             // the goal: to atomically write the command and associated data.
             CommandBuffer<T> buffer(command, value);
 
-            if (!ringBuffer->write(buffer.size(),(uint8_t *)&buffer,dataLength,variableData))
+            if (!ringBuffer->write(buffer.size(), (uint8_t *)&buffer, dataLength, variableData))
             {
                 Lv2Log::error("No space in audio service ringbuffer.");
                 return;
-
             }
         }
         void Lv2StateChanged(uint64_t instanceId)
         {
-            write(RingBufferCommand::Lv2StateChanged,instanceId);
+            write(RingBufferCommand::Lv2StateChanged, instanceId);
         }
         void MaybeLv2StateChanged(uint64_t instanceId)
         {
-            write(RingBufferCommand::MaybeLv2StateChanged,instanceId);
+            write(RingBufferCommand::MaybeLv2StateChanged, instanceId);
         }
-        void AtomOutput(uint64_t instanceId, size_t bytes, uint8_t*data)
+        void AtomOutput(uint64_t instanceId, size_t bytes, uint8_t *data)
         {
-            write(RingBufferCommand::AtomOutput,instanceId,bytes,data);
+            write(RingBufferCommand::AtomOutput, instanceId, bytes, data);
         }
-        void AtomOutput(uint64_t instanceId, const LV2_Atom*atom)
+        void AtomOutput(uint64_t instanceId, const LV2_Atom *atom)
         {
-            write(RingBufferCommand::AtomOutput,instanceId,atom->size+sizeof(LV2_Atom),(uint8_t*)atom);
+            write(RingBufferCommand::AtomOutput, instanceId, atom->size + sizeof(LV2_Atom), (uint8_t *)atom);
         }
         void ParameterRequest(RealtimePatchPropertyRequest *pRequest)
         {
-            write(RingBufferCommand::ParameterRequest,pRequest);
+            write(RingBufferCommand::ParameterRequest, pRequest);
         }
         void ParameterRequestComplete(RealtimePatchPropertyRequest *pRequest)
         {
-            write(RingBufferCommand::ParameterRequestComplete,pRequest);
+            write(RingBufferCommand::ParameterRequestComplete, pRequest);
         }
-        void MidiValueChanged(int64_t instanceId, int controlIndex,float value)
+        void MidiValueChanged(int64_t instanceId, int controlIndex, float value)
         {
             MidiValueChangedBody body;
             body.instanceId = instanceId;
             body.controlIndex = controlIndex;
             body.value = value;
-            write(RingBufferCommand::MidiValueChanged,body);            
+            write(RingBufferCommand::MidiValueChanged, body);
         }
 
-        void OnMidiListen(bool isNote, uint8_t noteOrControl) {
+        void OnMidiListen(bool isNote, uint8_t noteOrControl)
+        {
             uint16_t msg = noteOrControl;
-            if (isNote) msg |= 0x100;
+            if (isNote)
+                msg |= 0x100;
             write(RingBufferCommand::OnMidiListen, msg);
         }
 
         /**
          * @brief Notify host of a midi program change request.
-         * 
+         *
          * @param bank MIDI bank number, or -1 for current bank.
          * @param program MIDI program number.
          */
-        void OnMidiProgramChange(int64_t _requestId,int8_t _bank,uint8_t _program)
+        void OnMidiProgramChange(int64_t _requestId, int8_t _bank, uint8_t _program)
         {
-            RealtimeMidiProgramRequest msg { requestId:_requestId, bank: _bank,program: _program};
+            RealtimeMidiProgramRequest msg{requestId : _requestId, bank : _bank, program : _program};
 
-
-            write(RingBufferCommand::MidiProgramChange,msg);
+            write(RingBufferCommand::MidiProgramChange, msg);
         }
         void OnRealtimeMidiEvent(RealtimeMidiEventType eventType)
         {
-            RealtimeMidiEventRequest msg { eventType};
-            write(RingBufferCommand::RealtimeMidiEvent,msg);
+            RealtimeMidiEventRequest msg{eventType};
+            write(RingBufferCommand::RealtimeMidiEvent, msg);
         }
-        void OnNextMidiProgram(int64_t requestId,int32_t direction)
+        void OnRealtimeMidiSnapshotRequest(int32_t snapshotIndex, int64_t snapshotRequestId)
         {
-            RealtimeNextMidiProgramRequest msg { requestId: requestId, direction:direction};
-            write(RingBufferCommand::NextMidiProgram,msg);
+            RealtimeMidiSnapshotRequest msg{snapshotIndex, snapshotRequestId};
+
+            write(RingBufferCommand::RealtimeMidiSnapshotRequest, msg);
+        }
+
+        void OnNextMidiProgram(int64_t requestId, int32_t direction)
+        {
+            RealtimeNextMidiProgramRequest msg{requestId : requestId, direction : direction};
+            write(RingBufferCommand::NextMidiProgram, msg);
+        }
+        void OnNextMidiBank(int64_t requestId, int32_t direction)
+        {
+            RealtimeNextMidiProgramRequest msg{requestId : requestId, direction : direction};
+            write(RingBufferCommand::NextMidiBank, msg);
         }
 
         void SetControlValue(int effectIndex, int controlIndex, float value)
@@ -405,21 +421,20 @@ namespace pipedal
             body.effectIndex = effectIndex;
             body.controlIndex = controlIndex;
             body.value = value;
-            write(RingBufferCommand::SetValue,body);
+            write(RingBufferCommand::SetValue, body);
         }
         void SetInputVolume(float value)
         {
             SetVolumeBody body;
             body.value = value;
-            write(RingBufferCommand::SetInputVolume,body);
+            write(RingBufferCommand::SetInputVolume, body);
         }
         void SetOutputVolume(float value)
         {
             SetVolumeBody body;
             body.value = value;
-            write(RingBufferCommand::SetOutputVolume,body);
+            write(RingBufferCommand::SetOutputVolume, body);
         }
-
 
         void FreeVuSubscriptions(RealtimeVuBuffers *configuration)
         {
@@ -432,7 +447,7 @@ namespace pipedal
         }
 
         void SendMonitorPortUpdate(
-            PortMonitorCallback* callback,
+            PortMonitorCallback *callback,
             int64_t subscriptionHandle,
             float value)
         {
@@ -442,12 +457,12 @@ namespace pipedal
 
         void SendVuUpdate(const std::vector<VuUpdate> *pUpdates)
         {
-            write(RingBufferCommand::SendVuUpdate,pUpdates);
+            write(RingBufferCommand::SendVuUpdate, pUpdates);
         }
         void AckVuUpdate()
         {
             bool value = true;
-            write(RingBufferCommand::AckVuUpdate,value);
+            write(RingBufferCommand::AckVuUpdate, value);
         }
         void AckMonitorPortUpdate(int64_t subscriptionHandle)
         {
@@ -459,14 +474,17 @@ namespace pipedal
         {
             write(RingBufferCommand::SetVuSubscriptions, configuration);
         }
-        void LoadSnapshot(IndexedSnapshot*snapshot)
+        void LoadSnapshot(IndexedSnapshot *snapshot)
         {
-            write(RingBufferCommand::LoadSnapshot,snapshot);
+            write(RingBufferCommand::LoadSnapshot, snapshot);
         }
-        
+
         void AckMidiProgramRequest(int64_t requestId)
         {
-            write(RingBufferCommand::AckMidiProgramChange,requestId);
+            write(RingBufferCommand::AckMidiProgramChange, requestId);
+        }
+        void AckMidiSnapshotRequest(uint64_t snapshotRequestId) {
+            write(RingBufferCommand::AckMidiSnapshotRequest, snapshotRequestId);
         }
 
         void SetMonitorPortSubscriptions(RealtimeMonitorPortSubscriptions *subscriptions)
@@ -481,7 +499,7 @@ namespace pipedal
             SetBypassBody body;
             body.effectIndex = effectIndex;
             body.enabled = enabled;
-            write(RingBufferCommand::SetBypass,body);
+            write(RingBufferCommand::SetBypass, body);
         }
 
         void ReplaceEffect(Lv2Pedalboard *pedalboard)
@@ -500,19 +518,19 @@ namespace pipedal
             write(RingBufferCommand::EffectReplaced, pedalboard);
         }
 
-        void FreeSnapshot(IndexedSnapshot*snapshot)
+        void FreeSnapshot(IndexedSnapshot *snapshot)
         {
-            write(RingBufferCommand::FreeSnapshot,snapshot);
+            write(RingBufferCommand::FreeSnapshot, snapshot);
         }
 
-        void WriteLv2ErrorMessage(int64_t instanceId, const char*message)
+        void WriteLv2ErrorMessage(int64_t instanceId, const char *message)
         {
             size_t length = strlen(message);
-            write(RingBufferCommand::Lv2ErrorMessage,instanceId,length,(uint8_t*)message);
+            write(RingBufferCommand::Lv2ErrorMessage, instanceId, length, (uint8_t *)message);
         }
-        void SendPathPropertyBuffer(PatchPropertyWriter::Buffer*buffer)
+        void SendPathPropertyBuffer(PatchPropertyWriter::Buffer *buffer)
         {
-            write(RingBufferCommand::SendPathPropertyBuffer,buffer);
+            write(RingBufferCommand::SendPathPropertyBuffer, buffer);
         }
     };
 
@@ -521,20 +539,16 @@ namespace pipedal
     typedef RingBufferWriter<true, false> HostRingBufferWriter;
 
     // cures a forward-declaration problem.
-    class RealtimeRingBufferWriter: public RingBufferWriter<false, true> 
+    class RealtimeRingBufferWriter : public RingBufferWriter<false, true>
     {
     public:
         RealtimeRingBufferWriter()
         {
         }
-        RealtimeRingBufferWriter(RingBuffer<false,true>*ringBuffer)
-            : RingBufferWriter<false, true> (ringBuffer)
+        RealtimeRingBufferWriter(RingBuffer<false, true> *ringBuffer)
+            : RingBufferWriter<false, true>(ringBuffer)
         {
         }
-
-
-
     };
 
-
-} //namespace
+} // namespace

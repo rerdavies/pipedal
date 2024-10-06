@@ -1418,6 +1418,17 @@ void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
         writer.write(bindings);
     }
 }
+static bool hasBinding(std::vector<MidiBinding> &bindings, const std::string&name)
+{
+    for (auto&binding: bindings)
+    {
+        if (binding.symbol() == name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
 std::vector<MidiBinding> Storage::GetSystemMidiBindings()
 {
     std::vector<MidiBinding> result;
@@ -1441,6 +1452,20 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
                 result.push_back(MidiBinding::SystemBinding("shutdown"));
                 result.push_back(MidiBinding::SystemBinding("reboot"));
             }
+            if (!hasBinding(result,"prevBank"))
+            {
+                result.insert(result.begin(),MidiBinding::SystemBinding("nextBank")); // reverse order.
+                result.insert(result.begin(),MidiBinding::SystemBinding("prevBank"));
+            }
+            if (!hasBinding(result,"snapshot1"))
+            {
+                auto position = 4;
+                for (int i = 0; i < 6; ++i)
+                {
+                    result.insert(result.begin()+position,MidiBinding::SystemBinding(SS("snapshot" << (i+1))));
+                    ++position;
+                }
+            }
             return result;
         }
         catch (const std::exception&e)
@@ -1449,8 +1474,18 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
         }
     }
     result.clear();
+    result.push_back(MidiBinding::SystemBinding("prevBank"));
+    result.push_back(MidiBinding::SystemBinding("nextBank"));
     result.push_back(MidiBinding::SystemBinding("prevProgram"));
     result.push_back(MidiBinding::SystemBinding("nextProgram"));
+
+    result.push_back(MidiBinding::SystemBinding("snapshot1"));
+    result.push_back(MidiBinding::SystemBinding("snapshot2"));
+    result.push_back(MidiBinding::SystemBinding("snapshot3"));
+    result.push_back(MidiBinding::SystemBinding("snapshot4"));
+    result.push_back(MidiBinding::SystemBinding("snapshot5"));
+    result.push_back(MidiBinding::SystemBinding("snapshot6"));
+
     result.push_back(MidiBinding::SystemBinding("stopHotspot"));
     result.push_back(MidiBinding::SystemBinding("startHotspot"));
     result.push_back(MidiBinding::SystemBinding("shutdown"));

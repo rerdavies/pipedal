@@ -680,7 +680,7 @@ void WifiConfigSettings::ParseArguments(
 
     )
 {
-    this->valid_ = false;
+    this->valid_ = false ;
     if (argv.size() != 4)
     {
         throw invalid_argument("Invalid number of arguments.");

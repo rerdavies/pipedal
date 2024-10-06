@@ -61,3 +61,10 @@ export class FakeAndroidHost implements AndroidHostInterface
         return this.theme;
     }
 }
+export function isAndroidHosted(): boolean {
+    return ((window as any).AndroidHost as AndroidHostInterface) !== undefined;
+}
+
+export function getAndroidHost(): AndroidHostInterface | undefined {
+    return ((window as any).AndroidHost as AndroidHostInterface);
+}

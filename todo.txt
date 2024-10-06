@@ -1,7 +1,3 @@
-ToobFreeverb has a big memory leak!
-
-Review state changing code. Do we need this anymmore? I think not. It is a bit sus.
-
 
 Review current handleNotifyPatchProperty. I tink server-side support needs to be
 removed, and rely on handleNotifyPathPatchPropertyChanged instead.
@@ -10,26 +6,18 @@ removed, and rely on handleNotifyPathPatchPropertyChanged instead.
 
 Midi bindings.    
 
-SEGV at void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
-            bool changed = this->audioHost->UpdatePluginState(*item);
-            PiPedalModel.cpp:375
 
-       because audioHost is gone.
        revamp shutdown procedure for the audio thread. 
        write a marker on exit, and don't  release 
        audioHost UNTIL the service thread has read the close marker.
        
-- continuing corrupt memory.
 
-
-- verify that scanning doesn't cause overruns.
-- verify address change behaviour in client
 -verify clean removal of dhcpcd and nm_p2p2d
 
 X Review docs changes once we go live.
 
 - Localisation: support non-UTF8 code pages.
-- unicode commandline arguments.
+- unicode commandline arguments. (probably the hotspot name)
 - review unicode filenames (this is probably ok)
 
 - BUG: gcs when we have an animated output control

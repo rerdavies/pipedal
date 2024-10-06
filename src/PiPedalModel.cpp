@@ -349,6 +349,7 @@ void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const s
     }
 }
 
+// we were explicitly told that the state was changed by the plugin
 void PiPedalModel::OnNotifyLv2StateChanged(uint64_t instanceId)
 {
     // a sent PATCH_Set, or an explicit state changed notification.
@@ -356,6 +357,7 @@ void PiPedalModel::OnNotifyLv2StateChanged(uint64_t instanceId)
     this->SetPresetChanged(-1, true, false);
 }
 
+// The plugin notified us that a  path path property changed. The state *purrobably changed.
 void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
 {
     // one or more received PATCH_Sets, which MAY change the state.
@@ -363,7 +365,9 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
     PedalboardItem *item = pedalboard.GetItem(instanceId);
     if (item != nullptr)
     {
-
+        if (!audioHost) {
+            return;
+        }
         bool changed = this->audioHost->UpdatePluginState(*item);
         if (changed)
         {
@@ -371,11 +375,8 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
             item->stateUpdateCount(item->stateUpdateCount() + 1);
 
             Lv2PluginState newState = item->lv2State();
-            std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
-            for (auto &subscriber : t)
-            {
-                subscriber->OnLv2StateChanged(instanceId, newState);
-            }
+
+            FireLv2StateChanged(instanceId,newState);
         }
     }
 }
@@ -508,6 +509,8 @@ void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
         this->SetPresetChanged(clientId, true);
     }
 }
+
+
 
 void PiPedalModel::SetSnapshot(int64_t selectedSnapshot)
 {
@@ -723,12 +726,43 @@ void PiPedalModel::UpdateVst3Settings(Pedalboard &pedalboard)
 #endif
 }
 
+void PiPedalModel::FireLv2StateChanged(int64_t instanceId, const Lv2PluginState &lv2State) {
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+
+    for (auto &subscriber : t)
+    {
+        subscriber->OnLv2StateChanged(instanceId,lv2State);
+    }
+
+}
+
+// referesh the plugin state for all plugins.
+bool PiPedalModel::SyncLv2State()
+{
+    bool changed = false;
+    auto pedalboardItems = pedalboard.GetAllPlugins();
+    for (PedalboardItem *item : pedalboardItems)
+    {
+        if (!item->isSplit())
+        {
+            if (audioHost->UpdatePluginState(*item))
+            {
+                FireLv2StateChanged(item->instanceId(),item->lv2State());
+                changed = true;
+            }
+        }
+    }
+    return changed;
+
+}
 void PiPedalModel::SaveCurrentPreset(int64_t clientId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
     UpdateVst3Settings(this->pedalboard);
-    this->audioHost->UpdatePluginStates(this->pedalboard);
+    SyncLv2State();
+
     storage.SaveCurrentPreset(this->pedalboard);
     this->SetPresetChanged(clientId, false);
 }
@@ -761,6 +795,7 @@ int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, const std::string &n
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
+    SyncLv2State();
     auto pedalboard = this->pedalboard;
     UpdateVst3Settings(pedalboard);
     pedalboard.name(name);
@@ -880,7 +915,7 @@ void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest 
     try
     {
 
-        if (request.direction < 0)
+        if (request.direction >= 0)
         {
             NextPreset();
         }
@@ -899,6 +934,47 @@ void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest 
         this->audioHost->AckMidiProgramRequest(request.requestId);
     }
 }
+
+void PiPedalModel::OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) 
+{
+    try {
+        SetSnapshot((int64_t)snapshotIndex);
+    } catch (const std::exception&e)
+    {
+        Lv2Log::error(SS("SetSnapshot failed. " << e.what()));
+    }
+    if (this->audioHost)
+    {
+        this->audioHost->AckSnapshotRequest(snapshotRequestId);
+    }
+}
+
+void PiPedalModel::OnNotifyNextMidiBank(const RealtimeNextMidiProgramRequest &request)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    try
+    {
+
+        if (request.direction >= 0)
+        {
+            NextBank();
+        }
+        else
+        {
+            PreviousBank();
+        }
+    }
+    catch (std::exception &e)
+    {
+
+        Lv2Log::error(e.what());
+    }
+    if (this->audioHost)
+    {
+        this->audioHost->AckMidiProgramRequest(request.requestId);
+    }
+}
+
 
 void PiPedalModel::OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest)
 {
@@ -1953,14 +2029,14 @@ void PiPedalModel::OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetPropert
         atom_object atomObject{atomValue};
 
         PedalboardItem::PropertyMap &properties = item->PatchProperties();
-        if (properties.contains(propertyUri))
+        if (properties.contains(propertyUri) && properties[propertyUri] == atomObject)
         {
-            if (properties[propertyUri] == atomObject)
-            {
-                return;
-            }
+            // do noting.
+        } else {
+            properties[propertyUri] = std::move(atomObject);
         }
-        properties[propertyUri] = std::move(atomObject);
+
+        OnNotifyMaybeLv2StateChanged(instanceId);
     }
 
     bool hasAtomJson = false;
@@ -2508,6 +2584,7 @@ void PiPedalModel::OnNetworkChanged(bool ethernetConnected, bool hotspotConnecte
 {
     FireNetworkChanged();
 }
+
 
 void PiPedalModel::OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType)
 {

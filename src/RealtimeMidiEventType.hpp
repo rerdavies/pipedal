@@ -23,7 +23,16 @@ namespace pipedal {
         Shutdown,
         Reboot,
         StartHotspot,
-        StopHotspot
+        StopHotspot,
+        NextBank,
+        PrevBank,
+        Snapshot1,
+        Snapshot2,
+        Snapshot3,
+        Snapshot4,
+        Snapshot5,
+        Snapshot6,
+
     };
 
 };

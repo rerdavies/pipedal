@@ -97,7 +97,8 @@
         "strstream": "cpp",
         "p2p_i.h": "c",
         "p2p.h": "c",
-        "hash_set": "cpp"
+        "hash_set": "cpp",
+        "barrier": "cpp"
     },
     "cSpell.words": [
         "Guitarix",

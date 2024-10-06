@@ -11,33 +11,6 @@
     "version": "0.2.0",
     "configurations": [
     
-    {
-        "name": "Attach to Edge",
-        "port": 9222,
-        "request": "attach",
-        "type": "msedge",
-        "webRoot": "${workspaceFolder}"
-    },
-    {
-        "name": "(gdb) Attach",
-        "type": "cppdbg",
-        "request": "attach",
-        "program": "enter program name, for example ${workspaceFolder}/a.out",
-        "MIMode": "gdb",
-        "setupCommands": [
-            {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-            },
-            {
-                "description": "Set Disassembly Flavor to Intel",
-                "text": "-gdb-set disassembly-flavor intel",
-                "ignoreFailures": true
-            }
-        ]
-    },
-    
 
 
 
@@ -67,57 +40,6 @@
                 }
             ]
         },
-        {
-            "name": "(gdb) makeRelease",
-            "type": "cppdbg",
-            "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [    ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/../..",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) downloadCounts",
-            "type": "cppdbg",
-            "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [  "--downloads"  ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/../..",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-
         {
             "name": "(gdb) pipedal_nm_p2pd",
             "type": "cppdbg",
@@ -174,13 +96,7 @@
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
-                },
-                {
-                    "description": "Add alsa source directories.",
-                    "text": "directory $cd:$cwd:/usr/src/alsa-lib-1.2.8",
-                    "ignoreFailures": true
                 }
-
             ]
         },
 
@@ -196,7 +112,7 @@
                 //"[json_variants]"  // subtest of your choice, or none to run all of the tests.
                 //"[inverting_mutex_test]"
                 // "[utf8_to_utf32]"
-                "[updater]"
+                "[wifi_channels_test]"
             ],
 
             "stopAtEntry": false,
@@ -256,38 +172,6 @@
                 }
             ]
         },
-        {
-            "name": "(gdb) profilePlugin Launch",
-            "type": "cppdbg",
-            "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "${command:cmake.launchTargetPath}",
-
-            "args": [            "ToobNam_Profile", "--no-profile","-w" ],
-
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                },
-                {
-                    "name": "OTHER_VALUE",
-                    "value": "Something something"
-                }
-            ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-
 
 
         {
@@ -373,15 +257,11 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
-                "--prefix",
-                "/usr/sbin",
                 "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
-                "--install"
-
                 //"--get-current-port"
-                //"--install"
+                // "--uninstall"
                 //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
-                //"--list-p2p-channels"
+                "--list-p2p-channels"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

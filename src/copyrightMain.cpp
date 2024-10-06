@@ -34,12 +34,12 @@ class Copyrights {
     static std::string trim(const std::string&value)
     {
         size_t start = 0;
-        while (start < value.length() && value[start] == ' ' || value[start] == '\t')
+        while (start < value.length() && (value[start] == ' ' || value[start] == '\t'))
         {
             ++start;
         }
         size_t end = value.length();
-        while (end > start && value[end-1] == ' ' || value[end-1] == '\t')
+        while (end > start && (value[end-1] == ' ' || value[end-1] == '\t'))
         {
             --end;
         }

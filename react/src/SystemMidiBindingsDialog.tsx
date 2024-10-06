@@ -50,7 +50,7 @@ const styles = (theme: Theme) => createStyles({
         flex: "1 1 auto",
     },
     pluginTable: {
-        border: "collapse",
+        borderCollapse: "collapse",
         width: "100%",
 
     },
@@ -66,6 +66,13 @@ const styles = (theme: Theme) => createStyles({
         verticalAlign: "top",
         paddingTop: 12
     },
+    plainRow: {
+         borderWidth: "1px 0px 0px 0px", borderStyle: "solid", borderColor: "transparent"
+    },
+    dividerRow: {
+        borderWidth: "1px 0px 0px 0px",  borderStyle: "solid", borderColor: theme.palette.divider
+   }
+
 });
 
 
@@ -118,40 +125,53 @@ export const SystemMidiBindingDialog =
 
             createBindings(): BindingEntry[] {
                 let result: BindingEntry[] = [];
-                for (var item of this.model.systemMidiBindings.get())
-                {
-                    let displayName  = "";
-                    let instanceId = -1;
-
-                    if (item.symbol === "prevProgram")
-                    {
-                        displayName = "Previous Preset";
-                        instanceId = 1;
-                    } else if (item.symbol === "nextProgram")
-                    {
-                        displayName = "Next Preset";
-                        instanceId = 2;
-                    } else if (item.symbol === "startHotspot")
-                    {
-                        displayName = "Enable Hotspot";
-                        instanceId = 3;
-                    } else if (item.symbol === "stopHotspot")
-                    {
-                        displayName = "Disable Hotspot";
-                        instanceId = 4;
-                    } else if (item.symbol === "shutdown")
-                    {
-                        displayName = "Shutdown";
-                        instanceId = 5;
-                    } else if (item.symbol === "reboot")
-                    {
-                        displayName = "Reboot";
-                        instanceId = 6;
+                let listenInstanceId = 0;
+                for (var item of this.model.systemMidiBindings.get()) {
+                    let displayName = "";
+                    let found = true;
+                    if (item.symbol === "nextBank") {
+                        displayName = "Next Bank";
                     }
-
-                    if (instanceId !== -1)
-                    {
-                        result.push(new BindingEntry(displayName,instanceId,item));
+                    else if (item.symbol === "prevBank") {
+                        displayName = "Previous Bank";
+                    }
+                    else if (item.symbol === "nextProgram") {
+                        displayName = "Next Preset";
+                    }else if (item.symbol === "prevProgram") {
+                        displayName = "Previous Preset";
+                    }
+                    else if (item.symbol === "snapshot1") {
+                        displayName = "Snapshot 1";
+                    }
+                    else if (item.symbol === "snapshot2") {
+                        displayName = "Snapshot 2";
+                    }
+                    else if (item.symbol === "snapshot3") {
+                        displayName = "Snapshot 3";
+                    }
+                    else if (item.symbol === "snapshot4") {
+                        displayName = "Snapshot 4";
+                    }
+                    else if (item.symbol === "snapshot5") {
+                        displayName = "Snapshot 5";
+                    }
+                    else if (item.symbol === "snapshot6") {
+                        displayName = "Snapshot 6";
+                    } else if (item.symbol === "startHotspot") {
+                        displayName = "Enable Hotspot";
+                    } else if (item.symbol === "stopHotspot") {
+                        displayName = "Disable Hotspot";
+                    } else if (item.symbol === "shutdown") {
+                        displayName = "Shutdown";
+                    } else if (item.symbol === "reboot") {
+                        displayName = "Reboot";
+                    } else {
+                        found = false;
+                    }
+                    if (found)
+                    {   
+                        result.push(new BindingEntry(displayName, listenInstanceId, item));
+                        ++listenInstanceId;
                     }
                 }
                 return result;
@@ -174,8 +194,7 @@ export const SystemMidiBindingDialog =
                     clearTimeout(this.listenTimeoutHandle);
                     this.listenTimeoutHandle = undefined;
                 }
-                if (this.listenHandle)
-                {
+                if (this.listenHandle) {
                     this.model.cancelListenForMidiEvent(this.listenHandle)
                     this.listenHandle = undefined;
                 }
@@ -184,14 +203,11 @@ export const SystemMidiBindingDialog =
 
             }
 
-            handleListenSucceeded(instanceId: number, symbol: string, isNote: boolean, noteOrControl: number)
-            {
+            handleListenSucceeded(instanceId: number, symbol: string, isNote: boolean, noteOrControl: number) {
                 this.cancelListenForControl();
 
-                for (var binding of this.state.systemMidiBindings)
-                {
-                    if (binding.instanceId === instanceId)
-                    {
+                for (var binding of this.state.systemMidiBindings) {
+                    if (binding.instanceId === instanceId) {
                         let newBinding = binding.midiBinding.clone();
 
                         if (isNote) {
@@ -201,8 +217,8 @@ export const SystemMidiBindingDialog =
                             newBinding.bindingType = MidiBinding.BINDING_TYPE_CONTROL;
                             newBinding.control = noteOrControl;
                         }
-        
-                        this.model.setSystemMidiBinding(instanceId,newBinding);
+
+                        this.model.setSystemMidiBinding(instanceId, newBinding);
                         return;
                     }
                 }
@@ -218,9 +234,9 @@ export const SystemMidiBindingDialog =
 
                 this.listenHandle = this.model.listenForMidiEvent(listenForControl,
                     (isNote: boolean, noteOrControl: number) => {
-                        this.handleListenSucceeded(instanceId,symbol,isNote, noteOrControl);
+                        this.handleListenSucceeded(instanceId, symbol, isNote, noteOrControl);
                     });
-                
+
 
 
             }
@@ -229,7 +245,7 @@ export const SystemMidiBindingDialog =
             }
 
             onMidiBindingsChanged() {
-                this.setState({systemMidiBindings: this.createBindings()});
+                this.setState({ systemMidiBindings: this.createBindings() });
             }
 
             componentDidMount() {
@@ -256,10 +272,20 @@ export const SystemMidiBindingDialog =
                 let result: React.ReactNode[] = [];
 
                 let items = this.state.systemMidiBindings;
-                
+
                 for (var item of items) {
+                    let symbol = item.midiBinding.symbol;
+                    let hasDivider = symbol === "snapshot1" || symbol === "stopHotspot"  || symbol === "shotdown";
+                    if (hasDivider)
+                    {
+                        result.push(
+                            <tr>
+                                <td colSpan={2} className={classes.dividerRow}><div style={{height: 1}} /></td>
+                            </tr>
+                        );
+                    }
                     result.push(
-                        <tr key={item.instanceId}>
+                        <tr key={item.instanceId} >
                             <td className={classes.nameTd}>
                                 <Typography noWrap style={{ verticalAlign: "center", height: 48 }}>
                                     {item.displayName}
@@ -268,8 +294,7 @@ export const SystemMidiBindingDialog =
                             <td className={classes.bindingTd}>
                                 <SystemMidiBindingView instanceId={item.instanceId} midiBinding={item.midiBinding}
                                     onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {
-                                        if (instanceId === -2)
-                                        {
+                                        if (instanceId === -2) {
                                             this.cancelListenForControl();
                                         } else {
                                             this.handleListenForControl(instanceId, symbol, listenForControl);
@@ -300,52 +325,52 @@ export const SystemMidiBindingDialog =
                 }
 
                 return (
-                    <DialogEx tag="systemMidiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
-                        fullScreen={true} 
-                        style={{userSelect: "none"}}
+                    <DialogEx tag="systemMidiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title"
+                        fullScreen={true}
+                        style={{ userSelect: "none" }}
                     >
-                            <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
-                                <div style={{ flex: "0 0 auto" }}>
-                                    <AppBar className={classes.dialogAppBar} >
-                                        <Toolbar>
-                                            <IconButton
-                                                edge="start"
-                                                color="inherit"
-                                                onClick={this.handleClose}
-                                                aria-label="back"
-                                                size="large">
-                                                <ArrowBackIcon />
-                                            </IconButton>
-                                            <Typography variant="h6" className={classes.dialogTitle}>
-                                                System MIDI Bindings
-                                            </Typography>
-                                        </Toolbar>
-                                    </AppBar>
-                                </div>
-                                <div style={{ overflow: "auto", flex: "1 1 auto", width: "100%" }}>
-                                    <table className={classes.pluginTable} >
-                                        <colgroup>
-                                            <col style={{ width: "auto" }} />
-                                            <col style={{ width: "100%" }} />
-                                        </colgroup>
-
-                                        <tbody>
-                                            {this.generateTable()}
-
-                                        </tbody>
-                                    </table>
-                                </div>
+                        <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
+                            <div style={{ flex: "0 0 auto" }}>
+                                <AppBar className={classes.dialogAppBar} >
+                                    <Toolbar>
+                                        <IconButton
+                                            edge="start"
+                                            color="inherit"
+                                            onClick={this.handleClose}
+                                            aria-label="back"
+                                            size="large">
+                                            <ArrowBackIcon />
+                                        </IconButton>
+                                        <Typography variant="h6" className={classes.dialogTitle}>
+                                            System MIDI Bindings
+                                        </Typography>
+                                    </Toolbar>
+                                </AppBar>
                             </div>
-                            <Snackbar
-                                anchorOrigin={{
-                                    vertical: 'bottom',
-                                    horizontal: 'left',
-                                }}
-                                open={this.state.listenSnackbarOpen}
-                                autoHideDuration={1500}
-                                onClose={() => this.setState({ listenSnackbarOpen: false })}
-                                message="Listening for MIDI input"
-                            />
+                            <div style={{ overflow: "auto", flex: "1 1 auto", width: "100%" }}>
+                                <table className={classes.pluginTable} >
+                                    <colgroup>
+                                        <col style={{ width: "auto" }} />
+                                        <col style={{ width: "100%" }} />
+                                    </colgroup>
+
+                                    <tbody>
+                                        {this.generateTable()}
+
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <Snackbar
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'left',
+                            }}
+                            open={this.state.listenSnackbarOpen}
+                            autoHideDuration={1500}
+                            onClose={() => this.setState({ listenSnackbarOpen: false })}
+                            message="Listening for MIDI input"
+                        />
                     </DialogEx >
                 );
             }

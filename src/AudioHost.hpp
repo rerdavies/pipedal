@@ -166,8 +166,10 @@ namespace pipedal
 
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) = 0;
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request) = 0;
+        virtual void OnNotifyNextMidiBank(const RealtimeNextMidiProgramRequest &request) = 0;
         virtual void OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error) = 0;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) = 0;
+        virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) = 0;
     };
 
     class JackHostStatus
@@ -206,7 +208,7 @@ namespace pipedal
         virtual void SetListenForMidiEvent(bool listen) = 0;
         virtual void SetListenForAtomOutput(bool listen) = 0;
 
-        virtual bool UpdatePluginStates(Pedalboard &pedalboard) = 0;
+        //virtual bool UpdatePluginStates(Pedalboard &pedalboard) = 0;
         virtual bool UpdatePluginState(PedalboardItem &pedalboardItem) = 0;
 
         virtual std::string AtomToJson(const LV2_Atom *atom) = 0;
@@ -235,6 +237,8 @@ namespace pipedal
 
         virtual void sendRealtimeParameterRequest(RealtimePatchPropertyRequest *pParameterRequest) = 0;
         virtual void AckMidiProgramRequest(uint64_t requestId) = 0;
+        virtual void AckSnapshotRequest(uint64_t snapshotRequestId) = 0;
+
 
         virtual JackHostStatus getJackStatus() = 0;
 

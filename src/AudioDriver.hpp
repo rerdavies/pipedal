@@ -38,11 +38,9 @@ namespace pipedal {
 
     struct MidiEvent
     {
-        /* BINARY COMPATIBLE WITH jack_midi_event_t;! (in case we ever want to resurrect Jack support) */
-        uint32_t    time;   /**< Sample index at which event is valid */
-        size_t            size;   /**< Number of bytes of data in \a buffer */
-        uint8_t *buffer; /**< Raw MIDI data */
-
+        uint32_t    time;   /**< Sample frame at which event is valid */
+        uint32_t  size;   /**< Number of bytes of data in \a buffer */
+        uint8_t  *buffer; /**< Raw MIDI data */
     };
 
 
@@ -65,19 +63,15 @@ namespace pipedal {
 
         virtual uint32_t GetSampleRate() = 0;
 
-        virtual size_t MidiInputBufferCount() const = 0;
-        virtual void*GetMidiInputBuffer(size_t channel, size_t nFrames) = 0;
-        virtual size_t GetMidiInputEventCount(void*buffer) = 0;
-        virtual bool GetMidiInputEvent(MidiEvent*event, void*portBuf, size_t nFrame) = 0;
-
-        virtual void FillMidiBuffers() = 0;
+        virtual size_t GetMidiInputEventCount() = 0;
+        virtual MidiEvent*GetMidiEvents() = 0;
 
         virtual size_t InputBufferCount() const = 0;
-        virtual float*GetInputBuffer(size_t channel, size_t nFrames) = 0;
+        virtual float*GetInputBuffer(size_t channel) = 0;
 
 
         virtual size_t OutputBufferCount() const = 0;
-        virtual float*GetOutputBuffer(size_t channel, size_t nFrames) = 0;
+        virtual float*GetOutputBuffer(size_t channe) = 0;
 
         virtual void Open(const JackServerSettings & jackServerSettings,const JackChannelSelection &channelSelection) = 0;
 
