@@ -23,6 +23,7 @@
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix mod: <http://moddevices.com/ns/mod#>.
 
 @prefix toobcrs: <http://two-play.com/plugins/toob-convolution-reverb-stereo#> .
 @prefix toobimpulse: <http://two-play.com/plugins/toob-impulse#> .
@@ -30,6 +31,7 @@
 toobimpulse:impulseFile
         a lv2:Parameter;
         rdfs:label "File";
+        mod:fileTypes "wav,flac";
         rdfs:range atom:Path.
 
 
@@ -49,7 +51,7 @@ toobimpulse:impulseFile
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 48 ;
+        lv2:microVersion 49 ;
         rdfs:comment """
 
 

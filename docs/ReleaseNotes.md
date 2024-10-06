@@ -12,6 +12,7 @@ Bug Fixes:
 - A fix for the dreaded "Audio Stopped" error (and associated memory corruption). You may underrun, but at least audio won't stop.
 - Further improvements to clean (and timely) shutdown procedure.
 - Minor UI improvements for adaptive display on small devices.
+- A bug in TooB Freeverb that causes memory use to increase exponentially each time the plugin is loaded.
 
 
 ## PiPedal 1.2.52 Release

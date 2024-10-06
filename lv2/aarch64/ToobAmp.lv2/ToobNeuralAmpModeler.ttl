@@ -23,6 +23,8 @@
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix mod: <http://moddevices.com/ns/mod#>.
+
 @prefix toobNam: <http://two-play.com/plugins/toob-nam#> .
 
 
@@ -36,6 +38,7 @@
 toobNam:modelFile
         a lv2:Parameter;
         rdfs:label "Model";
+	mod:fileTypes "nam,nammodel";
         rdfs:range atom:Path.
 
 toobNam:eqGroup
@@ -58,7 +61,7 @@ toobNam:eqGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 48 ;
+        lv2:microVersion 49 ;
         rdfs:comment """
 A port of Steven Atkinson's Neural Amp Modeler to LV2. 
 

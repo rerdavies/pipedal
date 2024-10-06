@@ -25,11 +25,13 @@
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix toobml: <http://two-play.com/plugins/toob-ml#> .
+@prefix mod: <http://moddevices.com/ns/mod#>.
 
 
 toobml:modelFile
         a lv2:Parameter;
         rdfs:label "Model";
+	mod:fileTypes "nam,nammodel";
         rdfs:range atom:Path.
 
 toobml:filterGroup
@@ -63,7 +65,7 @@ toobml:sagGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 48 ;
+        lv2:microVersion 49 ;
         rdfs:comment """
 The TooB ML Amplifier plugin provides emulation of a variety of amplifiers and overdrive pedals that are implemented 
 using neural-network-based machine learning models of real amplifiers.
