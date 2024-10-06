@@ -3,13 +3,13 @@
 
 Major features:
 - Snapshots. For a discussion of what snapshot are, see [An Intro to Snapshots](https://rerdavies.github.io/pipedal/Snaphots.html)
-- New <b><i>Performance View</b></i> providing an user-interface optimized for live performance rather than editing of plugins.
+- New <b><i>Performance View<</i></b> providing an user-interface optimized for live performance rather than editing of plugins.
 - New System Midi Bindings for snapshot selection, and for previous and next bank.
 
 This should have probably gone out as a Beta release, but the fixes for the "Audio Stopped" error are significant. I would recommend updating to this release as soon as you can. Please consider the snapshot user interface to be somehwat fluid for now. I am open to suggestions and feedback on the new feature.
 
 Bug Fixes:
-- A fix for the dreaded "Audio Stopped" error (and associated memory corruption). You may underrun, but at least audio won't stop.
+- A fix for the dreaded "Audio Stopped" error (and associated memory corruption). You may still underrun, but at least audio won't stop.
 - Further improvements to clean (and timely) shutdown procedure.
 - Minor UI improvements for adaptive display on small devices.
 - A bug in TooB Freeverb that causes memory use to increase exponentially each time the plugin is loaded.

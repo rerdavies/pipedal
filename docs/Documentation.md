@@ -8,7 +8,7 @@
 #### [Installing PiPedal](Installing.md)
 
 #### [Configuring PiPedal After Installation](Configuring.md)  
-#### [Snapshots](AudioLatency.md)  
+#### [An intro to Snapshots](Snapshots.md)  
 #### [Choosing a USB Audio Adapter](ChoosingAUsbAudioAdapter.md)  
 #### [Optimizing Audio Latency](AudioLatency.md)  
 #### [Command-Line Configuration of PiPedal](CommandLine.md)

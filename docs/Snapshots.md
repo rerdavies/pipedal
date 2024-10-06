@@ -19,12 +19,12 @@ Snapshots are useful if you have a USB or MIDI footswitch controller. You can ea
 
 But snapshots are equally useful when you are using PiPedal's <b><i>Performance View</i></b>. To access the <b><i>Performance View</i></b> click on the <b><i>Performance View</i></b> menu item in the main PiPedal menu.
 
-![PiPedal Performance View](PerformanceView-ss.png "Performance View")
+![PiPedal Performance View](img/PerformanceView-ss.png)
 &nbsp;&nbsp;&nbsp;PiPedal's Performance View
 
 Note how PiPedal has been configured to use <i>banks</i> as containers for songs in a set list. Each song in the setlist gets its own preset; and then snapshots are used to change controls for the preset being used in each song. As an example, the only difference between <i>Chorus</i> and <i>Chorus + Phaser</i> snaphots is whether the Phaser plugin is bypassed or not. You are of course, free to arrange your own banks and presets any way you want. But if you have a complex repertoire of songs that you play regularly, this is a good way to arrange your preset: setlists go into banks; songs go into presets; and then you use snapshots to switch between settings used in the same song.
 
-### Accessing Snapshots in the PiPedal User Interface.
+#### Accessing Snapshots in the PiPedal User Interface.
 
 You can create, modify, and select snapshots in two places in the  PiPedal user interface. 
 
