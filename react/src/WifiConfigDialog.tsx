@@ -223,6 +223,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                 this.state.newPassword;
         }
 
+        onEnterKey() {
+            this.handleOk(false);
+        }
+    
         handleOk(wifiWarningGiven: boolean) {
             let hasError = false;
             if (this.state.autoStartMode !== 0) {
@@ -334,8 +338,11 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
             };
             let enabled = this.state.autoStartMode !== 0;
             return (
-                <DialogEx tag="wifiConfig" open={open} fullWidth onClose={handleClose} style={{ userSelect: "none" }}
-                    fullScreen={this.state.fullScreen}
+                <DialogEx tag="wifiConfig" open={open} fullWidth maxWidth="sm" onClose={handleClose} style={{ userSelect: "none" }}
+                    fullScreen={this.state.fullScreen
+                    }
+                    onEnterKey={()=>{ this.handleOk(false); }}
+
                 >
                     {(this.state.fullScreen || !this.state.compactHeight) && (
                         <DialogTitle>Wi-fi Auto-Hotspot</DialogTitle>
@@ -353,8 +360,8 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                             }}
                             >
 
-                                <FormControl variant="standard" style={{ flexGrow: 1, flexBasis: 1 }} >
-                                    <InputLabel htmlFor="behavior">Auto-start hotspot when</InputLabel>
+                                <FormControl variant="standard" style={{ flexGrow: 1, flexBasis: 1, minWidth: 150 }} >
+                                    <InputLabel htmlFor="behavior">Auto-start hotspot when...</InputLabel>
                                     <Select id="behavior" value={this.state.autoStartMode}
                                         onChange={(el) => {
                                             let value = el.target.value as number
