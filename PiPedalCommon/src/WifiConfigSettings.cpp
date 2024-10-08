@@ -168,7 +168,7 @@ void WifiConfigSettings::Save()
     {
         ofstream_synced f;
         openWithPerms(f,CONFIG_PATH);
-        json_writer writer(f);
+        json_writer writer(f,false);
         writer.write(&newSettings);
     }
     catch (const std::exception &e)

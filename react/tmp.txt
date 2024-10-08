@@ -10,6 +10,8 @@ src/SelectMidiChannelsDialog.tsx
 src/AlsaMidiDeviceInfo.tsx
 src/WifiDirectConfigSettings.tsx
 src/WifiConfigSettings.tsx
+src/SnapshotButton.tsx
+src/WindowScale.tsx
 src/JsonAtom.tsx
 src/PiPedalSocket.tsx
 src/TemporaryDrawer.tsx
@@ -20,6 +22,7 @@ src/SnapshotDialog.tsx
 src/SettingsDialog.tsx
 src/PedalboardView.tsx
 src/reportWebVitals.ts
+src/OptionsDialog.tsx
 src/SelectChannelsDialog.tsx
 src/PluginPresetSelector.tsx
 src/VuMeter.tsx
@@ -99,6 +102,7 @@ src/svg/fx_mixer.svg
 src/svg/fx_utility.svg
 src/Updater.tsx
 src/UploadPresetDialog.tsx
+src/RadioSelectDialog.tsx
 src/setupTests.ts
 src/ToobCabSimView.tsx
 src/RenameDialog.tsx
@@ -117,6 +121,7 @@ src/Pedal.tsx
 src/Draggable.tsx
 src/PluginIcon.tsx
 src/react-app-env.d.ts
+src/TextFieldEx.tsx
 src/FilePropertyDialog.tsx
 src/FilePropertyDirectoryTree.tsx
 src/StringBuilder.tsx
@@ -127,7 +132,6 @@ src/Lv2Plugin.tsx
 src/ToobSpectrumResponseView.tsx
 src/PerformanceView.tsx
 src/JackServerSettingsDialog.tsx
-src/ListSelectDialog.tsx
 src/Utility.tsx
 src/JackStatusView.tsx
 src/ToobSpectrumAnalyzerView.tsx
@@ -137,6 +141,7 @@ src/PresetDialog.tsx
 src/WifiChannel.tsx
 src/AboutDialog.tsx
 src/GxTunerControl.tsx
+src/VirtualKeyboardHandler.tsx
 src/PluginControl.tsx
 src/LoadPluginDialog.tsx
 src/ZoomedUiControl.tsx
@@ -152,8 +157,10 @@ src/AndroidHost.tsx
 src/SnapshotPanel.tsx
 src/ToobMLView.tsx
 src/WifiConfigDialog.tsx
+src/Rectangle.tsx
 src/SnapshotColors.tsx
 src/PiPedalModel.tsx
+src/ObservableEvent.tsx
 src/JackHostStatus.tsx
 src/index.tsx
 src/FilePropertyControl.tsx
