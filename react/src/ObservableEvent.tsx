@@ -19,51 +19,36 @@
 
 
 
-export type OnChangedHandler<VALUE_TYPE> = (newValue: VALUE_TYPE) => void;
+export type ObservableEventHandler<VALUE_TYPE> = (newValue: VALUE_TYPE) => void;
 
 
-export class ObservableProperty<VALUE_TYPE> {
+export default class ObservableEvent<VALUE_TYPE> {
 
-    _value_type: VALUE_TYPE;
-    _on_changed_handlers: OnChangedHandler<VALUE_TYPE>[] = [];
+    private _on_event_handlers: ObservableEventHandler<VALUE_TYPE>[] = [];
 
-    constructor(default_value: VALUE_TYPE)
+
+    addEventHandler(handler: ObservableEventHandler<VALUE_TYPE> ) : void
     {
-        this._value_type = default_value;
+        this._on_event_handlers.push(handler);
     }
-
-    addOnChangedHandler(handler: OnChangedHandler<VALUE_TYPE> ) : void
+    removeEventHandler(handler: ObservableEventHandler<VALUE_TYPE> ) : void
     {
-        this._on_changed_handlers.push(handler);
-        handler(this._value_type);
-    }
-    removeOnChangedHandler(handler: OnChangedHandler<VALUE_TYPE> ) : void
-    {
-        let oldArray = this._on_changed_handlers;
+        let newArray: ObservableEventHandler<VALUE_TYPE>[] = [];
 
-        let newArray: OnChangedHandler<VALUE_TYPE>[] = [];
-
-        let outIx = 0;
-        for (let i = 0; i < oldArray.length; ++i)
+        for (let myHandler of  this._on_event_handlers)
         {
-            if (oldArray[i] !== handler)
+            if (myHandler !== handler)
             {
-                newArray[outIx++]  = oldArray[i];
+                newArray.push(myHandler);
             }
         }
-        this._on_changed_handlers = newArray;
+        this._on_event_handlers = newArray;
     }
-
-    get() : VALUE_TYPE {
-        return this._value_type;
-    }
-
-    set(value: VALUE_TYPE) : void
+    fire(value: VALUE_TYPE)
     {
-        this._value_type = value;
-
-        let t = this._on_changed_handlers; // take an copy in case removes happen while iteratiing.
-        t.forEach(c => c(value));
+        for (let handler of this._on_event_handlers)
+        {
+            handler(value);
+        }
     }
-
 };

@@ -19,6 +19,7 @@
 
 
 import { Theme } from '@mui/material/styles';
+import SaveIconOutline from '@mui/icons-material/Save';
 import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
@@ -78,6 +79,7 @@ interface PerformanceViewState {
     banks: BankIndex;
     showSnapshotEditor: boolean;
     snapshotEditorIndex: number;
+    presetModified: boolean;
 }
 
 
@@ -97,11 +99,13 @@ export const PerformanceView =
                     banks: this.model.banks.get(),
                     wrapSelects: false,
                     showSnapshotEditor: false,
-                    snapshotEditorIndex: 0
+                    snapshotEditorIndex: 0,
+                    presetModified: this.model.presetChanged.get()
                 };
                 this.onPresetsChanged = this.onPresetsChanged.bind(this);
                 this.onBanksChanged = this.onBanksChanged.bind(this);
                 this.handlePopState = this.handlePopState.bind(this);
+                this.onPresetChangedChanged = this.onPresetChangedChanged.bind(this);
 
             }
 
@@ -181,6 +185,9 @@ export const PerformanceView =
             onBanksChanged(newValue: BankIndex) {
                 this.setState({ banks: this.model.banks.get() })
             }
+            onPresetChangedChanged(newValue: boolean) {
+                this.setState({ presetModified:newValue});
+            }
 
             private mounted: boolean = false;
             componentDidMount(): void {
@@ -188,9 +195,12 @@ export const PerformanceView =
                 this.mounted = true;
                 this.model.presets.addOnChangedHandler(this.onPresetsChanged);
                 this.model.banks.addOnChangedHandler(this.onBanksChanged);
+                this.model.presetChanged.addOnChangedHandler(this.onPresetChangedChanged)
                 this.setState({
                     presets: this.model.presets.get(),
-                    banks: this.model.banks.get()
+                    banks: this.model.banks.get(),
+                    presetModified: this.model.presetChanged.get()
+
                 });
 
                 this.updateHooks();
@@ -200,7 +210,7 @@ export const PerformanceView =
 
 
             componentWillUnmount(): void {
-
+                this.model.presetChanged.removeOnChangedHandler(this.onPresetChangedChanged)
                 this.model.presets.removeOnChangedHandler(this.onPresetsChanged);
                 this.model.banks.removeOnChangedHandler(this.onBanksChanged);
 
@@ -332,12 +342,26 @@ export const PerformanceView =
                                             <IconButton
                                                 aria-label="next-bank"
                                                 onClick={() => { this.handleNextBank(); }}
-                                                size="large"
                                                 color="inherit"
                                                 style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
                                             >
                                                 <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
+                                                
                                             </IconButton>
+
+                                            {/** spacer */}
+                                            <IconButton
+                                                aria-label="next-bank"
+                                                onClick={() => { this.handleNextBank(); }}
+                                                size="medium"
+                                                color="inherit"
+                                                style={{visibility: "hidden"}}
+                                            >
+                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
+                                                
+                                            </IconButton>
+
+                                            
 
                                         </div>
                                         {/********* PRESETS *******************/}
@@ -367,9 +391,14 @@ export const PerformanceView =
                                             >
                                                 {
                                                     presets.presets.map((preset) => {
+                                                        let name = preset.name;
+                                                        if (this.state.presets.selectedInstanceId === preset.instanceId && this.state.presetModified)
+                                                        {
+                                                            name += "*";
+                                                        }
                                                         return (
                                                             <MenuItem key={preset.instanceId} value={preset.instanceId} >
-                                                                {preset.name}
+                                                                {name}
                                                             </MenuItem>
                                                         );
                                                     })
@@ -383,6 +412,16 @@ export const PerformanceView =
                                                 style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
                                             >
                                                 <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
+                                            </IconButton>
+
+                                            <IconButton
+                                                aria-label="save-preset"
+                                                onClick={() => { this.model.saveCurrentPreset(); }}
+                                                size="medium"
+                                                color="inherit"
+                                                style={{flexShrink: 0,visibility: this.state.presetModified? "visible": "hidden"}}
+                                            >
+                                                <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />                                                
                                             </IconButton>
 
                                         </div>

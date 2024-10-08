@@ -385,6 +385,34 @@ static std::string GetNonLinkLocalAddressForIp4Interface(const std::string &name
     return result;
 }
 
+bool pipedal::IsLinkLocalAddress(const std::string fromAddress)
+{
+    std::string address = fromAddress;
+    std::string result;
+    if (address[0] != '[')
+    {
+        return false;
+    }
+    else
+    {
+        // ipv6
+        if (address[0] != '[' || address[address.length() - 1] != ']')
+            throw std::invalid_argument("Bad address.");
+        address = address.substr(1, address.length() - 2);
+
+        struct in6_addr inetAddr6;
+        memset(&inetAddr6, 0, sizeof(inetAddr6));
+        if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
+        {
+            if (IN6_IS_ADDR_LINKLOCAL(&inetAddr6))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 std::string pipedal::GetNonLinkLocalAddress(const std::string fromAddress)
 {
     std::string address = fromAddress;

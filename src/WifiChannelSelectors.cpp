@@ -74,12 +74,12 @@ std::vector<WifiChannelSelector> pipedal::getWifiChannelSelectors(const char*cou
     if (forCommandline) {
         WifiChannelSelector autoSelect;
         autoSelect.channelId_ = "0";
-        autoSelect.channelName_ = "0 Select automatically";
+        autoSelect.channelName_ = "0 Automatic";
         result.push_back(autoSelect);
     } else {
         WifiChannelSelector autoSelect;
         autoSelect.channelId_ = "0";
-        autoSelect.channelName_ = "Select automatically";
+        autoSelect.channelName_ = "Automatic";
         result.push_back(autoSelect);
     }
     WifiInfo wifiInfo = getWifiInfo(countryIso3661);

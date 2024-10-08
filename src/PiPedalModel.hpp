@@ -68,6 +68,7 @@ namespace pipedal
         virtual void OnPedalboardChanged(int64_t clientId, const Pedalboard &pedalboard) = 0;
         virtual void OnPresetsChanged(int64_t clientId, const PresetIndex &presets) = 0;
         virtual void OnPresetChanged(bool changed) = 0;
+        virtual void OnSnapshotModified(int64_t selectedSnapshot, bool modified) = 0;
         virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) = 0;
         virtual void OnPluginPresetsChanged(const std::string &pluginUri) = 0;
         virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection) = 0;
@@ -180,6 +181,7 @@ namespace pipedal
 
         std::vector<std::shared_ptr<IPiPedalModelSubscriber>> subscribers;
         void SetPresetChanged(int64_t clientId, bool value, bool changeSnapshotSelect = true);
+        void FireSnapshotModified(int64_t snapshotIndex, bool modified);
         void FireSelectedSnapshotChanged(int64_t selectedSnapshot);
         void FirePresetsChanged(int64_t clientId);
         void FirePresetChanged(bool changed);

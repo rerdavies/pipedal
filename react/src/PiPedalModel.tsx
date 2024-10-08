@@ -21,6 +21,7 @@ import { UiPlugin, UiControl, PluginType, UiFileProperty } from './Lv2Plugin';
 
 import { PiPedalArgumentError, PiPedalStateError } from './PiPedalError';
 import { UpdateStatus, UpdatePolicyT } from './Updater';
+import ObservableEvent from './ObservableEvent';
 import { ObservableProperty } from './ObservableProperty';
 import { Pedalboard, PedalboardItem, ControlValue, Snapshot } from './Pedalboard'
 import PluginClass from './PluginClass';
@@ -362,6 +363,11 @@ export interface FavoritesList {
     [url: string]: boolean;
 };
 
+export interface SnapshotModifiedEvent {
+    snapshotIndex: number;
+    modified: boolean;
+};
+
 
 export class PiPedalModel //implements PiPedalModel 
 {
@@ -375,6 +381,9 @@ export class PiPedalModel //implements PiPedalModel
     lv2Path: string = "";
     webSocket?: PiPedalSocket;
 
+
+
+    onSnapshotModified: ObservableEvent<SnapshotModifiedEvent> = new ObservableEvent<SnapshotModifiedEvent>();
 
     ui_plugins: ObservableProperty<UiPlugin[]>
         = new ObservableProperty<UiPlugin[]>([]);
@@ -503,6 +512,7 @@ export class PiPedalModel //implements PiPedalModel
     private setModelPedalboard(pedalboard: Pedalboard) {
         this.pedalboard.set(pedalboard);
         this.selectedSnapshot.set(pedalboard.selectedSnapshot);
+
     }
     onSocketMessage(header: PiPedalMessageHeader, body?: any) {
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
@@ -564,6 +574,21 @@ export class PiPedalModel //implements PiPedalModel
             let channelSelectionBody = body as ChannelSelectionChangedBody;
             let channelSelection = new JackChannelSelection().deserialize(channelSelectionBody.jackChannelSelection);
             this.jackSettings.set(channelSelection);
+        } else if (message === "onSnapshotModified") {
+            let {snapshotIndex,modified} = (body as {snapshotIndex: number, modified: boolean});
+            let snapshots = this.pedalboard.get().snapshots;
+            if (snapshotIndex >= 0 && snapshotIndex < snapshots.length)
+            {
+                let snapshot = snapshots[snapshotIndex]
+                if (snapshot)
+                {
+                    if (snapshot.isModified !== modified)
+                    {
+                        snapshot.isModified = modified;
+                        this.onSnapshotModified.fire({snapshotIndex: snapshotIndex,modified: modified});
+                    }
+                }
+            }
         } else if (message === "onSelectedSnapshotChanged") {
             let selectedSnapshot = body as number;
             this.pedalboard.get().selectedSnapshot = selectedSnapshot;
@@ -581,6 +606,7 @@ export class PiPedalModel //implements PiPedalModel
             let presetsChangedBody = body as PresetsChangedBody;
             let presets = new PresetIndex().deserialize(presetsChangedBody.presets);
             this.presets.set(presets);
+            this.presetChanged.set(presets.presetChanged);
         } else if (message === "onPluginPresetsChanged") {
             let pluginUri = body as string;
             this.handlePluginPresetsChanged(pluginUri);
@@ -1286,7 +1312,6 @@ export class PiPedalModel //implements PiPedalModel
             changed = item.setControlValue(controlValue.key, controlValue.value) || changed;
         }
         if (changed) {
-            newPedalboard.selectedSnapshot = -1;
             this.setModelPedalboard(newPedalboard);
         }
     }
@@ -1428,7 +1453,6 @@ export class PiPedalModel //implements PiPedalModel
         if (pedalboard.input_volume_db !== volume_db) {
             let newPedalboard = pedalboard.clone();
             newPedalboard.input_volume_db = volume_db;
-            newPedalboard.selectedSnapshot = -1;
             this.setModelPedalboard(newPedalboard);
             changed = true;
         }
@@ -1457,7 +1481,6 @@ export class PiPedalModel //implements PiPedalModel
         if (pedalboard.output_volume_db !== volume_db) {
             let newPedalboard = pedalboard.clone();
             newPedalboard.output_volume_db = volume_db;
-            newPedalboard.selectedSnapshot = -1;
             this.setModelPedalboard(newPedalboard);
             changed = true;
         }
@@ -1494,7 +1517,6 @@ export class PiPedalModel //implements PiPedalModel
             if (notifyServer) {
                 this._setServerControl("setControl", instanceId, key, value);
             }
-            newPedalboard.selectedSnapshot = -1;
             this.setModelPedalboard(newPedalboard);
             for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
                 let item = this._controlValueChangeItems[i];
@@ -1547,7 +1569,6 @@ export class PiPedalModel //implements PiPedalModel
         let changed = value !== item.isEnabled;
         if (changed) {
             item.isEnabled = value;
-            newPedalboard.selectedSnapshot = -1;
             this.setModelPedalboard(newPedalboard);
             if (notifyServer) {
                 let body: PedalboardItemEnableBody = {
@@ -1605,7 +1626,6 @@ export class PiPedalModel //implements PiPedalModel
                     //  null -> we've never seen a value.
                     item.pathProperties[fileProperty.patchProperty] = "null";
                 }
-                newPedalboard.selectedSnapshot = -1;
                 this.setModelPedalboard(newPedalboard);
                 this.updateServerPedalboard()
                 return item.instanceId;
@@ -1646,7 +1666,6 @@ export class PiPedalModel //implements PiPedalModel
 
         let result = newPedalboard.deleteItem(instanceId);
         if (result !== null) {
-            newPedalboard.selectedSnapshot = -1;
             this.setModelPedalboard(newPedalboard);
             this.updateServerPedalboard();
         }
@@ -1669,7 +1688,6 @@ export class PiPedalModel //implements PiPedalModel
         newPedalboard.deleteItem(fromInstanceId);
 
         newPedalboard.addBefore(fromItem, toInstanceId);
-        newPedalboard.selectedSnapshot = -1;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
 
@@ -1690,7 +1708,6 @@ export class PiPedalModel //implements PiPedalModel
 
         newPedalboard.addAfter(fromItem, toInstanceId);
 
-        newPedalboard.selectedSnapshot = -1;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
     }
@@ -1712,7 +1729,6 @@ export class PiPedalModel //implements PiPedalModel
 
         newPedalboard.addToStart(fromItem);
 
-        newPedalboard.selectedSnapshot = -1;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
     }
@@ -1732,7 +1748,6 @@ export class PiPedalModel //implements PiPedalModel
 
         newPedalboard.addToEnd(fromItem);
 
-        newPedalboard.selectedSnapshot = -1;
         this.setModelPedalboard(newPedalboard);
 
         this.updateServerPedalboard();
@@ -1761,7 +1776,6 @@ export class PiPedalModel //implements PiPedalModel
         newPedalboard.replaceItem(fromInstanceId, emptyItem);
         newPedalboard.replaceItem(toInstanceId, fromItem);
 
-        newPedalboard.selectedSnapshot = -1;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
 
@@ -1785,7 +1799,6 @@ export class PiPedalModel //implements PiPedalModel
         }
         let newItem = newPedalboard.createEmptyItem();
         newPedalboard.addItem(newItem, instanceId, append);
-        newPedalboard.selectedSnapshot = -1;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
         return newItem.instanceId;
@@ -1811,7 +1824,6 @@ export class PiPedalModel //implements PiPedalModel
         }
         let newItem = newPedalboard.createEmptySplit();
         newPedalboard.addItem(newItem, instanceId, append);
-        newPedalboard.selectedSnapshot = -1;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
         return newItem.instanceId;
@@ -1829,7 +1841,6 @@ export class PiPedalModel //implements PiPedalModel
         }
         newPedalboard.setItemEmpty(item);
 
-        newPedalboard.selectedSnapshot = -1;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
         return item.instanceId;
@@ -2332,7 +2343,6 @@ export class PiPedalModel //implements PiPedalModel
         let newPedalboard = pedalboard.clone();
         this.updateVst3State(newPedalboard);
         if (newPedalboard.setMidiBinding(instanceId, midiBinding)) {
-            newPedalboard.selectedSnapshot = -1;
             this.setModelPedalboard(newPedalboard);
 
 

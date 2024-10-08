@@ -216,8 +216,23 @@ const SnapshotEditor = withStyles(appStyles)(class extends ResizeResponsiveCompo
     }
 
     handleOk() {
-        let selectedSnapshot = this.props.snapshotIndex;
         let currentPedalboard = this.model_.pedalboard.get();
+        let selectedSnapshot = this.props.snapshotIndex;
+        let currentSnapshot: Snapshot | null = currentPedalboard.snapshots[selectedSnapshot];
+        if (!currentSnapshot) 
+        {
+            this.props.onClose();
+            return;
+        }
+
+        let changed = this.state.name !== currentSnapshot.name 
+            || this.state.color !== currentSnapshot.color
+            || currentSnapshot.isModified;
+        if (!changed)
+        {
+            this.props.onClose();
+            return;
+        }
         let newSnapshots = Snapshot.cloneSnapshots(currentPedalboard.snapshots);
         let newSnapshot = this.model_.pedalboard.get().makeSnapshot();
         newSnapshot.name = this.state.name;
