@@ -484,9 +484,12 @@ export default withStyles(styles, { withTheme: true })(
                     fullScreen={this.state.fullScreen} 
                     onClose={() => {
                         this.props.onCancel();
-                    }} 
+                    }}
+                    onEnterKey={()=> {
+                        this.openSelectedFile();
+                    }}
                     open={this.props.open} tag="fileProperty" 
-                    fullWidth maxWidth="xl" 
+                    fullWidth maxWidth="md" 
                     PaperProps={
                         this.state.fullScreen ? 
                         {}

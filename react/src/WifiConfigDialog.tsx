@@ -328,6 +328,13 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
             }
             return result;
         }
+        handleWarningDialogOk() 
+        {
+            this.setState({ showWifiWarningDialog: false });
+            this.handleOk(true);
+        }
+
+
         render() {
             let props = this.props;
             let classes = this.props.classes;
@@ -569,7 +576,11 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     </DialogActions>
                     {this.state.showHelpDialog && (
                         <DialogEx open={this.state.showHelpDialog} tag="wifiHelp"
-                            style={{ userSelect: "none" }}>
+                            style={{ userSelect: "none" }}
+                            onEnterKey={()=>{ 
+                                this.setState({ showHelpDialog: false });
+                            }}
+                        >
                             <DialogContent>
                                 <Typography className={classes.pgraph} variant="h6" color="textPrimary">
                                     PiPedal Auto-Hotspot
@@ -633,6 +644,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     )}
                     {this.state.showWifiWarningDialog && (
                         <DialogEx open={this.state.showWifiWarningDialog} tag="wifiConfirm"
+                            onEnterKey={()=>{ this.handleWarningDialogOk();}}
                             style={{ userSelect: "none" }}>
                             <DialogContent>
                                 <Typography className={classes.pgraph} variant="body2" color="textPrimary">
@@ -654,8 +666,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                                     Cancel
                                 </Button>
                                 <Button onClick={() => {
-                                    this.setState({ showWifiWarningDialog: false });
-                                    this.handleOk(true);
+                                    this.handleWarningDialogOk();
                                 }} variant="dialogPrimary" style={{ width: 120 }} >
                                     PROCEED
                                 </Button>

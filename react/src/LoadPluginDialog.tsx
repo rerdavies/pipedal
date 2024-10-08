@@ -375,8 +375,22 @@ export const LoadPluginDialog =
                 e.preventDefault();
                 this.cancel();
             }
-            handleOk(e: SyntheticEvent): void {
-                e.preventDefault();
+            handleOk(e?: SyntheticEvent): void {
+                if (e) {
+                    e.preventDefault();
+                }
+
+                let selectedPlugin: UiPlugin | undefined = undefined;
+                if (this.state.selected_uri) {
+                    let t = this.model.getUiPlugin(this.state.selected_uri);
+                    if (t) selectedPlugin = t;
+                }
+                if (!selectedPlugin)
+                {
+                    return;
+                }
+
+
                 if (this.state.selected_uri) {
                     this.props.onOk(this.state.selected_uri);
                 }
@@ -688,7 +702,9 @@ export const LoadPluginDialog =
                 return (
                     <React.Fragment>
                         <DialogEx tag="plugins"
+                            onEnterKey={()=>{ this.handleOk(); }}
                             onKeyPress={(e) => { this.handleKeyPress(e); }}
+
                             fullScreen={true}
                             TransitionComponent={undefined}
                             maxWidth={false}

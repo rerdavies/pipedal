@@ -235,7 +235,9 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                 <InfoOutlinedIcon className={classes.icon} color='inherit' />
             </IconButton>
             {open && (
-                <DialogEx tag="info" onClose={handleClose} open={open} fullWidth >
+                <DialogEx tag="info" onClose={handleClose} open={open} fullWidth maxWidth="md" 
+                    onEnterKey={handleClose}
+                >
                     <MuiDialogTitle >
                         <div style={{ display: "flex", flexDirection: "row", alignItems: "start", flexWrap: "nowrap" }}>
                             <div style={{ flex: "0 0 auto", marginRight: 16 }}>

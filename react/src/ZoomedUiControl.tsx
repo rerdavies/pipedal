@@ -222,6 +222,7 @@ const ZoomedUiControl = withStyles(styles, { withTheme: true })(
                 <DialogEx tag="zoomedControl" open={this.props.dialogOpen}
                     onClose={() => { this.props.onDialogClose() }}
                     onAbort={() => { this.props.onDialogClose() }}
+                    onEnterKey={()=>{/*nothing*/}}
                 >
                     <div  style={{
                         width: 380, height: 300,

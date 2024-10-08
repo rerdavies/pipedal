@@ -1,3 +1,7 @@
+Splittype changes. 
+- disable splittype control when editing snapshot.
+- identical structure requires no changes in split type.
+
 
 Review current handleNotifyPatchProperty. I tink server-side support needs to be
 removed, and rely on handleNotifyPathPatchPropertyChanged instead.

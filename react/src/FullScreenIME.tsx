@@ -166,15 +166,19 @@ const FullScreenIME =
                 }
             }
 
+            onOk() {
+                if (this.inputChanged) {
+                    this.inputChanged = false;
+                    this.validateInput(true);
+                }
+                else {
+                    this.props.onClose();
+                }
+            }
+
             onInputKeyPress(e: any): void {
                 if (e.charCode === 13) {
-                    if (this.inputChanged) {
-                        this.inputChanged = false;
-                        this.validateInput(true);
-                    }
-                    else {
-                        this.props.onClose();
-                    }
+                    this.onOk();
                 }
             }
 
@@ -196,7 +200,9 @@ const FullScreenIME =
                 let value = this.props.value;
 
                 return (
-                    <DialogEx tag="ime" fullScreen open={!!(this.props.uiControl)} onClose={(e, r) => this.handleClose(e, r)} >
+                    <DialogEx tag="ime" fullScreen open={!!(this.props.uiControl)} onClose={(e, r) => this.handleClose(e, r)} 
+                        onEnterKey={()=>{ /*nothing*/}}
+                    >
                         <div style={{
                             width: "100%", height: "100%", position: "relative",
                             display: "flex", flexDirection: "column", flexWrap: "nowrap",

@@ -307,7 +307,7 @@ const WifiDirectConfigDialog = withStyles(styles, { withTheme: true })(
 
             return (
                 <DialogEx tag="p2pConfig" open={open} onClose={handleClose} style={{ userSelect: "none", }}
-                    fullScreen={this.state.fullScreen} fullWidth={this.useLandscapeLayout()}
+                    fullScreen={this.state.fullScreen} fullWidth={this.useLandscapeLayout()} onEnterKey={()=>{}}
                 >
                     {this.state.landscapeLayout && (
                         <DialogContent >

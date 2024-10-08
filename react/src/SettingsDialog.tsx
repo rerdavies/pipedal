@@ -20,7 +20,7 @@
 import React, { SyntheticEvent, Component } from 'react';
 import Switch from "@mui/material/Switch";
 import OkCancelDialog from './OkCancelDialog';
-import ListSelectDialog from './ListSelectDialog';
+import RadioSelectDialog from './RadioSelectDialog';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
@@ -542,6 +542,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 <DialogEx tag="settings" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
                     style={{ userSelect: "none" }}
+                    onEnterKey={()=>{}}
                 >
 
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
@@ -882,7 +883,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     {
                         (this.state.showGovernorSettingsDialog) &&
                         (
-                            <ListSelectDialog
+                            <RadioSelectDialog
                                 width={220}
                                 open={this.state.showGovernorSettingsDialog}
                                 items={this.state.governorSettings.governors}
@@ -901,7 +902,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                     this.setState({ showGovernorSettingsDialog: false })
                                 }}
                             >
-                            </ListSelectDialog>
+                            </RadioSelectDialog>
                         )
                     }
                     {
