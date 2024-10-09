@@ -1,4 +1,38 @@
 # Release Notes
+## PiPedal 1.3.54 Release
+
+Improvements to and fixes for hotspot functionality. Fixes for problems with snapshots.
+
+Minor features;
+- Enter key supported in most dialogs. 
+
+Bug fixes.
+-    Various crashes related to snapshots.
+
+-    Applying changes to wi-fi hostpot configuration would not change the configuration until PiPedal was rebooted (a regression).
+     The configuration of the Wi-Fi hotspot now changes as soon as you apply it.
+
+-    The state of bypass switches was not getting captured in snapshots. 
+
+-    Crashes when scrolling through presets rapidly in the Snapshot view.
+
+-    Web server redirects link-local IPv6 connections to non-link local address. (Improves client connectivity).
+
+-    Force DHCP routing on hotspot connections. (Improves android client cnnectivity)
+
+-    Missing MIDI device causes audio to stop.
+
+-    The file model for snapshots was confusing and didn't entirely work as expected. Changes to snapshots now 
+     only get saved when the preset to which they belong gets saved (explicit-save file model, instead of 
+     Android file model).
+
+-    Layout improvement to a number of dialogs when displayed on wide screens.
+
+
+
+Bug fixes: 
+
+
 ## PiPedal 1.3.53 Release
 
 Major features:

@@ -993,19 +993,16 @@ namespace pipedal
             std::string addrOnly,portStr;
             splitAddressAndPort(fromAddress,addrOnly,portStr);
 
-            if (IsLinkLocalAddress(addrOnly))
+            std::string nonLinkLocalUrl;
+
+            if (RemapLinkLocalUrl(con->get_socket().remote_endpoint().address(), con->get_uri()->str(),&nonLinkLocalUrl))
             {
                 try {
-                    uri_builder builder(requestUri);
-
-                    std::string redirectAddress = GetNonLinkLocalAddress(addrOnly);
-                    builder.set_authority(redirectAddress+portStr);
-                    std::string redirectUri = builder.str();
-
-                    res.set(HttpField::location,redirectUri.c_str());
-                    Lv2Log::info(SS("Redirecting from " << fromAddress << " to " << redirectUri));
+                    Lv2Log::info(SS("Redirecting " << fromAddress << " to " << nonLinkLocalUrl));
                     res.keepAlive(false);
+                    res.set(HttpField::location,nonLinkLocalUrl.c_str());
                     con->set_status(websocketpp::http::status_code::temporary_redirect);
+                    res.setBody("");
                     return;
                 } catch (const std::exception&e)
                 {
