@@ -191,10 +191,12 @@ namespace pipedal
 
 
         void validate_capture_handle() { // leftover debugging for a buffer overrun :-/
-            // if (snd_pcm_type(captureHandle) != SND_PCM_TYPE_HW)
-            // {
-            //     throw std::runtime_error("Capture handle has been overwritten");
-            // }
+        #ifdef DEBUG
+            if (snd_pcm_type(captureHandle) != SND_PCM_TYPE_HW)
+            {
+                throw std::runtime_error("Capture handle has been overwritten");
+            }
+        #endif
         }
     public:
         AlsaDriverImpl(AudioDriverHost *driverHost)
@@ -1934,10 +1936,15 @@ namespace pipedal
 
             for (size_t i = 0; i < devices.size(); ++i)
             {
-                const auto &device = devices[i];
-                auto midiDevice = std::make_unique<AlsaMidiDeviceImpl>();
-                midiDevice->Open(device);
-                midiDevices.push_back(std::move(midiDevice));
+                try {
+                    const auto &device = devices[i];
+                    auto midiDevice = std::make_unique<AlsaMidiDeviceImpl>();
+                    midiDevice->Open(device);
+                    midiDevices.push_back(std::move(midiDevice));
+                } catch (const std::exception &e)
+                {
+                    Lv2Log::error(e.what());
+                }
             }
         }
 
@@ -2016,11 +2023,11 @@ namespace pipedal
         if (jackServerSettings.IsDummyAudioDevice())
         {
             inputAudioPorts.clear();
-            inputAudioPorts.push_back("system::capture_0");
-            inputAudioPorts.push_back("system::capture_1");
+            inputAudioPorts.push_back(std::string("system::capture_0"));
+            inputAudioPorts.push_back(std::string("system::capture_1"));
             outputAudioPorts.clear();
-            outputAudioPorts.push_back("system::playback_0");
-            outputAudioPorts.push_back("system::playback_1");
+            outputAudioPorts.push_back(std::string("system::playback_0"));
+            outputAudioPorts.push_back(std::string("system::playback_1"));
 
             return true;
         }
