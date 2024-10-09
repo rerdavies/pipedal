@@ -72,7 +72,7 @@ void SignPackage()
     cout << "--------------------------------------------------------------" << endl;
 
     std::string signCmd =
-        SS("/usr/bin/gpg --yes --default-key " << UPDATE_GPG_FINGERPRINT2
+        SS("/usr/bin/gpg --pinentry-mode loopback --yes --default-key " << UPDATE_GPG_FINGERPRINT2
                                                << " --armor --output " << packagePath << ".asc"
                                                << " --detach-sign " << packagePath.c_str());
     int result = system(signCmd.c_str());
