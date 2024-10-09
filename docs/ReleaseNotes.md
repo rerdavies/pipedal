@@ -6,19 +6,23 @@ Improvements to and fixes for hotspot functionality. Fixes for problems with sna
 Minor features;
 - Enter key supported in most dialogs. 
 
+- Uploaded .zip files create a top-level directory with the name of the zip file if the zip file doesn't contain a single root-level directory. (released in 1.3.53)
+
 Bug fixes.
 -    Various crashes related to snapshots.
 
--    Applying changes to wi-fi hostpot configuration would not change the configuration until PiPedal was rebooted (a regression).
+-    Applying changes to Wi-Fi hotspot configuration would not change the configuration until PiPedal was rebooted (a regression).
      The configuration of the Wi-Fi hotspot now changes as soon as you apply it.
 
 -    The state of bypass switches was not getting captured in snapshots. 
 
 -    Crashes when scrolling through presets rapidly in the Snapshot view.
 
+-    Fix exponential growth in memory use each time TooB Freeverb is loaded. (released in v1.3.53).
+
 -    Web server redirects link-local IPv6 connections to non-link local address. (Improves client connectivity).
 
--    Force DHCP routing on hotspot connections. (Improves android client cnnectivity)
+-    Force DHCP routing on hotspot connections. (Improves android client connectivity)
 
 -    Missing MIDI device causes audio to stop.
 
@@ -27,10 +31,6 @@ Bug fixes.
      Android file model).
 
 -    Layout improvement to a number of dialogs when displayed on wide screens.
-
-
-
-Bug fixes: 
 
 
 ## PiPedal 1.3.53 Release
