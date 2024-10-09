@@ -70,7 +70,7 @@ function OptionsDialog(props: OptionsDialogProps) {
         onClose();
     };
     return (
-        <DialogEx tag="options" onClose={handleCancel} aria-labelledby="select-option" open={open}  >
+        <DialogEx tag="options" onClose={handleCancel} aria-labelledby="select-option" open={open} onEnterKey={()=>{}}  >
         {title && (
             <DialogTitle style={{paddingLeft: 8}}>
                 <Typography variant="body2" color="textSecondary">

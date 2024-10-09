@@ -409,6 +409,7 @@ const BankDialog = withStyles(styles, { withTheme: true })(
             return (
                 <DialogEx tag="bank" fullScreen open={this.props.show}
                     onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}
+                    onEnterKey={()=>{}}
                     style={{ userSelect: "none" }}
                 >
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
@@ -544,7 +545,9 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                     />
 
                     <DialogEx tag="deletePrompt" open={this.state.showDeletePrompt} onClose={() => this.handleDeletePromptClose()}
-                        style={{ userSelect: "none" }}>
+                        style={{ userSelect: "none" }}
+                        onEnterKey={()=>{ this.handleDeletePromptOk() }}
+                        >
                         <DialogContent>
                             <Typography>Are you sure you want to delete bank '{this.getSelectedBankName()}'?</Typography>
                         </DialogContent>

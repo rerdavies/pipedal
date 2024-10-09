@@ -936,6 +936,20 @@ namespace pipedal
             return result.str();
         }
 
+        static void splitAddressAndPort(const std::string &address, std::string&addrOnly, std::string&port)
+        {
+            size_t portPos = address.length();
+            for (size_t i = address.length(); i > 0; --i)
+            {
+                if (address[i-1] == ':')
+                {
+                    portPos = i-1;
+                    break;
+                }
+            }
+            addrOnly = address.substr(0,portPos);
+            port = address.substr(portPos);
+        }
         void on_http(connection_hdl hdl)
         {
             // Upgrade our connection handle to a full connection_ptr
@@ -974,6 +988,28 @@ namespace pipedal
 
             std::string fromAddress = SS(con->get_remote_endpoint());
 
+            // redirect requests to IPV6 local connections to a better address.
+
+            std::string addrOnly,portStr;
+            splitAddressAndPort(fromAddress,addrOnly,portStr);
+
+            std::string nonLinkLocalUrl;
+
+            if (RemapLinkLocalUrl(con->get_socket().remote_endpoint().address(), con->get_uri()->str(),&nonLinkLocalUrl))
+            {
+                try {
+                    Lv2Log::info(SS("Redirecting " << fromAddress << " to " << nonLinkLocalUrl));
+                    res.keepAlive(false);
+                    res.set(HttpField::location,nonLinkLocalUrl.c_str());
+                    con->set_status(websocketpp::http::status_code::temporary_redirect);
+                    res.setBody("");
+                    return;
+                } catch (const std::exception&e)
+                {
+                    ServerError(*con,"Invalid request on link-local address.");
+                    return;
+                }
+            }
             if (req.method() == HttpVerb::options)
             {
                 res.set(HttpField::access_control_allow_origin, origin);
@@ -983,6 +1019,7 @@ namespace pipedal
                 con->set_status(websocketpp::http::status_code::ok);
                 return;
             }
+
 
             for (auto requestHandler : this->request_handlers)
             {

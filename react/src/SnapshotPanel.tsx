@@ -22,18 +22,12 @@
 * SOFTWARE.
 */
 
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import ButtonBase from '@mui/material/ButtonBase';
+import SnapshotButton from './SnapshotButton';
 import { Pedalboard, Snapshot } from './Pedalboard';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import SaveIconOutline from '@mui/icons-material/Save';
-import Button from "@mui/material/Button";
-import EditIconOutline from '@mui/icons-material/Edit';
 
 import SnapshotPropertiesDialog from './SnapshotPropertiesDialog';
-import { colorKeys, getBackgroundColor, getBorderColor } from './MaterialColors';
 
 
 
@@ -100,7 +94,7 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
     }
 
     onSelectedSnapshotChanged(value: number) {
-        this.setState({ selectedSnapshot: this.getSelectedSnapshot() })
+        this.setState({ selectedSnapshot: value })
     }
     onPedalboardChanged(value: Pedalboard) {
         // boofs our current edit, oh well. we can't track property across a structural change.
@@ -193,110 +187,17 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
         this.model.selectSnapshot(index);
     }
     renderSnapshot(snapshot: Snapshot | null, index: number) {
-        //let state = this.state;
-        let color: string;
-        let bordercolor: string;
-        if (snapshot) {
-            if (colorKeys.indexOf(snapshot.color) === -1) {
-                bordercolor = color = snapshot.color;
-            } else {
-                color = getBackgroundColor(snapshot.color);
-                bordercolor = getBorderColor(snapshot.color);
-            }
-        } else {
-            bordercolor = color = getBackgroundColor("grey");
-        }
-        let title = snapshot ? snapshot.name : "<unassigned>";
-        let disabled = snapshot === null;
-        let selected = this.state.selectedSnapshot === index;
         return (
-            <div style={{ display: "flex", position: "relative",flexGrow: 1, flexBasis: 1, flexFlow: "column nowrap", alignItems: "stretch", borderRadius: 16 }}>
-
-                <ButtonBase style={{
-                    display: "flex", flexGrow: 1, flexBasis: 1, flexFlow: "column nowrap", alignItems: "stretch", borderRadius: 16,
-                    background: color,
-                    boxShadow: "1px 3px 6px #00000090"
-                }}
-                    onMouseDown={(ev) => {
-                        if (!selected) ev.stopPropagation();
-                    }}
-
-                    onClick={() => { if (snapshot) this.selectSnapshot(index); }}
-                >
-                    <div
-                        style={{ flexGrow: 1, flexShrink: 1, display: "flex", flexFlow: "column nowrap", alignItems: "stretch" }}
-                        onMouseDown={(ev) => {
-                            if (disabled) ev.stopPropagation();
-                        }}
-                    >
-                        <div style={{
-                            flexGrow: 1, flexShrink: 1, display: "flex", flexFlow: "column nowrap", alignItems: "stretch", justifyContent: "center", margin: 6,
-                            borderColor: selected ? bordercolor : "transparent", borderStyle: "solid", borderWidth: 3, borderRadius: 10
-                        }}
-                        >
-                            <div style={{ flexGrow: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-
-                                <Typography display="block" color="textPrimary" align="center" variant="body1"
-                                    style={{ fontSize: this.state.largeText ? "30px" : undefined }}
-                                >{title}</Typography>
-                            </div>
-                            <div style={{ height: 54,flexGrow: 0,flexShrink: 0 }}>
-                                {/* placeholder where we will float the buttons, which can't be witin another button (tons of DOM validation warning messages in chrome) */}
-                            </div>
-
-                        </div>
-                    </div>
-                </ButtonBase >
-                <div style={{ flexGrow: 0, position: "absolute", bottom:0,left:0,right:0,paddingBottom:10,paddingLeft: 16, paddingRight:12 }} >
-                    <Typography variant="h3" style={{opacity: 0.15,fontSize: "44px",fontWeight:900,fontFamily: "Arial Black",fontStyle: "italic"}} >{(index+1).toString()}</Typography>
-                </div>
-
-                <div style={{ flexGrow: 0, position: "absolute", bottom:0,left:0,right:0,paddingBottom:12,paddingLeft: 12, paddingRight:12 }} >
-                        {!this.state.collapseButtons ? (
-                            <div style={{ marginRight: 8, display: "flex", flexFlow: "row nowrap" }}>
-                                <div style={{ flexGrow: 1, flexBasis: 1 }} >&nbsp;</div>
-                                <Button variant="dialogSecondary" startIcon={<SaveIconOutline />} color="inherit" style={{ textTransform: "none" }}
-                                    onMouseDown={(ev) => { ev.stopPropagation(); /*don't prop to card*/ }}
-                                    onMouseUp={(ev) => { ev.stopPropagation(); /*don't prop to card*/ }}
-                                    disabled={false}
-                                    onClick={(ev) => { ev.stopPropagation(); this.onSaveSnapshot(index); }}
-
-                                >
-                                    Save
-                                </Button>
-                                <Button variant="dialogSecondary" color="inherit" startIcon={<EditIconOutline />} style={{ textTransform: "none" }}
-                                    onMouseDown={(ev) => { ev.stopPropagation();  /*don't prop to card*/ }}
-                                    onMouseUp={(ev) => { ev.stopPropagation(); /*don't prop to card*/ }}
-                                    disabled={disabled}
-                                    onClick={(ev) => { ev.stopPropagation(); this.onEditSnapshot(index); }}
-
-                                >
-                                    Edit
-                                </Button>
-                            </div>
-
-                        ) : (
-                            <div style={{ marginLeft: "auto", marginRight: 8, display: "flex", flexFlow: "row nowrap" }}>
-                                <div style={{ flexGrow: 1, flexBasis: 1 }} >&nbsp;</div>
-                                <IconButton color="inherit" style={{ opacity: 0.66 }} disabled={false}
-                                    onMouseDown={(ev) => { ev.stopPropagation(); /*don't prop to card*/ }}
-                                    onClick={() => { this.onSaveSnapshot(index); }}
-                                >
-                                    <SaveIconOutline />
-                                </IconButton>
-                                <IconButton color="inherit" disabled={disabled} style={{ opacity: 0.66 }}
-                                    onMouseDown={(ev) => { ev.stopPropagation();  /*don't prop to card*/ }}
-                                    onClick={() => { this.onEditSnapshot(index); }}
-
-                                >
-                                    <EditIconOutline />
-                                </IconButton>
-                            </div>
-
-                        )}
-
-                    </div>
-            </div >
+            <SnapshotButton key={"s"+index}
+                snapshot={snapshot}
+                snapshotIndex={index}
+                collapseButtons={this.state.collapseButtons}
+                selected={this.state.selectedSnapshot === index}
+                largeText={this.state.largeText}
+                onEditSnapshot={(index)=>{this.onEditSnapshot(index)}}
+                onSaveSnapshot={(index)=>{ this.onSaveSnapshot(index); }}
+                onSelectSnapshot={(index)=>{this.model.selectSnapshot(index);}}
+            />
         );
     }
 

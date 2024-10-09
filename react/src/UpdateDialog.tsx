@@ -166,6 +166,7 @@ export default class UpdateDialog extends ResizeResponsiveComponent<UpdateDialog
         return (
             <DialogEx tag="update" open={this.props.open} onClose={() => { this.handleClose(); }}
                 style={{ userSelect: "none" }}
+                onEnterKey={()=>{ this.handleOK();}}
             >
                 <DialogTitle>
                     <div style={{ display: "flex", flexFlow: "row noWrap", alignItems: "center" }} >
@@ -288,6 +289,7 @@ export default class UpdateDialog extends ResizeResponsiveComponent<UpdateDialog
                     open={this.state.alertDialogOpen}
                     onClose={() => { this.handleCloseAlert(); }}
                     aria-describedby="Alert Dialog"
+                    onEnterKey={()=>{ this.handleCloseAlert(); }}
                 >
                     <DialogContent>
                         <Typography variant="body2" color="secondaryText">

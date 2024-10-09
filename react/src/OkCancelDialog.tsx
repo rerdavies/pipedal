@@ -63,6 +63,7 @@ export default class OkCancelDialog extends React.Component<OkCancelDialogProps,
         }
         return (
             <DialogEx tag="okCancel" open={open} onClose={handleClose} 
+                onEnterKey={handleOk}
                 style={{userSelect: "none"}}
                 >
                 <DialogContent>

@@ -168,7 +168,7 @@ void WifiConfigSettings::Save()
     {
         ofstream_synced f;
         openWithPerms(f,CONFIG_PATH);
-        json_writer writer(f);
+        json_writer writer(f,false);
         writer.write(&newSettings);
     }
     catch (const std::exception &e)
@@ -299,6 +299,18 @@ namespace pipedal::priv
             connection["802-11-wireless-security"]["psk"] = sdbus::Variant(password);
             connection["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
             connection["ipv6"]["method"] = sdbus::Variant(std::string("ignore"));
+
+
+            connection["ipv4"]["address-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{{
+                    {"address", sdbus::Variant("192.168.4.1")},
+                    {"prefix", sdbus::Variant(uint32_t(24))}
+            }});                    
+            connection["ipv4"]["dhcp-send-hostname"] = sdbus::Variant(true);
+            connection["ipv4"]["dhcp-hostname"] = sdbus::Variant("raspberrypi");
+            connection["ipv4"]["dhcp-options"] = sdbus::Variant(std::vector<std::string>{
+                "option:classless-static-route,192.168.4.0/24,0.0.0.0,0.0.0.0/0,192.168.4.1"
+                //"option:classless-static-route,192.168.4.0/24,192.168.4.1"
+    });
 
             auto connection_path = AddConnection(connection);
             return connection_path;

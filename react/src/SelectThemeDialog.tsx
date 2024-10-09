@@ -64,7 +64,9 @@ function SelectThemesDialog(props: SelectThemesDialogProps) {
 
 
     return (
-        <DialogEx tag="theme" onClose={handleClose} open={open}>
+        <DialogEx tag="theme" onClose={handleClose} open={open}
+            onEnterKey={handleOk}
+        >
             <DialogTitle id="simple-dialog-title">Theme</DialogTitle>
             <DialogContent>
                 <FormControl>

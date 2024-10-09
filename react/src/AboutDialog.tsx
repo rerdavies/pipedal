@@ -199,6 +199,7 @@ const AboutDialog = withStyles(styles, { withTheme: true })(
             return (
                 <DialogEx tag="about" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
+                    onEnterKey={() => { this.props.onClose() }}
                     style={{ userSelect: "none" }}
                 >
 

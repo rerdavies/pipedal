@@ -319,6 +319,7 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
             <DialogEx tag="fpDirectorySelect" open={this.props.open} fullWidth onClose={() => { this.onClose(); }} aria-labelledby="Rename-dialog-title"
                 fullScreen={this.state.fullScreen}
                 style={{ userSelect: "none" }}
+                onEnterKey={()=>{ this.onOK(); }}
                 PaperProps={{ style: { minHeight: "80%", maxHeight: "80%", minWidth: "75%", maxWidth: "75%", overflowY: "visible" } }}
             >
                 <DialogTitle>

@@ -326,6 +326,8 @@ export const MidiBindingDialog =
                     <DialogEx tag="midiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
                         fullScreen={true} 
                         style={{userSelect: "none"}}
+                        onEnterKey={()=>{}}
+
                     >
                             <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                                 <div style={{ flex: "0 0 auto" }}>

@@ -393,8 +393,10 @@ const JackServerSettingsDialog = withStyles(styles)(
         }
 
         handleApply() {
-
-            this.props.onApply(this.state.jackServerSettings.clone());
+            if (this.state.okEnabled)
+            {
+                this.props.onApply(this.state.jackServerSettings.clone());
+            }
         };
 
         render() {
@@ -422,7 +424,12 @@ const JackServerSettingsDialog = withStyles(styles)(
             let bufferCountDisabled = !selectedDevice;
 
             return (
-                <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
+                <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
+                    onEnterKey={() => {
+                        this.handleApply();
+                    }}
+
+                >
                     <DialogContent>
                         <div>
                             <FormControl className={classes.formControl}>

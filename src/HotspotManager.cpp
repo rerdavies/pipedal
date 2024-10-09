@@ -37,7 +37,7 @@ using namespace dbus::networkmanager;
 namespace pipedal::impl
 {
 
-    #define PIPEDAL_HOTSPOT_NAME "PiPedal Hotspot"
+#define PIPEDAL_HOTSPOT_NAME "PiPedal Hotspot"
 
     class HotspotManagerImpl : public HotspotManager
     {
@@ -164,19 +164,20 @@ void HotspotManagerImpl::Open()
 
 void HotspotManagerImpl::onClose()
 {
-    this->closed  = true; // avoids a memory barrier probelm.
+    this->closed = true; // avoids a memory barrier probelm.
 
     CancelDeviceChangedTimer();
     CancelWaitForNetworkManagerTimer();
     CancelAccessPointsChangedTimer();
 
-
     if (networkManager && activeConnection)
     {
-        try {
+        try
+        {
             networkManager->DeactivateConnection(activeConnection->getObjectPath());
             activeConnection = nullptr;
-        } catch (const std::exception&e)
+        }
+        catch (const std::exception &e)
         {
             // nothrow.
         }
@@ -443,16 +444,31 @@ void HotspotManagerImpl::onReload()
     if (closed)
         return;
     WifiConfigSettings oldSettings = this->wifiConfigSettings;
-    ;
-    wifiConfigSettings.Load();
+    this->wifiConfigSettings.Load();
+    if (wifiConfigSettings == oldSettings)
+    {
+        return;
+    }
 
     switch (state)
     {
-    case State::Initial:
     case State::Error:
-        // ignore.
+        Lv2Log::error("NetworkManager is in an error state. Reboot and try again.");
         return;
+    case State::Initial:
+    case State::WaitingForNetworkManager:
+        // ignore. new config will be picked up once initialization completes.
+        return;
+
+    case State::Closed:
+        return;
+
+    case State::HotspotConnecting:
+    case State::HotspotConnected:
     default:
+        // force a reload.
+        StopHotspot(); 
+        SetState(State::Monitoring);
         MaybeStartHotspot();
         return;
     }
@@ -536,7 +552,8 @@ void HotspotManagerImpl::UpdateKnownNetworks(
     }
     for (auto &accessPoint : allAccessPoints)
     {
-        try {
+        try
+        {
             uint8_t strength = accessPoint->Strength();
             auto vSsid = accessPoint->Ssid();
             std::string ssid = ssidToString(vSsid);
@@ -547,7 +564,8 @@ void HotspotManagerImpl::UpdateKnownNetworks(
                 record.visibleNetwork = true;
                 record.strength = strength;
             }
-        } catch (const std::exception&ignored)
+        }
+        catch (const std::exception &ignored)
         {
             // race to get the info before it changes. np.
         }
@@ -819,8 +837,6 @@ void HotspotManagerImpl::StartHotspot()
             std::vector<uint8_t> vSsid{ssid.begin(), ssid.end()};
             wireless["ssid"] = vSsid;
             wireless["mode"] = "ap";
-            wireless["band"] = "a";
-            wireless["band"] = "bg";
 
             uint32_t iChannel = 0;
             auto channel = this->wifiConfigSettings.channel_;
@@ -829,9 +845,14 @@ void HotspotManagerImpl::StartHotspot()
                 std::stringstream ss{channel};
                 ss >> iChannel;
             }
-            if (iChannel != 0)
+            if (iChannel <= 1)
             {
                 wireless["channel"] = iChannel;
+                wireless["band"] = iChannel > 14 ? "a" : "bg";
+            }
+            else
+            {
+                wireless["band"] = iChannel == 0 ? "bg" : "a";
             }
 
             std::map<std::string, sdbus::Variant> &wirelessSecurity = settings["802-11-wireless-security"];
@@ -840,6 +861,26 @@ void HotspotManagerImpl::StartHotspot()
 
             settings["ipv4"]["method"] = "shared";
             settings["ipv6"]["method"] = "shared";
+
+            ////////////////////////////////////////////////////////////////
+
+            // Create connection
+            settings["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
+            //settings["ipv6"]["method"] = sdbus::Variant(std::string("ignore"));
+
+            settings["ipv4"]["address-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{{{"address", sdbus::Variant("192.168.60.1")},
+                                                                                                                  {"prefix", sdbus::Variant(uint32_t(24))}}});
+            settings["ipv4"]["dhcp-send-hostname"] = sdbus::Variant(true);
+            settings["ipv4"]["dhcp-hostname"] = sdbus::Variant("raspberrypi");
+            // settings["ipv4"]["dhcp-options"] = sdbus::Variant(std::vector<std::string>{
+            //     "option:classless-static-route,192.168.60.0/24,0.0.0.0,0.0.0.0/0,192.168.60.1"});
+
+            settings["ipv4"]["route-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{{
+                    {"dest", sdbus::Variant("192.168.4.0")},
+                    {"prefix", sdbus::Variant(uint32_t(24))},
+                    {"metric", sdbus::Variant((uint32_t)99)}
+            }});
+            ////////////////////////////////////////////////////////////
             // settings["ipv6"]["addr-gen-mode"] = "stable-privacy";
 
             std::map<std::string, sdbus::Variant> options;

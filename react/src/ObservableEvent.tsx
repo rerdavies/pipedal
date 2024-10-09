@@ -12,38 +12,43 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO `EVENT` SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#pragma once
-
-#include <string>
-#include <utility>
-#include <boost/asio.hpp>
-namespace pipedal {
 
 
-    std::string GetInterfaceIpv4Address(const std::string& interfaceName);
+export type ObservableEventHandler<VALUE_TYPE> = (newValue: VALUE_TYPE) => void;
 
 
-    // bool IsLinkLocalAddress(const std::string &fromAddress);
+export default class ObservableEvent<VALUE_TYPE> {
 
-    std::string GetNonLinkLocalAddress(const std::string& fromAddress);
-
-    bool IsOnLocalSubnet(const std::string&fromAddress);
+    private _on_event_handlers: ObservableEventHandler<VALUE_TYPE>[] = [];
 
 
-    bool RemapLinkLocalUrl(
-        const boost::asio::ip::address &address,
-        const std::string&url,std::string*outputUrl);
+    addEventHandler(handler: ObservableEventHandler<VALUE_TYPE> ) : void
+    {
+        this._on_event_handlers.push(handler);
+    }
+    removeEventHandler(handler: ObservableEventHandler<VALUE_TYPE> ) : void
+    {
+        let newArray: ObservableEventHandler<VALUE_TYPE>[] = [];
 
-    bool ParseHttpAddress(const std::string address,
-        std::string *pUser,
-        std::string *pServer, 
-        int *pPort, 
-        int defaultPort);
-
-
-}
+        for (let myHandler of  this._on_event_handlers)
+        {
+            if (myHandler !== handler)
+            {
+                newArray.push(myHandler);
+            }
+        }
+        this._on_event_handlers = newArray;
+    }
+    fire(value: VALUE_TYPE)
+    {
+        for (let handler of this._on_event_handlers)
+        {
+            handler(value);
+        }
+    }
+};

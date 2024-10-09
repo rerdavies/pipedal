@@ -101,6 +101,26 @@ PiPedalModel::PiPedalModel()
     // don't actuall start the hotspotManager until after LV2 is initialized (in order to avoid logging oddities)
 }
 
+void PrepareSnapshostsForSave(Pedalboard&pedalboard) 
+{
+    if (pedalboard.selectedSnapshot() != -1) {
+        auto&currentSnapshot = pedalboard.snapshots()[pedalboard.selectedSnapshot()];
+        if (!currentSnapshot ||  currentSnapshot->isModified_)
+        {
+            pedalboard.selectedSnapshot(-1);
+
+        }
+    }
+    for (auto &snapshot: pedalboard.snapshots())
+    {
+        if (snapshot) {
+            snapshot->isModified_ = false;
+        }
+    }
+}
+
+
+
 void PiPedalModel::Close()
 {
     std::unique_ptr<AudioHost> oldAudioHost;
@@ -515,15 +535,19 @@ void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
 void PiPedalModel::SetSnapshot(int64_t selectedSnapshot)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    if (this->pedalboard.selectedSnapshot() == selectedSnapshot)
-    {
-        return;
-    }
     if (this->pedalboard.ApplySnapshot(selectedSnapshot))
     {
+        this->pedalboard.SetCurrentSnapshotModified(false);
+        this->FireSnapshotModified(selectedSnapshot,false);
         if (this->audioHost)
         {
-            this->audioHost->LoadSnapshot(*(this->pedalboard.snapshots()[selectedSnapshot]), this->pluginHost); // no longer own it.
+            if (this->previousPedalboardLoaded &&  this->pedalboard.IsStructureIdentical(this->previousPedalboard))
+            {
+                this->audioHost->LoadSnapshot(*(this->pedalboard.snapshots()[selectedSnapshot]), this->pluginHost); // no longer own it.
+            } else {
+                LoadCurrentPedalboard();
+            }
+
         }
         SetPresetChanged(-1, true, false);
         this->pedalboard.selectedSnapshot(selectedSnapshot);
@@ -535,43 +559,21 @@ void PiPedalModel::SetSnapshots(std::vector<std::shared_ptr<Snapshot>> &snapshot
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
-    // notionally, snapshots are saved whenever they are modified, but pedalboards are not.
-    // so we must add the current snapshots BOTH to the current pedalbaoard, AND to the
-    // current saved instance of the pedalboard to create the illusion that the are stored separately.
-    // In practice, snapshots have to track structure changes (delete pedalboard items that have been deleted,
-    // and set default settings for pedalboard items that have ben added since the snapshots was last saved.
-    //
-    // This is acheived by:
-    // 1. updating BOTH the current pedalboard, and its saved instance.
-    // 2. discarding references to dangling instances as plugins are loaded (see UpdateDefaults).
-    // 3. Setting missing snapshot controls to default values (NOT the current pedalboard values)
-    // 4. (We currently don't do the right thing with patch properties if the patch property has never been set).
 
     UpdateVst3Settings(pedalboard);
 
-    {
-        // stealth update of the saved snapshots.
-        auto savedPedalboard = storage.GetCurrentPreset();
-        savedPedalboard.snapshots(snapshots); // makes a shallow copy
-
-        if (selectedSnapshot != -1)
-        {
-            // implies that this is a snapshot of the currently running pedalboard. so we can mark it as the selected pedalboard.
-            this->pedalboard.selectedSnapshot(selectedSnapshot);
-        }
-        // UpdateDefaults(&savedPedalboard); // The update is awfully fresh. wait until it gets loaded again before pruning.
-        storage.SaveCurrentPreset(savedPedalboard);
-    }
-
     this->pedalboard.snapshots(std::move(snapshots));
+
     if (selectedSnapshot != -1)
     {
         this->pedalboard.selectedSnapshot(selectedSnapshot);
     }
-
+    
     this->FirePedalboardChanged(-1, false); // notify clients (but don't change the running pedalboard, because it's still the same)
                                             // this means that all clients get an up-to-date copy of the snapshots AND the currently selected snapshot if that applies
                                             // (and a fresh copy of the pedalboard settings as well, which is harmless, since they have not changed)
+    this->SetPresetChanged(-1, true,false);
+
 }
 
 void PiPedalModel::UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalboard)
@@ -634,14 +636,36 @@ void PiPedalModel::SetPresetChanged(int64_t clientId, bool value, bool changeSna
 {
     if (changeSnapshotSelect && value && this->pedalboard.selectedSnapshot() != -1)
     {
-        this->pedalboard.selectedSnapshot(-1);
-        FireSelectedSnapshotChanged(-1);
+        auto & snapshot = this->pedalboard.snapshots()[pedalboard.selectedSnapshot()];
+        if (snapshot) {
+            if (!snapshot->isModified_)
+            {
+                snapshot->isModified_  = true;
+                FireSnapshotModified(pedalboard.selectedSnapshot(),true);
+            }
+        }
+
+        this->pedalboard.SetCurrentSnapshotModified(true);
     }
     if (value != this->hasPresetChanged)
     {
         hasPresetChanged = value;
         FirePresetChanged(value);
     }
+}
+
+void PiPedalModel::FireSnapshotModified(int64_t snapshotIndex, bool modified)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    {
+        // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
+        {
+            subscriber->OnSnapshotModified(snapshotIndex,modified);
+        }
+    }
+
 }
 
 void PiPedalModel::FireSelectedSnapshotChanged(int64_t selectedSnapshot)
@@ -762,6 +786,8 @@ void PiPedalModel::SaveCurrentPreset(int64_t clientId)
 
     UpdateVst3Settings(this->pedalboard);
     SyncLv2State();
+    PrepareSnapshostsForSave(pedalboard);
+
 
     storage.SaveCurrentPreset(this->pedalboard);
     this->SetPresetChanged(clientId, false);
@@ -791,12 +817,15 @@ int64_t PiPedalModel::SavePluginPresetAs(int64_t instanceId, const std::string &
     return presetId;
 }
 
+
 int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, const std::string &name, int64_t saveAfterInstanceId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
     SyncLv2State();
-    auto pedalboard = this->pedalboard;
+    auto pedalboard = this->pedalboard.DeepCopy();
+    PrepareSnapshostsForSave(pedalboard);    
+    
     UpdateVst3Settings(pedalboard);
     pedalboard.name(name);
     int64_t result = storage.SaveCurrentPresetAs(pedalboard, name, saveAfterInstanceId);
@@ -1280,6 +1309,7 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
 
         this->audioHost->SetPedalboard(nullptr);
 
+        previousPedalboardLoaded = false;
         auto jackServerSettings = this->jackServerSettings;
         if (useDummyAudioDriver)
         {
@@ -2359,6 +2389,8 @@ bool PiPedalModel::LoadCurrentPedalboard()
     // return true if the error messages have changed
     CheckForResourceInitialization(this->pedalboard);
     audioHost->SetPedalboard(lv2Pedalboard);
+    previousPedalboard = this->pedalboard;
+    previousPedalboardLoaded = true;
     return true;
 }
 

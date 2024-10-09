@@ -113,6 +113,7 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
         return (
             <DialogEx maxWidth="sm" fullWidth={true} tag="snapshotProps" open={this.props.open} onClose={handleClose} 
                 style={{ userSelect: "none" }} fullScreen={this.state.compactVertical}
+                onEnterKey={()=> { this.handleOk(); }}
             >
                 <DialogTitle>
                     <div>

@@ -226,12 +226,14 @@ export class SnapshotValue {
     {
         let result = new SnapshotValue();
         result.instanceId = item.instanceId;
+        result.isEnabled = item.isEnabled;
         result.controlValues = ControlValue.deserializeArray(item.controlValues); 
         result.lv2State = item.lv2State; // we can do this, because lv2State is immutable.
         result.pathProperties = {...item.pathProperties}; // clone the dictionary.
         return result;
     }
     instanceId: number = -1;
+    isEnabled: boolean = true;
     controlValues: ControlValue[] = ControlValue.EmptyArray;
     lv2State: [boolean,any] = [false,{}];
     pathProperties: {[Name: string]: string} = {};
@@ -239,6 +241,7 @@ export class SnapshotValue {
 export class Snapshot {
     deserialize(input: any): Snapshot {
         this.values = SnapshotValue.deserializeArray(input.values);
+        this.isModified = input.isModified;
         this.name = input.name;
         this.color = input.color;
         return this;
@@ -273,6 +276,7 @@ export class Snapshot {
         return result;
     }
     name: string = "";
+    isModified: boolean = false;
     color: string = "";
     values: SnapshotValue[] = [];
 };

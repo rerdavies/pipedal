@@ -93,7 +93,9 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
 
 
     return (
-        <DialogEx tag="midiChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
+        <DialogEx tag="midiChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
+            onEnterKey={handleOk}
+        >
             <DialogTitle id="simple-dialog-title">Select MIDI Device</DialogTitle>
             <List>
                 {availableChannels.map((channel) => (

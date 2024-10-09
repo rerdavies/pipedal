@@ -396,6 +396,19 @@ JSON_MAP_REFERENCE(SetSnapshotsBody, snapshots)
 JSON_MAP_REFERENCE(SetSnapshotsBody, selectedSnapshot)
 JSON_MAP_END()
 
+class SnapshotModifiedBody {
+public:
+    int64_t snapshotIndex_;
+    bool modified_;
+
+    DECLARE_JSON_MAP(SnapshotModifiedBody);
+};
+
+JSON_MAP_BEGIN(SnapshotModifiedBody)
+JSON_MAP_REFERENCE(SnapshotModifiedBody, snapshotIndex)
+JSON_MAP_REFERENCE(SnapshotModifiedBody, modified)
+JSON_MAP_END()
+
 class ChannelSelectionChangedBody
 {
 public:
@@ -1762,6 +1775,15 @@ private:
         body.jackChannelSelection_ = const_cast<JackChannelSelection *>(&channelSelection);
         Send("onChannelSelectionChanged", body);
     }
+
+    virtual void OnSnapshotModified(int64_t snapshotIndex, bool modified) 
+    {
+        SnapshotModifiedBody body;
+        body.snapshotIndex_ = snapshotIndex;
+        body.modified_ = modified;
+        Send("onSnapshotModified", body);
+    }
+
     virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) override
     {
         Send("onSelectedSnapshotChanged", selectedSnapshot);

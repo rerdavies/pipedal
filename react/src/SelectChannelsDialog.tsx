@@ -90,7 +90,9 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
 
 
         return (
-            <DialogEx tag="audioChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open}>
+            <DialogEx tag="audioChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
+                onEnterKey={handleOk}
+            >
                 <DialogTitle id="simple-dialog-title">Select Channels</DialogTitle>
                 <List>
                     {availableChannels.map((channel) => (
@@ -154,7 +156,9 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
         }
 
         return (
-            <DialogEx tag="channels" onClose={handleCancel} aria-labelledby="select-channels-title" open={open}>
+            <DialogEx tag="channels" onClose={handleCancel} aria-labelledby="select-channels-title" open={open}
+                onEnterKey={()=>{}}
+            >
                 
                 <List style={{ marginLeft: 0, marginRight: 0}}>
                     <ListItem button onClick={() => handleListItemClick("Stereo")} key={"Stereo"} selected={selectionKey === "Stereo"} >

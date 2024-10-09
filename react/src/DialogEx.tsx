@@ -25,6 +25,7 @@ import Dialog, {DialogProps} from '@mui/material/Dialog';
 interface DialogExProps extends DialogProps {
     tag: string;
     fullwidth?: boolean;
+    onEnterKey: () => void;
 }
 
 interface DialogExState {
@@ -186,7 +187,10 @@ class DialogEx extends React.Component<DialogExProps,DialogExState> implements I
     }
 
     onEnterKey() {
-
+        if (this.props.onEnterKey)
+        {
+            this.props.onEnterKey();
+        }
     }
     onKeyDown(evt: React.KeyboardEvent<HTMLDivElement>)
     {

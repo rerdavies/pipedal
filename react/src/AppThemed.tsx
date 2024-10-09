@@ -1020,6 +1020,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 <DialogEx tag="Alert"
                     open={this.state.alertDialogOpen}
                     onClose={this.handleCloseAlert}
+                    onEnterKey={this.handleCloseAlert}
                     aria-describedby="alert-dialog-description"
                 >
                     <DialogContent>

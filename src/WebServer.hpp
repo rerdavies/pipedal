@@ -70,6 +70,7 @@ public:
     constexpr static const char* origin = "Origin";
     constexpr static const char* date = "Date";
     constexpr static const char* referer = "Referer";
+    constexpr static const char * location = "Location";
 };
 
 

@@ -722,7 +722,7 @@ void Storage::SaveChannelSelection()
     try
     {
         pipedal::ofstream_synced s(fileName);
-        json_writer writer(s, true);
+        json_writer writer(s, false);
         writer.write(this->jackChannelSelection);
     }
     catch (const std::exception &e)
@@ -933,7 +933,7 @@ void Storage::SaveUserSettings()
         {
             throw PiPedalException("Unable to write to " + ((std::string)path));
         }
-        json_writer writer(f, true);
+        json_writer writer(f, false);
         writer.write(userSettings);
     }
 }
@@ -1399,7 +1399,7 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
     f.open(fileName);
     if (f.is_open())
     {
-        json_writer writer(f, true);
+        json_writer writer(f, false);
         writer.write(jackConfiguration);
     }
 #if JACK_HOST

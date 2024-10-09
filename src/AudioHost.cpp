@@ -177,16 +177,24 @@ namespace pipedal
                             std::istringstream ss(pathProperty.second);
                             json_reader reader(ss);
                             reader.read(&vProperty);
-                            vProperty = pluginHost.MapPath(vProperty);
+                            if (!vProperty.is_null())
+                            {
+                                try {
+                                    vProperty = pluginHost.MapPath(vProperty);
 
-                            // now to atom format (what we want on the rt thread0)
-                            AtomConverter atomConverter(pluginHost.GetMapFeature());
-                            LV2_Atom *atomValue = atomConverter.ToAtom(vProperty);
+                                    // now to atom format (what we want on the rt thread0)
+                                    AtomConverter atomConverter(pluginHost.GetMapFeature());
+                                    LV2_Atom *atomValue = atomConverter.ToAtom(vProperty);
 
-                            size_t atomBufferSize = (atomValue->size + sizeof(LV2_Atom) + 3) / 4 * 4;
-                            pathPatchProperty.atomBuffer.resize(atomValue->size + sizeof(LV2_Atom));
-                            memcpy(pathPatchProperty.atomBuffer.data(), atomValue, pathPatchProperty.atomBuffer.size());
-                            this->pathPatchProperties.push_back(std::move(pathPatchProperty));
+                                    size_t atomBufferSize = (atomValue->size + sizeof(LV2_Atom) + 3) / 4 * 4;
+                                    pathPatchProperty.atomBuffer.resize(atomValue->size + sizeof(LV2_Atom));
+                                    memcpy(pathPatchProperty.atomBuffer.data(), atomValue, pathPatchProperty.atomBuffer.size());
+                                    this->pathPatchProperties.push_back(std::move(pathPatchProperty));
+                                } catch (const std::exception &e)
+                                {
+                                    Lv2Log::info(SS("IndexedSnapshotValue: Failed to map path property " << pathProperty.first << ". " << e.what()));
+                                }
+                            }
                         }
                     }
                 }

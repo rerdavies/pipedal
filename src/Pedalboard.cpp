@@ -87,6 +87,18 @@ ControlValue* PedalboardItem::GetControlValue(const std::string&symbol)
     return nullptr;
 }
 
+const ControlValue* PedalboardItem::GetControlValue(const std::string&symbol) const
+{
+    for (size_t i = 0; i < this->controlValues().size(); ++i)
+    {
+        if (this->controlValues()[i].key() == symbol)
+        {
+            return &(this->controlValues()[i]);
+        }
+    }
+    return nullptr;
+}
+
 bool Pedalboard::SetItemEnabled(int64_t pedalItemId, bool enabled)
 {
     PedalboardItem*item = GetItem(pedalItemId);
@@ -228,6 +240,7 @@ void PedalboardItem::ApplySnapshotValue(SnapshotValue*snapshotValue)
         this->lv2State(snapshotValue->lv2State_);
         this->stateUpdateCount(this->stateUpdateCount()+1);
     }
+    this->isEnabled(snapshotValue->isEnabled_);
 
 }
 
@@ -265,6 +278,17 @@ bool PedalboardItem::IsStructurallyIdentical(const PedalboardItem&other) const
     }
     if (this->isSplit()) // so is the other by virtue of idential uris.
     {
+        auto myValue = this->GetControlValue("splitType");
+        auto otherValue = other.GetControlValue("splitType");
+        if (myValue == nullptr || otherValue == nullptr) // actually an error.
+        {
+            return false;
+        }
+        // split type changes potentially trigger buffer allocation changes, 
+        // so different split types are not structurally identical.
+        if (myValue->value() != otherValue->value()) {
+            return false; 
+        }
         if (topChain().size() != other.topChain().size())
         {
             return false;
@@ -294,6 +318,7 @@ void PedalboardItem::AddToSnapshotFromCurrentSettings(Snapshot&snapshot) const
 {
     SnapshotValue snapshotValue;
     snapshotValue.instanceId_ = this->instanceId_;
+    snapshotValue.isEnabled_ = this->isEnabled_;
 
     for (const ControlValue &value: this->controlValues_)
     {
@@ -354,6 +379,30 @@ void PedalboardItem::AddResetsForMissingProperties(Snapshot&snapshot, size_t*ind
 
 }
 
+Pedalboard Pedalboard::DeepCopy()
+{
+    Pedalboard result = *this;
+    for (size_t i= 0; i < snapshots_.size(); ++i)
+    {
+        if (snapshots_[i])
+        {
+            result.snapshots_[i] = std::make_shared<Snapshot>(*(snapshots_[i]));
+        }
+    }
+    return result;
+}
+void  Pedalboard::SetCurrentSnapshotModified(bool modified)
+{
+    if (selectedSnapshot() != -1)
+    {
+        auto& snapshot = snapshots_[selectedSnapshot_];
+        if (snapshot)
+        {
+            snapshot->isModified_ = modified;
+        }
+    }
+}
+
 Snapshot Pedalboard::MakeSnapshotFromCurrentSettings(const Pedalboard &previousPedalboard)
 {
     Snapshot snapshot;
@@ -410,6 +459,7 @@ JSON_MAP_END()
 
 JSON_MAP_BEGIN(SnapshotValue)
     JSON_MAP_REFERENCE(SnapshotValue,instanceId)
+    JSON_MAP_REFERENCE(SnapshotValue,isEnabled)
     JSON_MAP_REFERENCE(SnapshotValue,controlValues)
     JSON_MAP_REFERENCE(SnapshotValue,lv2State)
     JSON_MAP_REFERENCE(SnapshotValue,pathProperties)
@@ -417,6 +467,7 @@ JSON_MAP_END()
 
 JSON_MAP_BEGIN(Snapshot)
     JSON_MAP_REFERENCE(Snapshot,name)
+    JSON_MAP_REFERENCE(Snapshot,isModified)
     JSON_MAP_REFERENCE(Snapshot,color)
     JSON_MAP_REFERENCE(Snapshot,values)
 JSON_MAP_END()

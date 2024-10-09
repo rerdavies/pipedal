@@ -1,16 +1,8 @@
+Main menu on Pixel 5 client.
+x1 bank menu (landscape pixel 5) should show current bank.
 
-Review current handleNotifyPatchProperty. I tink server-side support needs to be
-removed, and rely on handleNotifyPathPatchPropertyChanged instead.
+Restart discover on network change?
 
-`private handleNotifyPatchProperty(clientHandle: number, instanceId: number, propertyUri: string, jsonObject: any) {
-
-Midi bindings.    
-
-
-       revamp shutdown procedure for the audio thread. 
-       write a marker on exit, and don't  release 
-       audioHost UNTIL the service thread has read the close marker.
-       
 
 -verify clean removal of dhcpcd and nm_p2p2d
 

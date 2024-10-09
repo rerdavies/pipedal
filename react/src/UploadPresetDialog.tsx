@@ -157,9 +157,10 @@ export default class UploadPresetDialog extends ResizeResponsiveComponent<Upload
 
 
         return (
-            <DialogEx tag="uploadPreset" open={this.props.open} fullWidth onClose={() => this.handleClose()} 
+            <DialogEx tag="uploadPreset" open={this.props.open} fullWidth maxWidth="sm" onClose={() => this.handleClose()} 
                 fullScreen={this.state.fullScreen}
                 style={{userSelect: "none"}}
+                onEnterKey={()=>{}}
             >
                 <DialogTitle>{this.props.title}</DialogTitle>
                 <DialogContent>

@@ -311,9 +311,13 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
 
         let isAndroid = UploadFileDialog.IsAndroid();
         return (
-            <DialogEx tag="uploadFile" open={this.props.open} fullWidth onClose={() => this.handleClose()}
-                fullScreen={this.state.fullScreen}
-                style={{ userSelect: "none" }}
+            <DialogEx tag="uploadFile" open={this.props.open} onClose={() => this.handleClose()}
+                fullScreen={false}
+                fullWidth={true}
+                maxWidth={"sm"}
+                style={{ userSelect: "none",}}
+                onEnterKey={()=>{ this.handleClose(); }}
+
             >
                 <DialogTitle >
                     <div>
@@ -326,7 +330,7 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
                 </DialogTitle>
                 <DialogContent style={{ paddingBottom: 0 }}>
                     <div style={{
-                        width: "100%", height: 140, marginBottom: 0,
+                        height: 140, marginBottom: 0,
                         border: (isAndroid? "2px solid #CCC" :"2px dashed #CCC"),
                         borderRadius: "10px",
                         fontFamily: "Roboto",

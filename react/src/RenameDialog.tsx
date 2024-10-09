@@ -117,6 +117,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
             <DialogEx tag="nameDialog" open={open} fullWidth maxWidth="sm" onClose={handleClose} aria-labelledby="Rename-dialog-title" 
                 fullScreen={this.state.fullScreen}
                 style={{userSelect: "none"}}
+                onEnterKey={()=>{}}
                 >
                 <DialogContent style={{minHeight: 96}}>
                     <TextField

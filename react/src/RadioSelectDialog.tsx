@@ -18,7 +18,6 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import Button from '@mui/material/Button';
 
 
 import Radio from '@mui/material/Radio';
@@ -29,11 +28,10 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
 import DialogEx from './DialogEx';
-import DialogActions from '@mui/material/DialogActions';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 
 
-export interface ListSelectDialogProps {
+export interface RadioSelectDialogProps {
     open: boolean,
     title: string,
     width: number,
@@ -43,15 +41,15 @@ export interface ListSelectDialogProps {
     onClose: () => void
 };
 
-export interface ListSelectDialogState {
+export interface RadioSelectDialogState {
     fullScreen: boolean;
 };
 
-export default class ListSelectDialog extends ResizeResponsiveComponent<ListSelectDialogProps, ListSelectDialogState> {
+export default class RadioSelectDialog extends ResizeResponsiveComponent<RadioSelectDialogProps, RadioSelectDialogState> {
 
     refText: React.RefObject<HTMLInputElement>;
 
-    constructor(props: ListSelectDialogProps) {
+    constructor(props: RadioSelectDialogProps) {
         super(props);
         this.state = {
             fullScreen: false
@@ -82,7 +80,9 @@ export default class ListSelectDialog extends ResizeResponsiveComponent<ListSele
     render() {
 
         return (
-            <DialogEx tag="list" onClose={()=>this.props.onClose()} open={this.props.open}>
+            <DialogEx tag="list" onClose={()=>this.props.onClose()} open={this.props.open}
+            onEnterKey={()=>{  }}
+            >
                 <List sx={{pt: 0}}>
                 {
                     this.props.items.map(
@@ -105,11 +105,6 @@ export default class ListSelectDialog extends ResizeResponsiveComponent<ListSele
                     )
                 }
                 </List>
-                <DialogActions>
-                    <Button variant="dialogSecondary" onClick={()=> this.props.onClose()} color="primary">
-                        Cancel
-                    </Button>
-                </DialogActions>
             </DialogEx>
         );
     }

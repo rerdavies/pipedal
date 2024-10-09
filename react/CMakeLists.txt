@@ -33,6 +33,8 @@ add_custom_command(
     src/AlsaMidiDeviceInfo.tsx
     src/WifiDirectConfigSettings.tsx
     src/WifiConfigSettings.tsx
+    src/SnapshotButton.tsx
+    src/WindowScale.tsx
     src/JsonAtom.tsx
     src/PiPedalSocket.tsx
     src/TemporaryDrawer.tsx
@@ -43,6 +45,7 @@ add_custom_command(
     src/SettingsDialog.tsx
     src/PedalboardView.tsx
     src/reportWebVitals.ts
+    src/OptionsDialog.tsx
     src/SelectChannelsDialog.tsx
     src/PluginPresetSelector.tsx
     src/VuMeter.tsx
@@ -122,6 +125,7 @@ add_custom_command(
     src/svg/fx_utility.svg
     src/Updater.tsx
     src/UploadPresetDialog.tsx
+    src/RadioSelectDialog.tsx
     src/setupTests.ts
     src/ToobCabSimView.tsx
     src/RenameDialog.tsx
@@ -140,6 +144,7 @@ add_custom_command(
     src/Draggable.tsx
     src/PluginIcon.tsx
     src/react-app-env.d.ts
+    src/TextFieldEx.tsx
     src/FilePropertyDialog.tsx
     src/FilePropertyDirectoryTree.tsx
     src/StringBuilder.tsx
@@ -150,7 +155,6 @@ add_custom_command(
     src/ToobSpectrumResponseView.tsx
     src/PerformanceView.tsx
     src/JackServerSettingsDialog.tsx
-    src/ListSelectDialog.tsx
     src/Utility.tsx
     src/JackStatusView.tsx
     src/ToobSpectrumAnalyzerView.tsx
@@ -160,6 +164,7 @@ add_custom_command(
     src/WifiChannel.tsx
     src/AboutDialog.tsx
     src/GxTunerControl.tsx
+    src/VirtualKeyboardHandler.tsx
     src/PluginControl.tsx
     src/LoadPluginDialog.tsx
     src/ZoomedUiControl.tsx
@@ -175,8 +180,10 @@ add_custom_command(
     src/SnapshotPanel.tsx
     src/ToobMLView.tsx
     src/WifiConfigDialog.tsx
+    src/Rectangle.tsx
     src/SnapshotColors.tsx
     src/PiPedalModel.tsx
+    src/ObservableEvent.tsx
     src/JackHostStatus.tsx
     src/index.tsx
     src/FilePropertyControl.tsx
@@ -192,7 +199,7 @@ add_custom_command(
     src/SnapshotPropertiesDialog.tsx
     src/SearchControl.tsx
     src/Units.tsx
-                
+                    
 )
 
 add_custom_target (

@@ -223,6 +223,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                 this.state.newPassword;
         }
 
+        onEnterKey() {
+            this.handleOk(false);
+        }
+    
         handleOk(wifiWarningGiven: boolean) {
             let hasError = false;
             if (this.state.autoStartMode !== 0) {
@@ -324,6 +328,13 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
             }
             return result;
         }
+        handleWarningDialogOk() 
+        {
+            this.setState({ showWifiWarningDialog: false });
+            this.handleOk(true);
+        }
+
+
         render() {
             let props = this.props;
             let classes = this.props.classes;
@@ -334,8 +345,11 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
             };
             let enabled = this.state.autoStartMode !== 0;
             return (
-                <DialogEx tag="wifiConfig" open={open} fullWidth onClose={handleClose} style={{ userSelect: "none" }}
-                    fullScreen={this.state.fullScreen}
+                <DialogEx tag="wifiConfig" open={open} fullWidth maxWidth="sm" onClose={handleClose} style={{ userSelect: "none" }}
+                    fullScreen={this.state.fullScreen
+                    }
+                    onEnterKey={()=>{ this.handleOk(false); }}
+
                 >
                     {(this.state.fullScreen || !this.state.compactHeight) && (
                         <DialogTitle>Wi-fi Auto-Hotspot</DialogTitle>
@@ -353,8 +367,8 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                             }}
                             >
 
-                                <FormControl variant="standard" style={{ flexGrow: 1, flexBasis: 1 }} >
-                                    <InputLabel htmlFor="behavior">Auto-start hotspot when</InputLabel>
+                                <FormControl variant="standard" style={{ flexGrow: 1, flexBasis: 1, minWidth: 150 }} >
+                                    <InputLabel htmlFor="behavior">Auto-start hotspot when...</InputLabel>
                                     <Select id="behavior" value={this.state.autoStartMode}
                                         onChange={(el) => {
                                             let value = el.target.value as number
@@ -562,7 +576,11 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     </DialogActions>
                     {this.state.showHelpDialog && (
                         <DialogEx open={this.state.showHelpDialog} tag="wifiHelp"
-                            style={{ userSelect: "none" }}>
+                            style={{ userSelect: "none" }}
+                            onEnterKey={()=>{ 
+                                this.setState({ showHelpDialog: false });
+                            }}
+                        >
                             <DialogContent>
                                 <Typography className={classes.pgraph} variant="h6" color="textPrimary">
                                     PiPedal Auto-Hotspot
@@ -626,6 +644,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     )}
                     {this.state.showWifiWarningDialog && (
                         <DialogEx open={this.state.showWifiWarningDialog} tag="wifiConfirm"
+                            onEnterKey={()=>{ this.handleWarningDialogOk();}}
                             style={{ userSelect: "none" }}>
                             <DialogContent>
                                 <Typography className={classes.pgraph} variant="body2" color="textPrimary">
@@ -647,8 +666,7 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                                     Cancel
                                 </Button>
                                 <Button onClick={() => {
-                                    this.setState({ showWifiWarningDialog: false });
-                                    this.handleOk(true);
+                                    this.handleWarningDialogOk();
                                 }} variant="dialogPrimary" style={{ width: 120 }} >
                                     PROCEED
                                 </Button>
