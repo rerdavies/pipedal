@@ -27,10 +27,12 @@
 #include <memory.h>
 #include <exception>
 #include <netdb.h>
+#include <regex>
+#include "ss.hpp"
+#include "Finally.hpp"
 
 using namespace pipedal;
 
-std::string pipedal::GetNonLinkLocalAddress(const std::string fromAddress);
 
 static bool IsIpv4MappedAddress(const struct in6_addr &inetAddr6)
 {
@@ -188,7 +190,6 @@ bool pipedal::IsOnLocalSubnet(const std::string &fromAddress)
         // ipv4
         struct in_addr inetAddr;
         memset(&inetAddr, 0, sizeof(inetAddr));
-
         if (inet_pton(AF_INET, address.c_str(), &inetAddr) == 1)
         {
             uint32_t remoteAddress = htonl(inetAddr.s_addr);
@@ -314,12 +315,89 @@ static std::string GetInterfaceForIp6Address(const in6_addr inetAddr6)
     return result;
 }
 
+static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6 &ipV6Address)
+{
+    auto targetInterfaceId = ipV6Address.scope_id();
+    boost::asio::ip::address_v6::bytes_type bytes = ipV6Address.to_bytes();
+    auto scopeId = ipV6Address.scope_id();
+
+    struct ifaddrs *ifap = nullptr;
+    if (getifaddrs(&ifap) != 0)
+        throw std::runtime_error("No networks available.");
+
+    Finally f{[ifap]() {
+            freeifaddrs(ifap);
+    }};
+
+    std::string result;
+
+    const char *targetInterfaceName = nullptr;
+    const ifaddrs *targetInterface = nullptr;
+
+    // get the nameof the interface for this scopeId.
+    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr)
+        { // TODO: Add support for AF_INET6
+            struct sockaddr_in6 *pAddr = (struct sockaddr_in6 *)(p->ifa_addr);
+            if (pAddr->sin6_scope_id == scopeId)
+            {
+                targetInterface = p;
+                targetInterfaceName = p->ifa_name;
+                break;
+            }
+        }
+    }
+    if (!targetInterface)
+    {
+        throw std::runtime_error("Unknown address.");
+    }
+    // an IPV4 address would be the ideal result.
+    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
+        {
+            if (strcmp(p->ifa_name,targetInterfaceName) == 0)
+            {
+                constexpr int BUFSIZE = 128;
+                char host[BUFSIZE];
+                if (getnameinfo(p->ifa_addr, sizeof(struct sockaddr_in), host, BUFSIZE, NULL, 0, NI_NUMERICHOST) == 0)
+                {
+                    host[BUFSIZE - 1] = '\0';
+
+                    result = host;
+                }
+                return result;
+            }
+        }
+    }
+    // failing that, a global unique ip address.
+    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
+        { // TODO: Add support for AF_INET6
+            struct sockaddr_in6 *pAddr = (struct sockaddr_in6 *)(p->ifa_addr);
+            if ((!IN6_IS_ADDR_LINKLOCAL(pAddr)) && (!IN6_IS_ADDR_SITELOCAL(pAddr)))
+            {
+                char buffer[128];
+                inet_ntop(AF_INET6, &(pAddr->sin6_addr),
+                    buffer,sizeof(buffer));
+                return SS('[' << buffer << ']');
+            }
+        }
+    }
+    // probably network address settling after the hotspot comes up. :-/
+    throw std::runtime_error("Not ready. Try again later.");
+
+}
+
 static std::string GetNonLinkLocalAddressForInterface(const std::string &name)
 {
     struct ifaddrs *ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return "";
-    std::string result = "notlinklocal.error";
+    std::string result;
+
     for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
@@ -352,6 +430,10 @@ static std::string GetNonLinkLocalAddressForInterface(const std::string &name)
         }
     }
     freeifaddrs(ifap);
+    if (result.empty())
+    {
+        throw std::logic_error("Address not supported.");
+    }
     return result;
 }
 static std::string GetNonLinkLocalAddressForIp4Interface(const std::string &name)
@@ -385,35 +467,97 @@ static std::string GetNonLinkLocalAddressForIp4Interface(const std::string &name
     return result;
 }
 
-bool pipedal::IsLinkLocalAddress(const std::string fromAddress)
-{
-    std::string address = fromAddress;
-    std::string result;
-    if (address[0] != '[')
-    {
-        return false;
-    }
-    else
-    {
-        // ipv6
-        if (address[0] != '[' || address[address.length() - 1] != ']')
-            throw std::invalid_argument("Bad address.");
-        address = address.substr(1, address.length() - 2);
+// bool pipedal::IsLinkLocalAddress(const std::string & fromAddress)
+// {
+//     std::string address = fromAddress;
+//     std::string result;
+//     if (address[0] != '[')
+//     {
+//         return false;
+//     }
+//     else
+//     {
+//         // ipv6
+//         if (address[0] != '[' || address[address.length() - 1] != ']')
+//             throw std::invalid_argument("Bad address.");
+//         address = address.substr(1, address.length() - 2);
 
-        struct in6_addr inetAddr6;
-        memset(&inetAddr6, 0, sizeof(inetAddr6));
-        if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
-        {
-            if (IN6_IS_ADDR_LINKLOCAL(&inetAddr6))
-            {
-                return true;
-            }
-        }
-    }
-    return false;
-}
+//         // strip the interface suffice if present.
+//         auto pos = address.find_last_of('%'); //
+//         if (pos != std::string::npos)
+//         {
+//             address = address.substr(0,pos);
+//         }
+//         struct in6_addr inetAddr6;
+//         memset(&inetAddr6, 0, sizeof(inetAddr6));
+//         xx trashes memory. if (inet_pton(AF_INET6, address.c_str(), &address) == 1)
+//         {
+//             if (IN6_IS_ADDR_LINKLOCAL(&inetAddr6))
+//             {
+//                 return true;
+//             }
+//         }
+//     }
+//     return false;
+// }
 
-std::string pipedal::GetNonLinkLocalAddress(const std::string fromAddress)
+// static std::string GetNonLinkLocalAddress(const std::string &address)
+// {
+//     std::string address = fromAddress;
+//     std::string result;
+//     if (address[0] != '[')
+//     {
+//         return address;
+//     }
+//     else
+//     {
+//         // ipv6
+//         if (address[0] != '[' || address[address.length() - 1] != ']')
+//             throw std::invalid_argument("Bad address.");
+//         address = address.substr(1, address.length() - 2);
+
+//         auto nPos = address.find('%') ;
+//         if (nPos != std::string::npos)
+//         {
+//             std::string ifName = address.substr(nPos+1);
+//             return GetNonLinkLocalAddressForInterface(ifName);
+
+//         }
+//         struct sockaddr_in6 sa6;
+//         auto&inetAddr6 = sa6.sin6_addr;
+//         if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
+//         {
+//             int32_t remoteAddress = -1;
+//             // cases:
+//             //   [::FFFF:ipv4 address]
+//             //   [FE80:: ]   link local.
+//             //   [FEC0:: ]   site local.
+//             //   others?
+//             if (IN6_IS_ADDR_V4MAPPED(&inetAddr6))
+//             {
+//                 int8_t *pAddr = (int8_t *)&inetAddr6;
+//                 uint32_t remoteAddress = htonl(*(int32_t *)(pAddr + 12));
+//                 std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
+//                 result = GetNonLinkLocalAddressForIp4Interface(interfaceName);
+//             }
+//             else
+//             {
+
+
+//                 std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
+//                 result =  GetNonLinkLocalAddressForInterface(interfaceName);
+//             }
+//         }
+//     }
+//     if (result == "")
+//     {
+//         result = GetNonLinkLocalAddressForInterface("");
+//     }
+//     return result;
+// }
+
+
+std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
 {
     std::string address = fromAddress;
     std::string result;
@@ -472,3 +616,120 @@ std::string pipedal::GetInterfaceIpv4Address(const std::string& interfaceName)
 {
     return GetNonLinkLocalAddressForIp4Interface(interfaceName);
 }
+
+
+// std::string getNonLinkLocalAddress(const std::string&address, const std::string&interface)
+// {
+//     if (!interface.empty())
+//     {
+//         return GetNonLinkLocalAddressForInterface(interface);
+//     }
+//     return GetNonLinkLocalAddress(address);
+
+// }
+
+static bool parseForLinkLocalUrl(const std::string&url,std::string*prefix, std::string *suffix)
+{
+    auto iter = url.begin();
+    auto end = url.end();
+
+    // proto:
+    while (true)
+    {
+        if (iter == end) return false;
+        if (*iter == ':')
+        {
+            ++iter;
+            break;
+        }
+        ++iter;
+    }
+
+    //  //
+    if (iter == end || *iter != '/') return false;
+    ++iter;
+    if (iter == end || *iter != '/') return false;
+    ++iter;
+
+
+    // (user@)? of id: http://user@[::1]/
+    if (*iter != '[') {
+        while (true)
+        {
+            if (iter == end || *iter == '/') return false;
+            if (*iter == '@')
+            {
+                ++iter;
+                break;
+            }
+            ++iter;
+        }
+    }
+    // [fe80:*]
+    if (iter == end || *iter != '[')
+    {
+        return false;
+    }
+    auto endOfPrefix = iter;
+    ++iter;
+
+    // fe80: ...
+    if (iter == end  || !(*iter == 'f' ||  *iter == 'F')) return false;
+    ++iter;
+    if (iter == end  || !(*iter == 'e' ||  *iter == 'E')) return false;
+    ++iter;
+    if (iter == end  || *iter != '8' ) return false;
+    ++iter;
+    if (iter == end  || *iter != '0' ) return false;
+    ++iter;
+    if (iter == end  || *iter != ':' ) return false;
+    ++iter;
+
+    while (true)
+    {
+        if (iter == end) break;
+        char c = *iter;
+        bool valid = (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || c >= '0' && c <= '9' || c == ':';
+        if (!valid) break;
+        ++iter;
+    }
+    // potentially a scope ID
+    // [::1%wlan0]
+    auto endOfAddress = iter;
+    if (iter != end && *iter == '%')
+    {
+        while (true) {
+            if (iter == end) return false;
+            if (*iter == ']') break;
+            ++iter;
+        }
+    }
+    // made it!
+    if (iter == end || *iter != ']') return false;
+    ++iter;
+
+    auto startOfRest = iter;
+
+    *prefix = std::string(url.begin(),endOfPrefix);
+    *suffix = std::string(startOfRest,url.end());
+    return true;
+
+}
+bool pipedal::RemapLinkLocalUrl(
+    const boost::asio::ip::address &boostAddress,
+    const std::string&url,std::string*outputUrl)
+{
+
+    std::string prefix, suffix;
+    if (!parseForLinkLocalUrl(url,&prefix,&suffix)) return false;
+
+    boost::asio::ip::address_v6 addressV6 = boostAddress.to_v6();
+
+    std::string directAddress;
+    directAddress = ::GetNonLinkLocalAddress(addressV6);
+
+    *outputUrl =  SS(prefix << directAddress << suffix);
+    return true;
+}
+
+

@@ -20,18 +20,24 @@
 #pragma once
 
 #include <string>
-
+#include <utility>
+#include <boost/asio.hpp>
 namespace pipedal {
 
 
     std::string GetInterfaceIpv4Address(const std::string& interfaceName);
 
 
-    bool IsLinkLocalAddress(const std::string fromAddress);
+    // bool IsLinkLocalAddress(const std::string &fromAddress);
 
-    std::string GetNonLinkLocalAddress(const std::string fromAddress);
+    std::string GetNonLinkLocalAddress(const std::string& fromAddress);
 
     bool IsOnLocalSubnet(const std::string&fromAddress);
+
+
+    bool RemapLinkLocalUrl(
+        const boost::asio::ip::address &address,
+        const std::string&url,std::string*outputUrl);
 
     bool ParseHttpAddress(const std::string address,
         std::string *pUser,
