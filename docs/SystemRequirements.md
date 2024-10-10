@@ -13,14 +13,12 @@ PiPedal has been tested on the following Operating Systems:
 
 * Raspberry Pi OS 64-bit Bookworm
 
-Older versions of PiPedal (v1.1.31) have been tested on the following operating systems:
+Older versions of PiPedal (v1.1.31) have been tested on the following operating systems, but are no longer supported:
 
 * Ubuntu 21.04 or later, 64-bit
 * Raspberry PI OS 64-bit bullseye
 
-Compatibility testing on these OS's for current versions of PiPedal is ongoing.
-
-64-bit operating systems are preferred, as they delivery significantly higher performance than 32-bit platforms.
 
 --------
-[Up](Documentation.md) | [Installing PiPedal >>](Installing.md)
+[<< Changing the Web Server Port](AboutPiPedal.md)  | [Up](Documentation.md) | [Installing PiPedal >>](Installing.md)
+

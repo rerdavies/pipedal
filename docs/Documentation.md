@@ -3,6 +3,8 @@
 
 &nbsp;
 
+#### [What PiPedal Is](AboutPiPedal.md)
+
 #### [System Requirements](SystemRequirements.md)
 
 #### [Installing PiPedal](Installing.md)
