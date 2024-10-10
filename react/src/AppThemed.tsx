@@ -17,12 +17,12 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { SyntheticEvent } from 'react';
 import { WithStyles } from '@mui/styles';
 
 import './AppThemed.css';
-
+//import {alpha} from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
+import Modal from '@mui/material/Modal';
 import Toolbar from '@mui/material/Toolbar';
 import CssBaseline from '@mui/material/CssBaseline';
 import Typography from '@mui/material/Typography';
@@ -94,6 +94,17 @@ const appStyles = (theme: Theme) => createStyles({
     listSubheader: {
         backgroundImage: "linear-gradient(255,255,255,0.15),rgba(255,255,255,0.15)"
     },
+    loadingMask: {
+        position: "absolute",
+        minHeight: "10em",
+        left: "0px",
+        top: "0px",
+        right: "0px",
+        bottom: "0px",
+        opacity: 0.8,
+        background:
+            isDarkMode() ? "#222" : "#DDD",
+    },
     loadingContent: {
         display: "block",
         position: "absolute",
@@ -102,7 +113,6 @@ const appStyles = (theme: Theme) => createStyles({
         top: "0px",
         width: "100%",
         height: "100%",
-        background: isDarkMode() ? "#222" : "#DDD",
         opacity: "0.95",
         justifyContent: "center",
         textAlign: "center",
@@ -168,22 +178,22 @@ const appStyles = (theme: Theme) => createStyles({
 
     },
     loadingBox: {
-        position: "relative",
+        display: "flex",
+        flexFlow: "column nowrap",
+        position: "absolute",
         top: "20%",
+        left: 0, right: 0,
         color: isDarkMode() ? theme.palette.text.secondary : "#888",
         // border: "3px solid #888",
-        borderRadius: "12px",
-        padding: "12px",
-        justifyContent: "center",
+        alignItems: "center",
         textAlign: "center",
         opacity: 0.8,
-        zIndex: 2010
 
     },
     loadingBoxItem: {
-        justifyContent: "center",
+        display: "flex", flexFlow: "row nowrap",
+        alignItems: "center",
         textAlign: "center",
-        zIndex: 2010
 
     },
 
@@ -249,9 +259,8 @@ function setFullScreen(value: boolean) {
 
     if (docEl.requestFullscren) // the latest offical api.
     {
-        if (value)
-        {
-            window.document.documentElement.requestFullscreen({navigationUI: "show"});
+        if (value) {
+            window.document.documentElement.requestFullscreen({ navigationUI: "show" });
         } else {
             window.document.exitFullscreen();
         }
@@ -269,10 +278,10 @@ function setFullScreen(value: boolean) {
 }
 
 
-function preventDefault(e: SyntheticEvent): void {
-    e.stopPropagation();
-    e.preventDefault();
-}
+// function preventDefault(e: SyntheticEvent): void {
+//     e.stopPropagation();
+//     e.preventDefault();
+// }
 
 type AppState = {
     zoomedControlInfo: ZoomedControlInfo | undefined;
@@ -494,7 +503,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     }
     handleDrawerSelectBank() {
-     
+
         this.setState({
             bankDialogOpen: true,
             editBankDialogOpen: false
@@ -692,8 +701,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
         let result: BankIndexEntry[] = [];
 
-        if (nListEntries <= nDisplayEntries)
-        {
+        if (nListEntries <= nDisplayEntries) {
             for (let i = 0; i < nListEntries; ++i) {
                 result.push(entries[i]);
             }
@@ -706,15 +714,14 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                     break;
                 }
             }
-    
-            let minN = selectedIndex-Math.floor(nDisplayEntries/2);
+
+            let minN = selectedIndex - Math.floor(nDisplayEntries / 2);
             if (minN < 0) minN = 0;
             let maxN = minN + nDisplayEntries;
             if (maxN > entries.length) {
                 maxN = entries.length;
             }
-            for (let i = minN; i < maxN; ++i)
-            {
+            for (let i = minN; i < maxN; ++i) {
                 result.push(entries[i]);
             }
         }
@@ -755,7 +762,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             <div style={{
                 colorScheme: isDarkMode() ? "dark" : "light", // affects scrollbar color
                 minHeight: 300, minWidth: 300,
-                position: "absolute", left:0, top: 0, right:0,bottom:0,
+                position: "absolute", left: 0, top: 0, right: 0, bottom: 0,
                 overscrollBehavior: this.state.isDebug ? "auto" : "none"
             }}
                 onContextMenu={(e) => {
@@ -1051,67 +1058,62 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 </DialogEx>
 
 
-                <div className={classes.errorContent} style={{ zIndex: 1200, display: this.state.displayState === State.Error ? "flex" : "none" }}
-                    onMouseDown={preventDefault} onKeyDown={preventDefault} 
+                <Modal open={this.state.displayState === State.Error}
+                    aria-label="fatal-error"
+                    aria-describedby="aria-error-text"
                 >
-                    <div className={classes.errorContentMask} />
-                    <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
-                    <div className={classes.errorMessageBox} style={{ position: "relative" }} >
-                        <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 3, color: "#A00" }}>
-                            <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
-                        </div>
-                        <div style={{ marginLeft: 40, marginTop: 3 }}>
-                            <p className={classes.errorText}>
-                                Error: {this.state.errorMessage}
-                            </p>
-                        </div>
-                        <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
-                            <Button variant='contained' color="primary"
-                                onClick={() => this.handleReload()} >
-                                Reload
-                            </Button>
+                    <div style={{
+                        display: "flex", flexFlow: "column nowrap",
+                        position: "absolute", top: 0, left: 0, right: 0, bottom: 0
+                    }}
+                    >
+                        <div className={classes.loadingMask} />
+                        <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
+                        <div className={classes.errorMessageBox} style={{ position: "relative" }} >
+                            <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 3, color: "#A00" }}>
+                                <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
+                            </div>
+                            <div style={{ marginLeft: 40, marginTop: 3 }}>
+                                <p className={classes.errorText} id="aria-error-text">
+                                    Error: {this.state.errorMessage}
+                                </p>
+                            </div>
+                            <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
+                                <Button variant='contained' color="primary"
+                                    onClick={() => this.handleReload()} >
+                                    Reload
+                                </Button>
 
+                            </div>
                         </div>
-
+                        <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
                     </div>
 
-                    <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
-
-                </div>
-                {/* initial load mask*/}
-                <div className={classes.errorContent} style={{ display: this.state.displayState === State.Loading ? "block" : "none",zIndex: 1201 }}>
-                    <div className={classes.errorContentMask} />
-                    <div className={classes.loadingBox}>
-                        <div className={classes.loadingBoxItem}>
-                            <CircularProgress color="inherit" className={classes.loadingBoxItem} />
-                        </div>
-                        <Typography noWrap variant="body2" className={classes.loadingBoxItem}>
-                            Loading...
-                        </Typography>
-                    </div>
-                </div>
+                </Modal >
                 {/* Reloading mask */}
-                <div className={classes.errorContent} style={{
-                    zIndex: 1201,
-                    display: (
-                        wantsReloadingScreen(this.state.displayState)
-                            ? "block" : "none"
-                    )
-                }}
+                < Modal
+                    open={wantsReloadingScreen(this.state.displayState) || this.state.displayState === State.Loading}
+                    aria-label="loading"
+                    aria-describedby="reloading-modal-description"
                 >
-                    <div className={classes.errorContentMask} />
-
-                    <div className={classes.loadingBox}>
-                        <div className={classes.loadingBoxItem}>
-                            <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                    <div style={{display: "flex",flexFlow: "column nowrap", alignItems: "center"}}>
+                        <div className={classes.loadingMask} />
+                        <div className={classes.loadingBox}>
+                            <div className={classes.loadingBoxItem}>
+                                <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                            </div>
+                            <Typography id="reloading-modal-description" display="block" noWrap variant="body2" className={classes.progressText}>
+                                {
+                                    this.state.displayState === State.Loading ?
+                                        "Loading..."
+                                        :this.getReloadingMessage()
+                                }
+                            </Typography>
                         </div>
-                        <Typography display="block" noWrap variant="body2" className={classes.progressText}>
-                            {this.getReloadingMessage()}
-                        </Typography>
                     </div>
-                </div>
-
+                </Modal >
             </div >
+
         );
     }
 });
