@@ -8,6 +8,9 @@ PiPedal uses LV2 audio plugins. There are literally thousands of freely availabl
 
 By default, PiPedal comes with a basic set of plugins from the ToobAmp plugin collection. You will probably want to install more.
 
+Visit [PatchStorage](https://patchstorage.com/platform/lv2-plugins/) to download LV2 pluginst that have been precompiled for use on Raspberry Pi. To see LV2 plugins
+that are specifically for Raspberry Pi, click on the `Target` dropdown button and select `rpi-aarch64`.
+
 Here is a brief list of particularly recommended plugin collections.dhcp
 
 | Collection                      | To Install                            | Description      |
