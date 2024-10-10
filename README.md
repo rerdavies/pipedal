@@ -35,7 +35,7 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 ----
 &nbsp;
 
-#### [What PiPedal Is](https://rerdavies.github.io/pipedal/AboutPiPedal.md)
+### [What PiPedal Is](https://rerdavies.github.io/pipedal/AboutPiPedal.html)
 ### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.html)
 ### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.html)
 ### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.html)
