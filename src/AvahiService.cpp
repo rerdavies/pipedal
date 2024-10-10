@@ -482,8 +482,8 @@ void AvahiService::Wait()
         {
             default:
             case ServiceState::Unitialized:
-                throw std::runtime_error("Invalid state");
-
+                done = true;
+                break;
             case ServiceState::Initializing:
             case ServiceState::Settling:
             case ServiceState::Requested:
@@ -503,6 +503,8 @@ void AvahiService::Wait()
         if (clock::now() > waitTime)
         {
             Lv2Log::error("DNS/SD announcement timed out.");
+            done = true;
+            break;
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(20));

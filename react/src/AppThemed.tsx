@@ -36,7 +36,9 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import List from '@mui/material/List';
 import Divider from '@mui/material/Divider';
-import ListItem from '@mui/material/ListItem';
+// import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -403,7 +405,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         return false;
     }
 
-    onOpenBank(bankId: number) {
+    handleSpecificBank(bankId: number) {
+
         this.model_.openBank(bankId)
             .catch((error) => this.model_.showAlert(error.toString()));
 
@@ -491,17 +494,15 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     }
     handleDrawerSelectBank() {
+     
         this.setState({
-            isDrawerOpen: false,
             bankDialogOpen: true,
             editBankDialogOpen: false
         });
 
     }
     handleDrawerDonationClick() {
-        this.setState({
-            isDrawerOpen: false,
-        });
+        this.hideDrawer(false);
         if (this.model_.isAndroidHosted()) {
             this.model_.showAndroidDonationActivity();
         } else {
@@ -514,14 +515,12 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     handleDrawerAboutClick() {
         this.setState({
-            isDrawerOpen: false,
             aboutDialogOpen: true
         });
 
     }
     handleDrawerRenameBank() {
         this.setState({
-            isDrawerOpen: false,
             renameBankDialogOpen: true,
             saveBankAsDialogOpen: false
         });
@@ -529,7 +528,6 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     }
     handleDrawerSaveBankAs() {
         this.setState({
-            isDrawerOpen: false,
             renameBankDialogOpen: false,
             saveBankAsDialogOpen: true
         });
@@ -657,6 +655,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         let bankEntries = Math.floor((height - K) / ENTRY_HEIGHT);
         if (bankEntries < 1) bankEntries = 1;
         if (bankEntries > 7) bankEntries = 7;
+        if (bankEntries === 2) bankEntries = 1;
+
         this.setState({ bankDisplayItems: bankEntries });
 
     }
@@ -686,27 +686,35 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     }
 
     shortBankList(banks: BankIndex): BankIndexEntry[] {
-        let n = this.state.bankDisplayItems;
+        let nDisplayEntries = this.state.bankDisplayItems;
         let entries = banks.entries;
-        if (entries.length < n + 1) {  // +1 for the .... entry.
-            return entries;
-        }
+        let nListEntries = entries.length;
+
         let result: BankIndexEntry[] = [];
-        let selectedIndex = -1;
-        for (let i = 0; i < entries.length; ++i) {
-            if (entries[i].instanceId === banks.selectedBank) {
-                selectedIndex = i;
-                break;
-            }
-        }
-        if (n > entries.length) n = entries.length;
-        if (selectedIndex > n) {
-            for (let i = 0; i < n - 1; ++i) {
+
+        if (nListEntries <= nDisplayEntries)
+        {
+            for (let i = 0; i < nListEntries; ++i) {
                 result.push(entries[i]);
             }
-            result.push(entries[selectedIndex]);
         } else {
-            for (let i = 0; i < n; ++i) {
+            // a subset of the list CENTERED on the currently selected entry.
+            let selectedIndex = 0;
+            for (let i = 0; i < nListEntries; ++i) {
+                if (entries[i].instanceId === banks.selectedBank) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+    
+            let minN = selectedIndex-Math.floor(nDisplayEntries/2);
+            if (minN < 0) minN = 0;
+            let maxN = minN + nDisplayEntries;
+            if (maxN > entries.length) {
+                maxN = entries.length;
+            }
+            for (let i = minN; i < maxN; ++i)
+            {
                 result.push(entries[i]);
             }
         }
@@ -831,11 +839,11 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                 </div>
                             )}
                         <TemporaryDrawer position='left' title="PiPedal"
-                            is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
+                            is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(false); }} >
 
                             <List>
-                                <ListItem button key='PerformanceView'
-                                    onClick={(ev) => {
+                                <ListItemButton key='PerformanceView'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.setState({ performanceView: true });
@@ -844,7 +852,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <FxAmplifierIcon color='inherit' className={classes.menuIcon} style={{ width: 24, height: 24 }} />
                                     </ListItemIcon>
                                     <ListItemText primary='Performance View' />
-                                </ListItem>
+                                </ListItemButton>
                             </List>
                             <Divider />
                             <ListSubheader className="listSubheader" component="div" id="xnested-list-subheader" style={{ lineHeight: "24px", height: 24, background: "rgba(12,12,12,0.0)" }}
@@ -856,20 +864,24 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                 {
                                     shortBankList.map((bank) => {
                                         return (
-                                            <ListItem button key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
-                                                onClick={() => this.onOpenBank(bank.instanceId)}
+                                            <ListItemButton key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
+                                                onClick={(ev: any) => {
+                                                    ev.stopPropagation();
+                                                    this.hideDrawer(false);
+                                                    this.handleSpecificBank(bank.instanceId);
+                                                }}
                                             >
 
                                                 <ListItemText primary={bank.name} />
-                                            </ListItem>
+                                            </ListItemButton>
 
                                         );
                                     })
                                 }
                                 {
                                     showBankSelectDialog && (
-                                        <ListItem button key={'bankDOTDOTDOT'} selected={false}
-                                            onClick={(ev) => {
+                                        <ListItemButton key={'bankDOTDOTDOT'} selected={false}
+                                            onClick={(ev: any) => {
                                                 ev.stopPropagation();
                                                 this.hideDrawer(true);
                                                 this.handleDrawerSelectBank();
@@ -877,7 +889,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         >
 
                                             <ListItemText primary={"..."} />
-                                        </ListItem>
+                                        </ListItemButton>
 
 
                                     )
@@ -885,8 +897,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                             </List>
                             <Divider />
                             <List>
-                                <ListItem button key='RenameBank'
-                                    onClick={(ev) => {
+                                <ListItemButton key='RenameBank'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerRenameBank()
@@ -895,9 +907,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='Rename bank' />
-                                </ListItem>
-                                <ListItem button key='SaveBank'
-                                    onClick={(ev) => {
+                                </ListItemButton>
+                                <ListItemButton key='SaveBank'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerSaveBankAs();
@@ -906,9 +918,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <SaveBankAsIcon color="inherit" className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='Save as new bank' />
-                                </ListItem>
-                                <ListItem button key='EditBanks'
-                                    onClick={(ev) => {
+                                </ListItemButton>
+                                <ListItemButton key='EditBanks'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerManageBanks();
@@ -917,12 +929,12 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <EditBanksIcon color="inherit" className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='Manage banks...' />
-                                </ListItem>
+                                </ListItemButton>
                             </List>
                             <Divider />
                             <List>
-                                <ListItem button key='Settings'
-                                    onClick={(ev) => {
+                                <ListItemButton key='Settings'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerSettingsClick()
@@ -931,9 +943,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <SettingsIcon color="inherit" className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='Settings' />
-                                </ListItem>
-                                <ListItem button key='About'
-                                    onClick={(ev) => {
+                                </ListItemButton>
+                                <ListItemButton key='About'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerAboutClick();
@@ -942,18 +954,17 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <HelpOutlineIcon color="inherit" className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='About' />
-                                </ListItem>
-                                <ListItem button key='Donations'
-                                    onClick={(ev) => {
+                                </ListItemButton>
+                                <ListItemButton key='Donations'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
-                                        this.hideDrawer(true);
                                         this.handleDrawerDonationClick();
                                     }}>
                                     <ListItemIcon >
                                         <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
                                     </ListItemIcon>
                                     <ListItemText primary='Donations' />
-                                </ListItem>
+                                </ListItemButton>
                             </List>
 
                         </TemporaryDrawer>
