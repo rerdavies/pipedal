@@ -31,6 +31,8 @@ jobs:
         sudo apt install libwebsocketpp-dev authbind
         sudo apt install libsdbus-c++-dev libsdbus-c++-bin
         sudo apt install libavahi-client-dev libzip-dev libicu-dev apt
+        
+        sudo apt install -y librsvg2-dev 
         git submodule update --init --recursive 
         ./react-config
 
