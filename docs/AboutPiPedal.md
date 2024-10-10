@@ -30,7 +30,9 @@ So let's just to put all of that in perspective, because the results of all of t
 
 And now you can plug in a USB audio adapter (not free, I'm afraid) into your Raspberry Pi (also not free, but very cheap), and run those incredible amp models in realtime with low latency using PiPedal (which is also free). That isn't entirely what PiPedal started off as. But at this particular moment in time, that's what PiPedal is. 
 
-And yes, all of the easy effects (reverb, delay, chorus, flangers, modulators, phasers, etc. etc. etc) are either included with PiPedal, or are available for free as LV2 plugins that can also be downloaded from the internet. And Machine Learning plugins also provide good emulations of overdrive, fuzz pedals and other distortion effects, so that's covered. And convolution reverb and cab IR effects aren't particularly easy, but once you've coverd that, you pretty much have it all. But the living heart and core of a guitar stomp box is the amp emulations, and how good they are. On Pipedal, thanks to Jatin Chowdhury's escaped monster, they are very good indeed.
+And yes, all of the easy effects (reverb, delay, chorus, flangers, modulators, phasers, etc. etc. etc) are either included with PiPedal, or are available for free as LV2 plugins that can also be downloaded from the internet. And Machine Learning plugins also provide good emulations of overdrive, fuzz pedals and other distortion effects, so that's covered. And convolution reverb and cab IR effects aren't particularly easy, but once you've coverd that, you pretty much have it all. 
+
+But the living heart and soul of a guitar stomp box is the amp emulations, and how good they are. On Pipedal, thanks to Jatin Chowdhury's escaped monster, they are very good indeed.
 
 ### What PiPedal Is
 
