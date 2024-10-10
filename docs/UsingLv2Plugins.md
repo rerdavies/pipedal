@@ -10,7 +10,7 @@ To get you started, PiPedal comes with a basic set of plugins from the ToobAmp p
 
 LV2 Plugins are available from a wide variety of sources. Some are available through apt installs; others can be downloaded from a variety places on the web. Some are available through github, and some even require you to build the plugins yourself. Pipedal will automatically detect freshly installed LV2 plugins. New plugins should show up in the list of available plugins a few seconds after the install completes. You don't need to restart PiPedal after installing a new plugin.
 
-A good place to get started is the [PatchStorage](https://patchstorage.com/platform/lv2-plugins/) website. PatchStorage provides a large number of LV2 plugins that have been precompiled and are readty to install on Raspberry Pi. To see LV2 plugins that are specifically for Raspberry Pi on PatchStorage, click on the `Target` dropdown button and select `rpi-aarch64`. 
+A good place to get started is the [PatchStorage](https://patchstorage.com/platform/lv2-plugins/) website. PatchStorage provides hundreds of LV2 plugins that have been precompiled and are readty to install on Raspberry Pi. To see LV2 plugins that are specifically for Raspberry Pi on PatchStorage, click on the `Target` dropdown button and select `rpi-aarch64`. 
 
 Here is a brief list of other particularly recommended plugin collections.
 
