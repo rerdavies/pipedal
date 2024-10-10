@@ -5,18 +5,13 @@ following conditions:
 
 - Must have mono or stereo audio inputs and outputs.
 
-- Must not be MIDI instruments or have CV (Control Voltage) inputs or outputs.
+- Must not be a MIDI instrument or have CV (Control Voltage) inputs or outputs.
 
-- Must be remotely controllable (no hard dependency on GUI-only controls), which is true of the vast majority of LV2 plugins.
+- Must be remotely controllable (no hard dependency on GUI-only controls), which is true of all but a tiny minority of LV2 plugins.
 
-If you install new LV2 plugins, you will have to restart the PiPedal web service (or reboot the machine) to get them to show up in the web interface.
+If you install a new LV2 plugin, PiPedal will detect the change and make it available immediately. Wait a few seconds, and the newly-installed plugin should show up in the list of avaialable plugins.
 
-```
-   sudo pipedalconfig --restart
-```
-
-Although most LV2 plugins provide GUI interfaces, when running on a Linux desktop, the LV2 plugin standard is specifically designed to allow remote control 
-without using the provided desktop GUI interface. And all but a tiny minority of LV2 plugins (most of them analyzers, unfortunately) support this.
+PiPedal does all plugins to use custom user interfaces.  However, we would be pleased to collaborate with developers who need more than the basic set of controls. Please contact rerdaves at gmail.com for further details.
 
 --------
 [<< Using LV2 Audio Plugins](UsingLv2Plugins.md)  | [Up](Documentation.md) | [BuildingPiPedal from Source >>](BuildingPiPedalFromSource.md)
