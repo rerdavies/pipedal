@@ -73,6 +73,20 @@ public:
         result.symbol_ = symbol;
         return result;
     }
+    bool operator==(const MidiBinding&other) const
+    {
+        return this->symbol_ == other.symbol_
+        && this->channel_ == other.channel_
+        && this->bindingType_ == other.bindingType_
+        && this->note_ == other.note_ 
+        && this->control_ == other.control_
+        && this->minValue_ == other.minValue_
+        && this->maxValue_ == other.maxValue_
+        && this->rotaryScale_ == other.rotaryScale_
+        && this->linearControlType_ == other.linearControlType_
+        && this->switchControlType_ == other.switchControlType_;
+
+    }
     GETTER_SETTER(channel);
     GETTER_SETTER_REF(symbol);
     GETTER_SETTER(bindingType);

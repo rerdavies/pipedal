@@ -1485,7 +1485,7 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
                             std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
                             for (auto &subscriber : t)
                             {
-                                t[i]->OnMidiValueChanged(instanceId, symbol, value);
+                                subscriber->OnMidiValueChanged(instanceId, symbol, value);
                             }
 
                             this->SetPresetChanged(-1, true);

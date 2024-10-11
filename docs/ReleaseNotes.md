@@ -1,10 +1,11 @@
 # Release Notes
 
-## PiPedal 1.3.55 Release
+## PiPedal 1.3.56 Release
 
 More snapshot problems.
 
 Bug fixes:
+- MIDI bindings cause crash.
 - Crashes related to snapshots and split controls.
 - Loading/reloading/error screens go on top of Snapshot dialogs.
   

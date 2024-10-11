@@ -327,6 +327,10 @@ bool PedalboardItem::IsStructurallyIdentical(const PedalboardItem&other) const
     {
         return false;
     }
+    if (this->midiBindings() != other.midiBindings())
+    {
+        return false;
+    }
     if (this->isSplit()) // so is the other by virtue of idential uris.
     {
         // provisionally, it seems ok to change the split type.
