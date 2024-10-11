@@ -358,7 +358,6 @@ namespace pipedal
 
         virtual void SetBypass(bool enabled)
         {
-            throw PiPedalArgumentException("Not implmented. Should not have been called.");
         }
 
         virtual float GetOutputControlValue(int index) const {

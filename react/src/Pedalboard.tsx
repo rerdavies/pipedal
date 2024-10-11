@@ -206,6 +206,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
 
 export class SnapshotValue {
     deserialize(input: any): SnapshotValue {
+        this.isEnabled = input.isEnabled;
         this.instanceId = input.instanceId;
         this.controlValues = ControlValue.deserializeArray(input.controlValues);
         this.lv2State = input.lv2state;

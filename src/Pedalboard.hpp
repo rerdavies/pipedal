@@ -28,6 +28,7 @@
 namespace pipedal {
     class SnapshotValue;
     class Snapshot;
+    class PluginHost;
     
 #define SPLIT_PEDALBOARD_ITEM_URI  "uri://two-play/pipedal/pedalboard#Split"
 #define EMPTY_PEDALBOARD_ITEM_URI  "uri://two-play/pipedal/pedalboard#Empty"
@@ -102,10 +103,13 @@ public:
 public:
     ControlValue*GetControlValue(const std::string&symbol);
     const ControlValue*GetControlValue(const std::string&symbol) const;
+    bool SetControlValue(const std::string&key, float value);
+
 
     bool IsStructurallyIdentical(const PedalboardItem&other) const;
 
     void ApplySnapshotValue(SnapshotValue*snapshotValue);
+    void ApplyDefaultValues(PluginHost&pluginHost);
     bool hasLv2State() const {
         return lv2State_.isValid_ != 0;
     }
@@ -203,7 +207,7 @@ public:
     std::vector<PedalboardItem*>GetAllPlugins();
 
     bool HasItem(int64_t pedalItemid) const { return GetItem(pedalItemid) != nullptr; }
-    bool ApplySnapshot(int64_t snapshotIndex);
+    bool ApplySnapshot(int64_t snapshotIndex, PluginHost &pluginHost);
 
     GETTER_SETTER_REF(name)
     GETTER_SETTER_VEC(items)

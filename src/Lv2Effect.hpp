@@ -293,7 +293,10 @@ namespace pipedal
 
         virtual float GetOutputControlValue(int portIndex) const
         {
-            return controlValues[portIndex];
+            if (portIndex >= 0 && portIndex < controlValues.size()) {
+                return controlValues[portIndex];
+            }
+            return 0;
         }
 
         virtual void SetBypass(bool bypass)

@@ -20,6 +20,9 @@
 #include "pch.h"
 #include "Pedalboard.hpp"
 #include "AtomConverter.hpp"
+#include "PluginHost.hpp"
+#include "AtomConverter.hpp"
+#include "SplitEffect.hpp"
 
 
 using namespace pipedal;
@@ -87,6 +90,19 @@ ControlValue* PedalboardItem::GetControlValue(const std::string&symbol)
     return nullptr;
 }
 
+
+bool PedalboardItem::SetControlValue(const std::string&symbol, float value)
+{
+    ControlValue*controlValue = GetControlValue(symbol);
+    if (controlValue == nullptr) return false;
+    if (controlValue->value() != value)
+    {
+        controlValue->value(value);
+        return true;
+    }
+    return false;
+}
+
 const ControlValue* PedalboardItem::GetControlValue(const std::string&symbol) const
 {
     for (size_t i = 0; i < this->controlValues().size(); ++i)
@@ -117,14 +133,7 @@ bool Pedalboard::SetControlValue(int64_t pedalItemId, const std::string &symbol,
 {
     PedalboardItem*item = GetItem(pedalItemId);
     if (!item) return false;
-    ControlValue*controlValue = item->GetControlValue(symbol);
-    if (controlValue == nullptr) return false;
-    if (controlValue->value() != value)
-    {
-        controlValue->value(value);
-        return true;
-    }
-    return false;
+    return item->SetControlValue(symbol,value);
 }
 
 
@@ -190,12 +199,12 @@ bool IsPedalboardSplitItem(const PedalboardItem*self, const std::vector<Pedalboa
     return self->uri() == SPLIT_PEDALBOARD_ITEM_URI;
 }
 
-bool Pedalboard::ApplySnapshot(int64_t snapshotIndex)
+bool Pedalboard::ApplySnapshot(int64_t snapshotIndex, PluginHost&pluginHost)
 {
     if (snapshotIndex < 0 || 
         snapshotIndex >= this->snapshots_.size() || 
-        this->snapshots_[snapshotIndex] == nullptr ||
-        this->selectedSnapshot() == snapshotIndex)
+        this->snapshots_[snapshotIndex] == nullptr 
+    )
     {
         return false;
     }
@@ -210,14 +219,46 @@ bool Pedalboard::ApplySnapshot(int64_t snapshotIndex)
     auto plugins = this->GetAllPlugins();
     for (PedalboardItem *pedalboardItem: plugins)
     {
-        SnapshotValue*snapshotValue = indexedValues[pedalboardItem->instanceId()];
-        if (snapshotValue)
+        if (!pedalboardItem->isEmpty())
         {
-            pedalboardItem->ApplySnapshotValue(snapshotValue);
+            SnapshotValue*snapshotValue = indexedValues[pedalboardItem->instanceId()];
+            if (snapshotValue)
+            {
+                pedalboardItem->ApplySnapshotValue(snapshotValue);
+            } else {
+                pedalboardItem->ApplyDefaultValues(pluginHost);
+            }
         }
     }
     return true;
 }
+
+void PedalboardItem::ApplyDefaultValues(PluginHost&pluginHost)
+{
+    if (isEmpty()) return;
+    auto pluginInfo = pluginHost.GetPluginInfo(this->uri());
+    if (!pluginInfo)
+    {
+        if (this->isSplit())
+        {
+            pluginInfo = GetSplitterPluginInfo();
+        }
+    }
+    this->isEnabled(true);
+    if (pluginInfo)
+    {
+        for (auto &port: pluginInfo->ports())
+        {
+            this->SetControlValue(port->symbol(),port->default_value());
+        }
+        // a cheat. this isn't actually true, but close enough.
+        for (auto &pathProperty: this->pathProperties_)
+        {
+            pathProperties_[pathProperty.first] = AtomConverter::EmptyPathstring();
+        }
+    }
+}
+
 
 void PedalboardItem::ApplySnapshotValue(SnapshotValue*snapshotValue)
 {
@@ -239,6 +280,16 @@ void PedalboardItem::ApplySnapshotValue(SnapshotValue*snapshotValue)
     {
         this->lv2State(snapshotValue->lv2State_);
         this->stateUpdateCount(this->stateUpdateCount()+1);
+    }
+    for (auto&property: snapshotValue->pathProperties_)
+    {
+        if (property.second == "null")
+        {
+            this->pathProperties_[property.first] = AtomConverter::EmptyPathstring();
+
+        } else {
+            this->pathProperties_[property.first] = property.second;
+        }
     }
     this->isEnabled(snapshotValue->isEnabled_);
 
@@ -278,17 +329,19 @@ bool PedalboardItem::IsStructurallyIdentical(const PedalboardItem&other) const
     }
     if (this->isSplit()) // so is the other by virtue of idential uris.
     {
-        auto myValue = this->GetControlValue("splitType");
-        auto otherValue = other.GetControlValue("splitType");
-        if (myValue == nullptr || otherValue == nullptr) // actually an error.
-        {
-            return false;
-        }
-        // split type changes potentially trigger buffer allocation changes, 
-        // so different split types are not structurally identical.
-        if (myValue->value() != otherValue->value()) {
-            return false; 
-        }
+        // provisionally, it seems ok to change the split type.
+        // auto myValue = this->GetControlValue("splitType");
+        // auto otherValue = other.GetControlValue("splitType");
+        // if (myValue == nullptr || otherValue == nullptr) // actually an error.
+        // {
+        //     return false;
+        // }
+
+        // // split type changes potentially trigger buffer allocation changes, 
+        // // so different split types are not structurally identical.
+        // if (myValue->value() != otherValue->value()) {
+        //     return false; 
+        // }
         if (topChain().size() != other.topChain().size())
         {
             return false;
@@ -407,17 +460,19 @@ Snapshot Pedalboard::MakeSnapshotFromCurrentSettings(const Pedalboard &previousP
 {
     Snapshot snapshot;
     // name and color don't matter. this is strictly for loading purposes.
-    for (auto &item : this->items())
+    auto items = this->GetAllPlugins();
+    for (auto item : items)
     {
-        item.AddToSnapshotFromCurrentSettings(snapshot);
+        item->AddToSnapshotFromCurrentSettings(snapshot);
     }
     // a neccesary precondition: the previous pedalboard must have identical structure, 
     // so we can just 
-    size_t index = 0;
-    for (auto&item: previousPedalboard.items_)
-    {
-        item.AddResetsForMissingProperties(snapshot,&index);
-    }
+    // auto items = this->GetAllPlugins();
+
+    // for (auto&item: previousPedalboard.items_)
+    // {
+    //     item.AddResetsForMissingProperties(snapshot,&index);
+    // }
     return snapshot;
 
 }

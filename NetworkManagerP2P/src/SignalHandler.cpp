@@ -20,7 +20,7 @@ static int ToOsSignalType(SignalHandler::SignalType signalType)
         case SignalHandler::Hangup: result = SIGHUP; break;
 
         default:
-            throw std::runtime_error("INvalid signal type");
+            throw std::runtime_error("Invalid signal type");
     }
     return result;
 }

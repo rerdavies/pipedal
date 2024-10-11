@@ -17,12 +17,12 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { SyntheticEvent } from 'react';
 import { WithStyles } from '@mui/styles';
 
 import './AppThemed.css';
-
+//import {alpha} from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
+import Modal from '@mui/material/Modal';
 import Toolbar from '@mui/material/Toolbar';
 import CssBaseline from '@mui/material/CssBaseline';
 import Typography from '@mui/material/Typography';
@@ -36,7 +36,9 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import List from '@mui/material/List';
 import Divider from '@mui/material/Divider';
-import ListItem from '@mui/material/ListItem';
+// import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -92,6 +94,17 @@ const appStyles = (theme: Theme) => createStyles({
     listSubheader: {
         backgroundImage: "linear-gradient(255,255,255,0.15),rgba(255,255,255,0.15)"
     },
+    loadingMask: {
+        position: "absolute",
+        minHeight: "10em",
+        left: "0px",
+        top: "0px",
+        right: "0px",
+        bottom: "0px",
+        opacity: 0.8,
+        background:
+            isDarkMode() ? "#222" : "#DDD",
+    },
     loadingContent: {
         display: "block",
         position: "absolute",
@@ -100,7 +113,6 @@ const appStyles = (theme: Theme) => createStyles({
         top: "0px",
         width: "100%",
         height: "100%",
-        background: isDarkMode() ? "#222" : "#DDD",
         opacity: "0.95",
         justifyContent: "center",
         textAlign: "center",
@@ -166,22 +178,22 @@ const appStyles = (theme: Theme) => createStyles({
 
     },
     loadingBox: {
-        position: "relative",
+        display: "flex",
+        flexFlow: "column nowrap",
+        position: "absolute",
         top: "20%",
+        left: 0, right: 0,
         color: isDarkMode() ? theme.palette.text.secondary : "#888",
         // border: "3px solid #888",
-        borderRadius: "12px",
-        padding: "12px",
-        justifyContent: "center",
+        alignItems: "center",
         textAlign: "center",
         opacity: 0.8,
-        zIndex: 2010
 
     },
     loadingBoxItem: {
-        justifyContent: "center",
+        display: "flex", flexFlow: "row nowrap",
+        alignItems: "center",
         textAlign: "center",
-        zIndex: 2010
 
     },
 
@@ -247,9 +259,8 @@ function setFullScreen(value: boolean) {
 
     if (docEl.requestFullscren) // the latest offical api.
     {
-        if (value)
-        {
-            window.document.documentElement.requestFullscreen({navigationUI: "show"});
+        if (value) {
+            window.document.documentElement.requestFullscreen({ navigationUI: "show" });
         } else {
             window.document.exitFullscreen();
         }
@@ -267,10 +278,10 @@ function setFullScreen(value: boolean) {
 }
 
 
-function preventDefault(e: SyntheticEvent): void {
-    e.stopPropagation();
-    e.preventDefault();
-}
+// function preventDefault(e: SyntheticEvent): void {
+//     e.stopPropagation();
+//     e.preventDefault();
+// }
 
 type AppState = {
     zoomedControlInfo: ZoomedControlInfo | undefined;
@@ -403,7 +414,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         return false;
     }
 
-    onOpenBank(bankId: number) {
+    handleSpecificBank(bankId: number) {
+
         this.model_.openBank(bankId)
             .catch((error) => this.model_.showAlert(error.toString()));
 
@@ -491,17 +503,15 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     }
     handleDrawerSelectBank() {
+
         this.setState({
-            isDrawerOpen: false,
             bankDialogOpen: true,
             editBankDialogOpen: false
         });
 
     }
     handleDrawerDonationClick() {
-        this.setState({
-            isDrawerOpen: false,
-        });
+        this.hideDrawer(false);
         if (this.model_.isAndroidHosted()) {
             this.model_.showAndroidDonationActivity();
         } else {
@@ -514,14 +524,12 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
 
     handleDrawerAboutClick() {
         this.setState({
-            isDrawerOpen: false,
             aboutDialogOpen: true
         });
 
     }
     handleDrawerRenameBank() {
         this.setState({
-            isDrawerOpen: false,
             renameBankDialogOpen: true,
             saveBankAsDialogOpen: false
         });
@@ -529,7 +537,6 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     }
     handleDrawerSaveBankAs() {
         this.setState({
-            isDrawerOpen: false,
             renameBankDialogOpen: false,
             saveBankAsDialogOpen: true
         });
@@ -657,6 +664,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
         let bankEntries = Math.floor((height - K) / ENTRY_HEIGHT);
         if (bankEntries < 1) bankEntries = 1;
         if (bankEntries > 7) bankEntries = 7;
+        if (bankEntries === 2) bankEntries = 1;
+
         this.setState({ bankDisplayItems: bankEntries });
 
     }
@@ -686,27 +695,33 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
     }
 
     shortBankList(banks: BankIndex): BankIndexEntry[] {
-        let n = this.state.bankDisplayItems;
+        let nDisplayEntries = this.state.bankDisplayItems;
         let entries = banks.entries;
-        if (entries.length < n + 1) {  // +1 for the .... entry.
-            return entries;
-        }
+        let nListEntries = entries.length;
+
         let result: BankIndexEntry[] = [];
-        let selectedIndex = -1;
-        for (let i = 0; i < entries.length; ++i) {
-            if (entries[i].instanceId === banks.selectedBank) {
-                selectedIndex = i;
-                break;
-            }
-        }
-        if (n > entries.length) n = entries.length;
-        if (selectedIndex > n) {
-            for (let i = 0; i < n - 1; ++i) {
+
+        if (nListEntries <= nDisplayEntries) {
+            for (let i = 0; i < nListEntries; ++i) {
                 result.push(entries[i]);
             }
-            result.push(entries[selectedIndex]);
         } else {
-            for (let i = 0; i < n; ++i) {
+            // a subset of the list CENTERED on the currently selected entry.
+            let selectedIndex = 0;
+            for (let i = 0; i < nListEntries; ++i) {
+                if (entries[i].instanceId === banks.selectedBank) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+
+            let minN = selectedIndex - Math.floor(nDisplayEntries / 2);
+            if (minN < 0) minN = 0;
+            let maxN = minN + nDisplayEntries;
+            if (maxN > entries.length) {
+                maxN = entries.length;
+            }
+            for (let i = minN; i < maxN; ++i) {
                 result.push(entries[i]);
             }
         }
@@ -747,7 +762,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
             <div style={{
                 colorScheme: isDarkMode() ? "dark" : "light", // affects scrollbar color
                 minHeight: 300, minWidth: 300,
-                position: "absolute", left:0, top: 0, right:0,bottom:0,
+                position: "absolute", left: 0, top: 0, right: 0, bottom: 0,
                 overscrollBehavior: this.state.isDebug ? "auto" : "none"
             }}
                 onContextMenu={(e) => {
@@ -831,11 +846,11 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                 </div>
                             )}
                         <TemporaryDrawer position='left' title="PiPedal"
-                            is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(); }} >
+                            is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(false); }} >
 
                             <List>
-                                <ListItem button key='PerformanceView'
-                                    onClick={(ev) => {
+                                <ListItemButton key='PerformanceView'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.setState({ performanceView: true });
@@ -844,7 +859,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <FxAmplifierIcon color='inherit' className={classes.menuIcon} style={{ width: 24, height: 24 }} />
                                     </ListItemIcon>
                                     <ListItemText primary='Performance View' />
-                                </ListItem>
+                                </ListItemButton>
                             </List>
                             <Divider />
                             <ListSubheader className="listSubheader" component="div" id="xnested-list-subheader" style={{ lineHeight: "24px", height: 24, background: "rgba(12,12,12,0.0)" }}
@@ -856,20 +871,24 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                 {
                                     shortBankList.map((bank) => {
                                         return (
-                                            <ListItem button key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
-                                                onClick={() => this.onOpenBank(bank.instanceId)}
+                                            <ListItemButton key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
+                                                onClick={(ev: any) => {
+                                                    ev.stopPropagation();
+                                                    this.hideDrawer(false);
+                                                    this.handleSpecificBank(bank.instanceId);
+                                                }}
                                             >
 
                                                 <ListItemText primary={bank.name} />
-                                            </ListItem>
+                                            </ListItemButton>
 
                                         );
                                     })
                                 }
                                 {
                                     showBankSelectDialog && (
-                                        <ListItem button key={'bankDOTDOTDOT'} selected={false}
-                                            onClick={(ev) => {
+                                        <ListItemButton key={'bankDOTDOTDOT'} selected={false}
+                                            onClick={(ev: any) => {
                                                 ev.stopPropagation();
                                                 this.hideDrawer(true);
                                                 this.handleDrawerSelectBank();
@@ -877,7 +896,7 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         >
 
                                             <ListItemText primary={"..."} />
-                                        </ListItem>
+                                        </ListItemButton>
 
 
                                     )
@@ -885,8 +904,8 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                             </List>
                             <Divider />
                             <List>
-                                <ListItem button key='RenameBank'
-                                    onClick={(ev) => {
+                                <ListItemButton key='RenameBank'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerRenameBank()
@@ -895,9 +914,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='Rename bank' />
-                                </ListItem>
-                                <ListItem button key='SaveBank'
-                                    onClick={(ev) => {
+                                </ListItemButton>
+                                <ListItemButton key='SaveBank'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerSaveBankAs();
@@ -906,9 +925,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <SaveBankAsIcon color="inherit" className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='Save as new bank' />
-                                </ListItem>
-                                <ListItem button key='EditBanks'
-                                    onClick={(ev) => {
+                                </ListItemButton>
+                                <ListItemButton key='EditBanks'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerManageBanks();
@@ -917,12 +936,12 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <EditBanksIcon color="inherit" className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='Manage banks...' />
-                                </ListItem>
+                                </ListItemButton>
                             </List>
                             <Divider />
                             <List>
-                                <ListItem button key='Settings'
-                                    onClick={(ev) => {
+                                <ListItemButton key='Settings'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerSettingsClick()
@@ -931,9 +950,9 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <SettingsIcon color="inherit" className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='Settings' />
-                                </ListItem>
-                                <ListItem button key='About'
-                                    onClick={(ev) => {
+                                </ListItemButton>
+                                <ListItemButton key='About'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
                                         this.hideDrawer(true);
                                         this.handleDrawerAboutClick();
@@ -942,18 +961,17 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                                         <HelpOutlineIcon color="inherit" className={classes.menuIcon} />
                                     </ListItemIcon>
                                     <ListItemText primary='About' />
-                                </ListItem>
-                                <ListItem button key='Donations'
-                                    onClick={(ev) => {
+                                </ListItemButton>
+                                <ListItemButton key='Donations'
+                                    onClick={(ev: any) => {
                                         ev.stopPropagation();
-                                        this.hideDrawer(true);
                                         this.handleDrawerDonationClick();
                                     }}>
                                     <ListItemIcon >
                                         <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
                                     </ListItemIcon>
                                     <ListItemText primary='Donations' />
-                                </ListItem>
+                                </ListItemButton>
                             </List>
 
                         </TemporaryDrawer>
@@ -1040,67 +1058,62 @@ const AppThemed = withStyles(appStyles)(class extends ResizeResponsiveComponent<
                 </DialogEx>
 
 
-                <div className={classes.errorContent} style={{ zIndex: 1200, display: this.state.displayState === State.Error ? "flex" : "none" }}
-                    onMouseDown={preventDefault} onKeyDown={preventDefault} 
+                <Modal open={this.state.displayState === State.Error}
+                    aria-label="fatal-error"
+                    aria-describedby="aria-error-text"
                 >
-                    <div className={classes.errorContentMask} />
-                    <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
-                    <div className={classes.errorMessageBox} style={{ position: "relative" }} >
-                        <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 3, color: "#A00" }}>
-                            <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
-                        </div>
-                        <div style={{ marginLeft: 40, marginTop: 3 }}>
-                            <p className={classes.errorText}>
-                                Error: {this.state.errorMessage}
-                            </p>
-                        </div>
-                        <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
-                            <Button variant='contained' color="primary"
-                                onClick={() => this.handleReload()} >
-                                Reload
-                            </Button>
+                    <div style={{
+                        display: "flex", flexFlow: "column nowrap",
+                        position: "absolute", top: 0, left: 0, right: 0, bottom: 0
+                    }}
+                    >
+                        <div className={classes.loadingMask} />
+                        <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
+                        <div className={classes.errorMessageBox} style={{ position: "relative" }} >
+                            <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 3, color: "#A00" }}>
+                                <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
+                            </div>
+                            <div style={{ marginLeft: 40, marginTop: 3 }}>
+                                <p className={classes.errorText} id="aria-error-text">
+                                    Error: {this.state.errorMessage}
+                                </p>
+                            </div>
+                            <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "left" }}>
+                                <Button variant='contained' color="primary"
+                                    onClick={() => this.handleReload()} >
+                                    Reload
+                                </Button>
 
+                            </div>
                         </div>
-
+                        <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
                     </div>
 
-                    <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
-
-                </div>
-                {/* initial load mask*/}
-                <div className={classes.errorContent} style={{ display: this.state.displayState === State.Loading ? "block" : "none",zIndex: 1201 }}>
-                    <div className={classes.errorContentMask} />
-                    <div className={classes.loadingBox}>
-                        <div className={classes.loadingBoxItem}>
-                            <CircularProgress color="inherit" className={classes.loadingBoxItem} />
-                        </div>
-                        <Typography noWrap variant="body2" className={classes.loadingBoxItem}>
-                            Loading...
-                        </Typography>
-                    </div>
-                </div>
+                </Modal >
                 {/* Reloading mask */}
-                <div className={classes.errorContent} style={{
-                    zIndex: 1201,
-                    display: (
-                        wantsReloadingScreen(this.state.displayState)
-                            ? "block" : "none"
-                    )
-                }}
+                < Modal
+                    open={wantsReloadingScreen(this.state.displayState) || this.state.displayState === State.Loading}
+                    aria-label="loading"
+                    aria-describedby="reloading-modal-description"
                 >
-                    <div className={classes.errorContentMask} />
-
-                    <div className={classes.loadingBox}>
-                        <div className={classes.loadingBoxItem}>
-                            <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                    <div style={{display: "flex",flexFlow: "column nowrap", alignItems: "center"}}>
+                        <div className={classes.loadingMask} />
+                        <div className={classes.loadingBox}>
+                            <div className={classes.loadingBoxItem}>
+                                <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                            </div>
+                            <Typography id="reloading-modal-description" display="block" noWrap variant="body2" className={classes.progressText}>
+                                {
+                                    this.state.displayState === State.Loading ?
+                                        "Loading..."
+                                        :this.getReloadingMessage()
+                                }
+                            </Typography>
                         </div>
-                        <Typography display="block" noWrap variant="body2" className={classes.progressText}>
-                            {this.getReloadingMessage()}
-                        </Typography>
                     </div>
-                </div>
-
+                </Modal >
             </div >
+
         );
     }
 });

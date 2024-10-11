@@ -155,6 +155,49 @@ void DisableService()
 #endif
 }
 
+bool disableAvahiConfigLine(SystemConfigFile &avahi, const std::string &section, const std::string &lineStart)
+{
+    bool changed = false;
+    // use-ipv6=no
+    int line = avahi.GetLineThatStartsWith(lineStart + "yes");
+    if (line != -1)
+    {
+        avahi.UndoableReplaceLine(line, lineStart + "no");
+        changed = true;
+    }
+    else
+    {
+        if (avahi.GetLineThatStartsWith(lineStart + "no") == -1)
+        {
+            line = avahi.GetLineThatStartsWith(section);
+            if (line == -1)
+            {
+                throw std::runtime_error("Unable to find [server] section.");
+            }
+            {
+                ++line;
+                // increment to end of section.
+                while (line < avahi.GetLineCount())
+                {
+                    const auto &txt = avahi.Get(line);
+                    if (txt.empty())
+                    {
+                        break;
+                    }
+                    if (txt.starts_with("[")) // start of next section.
+                    {
+                        break;
+                    }
+                    ++line;
+                }
+            }
+            avahi.UndoableAddLine(line,lineStart+"no");
+            changed = true;
+        }
+    }
+    return changed;
+}
+
 static void RestartAvahiService()
 {
     silentSysExec(SS(SYSTEMCTL_BIN << " restart avahi-daemon.service").c_str());
@@ -169,41 +212,10 @@ static void AvahiInstall()
         SystemConfigFile avahi(avahiConfig);
 
         bool changed = avahi.RemoveUndoableActions();
-        int line = avahi.GetLineThatStartsWith("use-ipv6=yes");
-        if (line != -1)
-        {
-            avahi.UndoableReplaceLine(line, "use-ipv6=no");
-            changed = true;
-        }
-        else
-        {
-            if (avahi.GetLineThatStartsWith("use-ipv6=no") == -1)
-            {
-                line = avahi.GetLineThatStartsWith("[server]");
-                if (line == 1)
-                {
-                    throw std::runtime_error("Unable to find [server] section.");
-                }
-                {
-                    // increment to end of section.
-                    while (line < avahi.GetLineCount())
-                    {
-                        const auto &txt = avahi.Get(line);
-                        if (txt.empty())
-                        {
-                            break;
-                        }
-                        if (txt.starts_with("[")) // start of next section.
-                        {
-                            break;
-                        }
-                        ++line;
-                    }
-                }
-                avahi.UndoableAddLine(avahi.GetLineCount(), "use-ipv6=no");
-                changed = true;
-            }
-        }
+
+        changed |= disableAvahiConfigLine(avahi, "[server]", "use-ipv6=");
+        changed |= disableAvahiConfigLine(avahi, "[publish]", "publish-aaaa-on-ipv4=");
+            
         if (changed)
         {
             avahi.Save();
@@ -914,7 +926,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
     try
     {
         // apply policy changes we dropped into the polkit configuration files (allows pipedal_d to use NetworkManager dbus apis).
-        silentSysExec(SYSTEMCTL_BIN " restart polkit"); 
+        silentSysExec(SYSTEMCTL_BIN " restart polkit");
 
         DeployVarConfig();
 
@@ -994,7 +1006,6 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         sysExec(USERMOD_BIN " -a -G  " AUDIO_SERVICE_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
         // add to netdev group
         sysExec(USERMOD_BIN " -a -G  " NETDEV_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
-
 
         // create and configure /var directory.
 
@@ -1211,11 +1222,11 @@ static void PrintHelp()
         << "\n\n"
         << "One of the following hotspot options can be specifed. If no hotspot option is given, the hotspot will always be enabled. "
         << "If one of the hotspot options are given, the PiPedal server will turn the hotspot on or off automatically, as conditions change."
-        <<  "\n\n"
+        << "\n\n"
         << "--home-network <wifi-ssid>\n"
         << AddIndent(4) << "Hotspot is disabled if the specificed Wi-Fi network is detected.\n"
         << AddIndent(-4)
-        << "--no-ethernet\n" 
+        << "--no-ethernet\n"
         << AddIndent(4) << "Hotspot is disabled if an ethernet network is connected.\n"
         << AddIndent(-4)
         << "--no-wifi\n"
@@ -1336,9 +1347,9 @@ int main(int argc, char **argv)
     parser.AddOption("--port", &portOption);
     parser.AddOption("--enable-hotspot", &enable_hotspot);
     parser.AddOption("--disable-hotspot", &disable_hotspot);
-    parser.AddOption("--home-network",&homeNetwork);
-    parser.AddOption("--no-ethernet",&noEthernet);
-    parser.AddOption("--no-wifi",&noWifi);
+    parser.AddOption("--home-network", &homeNetwork);
+    parser.AddOption("--no-ethernet", &noEthernet);
+    parser.AddOption("--no-wifi", &noWifi);
     try
     {
         parser.Parse(argc, (const char **)argv);
@@ -1367,9 +1378,7 @@ int main(int argc, char **argv)
             }
         }
         int hotspotOptionCount =
-            (homeNetwork.length() != 0 ? 1: 0)
-            + noEthernet
-            + noWifi;
+            (homeNetwork.length() != 0 ? 1 : 0) + noEthernet + noWifi;
 
         if (enable_hotspot)
         {
@@ -1377,7 +1386,9 @@ int main(int argc, char **argv)
             {
                 throw std::runtime_error("Only one hotspot option at a time can be specified.");
             }
-        } else {
+        }
+        else
+        {
             if (hotspotOptionCount > 0)
             {
                 throw std::runtime_error("Hotspot options only only valid when the --enable-hotspot option has been supplied.");
@@ -1432,7 +1443,8 @@ int main(int argc, char **argv)
         }
         if (install)
         {
-            try {
+            try
+            {
                 fs::path prefix;
                 if (prefixOption.length() != 0)
                 {
@@ -1465,8 +1477,8 @@ int main(int argc, char **argv)
                 }
                 Install(prefix, portOption);
                 FileSystemSync();
-
-            } catch (const std::exception&e)
+            }
+            catch (const std::exception &e)
             {
                 cout << "ERROR: " << e.what() << endl;
                 FileSystemSync();
@@ -1475,10 +1487,12 @@ int main(int argc, char **argv)
         }
         else if (uninstall)
         {
-            try {
+            try
+            {
                 Uninstall();
                 FileSystemSync();
-            } catch (const std::exception &e)
+            }
+            catch (const std::exception &e)
             {
                 cout << "ERROR: " << e.what() << endl;
                 FileSystemSync();
@@ -1489,7 +1503,6 @@ int main(int argc, char **argv)
         {
             RequireNetworkManager();
             StopService();
-
         }
         else if (start)
         {
@@ -1506,14 +1519,12 @@ int main(int argc, char **argv)
             RequireNetworkManager();
             EnableService();
             FileSystemSync();
-
         }
         else if (disable)
         {
             RequireNetworkManager();
             DisableService();
             FileSystemSync();
-
         }
         else if (enable_p2p)
         {
@@ -1541,8 +1552,7 @@ int main(int argc, char **argv)
             settings.Load();
             settings.enable_ = false;
             SetWifiDirectConfig(settings);
-            
-            
+
             RestartService(true);
             return EXIT_SUCCESS;
         }
@@ -1557,15 +1567,17 @@ int main(int argc, char **argv)
             if (homeNetwork.length() != 0)
             {
                 startMode = HotspotAutoStartMode::NotAtHome;
-            } else if (noEthernet)
+            }
+            else if (noEthernet)
             {
                 startMode = HotspotAutoStartMode::NoEthernetConnection;
-            } else if (noWifi)
+            }
+            else if (noWifi)
             {
                 startMode = HotspotAutoStartMode::NoRememberedWifiConections;
             }
 
-            settings.ParseArguments(argv,startMode,homeNetwork);
+            settings.ParseArguments(argv, startMode, homeNetwork);
 
             if (settings.hasPassword_)
             {

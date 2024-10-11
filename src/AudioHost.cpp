@@ -135,7 +135,7 @@ namespace pipedal
         {
             auto maxInputControl = effect->GetMaxInputControl();
             inputControlValues.resize(maxInputControl);
-
+            this->enabled = true;
             for (uint64_t i = 0; i < maxInputControl; ++i)
             {
                 bool isInputControl = effect->IsInputControl(i);
@@ -150,6 +150,7 @@ namespace pipedal
             }
             if (snapshotValue)
             {
+                this->enabled = snapshotValue->isEnabled_;
                 for (auto &controlValue : snapshotValue->controlValues_)
                 {
                     auto index = effect->GetControlIndex(controlValue.key());
@@ -202,6 +203,8 @@ namespace pipedal
         }
         void ApplyValues(IEffect *effect)
         {
+
+            effect->SetBypass(this->enabled);            
             if (effect != pEffect)
             {
                 throw std::runtime_error("Wrong effect");
@@ -226,6 +229,7 @@ namespace pipedal
     private:
         IEffect *pEffect;
         Lv2PluginState lv2State;
+        bool enabled;
         std::vector<InputControlEntry> inputControlValues;
         std::vector<PathPatchProperty> pathPatchProperties;
     };
