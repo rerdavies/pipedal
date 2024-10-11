@@ -1,4 +1,14 @@
 # Release Notes
+
+## PiPedal 1.3.55 Release
+
+More snapshot problems.
+
+Bug fixes:
+- Crashes related to snapshots and split controls.
+- Loading/reloading/error screens go on top of Snapshot dialogs.
+  
+
 ## PiPedal 1.3.54 Release
 
 Improvements to and fixes for hotspot functionality. Fixes for problems with snapshots.
@@ -8,7 +18,7 @@ Minor features;
 
 - Uploaded .zip files create a top-level directory with the name of the zip file if the zip file doesn't contain a single root-level directory. (released in 1.3.53)
 
-Bug fixes.
+Bug fixes:
 -    Various crashes related to snapshots.
 
 -    Applying changes to Wi-Fi hotspot configuration would not change the configuration until PiPedal was rebooted (a regression).
