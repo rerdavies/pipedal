@@ -535,23 +535,17 @@ void PiPedalModel::SetPedalboard(int64_t clientId, Pedalboard &pedalboard)
 void PiPedalModel::SetSnapshot(int64_t selectedSnapshot)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    if (this->pedalboard.ApplySnapshot(selectedSnapshot))
+    if (this->pedalboard.ApplySnapshot(selectedSnapshot, pluginHost))
     {
-        this->pedalboard.SetCurrentSnapshotModified(false);
-        this->FireSnapshotModified(selectedSnapshot,false);
-        if (this->audioHost)
-        {
-            if (this->previousPedalboardLoaded &&  this->pedalboard.IsStructureIdentical(this->previousPedalboard))
-            {
-                this->audioHost->LoadSnapshot(*(this->pedalboard.snapshots()[selectedSnapshot]), this->pluginHost); // no longer own it.
-            } else {
-                LoadCurrentPedalboard();
-            }
-
-        }
-        SetPresetChanged(-1, true, false);
         this->pedalboard.selectedSnapshot(selectedSnapshot);
-        FirePedalboardChanged(-1, false);
+        for (auto snapshot: this->pedalboard.snapshots())
+        {
+            if (snapshot)
+            {
+                snapshot->isModified_ = false;
+            }
+        }
+        FirePedalboardChanged(-1, true);
     }
 }
 
@@ -567,6 +561,13 @@ void PiPedalModel::SetSnapshots(std::vector<std::shared_ptr<Snapshot>> &snapshot
     if (selectedSnapshot != -1)
     {
         this->pedalboard.selectedSnapshot(selectedSnapshot);
+        for (auto &snapshot: pedalboard.snapshots())
+        {
+            if (snapshot)
+            {
+                snapshot->isModified_ = false;
+            }
+        }
     }
     
     this->FirePedalboardChanged(-1, false); // notify clients (but don't change the running pedalboard, because it's still the same)

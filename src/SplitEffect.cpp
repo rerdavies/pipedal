@@ -182,6 +182,7 @@ SplitEffect::SplitEffect(
 
     Lv2PluginInfo::ptr puginInfo = g_splitterPluginInfo;
 
+    defaultInputControlValues.resize(MAX_INPUT_CONTROL);
     for (auto&port:  puginInfo->ports())
     {   
         if (port->is_control_port()  && port->is_input())

@@ -1,3 +1,5 @@
+Loading shields need to be of Modal type.
+
 MOD fileTypes
 
     - audioloop: Audio Loops, meant to be used for looper-style plugins
