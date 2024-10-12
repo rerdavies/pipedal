@@ -27,7 +27,7 @@
 #include "ServiceConfiguration.hpp"
 #include "AvahiService.hpp"
 #include "WebServerConfig.hpp"
-
+#include <execinfo.h>
 #include "PiPedalSocket.hpp"
 #include "PluginHost.hpp"
 #include <boost/system/error_code.hpp>
@@ -87,11 +87,39 @@ static void AsanCheck()
     exit(EXIT_FAILURE);
 }
 
+#if ENABLE_BACKTRACE
+void segvHandler(int sig) {
+    void *array[10];
+
+    // Get void*'s for all entries on the stack
+    size_t size;
+    size = backtrace(array, 10);
+
+    // Print out all the frames to stderr
+    const char *message = "Error: SEGV signal received.\n";
+    write(STDERR_FILENO,message,strlen(message));
+
+    backtrace_symbols_fd(array+2, size-2, STDERR_FILENO);
+    _exit(EXIT_FAILURE);
+}
+
+
+static void EnableBacktrace()
+{
+    signal(SIGSEGV, segvHandler); 
+
+}
+#endif
+
 int main(int argc, char *argv[])
 {
 
 #ifndef WIN32
-    umask(002); // newly created files in /var/pipedal get 775-ish permissions, which improves debugging/live-service interaction.
+    umask(002); // newly created files in /var/pipedal get 7cd75-ish permissions, which improves debugging/live-service interaction.
+#endif
+
+#if ENABLE_BACKTRACE
+    EnableBacktrace();
 #endif
 
     // Check command line arguments.

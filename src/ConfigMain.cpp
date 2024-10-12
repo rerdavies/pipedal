@@ -44,6 +44,9 @@
 #include <grp.h>
 #include "ofstream_synced.hpp"
 
+#include <pwd.h>
+#include <unistd.h>
+
 #define P2PD_DISABLED
 
 #if JACK_HOST
@@ -87,6 +90,29 @@ namespace fs = std::filesystem;
 
 #define REMOVE_OLD_SERVICE 0 // Grandfathering: whether to remove the old shutdown service (now pipedaladmind)
 #define OLD_SHUTDOWN_SERVICE "pipedalshutdownd"
+
+
+
+void changeUserShell(const char* username, const char* newShell) {
+    struct passwd* pw;
+    struct passwd p;
+    char buf[1024];
+
+    pw = getpwnam(username);
+    if (pw == nullptr) {
+        throw std::runtime_error("User not found");
+    }
+    if (strcmp(pw->pw_shell,newShell) == 0) {
+        return;
+    }
+    std::string args = SS("/usr/sbin/usermod -s " << newShell << " " << username);
+
+    if (silentSysExec(args.c_str()) != EXIT_SUCCESS)
+    {
+        cout << "Failed to set shell for " << username << endl;
+    }
+}
+
 
 fs::path GetServiceFileName(const std::string &serviceName)
 {
@@ -926,7 +952,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
     try
     {
         // apply policy changes we dropped into the polkit configuration files (allows pipedal_d to use NetworkManager dbus apis).
-        silentSysExec(SYSTEMCTL_BIN " restart polkit");
+        silentSysExec(SYSTEMCTL_BIN " restart polkit.service");
 
         DeployVarConfig();
 
@@ -994,7 +1020,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 
         if (!userExists(SERVICE_ACCOUNT_NAME))
         {
-            if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -m --home /var/pipedal/home -N -r") != EXIT_SUCCESS)
+            if (sysExec(USERADD_BIN " " SERVICE_ACCOUNT_NAME " -g " SERVICE_GROUP_NAME " -s /usr/sbin/nologin -m --home /var/pipedal/home -N -r") != EXIT_SUCCESS)
             {
                 //  throw std::runtime_error("Failed to create service account.");
             }
@@ -1007,6 +1033,13 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         // add to netdev group
         sysExec(USERMOD_BIN " -a -G  " NETDEV_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
 
+        try {
+            changeUserShell(SERVICE_ACCOUNT_NAME, "/usr/sbin/nologon");
+        } catch (const std::exception&e)
+        {
+            cout << "Error: Can't set user shell for pipedal_d. " << e.what() << std::endl;
+
+        }
         // create and configure /var directory.
 
         fs::path varDirectory("/var/pipedal");
