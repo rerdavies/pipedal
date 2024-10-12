@@ -342,9 +342,9 @@ export function getBorderColor(colorKey: string): string {
     if (darkMode) {
         if (colorKey === "grey" || colorKey === "yellow") 
         {
-            return list[700];
+            return list[300];
         }
-        return list[500];
+        return list[200];
     } else {
         if (colorKey === "grey")
         {

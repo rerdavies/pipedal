@@ -31,6 +31,7 @@ import SaveIconOutline from '@mui/icons-material/Save';
 import Button from "@mui/material/Button";
 import EditIconOutline from '@mui/icons-material/Edit';
 import { Snapshot } from './Pedalboard';
+import { isDarkMode } from './DarkMode';
 
 import { colorKeys, getBackgroundColor, getBorderColor } from './MaterialColors';
 import { PiPedalModel, PiPedalModelFactory, SnapshotModifiedEvent } from './PiPedalModel';
@@ -49,6 +50,7 @@ export interface SnapshotButtonProps {
 
 export interface SnapshotButtonState {
     modified: boolean;
+    uiScale: number;
 };
 
 export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotButtonProps, SnapshotButtonState> {
@@ -58,14 +60,33 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
         super(props);
         this.state = {
             modified: this.props.snapshot?.isModified ?? false,
+            uiScale: 1.0
         };
         this.model = PiPedalModelFactory.getInstance();
         this.onSnapshotModified = this.onSnapshotModified.bind(this);
 
     }
 
-    onWindowSizeChanged(width: number, height: number): void {
+    is2x3Layout(width: number, height: number) {
+        return width * 2 < height * 3;
+    }
 
+    onWindowSizeChanged(width: number, height: number): void {
+        let uiScale: number;
+        if (this.is2x3Layout(width,height)) {
+            uiScale = width / 400;
+        } else {
+            uiScale = (width/3)/(400/2);
+        }
+        if (height < width) {
+            // 1 at 400, 2 at 600
+            let hUiScale = (height-340)/(400-340);
+            hUiScale += (height-400)/(460-400);
+            uiScale = Math.min(hUiScale,uiScale);
+        }
+        if (uiScale < 1) uiScale = 1;
+        if (uiScale > 4) uiScale = 4;
+        this.setState({uiScale: uiScale});
     }
 
     onSnapshotModified(event: SnapshotModifiedEvent) {
@@ -95,7 +116,7 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
 
     render() {
         let { snapshot, snapshotIndex, selected } = this.props;
-        let { modified } = this.state;
+        let { modified, uiScale } = this.state;
 
         // (snapshot: Snapshot | null, index: number) {
         //let state = this.state;
@@ -116,6 +137,8 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
             title = title + "*";
         }
         let disabled = snapshot === null;
+
+        let fontSize = (16*uiScale) + "px";
         return (
             <div style={{ display: "flex", position: "relative", flexGrow: 1, flexBasis: 1, flexFlow: "column nowrap", alignItems: "stretch", borderRadius: 16 }}>
 
@@ -130,6 +153,12 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
 
                     onClick={() => { if (snapshot) this.props.onSelectSnapshot(snapshotIndex); }}
                 >
+                    {/* select background mask*/}
+                    <div style={{position: "absolute", left:0,top:0,right:0,bottom:0, visibility: this.props.selected ? "visible": "hidden",
+                        background: isDarkMode() ? "#FFFFFF": "#000000", borderRadius: 16,
+                        opacity: 0.2
+                    }}
+                    />
                     <div
                         style={{ flexGrow: 1, flexShrink: 1, display: "flex", flexFlow: "column nowrap", alignItems: "stretch" }}
                         onMouseDown={(ev) => {
@@ -144,13 +173,13 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
                             <div style={{ flexGrow: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
 
                                 <Typography display="block" color="textPrimary" align="center" variant="body1"
-                                    style={{ fontSize: this.props.largeText ? "30px" : undefined }}
+                                    style={{ fontSize: fontSize }}
                                 >{title}</Typography>
                             </div>
                             <Typography variant="h3"
                                 style={{
                                     position: "absolute",bottom: 0, left: 0, paddingBottom: 12, paddingLeft: 16, paddingRight: 12,
-                                    pointerEvents: "none", opacity: 0.15, fontSize: "44px", fontWeight: 900, fontFamily: "Arial Black", fontStyle: "italic"
+                                    pointerEvents: "none", opacity: 0.35, fontSize: "44px", fontWeight: 900, fontFamily: "Arial Black", fontStyle: "italic"
                                 }}
                             >
                                 {(snapshotIndex + 1).toString()}
@@ -188,7 +217,7 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
 
                     ) : (
                         <div style={{ marginLeft: "auto", marginRight: 8, display: "flex", flexFlow: "row nowrap" }}>
-                            <div style={{ flexGrow: 1, flexBasis: 1 }} >&nbsp;</div>
+                            <div style={{ flexGrow: 1, flexBasis: 1 }} ></div>
                             <IconButton color="inherit" style={{ opacity: 0.66 }} disabled={false}
                                 onMouseDown={(ev) => { ev.stopPropagation(); /*don't prop to card*/ }}
                                 onClick={() => { this.props.onSaveSnapshot(snapshotIndex); }}

@@ -236,7 +236,6 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
         }
     }
 
-    bg: undefined;
 
     render() {
         let snapshots = this.state.snapshots;
@@ -246,7 +245,6 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
                 height: this.props.panelHeight,
                 overflow: "hidden", margin: 0,
                 paddingLeft: 16, paddingRight: 16, paddingTop: 0, paddingBottom: 24,
-                background: this.bg,
                 display: "flex", flexFlow: "column nowrap", alignContent: "stretch", justifyContent: "stretch"
             }}>
 
