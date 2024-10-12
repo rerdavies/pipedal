@@ -467,7 +467,7 @@ void HotspotManagerImpl::onReload()
     case State::HotspotConnected:
     default:
         // force a reload.
-        StopHotspot(); 
+        StopHotspot();
         SetState(State::Monitoring);
         MaybeStartHotspot();
         return;
@@ -861,28 +861,32 @@ void HotspotManagerImpl::StartHotspot()
 
             settings["ipv4"]["method"] = "shared";
             settings["ipv6"]["method"] = "shared";
+            settings["ipv6"]["addr-gen-mode"] = 1; // "stable-privacy";
+            
+                ////////////////////////////////////////////////////////////////
 
-            ////////////////////////////////////////////////////////////////
-
-            // Create connection
-            settings["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
-            //settings["ipv6"]["method"] = sdbus::Variant(std::string("ignore"));
+                // Create connection
+                settings["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
+            // settings["ipv6"]["method"] = sdbus::Variant(std::string("ignore"));
 
             settings["ipv4"]["address-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{{{"address", sdbus::Variant("192.168.60.1")},
                                                                                                                   {"prefix", sdbus::Variant(uint32_t(24))}}});
+            // settings["ipv4"]["gateway'"] = sdbus::Variant(std::string("192.168.60.1"));
             settings["ipv4"]["dhcp-send-hostname"] = sdbus::Variant(true);
             settings["ipv4"]["dhcp-hostname"] = sdbus::Variant("raspberrypi");
             // settings["ipv4"]["dhcp-options"] = sdbus::Variant(std::vector<std::string>{
-            //     "option:classless-static-route,192.168.60.0/24,0.0.0.0,0.0.0.0/0,192.168.60.1"});
+            //     "option:classless-static-route,192.168.60.0/23,0.0.0.0,0.0.0.0/0,192.168.60.1"});
 
-            settings["ipv4"]["route-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{{
-                    {"dest", sdbus::Variant("192.168.4.0")},
-                    {"prefix", sdbus::Variant(uint32_t(24))},
-                    {"metric", sdbus::Variant((uint32_t)99)}
-            }});
+            // settings["ipv4"]["dhcp-options"] = sdbus::Variant(std::vector<std::string>{
+            //        "option:classless-static-route,192.168.60.0/23,192.168.60.1"});
+
             ////////////////////////////////////////////////////////////
-            // settings["ipv6"]["addr-gen-mode"] = "stable-privacy";
 
+            settings["ipv6"]["address-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{
+                {{"address", sdbus::Variant("fdd2:e477:7b37:5b09::1")},
+                 {"prefix", sdbus::Variant(uint32_t(64))}}});
+
+            settings["ipv6"]["gateway"] = sdbus::Variant("fdd2:e477:7b37:5b09::1");
             std::map<std::string, sdbus::Variant> options;
             options["persist"] = "disk";
 
