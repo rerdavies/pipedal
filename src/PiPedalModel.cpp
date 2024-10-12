@@ -42,6 +42,7 @@
 #include "util.hpp"
 #include "DBusLog.hpp"
 #include "AvahiService.hpp"
+#include "DummyAudioDriver.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -481,6 +482,8 @@ void PiPedalModel::SetControl(int64_t clientId, int64_t pedalItemId, const std::
 void PiPedalModel::FireJackConfigurationChanged(const JackConfiguration &jackConfiguration)
 {
     // noify subscribers.
+
+    
     std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
     for (auto &subscriber : t)
     {
@@ -1319,12 +1322,7 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
 
         auto jackConfiguration = this->jackConfiguration;
         jackConfiguration.AlsaInitialize(jackServerSettings);
-        if (jackConfiguration.isValid())
-        {
-            JackChannelSelection selection = storage.GetJackChannelSelection(jackConfiguration);
-            selection = selection.RemoveInvalidChannels(jackConfiguration);
-        }
-        else
+        if (!jackConfiguration.isValid())
         {
             jackConfiguration.setErrorStatus("Error");
         }
@@ -1339,11 +1337,8 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
             throw std::runtime_error("Audio configuration not valid.");
         }
 
-        JackChannelSelection channelSelection = this->storage.GetJackChannelSelection(jackConfiguration);
-        if (this->jackConfiguration.isValid())
-        {
-            channelSelection.RemoveInvalidChannels(this->jackConfiguration);
-        }
+        auto channelSelection = this->storage.GetJackChannelSelection(jackConfiguration);
+
         if (!channelSelection.isValid())
         {
             throw std::runtime_error("Audio configuration not valid.");
@@ -1352,6 +1347,7 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
 
         this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
 
+        FireChannelSelectionChanged(-1);
         LoadCurrentPedalboard();
 
         this->UpdateRealtimeVuSubscriptions();
@@ -1408,10 +1404,7 @@ JackChannelSelection PiPedalModel::GetJackChannelSelection()
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     JackChannelSelection t = this->storage.GetJackChannelSelection(this->jackConfiguration);
-    if (this->jackConfiguration.isValid())
-    {
-        t = t.RemoveInvalidChannels(this->jackConfiguration);
-    }
+
     return t;
 }
 
@@ -2235,7 +2228,15 @@ void PiPedalModel::CancelMonitorPatchProperty(int64_t clientId, int64_t clientHa
 }
 std::vector<AlsaDeviceInfo> PiPedalModel::GetAlsaDevices()
 {
-    return this->alsaDevices.GetAlsaDevices();
+    std::vector<AlsaDeviceInfo> result = this->alsaDevices.GetAlsaDevices();
+#ifdef JUNK
+    // Useful for debugging non-stereo device configurations
+    result.push_back(MakeDummyDeviceInfo(1));
+    result.push_back(MakeDummyDeviceInfo(2));
+    result.push_back(MakeDummyDeviceInfo(8));
+#endif
+    return result;
+
 }
 
 const std::filesystem::path &PiPedalModel::GetWebRoot() const

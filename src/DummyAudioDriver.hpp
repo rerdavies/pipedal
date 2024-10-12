@@ -29,7 +29,10 @@
 
 namespace pipedal {
 
-    AudioDriver* CreateDummyAudioDriver(AudioDriverHost*driverHost);
+    AlsaDeviceInfo MakeDummyDeviceInfo(uint32_t channels);
+
+    uint32_t GetDummyAudioChannels(const std::string &deviceName);
+    AudioDriver* CreateDummyAudioDriver(AudioDriverHost*driverHost,const std::string&deviceId);
 
 }
 

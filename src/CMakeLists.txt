@@ -637,6 +637,7 @@ add_executable(pipedal_latency_test
     PiPedalAlsa.hpp PiPedalAlsa.cpp
     asan_options.cpp
     AlsaDriver.cpp AlsaDriver.hpp
+    DummyAudioDriver.cpp DummyAudioDriver.hpp
     JackConfiguration.hpp JackConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     CpuUse.hpp

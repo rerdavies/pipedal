@@ -199,14 +199,14 @@ void JackConfiguration::JackInitialize()
 
 JackChannelSelection JackChannelSelection::MakeDefault(const JackConfiguration&config){
     JackChannelSelection result;
-    for (size_t i = 0; i < std::min((size_t)2,config.GetInputAudioPorts().size()); ++i)
+    for (size_t i = 0; i < std::min((size_t)2,config.inputAudioPorts().size()); ++i)
     {
-        result.inputAudioPorts_.push_back(config.GetInputAudioPorts()[i]);
+        result.inputAudioPorts_.push_back(config.inputAudioPorts()[i]);
 
     }
-    for (size_t i = 0; i < std::min((size_t)2,config.GetOutputAudioPorts().size()); ++i)
+    for (size_t i = 0; i < std::min((size_t)2,config.outputAudioPorts().size()); ++i)
     {
-        result.outputAudioPorts_.push_back(config.GetOutputAudioPorts()[i]);
+        result.outputAudioPorts_.push_back(config.outputAudioPorts()[i]);
     }
     return result;
 
@@ -230,6 +230,16 @@ static std::vector<std::string> makeValid(const std::vector<std::string> & selec
         }
         if (found) {
             result.push_back(t);
+        }
+    }
+
+    // if the result is empty, generate a default selection.
+    if (result.size() == 0)
+    {
+        size_t n = std::min(available.size(),(size_t)2);
+        for (size_t i = 0; i < n; ++i)
+        {
+            result.push_back(available[i]);
         }
     }
     return result;
@@ -284,9 +294,9 @@ static std::vector<AlsaMidiDeviceInfo> makeValid(const std::vector<AlsaMidiDevic
 JackChannelSelection JackChannelSelection::RemoveInvalidChannels(const JackConfiguration&config) const
 {
     JackChannelSelection result;
-    result.inputAudioPorts_ = makeValid(this->inputAudioPorts_,config.GetInputAudioPorts());
-    result.outputAudioPorts_ = makeValid(this->outputAudioPorts_,config.GetOutputAudioPorts());
-    result.inputMidiDevices_ = makeValid(this->inputMidiDevices_, config.GetInputMidiDevices());
+    result.inputAudioPorts_ = makeValid(this->inputAudioPorts_,config.inputAudioPorts());
+    result.outputAudioPorts_ = makeValid(this->outputAudioPorts_,config.outputAudioPorts());
+    result.inputMidiDevices_ = makeValid(this->inputMidiDevices_, config.inputMidiDevices());
     if (!result.isValid())
     {
         return this->MakeDefault(config);

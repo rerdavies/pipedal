@@ -50,8 +50,8 @@ namespace pipedal
     public:
         JackConfiguration();
 
-        void AlsaInitialize(const JackServerSettings &jackServerSettings); // from also config settings.
-
+        void AlsaInitialize(const JackServerSettings &jackServerSettings); // from alsa config settings.
+        
         void JackInitialize(); // from jack server instance.
         ~JackConfiguration();
         bool isValid() const { return isValid_;}
@@ -67,9 +67,9 @@ namespace pipedal
         double maxAllowedMidiDelta() const { return maxAllowedMidiDelta_; }
         void setErrorStatus(const std::string&message) { this->errorStatus_ = message; }
 
-        const std::vector<std::string> &GetInputAudioPorts() const { return inputAudioPorts_; }
-        const std::vector<std::string> &GetOutputAudioPorts() const { return outputAudioPorts_; }
-        const std::vector<AlsaMidiDeviceInfo> &GetInputMidiDevices() const { return inputMidiDevices_; }
+        const std::vector<std::string> &inputAudioPorts() const { return inputAudioPorts_; }
+        const std::vector<std::string> &outputAudioPorts() const { return outputAudioPorts_; }
+        const std::vector<AlsaMidiDeviceInfo> &inputMidiDevices() const { return inputMidiDevices_; }
 
         DECLARE_JSON_MAP(JackConfiguration);
 

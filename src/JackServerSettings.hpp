@@ -57,10 +57,12 @@ namespace pipedal
         void UseDummyAudioDevice() {
             this->valid_ = true;
             if (sampleRate_ == 0) sampleRate_ = 48000;
-            this->alsaDevice_  = "__DUMMY_AUDIO__";
+            this->alsaDevice_  = "dummy:channels_2";
         }
         bool IsDummyAudioDevice() const {
-            return this->alsaDevice_ == "__DUMMY_AUDIO__";
+            return 
+                this->alsaDevice_.starts_with("__DUMMY_AUDIO__")
+                || this->alsaDevice_.starts_with("dummy:");
         }
 
         void ReadJackDaemonConfiguration();

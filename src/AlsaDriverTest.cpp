@@ -75,9 +75,9 @@ public:
         }
 
         JackChannelSelection channelSelection(
-            jackConfiguration.GetInputAudioPorts(),
-            jackConfiguration.GetOutputAudioPorts(),
-            jackConfiguration.GetInputMidiDevices());
+            jackConfiguration.inputAudioPorts(),
+            jackConfiguration.outputAudioPorts(),
+            jackConfiguration.inputMidiDevices());
 
 #if JACK_HOST
         if (useJack)

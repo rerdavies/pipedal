@@ -651,7 +651,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
 
 
-                                <ButtonBase className={classes.setting} onClick={() => this.handleInputSelection()} disabled={!isConfigValid}
+                                <ButtonBase className={classes.setting} onClick={() => this.handleInputSelection()} 
+                                    disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
                                     style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
 
                                 >
@@ -661,7 +662,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         <Typography display="block" variant="caption" color="textSecondary" noWrap>{this.state.jackSettings.getAudioInputDisplayValue(this.state.jackConfiguration)}</Typography>
                                     </div>
                                 </ButtonBase>
-                                <ButtonBase className={classes.setting} onClick={() => this.handleOutputSelection()} disabled={!isConfigValid}
+                                <ButtonBase className={classes.setting} onClick={() => this.handleOutputSelection()} 
+                                    disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
                                     style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
                                 >
                                     <SelectHoverBackground selected={false} showHover={true} />

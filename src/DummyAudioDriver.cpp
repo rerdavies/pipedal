@@ -35,6 +35,8 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
+#include <stdexcept>
+#include "ss.hpp"
 
 #include "CpuUse.hpp"
 
@@ -91,11 +93,16 @@ namespace pipedal
         uint8_t *rawPlaybackBuffer = nullptr;
 
         AudioDriverHost *driverHost = nullptr;
+        uint32_t channels = 2;
 
     public:
-        DummyDriverImpl(AudioDriverHost *driverHost)
+        DummyDriverImpl(AudioDriverHost *driverHost,const std::string&deviceName)
             : driverHost(driverHost)
+            , channels(GetDummyAudioChannels(deviceName))
         {
+            captureChannels = channels;
+            playbackChannels = channels;
+
         }
         virtual ~DummyDriverImpl()
         {
@@ -201,8 +208,8 @@ namespace pipedal
 
             this->numberOfBuffers = jackServerSettings.GetNumberOfBuffers();
             this->bufferSize = jackServerSettings.GetBufferSize();
-            AllocateBuffers(captureBuffers, 2);
-            AllocateBuffers(playbackBuffers, 2);
+            AllocateBuffers(captureBuffers, channels);
+            AllocateBuffers(playbackBuffers, channels);
      
         }
 
@@ -299,7 +306,7 @@ namespace pipedal
 
             this->activeCaptureBuffers.resize(channelSelection.GetInputAudioPorts().size());
 
-            playbackBuffers.resize(2);
+            playbackBuffers.resize(channels);
 
             int ix = 0;
             for (auto &x : channelSelection.GetInputAudioPorts())
@@ -419,14 +426,15 @@ namespace pipedal
         }
     };
 
-    AudioDriver *CreateDummyAudioDriver(AudioDriverHost *driverHost)
+    AudioDriver *CreateDummyAudioDriver(AudioDriverHost *driverHost,const std::string&deviceName)
     {
-        return new DummyDriverImpl(driverHost);
+        return new DummyDriverImpl(driverHost,deviceName);
     }
 
     bool GetDummyChannels(const JackServerSettings &jackServerSettings,
                          std::vector<std::string> &inputAudioPorts,
-                         std::vector<std::string> &outputAudioPorts)
+                         std::vector<std::string> &outputAudioPorts,
+                         uint32_t channels)
     {
 
         bool result = false;
@@ -434,7 +442,7 @@ namespace pipedal
         try
         {
 
-            unsigned int playbackChannels = 2, captureChannels = 2;
+            uint32_t playbackChannels = channels, captureChannels = channels;
 
             inputAudioPorts.clear();
             for (unsigned int i = 0; i < captureChannels; ++i)
@@ -457,4 +465,36 @@ namespace pipedal
         return result;
     }
 
+
+
+    AlsaDeviceInfo MakeDummyDeviceInfo(uint32_t channels)
+    {
+        AlsaDeviceInfo result;
+        constexpr int DUMMY_DEVICE_ID_OFFSET = 100974;
+        result.cardId_ = DUMMY_DEVICE_ID_OFFSET+channels;
+        result.id_ = SS("dummy:channels_" << channels);
+        result.name_ = SS("Dummy Device (" << channels << " channels)");
+        result.longName_ = result.name_;
+        result.sampleRates_.push_back(44100);
+        result.sampleRates_.push_back(48000);
+        result.minBufferSize_ = 16;
+        result.maxBufferSize_ = 1024;
+        return result;
+    }
+    
 } // namespace
+
+uint32_t pipedal::GetDummyAudioChannels(const std::string &deviceName)
+{
+    uint32_t channels;
+    int pos = deviceName.find_last_of('_');
+    if (pos == std::string::npos)
+    {
+        throw std::runtime_error("Invalid dummy device name");
+    }
+    std::istringstream ss(deviceName.substr(pos+1));
+    ss >> channels;
+    return channels;
+
+}
+

@@ -20,6 +20,12 @@
 import {PiPedalArgumentError} from './PiPedalError';
 import {AlsaMidiDeviceInfo} from './AlsaMidiDeviceInfo';
 
+function getChannelNumber(channelId: string): number {
+    let pos = channelId.indexOf("_");
+    let i = Number(channelId.substring(pos+1));
+    return i;
+}
+
 export class JackChannelSelection {
     deserialize(input: any): JackChannelSelection
     {
@@ -57,7 +63,8 @@ export class JackChannelSelection {
                 return "Stereo";
             } 
             if (selectedChannels.length === 1) return "Mono";
-            return "Invalid selection";
+
+            return "\u00A0"; // nbsp
 
         }
         if (selectedChannels.length === 0) return "Invalid selection";
@@ -69,12 +76,22 @@ export class JackChannelSelection {
             } else if (selectedChannels[0] === availableChannels[1]) {
                 return "Mono (right channel only)";
             } else {
+                return "\u00A0"; // nbsp
                 throw new PiPedalArgumentError("Invalid channel selection."); // should be subset of jackConfiguration.
             }
         } else {
-            if (selectedChannels.length === 2) return "Stereo (custom selection)";
-            if (selectedChannels.length === 1) return "Mono (custom selection)";
-            throw new PiPedalArgumentError("Invalid channel selection."); // should be subset of jackConfiguration.        
+            if (selectedChannels.length === 2) 
+            {
+                let result: string = "Stereo (" + (getChannelNumber(selectedChannels[0])+1) + "," + (getChannelNumber(selectedChannels[1])+1) + ")";
+                return result;
+            }
+            if (selectedChannels.length === 1) 
+            {
+                let result: string = "Mono (" + (getChannelNumber(selectedChannels[0])+1) +")";
+                return result;
+
+            }
+            return "\u00A0"; // nbsp
         }
     }
     getAudioInputDisplayValue(jackConfiguration: JackConfiguration): string

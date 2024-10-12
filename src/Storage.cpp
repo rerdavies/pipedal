@@ -683,7 +683,7 @@ void Storage::SetJackChannelSelection(const JackChannelSelection &channelSelecti
     this->isJackChannelSelectionValid = true;
     SaveChannelSelection();
 }
-const JackChannelSelection &Storage::GetJackChannelSelection(const JackConfiguration &jackConfiguration)
+JackChannelSelection Storage::GetJackChannelSelection(const JackConfiguration &jackConfiguration)
 {
     if (!this->isJackChannelSelectionValid)
     {
@@ -691,10 +691,9 @@ const JackChannelSelection &Storage::GetJackChannelSelection(const JackConfigura
         {
             auto defaultSelection = JackChannelSelection::MakeDefault(jackConfiguration);
             SetJackChannelSelection(defaultSelection);
-            return this->jackChannelSelection;
         }
     }
-    return jackChannelSelection;
+    return jackChannelSelection.RemoveInvalidChannels(jackConfiguration);
 }
 
 void Storage::LoadChannelSelection()

@@ -1636,7 +1636,7 @@ public:
         if (jackServerSettings.IsDummyAudioDevice())
         {
             this->isDummyAudioDriver = true;
-            this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this));
+            this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this,jackServerSettings.GetAlsaInputDevice()));
         }
         else
         {

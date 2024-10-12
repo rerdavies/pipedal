@@ -65,12 +65,22 @@ function removePort(selectedChannels: string[], channel: string) {
     return result;
 }
 
+function makeChannelName(id: string)
+{
+    let pos = id.lastIndexOf("_");
+    if (pos === -1) 
+    {
+        return id;
+    }
+    let i = Number(id.substring(pos+1));
+    return "Channel " + (i+1);
+}
 function SelectChannelsDialog(props: SelectChannelsDialogProps) {
     //const classes = useStyles();
     const { onClose, selectedChannels, availableChannels, open } = props;
     const [currentSelection, setCurrentSelection] = useState(selectedChannels);
 
-    let showCheckboxes = availableChannels.length > 2;
+    let showCheckboxes = availableChannels.length !== 2;
     if (showCheckboxes) {
 
         let toggleSelect = (value: string) => {
@@ -85,23 +95,25 @@ function SelectChannelsDialog(props: SelectChannelsDialogProps) {
             onClose(null);
         };
         const handleOk = (): void => {
-            onClose(currentSelection);
+            if (currentSelection.length >= 1 && currentSelection.length <= 2)
+            {
+                onClose(currentSelection);
+            }
         };
 
-
         return (
-            <DialogEx tag="audioChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
+            <DialogEx tag="audioChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open} fullWidth maxWidth="xs"
                 onEnterKey={handleOk}
             >
                 <DialogTitle id="simple-dialog-title">Select Channels</DialogTitle>
                 <List>
                     {availableChannels.map((channel) => (
-                        <ListItem button >
+                        <ListItem button key={channel}>
                             <FormControlLabel
                                 control={
-                                    <Checkbox checked={isChecked(currentSelection, channel)} onClick={() => toggleSelect(channel)} key={channel} />
+                                    <Checkbox checked={isChecked(currentSelection, channel)} onClick={() => toggleSelect(channel)} style={{marginLeft: 24}} />
                                 }
-                                label={channel}
+                                label={makeChannelName(channel)}
                             />
                         </ListItem>
                     )

@@ -22,6 +22,7 @@
 #include "json.hpp"
 
 namespace pipedal {
+
     class AlsaDeviceInfo {
     public:
         int cardId_ = -1;
@@ -30,7 +31,11 @@ namespace pipedal {
         std::string longName_;
         std::vector<uint32_t> sampleRates_;
         uint32_t minBufferSize_ = 0,maxBufferSize_ = 0;
-    
+
+        bool isDummyDevice() const {
+            return id_.starts_with("dummy:");
+        }
+
         DECLARE_JSON_MAP(AlsaDeviceInfo);
 
     };

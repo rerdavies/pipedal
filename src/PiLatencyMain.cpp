@@ -183,8 +183,8 @@ public:
             JackConfiguration jackConfiguration;
             jackConfiguration.AlsaInitialize(serverSettings);
 
-            auto & availableInputs = jackConfiguration.GetInputAudioPorts();
-            auto & availableOutputs = jackConfiguration.GetOutputAudioPorts();
+            auto & availableInputs = jackConfiguration.inputAudioPorts();
+            auto & availableOutputs = jackConfiguration.outputAudioPorts();
 
 
             std::vector<std::string> inputAudioPorts, outputAudioPorts;

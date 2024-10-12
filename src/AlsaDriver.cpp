@@ -32,6 +32,7 @@
 #include <thread>
 #include "RtInversionGuard.hpp"
 #include "PiPedalException.hpp"
+#include "DummyAudioDriver.hpp"
 
 #include "CpuUse.hpp"
 
@@ -2022,13 +2023,15 @@ namespace pipedal
     {
         if (jackServerSettings.IsDummyAudioDevice())
         {
+            auto nChannels = GetDummyAudioChannels(jackServerSettings.GetAlsaInputDevice());
+            
             inputAudioPorts.clear();
-            inputAudioPorts.push_back(std::string("system::capture_0"));
-            inputAudioPorts.push_back(std::string("system::capture_1"));
             outputAudioPorts.clear();
-            outputAudioPorts.push_back(std::string("system::playback_0"));
-            outputAudioPorts.push_back(std::string("system::playback_1"));
-
+            for (uint32_t i = 0; i < nChannels; ++i)
+            {
+                inputAudioPorts.push_back(std::string(SS("system::capture_" << i)));
+                outputAudioPorts.push_back(std::string(SS("system::playback_" << i)));
+            }
             return true;
         }
 
