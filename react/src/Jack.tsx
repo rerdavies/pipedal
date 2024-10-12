@@ -77,7 +77,6 @@ export class JackChannelSelection {
                 return "Mono (right channel only)";
             } else {
                 return "\u00A0"; // nbsp
-                throw new PiPedalArgumentError("Invalid channel selection."); // should be subset of jackConfiguration.
             }
         } else {
             if (selectedChannels.length === 2) 
