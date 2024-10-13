@@ -76,7 +76,7 @@
             "request": "launch",
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
-            "args": [   "/etc/pipedal/config",  "/etc/pipedal/react",  "-port", "0.0.0.0:8080"  ],
+            "args": [   "/etc/pipedal/config",  "/etc/pipedal/react",  "-port", "0.0.0.0:8080", "-log-level","debug"  ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [

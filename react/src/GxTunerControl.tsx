@@ -176,7 +176,8 @@ const GxTunerControl =
                 {
                     midiNote = value;
                 } else {
-                    if (value < 65)
+                    hz = value;
+                    if (hz < 65)
                     {
                         hz = -1;
                         midiNote = -1;
