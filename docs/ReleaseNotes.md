@@ -4,7 +4,7 @@
 
 Features:
 - dB readings displayed as text under the main VUs.
-- Snapshot button text now gets larger up on large screens. 
+- Snapshot button title text now gets larger on large screens. 
 - Selection indicators on Snapshot buttons are more visible.
 
 
@@ -13,18 +13,15 @@ Bug fixes:
 - No longer crashes when using an audio adapter with mono input.
 - Reload after a being suspended in the Android Client in order to ensure that controls and VUs continue to update. Not ideal, but when Android suspends a web app, web socket messages get silently discarded, so there's not much choice about it.
 - GxTuner display now updates.
-- Correct Esc and Enter key handling in search control of the Load Plugin dialog.
-- Android remote: can connect when both Data connection and Hotspot connection are active.
-- Stack dumps get written to systemd log on segment violations, to assist in field diagnostics.
+- Correct Escape and Enter key handling in search control of the Load Plugin dialog.
+- Android remote: can connect when both Data connection and hotspot connection are active.
+- Stack dumps get written to systemd log on segment violations (should make it easier to diagnose crashes in the field).
 
 Known issues:
 - To get the Android client to correctly follow system Dark Mode settings, you must update the Android app. You can work around the problem by explicitly selecting Light or Dark mode instead.
 - To get the Android client to connect when both the hot-spot and data connections are active, you must update the Android app. In the meantime, you can work around the problem by going to Android Network Settings, and clicking to disconnect and then reconnect the hot-spot connection (which will disable the data connection). 
 
 The updated Android app has been submitted, and should show up on Google Play sometime tomorrow morning.
-
-
-
 
 
 ## PiPedal 1.3.56 Release
