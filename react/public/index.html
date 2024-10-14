@@ -6,7 +6,8 @@
   <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#000000" />
-  <meta name="description" content="PiPedal Guitar Pedals" />
+  <meta name="color-scheme" content="dark light"/> <!-- uses media queries in web views. -->
+    <meta name="description" content="PiPedal Guitar Pedals" />
   <!--
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
     -->
@@ -42,19 +43,39 @@
   <script>
     const androidHosted = !!(window.AndroidHost);
 
+    var colorScheme = localStorage.getItem("colorScheme");
+    if (androidHosted)
+    {
+       var hostColorScheme  = window.AndroidHost.getThemePreference();
+       switch (hostColorScheme)
+       {
+        case 0: 
+          colorScheme = "Light";
+          break;
+        case 1:
+          colorScheme = "Dark";
+          break;
+        case 2:
+          {
+            // use the host's interpretation of the current system night mode.
+            colorScheme = window.AndroidHost.isDarkTheme() ? "Dark": "Light";
+          }
+          break;
+       }
+    }
+    if (!colorScheme)
+    {
+      colorScheme = "Dark";
+    }
     var darkMode = false;
     var useSystem = false;
 
     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    switch (localStorage.getItem("colorScheme")) {
+    switch (colorScheme) {
       case null:
       default:
-        if (androidHosted) {
-          useSystem = true;
-        } else {
-          darkMode = false;
-        }
+        darkMode = false;
         break;
 
       case "Light":
@@ -68,7 +89,7 @@
         break;
     }
     if (useSystem) {
-      darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      darkMode = prefersDark;
     }
 
     if (!darkMode) {

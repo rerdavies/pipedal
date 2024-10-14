@@ -31,6 +31,7 @@ export interface  AndroidHostInterface {
     launchExternalUrl(url:string): boolean;
     setThemePreference(theme: number): void;
     getThemePreference(): number;
+    isDarkTheme?: ()=> boolean;
 };
 
 export class FakeAndroidHost implements AndroidHostInterface
@@ -43,6 +44,9 @@ export class FakeAndroidHost implements AndroidHostInterface
     }
     chooseNewDevice(): void {
         
+    }
+    isDarkTheme(): boolean {
+        return true;
     }
     setDisconnected(isDisconnected: boolean): void {
         
