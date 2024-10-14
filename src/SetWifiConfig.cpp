@@ -544,9 +544,9 @@ p2p configuration:
 dnsmaqsq.d/30-pipedal-p2p.conf:
 
 interface=p2p-wlan0-0
-    dhcp-range=p2p-wlan0,173.24.0.3,172.23.0.127,1h
+    dhcp-range=p2p-wlan0,173.24.0.3,192.168.60.127,1h
     domain=local
-    address=/pipedal.local/172.23.0.2
+    address=/pipedal.local/192.168.60.2
 
 except-interface=eth0
 except-interface=wlan0
@@ -556,8 +556,8 @@ except-interface=lo
 dhcpcd.conf:
 ======
 interface p2p-wlan0-0
-     static ip_address=172.24.0.1/16
-     domain_name_servers=172.24.0.1
+     static ip_address=192.168.60.1/16
+     domain_name_servers=192.168.60.1
 
 Watch resolv.conf to make sure we don't lose DNS servers.
 ************************************************************************************/
@@ -672,8 +672,8 @@ static void ConfigDhcpcdForP2p()
     // dhcpcd.conf:
     // ======
     // interface p2p-wlan0-0
-    //      static ip_address=172.24.0.1/24
-    //      domain_name_server=172.24.0.1
+    //      static ip_address=192.168.60.1/24
+    //      domain_name_server=192.168.60.1
 
     int line = dhcpcd.GetLineThatStartsWith("hostname");
     std::string hostNameLine;
@@ -691,8 +691,8 @@ static void ConfigDhcpcdForP2p()
     {
         line = dhcpcd.GetLineCount();
         // interface p2p-wlan0-0
-        //      static ip_address=172.24.0.1/16 (trying int on .1.)
-        //      domain_name_server=172.24.0.1
+        //      static ip_address=192.168.60.1/16 (trying int on .1.)
+        //      domain_name_server=192.168.60.1
 
         dhcpcd.InsertLine(line++, "interface p2p-wlan0-0");
         dhcpcd.InsertLine(line++, "   static ip_address=" P2P_INTERFACE_ADDR);
@@ -705,8 +705,8 @@ static void ConfigDhcpcdForP2p()
             line = dhcpcd.GetLineCount();
         }
         // interface p2p-wlan0-0
-        //      static ip_address=172.24.0.1/16 (trying int on .1.)
-        //      domain_name_server=172.24.0.1
+        //      static ip_address=192.168.60.1/16 (trying int on .1.)
+        //      domain_name_server=192.168.60.1
 
         dhcpcd.InsertLine(line++, SS("allowinterfaces p2p-" << GetWifiConfigWlanAddress() << "-*").c_str());
         dhcpcd.InsertLine(line++, "static ip_address=" P2P_INTERFACE_ADDR);

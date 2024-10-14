@@ -607,6 +607,11 @@ export const LoadPluginDialog =
                 this.hSearchTimeout = undefined;
             }
 
+            handleApplyFilter() 
+            {
+                this.handleSearchStringReady();
+            }
+
             cancelSearchTimeout()
             {
                 if (this.hSearchTimeout) {
@@ -733,6 +738,9 @@ export const LoadPluginDialog =
                                                 showSearchIcon={showSearchIcon}
                                                 onTextChanged={(text) => {
                                                     this.handleSearchStringChanged(text);
+                                                }}
+                                                onApplyFilter={() => {
+                                                    this.handleApplyFilter();
                                                 }}
                                                 onClearFilterClick={() => {
                                                     if (this.state.search_string !== "") {

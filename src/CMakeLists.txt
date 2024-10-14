@@ -5,6 +5,10 @@ set (CMAKE_INSTALL_PREFIX "/usr/")
 
 set (USE_PCH 1)
 
+set (ENABLE_BACKTRACE 1)
+
+set (USE_SANITIZE true)
+
 set(CXX_STANDARD 20)
 
 include(FindPkgConfig)
@@ -96,9 +100,6 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set (USE_SANITIZE true)
-
-
 if (!ENABLE_VST3)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-psabi -DARCHITECTURE=${CPACK_SYSTEM_NAME}")
 else()
@@ -119,10 +120,17 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
     endif()
 elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     message(STATUS "RelWithgDebInfo build")
-    #set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "" )
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DNDEBUG" )
 else()
     message(STATUS "Release build")
-    #set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "" )
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DNDEBUG" )
+endif()
+
+if (ENABLE_BACKTRACE)
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic")
+    if (${DEBIAN_ARCHITECTURE} MATCHES arm64)
+        set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -funwind-tables")
+    endif()
 endif()
 
 
@@ -291,6 +299,9 @@ add_executable(pipedald
     main.cpp 
     )
 target_include_directories(pipedald PRIVATE ${PIPEDAL_INCLUDES})
+
+target_compile_definitions(pipedald PRIVATE "ENABLE_BACKTRACE=${ENABLE_BACKTRACE}")
+
 
 target_link_libraries(pipedald PRIVATE PiPedalCommon
    
@@ -627,7 +638,7 @@ add_executable(pipedalconfig
 
     )
 
-target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs
+target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs 
     )
 
 add_executable(pipedal_latency_test

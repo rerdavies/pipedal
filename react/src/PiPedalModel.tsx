@@ -457,13 +457,39 @@ export class PiPedalModel //implements PiPedalModel
         this.onSocketConnectionLost = this.onSocketConnectionLost.bind(this);
     }
 
+
+    private expectDisconnectTimer?: NodeJS.Timeout = undefined;
+
+    cancelExpectDisconnectTimer()
+    {
+        if (this.expectDisconnectTimer) {
+            clearTimeout(this.expectDisconnectTimer);
+        }
+    }
+    startExpectDisconnectTimer()
+    {
+        this.cancelExpectDisconnectTimer();
+        // poll for access to a running pipedal server
+        this.expectDisconnectTimer = setTimeout(
+            async () => {
+                this.reconnectReason = ReconnectReason.Disconnected;
+            },
+            5 * 1000);
+
+    }
+
     expectDisconnect(reason: ReconnectReason) {
+        this.cancelExpectDisconnectTimer();
         this.reconnectReason = reason;
+        if (this.reconnectReason !== ReconnectReason.Disconnected)
+        {
+            this.startExpectDisconnectTimer();
+        }
     }
 
     onSocketReconnecting(retry: number, maxRetries: number): boolean {
+        this.cancelExpectDisconnectTimer();
         if (this.isClosed) return false;
-        if (this.visibilityState.get() === VisibilityState.Hidden) return false;
         //if (retry !== 0) {
         switch (this.reconnectReason) {
             case ReconnectReason.Disconnected:
@@ -515,7 +541,6 @@ export class PiPedalModel //implements PiPedalModel
 
     }
     onSocketMessage(header: PiPedalMessageHeader, body?: any) {
-        if (this.visibilityState.get() === VisibilityState.Hidden) return;
 
         let message = header.message;
         if (message === "onControlChanged") {
@@ -1187,7 +1212,6 @@ export class PiPedalModel //implements PiPedalModel
         if (this.backgroundStateTimeout) {
             clearTimeout(this.backgroundStateTimeout);
             this.backgroundStateTimeout = undefined;
-            return;
         }
         if (this.state.get() === State.Background) {
             console.log("Exiting background state.");
@@ -1200,17 +1224,19 @@ export class PiPedalModel //implements PiPedalModel
         // on Android, delay entering background state by 180 seconds,
         // since background management is more complicated. e.g. screen flips, and system upload dialogs.
 
-        if (this.isAndroidHosted()) {
-            if (this.backgroundStateTimeout) {
-                clearTimeout(this.backgroundStateTimeout);
-            }
-            this.backgroundStateTimeout = setTimeout(() => {
-                this.backgroundStateTimeout = undefined;
-                this.enterBackgroundState_();
-            }, 180000);
-        } else {
-            this.enterBackgroundState_();
-        }
+        // if (this.isAndroidHosted()) {
+        //     yyyx;
+        //     if (this.backgroundStateTimeout) {
+        //         clearTimeout(this.backgroundStateTimeout);
+        //     }
+        //     this.backgroundStateTimeout = setTimeout(() => {
+        //         this.backgroundStateTimeout = undefined;
+        //         this.enterBackgroundState_();
+        //     }, 180000);
+        // } else {
+        //     this.enterBackgroundState_();
+        // }
+        this.enterBackgroundState_();
     }
     enterBackgroundState_() {
         if (this.state.get() !== State.Background) {
@@ -1227,11 +1253,9 @@ export class PiPedalModel //implements PiPedalModel
 
             switch (document.visibilityState) {
                 case "visible":
-                    this.visibilityState.set(VisibilityState.Visible);
                     this.exitBackgroundState();
                     break;
                 case "hidden":
-                    this.visibilityState.set(VisibilityState.Hidden);
                     this.enterBackgroundState();
                     break;
             }
@@ -2424,9 +2448,6 @@ export class PiPedalModel //implements PiPedalModel
 
     }
     private handleNotifyPatchProperty(clientHandle: number, instanceId: number, propertyUri: string, jsonObject: any) {
-        // yyy this whole path is obsolete.  We now get property change notifications
-        // always, since the entire pedalboard must track excactly.
-        // Review carefully.
         let pedalboard = this.pedalboard.get();
         let pedalboardItem = pedalboard.getItem(instanceId);
         if (pedalboardItem) {

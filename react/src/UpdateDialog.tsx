@@ -211,7 +211,7 @@ export default class UpdateDialog extends ResizeResponsiveComponent<UpdateDialog
                                         <Typography noWrap variant="body2" color="textSecondary"  >
                                             Update  version:
                                         </Typography>
-                                        <Typography noWrap variant="body2" color="textSecondary"  >
+                                        <Typography noWrap variant="body2" color="textSecondary" style={{ marginLeft: 16 }} >
                                             {updateRelease.upgradeVersionDisplayName}
                                         </Typography>
                                     </div>

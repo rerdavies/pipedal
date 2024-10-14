@@ -27,7 +27,7 @@
 #include "ServiceConfiguration.hpp"
 #include "AvahiService.hpp"
 #include "WebServerConfig.hpp"
-
+#include <execinfo.h>
 #include "PiPedalSocket.hpp"
 #include "PluginHost.hpp"
 #include <boost/system/error_code.hpp>
@@ -87,11 +87,50 @@ static void AsanCheck()
     exit(EXIT_FAILURE);
 }
 
+#if ENABLE_BACKTRACE
+void segvHandler(int sig) {
+    void *array[10];
+
+    // Get void*'s for all entries on the stack
+    size_t size;
+    size = backtrace(array, 10);
+
+    // Print out all the frames to stderr
+    const char *message = "Error: SEGV signal received.\n";
+    write(STDERR_FILENO,message,strlen(message));
+
+    backtrace_symbols_fd(array+2, size-2, STDERR_FILENO);
+    _exit(EXIT_FAILURE);
+}
+
+
+static void EnableBacktrace()
+{
+    signal(SIGSEGV, segvHandler); 
+
+}
+#endif
+
+static bool TryGetLogLevel(const std::string&strLogLevel,LogLevel*result)
+{
+    if (strLogLevel == "debug") {*result= LogLevel::Debug; return true;}
+    if (strLogLevel == "info") {*result= LogLevel::Info; return true;}
+    if (strLogLevel == "warning") {*result= LogLevel::Warning; return true;}
+    if (strLogLevel == "error") { *result= LogLevel::Error; return true;}
+    *result = LogLevel::Info;
+    return false;
+}
+
+
 int main(int argc, char *argv[])
 {
 
 #ifndef WIN32
-    umask(002); // newly created files in /var/pipedal get 775-ish permissions, which improves debugging/live-service interaction.
+    umask(002); // newly created files in /var/pipedal get 7cd75-ish permissions, which improves debugging/live-service interaction.
+#endif
+
+#if ENABLE_BACKTRACE
+    EnableBacktrace();
 #endif
 
     // Check command line arguments.
@@ -99,12 +138,14 @@ int main(int argc, char *argv[])
     bool error = false;
     bool systemd = false;
     bool testExtraDevice = false;
+    std::string logLevel;
     std::string portOption;
 
     CommandLineParser parser;
     parser.AddOption("-h", &help);
     parser.AddOption("--help", &help);
     parser.AddOption("-systemd", &systemd);
+    parser.AddOption("-log-level",&logLevel);
     parser.AddOption("-port", &portOption);
     parser.AddOption("-test-extra-device", &testExtraDevice); // advertise two different devices (for testing multi-device connect)
 
@@ -139,6 +180,7 @@ int main(int argc, char *argv[])
                   << "Options:\n"
                   << "   -systemd: Log to systemd journals instead of to the console.\n"
                   << "   -port: Port to listen on e.g. 80, or 0.0.0.0:80\n"
+                  << "   -log-level: (debug|info|warning|error)"
                   << "Example:\n"
                   << "    pipedald /etc/pipedal/config /etc/pipedal/react -port 80 \n"
                      "\n"
@@ -180,6 +222,18 @@ int main(int argc, char *argv[])
     }
 
     Lv2Log::log_level(configuration.GetLogLevel());
+    if (logLevel.length() != 0)
+    {
+        LogLevel lv2LogLevel;
+        if (TryGetLogLevel(logLevel,&lv2LogLevel))
+        {
+            Lv2Log::log_level(lv2LogLevel);
+
+        } else {
+            Lv2Log::error(SS("Invalid log level: " << logLevel));
+            return EXIT_SUCCESS; // indicate to systemd that we don't want a restart.
+        }
+    }
 
     if (portOption.length() != 0)
     {

@@ -20,8 +20,7 @@
 import React, { Component } from 'react';
 import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
-import createStyles from '@mui/styles/createStyles';
-import withStyles from '@mui/styles/withStyles';
+import {createStyles,withStyles} from '@mui/styles';
 import { PiPedalModel, State,PiPedalModelFactory, VuUpdateInfo, VuSubscriptionHandle } from './PiPedalModel';
 
 
@@ -55,13 +54,15 @@ class TelltaleState {
     telltaleDb: number = MIN_DB;
     lastTelltaleTime: number = 0;
     telltaleHoldTime: number = 0;
+    telltaleHoldValue: number = MIN_DB;
 
     reset() : void {
         this.telltaleHoldTime = 0;
         this.lastTelltaleTime = 0;
         this.telltaleDb = MIN_DB;
+        this.telltaleHoldValue = MIN_DB;
     }
-    getValue(currentDb: number): number {
+    getTelltaleHoldValue(currentDb: number): number {
         let t = new Date().getTime();
 
         let holdValue: number;
@@ -78,6 +79,7 @@ class TelltaleState {
                 }
             }
         }
+        this.telltaleHoldValue = holdValue;
 
         if (currentDb > holdValue) {
             this.telltaleDb = currentDb;
@@ -93,7 +95,7 @@ class TelltaleState {
 const LEFT_X = BORDER_THICKNESS;
 const RIGHT_X = BORDER_THICKNESS + + CHANNEL_WIDTH + BORDER_THICKNESS;
 
-const styles = ({ palette }: Theme) => createStyles({
+const styles = (theme: Theme) => createStyles({
     frame: {
         position: "relative",
         width: CHANNEL_WIDTH + 2*BORDER_THICKNESS,
@@ -113,6 +115,23 @@ const styles = ({ palette }: Theme) => createStyles({
         height: DISPLAY_HEIGHT,
         background: "black",
         overflow: "hidden",
+    },
+    monoTextFrame: {
+        display: "flex",flexFlow: "column nowrap", alignItems: "center", textAlign: "center"
+    },
+    stereoTextFrame: {
+        display: "flex",flexFlow: "column nowrap", alignItems: "center", textAlign: "center"
+    },
+    vuTextFrame: {
+        color: theme.palette.text.secondary,
+        display: "table-cell",
+        position: "relative",
+        marginTop: 4,
+        textAlign: "center",
+        width: 20, height: 16,
+        fontSize: "11px",
+        justifyContent: "center",
+        alignItems: "center"
     },
     redFrameL: {
         position: "absolute",
@@ -189,6 +208,7 @@ interface VuMeterProps extends WithStyles<typeof styles> {
     instanceId: number;
     display: "input" | "output";
     theme: Theme;
+    displayText?: boolean;
 }
 
 interface VuMeterState {
@@ -213,6 +233,7 @@ export const VuMeter =
         class extends Component<VuMeterProps, VuMeterState>
         {
             divRef: React.RefObject<HTMLDivElement> = React.createRef();
+            textRef: React.RefObject<HTMLDivElement> = React.createRef();
             model: PiPedalModel;
 
             yZero: number;
@@ -239,6 +260,35 @@ export const VuMeter =
 
             vuInfo?: VuUpdateInfo;
             requesttedStereoState: boolean = false;
+
+            updateText(telltaleDb: number)
+            {
+                if (this.textRef.current) {
+                    let displayValue: string; 
+                    if (telltaleDb <= MIN_DB)
+                    {
+                        displayValue = "-";
+                    } else {
+                        let iDb = Math.round(telltaleDb);
+                        if (iDb > 0)
+                        {
+                            displayValue = "+" + Math.round(telltaleDb).toString() + "\u00A0"
+                        } else if (iDb < 0) {
+                            displayValue = Math.round(telltaleDb).toString() + "\u00A0";
+                        } else {
+                            if (telltaleDb === 0) {
+                                displayValue = "0";
+                            } else if (telltaleDb > 0)
+                            {
+                                displayValue = "+0\u00A0";
+                            } else {
+                                displayValue = "-0\u00A0";
+                            }
+                        }
+                    }
+                    this.textRef.current.innerText = displayValue;
+                }
+            }
 
             onVuChanged(vuInfo: VuUpdateInfo): void {
                 let value: number;
@@ -291,6 +341,15 @@ export const VuMeter =
                     };
                     this.updateChannel(vuData, this.telltaleStateR);
                 }
+                if (this.props.displayText)
+                {
+                    if (this.state.isStereo)
+                    {
+                        this.updateText(Math.max(this.telltaleStateL.telltaleHoldValue,this.telltaleStateR.telltaleHoldValue));
+                    } else {
+                        this.updateText(this.telltaleStateL.telltaleHoldValue);
+                    }
+                }
             }
 
             resetTelltales() {
@@ -319,7 +378,7 @@ export const VuMeter =
                         vuData.redDiv.style.top = y + "px";
                     }
                 }
-                let dbTelltale = telltaleState.getValue(db);
+                let dbTelltale = telltaleState.getTelltaleHoldValue(db);
                 let yTelltale = dbToY(dbTelltale);
 
                 if (yTelltale < this.yZero) {
@@ -381,8 +440,28 @@ export const VuMeter =
 
 
             render() {
+                let displayText = this.props.displayText??false;
                 let classes = this.props.classes;
+                if (displayText)
+                {
+                    return (
+                        <div className={this.state.isStereo? classes.stereoTextFrame: classes.monoTextFrame}>
+                            {
+                                this.renderVus()
+                            }
+                            <div ref={this.textRef} className={classes.vuTextFrame}
+                            />
+                        </div>
+                    );
+                } else {
+                    return this.renderVus();
+                }
 
+            }
+
+            renderVus() {
+
+                let classes = this.props.classes;
                 if (!this.state.isStereo) {
                     return (<div className={classes.frame} ref={this.divRef}
                     >

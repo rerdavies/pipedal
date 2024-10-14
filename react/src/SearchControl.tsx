@@ -17,7 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import React from 'react';
+import React, { KeyboardEvent } from 'react';
 import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
@@ -39,6 +39,7 @@ interface SearchControlProps extends WithStyles<typeof styles> {
     onTextChanged: (searchString: string) => void;
     onClick: () => void;
     onClearFilterClick: () => void;
+    onApplyFilter: () => void;
     inputRef?: React.RefObject<HTMLInputElement>;
     showSearchIcon?: boolean
 
@@ -65,6 +66,17 @@ const SearchControl = withStyles(styles, { withTheme: true })(
                 return this.props.inputRef;
             }
             return this.defaultInputRef;
+        }
+        onKeyDown(ev: KeyboardEvent)
+        {
+            ev.stopPropagation(); // don't let the ENTER key propagate propagate the enclosing dialog Enter key handler.
+            if (ev.key === "Enter")
+            {
+                this.props.onApplyFilter();
+            } else if (ev.key === "Escape")
+            {
+                this.props.onClearFilterClick();
+            }
         }
         componentDidUpdate(oldProps: SearchControlProps) {
             if (oldProps.collapsed ?? false !== this.props.collapsed ?? false) {
@@ -96,7 +108,9 @@ const SearchControl = withStyles(styles, { withTheme: true })(
                     )
 
                     }
-                    <Input spellCheck={false} style={{
+                    <Input spellCheck={false}
+                        onKeyDown={(ev)=>{this.onKeyDown(ev);}}
+                         style={{
                         flex: "1 1", visibility: (this.props.collapsed ?? false) ? "collapse" : "visible", marginRight: 12, height: 32,
                     }}
                         inputRef={this.getInputRef()}

@@ -94,7 +94,7 @@ const styles = (theme: Theme) => createStyles({
     },
     vuMeterL: {
         position: "fixed",
-        paddingLeft: 12,
+        paddingLeft: 6,
         paddingRight: 4,
         paddingBottom: 24,
         left: 0,
@@ -634,10 +634,10 @@ const PluginControlView =
                 return (
                     <div className={classes.frame}>
                         <div className={classes.vuMeterL}>
-                            <VuMeter display="input" instanceId={pedalboardItem.instanceId} />
+                            <VuMeter displayText={true} display="input" instanceId={pedalboardItem.instanceId} />
                         </div>
                         <div className={vuMeterRClass}>
-                            <VuMeter display="output" instanceId={pedalboardItem.instanceId} />
+                            <VuMeter displayText={true} display="output" instanceId={pedalboardItem.instanceId} />
                         </div>
                         <div className={gridClass}  >
                             {

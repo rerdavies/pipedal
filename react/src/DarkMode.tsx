@@ -17,7 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { AndroidHostInterface } from "./AndroidHost";
+import { AndroidHostInterface, getAndroidHost } from "./AndroidHost";
 
 export enum ColorTheme {
     Light,
@@ -25,7 +25,16 @@ export enum ColorTheme {
     System
 };
 
-
+export function getEffectiveColorScheme(): ColorTheme {
+    let androidHost = (window as any).AndroidHost as AndroidHostInterface;
+    if (androidHost) {
+        if (androidHost.isDarkTheme)
+            return androidHost.isDarkTheme() ? ColorTheme.Dark: ColorTheme.Light;
+        return ColorTheme.Dark;
+    }
+    return getColorScheme();
+    
+}
 
 export function getColorScheme(): ColorTheme {
     let androidHost = (window as any).AndroidHost as AndroidHostInterface;
@@ -85,13 +94,28 @@ export function setColorScheme(value: ColorTheme): void {
     localStorage.setItem("colorScheme", storageValue);
 }
 
+var gIsDarkTheme: boolean| undefined = undefined;
+
 export function isDarkMode(): boolean {
+    if (gIsDarkTheme !== undefined)
+    {
+        return gIsDarkTheme;
+    }
     var colorTheme = getColorScheme();
     if (colorTheme === ColorTheme.System) {
+        let androidHost = getAndroidHost();
+        if (androidHost)
+        {
+            if (androidHost.isDarkTheme)
+            {
+                return gIsDarkTheme = androidHost.isDarkTheme();
+            }
+            return gIsDarkTheme = true;
+        }
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return true;
+            return gIsDarkTheme = true;
         }
     }
-    return colorTheme === ColorTheme.Dark;
+    return gIsDarkTheme = (colorTheme === ColorTheme.Dark);
 }
 

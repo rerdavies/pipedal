@@ -103,7 +103,7 @@ const appStyles = (theme: Theme) => createStyles({
         bottom: "0px",
         opacity: 0.8,
         background:
-            isDarkMode() ? "#222" : "#DDD",
+            isDarkMode() ? "#222" : "#EEE",
     },
     loadingContent: {
         display: "block",
