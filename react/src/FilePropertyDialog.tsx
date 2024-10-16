@@ -33,6 +33,7 @@ import AudioFileIcon from '@mui/icons-material/AudioFile';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FolderIcon from '@mui/icons-material/Folder';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DialogActions from '@mui/material/DialogActions';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -60,6 +61,32 @@ const styles = (theme: Theme) => createStyles({
     },
 });
 
+const audioFileExtensions: {[name: string]: boolean} = {
+    ".wav": true,
+    ".flac": true,
+    ".ogg": true,
+    ".aac": true,
+    ".au": true,
+    ".snd": true,
+    ".mid": true,
+    ".rmi": true,
+    ".mp3": true,
+    ".mp4": true,
+    ".aif": true,
+    ".aifc": true,
+    ".aiff": true,
+    ".ra": true
+};
+
+function isAudioFile(filename: string) {
+    let npos = filename.lastIndexOf('.');
+    let nposSlash = filename.lastIndexOf('/');
+    if (nposSlash >= npos) {
+        return false;
+    }
+    let extension = filename.substring(npos);
+    return audioFileExtensions[extension] !== undefined;
+}
 
 export interface FilePropertyDialogProps extends WithStyles<typeof styles>  {
     open: boolean,
@@ -470,6 +497,25 @@ export default withStyles(styles, { withTheme: true })(
         }
         return result;
     }
+    private getIcon(fileEntry: FileEntry)
+    {
+        if (fileEntry.filename === "")
+        {
+            return (<InsertDriveFileOutlinedIcon style={{ flex: "0 0 auto", opacity: 0.5, marginRight: 8, marginLeft: 8 }} />);
+        }
+        if (fileEntry.isDirectory)
+        {
+            return (
+                    <FolderIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
+            );
+        }
+        if (isAudioFile(fileEntry.filename))
+        {
+            return (<AudioFileIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />);
+        }
+        return (<InsertDriveFileIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />);
+    }
+
     render() {
         let classes = this.props.classes;
         let columnWidth = this.state.columnWidth;
@@ -571,12 +617,11 @@ export default withStyles(styles, { withTheme: true })(
                                 (this.state.columns !== 0) && // don't render until we have number of columns derived from layout.
                                 this.state.fileEntries.map(
                                     (value: FileEntry, index: number) => {
-                                        let isDefault = this.props.fileProperty.directory.startsWith("default");
                                         let displayValue = value.filename;
                                         if (displayValue === "") {
                                             displayValue = "<none>";
                                         } else {
-                                            if (isDefault)
+                                            if (value.isDirectory)
                                             {
                                                 displayValue = pathFileName(displayValue);
                                             } else {
@@ -601,14 +646,7 @@ export default withStyles(styles, { withTheme: true })(
                                             >
                                                 <div ref={scrollRef} style={{ position: "absolute", background: selectBg, width: "100%", height: "100%", borderRadius: 4 }} />
                                                 <div style={{ display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis", justifyContent: "start", alignItems: "center", width: "100%", height: "100%" }}>
-                                                    {value.filename === "" ?
-                                                        (<InsertDriveFileOutlinedIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />)
-                                                        : (
-                                                            value.isDirectory ? (
-                                                                <FolderIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
-                                                            ) : (
-                                                                <AudioFileIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
-                                                            ))}
+                                                    {this.getIcon(value)}
                                                     <Typography noWrap className={classes.secondaryText} variant="body2" style={{ flex: "1 1 auto", textAlign: "left" }}>{displayValue}</Typography>
                                                 </div>
                                             </ButtonBase>
@@ -725,7 +763,7 @@ export default withStyles(styles, { withTheme: true })(
     }
     openSelectedFile(): void {
         if (this.isDirectory(this.state.selectedFile)) {
-            let directoryName = pathFileNameOnly(this.state.selectedFile);
+            let directoryName = pathFileName(this.state.selectedFile);
             let navDirectory = pathConcat(this.state.navDirectory, directoryName);
             this.requestFiles(navDirectory);
             this.setState({ navDirectory: navDirectory });

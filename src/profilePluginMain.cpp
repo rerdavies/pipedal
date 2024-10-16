@@ -6,9 +6,11 @@
 #include "CommandLineParser.hpp"
 #include <thread>
 #include <chrono>
+#include "ss.hpp"
 
 // apt install google-perftools
 #include <gperftools/profiler.h>
+#include "ArmPerformanceCounters.hpp"
 
 using namespace pipedal;
 using namespace std;
@@ -79,6 +81,7 @@ private:
 struct ProfileOptions
 {
     std::string presetName;
+    std::string presetFileName;
     float benchmark_seconds = 20;
     std::string outputFilename = "/tmp/profilePlugin.perf";
     bool noProfile = false;
@@ -88,11 +91,17 @@ struct ProfileOptions
 
 void profilePlugin(const ProfileOptions &profileOptions)
 {
+
+#ifdef PIPEDAL_AARCH64
+    CacheMissCounter cacheMissCounter;
+#endif
+
     size_t nFrames = profileOptions.frameSize;
     Lv2Log::log_level(LogLevel::Info);
 
     /*** Initialize the model */
     PiPedalModel model;
+    Lv2Log::log_level(LogLevel::Error);
     fs::path doc_root = "/etc/pipedal/config";
     PiPedalConfiguration configuration;
     try
@@ -113,25 +122,59 @@ void profilePlugin(const ProfileOptions &profileOptions)
     // model.Load(); don't start audio.
 
     /* *** Load the preset.  */
-    PresetIndex presetIndex;
-    model.GetPresets(&presetIndex);
 
-    int64_t presetIndexId = 0;
-    bool presetIndexFound = false;
-    for (const auto &preset : presetIndex.presets())
+    bool presetValid = false;
+
+    if (profileOptions.presetName.length() != 0)
     {
-        if (preset.name() == profileOptions.presetName)
+        PresetIndex presetIndex;
+        model.GetPresets(&presetIndex);
+
+        int64_t presetIndexId = 0;
+        bool presetIndexFound = false;
+        for (const auto &preset : presetIndex.presets())
         {
-            presetIndexId = preset.instanceId();
-            presetIndexFound = true;
-            break;
+            if (preset.name() == profileOptions.presetName)
+            {
+                presetIndexId = preset.instanceId();
+                presetIndexFound = true;
+                break;
+            }
+        }
+        if (!presetIndexFound)
+        {
+            throw std::runtime_error("Preset not found.");
+        }
+        model.LoadPreset(-1, presetIndexId);
+    }
+    else if (profileOptions.presetFileName.length() != 0)
+    {
+        std::ifstream f(profileOptions.presetFileName);
+        if (!f.is_open())
+        {
+            throw std::runtime_error(SS("Unable to load preset file " << profileOptions.presetFileName << "."));
+        }
+        try
+        {
+            json_reader reader(f);
+            BankFile bankFile;
+            reader.read(&bankFile);
+            if (bankFile.presets().size() != 1)
+            {
+                throw new std::runtime_error(SS("Invalid preset file. Expection one preset, but " << bankFile.presets().size() << " presets were found."));
+            }
+            Pedalboard pedalboard = (bankFile.presets()[0]->preset());
+            model.SetPedalboard(-1,pedalboard);
+        }
+        catch (const std::exception &e)
+        {
+            throw std::runtime_error(SS("Invalid file format:  " << profileOptions.presetFileName << ". " << e.what() ));
         }
     }
-    if (!presetIndexFound)
+    else
     {
-        throw std::runtime_error("Preset not found.");
+        throw std::runtime_error("You must specify either a preset name or a preset file.");
     }
-    model.LoadPreset(-1, presetIndexId);
 
     auto pedalboard = model.GetCurrentPedalboardCopy();
     cout << "uri: " << pedalboard.items()[0].uri() << endl;
@@ -152,7 +195,6 @@ void profilePlugin(const ProfileOptions &profileOptions)
     RealtimeRingBufferWriter ringBufferWriter(&writerRingbuffer);
 
     RingBufferSink ringBufferSink(writerRingbuffer);
-
 
     // run once to get memory allocations in NAM and ML out of the way.
     lv2Pedalboard->Run(inputBuffers, outputBuffers, nFrames, &ringBufferWriter);
@@ -184,6 +226,10 @@ void profilePlugin(const ProfileOptions &profileOptions)
     {
         ProfilerStart(profileOptions.outputFilename.c_str());
     }
+#ifdef PIPEDAL_AARCH64
+    cacheMissCounter.start();
+#endif
+
     auto startTime = std::chrono::system_clock::now();
 
     size_t repetitions = static_cast<size_t>(48000 * profileOptions.benchmark_seconds / nFrames);
@@ -193,12 +239,21 @@ void profilePlugin(const ProfileOptions &profileOptions)
     }
 
     auto elapsedTime = std::chrono::high_resolution_clock::now() - startTime;
+
+#ifdef PIPEDAL_AARCH64
+    cacheMissCounter.stop();
+#endif
     if (!profileOptions.noProfile)
     {
         ProfilerStop();
     }
     std::chrono::milliseconds us = std::chrono::duration_cast<chrono::milliseconds>(elapsedTime);
     std::cout << "Ellapsed time: " << (us.count() / 1000.0) << "s" << endl;
+#ifdef PIPEDAL_AARCH64
+    std::cout << "L1 Cache Misses: " << cacheMissCounter.get_l1_misses() << endl;
+    // non-functional on Raspberry PI OS.
+    // std::cout << "L2 Cache Misses: " << cacheMissCounter.get_l2_misses()  << endl;
+#endif
 
     ringBufferSink.Close();
 
@@ -212,20 +267,29 @@ int main(int argc, char **argv)
         ProfileOptions profileOptions;
         bool help = false;
         CommandLineParser commandLineParser;
+        std::string presetFileName;
         commandLineParser.AddOption("w", "wait-for-work", &profileOptions.waitForWork);
         commandLineParser.AddOption("", "no-profile", &profileOptions.noProfile);
+        commandLineParser.AddOption("p", "preset-file", &presetFileName);
         commandLineParser.AddOption("o", "output", &profileOptions.outputFilename);
         commandLineParser.AddOption("s", "seconds", &profileOptions.benchmark_seconds);
         commandLineParser.AddOption("h", "help", &help);
 
         commandLineParser.Parse(argc, (const char **)argv);
 
-        if (commandLineParser.Arguments().size() != 1 || help)
+        bool argumentError = false;
+        if (commandLineParser.Arguments().size() == 1 && presetFileName.length() == 0)
+        {
+            cerr << "Error: You must supply either a preset name, or a preset file name" << endl;
+            argumentError = true;
+        }
+
+        if (argumentError || help)
         {
             cout << "profilePlugin - Generate profiling data for LV2 Plugins" << endl;
             cout << "Copyright (c) 2024 Robin E. R. Davies" << endl;
             cout << endl;
-            cout << "Syntax:  profilePlugin preset_name [options...]" << endl;
+            cout << "Syntax:  profilePlugin [preset_name] [options...]" << endl;
             cout << "         where preset_name is the name of a PiPedal preset." << endl;
             cout << endl;
             cout << "          A google-perf profile capture will be written to " << endl;
@@ -234,6 +298,8 @@ int main(int argc, char **argv)
             cout << "Options:" << endl;
             cout << "    --no-profile:" << endl;
             cout << "          do NOT generate a perf file." << endl;
+            cout << "    -p, --preset-file filename:" << endl;
+            cout << "          Load the specified preset file. " << endl;
             cout << "    -o, --output filename:" << endl;
             cout << "          The file to which profiler data is written. " << endl;
             cout << "          Defaults to /tmp/profilePlugin.perf" << endl;
@@ -241,12 +307,16 @@ int main(int argc, char **argv)
             cout << "          Assume that the plugin will load data on the LV2 scheduler thread." << endl;
             cout << "    -s, --seconds time_in_seconds: " << endl;
             cout << "          The number of seconds of audio to process." << endl;
-            cout << "     -h, --help:  display this message." << endl;
+            cout << "    -h, --help:  display this message." << endl;
             cout << endl;
             return help ? EXIT_SUCCESS : EXIT_FAILURE;
         }
 
-        profileOptions.presetName = commandLineParser.Arguments()[0];
+        if (commandLineParser.Arguments().size() != 0)
+        {
+            profileOptions.presetName = commandLineParser.Arguments()[0];
+        }
+        profileOptions.presetFileName = presetFileName;
 
         profilePlugin(profileOptions);
     }

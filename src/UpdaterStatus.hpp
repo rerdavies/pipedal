@@ -22,7 +22,9 @@
 #include "json.hpp"
 
 namespace pipedal {
-        enum class UpdatePolicyT
+    class UpdateStatus;
+
+    enum class UpdatePolicyT
     {
         // ordinal values must not change, as files depend on them.
         // must match declaration in Updater.tsx
@@ -37,14 +39,15 @@ namespace pipedal {
     {
     private:
         friend class UpdaterImpl;
+        friend class UpdateStatus;
         bool updateAvailable_ = false;
         std::string upgradeVersion_;            // just the version.
         std::string upgradeVersionDisplayName_; // display name for the version.
         std::string assetName_;                 // filename only
         std::string updateUrl_;                 // url from which to download the .deb file.
         std::string gpgSignatureUrl_;                 // url from which to download the .deb.asc file.
+        void UpdateForCurrentVersion(const std::string&currentVersion);
     public:
-        UpdateRelease();
 
         bool UpdateAvailable() const { return updateAvailable_; }
         const std::string &UpgradeVersion() const { return upgradeVersion_; }
@@ -78,8 +81,12 @@ namespace pipedal {
         std::chrono::system_clock::time_point LastUpdateTime() const;
         void LastUpdateTime(const std::chrono::system_clock::time_point &timePoint);
 
-        void ResetCurrentVersion();
+
+        void UpdateForCurrentVersion();
         bool IsValid() const { return isValid_; }
+
+        bool UpdateAvailable() const;
+
         const std::string &ErrorMessage() const { return errorMessage_; }
         bool IsOnline() const { return isOnline_; }
         const std::string &CurrentVersion() const { return currentVersion_; }

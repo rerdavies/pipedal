@@ -134,6 +134,9 @@ if (ENABLE_BACKTRACE)
 endif()
 
 
+
+
+
 # message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 # set(CMAKE_ENABLE_EXPORTS 1)
 
@@ -351,15 +354,19 @@ set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL true)
 if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
 
 
-    add_executable(profilePlugin
-        profilePluginMain.cpp
-        )
-    target_link_libraries(profilePlugin PRIVATE profiler  ${PIPEDAL_LIBS}) 
 
-    target_include_directories(profilePlugin PRIVATE ${PIPEDAL_INCLUDES}
+    add_executable(pipedalProfilePlugin
+        profilePluginMain.cpp ArmPerformanceCounters.hpp
         )
+    target_link_libraries(pipedalProfilePlugin PRIVATE profiler  ${PIPEDAL_LIBS}) 
 
-    set_target_properties(profilePlugin PROPERTIES EXCLUDE_FROM_ALL true)
+    target_include_directories(pipedalProfilePlugin PRIVATE ${PIPEDAL_INCLUDES}
+        )
+    if (${DEBIAN_ARCHITECTURE} MATCHES arm64)
+        target_compile_definitions(pipedalProfilePlugin PRIVATE "PIPEDAL_AARCH64")
+     endif()
+     
+
 
 endif()
 add_executable(jsonTest

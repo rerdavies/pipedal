@@ -68,7 +68,7 @@ public:
     virtual void SetUpdatePolicy(UpdatePolicyT updatePolicy) override;
     virtual void ForceUpdateCheck() override;
     virtual void DownloadUpdate(const std::string &url, std::filesystem::path *file, std::filesystem::path *signatureFile) override;
-    virtual UpdateStatus GetCurrentStatus() const override { return this->currentResult; }
+    virtual UpdateStatus GetCurrentStatus() const override;
     virtual UpdateStatus GetReleaseGeneratorStatus() override;
 
 private:
@@ -156,7 +156,7 @@ UpdateStatus UpdaterImpl::GetCachedUpdateStatus()
                 reader.read(&status);
 
                 // cached curruent version might come from a different version.
-                status.ResetCurrentVersion();
+                status.UpdateForCurrentVersion();
                 return status;
             }
         }
@@ -416,6 +416,36 @@ static int compareVersions(const std::string &l, const std::string &r)
     }
     return 0;
 }
+
+void UpdateRelease::UpdateForCurrentVersion(const std::string&currentVersion)
+{
+    if (compareVersions(currentVersion,this->UpgradeVersion()) >= 0)
+    {
+        this->updateAvailable_ = false;
+    }
+}
+
+bool UpdateStatus::UpdateAvailable() const
+{
+    if (!isValid_) return false;
+
+    switch (this->UpdatePolicy())
+    {
+        case UpdatePolicyT::Development:
+            return this->devRelease_.UpdateAvailable();
+            break;
+        case UpdatePolicyT::ReleaseOnly:
+            return this->releaseOnlyRelease_.UpdateAvailable();
+        case UpdatePolicyT::ReleaseOrBeta:
+        this->releaseOrBetaRelease_.UpdateAvailable();
+        default:
+        case UpdatePolicyT::Disabled:
+            return false;
+    }
+
+}
+
+
 static std::string normalizeReleaseName(const std::string &releaseName)
 {
     // e.g.   "PiPedal 1.2.34 Release" -> "PiPedal v1.2.34-Release"
@@ -897,16 +927,20 @@ UpdateStatus::UpdateStatus()
 #endif
 }
 
-void UpdateStatus::ResetCurrentVersion()
+void UpdateStatus::UpdateForCurrentVersion()
 {
     currentVersion_ = PROJECT_VER;
     currentVersionDisplayName_ = PROJECT_DISPLAY_VERSION;
 
-#ifdef TEST_UPDATE
+#if defined(TEST_UPDATE) && defined(DEBUG)
     // uncomment this line to test upgrading.
     currentVersion_ = "1.2.39";
-    currentVersionDisplayName_ = "PiPedal 1.2.39-Debug";
+    currentVersionDisplayName_ = "PiPedal 1.2.39-Fictional";
 #endif
+
+    this->devRelease_.UpdateForCurrentVersion(currentVersion_);;
+    this->releaseOnlyRelease_.UpdateForCurrentVersion(currentVersion_);
+    this->releaseOrBetaRelease_.UpdateForCurrentVersion(currentVersion_);
 }
 
 std::chrono::system_clock::time_point UpdateStatus::LastUpdateTime() const
@@ -953,9 +987,6 @@ const GithubAsset *GithubRelease::GetDownloadForCurrentArchitecture() const
     return nullptr;
 }
 
-UpdateRelease::UpdateRelease()
-{
-}
 
 std::string UpdaterImpl::GetSignatureUrl(const std::string &url)
 {
@@ -1325,6 +1356,10 @@ void UpdaterImpl::DownloadUpdate(const std::string &url, std::filesystem::path *
         std::filesystem::remove(downloadSignaturePath);
         throw;
     }
+}
+
+UpdateStatus UpdaterImpl::GetCurrentStatus() const { 
+    return this->currentResult;
 }
 
 
