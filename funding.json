@@ -19,7 +19,7 @@
       "description": "I'm a developer, and jazz musician, interested in developing Raspbery Pi software for use in live performance.\n\nPiPedal started as a pandemic project, to see if I could build what I wanted to use when I perform. It has since grown into something beautiful and true, so I would like to make it available for everyone.",
       "webpageUrl": {
         "url": "https://github.com/rerdavies",
-        "wellKnown": "https://github.com/rerdavies/pipedal/blob/main/.well-known/funding-manifest-urls"
+        "wellKnown": "https://github.com/rerdavies/pipedal/raw/main/.well-known/funding-manifest-urls"
       }
     },
     "projects": [
@@ -28,11 +28,12 @@
         "name": "The PiPedal Project",
         "description": "PiPedal is a guitar stomp box that runs on a Raspberry Pi (Raspberry Pi 4 or later). PiPedal is controlled remotely via a web application, or using the Android PiPedal Remote app.\n\nPipedal's user interface has been specifically designed with Phone and Tablet user interfaces in mind. Clip your phone or tablet onto a microphone stand, plugin your Raspberry Pi, and you're set to play!\n\nPiPedal started as  Pandemic Project. I spent two years developing PiPedal full time during the pandemic. I would very much like to continue working on it full time, but I need your help to do so.",
         "webpageUrl": {
-          "url": "https://rerdavies.github.io/pipedal"
+          "url": "https://rerdavies.github.io/pipedal",
+          "wellKnown": "https://rerdavies.github.io/pipedal/.well-known/funding-manifest-urls"
         },
         "repositoryUrl": {
           "url": "https://github.com/rerdavies/pipedal",
-          "wellKnown": "https://github.com/rerdavies/pipedal/blob/main/.well-known/funding-manifest-urls"
+          "wellKnown": "https://github.com/rerdavies/pipedal/raw/main/.well-known/funding-manifest-urls"
         },
         "licenses": [
           "spdx:MIT"
