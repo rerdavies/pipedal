@@ -9,7 +9,7 @@
         "description": "I'm a developer, and jazz musician, interested in developing Raspbery Pi software for use in live performance.\n\nPiPedal started as a pandemic project, to see if I could build what I wanted to use when I perform. It has since grown into something beautiful and true, so I would like to make it available for everyone.",
         "webpageUrl": {
             "url": "https://github.com/rerdavies",
-            "wellKnown": "https://github.com/rerdavies/pipedal/blob/master/.well-known/funding-manifest-urls"
+            "wellKnown": "https://github.com/rerdavies/pipedal/blob/main/.well-known/funding-manifest-urls"
         }
     },
     "projects": [{
@@ -22,7 +22,7 @@
         },
         "repositoryUrl": {
             "url": "https://github.com/rerdavies/pipedal",
-            "wellKnown": "https://github.com/rerdavies/pipedal/blob/master/.well-known/funding-manifest-urls"
+            "wellKnown": "https://github.com/rerdavies/pipedal/blob/main/.well-known/funding-manifest-urls"
         },
         "licenses": ["spdx:MIT"],
         "tags": ["audio", "effects-pedal", "guitar", "raspberry-pi", "lv2-plugin"]
