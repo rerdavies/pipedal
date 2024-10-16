@@ -212,7 +212,11 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
 
-            "args": [            "--no-profile", "-w", "TooB NAM"],
+            "args": [               
+                "--no-profile", "-w", 
+                // "TooB NAM"
+                "--preset-file", "/tmp/namPreset.preset"
+            ],
 
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

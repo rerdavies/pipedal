@@ -101,6 +101,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
 
     /*** Initialize the model */
     PiPedalModel model;
+    Lv2Log::log_level(LogLevel::Error);
     fs::path doc_root = "/etc/pipedal/config";
     PiPedalConfiguration configuration;
     try
@@ -156,13 +157,18 @@ void profilePlugin(const ProfileOptions &profileOptions)
         try
         {
             json_reader reader(f);
-            Pedalboard pedalboard;
-            reader.read(&pedalboard);
-            model.SetPedalboard(-1, pedalboard);
+            BankFile bankFile;
+            reader.read(&bankFile);
+            if (bankFile.presets().size() != 1)
+            {
+                throw new std::runtime_error(SS("Invalid preset file. Expection one preset, but " << bankFile.presets().size() << " presets were found."));
+            }
+            Pedalboard pedalboard = (bankFile.presets()[0]->preset());
+            model.SetPedalboard(-1,pedalboard);
         }
         catch (const std::exception &e)
         {
-            throw std::runtime_error(SS("Invalid file format:  " << profileOptions.presetFileName << "."));
+            throw std::runtime_error(SS("Invalid file format:  " << profileOptions.presetFileName << ". " << e.what() ));
         }
     }
     else
@@ -271,7 +277,14 @@ int main(int argc, char **argv)
 
         commandLineParser.Parse(argc, (const char **)argv);
 
-        if (commandLineParser.Arguments().size() != 1 || help)
+        bool argumentError = false;
+        if (commandLineParser.Arguments().size() == 1 && presetFileName.length() == 0)
+        {
+            cerr << "Error: You must supply either a preset name, or a preset file name" << endl;
+            argumentError = true;
+        }
+
+        if (argumentError || help)
         {
             cout << "profilePlugin - Generate profiling data for LV2 Plugins" << endl;
             cout << "Copyright (c) 2024 Robin E. R. Davies" << endl;
@@ -299,7 +312,7 @@ int main(int argc, char **argv)
             return help ? EXIT_SUCCESS : EXIT_FAILURE;
         }
 
-        if (commandLineParser.Arguments().size() == 1)
+        if (commandLineParser.Arguments().size() != 0)
         {
             profileOptions.presetName = commandLineParser.Arguments()[0];
         }
