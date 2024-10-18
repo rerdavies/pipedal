@@ -150,6 +150,9 @@ std::filesystem::path ResolveHomePath(const std::filesystem::path &path)
     {
         homeDirectory = getenv("USERPROFILE");
     }
+    if (homeDirectory == nullptr) {
+        return path;
+    }
     std::filesystem::path result = homeDirectory;
 
     bool first = true;
