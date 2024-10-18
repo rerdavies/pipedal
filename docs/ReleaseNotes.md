@@ -1,5 +1,9 @@
 # Release Notes
 
+## PiPedal 1.3.58 Release
+
+20% performance improvement when using Toob Neural Amp Modeller with large Wavenet models.
+
 ## PiPedal 1.3.57 Release
 
 Features:
