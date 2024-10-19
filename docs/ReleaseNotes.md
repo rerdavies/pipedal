@@ -1,8 +1,13 @@
 # Release Notes
 
-## PiPedal 1.3.58 Release
+## PiPedal 1.3.59 Release
 
 20% performance improvement when using Toob Neural Amp Modeller with large Wavenet models.
+
+Minor bug fixes:
+- Display file extensions in File Property dialogs.
+
+(re-issue of v1.3.58)
 
 ## PiPedal 1.3.57 Release
 
