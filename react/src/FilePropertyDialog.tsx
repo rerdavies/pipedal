@@ -625,7 +625,7 @@ export default withStyles(styles, { withTheme: true })(
                                             {
                                                 displayValue = pathFileName(displayValue);
                                             } else {
-                                                displayValue = pathFileNameOnly(displayValue);
+                                                displayValue = pathFileName(displayValue);
                                             }
                                         }
                                         let selected = value.filename === this.state.selectedFile;

@@ -6,13 +6,13 @@
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.3.57</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.3.59</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
 &nbsp;
 
-#### NEW version 1.3.57 Release, providing [snapshots](https://rerdavies.github.io/pipedal/Snaphots.html), and a new Performance View. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.3.59 Release, providing [snapshots](https://rerdavies.github.io/pipedal/Snaphots.html), and a new Performance View. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 

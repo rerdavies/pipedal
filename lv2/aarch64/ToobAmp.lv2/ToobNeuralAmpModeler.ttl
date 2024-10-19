@@ -61,7 +61,7 @@ toobNam:eqGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 50 ;
+        lv2:microVersion 51 ;
         rdfs:comment """
 A port of Steven Atkinson's Neural Amp Modeler to LV2. 
 
