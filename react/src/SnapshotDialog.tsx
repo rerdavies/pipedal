@@ -35,6 +35,7 @@ import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { TransitionProps } from '@mui/material/transitions';
 
 import Fade from '@mui/material/Fade';
+import Slide from '@mui/material/Slide';
 import SnapshotPanel from './SnapshotPanel';
 
 const styles = {
@@ -45,7 +46,7 @@ const styles = {
 };
 
 
-const Transition = React.forwardRef(function Transition(
+const FadeTransition = React.forwardRef(function Transition(
     props: TransitionProps & {
         children: React.ReactElement<any, any>;
     },
@@ -54,6 +55,17 @@ const Transition = React.forwardRef(function Transition(
     return <Fade in={true} ref={ref} {...props} />;
 });
 
+
+const SlideTransition = React.forwardRef(function Transition(
+    props: TransitionProps & {
+      children: React.ReactElement<any, any>;
+    },
+    ref: React.Ref<unknown>,
+  ) {
+    return <Slide direction="up" ref={ref} {...props} />;
+  });
+  
+  
 
 
 export interface SnapshotDialogProps {
@@ -100,11 +112,10 @@ export default class SnapshotDialog extends ResizeResponsiveComponent<SnapshotDi
     render() {
         return (
             <DialogEx fullWidth={true} tag="shapshot" open={this.props.open} onClose={() => this.props.onOk()} fullScreen={this.state.fullScreen}
-                TransitionComponent={Transition} keepMounted
+                TransitionComponent={this.state.fullScreen? SlideTransition: FadeTransition} keepMounted
                 style={{ userSelect: "none", }}
                 PaperProps={{
                     style: {
-                      maxWidth: '1000px'
                       
                     },
                   }}
