@@ -6,8 +6,6 @@ Bug fixes:
 - Uploading of preset and bank files now  work properly.
 - Uploaded plugin presets are merged with existing presets, instead of overwriting existing presets.
 
-(re-issue of v1.3.58)
-
 ## PiPedal 1.3.59 Release
 
 20% performance improvement when using Toob Neural Amp Modeller with large Wavenet models.
