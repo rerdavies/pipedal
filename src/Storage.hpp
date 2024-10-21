@@ -187,6 +187,7 @@ private:
 public:
     bool HasPluginPresets(const std::string&pluginUri) const;
     void SavePluginPresets(const std::string&pluginUri, const PluginPresets&presets);
+    void MergePluginPresets(const std::string&pluginUri, const PluginPresets&presets);
     PluginPresets GetPluginPresets(const std::string&pluginUri) const;
     const PluginPresetIndex& GetPluginPresetIndex();
 
