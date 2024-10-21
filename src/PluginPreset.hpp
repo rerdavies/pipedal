@@ -111,6 +111,8 @@ public:
         return preset;
     }   
 
+    bool equals(const PluginPreset&other) const;
+
     uint64_t instanceId_;
     std::string label_;
     std::string lilvPresetUri_;
@@ -157,6 +159,9 @@ public:
         }
         return -1;
     }
+
+    void MergePreset(const PluginPreset&preset);
+
 
     DECLARE_JSON_MAP(PluginPresets);
 };

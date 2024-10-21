@@ -214,17 +214,17 @@ public:
     {
         this->pluginUploadDirectory = model.GetPluginUploadDirectory();
         zipFile = ZipFileReader::Create(path);
-        auto s = zipFile->GetFileInputStream("pluginPresets.json");
+        auto s = zipFile->GetFileInputStream("bankFile.json");
         json_reader reader(s);
-        reader.read(&pluginPresets);
+        reader.read(&bankFile);
     }
     void LoadPluginPresetFile(PiPedalModel &model, const std::filesystem::path &path)
     {
         this->pluginUploadDirectory = model.GetPluginUploadDirectory();
         zipFile = ZipFileReader::Create(path);
-        auto s = zipFile->GetFileInputStream("bankFile.json");
+        auto s = zipFile->GetFileInputStream("pluginPresets.json");
         json_reader reader(s);
-        reader.read(&bankFile);
+        reader.read(&pluginPresets);
     }
     virtual ~PresetBundleReaderImpl() noexcept;
 
@@ -296,7 +296,7 @@ PresetBundleReader::ptr PresetBundleReader::LoadPresetsFile(PiPedalModel &model,
 PresetBundleReader::ptr PresetBundleReader::LoadPluginPresetsFile(PiPedalModel &model, const std::filesystem::path &filePath)
 {
     std::unique_ptr<PresetBundleReaderImpl> result = std::make_unique<PresetBundleReaderImpl>();
-    result->LoadPluginPresetsFile(model, filePath);
+    result->LoadPluginPresetFile(model, filePath);
     return result;
 }
 

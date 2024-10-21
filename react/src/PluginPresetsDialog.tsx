@@ -354,7 +354,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
             let pluginUri = this.getPluginUri();
             let plugin = this.model.getUiPlugin(pluginUri);
             if (plugin) {
-                title = "Presets - " + plugin.name;
+                title = "Plugin Presets - " + plugin.name;
             }
             
 
@@ -440,7 +440,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                                                             <DownloadIcon className={classes.listIcon} />
                                                         </ListItemIcon>
                                                         <ListItemText>
-                                                            Download presets
+                                                            Download plugin presets
                                                         </ListItemText>
 
                                                     </MenuItem>
@@ -449,7 +449,7 @@ const PluginPresetsDialog = withStyles(styles, { withTheme: true })(
                                                             <UploadIcon className={classes.listIcon} />
                                                         </ListItemIcon>
                                                         <ListItemText>
-                                                            Upload presets
+                                                            Upload plugin presets
                                                         </ListItemText>
 
                                                     </MenuItem>

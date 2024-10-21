@@ -844,7 +844,7 @@ void PiPedalModel::UploadPluginPresets(const PluginPresets &pluginPresets)
         throw PiPedalException("Invalid plugin presets.");
     }
     std::lock_guard<std::recursive_mutex> guard{mutex};
-    storage.SavePluginPresets(pluginPresets.pluginUri_, pluginPresets);
+    storage.MergePluginPresets(pluginPresets.pluginUri_, pluginPresets);
     FirePluginPresetsChanged(pluginPresets.pluginUri_);
 }
 int64_t PiPedalModel::UploadPreset(const BankFile &bankFile, int64_t uploadAfter)

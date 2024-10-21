@@ -37,7 +37,7 @@
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
 #define OLD_BANK_EXTENSION ".piBank"
-#define BANK_EXTENSION ".piBankBundle"
+#define BANK_EXTENSION ".piBank"
 #define PLUGIN_PRESETS_EXTENSION ".piPluginPresets"
 
 static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
@@ -598,6 +598,7 @@ public:
         }
         catch (const std::exception &e)
         {
+            Lv2Log::error(SS("Error uploading file: " << e.what()) );
             if (strcmp(e.what(), "Not found") == 0)
             {
                 ec = boost::system::errc::make_error_code(boost::system::errc::no_such_file_or_directory);

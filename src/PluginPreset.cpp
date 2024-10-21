@@ -2,6 +2,77 @@
 
 using namespace pipedal;
 
+
+static std::string GetUnversionedLabel(const std::string label)
+{
+    size_t pos = label.length();
+    if (pos != 0 && label.at(pos-1) == ')')
+    {
+        --pos;
+        while (true)
+        {
+            if (pos == 0) 
+            {
+                return label; // not versioned. return the original.
+            }
+            --pos;
+            char c = label[pos];
+            if (c >= '0' && c <= '9') 
+            {
+                continue; // eat the number.
+            }
+            else if (c == '(')
+            {
+                return label.substr(0,pos);
+
+            } else {
+                return label;  // failure. return the unmodified original
+            }
+        }
+    }
+    return label;
+}
+
+bool PluginPreset::equals(const PluginPreset&other) const
+{
+    // everything EXCEPT instanceId (since preset may be from another PluginPresets collection)
+    return label_ == other.label_ &&
+        lilvPresetUri_ == other.lilvPresetUri_ &&
+        controlValues_ == other.controlValues_ &&
+        state_ == other.state_;
+}
+
+void PluginPresets::MergePreset(const PluginPreset&preset)
+{
+    int existingPresetIndex = Find(preset.label_);
+    if (existingPresetIndex != -1)
+    {
+        if (this->presets_[existingPresetIndex].equals(preset))
+        {
+            // an exact duplicate. discard the new preset.
+            return;
+        }
+        std::string baseLabel = GetUnversionedLabel(preset.label_);
+
+        for (int i = 1; i < 1000; ++i)
+        {
+            std::string newLabel = SS(baseLabel << "(" << i << ")");
+            if (Find(newLabel) == -1)
+            {
+                PluginPreset versionedPreset = preset;
+                versionedPreset.label_ = newLabel;
+                MergePreset(versionedPreset);
+                return;
+            }
+        }
+        // A thousand duplicates?! Heck. just add a duplicate label. :-/
+    }
+    this->presets_.push_back(preset);
+    this->presets_.back().instanceId_ = this->nextInstanceId_++;
+    
+}
+
+
 JSON_MAP_BEGIN(PluginUiPreset)
     JSON_MAP_REFERENCE(PluginUiPreset,label)
     JSON_MAP_REFERENCE(PluginUiPreset,instanceId)

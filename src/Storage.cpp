@@ -1107,6 +1107,67 @@ std::filesystem::path Storage::GetPluginPresetPath(const std::string &pluginUri)
     }
     throw PiPedalArgumentException("Plugin preset file not found.");
 }
+
+void Storage::MergePluginPresets(const std::string &pluginUri, const PluginPresets &presets)
+{
+    std::string name;
+    std::filesystem::path path;
+    bool presetAdded = false;
+    PluginPresets existingPresets;
+    if (!HasPluginPresets(pluginUri))
+    {
+        name = SS(pluginPresetIndex.nextInstanceId_ << ".json");
+        path = GetPluginPresetsDirectory() / name;
+        presetAdded = true;
+    }
+    else
+    {
+        path = GetPluginPresetPath(pluginUri);
+        try {
+            std::ifstream f(path);
+            if (f.is_open())
+            {
+                json_reader reader(f);
+                reader.read(&existingPresets);
+            }
+        } catch (const std::exception &e)
+        {
+            Lv2Log::error(SS("Storage::MergePluginPresets: Can't reading existing plugin presets." << e.what()));
+        }
+    }
+    for (const PluginPreset &preset: presets.presets_)
+    {
+
+        existingPresets.MergePreset(preset);
+    }
+    auto tempPath = path.string() + ".$$$";
+    {
+        pipedal::ofstream_synced os;
+        os.open(tempPath, std::ios_base::trunc);
+        if (os.fail())
+        {
+            throw PiPedalException(SS("Can't write to " << path));
+        }
+        json_writer writer(os, true);
+        writer.write(existingPresets);
+    }
+    if (std::filesystem::exists(path))
+    {
+        std::filesystem::remove(path);
+    }
+    std::filesystem::rename(tempPath, path);
+
+    if (presetAdded)
+    {
+        pluginPresetIndex.entries_.push_back(
+            PluginPresetIndexEntry(
+                pluginUri, name));
+        pluginPresetIndex.nextInstanceId_++;
+        this->pluginPresetIndexChanged = true;
+        SavePluginPresetIndex();
+    }
+}
+
 void Storage::SavePluginPresets(const std::string &pluginUri, const PluginPresets &presets)
 {
     std::string name;
