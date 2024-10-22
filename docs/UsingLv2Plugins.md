@@ -16,14 +16,14 @@ Here is a brief list of other particularly recommended plugin collections.
 
 | Collection                      | To Install                            | Description      |
 |---------------------------------|---------------------------------------|------------------|
-|[Guitarix](https://guitarix.org) ★★★☆☆ | `sudo apt install guitarix-lv2`         | A large collection of guitar amplifiers and effects. |
-| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | [Install GxPlugsin.lv2](GxPlugins.md) | Additional amps and effects from the Guitarix collection |
+| [Guitarix](https://guitarix.org) ★★★☆☆ | `sudo apt install guitarix-lv2`         | A large collection of guitar amplifiers and effects. |
+| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | `sudo apt install gxplugins` | Additional amps and effects from the Guitarix collection |
 | [MDA Plugins](http://drobilla.net/software/mda-lv2.html) ★★★★☆ | `sudo apt install mda-lv2` | 36 high-quality plugs |
 | Invada Studio Plugins ★★★☆☆         | `sudo apt install invada-studio-plugins-lv2` | Delays, distortion, filters, phaser, reverb |
-|[Zam Plugins](https://zamaudio.com) ★★★☆☆ | `sudo apt install zam-plugins`   | Filtering, EQ, and mastering effects. |
+| [Zam Plugins](https://zamaudio.com) ★★★☆☆ | `sudo apt install zam-plugins`   | Filtering, EQ, and mastering effects. |
 | [Calf Studio Gear](https:://calf-studio-gear.org) ★★★☆☆ | `sudo apt install calf-plugins` | Flanger, filters, reverb, rotary speaker &c |
-
-The GxPlugins pack is currently distributed in source form. However, I have built a version for Raspberry Pi that can be downloaded [here](GxPlugins.md). It contains some extraordinarily beautiful amp and effect emulations, many of which are superior to plugins in the main Guitarix package.
+| [Dragonfly Reverb](https://michaelwillis.github.io/dragonfly-reverb/) ★★★☆☆ | `sudo apt install dragonfly-reverb-lv2` | Reverbs |
+| [x42](https://x42-plugins.com/x42/) ★★☆☆☆ | `sudo apt install x42-plugins` |Compressors, auto-tune, tuners |
 
 For a more complete (but still incomplete) list of LV2 audio plugins, see [here](https://lv2plug.in/pages/projects.html).
 

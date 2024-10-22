@@ -478,7 +478,7 @@ export class UiControl implements Deserializable<UiControl> {
         this.controlType = ControlType.Dial;
 
         if (!this.is_input) {
-            if (this.units === Units.midiNote) {
+            if (this.units === Units.midiNote || this.units === Units.hz) {
                 this.controlType = ControlType.Tuner;
 
             } else if (this.units === Units.db) {

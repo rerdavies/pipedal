@@ -198,7 +198,12 @@ void ZipFileImpl::ExtractTo(const std::string &zipName, const std::filesystem::p
                   zip_fclose(fIn);
               }};
 
+    std::filesystem::create_directories(path.parent_path());
     std::ofstream fo{path, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary};
+    if (!fo.is_open())
+    {
+        throw std::runtime_error(SS("Unable to open " << path));
+    }
 
     constexpr int BUFFER_SIZE = 64 * 1024;
     std::vector<char> vBuff(BUFFER_SIZE);
