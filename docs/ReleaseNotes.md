@@ -1,5 +1,11 @@
 # Release Notes
 
+## PiPedal 1.3.61 Release
+
+Bug fixes:
+- Media files are not extracted properly from preset and bank files.
+- Tuner control displayed for 3rd party tuner plugins that have outputs of type units:hz
+
 ## PiPedal 1.3.60 Release
 
 Bug fixes:
