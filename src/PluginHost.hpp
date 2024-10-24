@@ -214,7 +214,7 @@ namespace pipedal
         bool is_logarithmic_ = false;
         int display_priority_ = -1;
         int range_steps_ = 0;
-        bool trigger_ = false;
+        bool trigger_property_ = false;
         bool integer_property_ = false;
         bool enumeration_property_ = false;
         bool toggled_property_ = false;
@@ -285,7 +285,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(is_logarithmic);
         LV2_PROPERTY_GETSET_SCALAR(display_priority);
         LV2_PROPERTY_GETSET_SCALAR(range_steps);
-        LV2_PROPERTY_GETSET_SCALAR(trigger);
+        LV2_PROPERTY_GETSET_SCALAR(trigger_property);
         LV2_PROPERTY_GETSET_SCALAR(integer_property);
         LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
         LV2_PROPERTY_GETSET_SCALAR(toggled_property);
@@ -496,6 +496,7 @@ namespace pipedal
               default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()),
               is_logarithmic_(pPort->is_logarithmic()), integer_property_(pPort->integer_property()), enumeration_property_(pPort->enumeration_property()),
               toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()),
+              trigger_property_(pPort->trigger_property()),
               comment_(pPort->comment()), units_(pPort->units()),
               connection_optional_(pPort->connection_optional())
         {
@@ -536,6 +537,7 @@ namespace pipedal
         bool enumeration_property_ = false;
         bool not_on_gui_ = false;
         bool toggled_property_ = false;
+        bool trigger_property_ = false;
         std::vector<Lv2ScalePoint> scale_points_;
         std::string port_group_;
 
@@ -561,6 +563,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(integer_property);
         LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
         LV2_PROPERTY_GETSET_SCALAR(toggled_property);
+        LV2_PROPERTY_GETSET_SCALAR(trigger_property);
         LV2_PROPERTY_GETSET_SCALAR(not_on_gui);
         LV2_PROPERTY_GETSET(scale_points);
         LV2_PROPERTY_GETSET(units);
@@ -664,6 +667,7 @@ namespace pipedal
             AutoLilvNode core__toggled;
             AutoLilvNode core__connectionOptional;
             AutoLilvNode portprops__not_on_gui_property_uri;
+            AutoLilvNode portprops__trigger;
             AutoLilvNode midi__event;
             AutoLilvNode core__designation;
             AutoLilvNode portgroups__group;

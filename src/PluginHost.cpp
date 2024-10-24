@@ -118,6 +118,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     core__toggled = lilv_new_uri(pWorld, LV2_CORE__toggled);
     core__connectionOptional = lilv_new_uri(pWorld, LV2_CORE__connectionOptional);
     portprops__not_on_gui_property_uri = lilv_new_uri(pWorld, LV2_PORT_PROPS__notOnGUI);
+    portprops__trigger = lilv_new_uri(pWorld,LV2_PORT_PROPS__trigger);
     midi__event = lilv_new_uri(pWorld, LV2_MIDI__MidiEvent);
     core__designation = lilv_new_uri(pWorld, LV2_CORE__designation);
     portgroups__group = lilv_new_uri(pWorld, LV2_PORT_GROUPS__group);
@@ -932,6 +933,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__toggled);
     this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__not_on_gui_property_uri);
     this->connection_optional_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__connectionOptional);
+    this->trigger_property_  = lilv_port_has_property(plugin,pPort,host->lilvUris->portprops__trigger);
 
     LilvScalePoints *pScalePoints = lilv_port_get_scale_points(plugin, pPort);
     LILV_FOREACH(scale_points, iSP, pScalePoints)
@@ -1593,7 +1595,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      MAP_REF(Lv2PortInfo, is_logarithmic),
      MAP_REF(Lv2PortInfo, display_priority),
      MAP_REF(Lv2PortInfo, range_steps),
-     MAP_REF(Lv2PortInfo, trigger),
+     MAP_REF(Lv2PortInfo, trigger_property),
      MAP_REF(Lv2PortInfo, integer_property),
      MAP_REF(Lv2PortInfo, enumeration_property),
      MAP_REF(Lv2PortInfo, toggled_property),
@@ -1662,6 +1664,7 @@ json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
     MAP_REF(Lv2PluginUiPort, enumeration_property),
     MAP_REF(Lv2PluginUiPort, not_on_gui),
     MAP_REF(Lv2PluginUiPort, toggled_property),
+    MAP_REF(Lv2PluginUiPort, trigger_property),
     MAP_REF(Lv2PluginUiPort, scale_points),
     MAP_REF(Lv2PluginUiPort, port_group),
 

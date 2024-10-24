@@ -160,7 +160,7 @@ const MidiBindingView =
                     isBinaryControl = (port.isAbToggle() || port.isOnOffSwitch());
                     if (midiBinding.bindingType !== MidiBinding.BINDING_TYPE_NONE) {
                         canLatch = isBinaryControl;
-                        canTrigger = port.trigger;
+                        canTrigger = port.trigger_property;
                         showLinearControlTypeSelect = !(canLatch || canTrigger);
                         showLinearRange = showLinearControlTypeSelect && midiBinding.linearControlType === MidiBinding.LINEAR_CONTROL_TYPE;
                         canRotaryScale = showLinearControlTypeSelect && midiBinding.linearControlType === MidiBinding.CIRCULAR_CONTROL_TYPE;
