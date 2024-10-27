@@ -17,25 +17,37 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "FileEntry.hpp"
+#pragma once
+#include <string>
+#include <vector>
+#include <filesystem>
 
-using namespace pipedal;
+namespace pipedal {
+    class ModFileTypes {
 
-JSON_MAP_BEGIN(FileEntry)
-    JSON_MAP_REFERENCE(FileEntry,pathname)
-    JSON_MAP_REFERENCE(FileEntry,displayName)
-    JSON_MAP_REFERENCE(FileEntry,isProtected)
-    JSON_MAP_REFERENCE(FileEntry,isDirectory)
-JSON_MAP_END()
+    public: 
+        ModFileTypes(const std::string&fileTypes);
+        const std::vector<std::string> &rootDirectories() { return rootDirectories_; }
+        const std::vector<std::string> &fileTypes() { return fileTypes_;}
 
-JSON_MAP_BEGIN(BreadcrumbEntry)
-    JSON_MAP_REFERENCE(BreadcrumbEntry,pathname)
-    JSON_MAP_REFERENCE(BreadcrumbEntry,displayName)
-JSON_MAP_END()
+    private:
+        std::vector<std::string> rootDirectories_;
+        std::vector<std::string> fileTypes_;
 
 
-JSON_MAP_BEGIN(FileRequestResult)
-    JSON_MAP_REFERENCE(FileRequestResult,files)
-    JSON_MAP_REFERENCE(FileRequestResult,isProtected)
-    JSON_MAP_REFERENCE(FileRequestResult,breadcrumbs)
-JSON_MAP_END()
+    public:
+        class ModDirectory {
+        public:
+            const std::string modType;
+            const std::string pipedalPath;
+            const std::string displayName;
+            const std::vector<std::string> defaultFileExtensions;
+        };
+
+        const static std::vector<ModDirectory> ModDirectories;
+        static const ModDirectory* GetModDirectory(const std::string&modType);
+
+        static void CreateDefaultDirectories(const std::filesystem::path&rootDirectory);
+
+    };
+}

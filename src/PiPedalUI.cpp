@@ -465,6 +465,8 @@ JSON_MAP_REFERENCE(UiFileProperty, patchProperty)
 JSON_MAP_REFERENCE(UiFileProperty, fileTypes)
 JSON_MAP_REFERENCE(UiFileProperty, portGroup)
 JSON_MAP_REFERENCE(UiFileProperty, resourceDirectory)
+JSON_MAP_REFERENCE(UiFileProperty, modDirectories)
+JSON_MAP_REFERENCE(UiFileProperty, useLegacyModDirectory)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(UiFrequencyPlot)

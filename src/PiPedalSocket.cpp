@@ -1589,8 +1589,8 @@ public:
         {
             FileRequestArgs requestArgs;
             pReader->read(&requestArgs);
-            std::vector<FileEntry> list = this->model.GetFileList2(requestArgs.relativePath_, requestArgs.fileProperty_);
-            this->Reply(replyTo, "requestFileList2", list);
+            FileRequestResult result = this->model.GetFileList2(requestArgs.relativePath_, requestArgs.fileProperty_);
+            this->Reply(replyTo, "requestFileList2", result);
         }
         else if (message == "newPreset")
         {

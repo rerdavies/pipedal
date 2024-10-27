@@ -432,7 +432,7 @@ namespace pipedal
         void SetUpdatePolicy(UpdatePolicyT updatePolicy);
         void ForceUpdateCheck();
         std::vector<std::string> GetFileList(const UiFileProperty &fileProperty);
-        std::vector<FileEntry> GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty);
+        FileRequestResult GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty);
 
         void DeleteSampleFile(const std::filesystem::path &fileName);
         std::string CreateNewSampleDirectory(const std::string &relativePath, const UiFileProperty &uiFileProperty);

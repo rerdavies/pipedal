@@ -73,8 +73,20 @@ export enum ReconnectReason {
 export type ControlValueChangedHandler = (key: string, value: number) => void;
 
 export interface FileEntry {
-    filename: string;
+    pathname: string;
+    displayName: string;
     isDirectory: boolean;
+    isProtected: boolean;
+};
+
+export interface BreadcrumbEntry {
+    pathname: string;
+    displayName: string;
+};
+export class FileRequestResult {
+    files: FileEntry[] = [];
+    isProtected: boolean = false;
+    breadcrumbs: BreadcrumbEntry[] = [];
 };
 
 export type PluginPresetsChangedHandler = (pluginUri: string) => void;
@@ -1989,9 +2001,9 @@ export class PiPedalModel //implements PiPedalModel
         return nullCast(this.webSocket)
             .request<string[]>('requestFileList', piPedalFileProperty);
     }
-    requestFileList2(relativeDirectoryPath: string, piPedalFileProperty: UiFileProperty): Promise<FileEntry[]> {
+    requestFileList2(relativeDirectoryPath: string, piPedalFileProperty: UiFileProperty): Promise<FileRequestResult> {
         return nullCast(this.webSocket)
-            .request<FileEntry[]>('requestFileList2',
+            .request<FileRequestResult>('requestFileList2',
                 { relativePath: relativeDirectoryPath, fileProperty: piPedalFileProperty }
             );
     }

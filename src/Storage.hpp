@@ -152,7 +152,9 @@ public:
     int64_t DeleteBank(int64_t bankId);
 
     std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
-    std::vector<FileEntry> GetFileList2(const std::string&relativePath,const UiFileProperty&fileProperty);
+    FileRequestResult GetFileList2(const std::string&relativePath,const UiFileProperty&fileProperty);
+
+    FileRequestResult GetModFileList2(const std::string &relativePath,const UiFileProperty &fileProperty);
 
 
     void SetJackChannelSelection(const JackChannelSelection&channelSelection);

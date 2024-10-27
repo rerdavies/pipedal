@@ -2296,7 +2296,7 @@ std::vector<std::string> PiPedalModel::GetFileList(const UiFileProperty &filePro
         return std::vector<std::string>(); // don't disclose to users what the problem is.
     }
 }
-std::vector<FileEntry> PiPedalModel::GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty)
+FileRequestResult PiPedalModel::GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty)
 {
     try
     {
@@ -2305,7 +2305,7 @@ std::vector<FileEntry> PiPedalModel::GetFileList2(const std::string &relativePat
     catch (const std::exception &e)
     {
         Lv2Log::warning("GetFileList() failed:  (%s)", e.what());
-        return std::vector<FileEntry>(); // don't disclose to users what the problem is.
+        throw;
     }
 }
 

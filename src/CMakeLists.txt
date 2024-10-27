@@ -157,6 +157,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    ModFileTypes.cpp ModFileTypes.hpp
     PatchPropertyWriter.hpp
     PresetBundle.cpp PresetBundle.hpp
     RealtimeMidiEventType.hpp
@@ -637,6 +638,7 @@ add_executable(pipedalconfig
     CommandLineParser.hpp
     PiPedalException.hpp 
     ConfigMain.cpp
+    ModFileTypes.cpp ModFileTypes.hpp
     PiPedalConfiguration.hpp PiPedalConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
