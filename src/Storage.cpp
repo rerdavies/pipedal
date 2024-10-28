@@ -22,6 +22,7 @@
 #include "Storage.hpp"
 #include "AudioConfig.hpp"
 #include "PiPedalException.hpp"
+#include <stdexcept>
 #include <sstream>
 #include "json.hpp"
 #include <fstream>
@@ -32,13 +33,49 @@
 #include "PluginHost.hpp"
 #include "ss.hpp"
 #include "ofstream_synced.hpp"
+#include "ModFileTypes.hpp"
 
 using namespace pipedal;
+namespace fs = std::filesystem;
 
 const char *BANK_EXTENSION = ".bank";
 const char *BANKS_FILENAME = "index.banks";
 
 #define USER_SETTINGS_FILENAME "userSettings.json";
+
+
+static bool isSubdirectory(const fs::path&path, const fs::path&basePath)
+{
+    auto iPath = path.begin();
+    for (auto i = basePath.begin(); i != basePath.end(); ++i)
+    {
+        if (iPath == path.end())
+        {
+            return false;
+        }
+        
+        if ((*i) != (*iPath))
+        {
+            return false;
+        }
+        ++iPath;
+    }
+    while (iPath != path.end())
+    {
+        if (iPath->string() == "..")
+        {
+            return false;
+        }
+        ++iPath;
+    }
+    return true;
+}
+
+static bool hasSyntheticModRoot(const UiFileProperty &fileProperty)
+{
+    return (fileProperty.modDirectories().size() > 1 || (fileProperty.modDirectories().size() == 1 && fileProperty.useLegacyModDirectory()));
+    
+}
 
 Storage::Storage()
 {
@@ -1648,63 +1685,190 @@ static bool  ensureNoDotDot(const std::filesystem::path&path)
     return true;
 }
 
-
-std::vector<FileEntry> Storage::GetFileList2(const std::string &relativePath,const UiFileProperty &fileProperty)
+static void AddFilesToResult(
+    FileRequestResult&result,
+    const UiFileProperty &fileProperty,
+    const fs::path&rootPath)
 {
-    if (!ensureNoDotDot(relativePath))
+    if (!fs::exists(rootPath))
     {
-        ThrowPermissionDeniedError();
+        return; // silently without error.
     }
-    if (!UiFileProperty::IsDirectoryNameValid(fileProperty.directory()))
+    auto & resultFiles = result.files_;
+    try
     {
-        ThrowPermissionDeniedError();
-    }
-
-    std::vector<FileEntry> result;
-
-    // if fileProperty has a user-accessible directory, push the entire file path.
-    if (fileProperty.directory().size() != 0)
-    {
-        std::filesystem::path audioFileDirectory = this->GetPluginUploadDirectory() / fileProperty.directory() / relativePath;
-        try
+        for (auto const &dir_entry : std::filesystem::directory_iterator(rootPath))
         {
-            for (auto const &dir_entry : std::filesystem::directory_iterator(audioFileDirectory))
+            const auto &path = dir_entry.path();
+            auto name = path.filename().string();
+            if (dir_entry.is_regular_file())
             {
-                if (dir_entry.is_regular_file())
+                if (name.length() > 0 && name[0] != '.') // don't show hidden files.
                 {
-                    auto &path = dir_entry.path();
-                    auto name = path.filename().string();
-                    if (name.length() > 0 && name[0] != '.') // don't show hidden files.
+                    if (fileProperty.IsValidExtension(path.extension().string()))
                     {
-                        if (fileProperty.IsValidExtension(path.extension().string()))
-                        {
-                            // a relative path!
-                            result.push_back(FileEntry(path,false));
-                        }
+                        resultFiles.push_back(
+                            FileEntry(path,name,false,false)
+                        );
                     }
-                } else if (dir_entry.is_directory()) {
-                    result.push_back(FileEntry(dir_entry.path(),true));
                 }
+            } else if (dir_entry.is_directory()) {
+                resultFiles.push_back(FileEntry{path,name,true,fs::is_symlink(path)});
             }
         }
-        catch (const std::exception &error)
-        {
-            throw std::logic_error("GetFileList failed. Directory not found: " + audioFileDirectory.string());
-        }
+    }
+    catch (const std::exception &error)
+    {
+        throw std::logic_error("GetFileList failed. Directory not found: " + rootPath.string());
     }
 
     // sort lexicographically
 
     auto collator = Locale::GetInstance()->GetCollator();
 
-    std::sort(result.begin(), result.end(),[&collator](const FileEntry&l, const FileEntry&r) {
+    std::sort(resultFiles.begin(), resultFiles.end(),[&collator](const FileEntry&l, const FileEntry&r) {
         if (l.isDirectory_ != r.isDirectory_)
         {
             return l.isDirectory_ > r.isDirectory_;
         }
-        return collator->Compare(l.filename_,r.filename_) < 0;
-    
+        return collator->Compare(l.displayName_,r.displayName_) < 0;
     });
+}
+FileRequestResult Storage::GetModFileList2(const std::string &relativePath,const UiFileProperty &fileProperty)
+{
+    FileRequestResult result;
+    fs::path uploadsDirectory = GetPluginUploadDirectory();
+
+    if (relativePath.empty())
+    {
+        // return the synthetic root. 
+        result.isProtected_ = true;
+
+        for (const auto&modDirectory: fileProperty.modDirectories())
+        {
+            const auto directoryInfo = ModFileTypes::GetModDirectory(modDirectory);
+            if (directoryInfo)
+            {
+                result.files_.push_back(
+                    FileEntry(uploadsDirectory / directoryInfo->pipedalPath,directoryInfo->displayName,true,true)
+                );
+            }
+
+        }
+        if (fileProperty.useLegacyModDirectory())
+        {
+            result.files_.push_back(
+                FileEntry(uploadsDirectory / fileProperty.directory(),fs::path(fileProperty.directory()).filename().string(),true,true)
+            );
+        }
+        result.breadcrumbs_.push_back({"","Home"});
+        return result;
+    }
+    fs::path modDirectoryPath;
+
+    result.breadcrumbs_.push_back({"","Home"});
+    fs::path fsRelativePath { relativePath};
+
+    for (const auto &modDirectory: fileProperty.modDirectories())
+    {
+        const ModFileTypes::ModDirectory*modDirectoryInfo = ModFileTypes::GetModDirectory(modDirectory);
+        if (modDirectoryInfo)
+        {
+            if (isSubdirectory(fsRelativePath, uploadsDirectory / modDirectoryInfo->pipedalPath))
+            {
+                modDirectoryPath = uploadsDirectory / modDirectoryInfo->pipedalPath;
+                result.breadcrumbs_.push_back({modDirectoryPath.string(),modDirectoryInfo->displayName});
+                break;
+            }
+            
+        }
+    }
+    if (modDirectoryPath.empty() && fileProperty.useLegacyModDirectory())
+    {
+        if (isSubdirectory(fsRelativePath, uploadsDirectory / fileProperty.directory()))
+        {
+            modDirectoryPath = uploadsDirectory / fileProperty.directory();
+            result.breadcrumbs_.push_back({modDirectoryPath.string(),fs::path(fileProperty.directory()).filename().string()});
+        } else {
+            ThrowPermissionDeniedError();
+        }
+    }
+
+    // add remaing path segements as breadcrumbs.
+    {
+        fs::path modPath {modDirectoryPath};
+        fs::path rp { relativePath};
+        auto iRp = rp.begin();
+        // skip past one or more segments in the modDiretoryPath.
+        for (auto iModPath = modPath.begin(); iModPath != modPath.end(); ++iModPath)
+        {
+            if (iRp != rp.end()) {
+                ++iRp;
+            }
+        }
+        while (iRp != rp.end())
+        {
+            result.breadcrumbs_.push_back({*iRp,*iRp});
+            ++iRp;
+        }
+    }
+
+    AddFilesToResult(result,fileProperty,relativePath);
+    return result;
+}
+
+
+FileRequestResult Storage::GetFileList2(const std::string &relativePath_,const UiFileProperty &fileProperty)
+{
+    std::string absolutePath = relativePath_;
+    if (!ensureNoDotDot(absolutePath))
+    {
+        ThrowPermissionDeniedError();
+    }
+    if (hasSyntheticModRoot(fileProperty))
+    {
+        return Storage::GetModFileList2(absolutePath,fileProperty);
+    }
+
+    FileRequestResult result;
+
+    if (fileProperty.directory().empty()) 
+    {
+        throw std::runtime_error("fileProperty.directory() not specified.");
+    }
+    std::filesystem::path pluginRootDirectory = this->GetPluginUploadDirectory() / fileProperty.directory();
+    if (absolutePath == "")
+    {
+        absolutePath = pluginRootDirectory.string();
+    }
+
+
+    {
+        result.breadcrumbs_.push_back({"","Home"});
+        fs::path fsAbsolutePath {absolutePath};
+        auto iAbsolutePath = fsAbsolutePath.begin();
+        for (auto i = pluginRootDirectory.begin(); i != pluginRootDirectory.end(); ++i)
+        {
+            if (iAbsolutePath == fsAbsolutePath.end() || (*i) != *iAbsolutePath)
+            {
+                throw std::runtime_error("Directory is not a subdirectory of the plugin root directory.");
+            }
+            ++iAbsolutePath;
+        }
+        auto cumulativePath = pluginRootDirectory;
+
+        while (iAbsolutePath != fsAbsolutePath.end())
+        {
+            cumulativePath /= (*iAbsolutePath);
+            result.breadcrumbs_.push_back({cumulativePath.string(),iAbsolutePath->string()});
+            ++iAbsolutePath;
+        }
+    }
+    if (!isSubdirectory(absolutePath,pluginRootDirectory))
+    {
+        throw std::runtime_error(SS("Improper location. " << absolutePath));
+    }
+    AddFilesToResult(result,fileProperty,absolutePath);
     return result;
 }
 
@@ -1715,29 +1879,32 @@ bool Storage::IsValidSampleFileName(const std::filesystem::path &fileName)
     {
         return false;
     }
-    if (!ensureNoDotDot(fileName))
-    {
-        return false;
-    }
     
     std::filesystem::path audioFilePath = this->GetPluginUploadDirectory();
 
     std::filesystem::path parentDirectory = fileName.parent_path();
-    while (true)
+
+    auto iTarget = parentDirectory.begin();
+
+    for (auto i = audioFilePath.begin(); i != audioFilePath.end(); ++i)
     {
-        if (!parentDirectory.has_parent_path())
-        {
+        if (iTarget == parentDirectory.end()) {
             return false;
         }
-        std::string name = parentDirectory.filename().string();
-        if (parentDirectory == audioFilePath)
-            return true;
-        parentDirectory = parentDirectory.parent_path();
-        if (parentDirectory.string().length() < audioFilePath.string().length())
-        {
+        if (*i != *iTarget) {
             return false;
         }
+        ++iTarget;
     }
+    while (iTarget != parentDirectory.end())
+    {
+        if (iTarget->string() == "..")
+        {
+            return false;
+        }
+        ++iTarget;
+    }
+    return true;
 }
 void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
 {
@@ -1753,9 +1920,18 @@ void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
     {
         if (std::filesystem::is_directory(fileName))
         {
-            if (fileName.string().length() > 1) // guard against rm -rf /  (bitter experience)
+            if (fileName.string().length() <= 1) // guard against rm -rf /  (bitter experience)
             {
-                std::filesystem::remove_all(fileName);
+                throw std::logic_error("Invalid filename.");
+            }
+            if (std::filesystem::is_symlink(fileName))
+            {
+                std::filesystem::remove(fileName);
+            } else {
+                if (fileName.string().length() > 1) // guard against rm -rf /  (bitter experience)
+                {
+                    std::filesystem::remove_all(fileName);
+                }
             }
         }
         else {
@@ -1769,13 +1945,13 @@ void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
 }
 std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, const std::string &filename)
 {
-    if (!ensureNoDotDot(directory))
-    {
-        throw std::logic_error(SS("Invalide filename: " << filename));
-    }
     std::filesystem::path filePath{filename};
 
-    std::filesystem::path result = this->GetPluginUploadDirectory() / directory / filename;
+    std::filesystem::path result = fs::path(directory) / filename;
+    if (!result.is_absolute())
+    {
+        result = this->GetPluginUploadDirectory() / result;
+    }
     if (!this->IsValidSampleFileName(result))
     {
         throw std::logic_error(SS("Invalid upload path: " << result));
@@ -1898,8 +2074,8 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std:
     {
         if (child.is_directory())
         {
-            const auto& childPath = child.path();
-            FilePropertyDirectoryTree::ptr childTree = std::make_unique<FilePropertyDirectoryTree>(childPath.filename());
+            const auto& childPath = child.path(); 
+            FilePropertyDirectoryTree::ptr childTree = std::make_unique<FilePropertyDirectoryTree>(childPath);
             FillSampleDirectoryTree(childTree.get(),childPath);
             node->children_.push_back(std::move(childTree));
         }
@@ -1911,22 +2087,53 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std:
             return collator->Compare(left->directoryName_,right->directoryName_) < 0;
         });
 }
-FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) const
+FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) 
 {
-    FilePropertyDirectoryTree::ptr result = std::make_unique<FilePropertyDirectoryTree>("");
-    if (uiFileProperty.directory().empty())
-    {
-        throw std::runtime_error("Invalid uiFileProperty");
-    }
-    if (!ensureNoDotDot(uiFileProperty.directory()))
-    {
-        throw std::runtime_error("Invalid uiFileProperty");
-    }
-    std::filesystem::path rootDirectory = this->GetPluginUploadDirectory() / uiFileProperty.directory();
+    fs::path uploadDirectory =  this->GetPluginUploadDirectory();
 
-    FillSampleDirectoryTree(result.get(),rootDirectory);
+    if (hasSyntheticModRoot(uiFileProperty))
+    {
+        FilePropertyDirectoryTree::ptr result = std::make_unique<FilePropertyDirectoryTree>("","Home");
+        result->isProtected_ = true;
+        for (const auto& modDirectory: uiFileProperty.modDirectories())
+        {
+            auto modDirectoryInfo = ModFileTypes::GetModDirectory(modDirectory);
+            if (modDirectoryInfo)
+            {
+                auto childPath = uploadDirectory / modDirectoryInfo->pipedalPath;
+                FilePropertyDirectoryTree::ptr child = std::make_unique<FilePropertyDirectoryTree>(
+                    childPath,modDirectoryInfo->displayName
+                );
+                FillSampleDirectoryTree(child.get(),childPath);
+                result->children_.push_back(std::move(child));
+            }
+        }
+        if (uiFileProperty.useLegacyModDirectory()) {
+            auto childPath = uploadDirectory / uiFileProperty.directory();
+            FilePropertyDirectoryTree::ptr child = std::make_unique<FilePropertyDirectoryTree>(
+                childPath
+            );
+            FillSampleDirectoryTree(child.get(),childPath);
+            result->children_.push_back(std::move(child));
+        }
+        return result;
 
-    return result;
+    } else {
+        if (uiFileProperty.directory().empty())
+        {
+            throw std::runtime_error("Invalid uiFileProperty");
+        }
+        if (!ensureNoDotDot(uiFileProperty.directory()))
+        {
+            throw std::runtime_error("Invalid uiFileProperty");
+        }
+        std::filesystem::path rootDirectory = uploadDirectory / uiFileProperty.directory();
+        FilePropertyDirectoryTree::ptr result = std::make_unique<FilePropertyDirectoryTree>(rootDirectory.string(),"Home");
+
+        FillSampleDirectoryTree(result.get(),rootDirectory);
+        return result;
+    }
+
 }
 
 

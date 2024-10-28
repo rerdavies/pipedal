@@ -1,5 +1,31 @@
 # Release Notes
 
+## PiPedal 1.3.62 Beta
+
+Features:
+- Plugins can now share uploaded model and IR files by type. For plugins with appropriate mod:fileTypes attributes, uploaded
+  files will be shared by category (Nam model, IR Files, Audio Tracks, Midi Songs, etc). Sharing of ML models are also supported, although 
+  that requires use of an extended mod:fileType (mlmodel) that MOD does not support. 
+- TooB Tuner stability issues fixed. The pitch detection algorithm has been improved, and the tuner now does filtering to avoid 
+  displaying a value when the current input isn't a steady note.
+- LV2 trigger controls are now displayed as buttons instead of toggle controls (maybe useful for 3rd-party looper plugins).
+
+Known issues:
+
+- There are a number of outstanding minor compatibility issues with Ratatouille. I intend to work with the author to address them.
+
+### Backwards Compatibility With the Previous Upload Directory Scheme
+
+Sharing file types poses a problem with previous versions of PiPedal which did not share uploads by file type, but instead placed uploads in a private directory for each plugin.
+In order to accomodate this, Pipedal provides legacy support for this situation. If a private upload directory for a plugin exists, the file property selection dialog will show
+both the new shared directories, and the old private directory. The private directory has a name that reflects the name of the plugin (e.g. "Ratatoille.lv2"). This directory only
+shows up if you have used the plugin on previous versiouns of Pipedal. If you have nothing of particular value in the old private upload directory, you can delete the plugin's private directory (which can be found in `/var/pipedal/audio_uploads`), and the private directory will no longer be displayed in the PiPedal UI.
+
+I anticipate providing a migration utility in the near future which will clean up and migrate legacy upload directories to the new directory structure (automatically uploading
+presets which reference uploaded files that have moved). In the meantime, I think you will find the current occomodation for legacy upload directories perfectly functional. 
+
+
+
 ## PiPedal 1.3.61 Release
 
 Bug fixes:

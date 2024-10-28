@@ -29,7 +29,10 @@ namespace pipedal {
         
         FilePropertyDirectoryTree();
         FilePropertyDirectoryTree(const std::string&directoryName);
+        FilePropertyDirectoryTree(const std::string&directoryName,const std::string&displayName);
         std::string directoryName_;
+        std::string displayName_;
+        bool isProtected_ = false;
         std::vector<std::unique_ptr<FilePropertyDirectoryTree>> children_;
 
         DECLARE_JSON_MAP(FilePropertyDirectoryTree);

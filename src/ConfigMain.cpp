@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include "CommandLineParser.hpp"
 #include "SystemConfigFile.hpp"
+#include "ModFileTypes.hpp"
 
 #include <filesystem>
 #include <stdlib.h>
@@ -951,6 +952,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
     }
     try
     {
+
         // apply policy changes we dropped into the polkit configuration files (allows pipedal_d to use NetworkManager dbus apis).
         silentSysExec(SYSTEMCTL_BIN " restart polkit.service");
 
@@ -1158,6 +1160,8 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         sysExec(SYSTEMCTL_BIN " daemon-reload");
 
         FixPermissions();
+        ModFileTypes::CreateDefaultDirectories("/var/pipedal/audio_uploads");
+
 
         StopService(false);
         AvahiInstall();

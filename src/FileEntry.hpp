@@ -26,15 +26,33 @@ namespace pipedal {
     class FileEntry {
     public:
         FileEntry() { }
-        FileEntry(std::string filename,bool isDirectory)
-        :filename_(filename), isDirectory_(isDirectory)
+        FileEntry(const std::string&pathname,const std::string &displayName,bool isDirectory, bool isProtected = false)
+        :pathname_(pathname), displayName_(displayName), isDirectory_(isDirectory),isProtected_(isProtected)
         {
 
         }
-        std::string filename_;
+        std::string pathname_;
+        std::string displayName_;
         bool isDirectory_ = false;
+        bool isProtected_ = false;
 
         DECLARE_JSON_MAP(FileEntry);
+
+    };
+    class BreadcrumbEntry {
+    public:
+        std::string pathname_;
+        std::string displayName_;
+
+        DECLARE_JSON_MAP(BreadcrumbEntry);
+    };
+
+    class FileRequestResult {
+    public:
+        std::vector<FileEntry> files_;
+        bool isProtected_ = false;
+        std::vector<BreadcrumbEntry> breadcrumbs_;
+        DECLARE_JSON_MAP(FileRequestResult);
 
     };
 }

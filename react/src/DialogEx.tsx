@@ -198,6 +198,7 @@ class DialogEx extends React.Component<DialogExProps,DialogExState> implements I
         {
             this.onEnterKey();
         }
+        evt.stopPropagation();
     }
     render() {
         let { tag,onClose,...extra} = this.props;

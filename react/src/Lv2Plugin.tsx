@@ -246,6 +246,8 @@ export class UiFileProperty {
         this.index = input.index;
         this.portGroup = input.portGroup;
         this.resourceDirectory = input.resourceDirectory ?? "";
+        this.modDirectories = input.modDirectories;
+        this.useLegacyModDirectory = input.useLegacyModDirectory;
         return this;
     }
     static deserialize_array(input: any): UiFileProperty[] {
@@ -297,6 +299,8 @@ export class UiFileProperty {
     index: number = -1;
     portGroup: string = "";
     resourceDirectory: string = "";
+    modDirectories: string[] = [];
+    useLegacyModDirectory: boolean = false;
 
 };
 export class Lv2Plugin implements Deserializable<Lv2Plugin> {
@@ -436,6 +440,7 @@ export enum ControlType {
     OnOffSwitch,
     ABSwitch,
     Select,
+    Trigger,
 
     Tuner,
     Vu,
@@ -444,7 +449,7 @@ export enum ControlType {
 }
 
 export class UiControl implements Deserializable<UiControl> {
-    deserialize(input: any): UiControl {
+deserialize(input: any): UiControl {
         this.symbol = input.symbol;
         this.name = input.name;
         this.index = input.index;
@@ -458,7 +463,7 @@ export class UiControl implements Deserializable<UiControl> {
         this.integer_property = input.integer_property;
         this.enumeration_property = input.enumeration_property;
         this.toggled_property = input.toggled_property;
-        this.trigger = input.trigger;
+        this.trigger_property = input.trigger_property;
         this.not_on_gui = input.not_on_gui;
         this.scale_points = ScalePoint.deserialize_array(input.scale_points);
         this.port_group = input.port_group;
@@ -498,6 +503,10 @@ export class UiControl implements Deserializable<UiControl> {
             if (this.toggled_property || (this.integer_property && this.min_value === 0 && this.max_value === 1)) {
                 this.controlType = ControlType.OnOffSwitch;
             }
+        }
+        if (this.is_input && this.trigger_property)
+        {
+            this.controlType = ControlType.Trigger;
         }
         return this;
     }
@@ -546,7 +555,7 @@ export class UiControl implements Deserializable<UiControl> {
     range_steps: number = 0;
     integer_property: boolean = false;
     enumeration_property: boolean = false;
-    trigger: boolean = false;
+    trigger_property: boolean = false;
     not_on_gui: boolean = false;
     toggled_property: boolean = false;
     scale_points: ScalePoint[] = [];
@@ -589,6 +598,9 @@ export class UiControl implements Deserializable<UiControl> {
     }
     isSelect(): boolean {
         return this.controlType === ControlType.Select;
+    }
+    isTrigger(): boolean {
+        return this.controlType === ControlType.Trigger;
     }
     isOutputSelect(): boolean {
         return !this.is_input && this.controlType === ControlType.OutputSelect;

@@ -46,6 +46,7 @@
 #include "PiPedalException.hpp"
 #include "StdErrorCapture.hpp"
 #include "util.hpp"
+#include "ModFileTypes.hpp"
 
 #include "Locale.hpp"
 
@@ -118,6 +119,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     core__toggled = lilv_new_uri(pWorld, LV2_CORE__toggled);
     core__connectionOptional = lilv_new_uri(pWorld, LV2_CORE__connectionOptional);
     portprops__not_on_gui_property_uri = lilv_new_uri(pWorld, LV2_PORT_PROPS__notOnGUI);
+    portprops__trigger = lilv_new_uri(pWorld, LV2_PORT_PROPS__trigger);
     midi__event = lilv_new_uri(pWorld, LV2_MIDI__MidiEvent);
     core__designation = lilv_new_uri(pWorld, LV2_CORE__designation);
     portgroups__group = lilv_new_uri(pWorld, LV2_PORT_GROUPS__group);
@@ -191,8 +193,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     dc__format = lilv_new_uri(pWorld, "http://purl.org/dc/terms/format");
 
-    mod__fileTypes = lilv_new_uri(pWorld,"http://moddevices.com/ns/mod#fileTypes");
-
+    mod__fileTypes = lilv_new_uri(pWorld, "http://moddevices.com/ns/mod#fileTypes");
 }
 
 void PluginHost::LilvUris::Free()
@@ -477,8 +478,7 @@ void PluginHost::Load(const char *lv2Path)
         const char *pb1 = left->name().c_str();
         const char *pb2 = right->name().c_str();
         return collator->Compare(
-                   left->name(),right->name()) 
-                   < 0;
+                   left->name(), right->name()) < 0;
     };
     std::sort(this->plugins_.begin(), this->plugins_.end(), compare);
 
@@ -624,15 +624,47 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
                                 strLabel, propertyUri.AsUri(), lv2DirectoryName);
 
                         AutoLilvNodes mod__fileTypes = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->mod__fileTypes, nullptr);
-                        LILV_FOREACH(nodes,i,mod__fileTypes)
+                        LILV_FOREACH(nodes, i, mod__fileTypes)
                         {
-                                // "nam,nammodel"
-                            AutoLilvNode lilvfileType  {lilv_nodes_get(mod__fileTypes, i)};
+                            // "nam,nammodel"
+                            AutoLilvNode lilvfileType{lilv_nodes_get(mod__fileTypes, i)};
                             std::string fileTypes = lilvfileType.AsString();
+                            ModFileTypes modFileTypes(fileTypes);
 
-                            for (std::string&type: split(fileTypes,','))
+                            for (const std::string &rootDirectory : modFileTypes.rootDirectories())
                             {
-                                fileProperty->fileTypes().push_back(UiFileType(SS(type << " file"),SS('.' << type)));
+                                fileProperty->modDirectories().push_back(rootDirectory);
+                            }
+                            for (const std::string &type : modFileTypes.fileTypes())
+                            {
+                                fileProperty->fileTypes().push_back(UiFileType(SS(type << " file"), SS('.' << type)));
+                            }
+                            // Legacy case: audio_uploads/<plugin_directory> exists.
+
+                            std::filesystem::path bundleDirectoryName = std::filesystem::path(bundle_path()).parent_path().filename();
+                            std::filesystem::path legacyUploadPath = lv2Host->MapPath(bundleDirectoryName.string());
+
+                            if (std::filesystem::exists(legacyUploadPath))
+                            {
+                                if (!std::filesystem::exists(legacyUploadPath / ".migrated"))
+                                {
+                                    fileProperty->useLegacyModDirectory(true);
+                                    fileProperty->directory(bundleDirectoryName);
+                                }
+                            }
+                            if (fileProperty->modDirectories().size() == 0)
+                            {
+                                fileProperty->directory(bundleDirectoryName);
+                            }
+                            else if (fileProperty->modDirectories().size() == 1 && !fileProperty->useLegacyModDirectory()) // no synthetic root.
+                            {
+                                auto modType = ModFileTypes::GetModDirectory(fileProperty->modDirectories()[0]);
+                                if (modType)
+                                {
+                                    fileProperty->directory(modType->pipedalPath);
+                                }
+                            } else {
+                                // handled at request time.
                             }
                         }
                         if (!mod__fileTypes)
@@ -932,6 +964,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__toggled);
     this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__not_on_gui_property_uri);
     this->connection_optional_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__connectionOptional);
+    this->trigger_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__trigger);
 
     LilvScalePoints *pScalePoints = lilv_port_get_scale_points(plugin, pPort);
     LILV_FOREACH(scale_points, iSP, pScalePoints)
@@ -1387,33 +1420,36 @@ std::shared_ptr<HostWorkerThread> PluginHost::GetHostWorkerThread()
     return pHostWorkerThread;
 }
 
-class ResourceInfo {
+class ResourceInfo
+{
 public:
-    ResourceInfo(const std::string&filePropertyDirectory,const std::string&resourceDirectory)
-    :filePropertyDirectory(filePropertyDirectory), resourceDirectory(resourceDirectory) {}
+    ResourceInfo(const std::string &filePropertyDirectory, const std::string &resourceDirectory)
+        : filePropertyDirectory(filePropertyDirectory), resourceDirectory(resourceDirectory) {}
 
     std::string filePropertyDirectory;
     std::string resourceDirectory;
-    bool operator==(const ResourceInfo&other) const {
+    bool operator==(const ResourceInfo &other) const
+    {
         return this->filePropertyDirectory == other.filePropertyDirectory && this->resourceDirectory == other.resourceDirectory;
-
     }
-    bool operator<(const ResourceInfo&other) const {
+    bool operator<(const ResourceInfo &other) const
+    {
         if (this->filePropertyDirectory < other.filePropertyDirectory)
             return true;
         if (this->filePropertyDirectory > other.filePropertyDirectory)
             return false;
-        return  this->resourceDirectory < other.resourceDirectory;
-
+        return this->resourceDirectory < other.resourceDirectory;
     }
 };
 
-static bool anyTargetFilesExist(const std::filesystem::path &sourceDirectory, const std::filesystem::path&targetDirectory)
+static bool anyTargetFilesExist(const std::filesystem::path &sourceDirectory, const std::filesystem::path &targetDirectory)
 {
     namespace fs = std::filesystem;
-    try {
-        if (!fs::exists(targetDirectory)) return false;
-        for (auto&directoryEntry : fs::directory_iterator(sourceDirectory))
+    try
+    {
+        if (!fs::exists(targetDirectory))
+            return false;
+        for (auto &directoryEntry : fs::directory_iterator(sourceDirectory))
         {
             fs::path thisPath = directoryEntry.path();
             if (directoryEntry.is_directory())
@@ -1421,11 +1457,13 @@ static bool anyTargetFilesExist(const std::filesystem::path &sourceDirectory, co
                 auto name = thisPath.filename();
                 fs::path childSource = sourceDirectory / name;
                 fs::path childTarget = targetDirectory / name;
-                if (anyTargetFilesExist(childSource,childTarget))
+                if (anyTargetFilesExist(childSource, childTarget))
                 {
                     return true;
                 }
-            } else {
+            }
+            else
+            {
                 fs::path targetPath = targetDirectory / thisPath.filename();
                 if (fs::exists(targetPath))
                 {
@@ -1433,9 +1471,9 @@ static bool anyTargetFilesExist(const std::filesystem::path &sourceDirectory, co
                 }
             }
         }
-
-    } catch (const std::exception&) {
-
+    }
+    catch (const std::exception &)
+    {
     }
     return false;
 }
@@ -1450,48 +1488,52 @@ static void createTargetLinks(const std::filesystem::path &sourceDirectory, cons
     {
         fs::path childSource = dirEntry.path();
         fs::path childTarget = targetDirectory / childSource.filename();
-        if (dirEntry.is_directory()) {
-            createTargetLinks(childSource,childTarget);
-        } else {
-            fs::create_symlink(childSource,childTarget);
+        if (dirEntry.is_directory())
+        {
+            createTargetLinks(childSource, childTarget);
+        }
+        else
+        {
+            fs::create_symlink(childSource, childTarget);
         }
     }
 }
-void PluginHost::CheckForResourceInitialization(const std::string &pluginUri,const std::filesystem::path&pluginUploadDirectory)
+void PluginHost::CheckForResourceInitialization(const std::string &pluginUri, const std::filesystem::path &pluginUploadDirectory)
 {
 
     auto plugin = GetPluginInfo(pluginUri);
     if (plugin)
     {
         std::filesystem::path bundlePath = plugin->bundle_path();
-        if (!plugin->piPedalUI()) 
+        if (!plugin->piPedalUI())
             return;
-        const auto& fileProperties = plugin->piPedalUI()->fileProperties();
+        const auto &fileProperties = plugin->piPedalUI()->fileProperties();
         if (fileProperties.size() != 0 && !pluginsThatHaveBeenCheckedForResources.contains(pluginUri))
         {
             pluginsThatHaveBeenCheckedForResources.insert(pluginUri);
 
             // eliminate duplicates.
             std::set<ResourceInfo> resourceInfoSet;
-            for (const auto&fileProperty: fileProperties)
+            for (const auto &fileProperty : fileProperties)
             {
                 if (!fileProperty->resourceDirectory().empty() && !fileProperty->directory().empty())
                 {
-                    resourceInfoSet.insert(ResourceInfo(fileProperty->directory(),fileProperty->resourceDirectory()));
+                    resourceInfoSet.insert(ResourceInfo(fileProperty->directory(), fileProperty->resourceDirectory()));
                 }
             }
-            try {
-            for (const ResourceInfo&resourceInfo: resourceInfoSet)
+            try
             {
-                std::filesystem::path sourcePath = bundlePath / resourceInfo.resourceDirectory;
-                std::filesystem::path targetPath = pluginUploadDirectory / resourceInfo.filePropertyDirectory;
-                if (!anyTargetFilesExist(sourcePath,targetPath))
+                for (const ResourceInfo &resourceInfo : resourceInfoSet)
                 {
-                    createTargetLinks(sourcePath,targetPath);
+                    std::filesystem::path sourcePath = bundlePath / resourceInfo.resourceDirectory;
+                    std::filesystem::path targetPath = pluginUploadDirectory / resourceInfo.filePropertyDirectory;
+                    if (!anyTargetFilesExist(sourcePath, targetPath))
+                    {
+                        createTargetLinks(sourcePath, targetPath);
+                    }
                 }
-
             }
-            } catch (const std::exception &e)
+            catch (const std::exception &e)
             {
                 Lv2Log::error(SS("CheckForResourceInitialization: " << e.what()));
             }
@@ -1499,19 +1541,16 @@ void PluginHost::CheckForResourceInitialization(const std::string &pluginUri,con
     }
 }
 
-json_variant PluginHost::MapPath(const json_variant&json)
+json_variant PluginHost::MapPath(const json_variant &json)
 {
     AtomConverter converter(GetMapFeature());
-    return converter.MapPath(json,GetPluginStoragePath());
-
+    return converter.MapPath(json, GetPluginStoragePath());
 }
-json_variant PluginHost::AbstractPath(const json_variant&json)
+json_variant PluginHost::AbstractPath(const json_variant &json)
 {
     AtomConverter converter(GetMapFeature());
-    return converter.AbstractPath(json,GetPluginStoragePath());
-
+    return converter.AbstractPath(json, GetPluginStoragePath());
 }
-
 
 std::string PluginHost::MapPath(const std::string &abstractPath)
 {
@@ -1521,10 +1560,8 @@ std::string PluginHost::MapPath(const std::string &abstractPath)
         return "";
     }
     return SS(storagePath << '/' << abstractPath);
-
-
 }
-std::string PluginHost::AbstractPath(const std::string&path)
+std::string PluginHost::AbstractPath(const std::string &path)
 {
     auto storagePath = GetPluginStoragePath();
     if (path.starts_with(storagePath))
@@ -1593,7 +1630,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      MAP_REF(Lv2PortInfo, is_logarithmic),
      MAP_REF(Lv2PortInfo, display_priority),
      MAP_REF(Lv2PortInfo, range_steps),
-     MAP_REF(Lv2PortInfo, trigger),
+     MAP_REF(Lv2PortInfo, trigger_property),
      MAP_REF(Lv2PortInfo, integer_property),
      MAP_REF(Lv2PortInfo, enumeration_property),
      MAP_REF(Lv2PortInfo, toggled_property),
@@ -1662,6 +1699,7 @@ json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
     MAP_REF(Lv2PluginUiPort, enumeration_property),
     MAP_REF(Lv2PluginUiPort, not_on_gui),
     MAP_REF(Lv2PluginUiPort, toggled_property),
+    MAP_REF(Lv2PluginUiPort, trigger_property),
     MAP_REF(Lv2PluginUiPort, scale_points),
     MAP_REF(Lv2PluginUiPort, port_group),
 

@@ -73,8 +73,20 @@ export enum ReconnectReason {
 export type ControlValueChangedHandler = (key: string, value: number) => void;
 
 export interface FileEntry {
-    filename: string;
+    pathname: string;
+    displayName: string;
     isDirectory: boolean;
+    isProtected: boolean;
+};
+
+export interface BreadcrumbEntry {
+    pathname: string;
+    displayName: string;
+};
+export class FileRequestResult {
+    files: FileEntry[] = [];
+    isProtected: boolean = false;
+    breadcrumbs: BreadcrumbEntry[] = [];
 };
 
 export type PluginPresetsChangedHandler = (pluginUri: string) => void;
@@ -1989,9 +2001,9 @@ export class PiPedalModel //implements PiPedalModel
         return nullCast(this.webSocket)
             .request<string[]>('requestFileList', piPedalFileProperty);
     }
-    requestFileList2(relativeDirectoryPath: string, piPedalFileProperty: UiFileProperty): Promise<FileEntry[]> {
+    requestFileList2(relativeDirectoryPath: string, piPedalFileProperty: UiFileProperty): Promise<FileRequestResult> {
         return nullCast(this.webSocket)
-            .request<FileEntry[]>('requestFileList2',
+            .request<FileRequestResult>('requestFileList2',
                 { relativePath: relativeDirectoryPath, fileProperty: piPedalFileProperty }
             );
     }
@@ -2498,7 +2510,7 @@ export class PiPedalModel //implements PiPedalModel
         link.click();
     }
 
-    uploadFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {
+    uploadUserFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {
         let result = new Promise<string>((resolve, reject) => {
             try {
                 if (file.size > this.maxFileUploadSize) {
@@ -2539,10 +2551,20 @@ export class PiPedalModel //implements PiPedalModel
                         }
                     })
                     .then((json) => {
-                        resolve(json as string);
+                        let response = json as {errorMessage: string, path: string};
+                        if (response.errorMessage !== "")
+                        {
+                            throw new Error(response.errorMessage);
+                        }
+                        resolve(response.path);
                     })
                     .catch((error) => {
-                        reject("Upload failed. " + error);
+                        if (error instanceof Error)
+                        {
+                            reject("Upload failed. " + (error as Error).message);
+                        } else {
+                            reject("Upload failed. " + error);
+                        }
                     })
                     ;
             } catch (error) {

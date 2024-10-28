@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { TouchEvent, PointerEvent, ReactNode, Component, SyntheticEvent } from 'react';
+import Button from '@mui/material/Button';
 import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
@@ -27,10 +28,11 @@ import Typography from '@mui/material/Typography';
 import Input from '@mui/material/Input';
 import Select from '@mui/material/Select';
 import Switch from '@mui/material/Switch';
-import Utility, {nullCast} from './Utility';
+import Utility, { nullCast } from './Utility';
 import MenuItem from '@mui/material/MenuItem';
-import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
-import {ReactComponent as DialIcon} from './svg/fx_dial.svg';
+import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
+import { ReactComponent as DialIcon } from './svg/fx_dial.svg';
+import { isDarkMode } from './DarkMode';
 
 const MIN_ANGLE = -135;
 const MAX_ANGLE = 135;
@@ -94,8 +96,7 @@ type PluginControlState = {
 
 const PluginControl =
     withStyles(styles, { withTheme: true })(
-        class extends Component<PluginControlProps, PluginControlState>
-        {
+        class extends Component<PluginControlProps, PluginControlState> {
 
             frameRef: React.RefObject<HTMLDivElement>;
             imgRef: React.RefObject<SVGSVGElement>;
@@ -140,23 +141,18 @@ const PluginControl =
                 return Utility.needsZoomedControls();
             }
 
-            showZoomedControl()
-            {
-                if (this.props.uiControl && this.frameRef.current)
-                {
-                    this.model.zoomUiControl(this.frameRef.current,this.props.instanceId,this.props.uiControl);
+            showZoomedControl() {
+                if (this.props.uiControl && this.frameRef.current) {
+                    this.model.zoomUiControl(this.frameRef.current, this.props.instanceId, this.props.uiControl);
                 }
             }
-            hideZoomedControl()
-            {
-                if (this.frameRef.current && this.model.zoomedUiControl.get()?.source === this.frameRef.current)
-                {
+            hideZoomedControl() {
+                if (this.frameRef.current && this.model.zoomedUiControl.get()?.source === this.frameRef.current) {
                     this.model.clearZoomedControl();
                 }
             }
 
-            componentWillUnmount()
-            {
+            componentWillUnmount() {
                 this.hideZoomedControl();
             }
             inputChanged: boolean = false;
@@ -172,12 +168,11 @@ const PluginControl =
             }
             onInputFocus(event: SyntheticEvent): void {
                 this.displayValueRef.current!.style.display = "none";
-                if (Utility.hasIMEKeyboard())
-                {
+                if (Utility.hasIMEKeyboard()) {
                     event.preventDefault();
                     event.stopPropagation();
                     this.inputRef.current?.blur();
-                    this.props.requestIMEEdit(nullCast(this.props.uiControl),this.props.value)
+                    this.props.requestIMEEdit(nullCast(this.props.uiControl), this.props.value)
                 }
             }
             onInputKeyPress(e: any): void {
@@ -221,7 +216,7 @@ const PluginControl =
                     // clamp and quantize.
                     let range = this.valueToRange(result);
                     result = this.rangeToValue(range);
-                    let displayVal = this.props.uiControl?.formatShortValue(result)??"";
+                    let displayVal = this.props.uiControl?.formatShortValue(result) ?? "";
                     if (event.currentTarget) {
                         event.currentTarget.value = displayVal;
                     }
@@ -270,11 +265,9 @@ const PluginControl =
 
             capturedPointers: number[] = [];
 
-            onBodyPointerDownCapture(e_: any): any
-            {
+            onBodyPointerDownCapture(e_: any): any {
                 let e = e_ as PointerEvent;
-                if (this.isExtraTouch(e))
-                {
+                if (this.isExtraTouch(e)) {
                     this.isTap = false;
                     this.captureElement!.setPointerCapture(e.pointerId);
                     this.capturedPointers.push(e.pointerId);
@@ -305,10 +298,8 @@ const PluginControl =
                     e.preventDefault();
                     e.stopPropagation();
 
-                    if (this.isTouchDevice())
-                    {
-                        if (this.props.uiControl?.isDial()??false)
-                        {
+                    if (this.isTouchDevice()) {
+                        if (this.props.uiControl?.isDial() ?? false) {
                             this.isTap = false;
                             this.showZoomedControl();
                             return;
@@ -318,8 +309,7 @@ const PluginControl =
                     ++this.pointersDown;
 
                     this.mouseDown = true;
-                    if (this.pointersDown === 1)
-                    {
+                    if (this.pointersDown === 1) {
                         this.isTap = true;
                         this.tapStartMs = Date.now();
                     } else {
@@ -340,8 +330,8 @@ const PluginControl =
                         this.captureElement = img;
                         document.body.addEventListener(
                             "pointerdown",
-                            this.onBodyPointerDownCapture,true
-                            );
+                            this.onBodyPointerDownCapture, true
+                        );
 
                         img.setPointerCapture(e.pointerId);
                         if (img.style) {
@@ -350,11 +340,10 @@ const PluginControl =
                     }
 
                 } else {
-                    if (this.isExtraTouch(e))
-                    {
+                    if (this.isExtraTouch(e)) {
                         ++this.pointersDown;
                         this.isTap = false;
-                        
+
                     }
                 }
             }
@@ -367,7 +356,7 @@ const PluginControl =
                 if (this.isCapturedPointer(e)) {
                     --this.pointersDown;
                     this.isTap = false;
-                    
+
 
                     this.releaseCapture(e);
                 }
@@ -378,21 +367,16 @@ const PluginControl =
 
                 let ultraHigh = false;
                 let high = false;
-                if (e.ctrlKey)
-                {
+                if (e.ctrlKey) {
                     ultraHigh = true;
                 }
-                if (e.shiftKey)
-                {
+                if (e.shiftKey) {
                     high = true;
                 }
-                if (e.pointerType === "touch")
-                {
-                    if (this.pointersDown >= 3)
-                    {
+                if (e.pointerType === "touch") {
+                    if (this.pointersDown >= 3) {
                         ultraHigh = true;
-                    } else if (this.pointersDown === 2)
-                    {
+                    } else if (this.pointersDown === 2) {
                         high = true;
                     }
                 }
@@ -411,28 +395,24 @@ const PluginControl =
             }
             private lastTapMs = 0;
 
-            resetToDefaultValue(uiControl: UiControl): void
-            {
+            resetToDefaultValue(uiControl: UiControl): void {
                 let value = uiControl.default_value;
-                this.model.setPedalboardControl(this.props.instanceId,uiControl.symbol,value);
+                this.model.setPedalboardControl(this.props.instanceId, uiControl.symbol, value);
             }
             onPointerDoubleTap() {
                 let uiControl = this.props.uiControl;
-                if (uiControl)
-                {
-                    if (uiControl.isDial())
-                    {
+                if (uiControl) {
+                    if (uiControl.isDial()) {
                         this.resetToDefaultValue(uiControl);
                     }
                 }
             }
             onPointerTap() {
                 let tapTime = Date.now();
-                let dT = tapTime-this.lastTapMs;
+                let dT = tapTime - this.lastTapMs;
                 this.lastTapMs = tapTime;
 
-                if (dT < 500)
-                {
+                if (dT < 500) {
                     this.onPointerDoubleTap();
                 }
             }
@@ -442,32 +422,29 @@ const PluginControl =
 
                 if (this.isCapturedPointer(e)) {
                     --this.pointersDown;
-                    
+
 
                     e.preventDefault();
                     let dRange = this.updateRange(e)
                     this.previewRange(dRange, true);
 
                     this.releaseCapture(e);
-                    if (this.isTap)
-                    {
-                        let ms = Date.now()-this.tapStartMs;
-                        if (ms < 200)
-                        {
+                    if (this.isTap) {
+                        let ms = Date.now() - this.tapStartMs;
+                        if (ms < 200) {
                             this.onPointerTap();
                         }
                     }
 
                 } else {
                     --this.pointersDown;
-                    
+
                 }
             }
 
-            releaseCapture(e: PointerEvent<SVGSVGElement>)
-            {
+            releaseCapture(e: PointerEvent<SVGSVGElement>) {
                 let img = this.imgRef.current;
-                
+
                 if (img && img.style) {
                     img.releasePointerCapture(e.pointerId);
                     img.style.opacity = "" + DEFAULT_OPACITY;
@@ -480,14 +457,14 @@ const PluginControl =
                 }
                 document.body.removeEventListener(
                     "pointerdown",
-                    this.onBodyPointerDownCapture,true
-                    );
+                    this.onBodyPointerDownCapture, true
+                );
 
                 this.mouseDown = false;
 
             }
 
-            clickSlop() { 
+            clickSlop() {
                 return 3.5;  // maybe larger on touch devices.
             }
             onPointerMove(e: PointerEvent<SVGSVGElement>): void {
@@ -499,15 +476,27 @@ const PluginControl =
                     let x = e.clientX;
                     let y = e.clientY;
                     let dx = x - this.startX;
-                    let dy = y-this.startY;
-                    let distance = Math.sqrt(dx*dx+dy*dy);
-                    if (distance >= this.clickSlop())
-                    {
+                    let dy = y - this.startY;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance >= this.clickSlop()) {
                         this.isTap = false;
                     }
                 }
             }
-
+            handleTriggerMouseDown() {
+                let uiControl = this.props.uiControl;
+                if (uiControl)
+                {
+                    this.model.setPedalboardControl(this.props.instanceId,uiControl.symbol,1);
+                }
+            }
+            handleTriggerMouseUp() {
+                let uiControl = this.props.uiControl;
+                if (uiControl)
+                {
+                    this.model.setPedalboardControl(this.props.instanceId,uiControl.symbol,0);
+                }
+            }
             previewInputValue(value: number, commitValue: boolean) {
                 let range = this.valueToRange(value);
                 value = this.rangeToValue(range);
@@ -547,13 +536,12 @@ const PluginControl =
                 }
                 let inputElement = this.inputRef.current;
                 if (inputElement) {
-                    let v = this.props.uiControl?.formatShortValue(value)??"";
+                    let v = this.props.uiControl?.formatShortValue(value) ?? "";
                     inputElement.value = v;
                 }
                 let displayValue = this.displayValueRef.current;
-                if (displayValue)
-                {
-                    let v = this.formatDisplayValue(this.props.uiControl,value);
+                if (displayValue) {
+                    let v = this.formatDisplayValue(this.props.uiControl, value);
                     displayValue.childNodes[0].textContent = v;
                 }
                 let selectElement = this.selectRef.current;
@@ -577,9 +565,9 @@ const PluginControl =
             }
             onSelectChanged(e: any, value: any) {
                 let target = e.target;
-                setTimeout(()=> {
+                setTimeout(() => {
                     this.props.onChange(target.value);
-                },0);
+                }, 0);
 
 
             }
@@ -610,7 +598,7 @@ const PluginControl =
                     );
                 } else {
                     return (
-                        <Select variant="standard" 
+                        <Select variant="standard"
                             ref={this.selectRef}
                             value={control.clampSelectValue(value)}
                             onChange={this.onSelectChanged}
@@ -619,7 +607,7 @@ const PluginControl =
                                 id: 'id' + control.symbol,
                                 style: { fontSize: FONT_SIZE }
                             }}
-                            style={{ marginLeft: 4, marginRight: 4, width: 140,fontSize: 14 }}
+                            style={{ marginLeft: 4, marginRight: 4, width: 140, fontSize: 14 }}
                         >
                             {control.scale_points.map((scale_point: ScalePoint) => (
                                 <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>
@@ -645,11 +633,10 @@ const PluginControl =
                         value = Math.round(value);
                     }
                     let range: number;
-                    if (uiControl.is_logarithmic)
-                    {
-                        range = Math.log(value/uiControl.min_value)/Math.log(uiControl.max_value/uiControl.min_value);
-                        if  (uiControl.range_steps > 1) {
-                            range = Math.round(range*(uiControl.range_steps-1))/(uiControl.range_steps-1);
+                    if (uiControl.is_logarithmic) {
+                        range = Math.log(value / uiControl.min_value) / Math.log(uiControl.max_value / uiControl.min_value);
+                        if (uiControl.range_steps > 1) {
+                            range = Math.round(range * (uiControl.range_steps - 1)) / (uiControl.range_steps - 1);
                         }
                     } else {
                         range = (value - uiControl.min_value) / (uiControl.max_value - uiControl.min_value);
@@ -666,17 +653,14 @@ const PluginControl =
                 let uiControl = this.props.uiControl;
                 if (uiControl) {
                     if (uiControl.range_steps > 1) {
-                        range = Math.round(range * (uiControl.range_steps-1)) / (uiControl.range_steps-1);
+                        range = Math.round(range * (uiControl.range_steps - 1)) / (uiControl.range_steps - 1);
                     }
                     let value: number;
-                    if (uiControl.min_value === uiControl.max_value)
-                    {
+                    if (uiControl.min_value === uiControl.max_value) {
                         value = uiControl.min_value;
-                    } else
-                    {
-                        if (uiControl.is_logarithmic)
-                        {
-                            value = uiControl.min_value*Math.pow(uiControl.max_value/uiControl.min_value,range);
+                    } else {
+                        if (uiControl.is_logarithmic) {
+                            value = uiControl.min_value * Math.pow(uiControl.max_value / uiControl.min_value, range);
                         } else {
                             value = range * (uiControl.max_value - uiControl.min_value) + uiControl.min_value;
                         }
@@ -724,45 +708,71 @@ const PluginControl =
                 let isSelect = control.isSelect();
                 let isAbSwitch = control.isAbToggle();
                 let isOnOffSwitch = control.isOnOffSwitch();
+                let isTrigger = control.isTrigger();
 
                 if (isAbSwitch) {
                     switchText = control.scale_points[0].value === value ? control.scale_points[0].label : control.scale_points[1].label;
                 }
 
-                let item_width = isSelect ? 160 : 80;
+                let item_width: number | undefined = isSelect ? 160 : 80;
+                if (isTrigger)
+                {
+                    item_width = undefined;
+                }
 
 
                 return (
                     <div ref={this.frameRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", width: item_width, margin: 8 }}>
                         {/* TITLE SECTION */}
-                        <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8,marginLeft: isSelect? 16: 0, marginRight: 0 }}>
-                            <Typography  variant="caption" display="block" noWrap style={{
+                        <div style={{ flex: "0 0 auto", alignSelf:"stretch", marginBottom: 8, marginLeft: isSelect ? 16 : 0, marginRight: 0 }}>
+                            <Typography variant="caption" display="block" noWrap style={{
                                 width: "100%",
                                 textAlign: isSelect ? "left" : "center"
-                            }}> {control.name}</Typography>
+                            }}> {isTrigger ? "\u00A0" : control.name}</Typography>
                         </div>
                         {/* CONTROL SECTION */}
 
                         <div style={{ flex: "0 0 auto" }}>
-                            {(isSelect || isAbSwitch || isOnOffSwitch) ? (
-                                this.makeSelect(control, value)
-                            ) : (
-                                <div style={{ flex: "0 1 auto" }}>
-                                    <DialIcon ref={this.imgRef} 
-                                        style={{ overscrollBehavior: "none", touchAction: "none", fill: dialColor,
-                                         width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform() }}
-                                        onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
-                                        onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp} onPointerMoveCapture={this.onPointerMove} onDrag={this.onDrag}
-                                        
-                                    />
-                                </div>
+                            {isTrigger ? (
+                                <Button variant="contained" color="primary" size="small"
+                                    onMouseDown={ 
+                                        (evt)=> { this.handleTriggerMouseDown(); }
+                                        }
+                                    onMouseUp={
+                                        (evt)=> { this.handleTriggerMouseUp(); }
+                                    }
+                                style={{
+                                    textTransform: "none",
+                                    background: (isDarkMode() ? "#6750A4" : undefined),
+                                    marginLeft: 8, marginRight: 8,minWidth:60
+                                }}
+
+                                >
+                                    {control.name}
+                                </Button>
                             )
+                                : ((isSelect || isAbSwitch || isOnOffSwitch) ? (
+                                    this.makeSelect(control, value)
+                                ) : (
+                                    <div style={{ flex: "0 1 auto" }}>
+                                        <DialIcon ref={this.imgRef}
+                                            style={{
+                                                overscrollBehavior: "none", touchAction: "none", fill: dialColor,
+                                                width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform()
+                                            }}
+                                            onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
+                                            onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp} onPointerMoveCapture={this.onPointerMove} onDrag={this.onDrag}
+
+                                        />
+                                    </div>
+                                )
+                                )
                             }
                         </div>
 
                         {/* LABEL/EDIT SECTION*/}
                         <div style={{ flex: "0 0 auto", position: "relative", width: 60 }}>
-                            {(!(isSelect || isOnOffSwitch)) &&
+                            {(!(isSelect || isOnOffSwitch || isTrigger)) &&
                                 (
                                     (isAbSwitch) ? (
                                         <Typography variant="caption" display="block" noWrap style={{
@@ -770,7 +780,7 @@ const PluginControl =
                                         }}> {switchText} </Typography>
                                     ) : (
                                         <div>
-                                            <Input key={value} 
+                                            <Input key={value}
                                                 type="number"
                                                 defaultValue={control.formatShortValue(value)}
                                                 error={this.state.error}
@@ -785,10 +795,10 @@ const PluginControl =
 
                                                 onKeyPress={this.onInputKeyPress} />
                                             <div className={classes.displayValue} ref={this.displayValueRef} onClick={(e) => { this.inputRef.current!.focus(); }} >
-                                                <Typography noWrap color="inherit" style={{ fontSize: "12.8px", paddingTop:4, paddingBottom: 6 }}
-                                                
-                                                 >
-                                                     {this.formatDisplayValue(control, value)}</Typography>
+                                                <Typography noWrap color="inherit" style={{ fontSize: "12.8px", paddingTop: 4, paddingBottom: 6 }}
+
+                                                >
+                                                    {this.formatDisplayValue(control, value)}</Typography>
                                             </div>
                                         </div>
                                     )

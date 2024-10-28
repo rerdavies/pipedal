@@ -51,6 +51,22 @@ namespace pipedal {
 
     }
 
+    template <typename T>
+    inline bool contains(const std::vector<T>&vector,const T&value)
+    {
+        for (auto i = vector.begin(); i != vector.end(); ++i)
+        {
+            if ((*i) == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+    inline bool contains(const std::vector<std::string>&vector,const char*value)
+    {
+        return contains(vector,std::string(value));
+    }
+
     class NoCopy {
     public:
         NoCopy() { }

@@ -37,6 +37,7 @@ export const SplitTypeControl: UiControl = new UiControl().deserialize({
     enumeration_property: true,
     not_on_gui: false,
     toggled_property:  false,
+    trigger_property: false,
     scale_points: ScalePoint.deserialize_array(
         [
             { value: 0, label: "A/B" },
@@ -60,6 +61,7 @@ export const SplitAbControl: UiControl = new UiControl().deserialize({
     enumeration_property: true,
     not_on_gui: false,
     toggled_property: false,
+    trigger_property: false,
     scale_points: ScalePoint.deserialize_array(
         [
             { value: 0, label: "A" },
@@ -83,6 +85,8 @@ export const SplitMixControl: UiControl = new UiControl().deserialize({
     enumeration_property: false,
     not_on_gui: false,
     toggled_property: false,
+    trigger_property: false,
+
     scale_points: []
 });
 
@@ -100,6 +104,8 @@ export const SplitPanLeftControl: UiControl = new UiControl().deserialize({
     enumeration_property: false,
     not_on_gui: false,
     toggled_property: false,
+    trigger_property: false,
+
     scale_points: []
 });
 
@@ -117,6 +123,8 @@ export const SplitVolLeftControl: UiControl = new UiControl().deserialize({
     enumeration_property: false,
     not_on_gui: false,
     toggled_property: false,
+    trigger_property: false,
+
     units: Units.db,
     scale_points: [
         new ScalePoint().deserialize({
@@ -141,6 +149,8 @@ export const SplitPanRightControl: UiControl = new UiControl().deserialize({
     enumeration_property: false,
     not_on_gui: false,
     toggled_property: false,
+    trigger_property: false,
+
     scale_points: []
 });
 
@@ -158,6 +168,8 @@ export const SplitVolRightControl: UiControl = new UiControl().deserialize({
     enumeration_property: false,
     not_on_gui: false,
     toggled_property: false,
+    trigger_property: false,
+
     units: Units.db,
     scale_points: [
         new ScalePoint().deserialize({
