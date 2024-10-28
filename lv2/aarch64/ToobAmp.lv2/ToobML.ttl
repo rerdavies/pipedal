@@ -31,7 +31,7 @@
 toobml:modelFile
         a lv2:Parameter;
         rdfs:label "Model";
-	mod:fileTypes "nam,nammodel";
+	mod:fileTypes "json,mlmodels";
         rdfs:range atom:Path.
 
 toobml:filterGroup
@@ -65,7 +65,7 @@ toobml:sagGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 51 ;
+        lv2:microVersion 52 ;
         rdfs:comment """
 The TooB ML Amplifier plugin provides emulation of a variety of amplifiers and overdrive pedals that are implemented 
 using neural-network-based machine learning models of real amplifiers.
