@@ -38,28 +38,18 @@ import { isDarkMode } from './DarkMode';
 import IconButton from '@mui/material/IconButton';
 
 
-function pathConcat(l: string, r: string): string
-{
-    if (l.length === 0) return r;
-    if (r.length === 0) return l;
-    return l +'/' + r;
-}
-
 class DirectoryTree {
     name: string = "";
     path: string = "";
     expanded: boolean = false;
+    isProtected: boolean = true;
     children: DirectoryTree[] = [];
 
     constructor(tree: FilePropertyDirectoryTree, parentTree: (DirectoryTree | null) = null) {
         this.name = tree.directoryName;
-        if (parentTree) {
-            this.path = pathConcat(parentTree.path,tree.directoryName);
-        } else {
-            this.name = "Home";
-            this.path = tree.directoryName;
-            this.expanded = true;
-        }
+        this.path = tree.directoryName;
+        this.name = tree.displayName;
+        this.isProtected = tree.isProtected;
         for (var treeChild of tree.children) {
             this.children.push(new DirectoryTree(treeChild, this));
         }
@@ -143,6 +133,7 @@ export interface FilePropertyDirectorySelectDialogState {
     selectedPath: string;
     directoryTree?: DirectoryTree;
     hasSelection: boolean;
+    isProtected: boolean;
     directoryTreeInvalidatecount: number;
 
 };
@@ -160,6 +151,7 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
             selectedPath: props.defaultPath,
             directoryTree: undefined,
             hasSelection: false,
+            isProtected: true,
             directoryTreeInvalidatecount: 0
 
         };
@@ -192,14 +184,19 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
         this.model.getFilePropertyDirectoryTree(this.props.uiFileProperty)
             .then((filePropertyDirectoryTree) => {
                 let myTree = new DirectoryTree(filePropertyDirectoryTree);
-                if (this.props.excludeDirectory)
+                if (this.props.excludeDirectory.length !== 0)
                 {
                     myTree.remove(this.props.excludeDirectory);
                 }
                 myTree.expand(this.state.selectedPath);
 
-                let hasSelection = myTree.find(this.state.selectedPath) != null;
-                this.setState({ directoryTree: myTree, hasSelection: hasSelection });
+                let selection = myTree.find(this.state.selectedPath);
+                let hasSelection = !!selection;
+                this.setState({ 
+                    directoryTree: myTree, 
+                    hasSelection: hasSelection,
+                    isProtected: selection ? selection.isProtected : false
+                 });
                 this.requestScroll = true;
             })
             .catch((e) => {
@@ -223,6 +220,9 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
 
 
     onOK() {
+        if (this.state.isProtected) {
+            return;
+        }
         if (this.state.hasSelection) {
             this.props.onOk(this.state.selectedPath);
         }
@@ -238,7 +238,11 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
     private onTreeClick(directoryTree: DirectoryTree) {
         if (!this.state.directoryTree) return;
         this.state.directoryTree.expand(directoryTree.path);
-        this.setState({ selectedPath: directoryTree.path, hasSelection: true, directoryTreeInvalidatecount: this.state.directoryTreeInvalidatecount + 1 });
+        this.setState({ 
+            selectedPath: directoryTree.path, 
+            hasSelection: true, 
+            isProtected: directoryTree.isProtected,
+            directoryTreeInvalidatecount: this.state.directoryTreeInvalidatecount + 1 });
     }
     private renderTree_(directoryTree: DirectoryTree) {
         let ref: ((element: HTMLButtonElement | null) => void) | undefined = undefined;
@@ -338,7 +342,8 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
                     <Button variant="dialogSecondary"  onClick={() => { this.onClose(); }} color="primary">
                         Cancel
                     </Button>
-                    <Button variant="dialogPrimary" onClick={() => { this.onOK(); }} color="secondary" disabled={!this.state.hasSelection} >
+                    <Button variant="dialogPrimary" onClick={() => { this.onOK(); }} color="secondary" 
+                        disabled={(!this.state.hasSelection) || this.state.isProtected} >
                         OK
                     </Button>
                 </DialogActions>

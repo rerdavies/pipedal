@@ -21,6 +21,8 @@
 export default class FilePropertyDirectoryTree {
     deserialize(input: any) : FilePropertyDirectoryTree {
         this.directoryName = input.directoryName;
+        this.displayName = input.displayName;
+        this.isProtected = input.isProtected;
         this.children = FilePropertyDirectoryTree.deserialize_array(input.children);
         return this;
     }
@@ -35,5 +37,7 @@ export default class FilePropertyDirectoryTree {
 
 
     directoryName: string = "";
+    displayName: string = "";
+    isProtected: boolean = false;
     children: FilePropertyDirectoryTree[] = [];
 }

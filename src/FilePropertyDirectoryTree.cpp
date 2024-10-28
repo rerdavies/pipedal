@@ -20,16 +20,26 @@
 #include "FilePropertyDirectoryTree.hpp"
 
 using namespace pipedal;
+namespace fs = std::filesystem;
 
 FilePropertyDirectoryTree::FilePropertyDirectoryTree()
 {
 }
 FilePropertyDirectoryTree::FilePropertyDirectoryTree(const std::string &directoryName)
-    : directoryName_(directoryName)
+    : directoryName_(directoryName),
+      displayName_(fs::path(directoryName).filename().string())
+{
+}
+
+FilePropertyDirectoryTree::FilePropertyDirectoryTree(const std::string &directoryName, const std::string &displayName)
+    : directoryName_(directoryName),
+      displayName_(displayName)
 {
 }
 
 JSON_MAP_BEGIN(FilePropertyDirectoryTree)
 JSON_MAP_REFERENCE(FilePropertyDirectoryTree, directoryName)
+JSON_MAP_REFERENCE(FilePropertyDirectoryTree, displayName)
+JSON_MAP_REFERENCE(FilePropertyDirectoryTree, isProtected)
 JSON_MAP_REFERENCE(FilePropertyDirectoryTree, children)
 JSON_MAP_END()

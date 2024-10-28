@@ -71,6 +71,12 @@ static bool isSubdirectory(const fs::path&path, const fs::path&basePath)
     return true;
 }
 
+static bool hasSyntheticModRoot(const UiFileProperty &fileProperty)
+{
+    return (fileProperty.modDirectories().size() > 1 || (fileProperty.modDirectories().size() == 1 && fileProperty.useLegacyModDirectory()));
+    
+}
+
 Storage::Storage()
 {
     SetConfigRoot("~/var/Config");
@@ -1819,7 +1825,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_,const U
     {
         ThrowPermissionDeniedError();
     }
-    if (fileProperty.modDirectories().size() > 1 || (fileProperty.modDirectories().size() == 1 && fileProperty.useLegacyModDirectory()))
+    if (hasSyntheticModRoot(fileProperty))
     {
         return Storage::GetModFileList2(absolutePath,fileProperty);
     }
@@ -1873,29 +1879,32 @@ bool Storage::IsValidSampleFileName(const std::filesystem::path &fileName)
     {
         return false;
     }
-    if (!ensureNoDotDot(fileName))
-    {
-        return false;
-    }
     
     std::filesystem::path audioFilePath = this->GetPluginUploadDirectory();
 
     std::filesystem::path parentDirectory = fileName.parent_path();
-    while (true)
+
+    auto iTarget = parentDirectory.begin();
+
+    for (auto i = audioFilePath.begin(); i != audioFilePath.end(); ++i)
     {
-        if (!parentDirectory.has_parent_path())
-        {
+        if (iTarget == parentDirectory.end()) {
             return false;
         }
-        std::string name = parentDirectory.filename().string();
-        if (parentDirectory == audioFilePath)
-            return true;
-        parentDirectory = parentDirectory.parent_path();
-        if (parentDirectory.string().length() < audioFilePath.string().length())
-        {
+        if (*i != *iTarget) {
             return false;
         }
+        ++iTarget;
     }
+    while (iTarget != parentDirectory.end())
+    {
+        if (iTarget->string() == "..")
+        {
+            return false;
+        }
+        ++iTarget;
+    }
+    return true;
 }
 void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
 {
@@ -1936,13 +1945,13 @@ void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
 }
 std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, const std::string &filename)
 {
-    if (!ensureNoDotDot(directory))
-    {
-        throw std::logic_error(SS("Invalide filename: " << filename));
-    }
     std::filesystem::path filePath{filename};
 
-    std::filesystem::path result = this->GetPluginUploadDirectory() / directory / filename;
+    std::filesystem::path result = fs::path(directory) / filename;
+    if (!result.is_absolute())
+    {
+        result = this->GetPluginUploadDirectory() / result;
+    }
     if (!this->IsValidSampleFileName(result))
     {
         throw std::logic_error(SS("Invalid upload path: " << result));
@@ -2065,8 +2074,8 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std:
     {
         if (child.is_directory())
         {
-            const auto& childPath = child.path();
-            FilePropertyDirectoryTree::ptr childTree = std::make_unique<FilePropertyDirectoryTree>(childPath.filename());
+            const auto& childPath = child.path(); 
+            FilePropertyDirectoryTree::ptr childTree = std::make_unique<FilePropertyDirectoryTree>(childPath);
             FillSampleDirectoryTree(childTree.get(),childPath);
             node->children_.push_back(std::move(childTree));
         }
@@ -2078,22 +2087,53 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std:
             return collator->Compare(left->directoryName_,right->directoryName_) < 0;
         });
 }
-FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) const
+FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) 
 {
-    FilePropertyDirectoryTree::ptr result = std::make_unique<FilePropertyDirectoryTree>("");
-    if (uiFileProperty.directory().empty())
-    {
-        throw std::runtime_error("Invalid uiFileProperty");
-    }
-    if (!ensureNoDotDot(uiFileProperty.directory()))
-    {
-        throw std::runtime_error("Invalid uiFileProperty");
-    }
-    std::filesystem::path rootDirectory = this->GetPluginUploadDirectory() / uiFileProperty.directory();
+    fs::path uploadDirectory =  this->GetPluginUploadDirectory();
 
-    FillSampleDirectoryTree(result.get(),rootDirectory);
+    if (hasSyntheticModRoot(uiFileProperty))
+    {
+        FilePropertyDirectoryTree::ptr result = std::make_unique<FilePropertyDirectoryTree>("","Home");
+        result->isProtected_ = true;
+        for (const auto& modDirectory: uiFileProperty.modDirectories())
+        {
+            auto modDirectoryInfo = ModFileTypes::GetModDirectory(modDirectory);
+            if (modDirectoryInfo)
+            {
+                auto childPath = uploadDirectory / modDirectoryInfo->pipedalPath;
+                FilePropertyDirectoryTree::ptr child = std::make_unique<FilePropertyDirectoryTree>(
+                    childPath,modDirectoryInfo->displayName
+                );
+                FillSampleDirectoryTree(child.get(),childPath);
+                result->children_.push_back(std::move(child));
+            }
+        }
+        if (uiFileProperty.useLegacyModDirectory()) {
+            auto childPath = uploadDirectory / uiFileProperty.directory();
+            FilePropertyDirectoryTree::ptr child = std::make_unique<FilePropertyDirectoryTree>(
+                childPath
+            );
+            FillSampleDirectoryTree(child.get(),childPath);
+            result->children_.push_back(std::move(child));
+        }
+        return result;
 
-    return result;
+    } else {
+        if (uiFileProperty.directory().empty())
+        {
+            throw std::runtime_error("Invalid uiFileProperty");
+        }
+        if (!ensureNoDotDot(uiFileProperty.directory()))
+        {
+            throw std::runtime_error("Invalid uiFileProperty");
+        }
+        std::filesystem::path rootDirectory = uploadDirectory / uiFileProperty.directory();
+        FilePropertyDirectoryTree::ptr result = std::make_unique<FilePropertyDirectoryTree>(rootDirectory.string(),"Home");
+
+        FillSampleDirectoryTree(result.get(),rootDirectory);
+        return result;
+    }
+
 }
 
 

@@ -226,7 +226,7 @@ public:
         const std::string&oldRelativePath,
         const std::string&newRelativePath,
         const UiFileProperty&uiFileProperty);
-    FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty) const;
+    FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty);
 };
 
 

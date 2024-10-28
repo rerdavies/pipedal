@@ -741,9 +741,7 @@ export default withStyles(styles, { withTheme: true })(
                                 }
                             }
                             uploadPage={
-                                "uploadUserFile?directory=" + encodeURIComponent(
-                                    pathConcat(this.props.fileProperty.directory, this.state.navDirectory)
-                                )
+                                "uploadUserFile?directory=" + encodeURIComponent(this.state.navDirectory)
                                 + "&ext="
                                 + encodeURIComponent(this.getFileExtensionList(this.props.fileProperty))
                             }
@@ -792,7 +790,7 @@ export default withStyles(styles, { withTheme: true })(
                                         defaultPath={this.getDefaultPath()}
                                         excludeDirectory={
                                             this.isDirectory(this.state.selectedFile)
-                                                ? pathConcat(this.state.navDirectory, pathFileName(this.state.selectedFile)) : ""}
+                                                ? this.state.selectedFile : ""}
                                         onClose={() => { this.setState({ moveDialogOpen: false }); }}
                                         onOk={
                                             (path) => {

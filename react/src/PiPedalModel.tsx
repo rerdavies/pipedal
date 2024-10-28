@@ -2510,7 +2510,7 @@ export class PiPedalModel //implements PiPedalModel
         link.click();
     }
 
-    uploadFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {
+    uploadUserFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {
         let result = new Promise<string>((resolve, reject) => {
             try {
                 if (file.size > this.maxFileUploadSize) {
@@ -2551,10 +2551,20 @@ export class PiPedalModel //implements PiPedalModel
                         }
                     })
                     .then((json) => {
-                        resolve(json as string);
+                        let response = json as {errorMessage: string, path: string};
+                        if (response.errorMessage !== "")
+                        {
+                            throw new Error(response.errorMessage);
+                        }
+                        resolve(response.path);
                     })
                     .catch((error) => {
-                        reject("Upload failed. " + error);
+                        if (error instanceof Error)
+                        {
+                            reject("Upload failed. " + (error as Error).message);
+                        } else {
+                            reject("Upload failed. " + error);
+                        }
                     })
                     ;
             } catch (error) {
