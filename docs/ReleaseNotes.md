@@ -3,7 +3,7 @@
 ## PiPedal 1.3.63 Experimental
 
 Bug fixes:
-- For ALSA for which maximum and minimum channels are not equal, prefer stereo channel configuration.
+- With ALSA devices for which maximum and minimum channels are not equal, prefer stereo channel configuration.
 
 
 ## PiPedal 1.3.62 Beta
