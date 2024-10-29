@@ -1,5 +1,12 @@
 # Release Notes
 
+## PiPedal 1.3.64 Beta
+
+Bug fixes:
+- Always choose the largest available ALSA sample format.
+- With ALSA devices for which maximum and minimum channels are not equal, prefer stereo channel configuration.
+
+
 ## PiPedal 1.3.63 Experimental
 
 Bug fixes:
@@ -25,7 +32,7 @@ Known issues:
 Sharing file types poses a problem with previous versions of PiPedal which did not share uploads by file type, but instead placed uploads in a private directory for each plugin.
 In order to accomodate this, Pipedal provides legacy support for this situation. If a private upload directory for a plugin exists, the file property selection dialog will show
 both the new shared directories, and the old private directory. The private directory has a name that reflects the name of the plugin (e.g. "Ratatoille.lv2"). This directory only
-shows up if you have used the plugin on previous versiouns of Pipedal. If you have nothing of particular value in the old private upload directory, you can delete the plugin's private directory (which can be found in `/var/pipedal/audio_uploads`), and the private directory will no longer be displayed in the PiPedal UI.
+shows up if you have used the plugin on previous versions of Pipedal. If you have nothingof particular value in the old private upload directory, you can delete the plugin's private directory (which can be found in `/var/pipedal/audio_uploads`), and the private directory will no longer be displayed in the PiPedal UI.
 
 I anticipate providing a migration utility in the near future which will clean up and migrate legacy upload directories to the new directory structure (automatically uploading
 presets which reference uploaded files that have moved). In the meantime, I think you will find the current occomodation for legacy upload directories perfectly functional. 
