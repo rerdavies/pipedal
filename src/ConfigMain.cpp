@@ -24,6 +24,7 @@
 #include "CommandLineParser.hpp"
 #include "SystemConfigFile.hpp"
 #include "ModFileTypes.hpp"
+#include "alsaCheck.hpp"
 
 #include <filesystem>
 #include <stdlib.h>
@@ -92,18 +93,19 @@ namespace fs = std::filesystem;
 #define REMOVE_OLD_SERVICE 0 // Grandfathering: whether to remove the old shutdown service (now pipedaladmind)
 #define OLD_SHUTDOWN_SERVICE "pipedalshutdownd"
 
-
-
-void changeUserShell(const char* username, const char* newShell) {
-    struct passwd* pw;
+void changeUserShell(const char *username, const char *newShell)
+{
+    struct passwd *pw;
     struct passwd p;
     char buf[1024];
 
     pw = getpwnam(username);
-    if (pw == nullptr) {
+    if (pw == nullptr)
+    {
         throw std::runtime_error("User not found");
     }
-    if (strcmp(pw->pw_shell,newShell) == 0) {
+    if (strcmp(pw->pw_shell, newShell) == 0)
+    {
         return;
     }
     std::string args = SS("/usr/sbin/usermod -s " << newShell << " " << username);
@@ -113,7 +115,6 @@ void changeUserShell(const char* username, const char* newShell) {
         cout << "Failed to set shell for " << username << endl;
     }
 }
-
 
 fs::path GetServiceFileName(const std::string &serviceName)
 {
@@ -218,7 +219,7 @@ bool disableAvahiConfigLine(SystemConfigFile &avahi, const std::string &section,
                     ++line;
                 }
             }
-            avahi.UndoableAddLine(line,lineStart+"no");
+            avahi.UndoableAddLine(line, lineStart + "no");
             changed = true;
         }
     }
@@ -242,7 +243,7 @@ static void AvahiInstall()
 
         changed |= disableAvahiConfigLine(avahi, "[server]", "use-ipv6=");
         changed |= disableAvahiConfigLine(avahi, "[publish]", "publish-aaaa-on-ipv4=");
-            
+
         if (changed)
         {
             avahi.Save();
@@ -1035,12 +1036,13 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         // add to netdev group
         sysExec(USERMOD_BIN " -a -G  " NETDEV_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
 
-        try {
+        try
+        {
             changeUserShell(SERVICE_ACCOUNT_NAME, "/usr/sbin/nologon");
-        } catch (const std::exception&e)
+        }
+        catch (const std::exception &e)
         {
             cout << "Error: Can't set user shell for pipedal_d. " << e.what() << std::endl;
-
         }
         // create and configure /var directory.
 
@@ -1162,7 +1164,6 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         FixPermissions();
         ModFileTypes::CreateDefaultDirectories("/var/pipedal/audio_uploads");
 
-
         StopService(false);
         AvahiInstall();
         InstallPgpKey();
@@ -1281,6 +1282,10 @@ static void PrintHelp()
 
         << HangingIndent() << "    --disable-hotspot\tDisabled the Wi-Fi hotspot."
         << "\n\n"
+        << HangingIndent() << "    --alsa-devices\tList available ALSA hw devices."
+        << "\n\n"
+        << HangingIndent() << "    --alsa-device [device_id]\tPrint info for the specified ALSA device."
+        << "\n\n"
         << HangingIndent() << "    --list-wifi-channels [<country_code>] \tList valid Wifi channels for the current/specified country."
         << "\n\n"
 
@@ -1364,6 +1369,8 @@ int main(int argc, char **argv)
     bool fix_permissions = false;
     bool nosudo = false;
     bool excludeShutdownService = false;
+    bool alsaDevices = false;
+    std::string alsaDevice;
     std::string prefixOption;
     std::string portOption;
     std::string homeNetwork;
@@ -1387,12 +1394,14 @@ int main(int argc, char **argv)
     parser.AddOption("--home-network", &homeNetwork);
     parser.AddOption("--no-ethernet", &noEthernet);
     parser.AddOption("--no-wifi", &noWifi);
+    parser.AddOption("--alsa-devices", &alsaDevices);
+    parser.AddOption("--alsa-device", &alsaDevice);
     try
     {
         parser.Parse(argc, (const char **)argv);
 
         int actionCount =
-            help + get_current_port + install + uninstall + stop + start + enable + disable + enable_hotspot + disable_hotspot + restart + enable_p2p + disable_p2p + list_p2p_channels + fix_permissions;
+            (!alsaDevice.empty()) + alsaDevices + help + get_current_port + install + uninstall + stop + start + enable + disable + enable_hotspot + disable_hotspot + restart + enable_p2p + disable_p2p + list_p2p_channels + fix_permissions;
         if (actionCount > 1)
         {
             throw std::runtime_error("Please provide only one action.");
@@ -1452,6 +1461,32 @@ int main(int argc, char **argv)
     if (get_current_port)
     {
         std::cout << "current port: " << GetCurrentWebServicePort() << std::endl;
+        return EXIT_SUCCESS;
+    }
+    if (alsaDevices)
+    {
+        try
+        {
+            list_alsa_devices();
+        }
+        catch (const std::exception &e)
+        {
+            cerr << "Error: " << e.what() << endl;
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+    if (alsaDevice.length() != 0)
+    {
+        try
+        {
+            check_alsa_channel_configs(alsaDevice.c_str());
+        }
+        catch (const std::exception &e)
+        {
+            cerr << "Error: " << e.what() << endl;
+            return EXIT_FAILURE;
+        }
         return EXIT_SUCCESS;
     }
     if (list_p2p_channels)

@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2022 Robin E. R. Davies
+ * Copyright (c) 2024 Robin E. R. Davies
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -366,10 +366,37 @@ namespace pipedal
             {
                 /*if not user-specified, try to find the maximum
                  * number of channels */
-                unsigned int channels_max;
+                unsigned int channels_max = 0;
+                unsigned int channels_min = 0;
                 err = snd_pcm_hw_params_get_channels_max(hwParams,
                                                          &channels_max);
+                if (err < 0) {
+                    AlsaError(SS("Can't get channels_max."));
+                }
+
+                err = snd_pcm_hw_params_get_channels_min(hwParams,
+                                                         &channels_min);
+                if (err < 0) {
+                    AlsaError(SS("Can't get channels_min."));
+                }
+
+
                 *channels = channels_max;
+
+                if (channels_max > 2 && channels_min <= 2 && channels_min > 0) {
+                    unsigned int bestChannelConfig = 2;
+
+                    snd_pcm_hw_params_t* test_params;
+                    snd_pcm_hw_params_alloca(&test_params);
+                    snd_pcm_hw_params_copy(test_params, hwParams);
+
+                    if ((err = snd_pcm_hw_params_set_channels(handle, test_params,
+                                                            bestChannelConfig)) >= 0)
+                    {
+                        *channels = bestChannelConfig;
+                    }
+
+                }
 
                 if (*channels > 1024)
                 {
@@ -2109,10 +2136,46 @@ namespace pipedal
             {
                 throw PiPedalLogicException("No outut channels.");
             }
+            unsigned int channelsMin;
+            err = snd_pcm_hw_params_get_channels_min(playbackHwParams, &channelsMin);
+            if (err < 0)
+            {
+                throw PiPedalLogicException("No outut channels.");
+            }
+            if (playbackChannels > 2 && channelsMin <=2 && channelsMin > 0)
+            {
+                snd_pcm_hw_params_t* test_params;
+                snd_pcm_hw_params_alloca(&test_params);
+                snd_pcm_hw_params_copy(test_params, playbackHwParams);
+
+
+                if (snd_pcm_hw_params_set_channels(playbackHandle,test_params,(unsigned int)2) >= 0)
+                {   
+                    playbackChannels = 2;
+                }
+            }
+
             err = snd_pcm_hw_params_get_channels_max(captureHwParams, &captureChannels);
             if (err < 0)
             {
                 throw PiPedalLogicException("No input channels.");
+            }
+            err = snd_pcm_hw_params_get_channels_min(captureHwParams,&channelsMin);
+            if (err >= 0)
+            {
+                if (captureChannels > 2 && channelsMin <= 2 && channelsMin > 0)
+                {
+                    snd_pcm_hw_params_t* test_params;
+                    snd_pcm_hw_params_alloca(&test_params);
+                    snd_pcm_hw_params_copy(test_params, captureHwParams);
+
+                    
+                    if (snd_pcm_hw_params_set_channels(captureHandle,test_params,(unsigned int)2) >= 0)
+                    {   
+                        captureChannels = 2;
+                    }
+
+                }                
             }
 
             inputAudioPorts.clear();
