@@ -66,20 +66,27 @@ namespace pipedal
         AudioFormat *formats,
         size_t nItems)
     {
+        snd_pcm_hw_params_t* test_params;
+        snd_pcm_hw_params_alloca(&test_params);
+
         for (size_t i = 0; i < nItems; ++i)
         {
-            int err = snd_pcm_hw_params_set_format(handle, hwParams, formats[i].pcm_format);
+            snd_pcm_hw_params_copy(test_params, hwParams);
+
+            int err = snd_pcm_hw_params_set_format(handle, test_params, formats[i].pcm_format);
             if (err == 0)
             {
-                return true;
+                int err = snd_pcm_hw_params_set_format(handle, hwParams, formats[i].pcm_format);
+                if (err == 0)
+                {
+                    return true;
+                }
             }
         }
         return false;
     }
 
     static AudioFormat leFormats[]{
-        {"16-bit little-endian", SND_PCM_FORMAT_S16_LE},
-
         {"32-bit float little-endian", SND_PCM_FORMAT_FLOAT_LE},
         {"32-bit integer little-endian", SND_PCM_FORMAT_S32_LE},
         {"24-bit little-endian", SND_PCM_FORMAT_S24_LE},
