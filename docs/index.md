@@ -8,9 +8,7 @@
 To download PiPedal, click [here](download.md). 
 To view PiPedal documentation, click [here](Documentation.md).
 
-#### PiPedal has a submitted a request to support sharing of Pipedal presets at [PatchStorage.com](https:///patchstorage.com). We need your support! Please vote for PiPedal [here](https://patchstorage.com/requests/pipedal/).
-
-&nbsp;
+#### Important notice: PiPedal has a submitted a request to support sharing of Pipedal presets at [PatchStorage.com](https:///patchstorage.com). We urgently need your support! Please vote for PiPedal [here](https://patchstorage.com/requests/pipedal/).
 
 #### NEW version 1.3.66 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
