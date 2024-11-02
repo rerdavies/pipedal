@@ -112,7 +112,7 @@
                 //"[json_variants]"  // subtest of your choice, or none to run all of the tests.
                 //"[inverting_mutex_test]"
                 // "[utf8_to_utf32]"
-                "[wifi_channels_test]"
+                "[pipedal_alsa_test]"
             ],
 
             "stopAtEntry": false,

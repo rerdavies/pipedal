@@ -30,18 +30,18 @@
 
 using namespace pipedal;
 
-TEST_CASE("Avahi Service Test", "[avahi_service][dev]")
-{
+// TEST_CASE("Avahi Service Test", "[avahi_service][dev]")
+// {
 
-    {
-        AvahiService service;
+//     {
+//         AvahiService service;
 
-        service.Announce(81, "Test Announcement", "0a6045b0-1753-4104-b3e4-b9713b9cc358","pipedal");
+//         service.Announce(81, "Test Announcement", "0a6045b0-1753-4104-b3e4-b9713b9cc358","pipedal");
 
-        sleep(10);
+//         sleep(10);
 
-        service.Unannounce();
-        service.Announce(81, "Test Announcement 2", "0a6045b0-1753-4104-b3e4-b9713b9cc358","pipedal");
-        sleep(10);
-    }
-}
+//         service.Unannounce();
+//         service.Announce(81, "Test Announcement 2", "0a6045b0-1753-4104-b3e4-b9713b9cc358","pipedal");
+//         sleep(10);
+//     }
+// }

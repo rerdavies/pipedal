@@ -32,6 +32,83 @@
 #include <stdexcept>
 #include "Finally.hpp"
 
+using namespace pipedal;
+
+static std::string GetChannelDescription(
+    snd_pcm_t* handle,
+    snd_pcm_hw_params_t*hwParams,
+    unsigned int channels)
+{
+    snd_pcm_chmap_query_t **chmaps = snd_pcm_query_chmaps(handle);
+
+    if (chmaps) {
+        Finally ff([chmaps] {
+            snd_pcm_free_chmaps(chmaps);
+        });
+        std::stringstream ss;
+        bool firstMap = true;
+        for (size_t i = 0; chmaps[i] != nullptr; ++i)
+        {
+            auto chmap = chmaps[i];
+            if (chmap->map.channels == channels)
+            {
+                if (!firstMap) {
+                    ss << "/";
+                }
+                ss << channels << " ";
+                firstMap = false;
+                switch (chmap->type)
+                {
+                    case SND_CHMAP_TYPE_NONE:
+                    default:
+                        ss << "Unknown";
+                        break;
+                    case SND_CHMAP_TYPE_VAR:
+                    case SND_CHMAP_TYPE_FIXED:
+                        for (size_t ch = 0; ch < chmap->map.channels; ++ch)
+                        {
+                            if (ch != 0)
+                            {
+                                ss << " ";
+                            }
+                            snd_pcm_chmap_position pos =(snd_pcm_chmap_position)(chmap->map.pos[ch]);
+                            if (pos == snd_pcm_chmap_position::SND_CHMAP_MONO)
+                            {
+                                ss << "ch" << (i+1);
+                            }
+                            ss << snd_pcm_chmap_name((snd_pcm_chmap_position)(chmap->map.pos[ch]));
+                        }
+                        break;
+                    case SND_CHMAP_TYPE_PAIRED:
+                        for (size_t pair = 0; pair < chmap->map.channels/2; ++pair)
+                        {
+                            if (pair != 0)
+                            {
+                                ss << " ";
+                            }
+                            ss << "L" << (pair+1) << " R" << (pair+1);
+                        }
+                        break;
+                }
+                if (chmap->type == SND_CHMAP_TYPE_VAR)
+                {
+                    ss << " (var)";
+                }
+            }
+        }
+        return ss.str();
+    } 
+    std::string config_name;
+    switch (channels) {
+        case 1: config_name = "Mono"; break;
+        case 2: config_name = "Stereo"; break;
+        case 4: config_name = "Quadraphonic"; break;
+        case 6: config_name = "5.1 Surround"; break;
+        case 8: config_name = "7.1 Surround"; break;
+        default: config_name = std::to_string(channels) + " channels";
+    }
+    return config_name;
+}
 
 
 void pipedal::check_alsa_channel_configs(const char* device_name) {
@@ -81,22 +158,24 @@ void pipedal::check_alsa_channel_configs(const char* device_name) {
             snd_pcm_hw_params_copy(test_params, hw_params);
 
             if (snd_pcm_hw_params_set_channels(handle, test_params, channels) == 0) {
-                std::string config_name;
-                switch (channels) {
-                    case 1: config_name = "Mono"; break;
-                    case 2: config_name = "Stereo"; break;
-                    case 4: config_name = "Quadraphonic"; break;
-                    case 6: config_name = "5.1 Surround"; break;
-                    case 8: config_name = "7.1 Surround"; break;
-                    default: config_name = std::to_string(channels) + " channels";
-                }
-                std::cout << "  " << channels << " channels (" << config_name << ")" << std::endl;
+                std::string channel_description = GetChannelDescription(handle,test_params,channels);
+
+                std::cout << "  " << channels << " channels (" << channel_description << ")" << std::endl;
             }
         }
     }
 
 }
 
+
+static bool hasChannelMaps(snd_pcm_t* pcm_handle) {
+    snd_pcm_chmap_query_t **chmaps = snd_pcm_query_chmaps(pcm_handle);
+    if (chmaps) {
+        snd_pcm_free_chmaps(chmaps);
+        return true;
+    }
+    return false;
+}
 
 static void print_device_info(snd_ctl_t* handle, int card, int device) {
     snd_pcm_info_t* pcminfo;
@@ -140,8 +219,8 @@ static void print_device_info(snd_ctl_t* handle, int card, int device) {
                 snd_pcm_hw_params_alloca(&hw_params);
                 
                 if (snd_pcm_hw_params_any(pcm_handle, hw_params) >= 0) {
-                    unsigned int min_channels, max_channels;
-                    unsigned int min_rate, max_rate;
+                    unsigned int min_channels = 1024, max_channels = 1024;
+                    unsigned int min_rate = 1, max_rate = 1;
                     
                     snd_pcm_hw_params_get_channels_min(hw_params, &min_channels);
                     snd_pcm_hw_params_get_channels_max(hw_params, &max_channels);
@@ -159,10 +238,28 @@ static void print_device_info(snd_ctl_t* handle, int card, int device) {
                         }
                     }
                     std::cout << std::endl;
+                    std::cout << "  Channel maps:" << std::endl;
+                    snd_pcm_hw_params_t* test_params;
+                    snd_pcm_hw_params_alloca(&test_params);
+
+                    if (!hasChannelMaps(pcm_handle))
+                    {
+                        std::cout << "       No channel maps." << std::endl;
+                    } else {
+                        for (size_t i = min_channels; i <= max_channels; ++i)
+                        {
+                            snd_pcm_hw_params_copy(test_params, hw_params);
+
+                            if (snd_pcm_hw_params_set_channels(pcm_handle, test_params, i) == 0) {
+
+                                std::cout << "      " << GetChannelDescription(pcm_handle,hw_params,i) << std::endl;
+                            }
+                        }
+                    }
                 }
                 snd_pcm_close(pcm_handle);
             } else {
-                std::cout << "  (device in use)" << std::endl;
+                std::cout << "  (device not available)" << std::endl;
             }
         }
     }

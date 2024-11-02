@@ -223,11 +223,11 @@ public:
 
         for (size_t i = 0; i < inputs; ++i)
         {
-            inputBuffers[i] = audioDriver->GetInputBuffer(i,nFrames);
+            inputBuffers[i] = audioDriver->GetInputBuffer(i);
         }
         for (size_t i = 0; i < outputs; ++i)
         {
-            outputBuffers[i] = audioDriver->GetOutputBuffer(i,nFrames);
+            outputBuffers[i] = audioDriver->GetOutputBuffer(i);
         }
         if (this->testType == TestType::Oscillator)
         {

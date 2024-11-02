@@ -24,6 +24,7 @@
 
 #include "pch.h"
 #include "util.hpp"
+#include "Finally.hpp"
 #include <bit>
 #include <memory>
 #include "ss.hpp"
@@ -66,7 +67,7 @@ namespace pipedal
         AudioFormat *formats,
         size_t nItems)
     {
-        snd_pcm_hw_params_t* test_params;
+        snd_pcm_hw_params_t *test_params;
         snd_pcm_hw_params_alloca(&test_params);
 
         for (size_t i = 0; i < nItems; ++i)
@@ -197,15 +198,16 @@ namespace pipedal
 
         AudioDriverHost *driverHost = nullptr;
 
-
-        void validate_capture_handle() { // leftover debugging for a buffer overrun :-/
-        #ifdef DEBUG
+        void validate_capture_handle()
+        { // leftover debugging for a buffer overrun :-/
+#ifdef DEBUG
             if (snd_pcm_type(captureHandle) != SND_PCM_TYPE_HW)
             {
                 throw std::runtime_error("Capture handle has been overwritten");
             }
-        #endif
+#endif
         }
+
     public:
         AlsaDriverImpl(AudioDriverHost *driverHost)
             : driverHost(driverHost)
@@ -377,35 +379,26 @@ namespace pipedal
                 unsigned int channels_min = 0;
                 err = snd_pcm_hw_params_get_channels_max(hwParams,
                                                          &channels_max);
-                if (err < 0) {
+                if (err < 0)
+                {
                     AlsaError(SS("Can't get channels_max."));
                 }
 
                 err = snd_pcm_hw_params_get_channels_min(hwParams,
                                                          &channels_min);
-                if (err < 0) {
+                if (err < 0)
+                {
                     AlsaError(SS("Can't get channels_min."));
                 }
 
-
                 *channels = channels_max;
 
-                if (channels_max > 2 && channels_min <= 2 && channels_min > 0) {
-                    unsigned int bestChannelConfig = 2;
-
-                    snd_pcm_hw_params_t* test_params;
-                    snd_pcm_hw_params_alloca(&test_params);
-                    snd_pcm_hw_params_copy(test_params, hwParams);
-
-                    if ((err = snd_pcm_hw_params_set_channels(handle, test_params,
-                                                            bestChannelConfig)) >= 0)
-                    {
-                        *channels = bestChannelConfig;
-                    }
-
+                if (ShouldForceStereoChannels(handle, hwParams, channels_min, channels_max))
+                {
+                    *channels = 2;
                 }
 
-                if (*channels > 1024)
+                if (*channels >= 1024)
                 {
                     // The default PCM device has unlimited channels.
                     // report 2 channels
@@ -1312,7 +1305,6 @@ namespace pipedal
                 }
             }
             validate_capture_handle();
-
         }
         void recover_from_output_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
         {
@@ -1398,7 +1390,6 @@ namespace pipedal
                 }
                 audioRunning = true;
                 validate_capture_handle();
-
             }
             else
             {
@@ -1426,7 +1417,6 @@ namespace pipedal
             // deal with regular and sysex messages split across
             // buffer boundaries (but discard them)
             snd_pcm_sframes_t framesRead;
-
 
             auto state = snd_pcm_state(handle);
             auto frame_bytes = this->captureFrameSize;
@@ -1971,12 +1961,14 @@ namespace pipedal
 
             for (size_t i = 0; i < devices.size(); ++i)
             {
-                try {
+                try
+                {
                     const auto &device = devices[i];
                     auto midiDevice = std::make_unique<AlsaMidiDeviceImpl>();
                     midiDevice->Open(device);
                     midiDevices.push_back(std::move(midiDevice));
-                } catch (const std::exception &e)
+                }
+                catch (const std::exception &e)
                 {
                     Lv2Log::error(e.what());
                 }
@@ -2051,6 +2043,95 @@ namespace pipedal
         return new AlsaDriverImpl(driverHost);
     }
 
+    bool ShouldForceStereoChannels(snd_pcm_t *pcmHandle, snd_pcm_hw_params_t *hwParams, unsigned int channelsMin, unsigned int channelsMax)
+    {
+        // The problem: old IC2 drivers seem to return 1-8 channels, but 8 channels is non-functinal. The assumption is that legacy drivers
+        // (I2C drivers, particularl, but also the Rpi headphones device, as an interesting example) that don't support channel maps do this.
+        // Hypothetically, devices could allow slection of hardware-downmixed surround channels. So deal with this case defensively.
+        // The approach: check the channel map and do our best to interpret what we find.
+        // No channel map, or any part of the channel map is unknown? Probably the legalcy case we're interested in. Return TRUE
+        // If the channel map is a surround format, return true in that case as well.
+        // If the channel map is pairwise, return false! (legitimately multi-channel devices should not be forced to stereo).
+        // If the channel map is all FL/FR/MONO return false (a hypothetical configuration for a multi-channel device)
+        // If the channel map is not all FL/FR/MONO, assume that it's an upmixed/downmixed surround format, and return TRUE.
+        // This is high-risk code, because it attempts to anticipate hypothetical device configurations with no actual testing.
+
+        if (channelsMax <= 2)
+            return false;
+        if (channelsMin == channelsMax)
+            return false;
+        if (channelsMin > 2)
+            return false; // can't imagine what sort of device this is.
+
+        snd_pcm_hw_params_t *test_params;
+
+        snd_pcm_hw_params_alloca(&test_params);
+        snd_pcm_hw_params_copy(test_params, hwParams);
+
+        // can we select 2 channels?
+        if (snd_pcm_hw_params_set_channels(pcmHandle, test_params, (unsigned int)2) >= 0)
+        {
+            snd_pcm_chmap_query_t **chmaps = snd_pcm_query_chmaps(pcmHandle);
+
+            if (chmaps == nullptr)
+            {
+                return true; // probably an old driver. Do it.
+            }
+            Finally ff([chmaps]()
+                       { snd_pcm_free_chmaps(chmaps); });
+            for (size_t i = 0; chmaps[i] != nullptr; ++i)
+            {
+                snd_pcm_chmap_query_t *chmap = chmaps[i];
+                if (chmap->map.channels == channelsMax)
+                {
+                    switch (chmap->type)
+                    {
+                    case SND_CHMAP_TYPE_NONE:
+                    default:
+                        return true; // weird legacy case?  Do it.
+                    case SND_CHMAP_TYPE_PAIRED:
+                        return false; // A legitimate multi-channel device. definitely don't do it.
+
+                    case SND_CHMAP_TYPE_VAR:
+                    case SND_CHMAP_TYPE_FIXED:
+                    {
+                        // we should do it for surround formats. guard against other hypothetical mappings for legitimately multi-channel devices.
+
+                        snd_pcm_chmap_position pos0 = (snd_pcm_chmap_position)(chmap->map.pos[0]);
+                        if (pos0 == snd_pcm_chmap_position::SND_CHMAP_MONO) // hypothetical channel map of all mono channesl.
+                        {
+                            return false; // don't do it.
+                        }
+                        if (pos0 != snd_pcm_chmap_position::SND_CHMAP_FL && pos0 != snd_pcm_chmap_position::SND_CHMAP_FL) // surround formats always start with FL. Hypothetical quad formats could start with FC.
+                        {
+                            return false; // don't do it.
+                        }
+                        // accept a hypothetical channel map of mixed FL's and FR's, FC's and MONOs. (Multi-channel with mixed mono and stereo pairs).
+                        // But otherwise assume it's a surround map, and use a stereo channel configuration instead.
+                        for (size_t i = 0; i < chmap->map.channels; ++i)
+                        {
+                            snd_pcm_chmap_position pos = (snd_pcm_chmap_position)(chmap->map.pos[i]);
+                            switch (pos)
+                            {
+                            case snd_pcm_chmap_position::SND_CHMAP_MONO:
+                            case snd_pcm_chmap_position::SND_CHMAP_FL:
+                            case snd_pcm_chmap_position::SND_CHMAP_FR:
+                            case snd_pcm_chmap_position::SND_CHMAP_FC:
+                                break; // keep going.
+                            default:
+                                return true; // probably a surround sound map.
+                            }
+                        }
+                        return false;
+                    };
+                    }
+                }
+            }
+            return true; // no matching channel map(!??). nonsensical case. may as well use the stereo config, which might be more sensible.
+        }
+        return false;
+    }
+
     bool GetAlsaChannels(const JackServerSettings &jackServerSettings,
                          std::vector<std::string> &inputAudioPorts,
                          std::vector<std::string> &outputAudioPorts)
@@ -2058,7 +2139,7 @@ namespace pipedal
         if (jackServerSettings.IsDummyAudioDevice())
         {
             auto nChannels = GetDummyAudioChannels(jackServerSettings.GetAlsaInputDevice());
-            
+
             inputAudioPorts.clear();
             outputAudioPorts.clear();
             for (uint32_t i = 0; i < nChannels; ++i)
@@ -2149,17 +2230,9 @@ namespace pipedal
             {
                 throw PiPedalLogicException("No outut channels.");
             }
-            if (playbackChannels > 2 && channelsMin <=2 && channelsMin > 0)
+            if (ShouldForceStereoChannels(playbackHandle, playbackHwParams, channelsMin, playbackChannels))
             {
-                snd_pcm_hw_params_t* test_params;
-                snd_pcm_hw_params_alloca(&test_params);
-                snd_pcm_hw_params_copy(test_params, playbackHwParams);
-
-
-                if (snd_pcm_hw_params_set_channels(playbackHandle,test_params,(unsigned int)2) >= 0)
-                {   
-                    playbackChannels = 2;
-                }
+                playbackChannels = 2;
             }
 
             err = snd_pcm_hw_params_get_channels_max(captureHwParams, &captureChannels);
@@ -2167,22 +2240,13 @@ namespace pipedal
             {
                 throw PiPedalLogicException("No input channels.");
             }
-            err = snd_pcm_hw_params_get_channels_min(captureHwParams,&channelsMin);
+            err = snd_pcm_hw_params_get_channels_min(captureHwParams, &channelsMin);
             if (err >= 0)
             {
-                if (captureChannels > 2 && channelsMin <= 2 && channelsMin > 0)
+                if (ShouldForceStereoChannels(captureHandle, captureHwParams, channelsMin, captureChannels))
                 {
-                    snd_pcm_hw_params_t* test_params;
-                    snd_pcm_hw_params_alloca(&test_params);
-                    snd_pcm_hw_params_copy(test_params, captureHwParams);
-
-                    
-                    if (snd_pcm_hw_params_set_channels(captureHandle,test_params,(unsigned int)2) >= 0)
-                    {   
-                        captureChannels = 2;
-                    }
-
-                }                
+                    captureChannels = 2;
+                }
             }
 
             inputAudioPorts.clear();
