@@ -54,6 +54,97 @@ using namespace pipedal;
 namespace pipedal
 {
 
+    static bool ShouldForceStereoChannels(snd_pcm_t *pcmHandle, snd_pcm_hw_params_t *hwParams, unsigned int channelsMin, unsigned int channelsMax)
+    {
+        // The problem: old IC2 drivers seem to return 1-8 channels, but 8 channels is non-functinal. The assumption is that legacy drivers
+        // (I2C drivers, particularl, but also the Rpi headphones device, as an interesting example) that don't support channel maps do this.
+        // Hypothetically, devices could allow slection of hardware-downmixed surround channels. So deal with this case defensively.
+        // The approach: check the channel map and do our best to interpret what we find.
+        // No channel map, or any part of the channel map is unknown? Probably the legalcy case we're interested in. Return TRUE
+        // If the channel map is a surround format, return true in that case as well.
+        // If the channel map is pairwise, return false! (legitimately multi-channel devices should not be forced to stereo).
+        // If the channel map is all FL/FR/MONO return false (a hypothetical configuration for a multi-channel device)
+        // If the channel map is not all FL/FR/MONO, assume that it's an upmixed/downmixed surround format, and return TRUE.
+        // This is high-risk code, because it attempts to anticipate hypothetical device configurations with no actual testing.
+
+        if (channelsMax <= 2)
+            return false;
+        if (channelsMin == channelsMax)
+            return false;
+        if (channelsMin > 2)
+            return false; // can't imagine what sort of device this is.
+
+        snd_pcm_hw_params_t *test_params;
+
+        snd_pcm_hw_params_alloca(&test_params);
+        snd_pcm_hw_params_copy(test_params, hwParams);
+
+        // can we select 2 channels?
+        if (snd_pcm_hw_params_set_channels(pcmHandle, test_params, (unsigned int)2) >= 0)
+        {
+            snd_pcm_chmap_query_t **chmaps = snd_pcm_query_chmaps(pcmHandle);
+
+            if (chmaps == nullptr)
+            {
+                return true; // probably an old driver. Do it.
+            }
+            Finally ff([chmaps]()
+                       { snd_pcm_free_chmaps(chmaps); });
+            for (size_t i = 0; chmaps[i] != nullptr; ++i)
+            {
+                snd_pcm_chmap_query_t *chmap = chmaps[i];
+                if (chmap->map.channels == channelsMax)
+                {
+                    switch (chmap->type)
+                    {
+                    case SND_CHMAP_TYPE_NONE:
+                    default:
+                        return true; // weird legacy case?  Do it.
+                    case SND_CHMAP_TYPE_PAIRED:
+                        return false; // A legitimate multi-channel device. definitely don't do it.
+
+                    case SND_CHMAP_TYPE_VAR:
+                    case SND_CHMAP_TYPE_FIXED:
+                    {
+                        // we should do it for surround formats. guard against other hypothetical mappings for legitimately multi-channel devices.
+
+                        snd_pcm_chmap_position pos0 = (snd_pcm_chmap_position)(chmap->map.pos[0]);
+                        if (pos0 == snd_pcm_chmap_position::SND_CHMAP_MONO) // hypothetical channel map of all mono channesl.
+                        {
+                            return false; // don't do it.
+                        }
+                        if (pos0 != snd_pcm_chmap_position::SND_CHMAP_FL && pos0 != snd_pcm_chmap_position::SND_CHMAP_FL) // surround formats always start with FL. Hypothetical quad formats could start with FC.
+                        {
+                            return false; // don't do it.
+                        }
+                        // accept a hypothetical channel map of mixed FL's and FR's, FC's and MONOs. (Multi-channel with mixed mono and stereo pairs).
+                        // But otherwise assume it's a surround map, and use a stereo channel configuration instead.
+                        for (size_t i = 0; i < chmap->map.channels; ++i)
+                        {
+                            snd_pcm_chmap_position pos = (snd_pcm_chmap_position)(chmap->map.pos[i]);
+                            switch (pos)
+                            {
+                            case snd_pcm_chmap_position::SND_CHMAP_MONO:
+                            case snd_pcm_chmap_position::SND_CHMAP_FL:
+                            case snd_pcm_chmap_position::SND_CHMAP_FR:
+                            case snd_pcm_chmap_position::SND_CHMAP_FC:
+                                break; // keep going.
+                            default:
+                                return true; // probably a surround sound map.
+                            }
+                        }
+                        return false;
+                    };
+                    }
+                }
+            }
+            return true; // no matching channel map(!??). nonsensical case. may as well use the stereo config, which might be more sensible.
+        }
+        return false;
+    }
+
+
+
     struct AudioFormat
     {
         char name[40];
@@ -2041,95 +2132,6 @@ namespace pipedal
     AudioDriver *CreateAlsaDriver(AudioDriverHost *driverHost)
     {
         return new AlsaDriverImpl(driverHost);
-    }
-
-    bool ShouldForceStereoChannels(snd_pcm_t *pcmHandle, snd_pcm_hw_params_t *hwParams, unsigned int channelsMin, unsigned int channelsMax)
-    {
-        // The problem: old IC2 drivers seem to return 1-8 channels, but 8 channels is non-functinal. The assumption is that legacy drivers
-        // (I2C drivers, particularl, but also the Rpi headphones device, as an interesting example) that don't support channel maps do this.
-        // Hypothetically, devices could allow slection of hardware-downmixed surround channels. So deal with this case defensively.
-        // The approach: check the channel map and do our best to interpret what we find.
-        // No channel map, or any part of the channel map is unknown? Probably the legalcy case we're interested in. Return TRUE
-        // If the channel map is a surround format, return true in that case as well.
-        // If the channel map is pairwise, return false! (legitimately multi-channel devices should not be forced to stereo).
-        // If the channel map is all FL/FR/MONO return false (a hypothetical configuration for a multi-channel device)
-        // If the channel map is not all FL/FR/MONO, assume that it's an upmixed/downmixed surround format, and return TRUE.
-        // This is high-risk code, because it attempts to anticipate hypothetical device configurations with no actual testing.
-
-        if (channelsMax <= 2)
-            return false;
-        if (channelsMin == channelsMax)
-            return false;
-        if (channelsMin > 2)
-            return false; // can't imagine what sort of device this is.
-
-        snd_pcm_hw_params_t *test_params;
-
-        snd_pcm_hw_params_alloca(&test_params);
-        snd_pcm_hw_params_copy(test_params, hwParams);
-
-        // can we select 2 channels?
-        if (snd_pcm_hw_params_set_channels(pcmHandle, test_params, (unsigned int)2) >= 0)
-        {
-            snd_pcm_chmap_query_t **chmaps = snd_pcm_query_chmaps(pcmHandle);
-
-            if (chmaps == nullptr)
-            {
-                return true; // probably an old driver. Do it.
-            }
-            Finally ff([chmaps]()
-                       { snd_pcm_free_chmaps(chmaps); });
-            for (size_t i = 0; chmaps[i] != nullptr; ++i)
-            {
-                snd_pcm_chmap_query_t *chmap = chmaps[i];
-                if (chmap->map.channels == channelsMax)
-                {
-                    switch (chmap->type)
-                    {
-                    case SND_CHMAP_TYPE_NONE:
-                    default:
-                        return true; // weird legacy case?  Do it.
-                    case SND_CHMAP_TYPE_PAIRED:
-                        return false; // A legitimate multi-channel device. definitely don't do it.
-
-                    case SND_CHMAP_TYPE_VAR:
-                    case SND_CHMAP_TYPE_FIXED:
-                    {
-                        // we should do it for surround formats. guard against other hypothetical mappings for legitimately multi-channel devices.
-
-                        snd_pcm_chmap_position pos0 = (snd_pcm_chmap_position)(chmap->map.pos[0]);
-                        if (pos0 == snd_pcm_chmap_position::SND_CHMAP_MONO) // hypothetical channel map of all mono channesl.
-                        {
-                            return false; // don't do it.
-                        }
-                        if (pos0 != snd_pcm_chmap_position::SND_CHMAP_FL && pos0 != snd_pcm_chmap_position::SND_CHMAP_FL) // surround formats always start with FL. Hypothetical quad formats could start with FC.
-                        {
-                            return false; // don't do it.
-                        }
-                        // accept a hypothetical channel map of mixed FL's and FR's, FC's and MONOs. (Multi-channel with mixed mono and stereo pairs).
-                        // But otherwise assume it's a surround map, and use a stereo channel configuration instead.
-                        for (size_t i = 0; i < chmap->map.channels; ++i)
-                        {
-                            snd_pcm_chmap_position pos = (snd_pcm_chmap_position)(chmap->map.pos[i]);
-                            switch (pos)
-                            {
-                            case snd_pcm_chmap_position::SND_CHMAP_MONO:
-                            case snd_pcm_chmap_position::SND_CHMAP_FL:
-                            case snd_pcm_chmap_position::SND_CHMAP_FR:
-                            case snd_pcm_chmap_position::SND_CHMAP_FC:
-                                break; // keep going.
-                            default:
-                                return true; // probably a surround sound map.
-                            }
-                        }
-                        return false;
-                    };
-                    }
-                }
-            }
-            return true; // no matching channel map(!??). nonsensical case. may as well use the stereo config, which might be more sensible.
-        }
-        return false;
     }
 
     bool GetAlsaChannels(const JackServerSettings &jackServerSettings,
