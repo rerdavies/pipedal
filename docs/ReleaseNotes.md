@@ -1,5 +1,15 @@
 # Release Notes
 
+## PiPedal 1.3.66 Release
+
+Bug fixes:
+- Choose 24-bit or 32-bit audio formats instead of 16-bit audio formats on devices that support both.
+- Force selection of stereo channel configuration for legacy I2C audio drivers without support for channel maps.
+- Avoid selection of hardware-downmixed Surround Sound channel configurations.
+
+Minor features:
+- Improved diagnostic tools for ALSA devices via `pipedalconfig --alsa-devices`
+
 ## PiPedal 1.3.64 Beta
 
 Bug fixes:

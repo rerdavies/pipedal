@@ -1,7 +1,7 @@
 
 
 <img src="GithubBanner.png" width="100%"/>
-<a href="Installing.html"><i>v1.3.65</i></a>
+<a href="Installing.html"><i>v1.3.66</i></a>
 
 &nbsp;
 
@@ -12,7 +12,7 @@ To view PiPedal documentation, click [here](Documentation.md).
 
 &nbsp;
 
-#### NEW version 1.3.65 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.3.66 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 
