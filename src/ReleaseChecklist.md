@@ -38,6 +38,4 @@ Steps to publishing a release. Chances should be waiting on a dev branch.
 - Verify that online docs link to the correct version.
 - Proofread the Release and associated notes.
 
-
-
-Experimental releases should be built on the dev branch. 
+Experimental releases should be built on the dev branch (and therefore do not show up in readme.md and docs).
