@@ -1,15 +1,18 @@
 
 
 <img src="GithubBanner.png" width="100%"/>
-<a href="Installing.html"><i>v1.3.62</i></a>
+<a href="Installing.html"><i>v1.3.66</i></a>
 
 &nbsp;
 
 To download PiPedal, click [here](download.md). 
 To view PiPedal documentation, click [here](Documentation.md).
 
+#### PiPedal has a submitted a request to support sharing of Pipedal presets at [PatchStorage.com](https:///patchstorage.com). We need your support! Please vote for PiPedal [here](https://patchstorage.com/requests/pipedal/).
 
-#### NEW version 1.3.62 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+&nbsp;
+
+#### NEW version 1.3.66 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 

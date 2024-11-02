@@ -27,9 +27,11 @@
 #include "PiPedalAlsa.hpp"
 
 using namespace pipedal;
+using namespace std;
 
-TEST_CASE( "ALSA Test", "[pipedal_alsa_test][Build][Dev]" ) {
-
+static void DiscoveryTest()
+{
+    cout << "--- Discovery" << endl;
     PiPedalAlsaDevices devices;
     auto result = devices.GetAlsaDevices();
     std::cout << result.size() << " ALSA devices found." << std::endl;
@@ -39,6 +41,19 @@ TEST_CASE( "ALSA Test", "[pipedal_alsa_test][Build][Dev]" ) {
     auto midiOutputDevices = GetAlsaMidiOutputDevices();
     std::cout << midiOutputDevices.size() << " ALSA MIDI output devices found." << std::endl;
 
+
+}
+
+void ChannelConfigtest()
+{
+    cout << "---  Channel Config Test" << endl;
+
+}
+
+TEST_CASE( "ALSA Test", "[pipedal_alsa_test][Build][Dev]" ) {
+    DiscoveryTest();
+
+    ChannelConfigTest();
 
 }
 

@@ -638,6 +638,8 @@ add_executable(pipedalconfig
     CommandLineParser.hpp
     PiPedalException.hpp 
     ConfigMain.cpp
+    alsaCheck.cpp
+    alsaCheck.hpp
     ModFileTypes.cpp ModFileTypes.hpp
     PiPedalConfiguration.hpp PiPedalConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
@@ -647,7 +649,7 @@ add_executable(pipedalconfig
 
     )
 
-target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs 
+target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs asound
     )
 
 add_executable(pipedal_latency_test
@@ -667,6 +669,12 @@ add_executable(pipedal_latency_test
 target_link_libraries(pipedal_latency_test PRIVATE pthread  asound PiPedalCommon
     )
  
+
+add_executable(pipedal_alsa_info
+    alsaCheck.cpp alsaCheck.hpp
+    alsaCheckMain.cpp    
+)
+target_link_libraries(pipedal_alsa_info PRIVATE asound)
 
 add_executable(capturepresets
     CapturePresetsMain.cpp
