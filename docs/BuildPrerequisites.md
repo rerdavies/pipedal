@@ -20,13 +20,13 @@ with
 
 
 Run the following commands to install dependent libraries required by the PiPedal build.
-
-    sudo apt update
-    sudo apt install -y liblilv-dev libboost-dev jackd2 libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
-    sudo apt install -y libasound2-dev jackd2 uuid-dev libxrandr-dev
-    sudo apt install -y authbind
-    sudo apt install -y libavahi-client-dev
-    sudo apt install -y libnm-dev libicu-dev
+ 
+    sudo apt update 
+    sudo apt install -y liblilv-dev libboost-dev jackd2 libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch 
+    sudo apt install -y libasound2-dev jackd2 uuid-dev libxrandr-dev 
+    sudo apt install -y authbind 
+    sudo apt install -y libavahi-client-dev 
+    sudo apt install -y libnm-dev libicu-dev 
     sudo apt install -y libsdbus-c++-dev libzip-dev google-perftools libgoogle-perftools-dev
     
 
@@ -46,8 +46,7 @@ In the project root, run the following commands to initialze and update pipedal 
 must be performed even if you used Visual Studio Code to initially install the project.
 
     cd ~/src/pipedal
-    git submodule init
-    git submodule update
+    git submodule update --init --recursive
    
 Run the following command to install and configure React dependencies.
 
