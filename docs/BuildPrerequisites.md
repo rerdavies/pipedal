@@ -52,6 +52,15 @@ Run the following command to install and configure React dependencies.
 
     cd ~/src/pipedal
     ./react-config   # Configure React NPM dependencies.
+
+And one final step. Edit the file `/etc/sysctl.conf`, and add or increase the value for the maximum number of watchable user 
+files:
+
+    fs.inotify.max_user_watches=524288
+
+Then run `sudo sysctl -p` to get the change to take effect. Visual Studio Code and the React Debug server both need this 
+setting to run properly. Older versions of Raspberry Pi OS set this value too low; and I am not honestly sure whether current 
+versions of Raspberry Pi OS have fixed the problem.
    
 --------------------------   
 [<< Building PiPedal from Source](BuildingPiPedalFromSource.md) | [Up](Documentation.md) | [The Build System >>](TheBuildSystem.md)
