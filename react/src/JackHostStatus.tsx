@@ -88,7 +88,7 @@ export default class JackHostStatus {
         }
         return (<div style={{ whiteSpace: "nowrap" }}>
             <Typography variant="caption" color="inherit">{label}</Typography>
-            {(status.cpuFreqMin != 0 || status.cpuFreqMax != 0) &&
+            {(status.cpuFreqMin !== 0 || status.cpuFreqMax !== 0) &&
                 (
                     <Typography variant="caption" color="inherit">
                         {
