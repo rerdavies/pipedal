@@ -97,7 +97,7 @@ void segvHandler(int sig) {
 
     // Print out all the frames to stderr
     const char *message = "Error: SEGV signal received.\n";
-    write(STDERR_FILENO,message,strlen(message));
+    auto _ = write(STDERR_FILENO,message,strlen(message));
 
     backtrace_symbols_fd(array+2, size-2, STDERR_FILENO);
     _exit(EXIT_FAILURE);

@@ -76,7 +76,7 @@ static int exec(const std::string &command)
     if ((pid = fork()) == 0)
     {
         execv(argv[0], (char *const *)argv.data());
-        write(1,"!\n",2);
+        auto _ = write(1,"!\n",2);
         exit(EXIT_FAILURE);
     }
     else
@@ -84,7 +84,7 @@ static int exec(const std::string &command)
         
         if (pid == -1)
         {
-            write(1,"*",1);
+            auto _ = write(1,"*",1);
             perror("execv");
             return EXIT_FAILURE;
         }
@@ -99,8 +99,8 @@ static int exec(const std::string &command)
 
 void updateLog(const std::string &message)
 {
-    write(1,message.c_str(),message.length());
-    write(1,"\n",1);
+    auto _ = write(1,message.c_str(),message.length());
+    _ = write(1,"\n",1);
 }
 
 

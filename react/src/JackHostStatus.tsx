@@ -19,10 +19,10 @@
 
 import React from 'react';
 import Typography from '@mui/material/Typography';
-import {isDarkMode} from './DarkMode';
+import { isDarkMode } from './DarkMode';
 
-const RED_COLOR = isDarkMode()? "#F88":"#C00";
-const GREEN_COLOR = isDarkMode()? "rgba(255,255,255,0.7)": "#666";
+const RED_COLOR = isDarkMode() ? "#F88" : "#C00";
+const GREEN_COLOR = isDarkMode() ? "rgba(255,255,255,0.7)" : "#666";
 
 
 
@@ -33,23 +33,18 @@ function cpuDisplay(cpu: number): string {
     return cpu.toFixed(1) + "%";
 }
 
-function fmtCpuFreq(freq: number): string
-{
-    if (freq >= 100000000)
-    {
-        return (freq/1000000).toFixed(1) + " GHz";
+function fmtCpuFreq(freq: number): string {
+    if (freq >= 100000000) {
+        return (freq / 1000000).toFixed(1) + " GHz";
     }
-    if (freq >= 10000000)
-    {
-        return (freq/1000000).toFixed(2) + " GHz";
+    if (freq >= 10000000) {
+        return (freq / 1000000).toFixed(2) + " GHz";
     }
-    if (freq >= 1000000)
-    {
-        return (freq/1000000).toFixed(3) + " GHz";
+    if (freq >= 1000000) {
+        return (freq / 1000000).toFixed(3) + " GHz";
     }
-    if (freq >= 1000)
-    {
-        return (freq/1000).toFixed(3) + " MHz";
+    if (freq >= 1000) {
+        return (freq / 1000).toFixed(3) + " MHz";
     }
     return freq + " KHz";
 }
@@ -65,6 +60,7 @@ export default class JackHostStatus {
         this.temperaturemC = input.temperaturemC;
         this.cpuFreqMax = input.cpuFreqMax;
         this.cpuFreqMin = input.cpuFreqMin;
+        this.hasCpuGovernor = input.hasCpuGovernor;
         this.governor = input.governor;
         return this;
     }
@@ -80,6 +76,7 @@ export default class JackHostStatus {
     temperaturemC: number = -1000000;
     cpuFreqMax: number = 0;
     cpuFreqMin: number = 0;
+    hasCpuGovernor: boolean = false;
     governor: string = "";
 
     static getCpuInfo(label: string, status?: JackHostStatus): React.ReactNode {
@@ -91,18 +88,21 @@ export default class JackHostStatus {
         }
         return (<div style={{ whiteSpace: "nowrap" }}>
             <Typography variant="caption" color="inherit">{label}</Typography>
-            <Typography variant="caption" color="inherit">
-                {
-                    (status.cpuFreqMax === status.cpuFreqMin)?
-                    (
-                        <span> {status.governor} {fmtCpuFreq(status.cpuFreqMax)}  </span>
-                    )
-                    :(
-                        <span> {status.governor} {fmtCpuFreq(status.cpuFreqMax)}-{fmtCpuFreq(status.cpuFreqMax)}  </span>
+            {(status.cpuFreqMin != 0 || status.cpuFreqMax != 0) &&
+                (
+                    <Typography variant="caption" color="inherit">
+                        {
+                            (status.cpuFreqMax === status.cpuFreqMin) ?
+                                (
+                                    <span> {status.governor} {fmtCpuFreq(status.cpuFreqMax)}  </span>
+                                )
+                                : (
+                                    <span> {status.governor} {fmtCpuFreq(status.cpuFreqMax)}-{fmtCpuFreq(status.cpuFreqMax)}  </span>
 
-                    )
-                }
-            </Typography>
+                                )
+                        }
+                    </Typography>
+                )}
         </div>);
 
 

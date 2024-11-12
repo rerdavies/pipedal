@@ -5,11 +5,15 @@ page_icon: img/Compiling.jpg
 
 {% include pageIcon.html %}
 
-PiPedal has only been tested on Raspberry Pi OS, and Ubuntu, but should run with little or no modification on most Linux distributions. Pull requests to correct problems with building PiPedal on other versions of Linux are welcome. 
+PiPedal has only been tested on Raspberry Pi OS, and Ubuntu, but should run with some modifications on most Linux distributions. Pull requests to correct problems with building PiPedal on other versions of Linux are welcome. However, getting build pre-requisites installed on non-Debian-derived Linux distrubutions (distros that don't use `apt`) will be challenging.
 
 To build and debug PiPedal using Visual Studio Code, you need 8GB of memory. You can build PiPedal with 2GB of memory.
 
-You should also be able to cross-compile PiPedal easily enough, but we do not currently provide support on how to do this. Visual Studio Code provides excellent support for cross-compiling, and good support for remote and cross-platform debugging, all of which should work with the PiPedal CMake build. However, management of ARM pakages on a Windows machine when cross-compiling is not great. Remote debugging may be a better path.
+If your Pi is short on memory, you _can_ run VSCode on laptop or desktop and configure VSCode to connect to your Raspberry PI using SSH connections. You can definitely build PiPedal using remote SSH connections on a 6GB Ubnutu VM; and can probably build Pipedal using SSH connections on a 4GB Raspberry Pi, as long as you are careful.
+
+As a last resort, you be able to configure VSCode and/or CMake to crosss-compile PiPedal on a laptop or desktop computer; but installing build dependencies when cross-compiling will be extremely challenging.  This is not a scenario that we can provide support for.
+
+
 
 --------
 [<< Which LV2 Plugins Does PiPedal Support?](WhichLv2PluginsAreSupported.md) | [Up](Documentation.md) | [Build Prerequisites >>](BuildPrerequisites.md)

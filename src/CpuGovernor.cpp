@@ -26,15 +26,19 @@
 
 using namespace pipedal;
 
-#ifdef __WIN32__
-
-// not a feature on Win32.
-void pipedal::SetCpuGovernor(const std::string &governor) { }
-std::vector<std::string> pipedal::GetAvailableGovernors() { return std::vector<std::string>(); }
-
-#else 
 
 static const int SYSFS_RETRIES = 3;
+
+bool pipedal::HasCpuGovernor()
+{
+#ifdef __WIN32__
+    return false;
+#else 
+    std::filesystem::path sysFsPath = SS("/sys/devices/system/cpu/cpu" << 0 << "/cpufreq/scaling_governor");
+    return std::filesystem::exists(sysFsPath);
+
+#endif
+}
 
 
 std::string pipedal::GetCpuGovernor()
@@ -42,10 +46,14 @@ std::string pipedal::GetCpuGovernor()
     std::string result;
     try {
         std::ifstream f("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+        if (!f.is_open())
+        {
+            return "";
+        }
         f >> result;
     } catch (const std::exception &)
     {
-
+        return result;
     }
     return result;
 
@@ -115,6 +123,10 @@ void pipedal::SetCpuGovernor(const std::string &governor) {
             break;
 
         std::filesystem::path sysFsPath = SS("/sys/devices/system/cpu/cpu" << nCpu << "/cpufreq/scaling_governor");
+        if (!std::filesystem::exists(sysFsPath))
+        {
+            return;
+        }
 
         if (!writeAndVerify(sysFsPath,governor))
         {
@@ -125,17 +137,13 @@ void pipedal::SetCpuGovernor(const std::string &governor) {
     }
 }
 std::vector<std::string> pipedal::GetAvailableGovernors() { 
+    if (!HasCpuGovernor())
+    {
+        return std::vector<std::string>();
+    }
     return std::vector<std::string> {
         "performance",
         "ondemand",
         "powersave"
     };
 }
-
-
-#endif
-
-
-    void SetCpuGovernor(const std::string &governor);
-
-    std::vector<std::string> GetAvailableGovernors();
