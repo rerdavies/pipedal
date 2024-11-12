@@ -50,6 +50,7 @@ namespace fs = std::filesystem;
 
 #include "GithubResponseHeaders.hpp"
 
+
 class pipedal::UpdaterImpl : public Updater
 {
 public:
@@ -236,7 +237,7 @@ void UpdaterImpl::Stop()
     if (event_writer != -1)
     {
         uint64_t value = CLOSE_EVENT;
-        write(this->event_writer, &value, sizeof(uint64_t));
+        auto _ = write(this->event_writer, &value, sizeof(uint64_t));
     }
     if (thread)
     {
@@ -256,7 +257,7 @@ void UpdaterImpl::Stop()
 void UpdaterImpl::CheckNow()
 {
     uint64_t value = CHECK_NOW_EVENT;
-    write(this->event_writer, &value, sizeof(uint64_t));
+    auto _ = write(this->event_writer, &value, sizeof(uint64_t));
 }
 
 void UpdaterImpl::SetUpdateListener(UpdateListener &&listener)
@@ -912,7 +913,7 @@ void UpdaterImpl::SetUpdatePolicy(UpdatePolicyT updatePolicy)
 void UpdaterImpl::ForceUpdateCheck()
 {
     uint64_t value = UNCACHED_CHECK_NOW_EVENT;
-    write(this->event_writer, &value, sizeof(uint64_t));
+    auto _ = write(this->event_writer, &value, sizeof(uint64_t));
 }
 
 UpdateStatus::UpdateStatus()

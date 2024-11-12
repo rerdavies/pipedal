@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <ifaddrs.h>
 #include "Ipv6Helpers.hpp"
+#include "CpuGovernor.hpp"
 
 using namespace pipedal;
 
@@ -143,6 +144,10 @@ void AdminClient::SetGovernorSettings(const std::string &settings)
     {
         throw PiPedalException("Can't use AdminClient when running interactively.");
     }
+    if (!HasCpuGovernor())
+    {
+        return;
+    }
     std::stringstream cmd;
     cmd << "GovernorSettings ";
     json_writer writer(cmd, true);
@@ -161,6 +166,10 @@ void AdminClient::MonitorGovernor(const std::string &governor)
     {
         return;
     }
+    if (!HasCpuGovernor())
+    {
+        return;
+    }
     std::stringstream cmd;
     cmd << "MonitorGovernor ";
     json_writer writer(cmd, true);
@@ -175,6 +184,10 @@ void AdminClient::MonitorGovernor(const std::string &governor)
 void AdminClient::UnmonitorGovernor()
 {
     if (!CanUseAdminClient())
+    {
+        return;
+    }
+    if (!HasCpuGovernor())
     {
         return;
     }

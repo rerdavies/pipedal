@@ -63,6 +63,10 @@ public:
     void Start(std::string governor)
     {
         std::unique_lock<std::mutex> lock(mutex);
+        if (!HasCpuGovernor())
+        {
+            return;
+        }
         if (!pThread)
         {
             this->governor = governor;
@@ -81,6 +85,10 @@ public:
     }
     void Stop()
     {
+        if (!HasCpuGovernor())
+        {
+            return;
+        }
         std::unique_lock<std::mutex> lock(mutex);
         if (pThread)
         {
@@ -109,6 +117,10 @@ private:
     std::string savedGovernor;
     void ServiceProc()
     {
+        if (!HasCpuGovernor())
+        {
+            return;
+        }
         savedGovernor = pipedal::GetCpuGovernor();
         pipedal::SetCpuGovernor(this->governor);
         while (true)
@@ -303,7 +315,10 @@ private:
                 {
                     throw PiPedalArgumentException("Invalid arguments.");
                 }
-                governorMonitorThread.SetGovernor(governor);
+                if (HasCpuGovernor())
+                {
+                    governorMonitorThread.SetGovernor(governor);
+                }
                 result = 0;
             }
             else if (command == "WifiConfigSettings")

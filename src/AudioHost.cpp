@@ -101,8 +101,8 @@ static void GetCpuFrequency(uint64_t *freqMin, uint64_t *freqMax)
     catch (const std::exception &)
     {
     }
-    if (fMin == 0)
-        fMax = 0;
+    if (fMax == 0)
+        fMin = 0;
     *freqMin = fMin;
     *freqMax = fMax;
 }
@@ -2091,7 +2091,13 @@ public:
             result.cpuUsage_ = audioDriver->CpuUse();
         }
         GetCpuFrequency(&result.cpuFreqMax_, &result.cpuFreqMin_);
-        result.governor_ = GetGovernor();
+        result.hasCpuGovernor_ = HasCpuGovernor();
+        if (result.hasCpuGovernor_)
+        {
+            result.governor_ = GetGovernor();
+        } else {
+            result.governor_ = "";
+        }
 
         return result;
     }
@@ -2278,5 +2284,6 @@ JSON_MAP_REFERENCE(JackHostStatus, msSinceLastUnderrun)
 JSON_MAP_REFERENCE(JackHostStatus, temperaturemC)
 JSON_MAP_REFERENCE(JackHostStatus, cpuFreqMin)
 JSON_MAP_REFERENCE(JackHostStatus, cpuFreqMax)
+JSON_MAP_REFERENCE(JackHostStatus, hasCpuGovernor)
 JSON_MAP_REFERENCE(JackHostStatus, governor)
 JSON_MAP_END()

@@ -23,6 +23,7 @@
 #include <vector>
 
 namespace pipedal {
+    bool HasCpuGovernor(); 
     std::string GetCpuGovernor();
 
     void SetCpuGovernor(const std::string &governor);

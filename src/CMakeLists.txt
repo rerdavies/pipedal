@@ -737,14 +737,16 @@ set (DEBIAN_COPYRIGHT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../debian/copyright)
 
 # generate Copyright section of settings page.
 # warning: there may be multiple versions. Pick the latest.
-if(EXISTS "/usr/share/doc/libboost1.74-dev")
+if(EXISTS "/usr/share/doc/libboost1.83-dev")
+   set (BOOST_COPYRIGHT_DIR "libboost1.83-dev")
+elseif(EXISTS "/usr/share/doc/libboost1.74-dev")
    set (BOOST_COPYRIGHT_DIR "libboost1.74-dev")
 elseif(EXISTS "/usr/share/doc/libboost1.71-dev")
    set (BOOST_COPYRIGHT_DIR "libboost1.71-dev")
 elseif(EXISTS "/usr/share/doc/libboost1.67-dev")
    set (BOOST_COPYRIGHT_DIR "libboost1.67-dev")
 else()
-    message(ERROR "Boost libary version has changed. Please update me.")
+    message(FATAL_ERROR "Boost libary version has changed. Please update me.")
 endif() 
 
 

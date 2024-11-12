@@ -21,6 +21,7 @@
 
 export default class GovernorSettings {
     deserialize(input: any) : GovernorSettings{
+        this.hasGovernor = input.hasGovernor;
         this.governors = input.governors;
         this.governor = input.governor;
         return this;
@@ -29,6 +30,7 @@ export default class GovernorSettings {
     {
         return new GovernorSettings().deserialize(this);
     }
+    hasGovernor: boolean = true;
     governors: string[] = ["ondemand","performance"];
     governor: string = "performance";
 

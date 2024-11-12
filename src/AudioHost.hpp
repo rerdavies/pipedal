@@ -184,6 +184,7 @@ namespace pipedal
         int32_t temperaturemC_ = -100000;
         uint64_t cpuFreqMax_ = 0;
         uint64_t cpuFreqMin_ = 0;
+        bool hasCpuGovernor_ = true;
         std::string governor_;
 
         DECLARE_JSON_MAP(JackHostStatus);
