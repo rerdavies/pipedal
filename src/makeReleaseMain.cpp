@@ -43,10 +43,10 @@ std::string psystem(const std::string &command)
     {
         throw std::runtime_error("popen() failed!");
     }
-    Finally ([pipe]() {
+    Finally ff{[pipe]() {
         pclose(pipe);
-    });
-    while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
+    }};
+    while (fgets(buffer.data(), buffer.size()-1, pipe) != nullptr)
     {
         result += buffer.data();
     }
@@ -113,7 +113,9 @@ void SignPackage()
     cout << "trusted certificate authority in the Updater keychain." << endl;
     std::string verifyCommand = SS("/usr/bin/gpg --verify --no-default-keyring "
                                    << "--homedir  " << keyringPath.c_str()
-                                   << " --armor " << packagePath << ".asc " << packagePath.c_str());
+                                   << " --armor " << packagePath.c_str() << ".asc " << packagePath.c_str());
+
+    cout << verifyCommand << endl;
     auto output = psystem(verifyCommand.c_str());
     cout << output << endl;
     auto npos = output.find("Good signature from \"" UPDATE_GPG_ADDRESS2 "\"");

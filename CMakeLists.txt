@@ -73,7 +73,7 @@ if ("${DEBIAN_ARCHITECTURE}" MATCHES "arm64")
 
     # select LV2 source directory for the current build architecture
 
-    set(LV2_SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/build/lv2/${CMAKE_SYSTEM_PROCESSOR}/ToobAmp.lv2)
+    set(LV2_SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/lv2/${CMAKE_SYSTEM_PROCESSOR}/ToobAmp.lv2)
 
     install (DIRECTORY ${LV2_SOURCE_DIRECTORY} 
         DESTINATION /usr/lib/lv2
