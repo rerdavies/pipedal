@@ -43,16 +43,26 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
       env:
-           CC:   gcc-12
-           CXX:  g++-12
+           CC:   gcc-13
+           CXX:  g++-13
     - name: Build
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
       env:
-         CC:   gcc-12
-         CXX:  g++-12
+         CC:   gcc-13
+         CXX:  g++-13
     #- name: Test
     #  working-directory: ${{github.workspace}}/build
     #  # Execute CMake BuiltTest test
     #  run: ctest -C ${{env.BUILD_TYPE}} -R BuildTest
-      
+    - name: Make Package
+      run: ./makePackage.sh
+       
+    - name: Generate Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+          name: artifact
+          path: |
+              build/*.deb
+          retention-days: 5
+             
