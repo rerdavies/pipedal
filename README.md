@@ -6,7 +6,7 @@
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.3.66</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.3.67</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
@@ -15,7 +15,7 @@ Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](htt
 #### Important notice: PiPedal has a submitted a request to support sharing of Pipedal presets at [PatchStorage.com](https:///patchstorage.com). We need your support! Please vote for PiPedal [here](https://patchstorage.com/requests/pipedal/).
 
 
-#### NEW version 1.3.66 Release, providing [snapshots](https://rerdavies.github.io/pipedal/Snaphots.html), and a new Performance View. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.3.67 Release, providing [snapshots](https://rerdavies.github.io/pipedal/Snaphots.html), and a new Performance View. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 

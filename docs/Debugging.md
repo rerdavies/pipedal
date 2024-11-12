@@ -117,7 +117,7 @@ not significantly worse than building on a newly released version fo GCC.  It's 
 variant set to RelWithDebugInfo. If you can get to the point that you can install Pipedal using ./install.sh, then that will 
 ensure that all the various configuration files that Pipedal requires are deployed in all the right places, whether the services 
 run properly or not. Check system logs using `journalctl -b0 | less` to see how well your newly built version of 
-Pipedal is doing, and stop systemd services as neccesary and appropriate. 
+Pipedal is doing, and stop systemd services as neccesary and appropriate.
 
 
 Set the build variant to debug. Set the debug target to "pipedald".  Click on the Build button to build the app. Click on the Debug button to launch a debugger.
