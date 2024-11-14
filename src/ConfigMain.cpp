@@ -1161,8 +1161,8 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 
         sysExec(SYSTEMCTL_BIN " daemon-reload");
 
-        FixPermissions();
         ModFileTypes::CreateDefaultDirectories("/var/pipedal/audio_uploads");
+        FixPermissions();
 
         StopService(false);
         AvahiInstall();
