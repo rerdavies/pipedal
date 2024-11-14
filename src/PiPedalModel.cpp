@@ -299,11 +299,6 @@ void PiPedalModel::Load()
 #endif
     }
 
-    struct sched_param scheduler_params;
-    scheduler_params.sched_priority = 10;
-    memset(&scheduler_params, 0, sizeof(sched_param));
-    sched_setscheduler(0, SCHED_RR, &scheduler_params);
-
     RestartAudio();
 }
 

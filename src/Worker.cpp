@@ -42,6 +42,7 @@
 #include <unistd.h> // for nice(
 #include <utility>
 #include "util.hpp"
+#include "SchedulerPriority.hpp"
 
 using namespace pipedal;
 
@@ -190,12 +191,8 @@ void HostWorkerThread::ThreadProc() noexcept
 {
     // run nice +2 (priority -2 on Windows)
     SetThreadName("lv2_worker");
-    errno = 0;
-    std::ignore = nice(2);
-    if (errno != 0)
-    {
-        std::cout << "Warning: Unable to run Lv2 schedule thread at nice +1" << std::endl;
-    }
+    SetThreadPriority(SchedulerPriority::Lv2Scheduler);
+
 
     try
     {

@@ -483,17 +483,25 @@ void InstallLimits()
         throw std::runtime_error("Failed to create audio service group.");
     }
 
-    fs::path limitsConfig = "/etc/security/limits.d/audio.conf";
+    // old limits config file bumped limits for members of the audio group, and didn't have a proper priority.
+    // remove it
+    fs::path oldLimitsConfig = "/etc/security/limits.d/audio.conf";
+    if (fs::exists(oldLimitsConfig))
+    {
+        fs::remove(oldLimitsConfig);
+    }
+
+    // bump limits for members of the pipedal_d group.
+    fs::path limitsConfig = "/etc/security/limits.d/90-pipedal.conf";
 
     if (!fs::exists(limitsConfig))
     {
         ofstream output(limitsConfig);
-        output << "# Realtime priority group used by pipedal audio (and also by jack)"
+        output << "# Realtime priority limits for the pipedal services"
                << "\n";
-        output << "@audio   -  rtprio     95"
-               << "\n";
-        output << "@audio   -  memlock    unlimited"
-               << "\n";
+        output << "@pipedal_d   -  rtprio     95" << "\n";
+        output << "@pipedal_d   -  nice     -20" << "\n";
+        output << "@pipedal_d   -  memlock    unlimited" << "\n";
     }
 }
 

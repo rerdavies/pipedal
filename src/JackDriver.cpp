@@ -25,13 +25,23 @@
 /* Status of Jack support.
 
 PiPedal was originally written for Jack, but subsequently ported to Alsa because running
-Jack as a systemd daemon proved to be unsupportable,. 
+Jack as a systemd daemon proved to be unsupportable. (Completely broken when pipewire is 
+installed).
 
+This was all functional code at one point, but is no longer in sync with the current 
+codebase. It won't work as is. It probably implemenets the driver interface properly. 
+You would have to go through AudioHost.cpp and substitute JackDriver for AlsaDriver 
+as appropriate.
 
 
 */
 
+
+
+#if JACK_HOST
+
 #include "pch.h"
+
 #include "JackDriver.hpp"
 
 #include <jack/jack.h>
@@ -39,8 +49,6 @@ Jack as a systemd daemon proved to be unsupportable,.
 #include <jack/session.h>
 #include <jack/midiport.h>
 #include "Lv2Log.hpp"
-
-#if JACK_HOST
 
 namespace pipedal {
 

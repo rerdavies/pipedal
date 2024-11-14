@@ -27,12 +27,12 @@ endif()
 # endif()
 
 # nlgenl-3 library.
-execute_process(COMMAND ls /usr/include/libnl3/netlink/netlink.h RESULT_VARIABLE LNL3_MISSING OUTPUT_QUIET ERROR_QUIET)
-if(LNL3_MISSING)
-    message(ERROR " Need to: sudo apt install libnl-3-dev libnl-genl-3-dev ")
-endif()
-set(LIBNL3_INCLUDE_DIRS /usr/include/libnl3)
-set(LIBNL3_LIBRARIES nl-3 nl-genl-3)
+# execute_process(COMMAND ls /usr/include/libnl3/netlink/netlink.h RESULT_VARIABLE LNL3_MISSING OUTPUT_QUIET ERROR_QUIET)
+# if(LNL3_MISSING)
+#     message(ERROR " Need to: sudo apt install libnl-3-dev libnl-genl-3-dev ")
+# endif()
+# set(LIBNL3_INCLUDE_DIRS /usr/include/libnl3)
+# set(LIBNL3_LIBRARIES nl-3 nl-genl-3)
 
 
 

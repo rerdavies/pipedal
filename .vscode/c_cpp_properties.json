@@ -7,6 +7,7 @@
                 "${workspaceFolder}",
                 "${workspaceFolder}/src",
                 "/usr/include/lilv-0",
+                "/usr/include/x86_64-linux-gnu",
                 "/usr/lib",
                 "~/src/vst3sdk"
             ],
@@ -16,6 +17,24 @@
             "intelliSenseMode": "linux-gcc-arm64",
             "compileCommands": "${workspaceFolder}/build/compile_commands.json",
             "configurationProvider": "ms-vscode.cmake-tools"
+        },
+        {
+            "name": "Linux x86_64",
+            "includePath": [
+                "${default}",
+                "${workspaceFolder}",
+                "${workspaceFolder}/src",
+                "/usr/include/x86_64-linux-gnu",
+                "/usr/include/lilv-0",
+                "/usr/lib"
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "mergeConfigurations": true
         }
     ],
     "version": 4
