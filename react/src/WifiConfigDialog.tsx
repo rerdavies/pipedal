@@ -526,23 +526,11 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                                 <Autocomplete fullWidth
                                     defaultValue={this.getCountryCodeValue(this.state.countryCode)}
                                     disableClearable={true}
-                                    onChange={(event, value) => { if (value) { this.setState({ countryCode: value.id }) } }}
+                                    onChange={(event, value) => { if (value) { this.handleCountryChanged({ countryCode: value.id }) } }}
                                     options={this.getCountryCodeOptions()}
                                     renderInput={(params) => (<TextField {...params} variant="standard" label="Regulatory Domain" />)}
                                     disabled={!enabled}
                                 />
-                                {/*
-                                    <Select variant="standard" label="Regulatory Domain" id="countryCodeSelect" 
-                                        fullWidth value={this.state.countryCode} style={{}}
-                                        onChange={(event) => this.handleCountryChanged(event)} disabled={!enabled} >
-                                        {Object.entries(this.model.countryCodes).map(([key, value]) => {
-                                            return (
-                                                <MenuItem value={key}>{value}</MenuItem>
-                                            );
-                                        })}
-                                    </Select>
-                                    */}
-
                             </div>
                             <div style={{ display: "flex", flexFlow: "column nowrap", marginBottom: 8, flexGrow: 1, flexBasis: 1 }}>
                                 <FormControl style={{ flexGrow: 1 }} >
