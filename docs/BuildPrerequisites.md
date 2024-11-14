@@ -3,13 +3,13 @@
 Run the following commands to install build tools required by the PiPedal build.
 
     # install CMake
-    sudo apt update
-    sudo apt install -y cmake ninja-build
+    sudo apt updatee
+    sudo apt install -y cmake ninja-build gcc git
 
 The PiPedal build process also requires version 12 or later of `node.js`. Type `node --version` to see if you have a version 
 of `node.js` installed already. Otherwise run the following commands as root to install the v14.x lts version of `node.js`: 
 `
-   sudo apt install nodejs npm
+   sudo apt install nodejs npm curl
 
 If your distribution doesn't provide a suitable version of nodejs, you can install the current LTS version of nodejs
 with
@@ -22,12 +22,11 @@ with
 Run the following commands to install dependent libraries required by the PiPedal build.
  
     sudo apt update 
-    sudo apt install -y liblilv-dev libboost-dev jackd2 libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch 
-    sudo apt install -y libasound2-dev jackd2 uuid-dev libxrandr-dev 
-    sudo apt install -y authbind 
-    sudo apt install -y libavahi-client-dev 
-    sudo apt install -y libnm-dev libicu-dev 
-    sudo apt install -y libsdbus-c++-dev libzip-dev google-perftools libgoogle-perftools-dev
+    sudo apt install -y liblilv-dev libboost-dev  \
+        libsystemd-dev catch libasound2-dev uuid-dev \
+        authbind libavahi-client-dev  libnm-dev libicu-dev \
+        libsdbus-c++-dev libzip-dev google-perftools \
+        libgoogle-perftools-dev
     
 
 ### Installing Sources
