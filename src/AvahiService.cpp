@@ -301,6 +301,7 @@ collision:
     n = avahi_alternative_service_name(avahiNameString);
     avahi_free(avahiNameString);
     avahiNameString = n;
+    serviceName = avahiNameString;
     Lv2Log::warning(SS("Service name collision, renaming service to '" << avahiNameString << "'"));
     avahi_entry_group_reset(group);
     create_group(c);
