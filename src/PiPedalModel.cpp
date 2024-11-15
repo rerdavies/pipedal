@@ -351,6 +351,9 @@ void PiPedalModel::RemoveNotificationSubsription(std::shared_ptr<IPiPedalModelSu
 void PiPedalModel::PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value)
 {
     IEffect *effect = lv2Pedalboard->GetEffect(pedalItemId);
+    if (!effect) {
+        return;
+    }
     if (effect->IsVst3())
     {
         int index = lv2Pedalboard->GetControlIndex(pedalItemId, symbol);
