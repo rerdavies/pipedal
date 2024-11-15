@@ -394,7 +394,7 @@ export class PiPedalModel //implements PiPedalModel
     webSocket?: PiPedalSocket;
 
 
-
+    hasWifiDevice: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
     onSnapshotModified: ObservableEvent<SnapshotModifiedEvent> = new ObservableEvent<SnapshotModifiedEvent>();
 
     ui_plugins: ObservableProperty<UiPlugin[]>
@@ -1036,6 +1036,7 @@ export class PiPedalModel //implements PiPedalModel
             )
             .then(data => {
                 this.enableAutoUpdate = !!data.enable_auto_update;
+                this.hasWifiDevice.set(!!data.has_wifi_device);
                 if (data.max_upload_size) {
                     this.maxPresetUploadSize = data.max_upload_size;
                 }

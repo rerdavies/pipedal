@@ -92,6 +92,8 @@ interface SettingsDialogState {
     showRestartOkDialog: boolean;
     showShutdownOkDialog: boolean;
     showSystemMidiBindingsDialog: boolean;
+
+    hasWifiDevice: boolean;
 };
 
 
@@ -199,10 +201,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 showShutdownOkDialog: false,
                 showRestartOkDialog: false,
                 showSystemMidiBindingsDialog: false,
-                isAndroidHosted: this.model.isAndroidHosted()
-
-
-
+                isAndroidHosted: this.model.isAndroidHosted(),
+                hasWifiDevice: this.model.hasWifiDevice.get()
             };
             this.handleJackConfigurationChanged = this.handleJackConfigurationChanged.bind(this);
             this.handleJackSettingsChanged = this.handleJackSettingsChanged.bind(this);
@@ -212,7 +212,6 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.handleGovernorSettingsChanged = this.handleGovernorSettingsChanged.bind(this);
             this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
             this.handleShowStatusMonitorChanged = this.handleShowStatusMonitorChanged.bind(this);
-
 
         }
 
@@ -542,7 +541,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                 <DialogEx tag="settings" fullScreen open={this.props.open}
                     onClose={() => { this.props.onClose() }} TransitionComponent={Transition}
                     style={{ userSelect: "none" }}
-                    onEnterKey={()=>{}}
+                    onEnterKey={() => { }}
                 >
 
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
@@ -651,7 +650,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
 
 
-                                <ButtonBase className={classes.setting} onClick={() => this.handleInputSelection()} 
+                                <ButtonBase className={classes.setting} onClick={() => this.handleInputSelection()}
                                     disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
                                     style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
 
@@ -662,7 +661,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                         <Typography display="block" variant="caption" color="textSecondary" noWrap>{this.state.jackSettings.getAudioInputDisplayValue(this.state.jackConfiguration)}</Typography>
                                     </div>
                                 </ButtonBase>
-                                <ButtonBase className={classes.setting} onClick={() => this.handleOutputSelection()} 
+                                <ButtonBase className={classes.setting} onClick={() => this.handleOutputSelection()}
                                     disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
                                     style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
                                 >
@@ -766,43 +765,52 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                                 )
                             }
 
-                            <Divider />
-                            <div >
-                                <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">CONNECTION</Typography>
+                            {(this.state.hasWifiDevice || this.state.isAndroidHosted) &&
+                                (
+                                    <div>
+                                        <Divider />
+                                        <div >
+                                            <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">CONNECTION</Typography>
 
-                                <ButtonBase
-                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                    onClick={() => this.handleShowWifiConfigDialog()}  >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                            Wi-Fi auto-hotspot</Typography>
-                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
-                                            {this.state.wifiConfigSettings.getSummaryText()}
-                                        </Typography>
+                                            {this.state.hasWifiDevice && (
+                                                <ButtonBase
+                                                    className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                                    onClick={() => this.handleShowWifiConfigDialog()}  >
+                                                    <SelectHoverBackground selected={false} showHover={true} />
+                                                    <div style={{ width: "100%" }}>
+                                                        <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                            Wi-Fi auto-hotspot</Typography>
+                                                        <Typography display="block" variant="caption" noWrap color="textSecondary">
+                                                            {this.state.wifiConfigSettings.getSummaryText()}
+                                                        </Typography>
+
+                                                    </div>
+                                                </ButtonBase>
+
+                                            )}
+
+                                            {
+                                                this.state.isAndroidHosted &&
+                                                (
+                                                    <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
+                                                        onClick={() => this.model.chooseNewDevice()}  >
+                                                        <SelectHoverBackground selected={false} showHover={true} />
+                                                        <div style={{ width: "100%" }}>
+                                                            <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                                Connect to a different device</Typography>
+                                                            <Typography display="block" variant="caption" noWrap color="textSecondary">
+
+                                                            </Typography>
+
+                                                        </div>
+                                                    </ButtonBase>
+                                                )
+                                            }
+
+                                        </div>
 
                                     </div>
-                                </ButtonBase>
-
-                                {
-                                    this.state.isAndroidHosted &&
-                                    (
-                                        <ButtonBase className={classes.setting} disabled={!this.state.wifiConfigSettings.valid}
-                                            onClick={() => this.model.chooseNewDevice()}  >
-                                            <SelectHoverBackground selected={false} showHover={true} />
-                                            <div style={{ width: "100%" }}>
-                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
-                                                    Connect to a different device</Typography>
-                                                <Typography display="block" variant="caption" noWrap color="textSecondary">
-
-                                                </Typography>
-
-                                            </div>
-                                        </ButtonBase>
-                                    )
-                                }
-
-                            </div>
+                                )}
                             {(!this.props.onboarding) ? (
                                 <div >
                                     <Divider />
@@ -942,10 +950,15 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
 
                         )
                     }
-                    <WifiDirectConfigDialog wifiDirectConfigSettings={this.state.wifiDirectConfigSettings} open={this.state.showWifiDirectConfigDialog}
-                        onClose={() => this.setState({ showWifiDirectConfigDialog: false })}
-                        onOk={(wifiDirectConfigSettings: WifiDirectConfigSettings) => this.handleApplyWifiDirectConfig(wifiDirectConfigSettings)}
-                    />
+                    {
+                        this.state.showWifiDirectConfigDialog && (
+                            <WifiDirectConfigDialog wifiDirectConfigSettings={this.state.wifiDirectConfigSettings} open={this.state.showWifiDirectConfigDialog}
+                                onClose={() => this.setState({ showWifiDirectConfigDialog: false })}
+                                onOk={(wifiDirectConfigSettings: WifiDirectConfigSettings) => this.handleApplyWifiDirectConfig(wifiDirectConfigSettings)}
+                            />
+
+                        )
+                    }
                     <OkCancelDialog text="Are you sure you want to reboot?" okButtonText='Reboot'
                         open={this.state.showRestartOkDialog}
                         onOk={() => { this.setState({ showRestartOkDialog: false }); this.handleRestartOk(); }}
@@ -956,10 +969,13 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                         onOk={() => { this.setState({ showShutdownOkDialog: false }); this.handleShutdownOk(); }}
                         onClose={() => { this.setState({ showShutdownOkDialog: false }); }}
                     />
-                    <SystemMidiBindingsDialog
-                        open={this.state.showSystemMidiBindingsDialog}
-                        onClose={() => { this.setState({ showSystemMidiBindingsDialog: false }); }}
-                    />
+                    {this.state.showSystemMidiBindingsDialog && (
+                        <SystemMidiBindingsDialog
+                            open={this.state.showSystemMidiBindingsDialog}
+                            onClose={() => { this.setState({ showSystemMidiBindingsDialog: false }); }}
+                        />
+
+                    )}
                     {this.state.showWindowScaleDialog && (
                         <OptionsDialog open={this.state.showWindowScaleDialog} options={getWindowScaleOptions()} value={getWindowScale()}
                             onClose={(() => this.setState({ showWindowScaleDialog: false }))}

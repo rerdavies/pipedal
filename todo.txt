@@ -1,28 +1,7 @@
-Loading shields need to be of Modal type.
-
-MOD fileTypes
-
-    - audioloop: Audio Loops, meant to be used for looper-style plugins
-    - audiorecording: Audio Recordings, triggered by plugins and stored in the unit
-    - audiosample: One-shot Audio Samples, meant to be used for sampler-style plugins
-    - audiotrack: Audio Tracks, meant to be used as full-performance/song or backtrack
-    - cabsim: Speaker Cabinets, meant as small IR audio files
-    - h2drumkit: Hydrogen Drumkits, must use h2drumkit file extension
-    - ir: Impulse Responses
-    - midiclip: MIDI Clips, to be used in sync with host tempo, must have mid or midi file extension
-    - midisong: MIDI Songs, meant to be used as full-performance/song or backtrack
-    - sf2: SF2 Instruments, must have sf2 or sf3 file extension
-    - sfz: SFZ Instruments, must have sfz file extension
+Not all country codes are valid (e.g. Antarctica)
 
 
 
-Main menu on Pixel 5 client.
-x1 bank menu (landscape pixel 5) should show current bank.
-
-Restart discover on network change?
-
-
--verify clean removal of dhcpcd and nm_p2p2d
 
 X Review docs changes once we go live.
 

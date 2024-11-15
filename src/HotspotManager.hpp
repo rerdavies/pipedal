@@ -38,6 +38,8 @@ namespace pipedal {
         
         using ptr = std::unique_ptr<HotspotManager>;
 
+        static bool HasWifiDevice();
+
         static ptr Create();
 
         virtual ~HotspotManager() noexcept { }

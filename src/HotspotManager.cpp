@@ -33,6 +33,7 @@
 
 using namespace pipedal;
 using namespace dbus::networkmanager;
+namespace fs = std::filesystem;
 
 namespace pipedal::impl
 {
@@ -1031,4 +1032,34 @@ std::vector<std::string> HotspotManagerImpl::GetKnownWifiNetworks()
 {
     std::lock_guard lock(knownWifiNetworksMutex); // pushed off the service thread.
     return this->knownWifiNetworks;
+}
+
+
+static bool is_wireless_sysfs(const std::string& ifname) {
+    return fs::exists("/sys/class/net/" + ifname + "/wireless");
+}
+
+static std::vector<std::string> get_wireless_interfaces_sysfs() {
+    std::vector<std::string> wireless_interfaces;
+    const std::string net_path = "/sys/class/net";
+
+    try {
+        for (const auto& entry : fs::directory_iterator(net_path)) {
+            std::string ifname = entry.path().filename();
+            if (is_wireless_sysfs(ifname)) {
+                wireless_interfaces.push_back(ifname);
+            }
+        }
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error accessing " << net_path << ": " << e.what() << std::endl;
+    }
+
+    return wireless_interfaces;
+}
+
+bool HotspotManager::HasWifiDevice()
+{
+    // use procfs to decide this, as NetworkManager may not be available yet.
+
+    return !(get_wireless_interfaces_sysfs().empty());
 }
