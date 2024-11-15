@@ -78,6 +78,10 @@ export interface WifiConfigState {
     homeNetworkSsid: string;
     homeNetworkError: boolean;
     homeNetworkErrorMessage: string;
+    countryCodeError: boolean;
+    countryCodeErrorMessage: string;
+    channelError: boolean;
+    channelErrorMessage: string;
     countryCode: string;
     channel: string;
     knownWifiNetworks: string[];
@@ -112,6 +116,10 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                 homeNetworkSsid: this.props.wifiConfigSettings.homeNetwork,
                 homeNetworkError: false,
                 homeNetworkErrorMessage: NBSP,
+                countryCodeError: false,
+                countryCodeErrorMessage: NBSP,
+                channelError: false,
+                channelErrorMessage: NBSP,
                 showWifiWarningDialog: false,
                 showHelpDialog: false,
                 wifiWarningGiven: this.props.wifiConfigSettings.wifiWarningGiven,
@@ -257,7 +265,19 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                     this.setState({ homeNetworkError: true, homeNetworkErrorMessage: "* Required" });
                     hasError = true;
                 }
+                if (this.state.countryCode === "")
+                {
+                    this.setState({ countryCodeError: true, countryCodeErrorMessage: "* Required" });
+                    hasError = true;
+                }
+                if (this.validChannelSelection() === "")
+                {
+                    this.setState({ channelError: true, channelErrorMessage: "* Required" });
+                    hasError = true;
+
+                }
             }
+
             if (this.state.autoStartMode !== 0 && (!this.props.wifiConfigSettings.hasSavedPassword) && this.state.newPassword.length === 0) {
                 this.setState({ passwordError: true, passwordErrorMessage: "* Required" });
                 hasError = true;
@@ -291,12 +311,14 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
 
         handleChannelChange(e: any) {
             let value = e.target.value as string;
-            this.setState({ channel: value });
+            this.setState({ channel: value, channelError: false, channelErrorMessage: NBSP });
         }
-        handleCountryChanged(e: any) {
-            let value = e.target.value as string;
+        handleCountryChanged(value: string) {
 
-            this.setState({ countryCode: value });
+            this.setState({ countryCode: value, 
+                countryCodeError: false, countryCodeErrorMessage: NBSP,
+                channelError: false, channelErrorMessage: NBSP
+             });
             this.requestWifiChannels(value);
         }
         handleTogglePasswordVisibility() {
@@ -334,6 +356,20 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
             this.handleOk(true);
         }
 
+        validChannelSelection() {
+            if (!this.state.wifiChannels)
+            {
+                return ''; // null selector.
+            }
+            for (let wifiChannel of this.state.wifiChannels)
+            {
+                if (wifiChannel.channelId === this.state.channel)
+                {
+                    return this.state.channel; // yes, it's a valid selection.
+                }
+            }
+            return ''; // null selector value.
+        }
 
         render() {
             let props = this.props;
@@ -522,34 +558,35 @@ const WifiConfigDialog = withStyles(styles, { withTheme: true })(
                                 ? { display: "flex", flexFlow: "row nowrap", gap: 24, alignItems: "start" }
                                 : { display: "block" }
                         }>
-                            <div style={{ display: "flex", marginBottom: 8, flexGrow: 1, flexBasis: 1 }}>
+                            <FormControl variant="standard" style={{ display: "flex", marginBottom: 8, flexGrow: 1, flexBasis: 1 }} >
                                 <Autocomplete fullWidth
                                     defaultValue={this.getCountryCodeValue(this.state.countryCode)}
                                     disableClearable={true}
-                                    onChange={(event, value) => { if (value) { this.handleCountryChanged({ countryCode: value.id }) } }}
+                                    onChange={(event, value) => { if (value) { this.handleCountryChanged(value.id as string ) } }}
                                     options={this.getCountryCodeOptions()}
                                     renderInput={(params) => (<TextField {...params} variant="standard" label="Regulatory Domain" />)}
                                     disabled={!enabled}
                                 />
-                            </div>
-                            <div style={{ display: "flex", flexFlow: "column nowrap", marginBottom: 8, flexGrow: 1, flexBasis: 1 }}>
-                                <FormControl style={{ flexGrow: 1 }} >
-                                    <InputLabel htmlFor="channelSelect">Channel</InputLabel>
-                                    <Select variant="standard" id="channelSelect" value={this.state.channel}
-                                        fullWidth
-                                        disabled={!enabled}
-                                        onChange={(e) => {
-                                            this.handleChannelChange(e);
-                                        }}>
-                                        {this.state.wifiChannels.map((channel) => {
-                                            return (
-                                                <MenuItem value={channel.channelId}>{channel.channelName}</MenuItem>
-                                            )
-                                        })}
-                                    </Select>
-                                </FormControl>
+                                <FormHelperText error={this.state.countryCodeError}>{this.state.countryCodeErrorMessage}</FormHelperText>
+                            </FormControl>
+                            <FormControl variant="standard" style={{ display: "flex", marginBottom: 8, flexGrow: 1, flexBasis: 1 }} >
+                                <InputLabel htmlFor="channelSelect">Channel</InputLabel>
+                                <Select variant="standard" id="channelSelect" value={
+                                        this.validChannelSelection()}
+                                    fullWidth
+                                    disabled={!enabled || this.state.wifiChannels.length === 0}
+                                    onChange={(e) => {
+                                        this.handleChannelChange(e);
+                                    }}>
+                                    {this.state.wifiChannels.map((channel) => {
+                                        return (
+                                            <MenuItem value={channel.channelId}>{channel.channelName}</MenuItem>
+                                        )
+                                    })}
+                                </Select>
+                                <FormHelperText error={this.state.channelError}>{this.state.channelErrorMessage}</FormHelperText>
 
-                            </div>
+                            </FormControl>
                         </div>
 
 
