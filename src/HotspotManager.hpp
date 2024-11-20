@@ -55,6 +55,11 @@ namespace pipedal {
 
         virtual void SetNetworkChangingListener(NetworkChangingListener &&listener) = 0;
 
+        using HasWifiListener = std::function<void(bool hasWifi)>;
+        virtual void SetHasWifiListener(HasWifiListener &&listener) = 0;
+        virtual bool GetHasWifi() = 0;
+
+
         using PostHandle = uint64_t;
         using PostCallback = std::function<void()>;
 

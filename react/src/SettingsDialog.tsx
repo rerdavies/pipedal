@@ -212,9 +212,13 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             this.handleGovernorSettingsChanged = this.handleGovernorSettingsChanged.bind(this);
             this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
             this.handleShowStatusMonitorChanged = this.handleShowStatusMonitorChanged.bind(this);
+            this.handleHasWifiChanged = this.handleHasWifiChanged.bind(this);
 
         }
 
+        handleHasWifiChanged(newValue: boolean) {
+            this.setState({hasWifiDevice: newValue});
+        }
 
         handleShowStatusMonitorChanged(): void {
             this.setState({ showStatusMonitor: this.model.showStatusMonitor.get() });
@@ -322,6 +326,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
             if (active !== this.active) {
                 this.active = active;
                 if (active) {
+                    this.model.hasWifiDevice.addOnChangedHandler(this.handleHasWifiChanged);
                     this.model.state.addOnChangedHandler(this.handleConnectionStateChanged);
                     this.model.showStatusMonitor.addOnChangedHandler(this.handleShowStatusMonitorChanged);
                     this.model.jackSettings.addOnChangedHandler(this.handleJackSettingsChanged);
@@ -350,6 +355,8 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.handleJackServerSettingsChanged();
                     this.handleWifiConfigSettingsChanged();
                     this.handleWifiDirectConfigSettingsChanged();
+                    this.setState({hasWifiDevice: this.model.hasWifiDevice.get()});
+
                     this.timerHandle = setInterval(() => this.tick(), 1000);
                 } else {
                     if (this.timerHandle) {
@@ -364,7 +371,7 @@ const SettingsDialog = withStyles(styles, { withTheme: true })(
                     this.model.wifiConfigSettings.removeOnChangedHandler(this.handleWifiConfigSettingsChanged);
                     this.model.wifiDirectConfigSettings.removeOnChangedHandler(this.handleWifiDirectConfigSettingsChanged);
                     this.model.governorSettings.removeOnChangedHandler(this.handleGovernorSettingsChanged);
-
+                    this.model.hasWifiDevice.removeOnChangedHandler(this.handleHasWifiChanged);
                 }
             }
 

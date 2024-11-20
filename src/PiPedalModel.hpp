@@ -92,6 +92,7 @@ namespace pipedal
         virtual void OnErrorMessage(const std::string &message) = 0;
         virtual void OnLv2PluginsChanging() = 0;
         virtual void OnNetworkChanging(bool hotspotConnected) = 0;
+        virtual void OnHasWifiChanged(bool hasWifi) = 0;
         virtual void Close() = 0;
     };
 
@@ -107,6 +108,9 @@ namespace pipedal
         using NetworkChangedListener = std::function<void(void)>;
 
     private:
+        bool hasWifi = false;
+
+        void SetHasWifi(bool hasWifi);
         std::unique_ptr<HotspotManager> hotspotManager;
 
         std::unique_ptr<Updater> updater;
@@ -257,6 +261,9 @@ namespace pipedal
             Increase,
             Decrease
         };
+
+    bool GetHasWifi();
+
         void NextBank(Direction direction = Direction::Increase);
         void PreviousBank() { NextBank(Direction::Decrease); }
         void NextPreset(Direction direction = Direction::Increase);

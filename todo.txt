@@ -1,3 +1,6 @@
+
+Hotspot monitoring - fails when WiFi network is disabled.
+
 Not all country codes are valid (e.g. Antarctica)
 
 
