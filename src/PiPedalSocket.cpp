@@ -1640,6 +1640,11 @@ public:
             pReader->read(&value);
             this->model.SetOnboarding(value);
         }
+        else if (message == "getWifiRegulatoryDomains")
+        {
+            auto  regulatoryDomains = this->model.GetWifiRegulatoryDomains();
+            this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
+        }
         else
         {
             Lv2Log::error("Unknown message received: %s", message.c_str());

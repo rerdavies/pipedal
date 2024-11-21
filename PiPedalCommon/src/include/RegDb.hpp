@@ -61,6 +61,7 @@ namespace pipedal
 
         const WifiRegulations&getWifiRegulations(const std::string&countryIso3661) const;
 
+        std::map<std::string,std::string> getRegulatoryDomains(const std::filesystem::path&namesFile="/etc/pipedal/config/iso_codes.json") const;
     private:
         bool isValid = false;
 

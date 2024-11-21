@@ -1018,10 +1018,7 @@ export class PiPedalModel //implements PiPedalModel
 
         }
         try {
-            let isoFetch = await fetch(new Request('iso_codes.json'));
-            this.countryCodes = (await isoFetch.json()) as { [Name: string]: string };
-
-
+            this.countryCodes = await this.getWebSocket().request<{ [Name: string]: string }>("getWifiRegulatoryDomains");
 
             this.clientId = (await this.getWebSocket().request<number>("hello")) as number;
 

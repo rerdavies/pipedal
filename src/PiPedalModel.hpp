@@ -91,6 +91,7 @@ namespace pipedal
         // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
         virtual void OnErrorMessage(const std::string &message) = 0;
         virtual void OnLv2PluginsChanging() = 0;
+
         virtual void OnNetworkChanging(bool hotspotConnected) = 0;
         virtual void OnHasWifiChanged(bool hasWifi) = 0;
         virtual void Close() = 0;
@@ -304,6 +305,7 @@ namespace pipedal
         void SetRestartListener(std::function<void(void)> &&listener);
         void OnLv2PluginsChanged();
         void SetOnboarding(bool value);
+        std::map<std::string,std::string> GetWifiRegulatoryDomains();
 
         void UpdateDnsSd();
 

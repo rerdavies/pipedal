@@ -31,6 +31,7 @@
 #include "AdminClient.hpp"
 #include "SplitEffect.hpp"
 #include "CpuGovernor.hpp"
+#include "RegDb.hpp"
 #include "RingBufferReader.hpp"
 #include "PiPedalUI.hpp"
 #include "atom_object.hpp"
@@ -2721,4 +2722,17 @@ bool PiPedalModel::GetHasWifi()
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     return hasWifi;
+}
+
+std::map<std::string,std::string> PiPedalModel::GetWifiRegulatoryDomains()
+{
+    std::map<std::string,std::string> result;
+    try {
+        auto& regDb = RegDb::GetInstance();
+        result = regDb.getRegulatoryDomains(storage.GetConfigRoot() / "iso_codes.json");
+    } catch (const std::exception&e)
+    {
+        Lv2Log::warning(SS("Unable to query Wifi Regulatory domains. " << e.what()));
+    }
+    return result;
 }

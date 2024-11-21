@@ -230,8 +230,24 @@ static void DisplayRegulations(const std::string& country)
     }   
 }
 
+void DisplayRegDomains()
+{
+    std::cout << "==== Regulatory domains === " << std::endl;
+    std::filesystem::path dbPath = "test_data/debian_bookworm_regulatory.db";
+    RegDb regdb{dbPath};
+    REQUIRE(regdb.IsValid());
+
+    auto regDomains = regdb.getRegulatoryDomains("config/iso_codes.json");
+    for (const auto&regDomain: regDomains)
+    {
+        std::cout << "    " << regDomain.first << ": " << regDomain.second << std::endl;
+    }
+
+}
+
 TEST_CASE("Wifi Channel Test", "[wifi_channels_test]")
 {
+    DisplayRegDomains();
     DisplayRegulations("CA");
     DisplayRegulations("US");
     DisplayRegulations("JP");
