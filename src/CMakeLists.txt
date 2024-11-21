@@ -647,11 +647,16 @@ add_executable(pipedalconfig
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp
+    Locale.cpp Locale.hpp
     asan_options.cpp
 
     )
 
 target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs asound
+        icui18n
+        icuuc
+        icudata
+
     )
 
 add_executable(pipedal_latency_test

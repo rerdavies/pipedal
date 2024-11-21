@@ -25,6 +25,8 @@
 #include "SystemConfigFile.hpp"
 #include "ModFileTypes.hpp"
 #include "alsaCheck.hpp"
+#include "RegDb.hpp"
+#include "Locale.hpp"
 
 #include <filesystem>
 #include <stdlib.h>
@@ -1296,6 +1298,11 @@ static void PrintHelp()
         << "\n\n"
         << HangingIndent() << "    --list-wifi-channels [<country_code>] \tList valid Wifi channels for the current/specified country."
         << "\n\n"
+        << HangingIndent() << "    --list-wifi-country-codes\tList valid country codes."
+        << "\n\n"
+
+        << HangingIndent() << "    --fix-permissions\t"
+        << "Set correct permissions on /var/pipedal directories and sub-directories\n\n"
 
         << Indent(0) << "Country codes:"
         << "\n\n"
@@ -1307,11 +1314,10 @@ static void PrintHelp()
         << "Without a country code, Wi-Fi must be restricted to channels 1 through 11 "
         << "with reduced amplitude and feature sets."
         << "\n\n"
-        << "For the most part, Wi-Fi country codes are taken from the list of ISO 3661 "
-        << "2-letter country codes; although there are a handful of exceptions for small "
-        << "countries and islands. See the Alpha-2 code column of "
-        << "\n\n"
-        << Indent(8) << "https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes."
+        << " Wi-Fi country codes are taken from the list of ISO 3661 "
+        << "2-letter country codes.\n\n"
+        << "To see a list of countries and their country codes, run: \n\n"
+        << Indent(8) << "pipedalconfig --list-wifi-country-codes"
         << "\n\n";
 }
 
@@ -1361,6 +1367,41 @@ void RequireNetworkManager()
     }
 }
 
+void ListValidCountryCodes()
+{
+    RegDb regdb;
+
+    auto ccs = regdb.getRegulatoryDomains();
+
+    if (ccs.size() == 0)
+    {
+        cout << "No regulatory domains found." << endl;
+    } else {
+        using pair = std::pair<std::string,std::string>;
+        std::vector<pair> list;
+        for (auto &cc: ccs)
+        {
+            list.push_back(pair(cc.first,cc.second));
+        }
+
+        auto collator = Locale::GetInstance()->GetCollator();
+        auto compare = [&collator](
+                            pair &left,
+                            pair &right)
+        {
+            return collator->Compare(
+                        left.second, right.second) < 0;
+        };
+        std::sort(list.begin(), list.end(), compare);
+
+        for (const auto &entry: list)
+        {
+            cout << entry.first << " - " << entry.second << endl;
+        }
+    }
+}
+
+
 int main(int argc, char **argv)
 {
     CommandLineParser parser;
@@ -1383,9 +1424,11 @@ int main(int argc, char **argv)
     std::string portOption;
     std::string homeNetwork;
     bool noEthernet = false;
+    bool list_wifi_country_codes = false;
     bool noWifi = false;
 
     parser.AddOption("--nosudo", &nosudo); // strictly a debugging aid. Run without sudo, until we fail because of permissions.
+    parser.AddOption("--list-wifi-country-codes",&list_wifi_country_codes);
     parser.AddOption("--install", &install);
     parser.AddOption("--uninstall", &uninstall);
     parser.AddOption("--stop", &stop);
@@ -1404,12 +1447,16 @@ int main(int argc, char **argv)
     parser.AddOption("--no-wifi", &noWifi);
     parser.AddOption("--alsa-devices", &alsaDevices);
     parser.AddOption("--alsa-device", &alsaDevice);
+    parser.AddOption("--fix-permissions", &fix_permissions);
     try
     {
         parser.Parse(argc, (const char **)argv);
 
         int actionCount =
-            (!alsaDevice.empty()) + alsaDevices + help + get_current_port + install + uninstall + stop + start + enable + disable + enable_hotspot + disable_hotspot + restart + enable_p2p + disable_p2p + list_p2p_channels + fix_permissions;
+            (!alsaDevice.empty()) + alsaDevices + help + get_current_port + install + 
+                uninstall + stop + start + enable + disable + enable_hotspot + 
+                disable_hotspot + restart + enable_p2p + disable_p2p + list_p2p_channels + 
+                fix_permissions + list_wifi_country_codes;
         if (actionCount > 1)
         {
             throw std::runtime_error("Please provide only one action.");
@@ -1464,6 +1511,11 @@ int main(int argc, char **argv)
     if (help)
     {
         PrintHelp();
+        return EXIT_SUCCESS;
+    }
+    if (list_wifi_country_codes)
+    {
+        ListValidCountryCodes();
         return EXIT_SUCCESS;
     }
     if (get_current_port)
