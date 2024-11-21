@@ -1,10 +1,5 @@
 
-Hotspot monitoring - fails when WiFi network is disabled.
-
-Not all country codes are valid (e.g. Antarctica)
-
-
-
+- Start and end connectors are missing in PedalboardView when no device selected (Do they have zero outputs?)
 
 X Review docs changes once we go live.
 

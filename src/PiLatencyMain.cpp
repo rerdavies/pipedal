@@ -50,13 +50,15 @@ struct TestResult
 void PrintHelp()
 {
     PrettyPrinter pp;
-    pp.width(160);
+    pp.width(78);
 
     pp << "PiPedal Latency Tester\n";
     pp << "Copyright (c) 2022 Robin Davies\n";
     pp << "\n";
     pp << Indent(0) << "Syntax\n\n";
-    pp << Indent(4) << "pipedal_latency_test [<options>] <device-name>\n\n";
+    pp << Indent(2) << "pipedal_latency_test [<options>] <device-name>\n\n";
+    pp << "where <device-name> is the name of an ALSA device. Typically this should be the name of a hardware "
+         "device (a device name starting with 'hw:').\n\n";
     pp << Indent(0) << "Options\n\n";
     pp << Indent(15);
 
@@ -73,21 +75,26 @@ void PrintHelp()
        << "Display this message.\n\n";
 
     pp << Indent(0) << "Remarks\n\n";
-    pp << Indent(4);
-    pp << "PiPedal Latency Tester measure actual audio latency from output to input of an ALSA device. "
+    pp << Indent(2);
+
+    pp << "PiPedal Latency Tester measures actual audio latency from output to input of an ALSA device.\n\n"
        << "To run a latency test, you must connect an audio cable from left (first) output of the device "
           "under test to the left (first) input of the device under test.\n\n"
 
-       << "PiPedal Latency Tester will measure the time it takes for a signal to propagate from output to input.\n\n"
-
+       << "PiPedal Latency Tester  measures internal buffer delays as well as operating system and  "
+       << "signal delays in hardware peripherals. Latency figures will therefore be somewhat higher than  "
+       << "most reported latency figures which typically only include internal buffer delays.\n\n";
+       
+    pp 
        << "The tests run over a variety of buffer sizes. A nominal compute load is provided in order to put some "
           "stress on the audio system.\n\n"
 
        << "You may need to stop the pipedald audio service in order to access the ALSA device:\n\n"
-       << Indent(8) << "sudo systemctl stop pipedald\n\n";
+       << Indent(6) << "sudo systemctl stop pipedald\n\n";
+
     pp << Indent(0) << "Examples\n\n";
-    pp << Indent(4) << "pipedal_latency_test --list\n\n";
-    pp << Indent(4) << "pipedal_latency_test M2\n\n";
+    pp << Indent(2) << "pipedal_latency_test --list\n\n";
+    pp << Indent(2) << "pipedal_latency_test hw:M2\n\n";
 }
 
 void ListDevices()
