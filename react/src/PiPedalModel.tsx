@@ -99,6 +99,7 @@ export class FileRequestResult {
     files: FileEntry[] = [];
     isProtected: boolean = false;
     breadcrumbs: BreadcrumbEntry[] = [];
+    currentDirectory: string = "";
 };
 
 export type PluginPresetsChangedHandler = (pluginUri: string) => void;

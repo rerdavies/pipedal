@@ -1770,6 +1770,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
                 FileEntry(uploadsDirectory / fileProperty.directory(), fs::path(fileProperty.directory()).filename().string(), true, true));
         }
         result.breadcrumbs_.push_back({"", "Home"});
+        result.currentDirectory_ = relativePath;
         return result;
     }
     fs::path modDirectoryPath;
@@ -1824,7 +1825,21 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
     }
 
     AddFilesToResult(result, fileProperty, relativePath);
+    result.currentDirectory_ = relativePath;
     return result;
+}
+
+static bool IsChildDirectory(const fs::path& child, const fs::path&parent) {
+    auto iChild = child.begin();
+    for (auto i = parent.begin(); i != parent.end(); ++i)
+    {
+        if (iChild == child.end() || (*i) != *iChild)
+        {
+            return false;
+        }
+        ++iChild;
+    }
+    return true;
 }
 
 FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const UiFileProperty &fileProperty)
@@ -1843,15 +1858,35 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
 
     if (fileProperty.directory().empty())
     {
+
         throw std::runtime_error("fileProperty.directory() not specified.");
     }
     std::filesystem::path pluginRootDirectory = this->GetPluginUploadDirectory() / fileProperty.directory();
-    if (absolutePath == "")
+    if (absolutePath.empty())
     {
         absolutePath = pluginRootDirectory.string();
     }
 
+    // handle resource directories.
+    if (!fileProperty.resourceDirectory().empty())
     {
+        if (fileProperty.resourceDirectory() == absolutePath)
+        {
+            absolutePath = pluginRootDirectory;
+        }
+    }
+
+    if (!IsChildDirectory(absolutePath,pluginRootDirectory))
+    {
+        absolutePath = pluginRootDirectory;
+    }
+
+
+    result.currentDirectory_ = absolutePath;
+
+
+    {
+        // watch out for resource files!!! 
         result.breadcrumbs_.push_back({"", "Home"});
         fs::path fsAbsolutePath{absolutePath};
         auto iAbsolutePath = fsAbsolutePath.begin();

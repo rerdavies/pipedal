@@ -32,7 +32,7 @@ import Button from '@mui/material/Button';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import FolderIcon from '@mui/icons-material/Folder';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DialogActions from '@mui/material/DialogActions';
@@ -105,6 +105,7 @@ export interface FilePropertyDialogState {
     canDelete: boolean;
     fileResult: FileRequestResult;
     navDirectory: string;
+    uploadDirectory: string;
     isProtectedDirectory: boolean;
     columns: number;
     columnWidth: number;
@@ -187,12 +188,14 @@ export default withStyles(styles, { withTheme: true })(
 
             this.model = PiPedalModelFactory.getInstance();
 
+            let selectedFile = props.selectedFile;
             this.state = {
                 fullScreen: this.getFullScreen(),
-                selectedFile: props.selectedFile,
+                selectedFile: selectedFile,
                 selectedFileProtected: true,
                 selectedFileIsDirectory: false,
-                navDirectory: this.getNavDirectoryFromFile(props.selectedFile, props.fileProperty),
+                navDirectory: this.getNavDirectoryFromFile(selectedFile, props.fileProperty),
+                uploadDirectory: "",
                 hasSelection: false,
                 canDelete: false,
                 columns: 0,
@@ -256,7 +259,8 @@ export default withStyles(styles, { withTheme: true })(
                             fileResult: filesResult,
                             hasSelection: !!fileEntry,
                             selectedFileProtected: fileEntry ? fileEntry.isProtected: true,
-                            navDirectory: navPath
+                            navDirectory: navPath,
+                            uploadDirectory: filesResult.currentDirectory
                         });
                     }
                 }).catch((error) => {
@@ -300,6 +304,8 @@ export default withStyles(styles, { withTheme: true })(
         componentDidMount() {
             super.componentDidMount();
             this.mounted = true;
+            this.requestFiles(this.state.navDirectory)
+            this.requestScroll = true;
         }
         componentWillUnmount() {
             super.componentWillUnmount();
@@ -310,14 +316,16 @@ export default withStyles(styles, { withTheme: true })(
             super.componentDidUpdate?.(prevProps, prevState, snapshot);
             if (prevProps.open !== this.props.open || prevProps.fileProperty !== this.props.fileProperty || prevProps.selectedFile !== this.props.selectedFile) {
                 if (this.props.open) {
-                    let navDirectory = this.getNavDirectoryFromFile(this.props.selectedFile, this.props.fileProperty);
+                    let selectedFile = this.props.selectedFile;
+                    let navDirectory = this.getNavDirectoryFromFile(selectedFile, this.props.fileProperty);
                     this.setState({
-                        selectedFile: this.props.selectedFile,
+                        selectedFile: selectedFile,
                         selectedFileIsDirectory: false,
                         selectedFileProtected: true,
                         newFolderDialogOpen: false,
                         renameDialogOpen: false,
-                        moveDialogOpen: false
+                        moveDialogOpen: false,
+                        navDirectory: navDirectory
                     });
                     this.requestFiles(navDirectory)
                     this.requestScroll = true;
@@ -549,7 +557,7 @@ export default withStyles(styles, { withTheme: true })(
             }
             if (fileEntry.isDirectory) {
                 return (
-                    <FolderIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
+                    <FolderOutlinedIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
                 );
             }
             if (isAudioFile(fileEntry.pathname)) {
@@ -741,7 +749,7 @@ export default withStyles(styles, { withTheme: true })(
                                 }
                             }
                             uploadPage={
-                                "uploadUserFile?directory=" + encodeURIComponent(this.state.navDirectory)
+                                "uploadUserFile?directory=" + encodeURIComponent(this.state.uploadDirectory)
                                 + "&ext="
                                 + encodeURIComponent(this.getFileExtensionList(this.props.fileProperty))
                             }

@@ -24,12 +24,23 @@
 
 namespace pipedal
 {
+    struct ResourceFileMapping {
+        std::string resourcePath; // absolute path of the resource directory.
+        std::string storagePath;  // absolute path of where resource directory files get placed.
+    };
     class MapPathFeature
     {
     public:
-        MapPathFeature(const std::filesystem::path &storagePath);
+        MapPathFeature();
 		void Prepare(MapFeature* map);
         void SetPluginStoragePath(const std::string&path) { storagePath = path;}
+
+        void AddResourceFileMapping(const ResourceFileMapping &resourceFileMapping)
+        {
+            this->resourceFileMappings.push_back(resourceFileMapping);
+        }
+
+        const std::vector<ResourceFileMapping> &GetResourceFileMappings() const { return resourceFileMappings; }
         const std::string&GetPluginStoragePath() const { return storagePath; }
         const LV2_Feature*GetMapPathFeature() { return &mapPathFeature;}
         const LV2_Feature*GetMakePathFeature() { return &makePathFeature;}
@@ -60,5 +71,6 @@ namespace pipedal
 
     private:
         std::string storagePath;
+        std::vector<ResourceFileMapping> resourceFileMappings;
     };
 }

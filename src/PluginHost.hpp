@@ -757,7 +757,7 @@ namespace pipedal
         std::vector<const LV2_Feature *> lv2Features;
         MapFeature mapFeature;
         OptionsFeature optionsFeature;
-        MapPathFeature mapPathFeature;
+        std::string pluginStoragePath;
 
         static void fn_LilvSetPortValueFunc(const char *port_symbol,
                                             void *user_data,

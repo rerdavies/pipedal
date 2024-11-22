@@ -26,8 +26,7 @@
 
 using namespace pipedal;
 
-MapPathFeature::MapPathFeature(const std::filesystem::path &storagePath)
-:storagePath(storagePath)
+MapPathFeature::MapPathFeature()
 {
     lv2_state_map_path.handle = (LV2_State_Map_Path_Handle *)this;
     lv2_state_map_path.absolute_path = FnAbsolutePath;

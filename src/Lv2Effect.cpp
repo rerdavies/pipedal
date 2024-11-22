@@ -43,8 +43,20 @@
 #include "RingBufferReader.hpp"
 
 using namespace pipedal;
+namespace fs = std::filesystem;
 
 const float BYPASS_TIME_S = 0.1f;
+
+
+static fs::path makeAbsolutePath(const std::filesystem::path &path, const std::filesystem::path &parentPath)
+{
+    if (path.is_absolute())
+    {
+        return path;
+    }
+    return parentPath / path;
+}
+
 
 Lv2Effect::Lv2Effect(
     IHost *pHost_,
@@ -69,7 +81,6 @@ Lv2Effect::Lv2Effect(
             this->pathProperties.push_back(filePropertyUrid);
 
             this->pathPropertyWriters.push_back(PatchPropertyWriter(instanceId, filePropertyUrid));
-            std::vector<PatchPropertyWriter> pathPropertyWriters;
         }
     }
     for (auto &pathProperty: pedalboardItem.pathProperties_)
@@ -84,8 +95,10 @@ Lv2Effect::Lv2Effect(
 
     const LilvPlugins *plugins = lilv_world_get_all_plugins(pWorld);
 
+    // xxx: could we not stash the pPlugin in the plugin info?
     auto uriNode = lilv_new_uri(pWorld, pedalboardItem.uri().c_str());
     const LilvPlugin *pPlugin = lilv_plugins_get_by_uri(plugins, uriNode);
+
     lilv_node_free(uriNode);
     {
         AutoLilvNode bundleUri = lilv_plugin_get_bundle_uri(pPlugin);
@@ -98,6 +111,25 @@ Lv2Effect::Lv2Effect(
             logFeature.GetLog(),
             bundleUriString,
             storagePath);
+
+
+        mapPathFeature.Prepare(&(pHost_->GetMapFeature()));
+        mapPathFeature.SetPluginStoragePath(pHost_->GetPluginStoragePath());
+        if (info->piPedalUI())
+        {
+            const auto &fileProperties = info_->piPedalUI()->fileProperties();
+            for (const auto &fileProperty : fileProperties)
+            {
+                if (!fileProperty->resourceDirectory().empty())
+                {
+                    mapPathFeature.AddResourceFileMapping({
+                        makeAbsolutePath(fileProperty->resourceDirectory(),bundleUriString),
+                        makeAbsolutePath(fileProperty->directory(),pHost_->GetPluginStoragePath())
+                    });
+                }
+            }
+        }
+
         lilv_free(bundleUriString);
     }
 
@@ -109,6 +141,10 @@ Lv2Effect::Lv2Effect(
     {
         this->features.push_back(*p);
     }
+    this->features.push_back(mapPathFeature.GetMapPathFeature());
+    this->features.push_back(mapPathFeature.GetMakePathFeature());
+    this->features.push_back(mapPathFeature.GetFreePathFeature());
+
 
     this->features.push_back(this->fileBrowserFilesFeature.GetFeature());
 

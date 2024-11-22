@@ -398,6 +398,11 @@ int main(int argc, char *argv[])
         }
         Lv2Log::info("Shutdown complete.");
 
+        if (systemd)
+        {
+            sd_notify(0, "STOPPING=1");
+        }
+
         if (g_restart)
             return EXIT_FAILURE; // indicate to systemd that we want a restart.
     }
