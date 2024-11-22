@@ -1,5 +1,20 @@
 # Release Notes
 
+## PiPedal 1.3.69
+
+Bug fixes:
+- Fix file uploads for Toob NAM and TooB Convolution Reverb.
+- Load actual list of Wi-Fi regulatory domains from regulatory database.
+- Reload channel list after selecting a new Wi-Fi regulatory domain.
+- Hotspot configuration dialog: validate country code and channel selection.
+- Add `--fix-permissions` and `-list-wifi-country-codes options` to `pipedalconfig`
+- Correct error in `wifi_latency_test` help text.
+- Cleaned up Debian package dependencies.
+- Correct mDNS service announcements after a name collision.
+- Cleaned up build pre-requisite documentation for PiPedal and ToobAmp projects.
+- Clean service shutdown: avoid double-close of web server sockets.
+- Numerous fixes for Ubutunu 24.04 LTS builds (experimental)
+
 ## PiPedal 1.3.66 Release
 
 Bug fixes:
