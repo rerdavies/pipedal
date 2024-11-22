@@ -1340,30 +1340,12 @@ namespace pipedal
             StopListening();
 
             //linger bit to see of connections will shut down normally
-            if(WaitForAllEndpointsClosed(timeoutMs/2))
-            {
-                return;
-            }
-            Lv2Log::warning("WebServer: forcibly closing connections");
-
-            {
-                std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
-                for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
-                {
-                    try
-                    {
-                        m_endpoint.close(*it, websocketpp::close::status::abnormal_close, "Shutting down");
-                    }
-                    catch (const std::exception &ignored)
-                    {
-                    }
-                }
-            }
-            if(WaitForAllEndpointsClosed(timeoutMs/2))
+            if(WaitForAllEndpointsClosed(timeoutMs))
             {
                 return;
             }
             Lv2Log::warning("WebServer: failed to close all connections.");
+            return;
 
         }
         virtual void Join()

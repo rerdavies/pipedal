@@ -80,13 +80,6 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
-static void AsanCheck()
-{
-    char *t = new char[5];
-    t[5] = 'x';
-    delete t;
-    exit(EXIT_FAILURE);
-}
 
 #if ENABLE_BACKTRACE
 void segvHandler(int sig) {
