@@ -111,7 +111,7 @@ static void SetPriority(int realtimePriority, int nicePriority, const char *prio
     int result = nice(nicePriority);
     if (result == -1)
     {
-        Lv2Log::error(SS("Failed Failed to set thread priority. (" << priorityName << ")"));
+        Lv2Log::error(SS("Failed to set thread priority. (" << priorityName << ")"));
     }
 }
 

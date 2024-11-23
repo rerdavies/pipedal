@@ -576,7 +576,7 @@ static std::string getIpv4Address(const std::string interface)
     /* I want to get an IPv4 IP address */
     ifr.ifr_addr.sa_family = AF_INET;
 
-    /* I want an IP address attached to "eth0" */
+    /* I want an IP address attached to "ethernet" */
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1);
 
     int result = ioctl(fd, SIOCGIFADDR, &ifr);
@@ -1413,10 +1413,11 @@ void WebServerImpl::DisplayIpAddresses()
         ss << "Listening on mDns address " << hostName << ":" << this->port;
         Lv2Log::info(ss.str());
     }
-    std::string ipv4Address = getIpv4Address("eth0");
-    if (ipv4Address.length() != 0)
+    auto ethAddresses = GetEthernetIpv4Addresses();
+    for (const auto&ethAddress: ethAddresses)
     {
-        Lv2Log::info(SS("Listening on eth0 address " << ipv4Address << ":" << this->port));
+        Lv2Log::info(SS("Listening on " << ethAddress << ":" << this->port));
+
     }
     std::string wifiAddress = getIpv4Address("wlan0");
     if (wifiAddress.length() != 0)

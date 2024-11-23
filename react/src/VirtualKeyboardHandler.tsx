@@ -41,7 +41,6 @@ export default class VirtualKeyboardHandler
             this.virtualKeyboard = navigator["virtualKeyboard"];
             if (this.virtualKeyboard) 
             {
-                alert("Has Virtual keyboard!");
                 this.virtualKeyboard.addEventListener("geometryChange",this.handleGeometryChange);
             }
         }   

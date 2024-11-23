@@ -93,11 +93,13 @@ PiPedalVersion::PiPedalVersion(PiPedalModel&model)
 
     this->webAddresses_.push_back(MakeWebAddress(SS(hostName << ".local"),port));
 
-    std::string ethAddr = GetInterfaceIpv4Address("eth0");
-    if (ethAddr.length() != 0) 
+
+    auto ethAddresses = GetEthernetIpv4Addresses();
+    for (const std::string&ethAddress: ethAddresses)
     {
-        this->webAddresses_.push_back(MakeWebAddress(ethAddr,port));
+        this->webAddresses_.push_back(MakeWebAddress(ethAddress,port));
     }
+    // yyx: fix this for ubuntu.
     std::string wlanAddr = GetInterfaceIpv4Address("wlan0");
     if (wlanAddr.length() != 0)
     {

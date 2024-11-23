@@ -372,7 +372,7 @@ void HotspotManagerImpl::onStartMonitoring()
         ethernetDevice = GetDevice(NM_DEVICE_TYPE_ETHERNET);
         if (!ethernetDevice)
         {
-            throw std::runtime_error("eth0 device not found.");
+            throw std::runtime_error("ethernet device not found.");
         }
         this->ethernetDevice->OnStateChanged.add(
             [this](uint32_t, uint32_t, uint32_t)

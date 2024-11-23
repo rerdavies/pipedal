@@ -253,7 +253,7 @@ void AvahiService::create_group(AvahiClient *c)
      * because it was reset previously, add our entries.  */
     if (this->makeAnnouncement && avahi_entry_group_is_empty(group))
     {
-        Lv2Log::debug(SS("Adding service '" << avahiNameString << "'"));
+        Lv2Log::debug(SS("Adding service '" << serviceName << "'"));
 
         std::string instanceTxtRecord = SS("id=" << this->instanceId);
 
