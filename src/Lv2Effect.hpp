@@ -27,6 +27,7 @@
 #include "FileBrowserFilesFeature.hpp"
 #include "PatchPropertyWriter.hpp"
 #include <unordered_map>
+#include "MapPathFeature.hpp"
 
 #include "IEffect.hpp"
 #include "Worker.hpp"
@@ -90,7 +91,7 @@ namespace pipedal
         std::vector<char *> outputAtomBuffers;
         std::vector<const LV2_Feature *> features;
         LV2_Feature *work_schedule_feature = nullptr;
-
+        MapPathFeature mapPathFeature;
 
         uint64_t maxInputControlPort = 0;
         std::vector<bool> isInputControlPort;

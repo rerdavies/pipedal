@@ -44,16 +44,10 @@ static void DiscoveryTest()
 
 }
 
-void ChannelConfigtest()
-{
-    cout << "---  Channel Config Test" << endl;
-
-}
 
 TEST_CASE( "ALSA Test", "[pipedal_alsa_test][Build][Dev]" ) {
     DiscoveryTest();
 
-    ChannelConfigTest();
 
 }
 

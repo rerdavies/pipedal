@@ -38,6 +38,8 @@ namespace pipedal {
         
         using ptr = std::unique_ptr<HotspotManager>;
 
+        static bool HasWifiDevice();
+
         static ptr Create();
 
         virtual ~HotspotManager() noexcept { }
@@ -52,6 +54,11 @@ namespace pipedal {
         using NetworkChangingListener = std::function<void(bool ethernetConnected,bool hotspotEnabled)>;
 
         virtual void SetNetworkChangingListener(NetworkChangingListener &&listener) = 0;
+
+        using HasWifiListener = std::function<void(bool hasWifi)>;
+        virtual void SetHasWifiListener(HasWifiListener &&listener) = 0;
+        virtual bool GetHasWifi() = 0;
+
 
         using PostHandle = uint64_t;
         using PostCallback = std::function<void()>;

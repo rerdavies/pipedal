@@ -1080,6 +1080,11 @@ public:
             UpdateStatus updateStatus = model.GetUpdateStatus();
             this->Reply(replyTo, "getUpdateStatus", updateStatus);
         }
+        else if (message == "getHasWifi")
+        {
+            bool result = model.GetHasWifi();
+            this->Reply(replyTo, "getHasWifi",result);
+        }
         else if (message == "updateNow")
         {
             std::string updateUrl;
@@ -1635,6 +1640,11 @@ public:
             pReader->read(&value);
             this->model.SetOnboarding(value);
         }
+        else if (message == "getWifiRegulatoryDomains")
+        {
+            auto  regulatoryDomains = this->model.GetWifiRegulatoryDomains();
+            this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
+        }
         else
         {
             Lv2Log::error("Unknown message received: %s", message.c_str());
@@ -1727,6 +1737,12 @@ private:
         Send("onLv2PluginsChanging", true);
         Flush();
     }
+    virtual void OnHasWifiChanged(bool hasWifi){
+        Send("onHasWifiChanged", hasWifi);
+        Flush();
+
+    }
+
     virtual void OnNetworkChanging(bool hotspotConnected) override
     {
         try

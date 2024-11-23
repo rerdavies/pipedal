@@ -24,6 +24,8 @@
 
 #pragma once
 
+#ifdef JUNK //yyx delete me.
+
 #include "ss.hpp"
 #include "Lv2Log.hpp"
 
@@ -67,3 +69,5 @@ namespace pipedal
         }
     };
 }
+
+#endif

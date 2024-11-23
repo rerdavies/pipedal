@@ -56,6 +56,18 @@ export enum State {
     HotspotChanging,
 };
 
+function getErrorMessage(error: any)
+{
+    if (error instanceof Error)
+    {
+        return (error as Error).message;
+    }
+    if (!error)
+    {
+        return "";
+    }
+    return error.toString();
+}
 class UpdatedError extends Error {
 };
 export function wantsReloadingScreen(state: State) {
@@ -87,6 +99,7 @@ export class FileRequestResult {
     files: FileEntry[] = [];
     isProtected: boolean = false;
     breadcrumbs: BreadcrumbEntry[] = [];
+    currentDirectory: string = "";
 };
 
 export type PluginPresetsChangedHandler = (pluginUri: string) => void;
@@ -394,7 +407,7 @@ export class PiPedalModel //implements PiPedalModel
     webSocket?: PiPedalSocket;
 
 
-
+    hasWifiDevice: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
     onSnapshotModified: ObservableEvent<SnapshotModifiedEvent> = new ObservableEvent<SnapshotModifiedEvent>();
 
     ui_plugins: ObservableProperty<UiPlugin[]>
@@ -742,6 +755,10 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onNetworkChanging") {
             this.onNetworkChanging(body as boolean);
         }
+        else if (message === "onHasWifiChanged") {
+            let hasWifi = body as boolean;
+            this.hasWifiDevice.set(hasWifi);
+        }        
     }
 
 
@@ -912,7 +929,7 @@ export class PiPedalModel //implements PiPedalModel
             }
         }
     }
-    onSocketReconnected() {
+    async onSocketReconnected(): Promise<void> {
         this.cancelOnNetworkChanging();
         this.cancelAndroidReconnectTimer();
 
@@ -920,97 +937,20 @@ export class PiPedalModel //implements PiPedalModel
             this.androidHost?.setDisconnected(false);
         }
 
-        this.expectDisconnect(ReconnectReason.Disconnected); // the next expected disconnect will be an actual disconnect.
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
-
+        
         // reload state, but not configuration.
-        this.getWebSocket().request<number>("hello")
-            .then(clientId => {
-                this.clientId = clientId;
-                return this.getUpdateStatus(); // detects whether server has been upgraded.
-            })
-            .then((updateStatus) => {
+        this.clientId = await this.getWebSocket().request<number>("hello");
 
-                return this.getWebSocket().request<any>("plugins");
-            })
-            .then(data => {
-                this.ui_plugins.set(UiPlugin.deserialize_array(data));
-                return this.getWebSocket().request<Pedalboard>("currentPedalboard");
-            })
-            .then(data => {
-                this.setModelPedalboard(new Pedalboard().deserialize(data));
+        let newServerVersion =  this.serverVersion = await this.getWebSocket().request<PiPedalVersion>("version");
+        if (newServerVersion.serverVersion !== this.serverVersion.serverVersion)
+        {
+            this.reloadPage();
+            return;
+        }
 
-                return this.getWebSocket().request<boolean>("getShowStatusMonitor");
-            })
-            .then(data => {
-                this.showStatusMonitor.set(data);
-
-                return this.getWebSocket().request<any>("getWifiConfigSettings");
-            })
-            .then(data => {
-                this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
-
-
-                return this.getWebSocket().request<any>("getWifiDirectConfigSettings");
-            })
-            .then(data => {
-                this.wifiDirectConfigSettings.set(new WifiDirectConfigSettings().deserialize(data));
-
-
-                return this.getWebSocket().request<any>("getGovernorSettings");
-            })
-            .then(data => {
-                this.governorSettings.set(new GovernorSettings().deserialize(data));
-
-
-                return this.getWebSocket().request<any>("getJackServerSettings");
-            })
-            .then(data => {
-                this.jackServerSettings.set(new JackServerSettings().deserialize(data));
-
-                return this.getWebSocket().request<PresetIndex>("getPresets");
-            })
-            .then((data) => {
-                this.presets.set(new PresetIndex().deserialize(data));
-
-                return this.getWebSocket().request<JackConfiguration>("getJackConfiguration");
-            })
-            .then((data) => {
-                // data.isValid = false;
-                // data.errorState = "Jack Audio server not running."
-
-                this.jackConfiguration.set(new JackConfiguration().deserialize(data));
-
-                return this.getWebSocket().request<any>("getJackSettings");
-            })
-            .then((data) => {
-                this.jackSettings.set(new JackChannelSelection().deserialize(data));
-
-                return this.getWebSocket().request<any>("getBankIndex");
-            })
-            .then((data) => {
-                this.banks.set(new BankIndex().deserialize(data));
-
-                return this.getWebSocket().request<FavoritesList>("getFavorites");
-            })
-            .then((data) => {
-                this.favorites.set(data);
-
-                return this.getWebSocket().request<MidiBinding[]>("getSystemMidiBindings");
-            })
-            .then((data) => {
-                let bindings = MidiBinding.deserialize_array(data);
-                this.systemMidiBindings.set(bindings);
-
-                this.setState(State.Ready);
-            })
-            .catch((what) => {
-                if (what instanceof UpdatedError) {
-                    // do nothing. a page reload is imminent and unavoidable as soon as we return to the dispatcher.
-                } else {
-                    this.onError(what.toString());
-                }
-            })
+        // anything could have changed while we were disconnected.
+        await this.loadServerState();
     }
     makeSocketServerUrl(hostName: string, port: number): string {
         return "ws://" + hostName + ":" + port + "/pipedal";
@@ -1026,178 +966,139 @@ export class PiPedalModel //implements PiPedalModel
     debug: boolean = false;
     enableAutoUpdate: boolean = false;
 
-    requestConfig(): Promise<boolean> {
-        const myRequest = new Request(this.varRequest('config.json'));
-        return fetch(myRequest)
-            .then(
-                (response) => {
-                    return response.json();
-                }
-            )
-            .then(data => {
-                this.enableAutoUpdate = !!data.enable_auto_update;
-                if (data.max_upload_size) {
-                    this.maxPresetUploadSize = data.max_upload_size;
-                }
-                if (data.fakeAndroid) {
-                    this.androidHost = new FakeAndroidHost();
-                }
-                this.debug = !!data.debug;
-                let { socket_server_port, socket_server_address, max_upload_size } = data;
-                if ((!socket_server_address) || socket_server_address === "*") {
-                    socket_server_address = window.location.hostname;
-                }
-                if (!socket_server_port) socket_server_port = 8080;
-                let socket_server = this.makeSocketServerUrl(socket_server_address, socket_server_port);
-                let var_server_url = this.makeVarServerUrl("http", socket_server_address, socket_server_port);
 
+    async requestConfig(): Promise<boolean> {
 
-                this.socketServerUrl = socket_server;
-                this.varServerUrl = var_server_url;
-                this.maxFileUploadSize = parseInt(max_upload_size);
+        try {
+            const  myRequest = new Request(this.varRequest('config.json'));
+            let response: Response = await fetch(myRequest);
+            let data = await response.json();
 
-                this.webSocket = new PiPedalSocket(
-                    this.socketServerUrl,
-                    {
-                        onMessageReceived: this.onSocketMessage,
-                        onError: this.onSocketError,
-                        onConnectionLost: this.onSocketConnectionLost,
-                        onReconnect: this.onSocketReconnected,
-                        onReconnecting: this.onSocketReconnecting
-                    }
-                );
-                return this.webSocket.connect();
-            })
-            .catch((error) => {
-                this.setError("Failed to connect to server. (" + this.socketServerUrl + ")");
-                return false;
-            })
-            .then(() => {
-                return this.getUpdateStatus();
-            })
-            .then((updateStatus) => {
-                const isoRequest = new Request('iso_codes.json');
-                return fetch(isoRequest);
-            })
-            .then((response) => {
-                return response.json();
-            })
-            .then((countryCodes) => {
-                this.countryCodes = countryCodes as { [Name: string]: string };
+            this.enableAutoUpdate = !!data.enable_auto_update;
+            this.hasWifiDevice.set(!!data.has_wifi_device);
+            if (data.max_upload_size) {
+                this.maxPresetUploadSize = data.max_upload_size;
+            }
+            if (data.fakeAndroid) {
+                this.androidHost = new FakeAndroidHost();
+            }
+            this.debug = !!data.debug;
+            let { socket_server_port, socket_server_address, max_upload_size } = data;
+            if ((!socket_server_address) || socket_server_address === "*") {
+                socket_server_address = window.location.hostname;
+            }
+            if (!socket_server_port) socket_server_port = 8080;
+            let socket_server = this.makeSocketServerUrl(socket_server_address, socket_server_port);
+            let var_server_url = this.makeVarServerUrl("http", socket_server_address, socket_server_port);
+    
+            this.socketServerUrl = socket_server;
+            this.varServerUrl = var_server_url;
+            this.maxFileUploadSize = parseInt(max_upload_size);
+        } catch (error: any)
+        {
+            this.setError("Can't connect to server. " + getErrorMessage(error));
+            return false;
+        }
 
-                return this.getWebSocket().request<number>("hello");
-            })
-            .then((clientId) => {
-                this.clientId = clientId;
+        this.webSocket = new PiPedalSocket(
+            this.socketServerUrl,
+            {
+                onMessageReceived: this.onSocketMessage,
+                onError: this.onSocketError,
+                onConnectionLost: this.onSocketConnectionLost,
+                onReconnect: this.onSocketReconnected,
+                onReconnecting: this.onSocketReconnecting
+            }
+        );
 
-                return this.getWebSocket().request<string>("imageList");
-            })
-            .then((data) => {
-                this.preloadImages(data);
-                return true;
-            })
-            .catch((error) => {
-                this.setError("Failed to connect to server. " + error.toString());
-                return false;
-            })
-            .then((succeeded) => {
-                if (!succeeded) return false;
-                return this.getWebSocket().request<PiPedalVersion>("version").then(data => {
-                    this.serverVersion = data;
-                    return this.getWebSocket().request<any>("plugins");
-                })
-                    .then(data => {
-                        this.ui_plugins.set(UiPlugin.deserialize_array(data));
+        try { 
+            await this.webSocket.connect();
+        } catch (error) {
+            this.setError("Failed to connect to server. (" + getErrorMessage(error));
+            return false;
 
-                        return this.getWebSocket().request<Pedalboard>("currentPedalboard");
-                    })
-                    .then(data => {
-                        this.setModelPedalboard(new Pedalboard().deserialize(data));
+        }
+        try {
+            this.countryCodes = await this.getWebSocket().request<{ [Name: string]: string }>("getWifiRegulatoryDomains");
 
-                        return this.getWebSocket().request<any>("pluginClasses");
-                    })
-                    .then((data) => {
+            this.clientId = (await this.getWebSocket().request<number>("hello")) as number;
 
-                        this.plugin_classes.set(new PluginClass().deserialize(data));
-                        this.validatePluginClasses(this.plugin_classes.get());
+            this.preloadImages( (await this.getWebSocket().request<string>("imageList")));
+        } catch (error) {
+            this.setError("Failed to establish connection. " + getErrorMessage(error));
+            return false;
+        }
+        return await this.loadServerState();
+    }
+    async loadServerState() : Promise<boolean>
+    {
+        try 
+        { 
+            this.serverVersion = await this.getWebSocket().request<PiPedalVersion>("version");
 
-                        return this.getWebSocket().request<PresetIndex>("getPresets");
-                    })
-                    .then((data) => {
-                        this.presets.set(new PresetIndex().deserialize(data));
+            this.updateStatus.set(new UpdateStatus().deserialize(await this.getUpdateStatus()));
 
-                        return this.getWebSocket().request<any>("getWifiConfigSettings");
-                    })
-                    .then(data => {
-                        this.wifiConfigSettings.set(new WifiConfigSettings().deserialize(data));
+            this.hasWifiDevice.set(await this.getWebSocket().request<boolean>("getHasWifi"));
+                        
+            this.ui_plugins.set(
+                UiPlugin.deserialize_array(await this.getWebSocket().request<any>("plugins"))
+            );
+            this.setModelPedalboard(
+                new Pedalboard().deserialize(
+                    await this.getWebSocket().request<Pedalboard>("currentPedalboard")
+                )
+            );
+            this.plugin_classes.set(new PluginClass().deserialize(
+                await this.getWebSocket().request<any>("pluginClasses")
+            ));
+            this.validatePluginClasses(this.plugin_classes.get());
 
-                        return this.getWebSocket().request<any>("getWifiDirectConfigSettings");
-                    })
-                    .then(data => {
-                        this.wifiDirectConfigSettings.set(new WifiDirectConfigSettings().deserialize(data));
+            this.presets.set(
+                new PresetIndex().deserialize(
+                    await this.getWebSocket().request<PresetIndex>("getPresets")
+                )
+            );
+            this.wifiConfigSettings.set(
+                new WifiConfigSettings().deserialize(
+                    await this.getWebSocket().request<any>("getWifiConfigSettings")
+                ));
+            this.wifiDirectConfigSettings.set(
+                new WifiDirectConfigSettings().deserialize(
+                    await this.getWebSocket().request<any>("getWifiDirectConfigSettings")
+                ));                    
+            this.governorSettings.set(new GovernorSettings().deserialize(
+                await this.getWebSocket().request<any>("getGovernorSettings")
+            ));
+            this.showStatusMonitor.set(
+                await this.getWebSocket().request<boolean>("getShowStatusMonitor")
+            );
+            this.jackServerSettings.set(
+                new JackServerSettings().deserialize(
+                    await this.getWebSocket().request<any>("getJackServerSettings")
+                )
+            );
+            this.jackConfiguration.set(new JackConfiguration().deserialize(
+                await this.getWebSocket().request<JackConfiguration>("getJackConfiguration")
+            ));
+            this.jackSettings.set(new JackChannelSelection().deserialize(
+                await this.getWebSocket().request<any>("getJackSettings")
+            ));
+            this.banks.set(new BankIndex().deserialize(await this.getWebSocket().request<any>("getBankIndex")));                
 
-                        return this.getWebSocket().request<any>("getGovernorSettings");
-                    })
-                    .then(data => {
-                        this.governorSettings.set(new GovernorSettings().deserialize(data));
+            this.favorites.set(await this.getWebSocket().request<FavoritesList>("getFavorites"));
 
-                        return this.getWebSocket().request<boolean>("getShowStatusMonitor");
-                    })
-                    .then(data => {
-                        this.showStatusMonitor.set(data);
+            this.systemMidiBindings.set(MidiBinding.deserialize_array(await this.getWebSocket().request<MidiBinding[]>("getSystemMidiBindings")));
 
-                        return this.getWebSocket().request<any>("getJackServerSettings");
-                    })
-                    .then(data => {
-                        this.jackServerSettings.set(new JackServerSettings().deserialize(data));
+            // load at lest once before we allow a reconnect.
+            this.getWebSocket().canReconnect = true;
 
-                        return this.getWebSocket().request<JackConfiguration>("getJackConfiguration");
-                    })
-                    .then((data) => {
-                        // data.isValid = false;
-                        // data.errorState = "Jack Audio server not running."
-
-                        this.jackConfiguration.set(new JackConfiguration().deserialize(data));
-
-                        return this.getWebSocket().request<any>("getJackSettings");
-                    })
-                    .then((data) => {
-                        this.jackSettings.set(new JackChannelSelection().deserialize(data));
-
-                        return this.getWebSocket().request<any>("getBankIndex");
-                    })
-                    .then((data) => {
-                        this.banks.set(new BankIndex().deserialize(data));
-                        if (this.webSocket) {
-                            // MUST not allow reconnect until at least one complete load has finished.
-                            this.webSocket.canReconnect = true;
-                        }
-
-                        return this.getWebSocket().request<FavoritesList>("getFavorites");
-                    })
-                    .then((data) => {
-                        this.favorites.set(data);
-
-                        return this.getWebSocket().request<MidiBinding[]>("getSystemMidiBindings");
-                    })
-                    .then((data) => {
-                        let bindings = MidiBinding.deserialize_array(data);
-                        this.systemMidiBindings.set(bindings);
-
-                        if (this.webSocket) {
-                            // MUST not allow reconnect until at least one complete load has finished.
-                            this.webSocket.canReconnect = true;
-                        }
-                        this.setState(State.Ready);
-                        return true;
-                    })
-                    .catch((error) => {
-                        this.setError("Failed to fetch server state.\n\n" + error.toString());
-                        return false;
-                    });
-
-            })
-            ;
+            this.setState(State.Ready);
+            return true;
+        }
+         catch(error) {
+            this.setError("Failed to fetch server state.\n\n" + getErrorMessage(error));
+            return false;
+        }
     }
 
 

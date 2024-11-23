@@ -52,6 +52,7 @@ namespace pipedal {
         std::vector<FileEntry> files_;
         bool isProtected_ = false;
         std::vector<BreadcrumbEntry> breadcrumbs_;
+        std::string currentDirectory_;
         DECLARE_JSON_MAP(FileRequestResult);
 
     };

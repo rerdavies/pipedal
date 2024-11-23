@@ -44,10 +44,11 @@
 
 #include <signal.h>
 #include <semaphore.h>
+#include "SchedulerPriority.hpp"
 
 #include <systemd/sd-daemon.h>
 
-using namespace pipedal;
+using namespace  pipedal;
 
 #ifdef __ARM_ARCH_ISA_A64
 #define AARCH64
@@ -79,13 +80,6 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
-static void AsanCheck()
-{
-    char *t = new char[5];
-    t[5] = 'x';
-    delete t;
-    exit(EXIT_FAILURE);
-}
 
 #if ENABLE_BACKTRACE
 void segvHandler(int sig) {
@@ -244,6 +238,9 @@ int main(int argc, char *argv[])
     std::shared_ptr<WebServer> server;
     try
     {
+        // (web server threads inherit the main   thread priority)
+        SetThreadPriority(SchedulerPriority::WebServerThread);
+
         auto const address = boost::asio::ip::make_address(configuration.GetSocketServerAddress());
         port = static_cast<uint16_t>(configuration.GetSocketServerPort());
 
@@ -393,6 +390,11 @@ int main(int argc, char *argv[])
             server->Join();
         }
         Lv2Log::info("Shutdown complete.");
+
+        if (systemd)
+        {
+            sd_notify(0, "STOPPING=1");
+        }
 
         if (g_restart)
             return EXIT_FAILURE; // indicate to systemd that we want a restart.

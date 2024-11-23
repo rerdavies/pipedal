@@ -87,13 +87,14 @@ set (LV2DEV_INCLUDE_DIRS ) # use lvt headers fro /usr/include
 
 set (WEBSOCKETPP_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/modules/websocketpp) 
 message(STATUS "WEBSOCKETPP_INCLUDE_DIRS ${WEBSOCKETPP_INCLUDE_DIRS}" )
-pkg_check_modules(JACK "jack")
-if(!JACK_FOUND)
-  message(ERROR "jack package not installed.")
-else()
-  message(STATUS "JACK_LIBRARIES: ${JACK_LIBRARIES}")
-  message(STATUS "JACK_INCLUDE_DIRS: ${JACK_INCLUDE_DIRS}")
-endif()
+
+# pkg_check_modules(JACK "jack")
+# if(!JACK_FOUND)
+#   message(ERROR "jack package not installed.")
+# else()
+#   message(STATUS "JACK_LIBRARIES: ${JACK_LIBRARIES}")
+#   message(STATUS "JACK_INCLUDE_DIRS: ${JACK_INCLUDE_DIRS}")
+# endif()
 
 
 # specify the C++ standard
@@ -157,6 +158,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    SchedulerPriority.hpp SchedulerPriority.cpp
     ModFileTypes.cpp ModFileTypes.hpp
     PatchPropertyWriter.hpp
     PresetBundle.cpp PresetBundle.hpp
@@ -645,11 +647,16 @@ add_executable(pipedalconfig
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp
+    Locale.cpp Locale.hpp
     asan_options.cpp
 
     )
 
 target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs asound
+        icui18n
+        icuuc
+        icudata
+
     )
 
 add_executable(pipedal_latency_test
@@ -659,6 +666,7 @@ add_executable(pipedal_latency_test
     PiPedalAlsa.hpp PiPedalAlsa.cpp
     asan_options.cpp
     AlsaDriver.cpp AlsaDriver.hpp
+    SchedulerPriority.cpp SchedulerPriority.hpp
     DummyAudioDriver.cpp DummyAudioDriver.hpp
     JackConfiguration.hpp JackConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp

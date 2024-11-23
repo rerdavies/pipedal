@@ -23,7 +23,7 @@ import { WithStyles } from '@mui/styles';
 import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import { UiPlugin, UiControl, UiFileProperty,UiFrequencyPlot, ScalePoint } from './Lv2Plugin';
+import { UiPlugin, UiControl, UiFileProperty, UiFrequencyPlot, ScalePoint } from './Lv2Plugin';
 import {
     Pedalboard, PedalboardItem, ControlValue
 } from './Pedalboard';
@@ -247,8 +247,7 @@ type PluginControlViewState = {
 
 const PluginControlView =
     withStyles(styles, { withTheme: true })(
-        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState>
-        {
+        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState> {
             model: PiPedalModel;
 
             constructor(props: PluginControlViewProps) {
@@ -526,7 +525,7 @@ const PluginControlView =
                 return false;
             }
 
-            controlKeyIndex : number = 0;
+            controlKeyIndex: number = 0;
             controlNodesToNodes(nodes: (ReactNode | ControlGroup)[]): ReactNode[] {
                 let classes = this.props.classes;
                 let isLandscapeGrid = this.state.landscapeGrid;
@@ -543,7 +542,7 @@ const PluginControlView =
                             let item = controlGroup.controls[j];
                             controls.push(
                                 (
-                                    <div key={"ctl"+(this.controlKeyIndex++)} className={classes.controlPadding}>
+                                    <div key={"ctl" + (this.controlKeyIndex++)} className={classes.controlPadding}>
                                         {item}
                                     </div>
 
@@ -552,7 +551,7 @@ const PluginControlView =
                         }
 
                         result.push((
-                            <div key={"ctl"+(this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
+                            <div key={"ctl" + (this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
                                 <div className={classes.portGroupTitle}>
                                     <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
                                 </div>
@@ -566,7 +565,7 @@ const PluginControlView =
 
                     } else {
                         result.push((
-                            <div key={"ctl"+(this.controlKeyIndex++)} className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
+                            <div key={"ctl" + (this.controlKeyIndex++)} className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
                                 {node as ReactNode}
                             </div>
                         ));
@@ -584,7 +583,7 @@ const PluginControlView =
 
 
             render(): ReactNode {
-                this.controlKeyIndex = 0; 
+                this.controlKeyIndex = 0;
                 let classes = this.props.classes;
                 let pedalboardItem: PedalboardItem;
                 let pedalboard = this.model.pedalboard.get();
@@ -650,29 +649,33 @@ const PluginControlView =
                                 )
                             }
                         </div>
-                        <FilePropertyDialog open={this.state.showFileDialog}
-                            fileProperty={this.state.dialogFileProperty}
-                            selectedFile={this.state.dialogFileValue}
-                            onCancel={() => { 
-                                this.setState({ showFileDialog: false }); 
-                            }}
-                            onOk={(fileProperty, selectedFile) => {
+                        {this.state.showFileDialog && (
 
-                                this.model.setPatchProperty(
-                                    this.props.instanceId,
-                                    fileProperty.patchProperty,
-                                    JsonAtom.Path(selectedFile)
-                                )
-                                    .then(() => {
+                            <FilePropertyDialog open={this.state.showFileDialog}
+                                fileProperty={this.state.dialogFileProperty}
+                                selectedFile={this.state.dialogFileValue}
+                                onCancel={() => {
+                                    this.setState({ showFileDialog: false });
+                                }}
+                                onOk={(fileProperty, selectedFile) => {
 
-                                    })
-                                    .catch((error) => {
-                                        this.model.showAlert("Unable to complete the operation. Audio is not running." + error);
-                                    });
-                                this.setState({ showFileDialog: false });
-                            }
-                            }
-                        />
+                                    this.model.setPatchProperty(
+                                        this.props.instanceId,
+                                        fileProperty.patchProperty,
+                                        JsonAtom.Path(selectedFile)
+                                    )
+                                        .then(() => {
+
+                                        })
+                                        .catch((error) => {
+                                            this.model.showAlert("Unable to complete the operation. Audio is not running." + error);
+                                        });
+                                    this.setState({ showFileDialog: false });
+                                }
+                                }
+                            />
+                        )}
+
                         <FullScreenIME uiControl={this.state.imeUiControl} value={this.state.imeValue}
 
                             onChange={(key, value) => this.onImeValueChange(key, value)}

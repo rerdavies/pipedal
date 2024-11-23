@@ -109,6 +109,8 @@ public:
 
     void SetDataRoot(const std::filesystem::path& path);
     void SetConfigRoot(const std::filesystem::path& path);
+    const std::filesystem::path&GetConfigRoot();
+    const std::filesystem::path&GetDataRoot();
 
     std::filesystem::path GetPluginUploadDirectory() const;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Robin Davies
+// Copyright (c) 2024 Robin E. R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -17,26 +17,17 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "FileEntry.hpp"
+#pragma once
 
-using namespace pipedal;
+namespace pipedal {
+    enum class SchedulerPriority {
+        RealtimeAudio, // the audio service thread.
+        AudioService, // non-realtime servicing of AudioThread responses.
+        Lv2Scheduler, // LV2 Scheduler service thread.
+        WebServerThread, // Web server threads.
+    };
 
-JSON_MAP_BEGIN(FileEntry)
-    JSON_MAP_REFERENCE(FileEntry,pathname)
-    JSON_MAP_REFERENCE(FileEntry,displayName)
-    JSON_MAP_REFERENCE(FileEntry,isProtected)
-    JSON_MAP_REFERENCE(FileEntry,isDirectory)
-JSON_MAP_END()
+    bool IsRtPreemptKernel(SchedulerPriority priority);
 
-JSON_MAP_BEGIN(BreadcrumbEntry)
-    JSON_MAP_REFERENCE(BreadcrumbEntry,pathname)
-    JSON_MAP_REFERENCE(BreadcrumbEntry,displayName)
-JSON_MAP_END()
-
-
-JSON_MAP_BEGIN(FileRequestResult)
-    JSON_MAP_REFERENCE(FileRequestResult,files)
-    JSON_MAP_REFERENCE(FileRequestResult,isProtected)
-    JSON_MAP_REFERENCE(FileRequestResult,breadcrumbs)
-    JSON_MAP_REFERENCE(FileRequestResult,currentDirectory)
-JSON_MAP_END()
+    void SetThreadPriority(SchedulerPriority priority);
+}

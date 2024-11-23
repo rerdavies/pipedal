@@ -37,6 +37,7 @@
 #include <thread>
 #include <stdexcept>
 #include "ss.hpp"
+#include "SchedulerPriority.hpp"
 
 #include "CpuUse.hpp"
 
@@ -223,32 +224,8 @@ namespace pipedal
             SetThreadName("dummyAudioDriver");
             try
             {
-#if defined(__WIN32)
-                // bump thread prioriy two levels to
-                // ensure that the service thread doesn't
-                // get bogged down by UIwork. Doesn't have to be realtime, but it
-                // MUST run at higher priority than UI threads.
-                xxx; // TO DO.
-#elif defined(__linux__)
-                int min = sched_get_priority_min(SCHED_RR);
-                int max = sched_get_priority_max(SCHED_RR);
 
-                struct sched_param param;
-                memset(&param, 0, sizeof(param));
-                param.sched_priority = RT_THREAD_PRIORITY;
-
-                int result = sched_setscheduler(0, SCHED_RR, &param);
-                if (result == 0)
-                {
-                    Lv2Log::debug("Service thread priority successfully boosted.");
-                }
-                else
-                {
-                    Lv2Log::error(SS("Failed to set ALSA AudioThread priority. (" << strerror(result) << ")"));
-                }
-#else
-                xxx; // TODO for your platform.
-#endif
+                SetThreadPriority(SchedulerPriority::RealtimeAudio);
 
                 bool ok = true;
 

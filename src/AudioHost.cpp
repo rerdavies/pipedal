@@ -20,9 +20,11 @@
 #include "AudioHost.hpp"
 #include "util.hpp"
 #include <lv2/atom/atom.h>
+#include "SchedulerPriority.hpp"
 
 #include "Lv2Log.hpp"
 
+#include "SchedulerPriority.hpp"
 #include "JackDriver.hpp"
 #include "AlsaDriver.hpp"
 #include "DummyAudioDriver.hpp"
@@ -1263,30 +1265,9 @@ public:
     bool terminateThread;
     void ThreadProc()
     {
-
-#if defined(__WIN32)
-        // bump thread prioriy two levels to
-        // ensure that the service thread doesn't
-        // get bogged down by UIwork. Doesn't have to be realtime, but it
-        // MUST run at higher _ than UI threads.
-        xxx; // TO DO.
-#elif defined(__linux__)
-        int min = sched_get_priority_min(SCHED_RR);
-        int max = sched_get_priority_max(SCHED_RR);
-
-        struct sched_param param;
-        memset(&param, 0, sizeof(param));
-        param.sched_priority = min;
-
-        int result = sched_setscheduler(0, SCHED_RR, &param);
-        if (result == 0)
-        {
-            Lv2Log::debug("Service thread priority successfully boosted.");
-        }
         SetThreadName("rtsvc");
-#else
-        xxx; // TODO!
-#endif
+        SetThreadPriority(SchedulerPriority::AudioService);
+        
         int underrunMessagesGiven = 0;
         try
         {

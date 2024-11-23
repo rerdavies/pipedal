@@ -243,16 +243,15 @@ static float nodeAsFloat(const LilvNode *node, float default_ = 0)
 
 void PluginHost::SetPluginStoragePath(const std::filesystem::path &path)
 {
-    mapPathFeature.SetPluginStoragePath(path);
+    pluginStoragePath = path;
 }
 
 std::string PluginHost::GetPluginStoragePath() const
 {
-    return mapPathFeature.GetPluginStoragePath();
+    return pluginStoragePath;
 }
 
 PluginHost::PluginHost()
-    : mapPathFeature("")
 {
     pWorld = nullptr;
 
@@ -260,12 +259,8 @@ PluginHost::PluginHost()
     lv2Features.push_back(mapFeature.GetUnmapFeature());
 
     optionsFeature.Prepare(mapFeature, 44100, this->GetMaxAudioBufferSize(), this->GetAtomBufferSize());
-
-    mapPathFeature.Prepare(&mapFeature);
-    lv2Features.push_back(mapPathFeature.GetMapPathFeature());
-    lv2Features.push_back(mapPathFeature.GetMakePathFeature());
-    lv2Features.push_back(mapPathFeature.GetFreePathFeature());
     lv2Features.push_back(optionsFeature.GetFeature());
+
 
     lv2Features.push_back(nullptr);
 

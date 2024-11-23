@@ -1,12 +1,10 @@
-Architecture: arm64
-Depends: libstdc++6 (>= 9), libasound2 (>= 1.0.17), libc6 (>= 2.34), libgcc-s1 (>= 4.0), libjack-jackd2-0 (>= 1.9.10+20150825) | libjack-0.125, liblilv-0-0 (>= 0.22.0~dfsg0), libnl-3-200 (>= 3.2.7), libnl-genl-3-200 (>= 3.2.7), libstdc++6 (>= 11), libsystemd0, dnsmasq(>= 2.85),lv2-dev(>=1.14)
+Depends: dnsmasq(>= 2.85),lv2-dev(>=1.14), iw
 Description: IoT guitar effect for Raspberry Pi
  IoT guitar effect pedal for Raspberry Pi, with phone-friendly web interface.
 Homepage: https://github.com/rerdavies/pipedal
 Maintainer: Robin E. R. Davies<rerdavies@gmail.com>
 Source: pipedal
 Package: pipedal
-Pre-Depends: hostapd;authbind;dnsmasq
 Priority: optional
 Section: sound
 Version: 1.2.32

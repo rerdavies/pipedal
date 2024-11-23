@@ -33,6 +33,7 @@
 
 using namespace pipedal;
 using namespace dbus::networkmanager;
+namespace fs = std::filesystem;
 
 namespace pipedal::impl
 {
@@ -59,6 +60,7 @@ namespace pipedal::impl
         virtual bool CancelPost(PostHandle handle) override;
 
         virtual void SetNetworkChangingListener(NetworkChangingListener &&listener) override;
+        virtual void SetHasWifiListener(HasWifiListener &&listener) override;
 
     private:
         enum class State
@@ -73,6 +75,11 @@ namespace pipedal::impl
         };
         void SetState(State state);
         State state = State::Initial;
+
+        bool hasWifi = false;
+        HasWifiListener hasWifiListener;
+        void SetHasWifi(bool hasWifi);
+        virtual bool GetHasWifi() override ;
 
         void onClose();
         void onError(const std::string &message);
@@ -223,6 +230,7 @@ void HotspotManagerImpl::onInitialize()
 }
 void HotspotManagerImpl::onDisconnect()
 {
+    SetHasWifi(false);
     if (state != State::Initial && state != State::WaitingForNetworkManager)
     {
         WaitForNetworkManager();
@@ -240,6 +248,8 @@ void HotspotManagerImpl::UpdateNetworkManagerStatus()
         // turn on wifi if required.
         auto ethernetDevice = GetDevice(NM_DEVICE_TYPE_ETHERNET);
         auto wlanDevice = GetDevice(NM_DEVICE_TYPE_WIFI);
+
+        SetHasWifi(!!wlanDevice);
 
         if (ethernetDevice && wlanDevice)
         {
@@ -290,6 +300,7 @@ void HotspotManagerImpl::ReleaseNetworkManager()
 
     this->onDeviceRemovedHandle = INVALID_DBUS_EVENT_HANDLE;
     this->onDeviceAddedHandle = INVALID_DBUS_EVENT_HANDLE;
+    SetHasWifi(false);
 }
 
 void HotspotManagerImpl::onDevicesChanged()
@@ -399,6 +410,8 @@ void HotspotManagerImpl::onStartMonitoring()
 
         OnEthernetStateChanged(ethernetDevice->State());
         OnWlanStateChanged(wlanDevice->State());
+
+        SetHasWifi(true);
 
         StartScanTimer();
         onAccessPointChanged();
@@ -862,11 +875,11 @@ void HotspotManagerImpl::StartHotspot()
             settings["ipv4"]["method"] = "shared";
             settings["ipv6"]["method"] = "shared";
             settings["ipv6"]["addr-gen-mode"] = 1; // "stable-privacy";
-            
-                ////////////////////////////////////////////////////////////////
 
-                // Create connection
-                settings["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
+            ////////////////////////////////////////////////////////////////
+
+            // Create connection
+            settings["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
             // settings["ipv6"]["method"] = sdbus::Variant(std::string("ignore"));
 
             settings["ipv4"]["address-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{{{"address", sdbus::Variant("192.168.60.1")},
@@ -1013,6 +1026,32 @@ bool HotspotManagerImpl::CancelPost(PostHandle handle)
     return dbusDispatcher.CancelPost(handle);
 }
 
+void HotspotManagerImpl::SetHasWifiListener(HasWifiListener &&listener)
+{
+    std::lock_guard<std::recursive_mutex> lock{this->networkChangingListenerMutex};
+    this->hasWifiListener = listener;
+    if (!this->closed && this->hasWifiListener)
+    {
+        this->hasWifiListener(this->hasWifi);
+    }
+}
+bool HotspotManagerImpl::GetHasWifi() {
+    std::lock_guard<std::recursive_mutex> lock{this->networkChangingListenerMutex};
+    return hasWifi;
+}
+void HotspotManagerImpl::SetHasWifi(bool hasWifi)
+{
+    std::lock_guard<std::recursive_mutex> lock{this->networkChangingListenerMutex};
+    if (hasWifi != this->hasWifi)
+    {
+        this->hasWifi = hasWifi;
+        if (this->hasWifiListener)
+        {
+            this->hasWifiListener(this->hasWifi);
+        }
+    }
+}
+
 void HotspotManagerImpl::SetNetworkChangingListener(NetworkChangingListener &&listener)
 {
     std::lock_guard<std::recursive_mutex> lock{this->networkChangingListenerMutex};
@@ -1031,4 +1070,40 @@ std::vector<std::string> HotspotManagerImpl::GetKnownWifiNetworks()
 {
     std::lock_guard lock(knownWifiNetworksMutex); // pushed off the service thread.
     return this->knownWifiNetworks;
+}
+
+static bool is_wireless_sysfs(const std::string &ifname)
+{
+    return fs::exists("/sys/class/net/" + ifname + "/wireless");
+}
+
+static std::vector<std::string> get_wireless_interfaces_sysfs()
+{
+    std::vector<std::string> wireless_interfaces;
+    const std::string net_path = "/sys/class/net";
+
+    try
+    {
+        for (const auto &entry : fs::directory_iterator(net_path))
+        {
+            std::string ifname = entry.path().filename();
+            if (is_wireless_sysfs(ifname))
+            {
+                wireless_interfaces.push_back(ifname);
+            }
+        }
+    }
+    catch (const fs::filesystem_error &e)
+    {
+        std::cerr << "Error accessing " << net_path << ": " << e.what() << std::endl;
+    }
+
+    return wireless_interfaces;
+}
+
+bool HotspotManager::HasWifiDevice()
+{
+    // use procfs to decide this, as NetworkManager may not be available yet.
+
+    return !(get_wireless_interfaces_sysfs().empty());
 }

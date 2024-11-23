@@ -33,6 +33,7 @@
 #include "TemporaryFile.hpp"
 #include "PresetBundle.hpp"
 #include "json.hpp"
+#include "HotspotManager.hpp"
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
@@ -701,6 +702,7 @@ public:
           << ", \"socket_server_address\": \"" << webSocketAddress
           << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
           << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true" : "false")
+          << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true": "false")
           << " }";
 
         return s.str();
