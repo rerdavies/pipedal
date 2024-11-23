@@ -49,6 +49,18 @@ function fmtCpuFreq(freq: number): string {
     return freq + " KHz";
 }
 
+function areSameFrequency(max: number, min: number): boolean {
+    return true;
+    // // x86 cpus can show incredibly minor frequency variations between CPUs
+    // if (min === 0) return false;
+    // let ratio = max/min;
+    // if (ratio < 1.2) 
+    // {
+    //     return true;
+    // }
+    // return false;
+}
+
 export default class JackHostStatus {
     deserialize(input: any): JackHostStatus {
         this.active = input.active;
@@ -92,12 +104,12 @@ export default class JackHostStatus {
                 (
                     <Typography variant="caption" color="inherit">
                         {
-                            (status.cpuFreqMax === status.cpuFreqMin) ?
+                            (areSameFrequency(status.cpuFreqMax,status.cpuFreqMin)) ?
                                 (
                                     <span> {status.governor} {fmtCpuFreq(status.cpuFreqMax)}  </span>
                                 )
                                 : (
-                                    <span> {status.governor} {fmtCpuFreq(status.cpuFreqMax)}-{fmtCpuFreq(status.cpuFreqMax)}  </span>
+                                    <span> {status.governor} {fmtCpuFreq(status.cpuFreqMin)}-{fmtCpuFreq(status.cpuFreqMax)}  </span>
 
                                 )
                         }

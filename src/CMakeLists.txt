@@ -158,6 +158,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    CpuTemperatureMonitor.cpp CpuTemperatureMonitor.hpp
     SchedulerPriority.hpp SchedulerPriority.cpp
     ModFileTypes.cpp ModFileTypes.hpp
     PatchPropertyWriter.hpp

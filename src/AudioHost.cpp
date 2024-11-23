@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include "PluginHost.hpp"
 #include "PatchPropertyWriter.hpp"
+#include "CpuTemperatureMonitor.hpp"
 
 using namespace pipedal;
 
@@ -387,6 +388,7 @@ private:
     std::mutex atomConverterMutex;
     AtomConverter atomConverter;
 
+    CpuTemperatureMonitor::ptr cpuTemperatureMonitor;
     static constexpr size_t DEFERRED_MIDI_BUFFER_SIZE = 1024;
 
     uint8_t deferredMidiMessages[DEFERRED_MIDI_BUFFER_SIZE];
@@ -1231,6 +1233,8 @@ public:
     {
         realtimeAtomBuffer.resize(32 * 1024);
         lv2_atom_forge_init(&inputWriterForge, pHost->GetMapFeature().GetMap());
+
+        cpuTemperatureMonitor = CpuTemperatureMonitor::Get();
     }
     virtual ~AudioHostImpl()
     {
@@ -2032,21 +2036,6 @@ public:
         this->hostWriter.ParameterRequest(pParameterRequest);
     }
 
-    static int32_t GetRaspberryPiTemperature()
-    {
-        try
-        {
-            std::ifstream f("/sys/class/thermal/thermal_zone0/temp");
-            int32_t temp;
-            f >> temp;
-            return temp;
-        }
-        catch (std::exception &)
-        {
-            return -1000000;
-        }
-    }
-
     virtual JackHostStatus getJackStatus()
     {
         CleanRestartThreads(false);
@@ -2062,7 +2051,7 @@ public:
 
         result.msSinceLastUnderrun_ = (uint64_t)dt;
 
-        result.temperaturemC_ = GetRaspberryPiTemperature();
+        result.temperaturemC_ = (int32_t)(std::round(cpuTemperatureMonitor->GetTemperatureC()*1000));
 
         result.active_ = IsAudioRunning();
         result.restarting_ = this->restarting;
@@ -2071,7 +2060,7 @@ public:
         {
             result.cpuUsage_ = audioDriver->CpuUse();
         }
-        GetCpuFrequency(&result.cpuFreqMax_, &result.cpuFreqMin_);
+        GetCpuFrequency(&result.cpuFreqMin_, &result.cpuFreqMax_);
         result.hasCpuGovernor_ = HasCpuGovernor();
         if (result.hasCpuGovernor_)
         {
