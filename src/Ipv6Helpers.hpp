@@ -27,6 +27,7 @@ namespace pipedal {
 
     std::string GetInterfaceIpv4Address(const std::string& interfaceName);
 
+    std::vector<std::string> GetEthernetIpv4Addresses();
 
     // bool IsLinkLocalAddress(const std::string &fromAddress);
 

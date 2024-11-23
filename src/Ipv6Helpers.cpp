@@ -267,6 +267,46 @@ bool pipedal::IsOnLocalSubnet(const std::string &fromAddress)
     return result;
 }
 
+
+static bool isEthernetAddress(const char*ifName)
+{
+    // either ethN (classic), 
+    if (strncmp(ifName,"eth",3) == 0) return true;
+    // or "enpNNsNN" (ubuntu)
+    return (ifName[0] == 'e' && ifName[1] == 'n' && ifName[2] == 'p');
+}
+
+std::vector<std::string> pipedal::GetEthernetIpv4Addresses() {
+    std::vector<std::string> result;
+
+    struct ifaddrs *ifap = nullptr;
+    if (getifaddrs(&ifap) != 0)
+        return result;
+
+    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (isEthernetAddress(p->ifa_name))
+        {
+            if (p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
+                uint32_t netmask = htonl(((sockaddr_in *)(p->ifa_netmask))->sin_addr.s_addr);
+                uint32_t ifAddr = htonl(((sockaddr_in *)(p->ifa_addr))->sin_addr.s_addr);
+            {
+                if (ifAddr & 0xFF) { // has an actual bound IP address.
+                    std::string name = SS(
+                        ((ifAddr >> 24) & 0xFF) << 
+                        '.' << ((ifAddr >> 16) & 0xFF) <<
+                        '.' << ((ifAddr >> 8) & 0xFF) <<
+                        '.' << ((ifAddr) & 0xFF)
+                    );
+                    result.push_back(std::move(name));
+                }
+            }
+        }
+    }
+    freeifaddrs(ifap);
+    return result;
+}
+
 static std::string GetInterfaceForIp4Address(uint32_t ipv4Address)
 {
     struct ifaddrs *ifap = nullptr;
@@ -616,6 +656,7 @@ std::string pipedal::GetInterfaceIpv4Address(const std::string& interfaceName)
 {
     return GetNonLinkLocalAddressForIp4Interface(interfaceName);
 }
+
 
 
 // std::string getNonLinkLocalAddress(const std::string&address, const std::string&interface)
