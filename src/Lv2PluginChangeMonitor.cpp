@@ -44,7 +44,7 @@ void Lv2PluginChangeMonitor::Shutdown()
     {
         terminateThread = true;
         uint64_t val = 1;
-        write(shutdown_eventfd,(void*)&val, sizeof(val));
+        auto _ = write(shutdown_eventfd,(void*)&val, sizeof(val));
         monitorThread->join();
         monitorThread = nullptr;
         close(shutdown_eventfd);

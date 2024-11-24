@@ -98,7 +98,7 @@ endif()
 
 set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Robin E. R. Davies<rerdavies@gmail.com>") # required
-set(CPACK_PACKAGE_VENDOR "Robin Davies")
+set(CPACK_PACKAGE_VENDOR "Robin E. R. Davies")
 set(CPACK_PACKAGE_DESCRIPTION "IoT guitar effect pedal for Raspberry Pi, with phone-friendly web interface.")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IoT guitar effect pedal for Raspberry Pi")
 set(CPACK_DEBIAN_PACKAGE_SECTION sound)

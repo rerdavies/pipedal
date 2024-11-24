@@ -281,7 +281,7 @@ class PiPedalSocket {
                 ws.onerror = (evt: Event) => {
                     ws.onclose = null;
                     ws.onerror = null;
-                    reject("Failed to connect.");
+                    reject("Connection not accepted.");
                 };
                 ws.onopen = (event: Event) => {
                     ws.onerror = self.handleError.bind(self);
@@ -290,7 +290,7 @@ class PiPedalSocket {
                     resolve(ws);
                 };
             } catch (e: any){
-                reject("Failed to connect. " + e.toString());
+                reject("Failed to connect: " + e.toString());
             };
         });
 }

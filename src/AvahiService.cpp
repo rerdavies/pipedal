@@ -181,6 +181,7 @@ void AvahiService::EntryGroupCallback(AvahiEntryGroup *g, AvahiEntryGroupState s
         char *n = avahi_alternative_service_name(avahiNameString);
         avahi_free(avahiNameString);
         avahiNameString = n;
+        this->serviceName = n;
         Lv2Log::warning(SS("Service name collision, renaming service to '" << avahiNameString << "'\n"));
         /* And recreate the services */
         create_group(avahi_entry_group_get_client(g));

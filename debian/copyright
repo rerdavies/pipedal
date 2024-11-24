@@ -1,24 +1,24 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: pipedal
-Upstream-Contact: Robin Davies <rerdavies@gmail.com>
+Upstream-Contact: Robin E. R. Davies <rerdavies@gmail.com>
 Source: https://www.example.com/software/project
 
 Files: *
-Copyright: 2021, Robin Davies
+Copyright: 2021, Robin E. R. Davies
 License: Expat
 
 Files: src/*
-Copyright: 2021, Robin Davies
+Copyright: 2021, Robin E. R. Davies
 License: Expat
 
 
 Files: react/src
-Copyright: 2020, Robin Davies.
+Copyright: 2020, Robin E. R. Davies.
 License: Expat
 
 Files: src/Lv2EventBufferWriter.hpp
 Copyright: 2008-2014, David Robillard <d@drobilla.net>
-    2021, Robin Davies
+    2021, Robin E. R. Davies
 License: ISC and Expat
 
 Files: react/node_modules/@babel/*

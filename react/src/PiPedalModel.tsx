@@ -1014,7 +1014,7 @@ export class PiPedalModel //implements PiPedalModel
         try { 
             await this.webSocket.connect();
         } catch (error) {
-            this.setError("Failed to connect to server. (" + getErrorMessage(error));
+            this.setError("Failed to connect to server. " + getErrorMessage(error) );
             return false;
 
         }

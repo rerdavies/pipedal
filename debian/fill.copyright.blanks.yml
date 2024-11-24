@@ -1,11 +1,11 @@
 ---
 /:
   license: Expat
-  copyright: 2021, Robin Davies.
+  copyright: 2021, Robin E. R. Davies.
 
 src/react/:
   license: Expat
-  copyright: 2021, Robin Davies.
+  copyright: 2021, Robin E. R. Davies.
 
 react/node_modules/webpack/:
   license: Expat

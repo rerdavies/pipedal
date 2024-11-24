@@ -11,7 +11,7 @@
                 "/usr/lib",
                 "~/src/vst3sdk"
             ],
-            "compilerPath": "/usr/bin/gcc",
+            "compilerPath": "/usr/bin/gcc-12",
             "cStandard": "c17",
             "cppStandard": "c++20",
             "intelliSenseMode": "linux-gcc-arm64",
