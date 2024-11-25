@@ -30,9 +30,9 @@
 #include <regex>
 #include "ss.hpp"
 #include "Finally.hpp"
+#include <boost/asio.hpp>
 
 using namespace pipedal;
-
 
 static bool IsIpv4MappedAddress(const struct in6_addr &inetAddr6)
 {
@@ -61,6 +61,71 @@ static bool ipv6NetmaskCompare(const struct in6_addr &left, const struct in6_add
     }
     return true;
 }
+
+NetworkInterfaceType pipedal::GetNetworkInterfaceType(const char *interfaceName)
+{
+    // stock linux.
+    if (strncmp(interfaceName, "eth", 3) == 0)
+    {
+        return NetworkInterfaceType::Ethernet;
+    }
+    if (strncmp(interfaceName, "wlan", 4) == 0)
+    {
+        return NetworkInterfaceType::WiFi;
+    }
+    if (strncmp(interfaceName, "lo", 2) == 0)
+    {
+        return NetworkInterfaceType::Loopback;
+    }
+
+    // ubuntu-style names.
+    if (strncmp(interfaceName, "en", 2) == 0)
+    {
+        return NetworkInterfaceType::Ethernet;
+    }
+    if (strncmp(interfaceName, "wl", 2) == 0)
+    {
+        return NetworkInterfaceType::WiFi;
+    }
+    return NetworkInterfaceType::Other;
+}
+
+std::optional<std::string> pipedal::GetWlanInterfaceName()
+{
+    struct ifaddrs *ifap = nullptr;
+    if (getifaddrs(&ifap) != 0)
+        throw std::runtime_error("No networks available.");
+
+    Finally f{[ifap]()
+              {
+                  freeifaddrs(ifap);
+              }};
+
+    for (struct ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (GetNetworkInterfaceType(p->ifa_name) == NetworkInterfaceType::WiFi)
+        {
+            return std::string(p->ifa_name);
+        }
+    }
+
+    return std::optional<std::string>();
+}
+
+std::optional<std::string> pipedal::GetWlanIpv4Address()
+{
+    auto wlanAddress = GetWlanInterfaceName();
+    if (wlanAddress)
+    {
+        auto result = GetInterfaceIpv4Address(*wlanAddress);
+        if (result.length() != 0)
+        {
+            return result;
+        }
+    }
+    return std::optional<std::string>();
+}
+
 
 static bool IsIpv4OnLocalSubnet(uint32_t ipv4Addres)
 {
@@ -267,16 +332,17 @@ bool pipedal::IsOnLocalSubnet(const std::string &fromAddress)
     return result;
 }
 
-
-static bool isEthernetAddress(const char*ifName)
+static bool isEthernetAddress(const char *ifName)
 {
-    // either ethN (classic), 
-    if (strncmp(ifName,"eth",3) == 0) return true;
+    // either ethN (classic),
+    if (strncmp(ifName, "eth", 3) == 0)
+        return true;
     // or "enpNNsNN" (ubuntu)
-    return (ifName[0] == 'e' && ifName[1] == 'n' && ifName[2] == 'p');
+    return (ifName[0] == 'e' && ifName[1] == 'n');
 }
 
-std::vector<std::string> pipedal::GetEthernetIpv4Addresses() {
+std::vector<std::string> pipedal::GetEthernetIpv4Addresses()
+{
     std::vector<std::string> result;
 
     struct ifaddrs *ifap = nullptr;
@@ -289,15 +355,12 @@ std::vector<std::string> pipedal::GetEthernetIpv4Addresses() {
         {
             if (p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
                 uint32_t netmask = htonl(((sockaddr_in *)(p->ifa_netmask))->sin_addr.s_addr);
-                uint32_t ifAddr = htonl(((sockaddr_in *)(p->ifa_addr))->sin_addr.s_addr);
+            uint32_t ifAddr = htonl(((sockaddr_in *)(p->ifa_addr))->sin_addr.s_addr);
             {
-                if (ifAddr & 0xFF) { // has an actual bound IP address.
+                if (ifAddr & 0xFF)
+                { // has an actual bound IP address.
                     std::string name = SS(
-                        ((ifAddr >> 24) & 0xFF) << 
-                        '.' << ((ifAddr >> 16) & 0xFF) <<
-                        '.' << ((ifAddr >> 8) & 0xFF) <<
-                        '.' << ((ifAddr) & 0xFF)
-                    );
+                        ((ifAddr >> 24) & 0xFF) << '.' << ((ifAddr >> 16) & 0xFF) << '.' << ((ifAddr >> 8) & 0xFF) << '.' << ((ifAddr) & 0xFF));
                     result.push_back(std::move(name));
                 }
             }
@@ -365,9 +428,10 @@ static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6 &ipV
     if (getifaddrs(&ifap) != 0)
         throw std::runtime_error("No networks available.");
 
-    Finally f{[ifap]() {
-            freeifaddrs(ifap);
-    }};
+    Finally f{[ifap]()
+              {
+                  freeifaddrs(ifap);
+              }};
 
     std::string result;
 
@@ -397,7 +461,7 @@ static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6 &ipV
     {
         if (p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
         {
-            if (strcmp(p->ifa_name,targetInterfaceName) == 0)
+            if (strcmp(p->ifa_name, targetInterfaceName) == 0)
             {
                 constexpr int BUFSIZE = 128;
                 char host[BUFSIZE];
@@ -421,14 +485,13 @@ static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6 &ipV
             {
                 char buffer[128];
                 inet_ntop(AF_INET6, &(pAddr->sin6_addr),
-                    buffer,sizeof(buffer));
+                          buffer, sizeof(buffer));
                 return SS('[' << buffer << ']');
             }
         }
     }
     // probably network address settling after the hotspot comes up. :-/
     throw std::runtime_error("Not ready. Try again later.");
-
 }
 
 static std::string GetNonLinkLocalAddressForInterface(const std::string &name)
@@ -583,7 +646,6 @@ static std::string GetNonLinkLocalAddressForIp4Interface(const std::string &name
 //             else
 //             {
 
-
 //                 std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
 //                 result =  GetNonLinkLocalAddressForInterface(interfaceName);
 //             }
@@ -595,7 +657,6 @@ static std::string GetNonLinkLocalAddressForIp4Interface(const std::string &name
 //     }
 //     return result;
 // }
-
 
 std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
 {
@@ -612,12 +673,11 @@ std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
             throw std::invalid_argument("Bad address.");
         address = address.substr(1, address.length() - 2);
 
-        auto nPos = address.find('%') ;
+        auto nPos = address.find('%');
         if (nPos != std::string::npos)
         {
-            std::string ifName = address.substr(nPos+1);
+            std::string ifName = address.substr(nPos + 1);
             return GetNonLinkLocalAddressForInterface(ifName);
-
         }
         struct in6_addr inetAddr6;
         memset(&inetAddr6, 0, sizeof(inetAddr6));
@@ -639,9 +699,8 @@ std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
             else
             {
 
-
                 std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
-                result =  GetNonLinkLocalAddressForInterface(interfaceName);
+                result = GetNonLinkLocalAddressForInterface(interfaceName);
             }
         }
     }
@@ -652,12 +711,10 @@ std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
     return result;
 }
 
-std::string pipedal::GetInterfaceIpv4Address(const std::string& interfaceName)
+std::string pipedal::GetInterfaceIpv4Address(const std::string &interfaceName)
 {
     return GetNonLinkLocalAddressForIp4Interface(interfaceName);
 }
-
-
 
 // std::string getNonLinkLocalAddress(const std::string&address, const std::string&interface)
 // {
@@ -669,7 +726,7 @@ std::string pipedal::GetInterfaceIpv4Address(const std::string& interfaceName)
 
 // }
 
-static bool parseForLinkLocalUrl(const std::string&url,std::string*prefix, std::string *suffix)
+static bool parseForLinkLocalUrl(const std::string &url, std::string *prefix, std::string *suffix)
 {
     auto iter = url.begin();
     auto end = url.end();
@@ -677,7 +734,8 @@ static bool parseForLinkLocalUrl(const std::string&url,std::string*prefix, std::
     // proto:
     while (true)
     {
-        if (iter == end) return false;
+        if (iter == end)
+            return false;
         if (*iter == ':')
         {
             ++iter;
@@ -687,17 +745,20 @@ static bool parseForLinkLocalUrl(const std::string&url,std::string*prefix, std::
     }
 
     //  //
-    if (iter == end || *iter != '/') return false;
+    if (iter == end || *iter != '/')
+        return false;
     ++iter;
-    if (iter == end || *iter != '/') return false;
+    if (iter == end || *iter != '/')
+        return false;
     ++iter;
-
 
     // (user@)? of id: http://user@[::1]/
-    if (*iter != '[') {
+    if (*iter != '[')
+    {
         while (true)
         {
-            if (iter == end || *iter == '/') return false;
+            if (iter == end || *iter == '/')
+                return false;
             if (*iter == '@')
             {
                 ++iter;
@@ -715,23 +776,30 @@ static bool parseForLinkLocalUrl(const std::string&url,std::string*prefix, std::
     ++iter;
 
     // fe80: ...
-    if (iter == end  || !(*iter == 'f' ||  *iter == 'F')) return false;
+    if (iter == end || !(*iter == 'f' || *iter == 'F'))
+        return false;
     ++iter;
-    if (iter == end  || !(*iter == 'e' ||  *iter == 'E')) return false;
+    if (iter == end || !(*iter == 'e' || *iter == 'E'))
+        return false;
     ++iter;
-    if (iter == end  || *iter != '8' ) return false;
+    if (iter == end || *iter != '8')
+        return false;
     ++iter;
-    if (iter == end  || *iter != '0' ) return false;
+    if (iter == end || *iter != '0')
+        return false;
     ++iter;
-    if (iter == end  || *iter != ':' ) return false;
+    if (iter == end || *iter != ':')
+        return false;
     ++iter;
 
     while (true)
     {
-        if (iter == end) break;
+        if (iter == end)
+            break;
         char c = *iter;
         bool valid = (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || c >= '0' && c <= '9' || c == ':';
-        if (!valid) break;
+        if (!valid)
+            break;
         ++iter;
     }
     // potentially a scope ID
@@ -739,38 +807,40 @@ static bool parseForLinkLocalUrl(const std::string&url,std::string*prefix, std::
     auto endOfAddress = iter;
     if (iter != end && *iter == '%')
     {
-        while (true) {
-            if (iter == end) return false;
-            if (*iter == ']') break;
+        while (true)
+        {
+            if (iter == end)
+                return false;
+            if (*iter == ']')
+                break;
             ++iter;
         }
     }
     // made it!
-    if (iter == end || *iter != ']') return false;
+    if (iter == end || *iter != ']')
+        return false;
     ++iter;
 
     auto startOfRest = iter;
 
-    *prefix = std::string(url.begin(),endOfPrefix);
-    *suffix = std::string(startOfRest,url.end());
+    *prefix = std::string(url.begin(), endOfPrefix);
+    *suffix = std::string(startOfRest, url.end());
     return true;
-
 }
 bool pipedal::RemapLinkLocalUrl(
     const boost::asio::ip::address &boostAddress,
-    const std::string&url,std::string*outputUrl)
+    const std::string &url, std::string *outputUrl)
 {
 
     std::string prefix, suffix;
-    if (!parseForLinkLocalUrl(url,&prefix,&suffix)) return false;
+    if (!parseForLinkLocalUrl(url, &prefix, &suffix))
+        return false;
 
     boost::asio::ip::address_v6 addressV6 = boostAddress.to_v6();
 
     std::string directAddress;
     directAddress = ::GetNonLinkLocalAddress(addressV6);
 
-    *outputUrl =  SS(prefix << directAddress << suffix);
+    *outputUrl = SS(prefix << directAddress << suffix);
     return true;
 }
-
-

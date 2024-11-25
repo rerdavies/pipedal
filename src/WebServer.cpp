@@ -1419,16 +1419,16 @@ void WebServerImpl::DisplayIpAddresses()
         Lv2Log::info(SS("Listening on " << ethAddress << ":" << this->port));
 
     }
-    std::string wifiAddress = getIpv4Address("wlan0");
-    if (wifiAddress.length() != 0)
+    auto wifiAddress = GetWlanIpv4Address();
+    if (wifiAddress)
     {
-        if (wifiAddress == "10.42.0.1")
+        if (*wifiAddress == "10.42.0.1")
         {
-            Lv2Log::info(SS("Listening on Wi-Fi hotspot address " << wifiAddress << ":" << this->port));
+            Lv2Log::info(SS("Listening on Wi-Fi hotspot address " << *wifiAddress << ":" << this->port));
         }
         else
         {
-            Lv2Log::info(SS("Listening on Wi-Fi address " << wifiAddress << ":" << this->port));
+            Lv2Log::info(SS("Listening on Wi-Fi address " << *wifiAddress << ":" << this->port));
         }
     }
 }

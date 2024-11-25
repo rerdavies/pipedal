@@ -383,7 +383,7 @@ void HotspotManagerImpl::onStartMonitoring()
         wlanDevice = GetDevice(NM_DEVICE_TYPE_WIFI);
         if (!wlanDevice)
         {
-            throw std::runtime_error("wlan0 device not found.");
+            throw std::runtime_error("Wi-Fi device not found.");
         }
         wlanWirelessDevice = DeviceWireless::Create(dbusDispatcher, wlanDevice->getObjectPath());
 
