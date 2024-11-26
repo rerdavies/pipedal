@@ -16,6 +16,10 @@ include(FindPkgConfig)
 find_package(sdbus-c++ REQUIRED)
 
 
+find_package(ICU REQUIRED COMPONENTS uc i18n  )
+message(STATUS  "ICU_LIBRARIES: ${ICU_LIBRARIES}")
+
+
 if(DEFINED ENV{GITHUB_ACTIONS})
   message(STATUS "Building in GitHub Actions environment")
   set(GITHUB_ACTIONS TRUE)
@@ -273,16 +277,16 @@ set (PIPEDAL_INCLUDES
     .
 )
 
+
 set(PIPEDAL_LIBS libpipedald zip
     PiPedalCommon
-    icui18n
-    icuuc
-    icudata
     pthread atomic stdc++fs asound avahi-common avahi-client systemd
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 
      # ${JACK_LIBRARIES} - pending delete for JACK support.
-      )
+     ${ICU_LIBRARIES}
+
+     )
 
 
 
