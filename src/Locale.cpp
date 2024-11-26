@@ -18,24 +18,21 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
-
 #include "Locale.hpp"
+
+
+#define U_SHOW_CPLUSPLUS_API 0
 
 #include <stdlib.h>
 #include "Lv2Log.hpp"
 #include <unicode/utypes.h>
 #include <unicode/ucol.h>
 #include <unicode/unistr.h>
-#include <unicode/sortkey.h>
 #include <stdexcept>
 #include "ss.hpp"
 #include <mutex>
 
-// Must be UNICODE. Should reflect system locale.  (.e.g en-US.UTF8,  de-de.UTF8)
-
-// This is correct for libstdc++; most probably not correct for Windows or CLANG. :-(
 using namespace pipedal;
-
 
 std::string getCurrentLocale() {
     std::string locale = setlocale(LC_ALL, nullptr);
@@ -69,33 +66,34 @@ std::string getCurrentLocale() {
 }
 
 Collator::~Collator() {
-
 }
 
 class LocaleImpl;
 
 class CollatorImpl : public Collator {
 public:
-    CollatorImpl(std::shared_ptr<LocaleImpl> LocaleImpl,icu::Locale &locale);
+    CollatorImpl(std::shared_ptr<LocaleImpl> localeImpl, const char* localeStr);
     ~CollatorImpl();
 
     virtual int Compare(const std::string &left, const std::string&right);
 private:
-    icu::Collator* collator = nullptr;
+    UCollator* collator = nullptr;
     std::shared_ptr<LocaleImpl> localeImpl;
 };
 
 CollatorImpl::~CollatorImpl()
 {
-    delete collator;
+    if (collator) {
+        ucol_close(collator);
+    }
     localeImpl = nullptr;
 }
-CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl> localeImpl, icu::Locale &locale)
-:localeImpl(localeImpl)
+
+CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl> localeImpl, const char* localeStr)
+: localeImpl(localeImpl)
 {
     UErrorCode status = U_ZERO_ERROR;
-
-    this->collator = icu::Collator::createInstance(locale, status);
+    collator = ucol_open(localeStr, &status);
 
     if (U_FAILURE(status)) {
         throw std::runtime_error(SS("Failed to create collator: " << u_errorName(status)));
@@ -103,8 +101,12 @@ CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl> localeImpl, icu::Locale &
 }
 
 int CollatorImpl::Compare(const std::string &left, const std::string&right) {
-    return collator->compare(left.c_str(),right.c_str());
+    UErrorCode status = U_ZERO_ERROR;
+    return ucol_strcoll(collator, 
+        reinterpret_cast<const UChar*>(left.c_str()), left.length(), 
+        reinterpret_cast<const UChar*>(right.c_str()), right.length());
 }
+
 Locale::ptr g_instance;
 
 class LocaleImpl: public Locale, public std::enable_shared_from_this<LocaleImpl>  {
@@ -113,32 +115,30 @@ public:
     virtual const std::string &CurrentLocale() const ;
     virtual Collator::ptr GetCollator();
 private:
-    std::unique_ptr<icu::Locale> locale;
     std::string currentLocale;
 };
 
 LocaleImpl::LocaleImpl()
 {
     currentLocale = getCurrentLocale();
-    locale = std::make_unique<icu::Locale>(currentLocale.c_str());
 }
+
 const std::string &LocaleImpl::CurrentLocale() const 
 {
     return currentLocale;
 }
 
-
 Collator::ptr LocaleImpl::GetCollator(){
     auto pThis = shared_from_this();
-    return std::shared_ptr<Collator>(new CollatorImpl(pThis,*locale));
+    return std::shared_ptr<Collator>(new CollatorImpl(pThis, currentLocale.c_str()));
 }
 
 static std::mutex createMutex;
 
 Locale::~Locale() 
 {
-
 }
+
 Locale::ptr Locale::g_instance;
 
 Locale::ptr Locale::GetInstance()
@@ -152,5 +152,3 @@ Locale::ptr Locale::GetInstance()
     g_instance = std::make_shared<LocaleImpl>();
     return g_instance;
 }
-
-
