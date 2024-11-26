@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 #include <boost/asio.hpp>
+#include <optional>
 
 namespace pipedal {
     enum class NetworkInterfaceType {
