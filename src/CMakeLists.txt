@@ -658,9 +658,6 @@ add_executable(pipedalconfig
     )
 
 target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs asound
-        icui18n
-        icuuc
-        icudata
 
     )
 

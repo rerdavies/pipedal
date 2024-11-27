@@ -34,6 +34,7 @@
 #include "ss.hpp"
 #include <mutex>
 #include "Utf8Utils.hpp"
+#include <filesystem>
 
 #define U_SHOW_CPLUSPLUS_API 0
 
@@ -50,9 +51,46 @@
 
 using namespace pipedal;
 using namespace std;
+namespace fs = std::filesystem;
 
+static inline bool isDigit(char c)
+{
+    return c >= '0' && c <= '9';
+}
+static bool getSoVersionNumber(const std::string&fileName, int *version)
+{
+    auto fnamePos = fileName.find_last_of('/');
+    if (fnamePos == std::string::npos)
+    {
+        fnamePos = 0;
+    }
+    auto extensionPos = fileName.find(".so.",fnamePos);
+    if (extensionPos == std::string::npos)
+    {
+        return false;
+    }
+
+
+    const char *p = fileName.c_str() + extensionPos + 4;
+
+    if (!isDigit(*p)) {
+        return false;
+    }
+    int n = 0;
+    while (isDigit(*p))
+    {
+        n = n*10 + *p-'0';
+        ++p;
+    }
+    if (*p != '\0' && *p != '.')
+    {
+        return false;
+    }
+    *version = n;
+    return true;
+}
 // Function to get ICU version dynamically
-int getICUVersion(void* libHandle) {
+static int getICUVersion(void* libHandle) {
 
     // pares the dlerror to get the version number. :-/
     dlerror(); // clear the error.
@@ -61,22 +99,35 @@ int getICUVersion(void* libHandle) {
     std::string error = dlerror();
     // "/lib/aarch64-linux-gnu/libicui18n.so.74: undefined symbol: nonExistentFunction"
 
-    auto nPos = error.find(".so.");
+    auto nPos = error.find(":");
     if (nPos == std::string::npos)
     {
-        throw std::runtime_error("Unable to determine version of libicui18n.so");
+        return false;
     }
-    const char *p = error.c_str() + nPos + 4;
+    std::string fileName = error.substr(nPos);
 
-    int version = 0;
-    while (*p >= '0' && *p <= '9')
+    int version = -1;
+
+    if (!getSoVersionNumber(fileName,&version))
     {
-        version = version*10 + *p-'0';
-        ++p;
-    }
-    if (*p != ':' && *p != '.')
-    {
-        throw std::runtime_error("Unable to determine version of libicui18n.so");
+        fs::path basePath = fileName;
+        fs::path parentDirectory = basePath.parent_path();
+        auto fileName = basePath.filename().string();
+        for (auto&entry: fs::directory_iterator(parentDirectory))
+        {
+            if (entry. path().filename().string().starts_with(fileName))
+            {
+                if (getSoVersionNumber(entry.path().string(),&version))
+                {
+                    break;
+                }
+
+            }
+        }
+        if (version == -1)
+        {
+            throw std::runtime_error(SS("Unable to determine libicui18n.so version: " << error));
+        }
     }
     return version;
 }

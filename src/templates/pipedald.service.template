@@ -11,6 +11,7 @@ Restart=on-failure
 Type=notify
 LimitMEMLOCK=infinity
 LimitRTPRIO=95
+Nice=-9
 ExecStart=${COMMAND} 
 User=pipedal_d
 Group=pipedal_d
