@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2023 Robin E. R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -19,36 +19,32 @@
 
 #pragma once
 
-#include <memory>
+
+#include <cstdint>
 #include <string>
+#include <string_view>
 
 namespace pipedal {
-    class Collator {
-    public:
-        using ptr = std::shared_ptr<Collator>;
-        virtual int Compare(const std::string &left, const std::string&right) = 0;
-        virtual int Compare(const std::u16string &left, const std::u16string&right) = 0;
-        virtual ~Collator();
-    };
-    class Locale {
-    protected:
-        Locale() { }
-    public:
-        virtual ~Locale();
-        // no copy, no move
-        Locale(const Locale&) = delete;
-        Locale(Locale&&) = delete;
-        Locale&operator =(const Locale&) = delete;
-        Locale&operator =(Locale&&) = delete;
-        
-        using ptr = std::shared_ptr<Locale>;
+    size_t Utf8Index(size_t size, const std::string &text);
+    size_t Utf8Decrement(size_t size, const std::string &text);
+    size_t Utf8Increment(size_t size, const std::string &text);
+    size_t Utf8Length(const std::string&text);
 
-        static ptr GetInstance();
-        static ptr GetTestInstance(const std::string&locale); // testing only. 
+    std::string Utf8Erase(const std::string&text, size_t start, size_t end);
+    std::string Utf8Substring(const std::string&text, size_t start, size_t end);
+    inline std::string Utf8Substring(const std::string&text, size_t start) { 
+        return Utf8Substring(text,start,(size_t)-1); 
+    }
+    namespace implementation {
+        void Utf8RangeError();
+    }
 
-        virtual const std::string &CurrentLocale() const = 0;
-        virtual Collator::ptr GetCollator() = 0;
-    private:
-        static ptr g_instance;
-    };
+    std::string Utf8FromUtf32(char32_t value);
+
+
+    std::u16string Utf8ToUtf16(const std::string_view&s);
+    std::string Utf16ToUtf8(const std::u16string_view&s);
+
+
 }
+

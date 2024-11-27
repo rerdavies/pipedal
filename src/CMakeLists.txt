@@ -7,7 +7,7 @@ set (USE_PCH 1)
 
 set (ENABLE_BACKTRACE 1)
 
-set (USE_SANITIZE true)
+set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 
 set(CXX_STANDARD 20)
 
@@ -284,7 +284,6 @@ set(PIPEDAL_LIBS libpipedald zip
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 
      # ${JACK_LIBRARIES} - pending delete for JACK support.
-     ${ICU_LIBRARIES}
 
      )
 
@@ -332,7 +331,6 @@ set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL true)
 
 add_executable(pipedaltest testMain.cpp
 
-    InvertingMutexTest.cpp
     jsonTest.cpp
     UpdaterTest.cpp
     
@@ -344,6 +342,8 @@ add_executable(pipedaltest testMain.cpp
     PiPedalAlsaTest.cpp
     UnixSocketTest.cpp
 
+    LocaleTest.cpp
+
     Lv2HostLeakTest.cpp
 
 
@@ -353,7 +353,7 @@ add_executable(pipedaltest testMain.cpp
     MemDebug.cpp
     MemDebug.hpp
     )
-target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS})
+target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} ${ICU_LIBRARIES})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
 

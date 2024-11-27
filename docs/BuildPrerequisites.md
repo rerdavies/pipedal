@@ -16,7 +16,7 @@ with
 
     # install NodeJS latest LTS release.
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    sudo apt-get install -y nodejs npm
 
 
 Run the following commands to install dependent libraries required by the PiPedal build.

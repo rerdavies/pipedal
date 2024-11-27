@@ -100,8 +100,8 @@ namespace pipedal
 
         long long get_l1_misses()
         {
-            long long count;
-            read(fd_l1, &count, sizeof(long long));
+            long long count = 0;
+            auto _ = read(fd_l1, &count, sizeof(long long));
             return count;
         }
 
@@ -111,8 +111,8 @@ namespace pipedal
             {
                 return -1;
             }
-            long long count;
-            read(fd_l2, &count, sizeof(long long));
+            long long count = 0;
+            auto _ = read(fd_l2, &count, sizeof(long long));
             return count;
         }
     };

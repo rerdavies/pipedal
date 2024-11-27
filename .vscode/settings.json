@@ -98,7 +98,11 @@
         "p2p_i.h": "c",
         "p2p.h": "c",
         "hash_set": "cpp",
-        "barrier": "cpp"
+        "barrier": "cpp",
+        "format": "cpp",
+        "locale": "cpp",
+        "stdfloat": "cpp",
+        "text_encoding": "cpp"
     },
     "cSpell.words": [
         "Guitarix",

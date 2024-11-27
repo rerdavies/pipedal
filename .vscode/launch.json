@@ -138,7 +138,8 @@
                 //"[inverting_mutex_test]"
                 // "[utf8_to_utf32]"
                 //"[pipedal_alsa_test]"
-                "[wifi_channels_test]"
+                // "[wifi_channels_test]"
+                // "[locale]"
             ],
 
             "stopAtEntry": false,
