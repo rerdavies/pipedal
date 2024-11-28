@@ -104,7 +104,7 @@ static int getICUVersion(void* libHandle) {
     {
         return false;
     }
-    std::string fileName = error.substr(nPos);
+    std::string fileName = error.substr(0,nPos);
 
     int version = -1;
 
