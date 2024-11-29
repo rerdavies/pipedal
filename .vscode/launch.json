@@ -22,7 +22,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
-                //"-h"
+                "--no-sudo"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

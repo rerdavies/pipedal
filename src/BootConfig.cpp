@@ -25,7 +25,7 @@
 #include "SysExec.hpp"
 #include "util.hpp"
 #include <set>
-#include <ranges>
+#include "SystemConfigFile.hpp"
 
 namespace fs = std::filesystem;
 
@@ -84,9 +84,9 @@ std::string ReadFileLine(const fs::path &path)
 {
     if (!fs::exists(path))
     {
-        throw std::runtime_error(SS("File does not exist: " << path ));
+        throw std::runtime_error(SS("File does not exist: " << path));
     }
-    
+
     std::ifstream f(path);
     if (!f.is_open())
     {
@@ -97,11 +97,11 @@ std::string ReadFileLine(const fs::path &path)
     std::getline(f, line);
     return line;
 }
-std::vector<std::string> ReadFileArgs(const fs::path&path)
+std::vector<std::string> ReadFileArgs(const fs::path &path)
 {
     std::string line = ReadFileLine(path);
 
-    return split(line,' ');
+    return split(line, ' ');
 }
 
 using namespace pipedal;
@@ -179,7 +179,8 @@ void BootConfig::WriteConfiguration(std::function<void(bool success, std::string
     this->thread = nullptr; // wait for any previous operations to complete.
     if (!changed)
     {
-        if (onComplete) onComplete(true, "");
+        if (onComplete)
+            onComplete(true, "");
     }
     else
     {
@@ -193,7 +194,8 @@ void BootConfig::WriteConfiguration(std::function<void(bool success, std::string
             }
             catch (const std::exception &e)
             {
-                if (onComplete) onComplete(false, e.what());
+                if (onComplete)
+                    onComplete(false, e.what());
             }
         }
         else if (this->bootLoader == BootLoaderT::Grub)
@@ -202,7 +204,8 @@ void BootConfig::WriteConfiguration(std::function<void(bool success, std::string
         }
         else
         {
-            if (onComplete) onComplete(false, "Unsupported bootloader.");
+            if (onComplete)
+                onComplete(false, "Unsupported bootloader.");
         }
     }
 }
@@ -211,15 +214,14 @@ static std::string commandLineOption(BootConfig::DynamicSchedulerT dynamicSchedu
 {
     switch (dynamicScheduler)
     {
-        case BootConfig::DynamicSchedulerT::None:
-            return "preempt=none";
-        case BootConfig::DynamicSchedulerT::Voluntary:
-            return "preempt=voluntary";
-        case BootConfig::DynamicSchedulerT::Full:
-            return "preempt=full";
-        default:
-            throw std::range_error("Invalid value.");
-
+    case BootConfig::DynamicSchedulerT::None:
+        return "preempt=none";
+    case BootConfig::DynamicSchedulerT::Voluntary:
+        return "preempt=voluntary";
+    case BootConfig::DynamicSchedulerT::Full:
+        return "preempt=full";
+    default:
+        throw std::range_error("Invalid value.");
     }
 }
 void BootConfig::WriteUBootConfiguration(std::function<void(bool success, std::string errorMessage)> onComplete)
@@ -229,40 +231,24 @@ void BootConfig::WriteUBootConfiguration(std::function<void(bool success, std::s
     this->thread = std::make_unique<std::jthread>(
         [this, onComplete]()
         {
-
             try
             {
+
                 fs::path cmdlineFile = "/boot/firmware/cmdline.txt";
-                std::vector<std::string> bootArgs = ReadFileArgs(cmdlineFile);
 
-                std::vector<std::string> newBootArgs;
-                for (const auto&value: bootArgs) 
+                fs::path backupFile = "/boot/firmware/cmdline.txt.bak";
+                if (!fs::exists(backupFile))
                 {
-                    if (value != "threadirqs" && !value.starts_with("preempt=")) 
+                    try {
+                        fs::copy_file(cmdlineFile,backupFile);
+                    } catch(...)
                     {
-                        newBootArgs.push_back(value);
+                        
                     }
                 }
-                if (this->canSetThreadIrqs && this->threadedIrqs)
-                {
-                    newBootArgs.push_back("threadirqs");
-                }
-                if (this->dynamicScheduler != DynamicSchedulerT::NotApplicable)
-                {
-                    newBootArgs.push_back(commandLineOption(this->dynamicScheduler));
-                }
-                std::stringstream ss;
-                bool firstArg = true;
-                for (const std::string&arg: newBootArgs) {
-                    if (!firstArg) {
-                        ss << ' ';
-                    }
-                    firstArg = false;
-                    ss << arg;
-                }
-                ss << '\n';
+                std::string line = ReadFileLine(cmdlineFile);
 
-                std::string newCmdLine = ss.str();
+                std::string newLine = SetCmdlineArgs(line);
 
                 {
                     std::ofstream f(cmdlineFile);
@@ -270,7 +256,7 @@ void BootConfig::WriteUBootConfiguration(std::function<void(bool success, std::s
                     {
                         throw std::runtime_error(SS("Can't write to " << cmdlineFile));
                     }
-                    f << newCmdLine;
+                    f << newLine << '\n'; // trailing \n is REQUIRED
                 }
 
                 if (onComplete)
@@ -287,6 +273,107 @@ void BootConfig::WriteUBootConfiguration(std::function<void(bool success, std::s
             }
         });
 }
+
+static std::string QuoteGrubArgument(const std::string &value) {
+    std::ostringstream ss;
+    ss << '\"';
+    for (char c : value) {
+        if (c == '\\' || c == '\"')
+        {
+            ss << '\\' << c;
+        } else {
+            ss << c;
+        }
+    }
+    ss << '\"';
+    return ss.str();
+}
+static std::string UnquoteGrubArgument(const std::string &value) {
+    if (value.length() == 0) return value;
+    std::istringstream ss(value);
+    if (ss.peek() == '\"')
+    {
+        // c-like; \ is escape character.
+        if (ss.peek() != '\"') 
+        {
+            throw std::runtime_error("Invalid string in GRUB configuration file.");
+        }
+        ss.get();
+        std::ostringstream result;
+        while (ss.peek() != '\"' && ss.peek() != -1)
+        {
+            int c = ss.get();
+            if (c == -1 || c == '\n') {
+                throw std::runtime_error("Invalid string in GRUB configuration file.");
+            }
+            if (c == '\\')
+            {
+                int c2 = ss.get();
+                if (c2 == '\n' || c2 == -1) {
+                    throw std::runtime_error("Invalid string in GRUB configuration file.");
+                }
+                result << (char)c2;
+            } else {
+                result << (char)c;
+            }
+        }
+        return result.str();
+    } else if (ss.peek() == '\'')
+    {
+        ss.get();
+        std::ostringstream result;
+        while (true)
+        {
+            int c = ss.get();
+            if (c == -1 || c == '\n') {
+                throw std::runtime_error("Invalid string in GRUB configuration file.");
+            }
+            if (c == '\'')
+            {
+                break;
+            }
+            result << (char)c;
+        }
+        return result.str();
+    } else {
+        throw std::runtime_error("Invalid string in GRUB configuration file.");
+    }
+    
+}
+
+std::string BootConfig::SetCmdlineArgs(const std::string &cmdLine)
+{
+    std::vector<std::string> bootArgs = split(cmdLine,' ');
+    std::vector<std::string> newBootArgs;
+    for (const auto &value : bootArgs)
+    {
+        if (value != "threadirqs" && !value.starts_with("preempt="))
+        {
+            newBootArgs.push_back(value);
+        }
+    }
+    if (this->canSetThreadIrqs && this->threadedIrqs)
+    {
+        newBootArgs.push_back("threadirqs");
+    }
+    if (this->dynamicScheduler != DynamicSchedulerT::NotApplicable)
+    {
+        newBootArgs.push_back(commandLineOption(this->dynamicScheduler));
+    }
+    std::stringstream ss;
+    bool firstArg = true;
+    for (const std::string &arg : newBootArgs)
+    {
+        if (!firstArg)
+        {
+            ss << ' ';
+        }
+        firstArg = false;
+        ss << arg;
+    }
+    return ss.str();
+}
+
 void BootConfig::WriteGrubConfiguration(std::function<void(bool success, std::string errorMessage)> onComplete)
 {
     this->thread = nullptr; // blocks if already running.
@@ -294,11 +381,60 @@ void BootConfig::WriteGrubConfiguration(std::function<void(bool success, std::st
     this->thread = std::make_unique<std::jthread>(
         [this, onComplete]()
         {
-            sleep(1);
-
-            if (onComplete)
+            try
             {
-                onComplete(false, "Grub handler not implemeneted.");
+                //////////  rewrite /etc/default/grub ////////////
+                fs::path configPath = "/etc/default/grub";
+                fs::path backupPath  = "/etc/default/grub.bak";
+                if (!fs::exists(backupPath))
+                {
+                    try {
+                        fs::copy_file(configPath,backupPath);
+                    } catch(...)
+                    {
+
+                    }
+                }
+                SystemConfigFile grubFile(configPath);
+
+                std::string linePrefix = "GRUB_CMDLINE_LINUX_DEFAULT=";
+                auto line = grubFile.GetLineNumberStartingWith(linePrefix);
+                if (line < 0) 
+                {
+                    throw std::runtime_error(SS("Unexpected file format:  " << configPath));
+                }
+                std::string cmdlineDefault = grubFile.Get(line);
+
+                std::string cmdlineArgs = UnquoteGrubArgument(cmdlineDefault.substr(linePrefix.length()));
+
+                std::string newArgs = SetCmdlineArgs(cmdlineArgs);
+
+                std::string newLine = linePrefix + QuoteGrubArgument(newArgs);
+                
+                grubFile.Set(line,newLine);
+
+                grubFile.Save(configPath);
+
+                /////// regenerate actual GRUB boot files /////////////
+
+                auto result = sysExecForOutput("update-grub","");
+                if (result.exitCode != EXIT_SUCCESS)
+                {
+                    throw std::runtime_error(SS("update-grub failed. (" << result.output.substr(0,std::min((size_t)60,result.output.length())) << ")"));
+                }
+                //// signal completion //////
+
+                if (onComplete)
+                {
+                    onComplete(true,"");
+                }
+            }
+            catch (const std::exception &e)
+            {
+                if (onComplete)
+                {
+                    onComplete(false, e.what());
+                }
             }
         });
 }

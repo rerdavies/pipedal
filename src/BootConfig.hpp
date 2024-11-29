@@ -67,6 +67,7 @@ namespace pipedal {
         bool operator==(BootConfig&other) const;
     private:
         std::unique_ptr<std::jthread> thread;
+        std::string SetCmdlineArgs(const std::string &args);
 
         void WriteUBootConfiguration(std::function<void(bool success,std::string errorMessage)> onComplete);
         void WriteGrubConfiguration(std::function<void(bool success,std::string errorMessage)> onComplete);

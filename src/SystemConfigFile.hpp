@@ -50,6 +50,8 @@ public:
     const std::string& Get(int position) const { return lines[position]; }
     void Set(const std::string&key,const std::string &value);
     void Set(const std::string&key,const std::string &value, const std::string&comment);
+    void Set(int position,const std::string&line);
+    
     void SetDefault(const std::string&key, const std::string &value);
     void SetDefault(const std::string&key,const std::string &value, const std::string &comment);
 

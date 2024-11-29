@@ -333,6 +333,8 @@ endif()
 add_executable(pipedal_kconfig
     kconfigMain.cpp
     BootConfig.cpp BootConfig.hpp
+    SystemConfigFile.hpp SystemConfigFile.cpp
+
 
 )
 
@@ -687,6 +689,7 @@ add_executable(pipedalconfig
     ConfigMain.cpp
     alsaCheck.cpp
     alsaCheck.hpp
+    BootConfig.cpp BootConfig.hpp
     ModFileTypes.cpp ModFileTypes.hpp
     PiPedalConfiguration.hpp PiPedalConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
@@ -816,7 +819,7 @@ add_custom_target (
 )
 
 
-install (TARGETS pipedalconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+install (TARGETS pipedalconfig pipedal_kconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
    EXPORT pipedalTargets)
 
    install (TARGETS pipedald pipedaladmind pipedal_update DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin

@@ -28,6 +28,7 @@
 #include "RegDb.hpp"
 #include "Locale.hpp"
 #include "Finally.hpp"
+#include "BootConfig.hpp"
 
 #include <filesystem>
 #include <stdlib.h>
@@ -1026,6 +1027,28 @@ bool SetWebServerPort(std::string portOption)
     return true;
 }
 
+void CheckPreemptDynamicConfig()
+{
+    try {
+        BootConfig bootConfig;
+
+        if (bootConfig.KernelType() == "PREEMPT_DYNAMIC")
+        {
+            if (bootConfig.DynamicScheduler() != BootConfig::DynamicSchedulerT::Full)
+            {
+                cout << endl;
+                cout << "Warning: PREEMPT_DYNAMIC kernel has not been configured for 'preempt=full'" << endl;
+                cout << "Run pipedal_kconfig to configure the kernel for real-time audio." << endl;
+                cout << endl;
+            }
+        }
+
+    } catch(const std::exception& /* ignore */)
+    {
+    }
+}
+
+
 void Install(const fs::path &programPrefix, const std::string endpointAddress)
 {
     cout << "Configuring pipedal" << endl;
@@ -1257,6 +1280,8 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 
         // Restart Wi-Fi Direct if neccessary.
         OnWifiReinstall();
+
+        CheckPreemptDynamicConfig();
     }
     catch (const std::exception &e)
     {
