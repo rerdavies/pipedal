@@ -561,38 +561,6 @@ void InstallAudioService()
 #endif
 }
 
-int SudoExec(int argc, char **argv)
-{
-    // re-execute with SUDO in order to prompt for SUDO credentials once only.
-    std::vector<char *> args;
-    std::string pkexec = "/usr/bin/sudo"; // staged because "ISO C++ forbids converting a string constant to std::vector<char*>::value_type"(!)
-    args.push_back((char *)(pkexec.c_str()));
-
-    std::string sPath = getSelfExePath();
-    args.push_back(const_cast<char *>(sPath.c_str()));
-    for (int arg = 1; arg < argc; ++arg)
-    {
-        args.push_back(const_cast<char *>(argv[arg]));
-    }
-
-    args.push_back(nullptr);
-
-    char **newArgs = &args[0];
-
-    int pbPid;
-    int returnValue = 0;
-
-    if ((pbPid = fork()) == 0)
-    {
-        return execv(newArgs[0], newArgs);
-    }
-    else
-    {
-        waitpid(pbPid, &returnValue, 0);
-        int exitStatus = WEXITSTATUS(returnValue);
-        return exitStatus;
-    }
-}
 
 static bool IsP2pServiceEnabled()
 {

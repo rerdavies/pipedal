@@ -11,6 +11,29 @@ set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 
 set(CXX_STANDARD 20)
 
+
+include(FetchContent)
+
+cmake_policy(SET CMP0169 OLD)
+
+set(FETCHCONTENT_QUIET ON)
+set(FTXUI_QUIET ON)
+
+FetchContent_Declare(ftxui
+  GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui
+  GIT_TAG v5.0.0
+)
+
+FetchContent_GetProperties(ftxui)
+if(NOT ftxui_POPULATED)
+  FetchContent_Populate(ftxui)
+  add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+message(STATUS "*** ${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR}")
+
+
+
 include(FindPkgConfig)
 
 find_package(sdbus-c++ REQUIRED)
@@ -302,6 +325,21 @@ if(${USE_PCH})
   target_precompile_headers(libpipedald PRIVATE pch.h)
 endif()
 
+
+#################################
+
+add_executable(pipedal_kconfig
+    kconfigMain.cpp
+    BootConfig.cpp BootConfig.hpp
+
+)
+
+target_link_libraries(pipedal_kconfig
+  PRIVATE ftxui::screen
+  PRIVATE ftxui::dom
+  PRIVATE ftxui::component  # Not needed for this example.
+  PRIVATE PiPedalCommon
+)
 
 #################################
 add_executable(pipedald 

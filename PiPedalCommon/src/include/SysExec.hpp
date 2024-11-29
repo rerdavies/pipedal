@@ -43,5 +43,9 @@ namespace pipedal
     void sysExecTerminate(ProcessId pid_, int termTimeoutMs = 1000, int killTimeoutMs = 500); // returns the process's exit status.
     int sysExecWait(ProcessId pid);
 
+    // re-execute the current program with current argument, but with sudo.
+    int SudoExec(int argc, char **argv);
+
+
     std::string getSelfExePath();
 }

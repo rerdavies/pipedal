@@ -14,6 +14,11 @@ set (CMAKE_INSTALL_PREFIX "/usr/")
 include(CTest)
 enable_testing()
 
+
+
+
+
+
 #add_subdirectory("submodules/pipedal_p2pd")
 
 add_subdirectory("PiPedalCommon")
