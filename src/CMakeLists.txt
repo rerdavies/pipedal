@@ -14,7 +14,9 @@ set(CXX_STANDARD 20)
 
 include(FetchContent)
 
-cmake_policy(SET CMP0169 OLD)
+if(CMAKE_VERSION VERSION_GREATER 3.30)
+    cmake_policy(SET CMP0169 OLD) # Allow use of old FETCHCONTENT macros.
+endif()
 
 set(FETCHCONTENT_QUIET ON)
 set(FTXUI_QUIET ON)
