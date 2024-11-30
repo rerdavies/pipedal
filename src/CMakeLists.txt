@@ -343,6 +343,7 @@ target_link_libraries(pipedal_kconfig
   PRIVATE ftxui::dom
   PRIVATE ftxui::component  # Not needed for this example.
   PRIVATE PiPedalCommon
+  systemd
 )
 
 #################################

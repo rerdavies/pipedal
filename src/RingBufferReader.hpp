@@ -38,7 +38,8 @@ namespace pipedal
         EffectReplaced,
         SetValue,
         SetBypass,
-        AudioStopped,
+        //AudioStopped,
+        AudioTerminatedAbnormally, // specifically for an ALSA loss of connection.
         SetVuSubscriptions,
         FreeVuSubscriptions,
 
@@ -507,10 +508,10 @@ namespace pipedal
             write(RingBufferCommand::ReplaceEffect, pedalboard);
         }
 
-        void AudioStopped()
+        void AudioTerminatedAbnormally()
         {
             AudioStoppedBody body;
-            write(RingBufferCommand::AudioStopped, body);
+            write(RingBufferCommand::AudioTerminatedAbnormally, body);
         }
 
         void EffectReplaced(Lv2Pedalboard *pedalboard)

@@ -138,6 +138,8 @@ void PiPedalModel::Close()
         }
         closed = true;
 
+        CancelAudioRetry();
+
         if (avahiService)
         {
             this->avahiService = nullptr; // and close.
@@ -1301,6 +1303,10 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
 {
     try
     {
+        if (useDummyAudioDriver)
+        {
+            CancelAudioRetry();
+        }
         if (this->audioHost->IsOpen())
         {
 
@@ -1380,6 +1386,8 @@ void PiPedalModel::SetJackChannelSelection(int64_t clientId, const JackChannelSe
         this->storage.SetJackChannelSelection(channelSelection);
 
         this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
+
+        CancelAudioRetry();
     }
 
     RestartAudio(); // no lock to avoid mutex deadlock when reader thread is sending notifications..
@@ -1790,6 +1798,8 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     storage.SetJackServerSettings(jackServerSettings);
 
     FireJackConfigurationChanged(this->jackConfiguration);
+
+    CancelAudioRetry();
 
     guard.unlock();
     RestartAudio();
@@ -2735,4 +2745,62 @@ std::map<std::string,std::string> PiPedalModel::GetWifiRegulatoryDomains()
         Lv2Log::warning(SS("Unable to query Wifi Regulatory domains. " << e.what()));
     }
     return result;
+}
+
+void PiPedalModel::CancelAudioRetry() {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    if (audioRetryPostHandle) 
+    {
+        // don't think this can ever happen, but if it did, it would be bad.
+        this->CancelPost(audioRetryPostHandle);
+        audioRetryPostHandle = 0;
+    }
+
+}
+void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
+    // notification from the realtime thread, via the audiohost that the 
+    // ALSA stream has broken. We want to restart.
+
+    // get off the service thread as promptly as possible
+    this->Post([&]() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (closed) return;
+
+        auto now = clock::now();
+        clock::duration timeSinceLastRetry = now-this->lastRestartTime;
+        this->lastRestartTime = now;
+        if (timeSinceLastRetry > std::chrono::duration_cast<clock::duration>(std::chrono::milliseconds(1000))) {
+            audioRestartRetries = 0;
+        }
+        CancelAudioRetry();
+
+        if (audioRestartRetries == 0)
+        {
+            this->audioRetryPostHandle = this->Post(
+                // No lock to avoid deadlocks!
+                [this]() {
+                    Lv2Log::info("Restarting audio.");
+                    this->RestartAudio();
+                });
+        } else if (audioRestartRetries < 3) 
+        {
+            this->audioRetryPostHandle = this->PostDelayed(
+                std::chrono::milliseconds(100 * audioRestartRetries),
+                [this]() {
+                    if (closed) {
+                        return;
+                    }
+                    Lv2Log::info(SS("Restarting audio. (retry " << audioRestartRetries << ")"));
+
+                    RestartAudio();
+                });
+        } else {
+            this->audioRetryPostHandle = this->Post(
+                // No lock to avoid deadlocks!
+                [this]() {
+                    Lv2Log::info(SS("Switching to dummy driver."));
+                    RestartAudio(true); // switch to the dummy driver.
+                });
+        }
+    });
 }

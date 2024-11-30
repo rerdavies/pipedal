@@ -109,6 +109,12 @@ namespace pipedal
         using NetworkChangedListener = std::function<void(void)>;
 
     private:
+
+        void CancelAudioRetry();
+        clock::time_point lastRestartTime = clock::time_point::min();
+        int audioRestartRetries = 0;
+        PostHandle audioRetryPostHandle = 0;
+
         bool hasWifi = false;
 
         void SetHasWifi(bool hasWifi);
@@ -230,6 +236,7 @@ namespace pipedal
         virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) override;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) override;
+        virtual void OnAlsaDriverTerminatedAbnormally() override;
 
         void OnNotifyPathPatchPropertyReceived(
             int64_t instanceId,

@@ -1657,7 +1657,7 @@ namespace pipedal
                 Lv2Log::error(e.what());
                 Lv2Log::error("ALSA audio thread terminated abnormally.");
             }
-            this->driverHost->OnAudioStopped();
+            this->driverHost->OnAlsaDriverStopped();
 
             // if we terminated abnormally, pump messages until we have been terminated.
             if (!terminateAudio())

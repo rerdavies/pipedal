@@ -183,7 +183,8 @@ namespace pipedal
                             reader.read(&vProperty);
                             if (!vProperty.is_null())
                             {
-                                try {
+                                try
+                                {
                                     vProperty = pluginHost.MapPath(vProperty);
 
                                     // now to atom format (what we want on the rt thread0)
@@ -194,7 +195,8 @@ namespace pipedal
                                     pathPatchProperty.atomBuffer.resize(atomValue->size + sizeof(LV2_Atom));
                                     memcpy(pathPatchProperty.atomBuffer.data(), atomValue, pathPatchProperty.atomBuffer.size());
                                     this->pathPatchProperties.push_back(std::move(pathPatchProperty));
-                                } catch (const std::exception &e)
+                                }
+                                catch (const std::exception &e)
                                 {
                                     Lv2Log::info(SS("IndexedSnapshotValue: Failed to map path property " << pathProperty.first << ". " << e.what()));
                                 }
@@ -207,7 +209,7 @@ namespace pipedal
         void ApplyValues(IEffect *effect)
         {
 
-            effect->SetBypass(this->enabled);            
+            effect->SetBypass(this->enabled);
             if (effect != pEffect)
             {
                 throw std::runtime_error("Wrong effect");
@@ -907,7 +909,7 @@ private:
 
     bool onMidiEvent(Lv2EventBufferWriter &eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent &event)
     {
-        //eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
+        // eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
 
         this->realtimeActivePedalboard->OnMidiMessage(event.size, event.buffer, this, fnMidiValueChanged);
         if (listenForMidiEvent)
@@ -1100,10 +1102,12 @@ private:
     {
         return this->active && (!this->audioStopped) && !this->isDummyAudioDriver;
     }
-    virtual void OnAudioStopped() override
+    virtual void OnAlsaDriverStopped() override
     {
+
         this->audioStopped = true;
         Lv2Log::info("Audio stopped.");
+        this->realtimeWriter.AudioTerminatedAbnormally();
     }
     virtual void OnAudioTerminated() override
     {
@@ -1256,12 +1260,14 @@ public:
         return this->sampleRate;
     }
 
-    void OnAudioComplete()
+    void HandleAudioTerminatedAbnormally()
     {
-        // there is actually no compelling circumstance in which this should ever happen.
-
         Lv2Log::error("Audio processing terminated unexpectedly.");
-        realtimeWriter.AudioStopped();
+
+        if (pNotifyCallbacks)
+        {
+            pNotifyCallbacks->OnAlsaDriverTerminatedAbnormally();
+        }
     }
     std::vector<uint8_t> atomBuffer;
     std::vector<uint8_t> realtimeAtomBuffer;
@@ -1271,7 +1277,7 @@ public:
     {
         SetThreadName("rtsvc");
         SetThreadPriority(SchedulerPriority::AudioService);
-        
+
         int underrunMessagesGiven = 0;
         try
         {
@@ -1456,7 +1462,7 @@ public:
                                             {
                                                 LV2_URID propertyUrid = ((LV2_Atom_URID *)property)->body;
                                                 this->pNotifyCallbacks->OnPatchSetReply(instanceId, propertyUrid, value);
-                                                //this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
+                                                // this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
                                             }
                                         }
                                     }
@@ -1492,11 +1498,11 @@ public:
                                 hostReader.read(&buffer);
                                 OnPathPropertyReceived(buffer);
                             }
-                            else if (command == RingBufferCommand::AudioStopped)
+                            else if (command == RingBufferCommand::AudioTerminatedAbnormally)
                             {
                                 AudioStoppedBody body;
                                 hostReader.read(&body);
-                                OnAudioComplete();
+                                HandleAudioTerminatedAbnormally();
                                 return;
                             }
                             else if (command == RingBufferCommand::
@@ -1621,7 +1627,7 @@ public:
         if (jackServerSettings.IsDummyAudioDevice())
         {
             this->isDummyAudioDriver = true;
-            this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this,jackServerSettings.GetAlsaInputDevice()));
+            this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this, jackServerSettings.GetAlsaInputDevice()));
         }
         else
         {
@@ -1927,7 +1933,7 @@ public:
     }
 
 private:
-    //virtual bool UpdatePluginStates(Pedalboard &pedalboard) override;
+    // virtual bool UpdatePluginStates(Pedalboard &pedalboard) override;
     virtual bool UpdatePluginState(PedalboardItem &pedalboardItem) override;
 
     class RestartThread
@@ -2051,7 +2057,7 @@ public:
 
         result.msSinceLastUnderrun_ = (uint64_t)dt;
 
-        result.temperaturemC_ = (int32_t)(std::round(cpuTemperatureMonitor->GetTemperatureC()*1000));
+        result.temperaturemC_ = (int32_t)(std::round(cpuTemperatureMonitor->GetTemperatureC() * 1000));
 
         result.active_ = IsAudioRunning();
         result.restarting_ = this->restarting;
@@ -2065,7 +2071,9 @@ public:
         if (result.hasCpuGovernor_)
         {
             result.governor_ = GetGovernor();
-        } else {
+        }
+        else
+        {
             result.governor_ = "";
         }
 
@@ -2110,7 +2118,7 @@ void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindin
         else if (i->symbol() == "prevBank")
         {
             this->prevBankMidiBinding.SetBinding(*i);
-        } 
+        }
         else if (i->symbol() == "nextProgram")
         {
             this->nextPresetMidiBinding.SetBinding(*i);

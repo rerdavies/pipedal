@@ -350,7 +350,7 @@ public:
     Oscillator oscillator;
     LatencyMonitor latencyMonitor;
 
-    virtual void OnAudioStopped()
+    virtual void OnAlsaDriverStopped()
     {
     }
     virtual void OnAudioTerminated()

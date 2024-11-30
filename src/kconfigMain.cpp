@@ -75,7 +75,7 @@ std::string spinnerText(const Clock::time_point &startTime)
 
     int64_t position = (ms * MAX_LENGTH / 3000) % (MAX_LENGTH + N_DOTS);
 
-    char result[MAX_LENGTH - 1];
+    char result[MAX_LENGTH + 1];
     for (int64_t i = 0; i < MAX_LENGTH; ++i)
     {
         if (i >= position && i < position + N_DOTS)
