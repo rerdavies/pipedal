@@ -37,11 +37,10 @@ import { UiPlugin, UiControl } from './Lv2Plugin';
 import PluginIcon from './PluginIcon';
 import { Remark } from 'react-remark';
 
- /* eslint-disable */
-let myTheme: Theme| undefined = undefined;
+/* eslint-disable */
+let myTheme: Theme | undefined = undefined;
 
-const styles = (theme: Theme) =>
-{
+const styles = (theme: Theme) => {
     myTheme = theme;
     return createStyles({
         root: {
@@ -151,25 +150,26 @@ function makeControls(controls: UiControl[]) {
             break;
         }
     }
+    hasComments = true;
     if (hasComments) {
         let trs: React.ReactElement[] = [];
         for (let i = 0; i < controls.length; ++i) {
             let control = controls[i];
             if (!(control.not_on_gui) && control.is_input)
-            trs.push((
-                <tr>
-                    <td style={{ verticalAlign: "top" }}>
-                        <Typography variant="body2" style={{ whiteSpace: "nowrap" }}>
-                            {control.name}
-                        </Typography>
-                    </td>
-                    <td style={{ paddingLeft: "16px", verticalAlign: "top" }}>
-                        <Typography variant="body2">
-                            {control.comment}
-                        </Typography>
-                    </td>
-                </tr >
-            ));
+                trs.push((
+                    <tr>
+                        <td style={{ verticalAlign: "top" }}>
+                            <Typography variant="body2" style={{ whiteSpace: "nowrap" }}>
+                                {control.name}
+                            </Typography>
+                        </td>
+                        <td style={{ paddingLeft: "16px", verticalAlign: "top" }}>
+                            <Typography variant="body2">
+                                {control.comment}
+                            </Typography>
+                        </td>
+                    </tr >
+                ));
 
         }
         return (
@@ -235,7 +235,7 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                 <InfoOutlinedIcon className={classes.icon} color='inherit' />
             </IconButton>
             {open && (
-                <DialogEx tag="info" onClose={handleClose} open={open} fullWidth maxWidth="md" 
+                <DialogEx tag="info" onClose={handleClose} open={open} fullWidth maxWidth="md"
                     onEnterKey={handleClose}
                 >
                     <MuiDialogTitle >
@@ -258,18 +258,18 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                     </MuiDialogTitle>
                     <PluginInfoDialogContent dividers style={{ width: "100%", maxHeight: "80%", overflowX: "hidden" }}>
                         <div style={{ width: "100%", display: "flex", flexFlow: "row", justifyItems: "stretch", flexWrap: "nowrap" }} >
-                            <div style={{ flex: "1 1 auto", whiteSpace: "nowrap",minWidth: "auto" }}>
+                            <div style={{ flex: "1 1 auto", whiteSpace: "nowrap", minWidth: "auto" }}>
                                 <Typography gutterBottom variant="body2" >
                                     Author:&nbsp;
                                     {(plugin.author_homepage !== "")
                                         ? (<a href={plugin.author_homepage} target="_blank" rel="noopener noreferrer">
-                                                {plugin.author_name}
+                                            {plugin.author_name}
                                         </a>
                                         )
                                         : (
                                             <span>{plugin.author_name}</span>
                                         )
-                                        
+
                                     }
                                 </Typography>
                             </div>
@@ -286,40 +286,44 @@ const PluginInfoDialog = withStyles(styles)((props: PluginInfoProps) => {
                         {
                             makeControls(plugin.controls)
                         }
-                        <Typography gutterBottom variant="body2" style={{ paddingTop: "1em" }}>
-                            Description:
-                        </Typography>
-                        <div style={{ marginLeft: 24, marginTop: 16 }}>
-                            <Remark 
-                                rehypeReactOptions={{
-                                    components: {
-                                        p: (props: any) => {
-                                            // return (
-                                            //     <p className="MuiTypography-root MuiTypography-body2" {...props} />
-                                            // );
-                                            return (
-                                                <Typography variant="body2" paragraph={true} {...props} />
-                                            );
-                                    
-                                        },
-                                        code: (props: any) => {
-                                            return (<code style={{fontSize: 14}} {...props} />);
-                                        },
-                                        a: (props: any) => {
-                                            return (
-                                                <a target="_blank" {...props} />
-                                            );
+                        {plugin.description.length > 0 && (
+                            <div>
+                                <Typography gutterBottom variant="body2" style={{ paddingTop: "1em" }}>
+                                    Description:
+                                </Typography>
+                                <div style={{ marginLeft: 24, marginTop: 16 }}>
+                                    <Remark
+                                        rehypeReactOptions={{
+                                            components: {
+                                                p: (props: any) => {
+                                                    // return (
+                                                    //     <p className="MuiTypography-root MuiTypography-body2" {...props} />
+                                                    // );
+                                                    return (
+                                                        <Typography variant="body2" paragraph={true} {...props} />
+                                                    );
 
-                                        }
-                                    },
-                                }}
-                            >
-                                {plugin.description}
-                            </Remark>
-                        </div>
+                                                },
+                                                code: (props: any) => {
+                                                    return (<code style={{ fontSize: 14 }} {...props} />);
+                                                },
+                                                a: (props: any) => {
+                                                    return (
+                                                        <a target="_blank" {...props} />
+                                                    );
+
+                                                }
+                                            },
+                                        }}
+                                    >
+                                        {plugin.description}
+                                    </Remark>
+                                </div>
+                            </div>
+                        )}
                     </PluginInfoDialogContent>
                     <PluginInfoDialogActions>
-                        <Button variant="dialogPrimary"  autoFocus onClick={handleClose} style={{ width: "130px" }}>
+                        <Button variant="dialogPrimary" autoFocus onClick={handleClose} style={{ width: "130px" }}>
                             OK
                         </Button>
                     </PluginInfoDialogActions>

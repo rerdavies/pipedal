@@ -1217,7 +1217,7 @@ private:
         }
         catch (const std::exception &e)
         {
-            Lv2Log::error("Fatal error while processing jack audio. (%s)", e.what());
+            Lv2Log::error("Fatal error while processing realtime audio. (%s)", e.what());
             throw;
         }
     }

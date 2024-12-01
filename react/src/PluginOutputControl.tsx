@@ -24,10 +24,11 @@ import createStyles from '@mui/styles/createStyles';
 import withStyles from '@mui/styles/withStyles';
 import { UiControl } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
-import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle,State } from './PiPedalModel';
-import {isDarkMode} from './DarkMode';
+import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle, State } from './PiPedalModel';
+import { isDarkMode } from './DarkMode';
 import GxTunerControl from './GxTunerControl';
 import Units from './Units';
+import ControlTooltip from './ControlTooltip';
 
 
 
@@ -74,8 +75,7 @@ type PluginOutputControlState = {
 
 const PluginOutputControl =
     withStyles(styles, { withTheme: true })(
-        class extends Component<PluginOutputControlProps, PluginOutputControlState>
-        {
+        class extends Component<PluginOutputControlProps, PluginOutputControlState> {
 
             private model: PiPedalModel;
             private vuRef: React.RefObject<HTMLDivElement>;
@@ -98,10 +98,8 @@ const PluginOutputControl =
                 this.onConnectionStateChanged = this.onConnectionStateChanged.bind(this);
             }
 
-            private onConnectionStateChanged(state: State)
-            {
-                if (state === State.Ready)
-                {
+            private onConnectionStateChanged(state: State) {
+                if (state === State.Ready) {
                     this.unsubscribe();
                     this.subscribe();
                 }
@@ -127,40 +125,36 @@ const PluginOutputControl =
             }
 
             componentDidUpdate(prevProps: Readonly<PluginOutputControlProps>, prevState: Readonly<PluginOutputControlState>, snapshot?: any): void {
-                if (prevProps.instanceId !== this.props.instanceId)
-                {
+                if (prevProps.instanceId !== this.props.instanceId) {
                     this.unsubscribe();
                     this.subscribe();
                 }
             }
 
-            private VU_HEIGHT = 60-4;
-            private DB_VU_HEIGHT = 60-4;
+            private VU_HEIGHT = 60 - 4;
+            private DB_VU_HEIGHT = 60 - 4;
             private animationHandle: number | undefined = undefined;
-            
+
             private dbVuTelltale = -96.0;
             private dbVuValue = -96.0;
 
             private dbVuHoldTime = 0.0;
 
             private requestDbVuAnimation() {
-                if (!this.animationHandle)
-                {
+                if (!this.animationHandle) {
                     this.animationHandle = requestAnimationFrame(
-                        ()=> {
+                        () => {
                             let value = this.dbVuValue;
                             let range = this.vuMap(value);
-                            let top = range-this.VU_HEIGHT;
+                            let top = range - this.VU_HEIGHT;
                             if (top > 0) top = 0;
-        
-                            if (value > this.dbVuTelltale)
-                            {
+
+                            if (value > this.dbVuTelltale) {
                                 this.dbVuTelltale = value;
-                                this.dbVuHoldTime = Date.now()+2000;
+                                this.dbVuHoldTime = Date.now() + 2000;
                             }
-                            if (this.dbVuRef.current)
-                            {
-                                this.dbVuRef.current.style.marginTop = top+"px";
+                            if (this.dbVuRef.current) {
+                                this.dbVuRef.current.style.marginTop = top + "px";
                             }
                             this.animationHandle = undefined;
                             this.updateDbVuTelltale();
@@ -171,19 +165,16 @@ const PluginOutputControl =
 
             updateDbVuTelltale() {
                 let telltaleDone = true;
-                if (this.dbVuHoldTime !== 0)
-                {
+                if (this.dbVuHoldTime !== 0) {
                     telltaleDone = false;
                     let t = Date.now();
-                    if (t >= this.dbVuHoldTime)
-                    {
-                        let dt = t-this.dbVuHoldTime;
-                        let telltaleValue = this.dbVuTelltale-30*dt/1000;
-                        if (telltaleValue < -200)
-                        {
+                    if (t >= this.dbVuHoldTime) {
+                        let dt = t - this.dbVuHoldTime;
+                        let telltaleValue = this.dbVuTelltale - 30 * dt / 1000;
+                        if (telltaleValue < -200) {
                             telltaleValue = -200;
                             telltaleDone = true;
-                        } 
+                        }
                         this.dbVuTelltale = telltaleValue;
                         this.dbVuHoldTime = t;
 
@@ -191,49 +182,41 @@ const PluginOutputControl =
                     let y = this.dbVuMap(this.dbVuTelltale);
                     if (y < 0) y = 0;
 
-                    if (this.dbVuTelltaleRef.current)
-                    {
+                    if (this.dbVuTelltaleRef.current) {
                         let telltaleStyle = this.dbVuTelltaleRef.current.style;
                         telltaleStyle.marginTop = y + "px";
                         let telltaleColor = "#0C0";
-                        if (this.dbVuTelltale >= 0)
-                        {
+                        if (this.dbVuTelltale >= 0) {
                             telltaleColor = "#F00";
-                        } else if (this.dbVuTelltale >= -10)
-                        {
+                        } else if (this.dbVuTelltale >= -10) {
                             telltaleColor = "#FF0";
                         }
                         telltaleStyle.background = telltaleColor;
                     }
                 }
-                if (!telltaleDone)
-                {
+                if (!telltaleDone) {
                     this.requestDbVuAnimation();
                 }
             }
             private updateValue(value: number) {
-                if (this.lampRef.current)
-                {
+                if (this.lampRef.current) {
                     let control = this.props.uiControl;
-                    let range = (value-control.min_value)/(control.max_value-control.min_value);
-                    this.lampRef.current.style.opacity = range +"";
-                } else if (this.dbVuRef.current)
-                {
+                    let range = (value - control.min_value) / (control.max_value - control.min_value);
+                    this.lampRef.current.style.opacity = range + "";
+                } else if (this.dbVuRef.current) {
                     this.dbVuValue = value;
                     this.requestDbVuAnimation();
                 }
                 else if (this.vuRef.current) {
                     let control = this.props.uiControl;
-                    let range = (value-control.min_value)/(control.max_value-control.min_value);
-                    let top = this.VU_HEIGHT-range*this.VU_HEIGHT;
+                    let range = (value - control.min_value) / (control.max_value - control.min_value);
+                    let top = this.VU_HEIGHT - range * this.VU_HEIGHT;
 
-                    if (!this.animationHandle)
-                    {
+                    if (!this.animationHandle) {
                         this.animationHandle = requestAnimationFrame(
-                            ()=> {
-                                if (this.vuRef.current)
-                                {
-                                    this.vuRef.current.style.marginTop = top+"px";
+                            () => {
+                                if (this.vuRef.current) {
+                                    this.vuRef.current.style.marginTop = top + "px";
                                 }
                                 this.animationHandle = undefined;
                             }
@@ -284,13 +267,13 @@ const PluginOutputControl =
 
             dbVuMap(value: number): number {
                 let control = this.props.uiControl;
-                let y = (control.max_value-value)*this.DB_VU_HEIGHT/(control.max_value-control.min_value);
+                let y = (control.max_value - value) * this.DB_VU_HEIGHT / (control.max_value - control.min_value);
                 return y;
             }
 
             vuMap(value: number): number {
                 let control = this.props.uiControl;
-                let y = (control.max_value-value)*this.VU_HEIGHT/(control.max_value-control.min_value);
+                let y = (control.max_value - value) * this.VU_HEIGHT / (control.max_value - control.min_value);
                 return y;
             }
 
@@ -317,20 +300,18 @@ const PluginOutputControl =
                         item_width = 80;
                     }
                 }
-                if (control.isTuner())
-                {
+                if (control.isTuner()) {
                     item_width = undefined;
                     return (
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
-                            <GxTunerControl instanceId={this.props.instanceId} symbolName={control.symbol} 
-                                valueIsMidi={ control.units === Units.midiNote}
-                                />
+                            <GxTunerControl instanceId={this.props.instanceId} symbolName={control.symbol}
+                                valueIsMidi={control.units === Units.midiNote}
+                            />
                         </div >
 
                     );
 
-                } else if (control.isDbVu())
-                {
+                } else if (control.isDbVu()) {
                     item_width = undefined;
                     let redLevel = this.dbVuMap(0);
                     let yellowLevel = this.dbVuMap(-10);
@@ -338,22 +319,24 @@ const PluginOutputControl =
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
                             {/* TITLE SECTION */}
                             <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
-                                <Typography variant="caption" display="block" style={{
-                                    width: "100%",
-                                    textAlign: "center"
-                                }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
+                                <ControlTooltip uiControl={control}>
+                                    <Typography variant="caption" display="block" style={{
+                                        width: "100%",
+                                        textAlign: "center"
+                                    }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
+                                </ControlTooltip>
                             </div>
                             {/* CONTROL SECTION */}
 
-                            <div style={{ flex: "1 1 auto", display: "flex",  justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
-                                <div style={{ width: 8, height: this.DB_VU_HEIGHT+4, background: "#000",  }}>
+                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
+                                <div style={{ width: 8, height: this.DB_VU_HEIGHT + 4, background: "#000", }}>
                                     <div style={{ height: this.DB_VU_HEIGHT, width: 4, overflow: "hidden", position: "absolute", margin: 2 }}>
-                                        <div style={{width: 4, height: redLevel,position: "absolute", marginTop: 0, background: "#F00"}} />
-                                        <div style={{width: 4, height: (yellowLevel-redLevel),position: "absolute", marginTop: redLevel, background: "#CC0"}} />
-                                        <div style={{width: 4, height: (this.DB_VU_HEIGHT-yellowLevel),position: "absolute", marginTop: yellowLevel, background: "#0A0"}} />
+                                        <div style={{ width: 4, height: redLevel, position: "absolute", marginTop: 0, background: "#F00" }} />
+                                        <div style={{ width: 4, height: (yellowLevel - redLevel), position: "absolute", marginTop: redLevel, background: "#CC0" }} />
+                                        <div style={{ width: 4, height: (this.DB_VU_HEIGHT - yellowLevel), position: "absolute", marginTop: yellowLevel, background: "#0A0" }} />
 
-                                        <div ref={this.dbVuRef} style={{ width: 4,position: "absolute",  marginTop: 0,height: this.VU_HEIGHT, background: "#000" }} />
-                                        <div ref={this.dbVuTelltaleRef} style={{ width: 4,position: "absolute",  marginTop: 100,height: 3, background: "#C00" }} />
+                                        <div ref={this.dbVuRef} style={{ width: 4, position: "absolute", marginTop: 0, height: this.VU_HEIGHT, background: "#000" }} />
+                                        <div ref={this.dbVuTelltaleRef} style={{ width: 4, position: "absolute", marginTop: 100, height: 3, background: "#C00" }} />
                                     </div>
                                 </div>
 
@@ -369,15 +352,17 @@ const PluginOutputControl =
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
                             {/* TITLE SECTION */}
                             <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
-                                <Typography variant="caption" display="block" style={{
-                                    width: "100%",
-                                    textAlign: "center"
-                                }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
+                                <ControlTooltip uiControl={control}>
+                                    <Typography variant="caption" display="block" style={{
+                                        width: "100%",
+                                        textAlign: "center"
+                                    }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
+                                </ControlTooltip>
                             </div>
                             {/* CONTROL SECTION */}
 
-                            <div style={{ flex: "1 1 auto", display: "flex",  justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
-                                <div style={{ width: 8, height: this.VU_HEIGHT+4, background: "#000",  }}>
+                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
+                                <div style={{ width: 8, height: this.VU_HEIGHT + 4, background: "#000", }}>
                                     <div style={{ height: this.VU_HEIGHT, overflow: "hidden", position: "absolute", margin: 2 }}>
                                         <div ref={this.vuRef} style={{ width: 4, height: this.VU_HEIGHT, background: "#0C0", }} />
                                     </div>
@@ -394,26 +379,31 @@ const PluginOutputControl =
                     );
                 } else if (control.isLamp()) {
                     item_width = undefined;
-                    let attachedLamp = control.name === "" || control.name === "\u00A0" ;
+                    let attachedLamp = control.name === "" || control.name === "\u00A0";
                     return (
-                        <div style={{ display: "flex", flexDirection: "column", width: item_width, 
-                                marginTop: 8, marginBottom: 8, marginRight: 8,marginLeft: (attachedLamp? 0: 8), height: 98 
-                            }}>
+                        <div style={{
+                            display: "flex", flexDirection: "column", width: item_width,
+                            marginTop: 8, marginBottom: 8, marginRight: 8, marginLeft: (attachedLamp ? 0 : 8), height: 98
+                        }}>
                             {/* TITLE SECTION */}
                             <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
-                                <Typography variant="caption" display="block" style={{
-                                    width: "100%",
-                                    textAlign: "center"
-                                }}> {control.name === "" ? "\u00A0": (control.name)}</Typography>
+                                <ControlTooltip uiControl={control}>
+                                    <Typography variant="caption" display="block" style={{
+                                        width: "100%",
+                                        textAlign: "center"
+                                    }}> {control.name === "" ? "\u00A0" : (control.name)}</Typography>
+                                </ControlTooltip>
                             </div>
                             {/* CONTROL SECTION */}
 
                             <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "left", alignItems: "start", flexFlow: "row nowrap" }}>
-                                <div style={{ width: 12, height: 12, background: isDarkMode()? "#111" : "#444", borderRadius: 5, position: "relative" }}>
-                                    <div ref={this.lampRef} style={{ width: 8, height: 8, 
-                                        background: (isDarkMode()? "radial-gradient(circle at center, #F00 0, #F00 20%, #333 100%)"
-                                                       : "radial-gradient(circle at center, #F44 0, #F44 40%, #644 100%)"),
-                                        opacity: 0, borderRadius: 3,margin: 2,position: "absolute" }} />
+                                <div style={{ width: 12, height: 12, background: isDarkMode() ? "#111" : "#444", borderRadius: 5, position: "relative" }}>
+                                    <div ref={this.lampRef} style={{
+                                        width: 8, height: 8,
+                                        background: (isDarkMode() ? "radial-gradient(circle at center, #F00 0, #F00 20%, #333 100%)"
+                                            : "radial-gradient(circle at center, #F44 0, #F44 40%, #644 100%)"),
+                                        opacity: 0, borderRadius: 3, margin: 2, position: "absolute"
+                                    }} />
                                 </div>
 
                             </div>
@@ -429,11 +419,14 @@ const PluginOutputControl =
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
                             {/* TITLE SECTION */}
                             <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
-                                <Typography variant="caption" display="block" style={{
-                                    width: "100%",
-                                    textAlign: "left"
-                                }}> {control.name}</Typography>
+                                <ControlTooltip uiControl={control}>
+                                    <Typography variant="caption" display="block" style={{
+                                        width: "100%",
+                                        textAlign: "left"
+                                    }}> {control.name}</Typography>
+                                </ControlTooltip>
                             </div>
+
                             {/* CONTROL SECTION */}
 
                             <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "start", alignItems: "center", flexFlow: "row nowrap" }}>
@@ -449,15 +442,17 @@ const PluginOutputControl =
                         </div >
                     );
 
-                }else {
+                } else {
                     return (
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
                             {/* TITLE SECTION */}
                             <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
-                                <Typography variant="caption" display="block" style={{
-                                    width: "100%",
-                                    textAlign: "left"
-                                }}> {control.name}</Typography>
+                                <ControlTooltip uiControl={control}>
+                                    <Typography variant="caption" display="block" style={{
+                                        width: "100%",
+                                        textAlign: "left"
+                                    }}> {control.name}</Typography>
+                                </ControlTooltip>
                             </div>
                             {/* CONTROL SECTION */}
 

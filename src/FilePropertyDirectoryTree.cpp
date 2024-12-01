@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "FilePropertyDirectoryTree.hpp"
+#include <filesystem>
 
 using namespace pipedal;
 namespace fs = std::filesystem;

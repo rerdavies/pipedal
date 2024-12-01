@@ -193,8 +193,11 @@ namespace pipedal
 
         bool requestStateChangedNotification = false;
 
+        float zeroInputMix = 0.5f;
+        int actualAudioInputs = 0;
+        int actualAudioOutputs = 0;
+        std::vector<std::vector<float>> outputMixBuffers;
         void BypassTo(float value);
-
 
     public:
 
@@ -242,6 +245,9 @@ namespace pipedal
         bool HasErrorMessage() const { return this->hasErrorMessage; }
         const char*TakeErrorMessage() { this->hasErrorMessage = false; return this->errorMessage; }
 
+        virtual void PrepareNoInputEffect(int numberOfInputs,size_t maxBufferSize) override;
+
+
         virtual void ResetAtomBuffers();
         virtual uint64_t GetInstanceId() const { return instanceId; }
         virtual int GetNumberOfInputAudioPorts() const { return inputAudioPortIndices.size(); }
@@ -250,6 +256,8 @@ namespace pipedal
         virtual int GetNumberOfOutputAtomPorts() const { return outputAtomPortIndices.size(); }
         virtual int GetNumberOfMidiInputPorts() const { return inputMidiPortIndices.size(); }
         virtual int GetNumberOfMidiOutputPorts() const { return outputMidiPortIndices.size(); }
+
+
 
         virtual void SetAudioInputBuffer(int index, float *buffer);
         virtual float *GetAudioInputBuffer(int index) const { return this->inputAudioBuffers[index]; }

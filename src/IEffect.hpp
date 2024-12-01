@@ -58,6 +58,7 @@ namespace pipedal {
         virtual bool GetRequestStateChangedNotification() const = 0;
         virtual void SetRequestStateChangedNotification(bool value) = 0;
 
+        virtual void PrepareNoInputEffect(int numberOfInputs, size_t maxBufferSize) = 0;
 
         virtual void SetAudioInputBuffer(int index, float *buffer) = 0;
         virtual void SetAudioOutputBuffer(int index, float*buffer) = 0;

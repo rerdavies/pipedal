@@ -33,6 +33,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { ReactComponent as DialIcon } from './svg/fx_dial.svg';
 import { isDarkMode } from './DarkMode';
+import ControlTooltip from './ControlTooltip';
 
 const MIN_ANGLE = -135;
 const MAX_ANGLE = 135;
@@ -725,10 +726,12 @@ const PluginControl =
                     <div ref={this.frameRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", width: item_width, margin: 8 }}>
                         {/* TITLE SECTION */}
                         <div style={{ flex: "0 0 auto", alignSelf:"stretch", marginBottom: 8, marginLeft: isSelect ? 16 : 0, marginRight: 0 }}>
-                            <Typography variant="caption" display="block" noWrap style={{
-                                width: "100%",
-                                textAlign: isSelect ? "left" : "center"
-                            }}> {isTrigger ? "\u00A0" : control.name}</Typography>
+                            <ControlTooltip uiControl={control} >
+                                <Typography variant="caption" display="block" noWrap style={{
+                                    width: "100%",
+                                    textAlign: isSelect ? "left" : "center"
+                                }}> {isTrigger ? "\u00A0" : control.name}</Typography>
+                            </ControlTooltip>
                         </div>
                         {/* CONTROL SECTION */}
 

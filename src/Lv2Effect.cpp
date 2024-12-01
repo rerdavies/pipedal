@@ -47,7 +47,6 @@ namespace fs = std::filesystem;
 
 const float BYPASS_TIME_S = 0.1f;
 
-
 static fs::path makeAbsolutePath(const std::filesystem::path &path, const std::filesystem::path &parentPath)
 {
     if (path.is_absolute())
@@ -56,7 +55,6 @@ static fs::path makeAbsolutePath(const std::filesystem::path &path, const std::f
     }
     return parentPath / path;
 }
-
 
 Lv2Effect::Lv2Effect(
     IHost *pHost_,
@@ -83,9 +81,9 @@ Lv2Effect::Lv2Effect(
             this->pathPropertyWriters.push_back(PatchPropertyWriter(instanceId, filePropertyUrid));
         }
     }
-    for (auto &pathProperty: pedalboardItem.pathProperties_)
+    for (auto &pathProperty : pedalboardItem.pathProperties_)
     {
-        SetPathPatchProperty(pathProperty.first,pathProperty.second);
+        SetPathPatchProperty(pathProperty.first, pathProperty.second);
     }
 
     // initialize the atom forge used on the realtime thread.
@@ -112,7 +110,6 @@ Lv2Effect::Lv2Effect(
             bundleUriString,
             storagePath);
 
-
         mapPathFeature.Prepare(&(pHost_->GetMapFeature()));
         mapPathFeature.SetPluginStoragePath(pHost_->GetPluginStoragePath());
         if (info->piPedalUI())
@@ -122,10 +119,8 @@ Lv2Effect::Lv2Effect(
             {
                 if (!fileProperty->resourceDirectory().empty())
                 {
-                    mapPathFeature.AddResourceFileMapping({
-                        makeAbsolutePath(fileProperty->resourceDirectory(),bundleUriString),
-                        makeAbsolutePath(fileProperty->directory(),pHost_->GetPluginStoragePath())
-                    });
+                    mapPathFeature.AddResourceFileMapping({makeAbsolutePath(fileProperty->resourceDirectory(), bundleUriString),
+                                                           makeAbsolutePath(fileProperty->directory(), pHost_->GetPluginStoragePath())});
                 }
             }
         }
@@ -144,7 +139,6 @@ Lv2Effect::Lv2Effect(
     this->features.push_back(mapPathFeature.GetMapPathFeature());
     this->features.push_back(mapPathFeature.GetMakePathFeature());
     this->features.push_back(mapPathFeature.GetFreePathFeature());
-
 
     this->features.push_back(this->fileBrowserFilesFeature.GetFeature());
 
@@ -370,15 +364,52 @@ void Lv2Effect::PreparePortIndices()
     outputAtomBuffers.resize(outputAtomPortIndices.size());
 }
 
+void Lv2Effect::PrepareNoInputEffect(int numberOfInputs, size_t maxBufferSize)
+{
+    if (outputAudioPortIndices.size() == 0)
+    {
+        // pass the input through unmodified.
+        inputAudioBuffers.resize(std::max((size_t)numberOfInputs, inputAudioPortIndices.size()));
+        outputAudioBuffers.resize(numberOfOutputs);
+    }
+    else if (inputAudioPortIndices.size() == 0)
+    {
+        inputAudioBuffers.resize(numberOfInputs);
+        outputAudioBuffers.resize(std::max((size_t)numberOfInputs, outputAudioPortIndices.size()));
+
+        // allocate a working buffer which we will mix with passed-through data.
+        outputMixBuffers.resize(outputAudioPortIndices.size());
+        for (size_t i = 0; i < outputMixBuffers.size(); ++i)
+        {
+            outputMixBuffers[i].resize(maxBufferSize);
+        }
+        // connect the plugin to the mix buffer instead of output buffer.
+        for (size_t i = 0; i < outputAudioPortIndices.size(); ++i)
+        {
+            int pluginIndex = this->outputAudioPortIndices[i];
+            lilv_instance_connect_port(this->pInstance, pluginIndex, outputMixBuffers[i].data());
+        }
+    }
+}
+
 void Lv2Effect::SetAudioInputBuffer(int index, float *buffer)
 {
-    if (index >= inputAudioPortIndices.size())
-    {
-        throw PiPedalArgumentException("Buffer index out of range.");
-    }
     this->inputAudioBuffers[index] = buffer;
-    int pluginIndex = this->inputAudioPortIndices[index];
-    lilv_instance_connect_port(this->pInstance, pluginIndex, buffer);
+
+    if (inputAudioPortIndices.size() == inputAudioBuffers.size())
+    {
+        int pluginIndex = this->inputAudioPortIndices[index];
+        lilv_instance_connect_port(this->pInstance, pluginIndex, buffer);
+    }
+    else
+    {
+        // cases: 1->0, 1->1, 2->0, 2->1
+        if (index < inputAudioPortIndices.size())
+        {
+            int pluginIndex = this->inputAudioPortIndices[index];
+            lilv_instance_connect_port(this->pInstance, pluginIndex, buffer);
+        }
+    }
 }
 
 void Lv2Effect::SetAudioInputBuffer(float *left)
@@ -388,7 +419,7 @@ void Lv2Effect::SetAudioInputBuffer(float *left)
         SetAudioInputBuffer(0, left);
         SetAudioInputBuffer(1, left);
     }
-    else
+    else if (GetNumberOfInputAudioPorts() != 0) /// yyx MIXING!
     {
         SetAudioInputBuffer(0, left);
     }
@@ -400,7 +431,7 @@ void Lv2Effect::SetAudioInputBuffers(float *left, float *right)
     {
         SetAudioInputBuffer(0, left);
     }
-    else
+    else if (GetNumberOfInputAudioPorts() > 1)
     {
         SetAudioInputBuffer(0, left);
         SetAudioInputBuffer(1, right);
@@ -410,8 +441,15 @@ void Lv2Effect::SetAudioInputBuffers(float *left, float *right)
 void Lv2Effect::SetAudioOutputBuffer(int index, float *buffer)
 {
     this->outputAudioBuffers[index] = buffer;
-    int pluginIndex = this->outputAudioPortIndices[index];
-    lilv_instance_connect_port(pInstance, pluginIndex, buffer);
+
+    if (this->inputAudioPortIndices.size() != 0) // i.e. we're not mixing a zero-input control
+    {
+        if ((size_t)index < this->inputAudioPortIndices.size())
+        {
+            int pluginIndex = this->outputAudioPortIndices[index];
+            lilv_instance_connect_port(pInstance, pluginIndex, buffer);
+        }
+    }
 }
 
 int Lv2Effect::GetControlIndex(const std::string &key) const
@@ -452,7 +490,7 @@ void Lv2Effect::Activate()
 
 void Lv2Effect::AssignUnconnectedPorts()
 {
-    for (int i = 0; i < this->GetNumberOfInputAudioPorts(); ++i)
+    for (size_t i = 0; i < this->inputAudioPortIndices.size(); ++i)
     {
         if (GetAudioInputBuffer(i) == nullptr)
         {
@@ -462,14 +500,16 @@ void Lv2Effect::AssignUnconnectedPorts()
             lilv_instance_connect_port(pInstance, pluginIndex, buffer);
         }
     }
-    for (int i = 0; i < this->GetNumberOfOutputAudioPorts(); ++i)
-    {
-        if (GetAudioOutputBuffer(i) == nullptr)
-        {
-            int pluginIndex = this->outputAudioPortIndices[i];
 
-            float *buffer = bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize());
-            lilv_instance_connect_port(pInstance, pluginIndex, buffer);
+    if (this->inputAudioPortIndices.size() != 0) // i.e. not using a mix buffer.
+    {
+        for (size_t i = 0; i < this->outputAudioPortIndices.size(); ++i)
+        {
+            if (GetAudioOutputBuffer(i) == nullptr)
+            {
+                float *buffer = bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize());
+                int pluginIndex = this->outputAudioPortIndices[i];
+            }
         }
     }
     for (int i = 0; i < this->GetNumberOfInputAtomPorts(); ++i)
@@ -528,6 +568,61 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
     {
         // relay worker response
         worker->EmitResponses();
+    }
+    // for zero-input plugins, mix the plugin output with the input signal.
+    if (this->inputAudioPortIndices.size() == 0)
+    {
+
+        // mix a zero input controls into the output buffer using a triangular mix curve.
+        float pluginLevel = std::max(1.0f, this->zeroInputMix * 2);
+        float inputLevel = std::max(1.0f, (1 - this->zeroInputMix) * 2);
+
+        // case
+        // 1 plugin output into 1 output.
+        // 2 plugin outputs into 2 outputs.
+        if (this->outputAudioBuffers.size() == this->outputMixBuffers.size())
+        {
+            for (size_t i = 0; i < this->outputMixBuffers.size(); ++i)
+            {
+                float *__restrict input;
+                if (i >= this->inputAudioBuffers.size()) {
+                    if (this->inputAudioBuffers.size() == 0)
+                    {
+                        break;
+                    }
+                    input = this->inputAudioBuffers[0];
+                } else {
+                    input = this->inputAudioBuffers[i];
+                } 
+                float *__restrict pluginOutput = this->outputMixBuffers[i].data();
+                float *__restrict finalOutput = this->outputAudioBuffers[i];
+
+                for (uint32_t i = 0; i < samples; ++i)
+                {
+                    finalOutput[i] = input[i] * inputLevel + pluginOutput[i] * pluginLevel;
+                }
+            }
+        }
+        else if (this->outputAudioPortIndices.size() == 1 && this->outputAudioBuffers.size() == 2)
+        {
+            // 1 plugin output into 2 outputs.
+            float *__restrict pluginOutput = this->outputMixBuffers[0].data();
+            for (size_t i = 0; i < this->outputMixBuffers.size(); ++i)
+            {
+                float *__restrict input = this->inputAudioBuffers[i];
+                float *__restrict finalOutput = this->outputAudioBuffers[i];
+
+                for (uint32_t i = 0; i < samples; ++i)
+                {
+                    finalOutput[i] = input[i] * inputLevel + pluginOutput[i] * pluginLevel;
+                }
+            }
+        }
+        else
+        {
+            // e.g. 2 plugin outputs into 1 output (should never happen)
+            std::runtime_error("Internal error 0xEA48");
+        }
     }
 
     // do soft bypass.

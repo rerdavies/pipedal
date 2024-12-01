@@ -288,7 +288,10 @@ export const MainPage =
                 this.setSelection(selectedId);
                 let item = this.getPedalboardItem(selectedId);
                 if (item != null) {
-                    if (item.isSplit()) {
+                    if (item.isStart() || item.isEnd())
+                    {
+                        // do nothing.
+                    } else if (item.isSplit()) {
                         let split = item as PedalboardSplitItem;
                         if (split.getSplitType() === SplitType.Ab) {
                             let cv = split.getToggleAbControlValue();
@@ -363,7 +366,7 @@ export const MainPage =
             titleBar(pedalboardItem: PedalboardItem | null): React.ReactNode {
                 let title = "";
                 let author = "";
-                let pluginUri = "";
+                let infoPluginUri = "";
                 let presetsUri = "";
                 let missing = false;
                 if (pedalboardItem) {
@@ -375,7 +378,7 @@ export const MainPage =
                         title = pedalboardItem.pluginName ?? "#error";
                         author = "";
                         presetsUri = "";
-                        pluginUri = "";
+                        infoPluginUri = "";
                     }
                     else {
                         let uiPlugin = this.model.getUiPlugin(pedalboardItem.uri);
@@ -386,9 +389,9 @@ export const MainPage =
                             title = uiPlugin.name;
                             author = uiPlugin.author_name;
                             presetsUri = uiPlugin.uri;
-                            if (uiPlugin.description.length > 20) {
-                                pluginUri = uiPlugin.uri;
-                            }
+                            // if (uiPlugin.description.length > 20) {
+                            // }
+                            infoPluginUri = uiPlugin.uri;
                         }
                     }
                 }
@@ -422,7 +425,7 @@ export const MainPage =
                                 )}
                             </div>
                             <div style={{ flex: "0 0 auto", verticalAlign: "center" }}>
-                                <PluginInfoDialog plugin_uri={pluginUri} />
+                                <PluginInfoDialog plugin_uri={infoPluginUri} />
                             </div>
                             <div style={{ flex: "0 0 auto" }}>
                                 <PluginPresetSelector pluginUri={presetsUri} instanceId={pedalboardItem?.instanceId ?? 0}

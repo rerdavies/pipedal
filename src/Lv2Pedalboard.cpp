@@ -121,6 +121,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                 if (pLv2Effect)
                 {
+
                     if (pLv2Effect->HasErrorMessage())
                     {
                         std::string error = pLv2Effect->TakeErrorMessage();
@@ -131,6 +132,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                     pEffect = pLv2Effect;
 
                     uint64_t instanceId = pEffect->GetInstanceId();
+                    pLv2Effect->PrepareNoInputEffect(inputBuffers.size(),pHost->GetMaxAudioBufferSize());
 
                     if (inputBuffers.size() == 1)
                     {
@@ -207,7 +209,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                     effectOutput.push_back(CreateNewAudioBuffer());
                 }
 #endif
-                for (size_t i = 0; i < effectOutput.size(); ++i)
+                for (size_t i = 0; i < effectOutput.size(); ++i) 
                 {
                     pEffect->SetAudioOutputBuffer(i, effectOutput[i]);
                 }

@@ -2782,6 +2782,7 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
                     Lv2Log::info("Restarting audio.");
                     this->RestartAudio();
                 });
+            ++audioRestartRetries;
         } else if (audioRestartRetries < 3) 
         {
             this->audioRetryPostHandle = this->PostDelayed(
@@ -2794,13 +2795,21 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
 
                     RestartAudio();
                 });
+            ++audioRestartRetries;
+        } else if (audioRestartRetries == 3)  // one attempt to start the dummy driver.
+        {
+            {
+                this->audioRetryPostHandle = this->Post(
+                    // No lock to avoid deadlocks!
+                    [this]() {
+                        Lv2Log::info(SS("Switching to dummy driver."));
+                        RestartAudio(true); // switch to the dummy driver.
+                    });
+            } 
+            ++audioRestartRetries;
         } else {
-            this->audioRetryPostHandle = this->Post(
-                // No lock to avoid deadlocks!
-                [this]() {
-                    Lv2Log::info(SS("Switching to dummy driver."));
-                    RestartAudio(true); // switch to the dummy driver.
-                });
+            Lv2Log::error(SS("Unable to reastart audio."));
+
         }
     });
 }

@@ -40,6 +40,7 @@ import JsonAtom from './JsonAtom';
 import PluginOutputControl from './PluginOutputControl';
 import Units from './Units';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
+import Tooltip from '@mui/material/Tooltip';
 
 
 export const StandardItemSize = { width: 80, height: 110 };
@@ -553,7 +554,11 @@ const PluginControlView =
                         result.push((
                             <div key={"ctl" + (this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
                                 <div className={classes.portGroupTitle}>
-                                    <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
+                                    <Tooltip title={controlGroup.name} 
+                                    placement="top-start" arrow  enterDelay={1500} enterNextDelay={1500}
+                                    >
+                                        <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
+                                    </Tooltip>
                                 </div>
                                 <div className={classes.portGroupControls} >
                                     {
