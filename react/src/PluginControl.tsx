@@ -68,6 +68,13 @@ const styles = (theme: Theme) => createStyles({
         backgroundColor: theme.palette.primary.main,
         opacity: theme.palette.mode === 'light' ? 0.38 : 0.3
     },
+    controlFrame: {
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", height: 116
+    },
+
+    titleSection: {
+        flex: "0 0 auto", alignSelf:"stretch", marginBottom: 8, marginLeft: 0, marginRight: 0
+    },
     displayValue: {
         position: "absolute",
         top: 0,
@@ -78,7 +85,14 @@ const styles = (theme: Theme) => createStyles({
         background: theme.mainBackground,
         color: theme.palette.text.secondary,
         // zIndex: -1,
+    },
+    midSection: {
+        flex: "1 1 1", display: "flex",flexFlow: "column nowrap",alignContent: "center",justifyContent: "center"
+    },
+    editSection: {
+        flex: "0 0 0", position: "relative", width: 60, height: 28,minHeight: 28
     }
+
 });
 
 
@@ -723,9 +737,16 @@ const PluginControl =
 
 
                 return (
-                    <div ref={this.frameRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", width: item_width, margin: 8 }}>
+                    <div ref={this.frameRef} 
+                        className={this.props.classes.controlFrame}
+                        style={{ width: item_width }}
+                       >
                         {/* TITLE SECTION */}
-                        <div style={{ flex: "0 0 auto", alignSelf:"stretch", marginBottom: 8, marginLeft: isSelect ? 16 : 0, marginRight: 0 }}>
+                        <div className={this.props.classes.titleSection}
+                         style={
+                            { alignSelf:"stretch", marginBottom: 8, marginLeft: isSelect ? 8 : 0, marginRight: 0 
+
+                         }}>
                             <ControlTooltip uiControl={control} >
                                 <Typography variant="caption" display="block" noWrap style={{
                                     width: "100%",
@@ -735,7 +756,8 @@ const PluginControl =
                         </div>
                         {/* CONTROL SECTION */}
 
-                        <div style={{ flex: "0 0 auto" }}>
+                        <div className={this.props.classes.midSection}>
+                        
                             {isTrigger ? (
                                 <Button variant="contained" color="primary" size="small"
                                     onMouseDown={ 
@@ -747,7 +769,9 @@ const PluginControl =
                                 style={{
                                     textTransform: "none",
                                     background: (isDarkMode() ? "#6750A4" : undefined),
-                                    marginLeft: 8, marginRight: 8,minWidth:60
+                                    marginLeft: 8, marginRight: 8,minWidth:60,
+                                    marginTop: 0
+
                                 }}
 
                                 >
@@ -774,7 +798,7 @@ const PluginControl =
                         </div>
 
                         {/* LABEL/EDIT SECTION*/}
-                        <div style={{ flex: "0 0 auto", position: "relative", width: 60 }}>
+                        <div className={this.props.classes.editSection} >
                             {(!(isSelect || isOnOffSwitch || isTrigger)) &&
                                 (
                                     (isAbSwitch) ? (

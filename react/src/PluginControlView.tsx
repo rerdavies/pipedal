@@ -126,11 +126,12 @@ const styles = (theme: Theme) => createStyles({
 
     normalGrid: {
         position: "relative",
-        paddingLeft: 22,
+        paddingLeft: 25,
         paddingRight: 34,
         flex: "1 1 auto",
         display: "flex", flexDirection: "row", flexWrap: "wrap",
         justifyContent: "flex-start", alignItems: "flex_start",
+        rowGap: 10
 
 
     },
@@ -147,12 +148,26 @@ const styles = (theme: Theme) => createStyles({
         marginBottom: 8
 
     },
+
     controlPadding: {
         flex: "0 0 auto",
         marginTop: 0,
-        marginBottom: 0
+        marginBottom: 0,
+        height: 116
 
     },
+    controlPair: {
+        display: "flex", flexFlow: "row nowrap",
+        flex: "0 0 auto",
+        height: 116
+    },
+    controlSpacer: {
+        display: "none",
+        minWidth: 0,
+        width: 0,
+        height: 116
+    },
+
     portGroup: {
         marginLeft: 8,
         marginTop: 0,
@@ -375,6 +390,34 @@ const PluginControlView =
 
             }
 
+            push_control(controls: ReactNode[], pluginControl: UiControl,controlValues: ControlValue[])
+            {
+                // combine lamps with their previous control
+                if ((pluginControl.isLamp() || pluginControl.isDbVu()) && controls.length !== 0)
+                {
+                    let newControl = this.makeStandardControl(pluginControl,controlValues);
+                    let previousControl = controls[controls.length-1];
+                    let pair = (
+                        <div className={this.props.classes.controlPair}>
+                            {previousControl}
+                            {newControl}
+                        </div>
+                    );
+                    controls[controls.length-1] = pair;
+                    // push a spacer control in order to make placing of extended controls predictable. 
+                    // (e.g.. inserting at position 4 still places the extended control after four previous controls
+                    controls.push((
+
+                        <div className={this.props.classes.controlSpacer} />
+                    ));
+
+                } else {
+                    controls.push(
+                        this.makeStandardControl(pluginControl, controlValues)
+                    )
+                }
+            }
+
             getStandardControlNodes(plugin: UiPlugin, controlValues: ControlValue[]): ControlNodes {
                 let result: ControlNodes = [];
                 let portGroupMap: { [id: string]: ControlGroup } = {};
@@ -394,10 +437,9 @@ const PluginControlView =
                             while (i + 1 < plugin.controls.length && plugin.controls[i + 1].port_group === pluginControl.port_group) {
                                 ++i;
                                 pluginControl = plugin.controls[i];
+
                                 if (!pluginControl.isHidden()) {
-                                    groupControls.push(
-                                        this.makeStandardControl(pluginControl, controlValues)
-                                    )
+                                    this.push_control(groupControls,pluginControl,controlValues);
                                     indexes.push(pluginControl.index);
                                 }
                             }
@@ -407,9 +449,7 @@ const PluginControlView =
                             )
                             portGroupMap[pluginControl.port_group] = controlGroup;
                         } else {
-                            result.push(
-                                this.makeStandardControl(pluginControl, controlValues)
-                            );
+                            this.push_control(result,pluginControl,controlValues);
                         }
                     }
                 }

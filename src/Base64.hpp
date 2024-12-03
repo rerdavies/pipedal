@@ -55,13 +55,14 @@ namespace macaron
                 'w', 'x', 'y', 'z', '0', '1', '2', '3',
                 '4', '5', '6', '7', '8', '9', '+', '/'};
 
+
             size_t in_len = size;
             size_t out_len = 4 * ((in_len + 2) / 3);
             std::string ret(out_len, '\0');
-            size_t i;
+            size_t i = 0;
             char *p = const_cast<char *>(ret.c_str());
 
-            for (i = 0; i < in_len - 2; i += 3)
+            for (i = 0; i+2 < in_len; i += 3)
             {
                 *p++ = sEncodingTable[(data[i] >> 2) & 0x3F];
                 *p++ = sEncodingTable[((data[i] & 0x3) << 4) | ((int)(data[i + 1] & 0xF0) >> 4)];

@@ -150,6 +150,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     pipedalUI__mimeType = lilv_new_uri(pWorld, PIPEDAL_UI__mimeType);
     pipedalUI__outputPorts = lilv_new_uri(pWorld, PIPEDAL_UI__outputPorts);
     pipedalUI__text = lilv_new_uri(pWorld, PIPEDAL_UI__text);
+    pipedalUI__ledColor = lilv_new_uri(pWorld,PIPEDAL_UI__ledColor);
 
     pipedalUI__frequencyPlot = lilv_new_uri(pWorld, PIPEDAL_UI__frequencyPlot);
     pipedalUI__xLeft = lilv_new_uri(pWorld, PIPEDAL_UI__xLeft);
@@ -194,6 +195,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     dc__format = lilv_new_uri(pWorld, "http://purl.org/dc/terms/format");
 
     mod__fileTypes = lilv_new_uri(pWorld, "http://moddevices.com/ns/mod#fileTypes");
+    pipedalui__fileTypes =lilv_new_uri(pWorld, PIPEDAL_UI__fileTypes);
 }
 
 void PluginHost::LilvUris::Free()
@@ -623,8 +625,11 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
                 //  rfs:range atom:Path?
                 if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->rdfs__range, lv2Host->lilvUris->atom__Path))
                 {
+
+
                     AutoLilvNode label = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->rdfs__label, nullptr);
                     std::string strLabel = label.AsString();
+
                     if (strLabel.length() != 0)
                     {
                         std::filesystem::path path = this->bundle_path();
@@ -636,7 +641,20 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
                             std::make_shared<UiFileProperty>(
                                 strLabel, propertyUri.AsUri(), lv2DirectoryName);
 
-                        AutoLilvNodes mod__fileTypes = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->mod__fileTypes, nullptr);
+
+                        AutoLilvNode indexNode = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->lv2core__index, nullptr);
+                        int32_t index = indexNode.AsInt(-1);
+                        fileProperty->index(index);
+
+
+                        // if there's a pipedalui_fileTypes node, use that instead.
+
+                        AutoLilvNodes mod__fileTypes = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->pipedalui__fileTypes, nullptr);
+                        if (!mod__fileTypes) 
+                        {
+                            mod__fileTypes = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->mod__fileTypes, nullptr);
+                        }
+
                         LILV_FOREACH(nodes, i, mod__fileTypes)
                         {
                             // "nam,nammodel"
@@ -978,6 +996,15 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__not_on_gui_property_uri);
     this->connection_optional_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__connectionOptional);
     this->trigger_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__trigger);
+
+    AutoLilvNode port_ledColor = lilv_port_get(plugin,pPort,host->lilvUris->pipedalUI__ledColor);
+    if (port_ledColor)
+    {
+        auto value = lilv_node_as_string(port_ledColor);
+        if (value) {
+            this->pipedal_ledColor_ = value;
+        }
+    }
 
     LilvScalePoints *pScalePoints = lilv_port_get_scale_points(plugin, pPort);
     LILV_FOREACH(scale_points, iSP, pScalePoints)
@@ -1650,6 +1677,8 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      MAP_REF(Lv2PortInfo, not_on_gui),
      MAP_REF(Lv2PortInfo, buffer_type),
      MAP_REF(Lv2PortInfo, port_group),
+     MAP_REF(Lv2PortInfo, pipedal_ledColor),
+
      json_map::enum_reference("units", &Lv2PortInfo::units_, get_units_enum_converter()),
      MAP_REF(Lv2PortInfo, comment)}};
 
@@ -1715,6 +1744,7 @@ json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
     MAP_REF(Lv2PluginUiPort, trigger_property),
     MAP_REF(Lv2PluginUiPort, scale_points),
     MAP_REF(Lv2PluginUiPort, port_group),
+    MAP_REF(Lv2PluginUiPort, pipedal_ledColor),
 
     json_map::enum_reference("units", &Lv2PluginUiPort::units_, get_units_enum_converter()),
     MAP_REF(Lv2PluginUiPort, comment),

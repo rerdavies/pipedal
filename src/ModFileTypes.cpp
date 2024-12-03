@@ -44,6 +44,10 @@ const std::vector<ModFileTypes::ModDirectory> ModFileTypes::ModDirectories =
         {"nammodel", "NeuralAmpModels", "Neural Amp Models", {".nam"}},              // Ratatoille, Mike's NAM.
         {"aidadspmodel", "shared/aidaaix", "AIDA IAX Models", {".json", ".aidaiax"}}, // Ratatoille
         {"mlmodel", "ToobMlModels", "ML Models", {".json"}},                         //
+
+        // pipedal-specific types. use pipedal_ui:filetypes instead (or in addition to) mod:fileTypes.
+        {"recording", "shared/audio/Recordings", "Recordings", {"audio/*"}}, // Recordings from recordings plugins. 
+
         //
 };
 
@@ -134,7 +138,7 @@ void ModFileTypes::CreateDefaultDirectories(const std::filesystem::path &rootDir
 
             fs::create_directories(path);
         }
-
+ 
         if (!fs::exists(rootDirectory / "shared" / "audio" / "Cab IR Files"))
         {
             fs::create_symlink(

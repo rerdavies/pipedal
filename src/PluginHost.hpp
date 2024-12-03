@@ -227,6 +227,7 @@ namespace pipedal
         std::string comment_;
         PiPedalUI::ptr piPedalUI_;
 
+        std::string pipedal_ledColor_;
 
     public:
         bool IsSwitch() const
@@ -293,6 +294,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(port_group);
         LV2_PROPERTY_GETSET(comment);
         LV2_PROPERTY_GETSET_SCALAR(units);
+        LV2_PROPERTY_GETSET(pipedal_ledColor);
 
         LV2_PROPERTY_GETSET(buffer_type);
 
@@ -497,6 +499,7 @@ namespace pipedal
               is_logarithmic_(pPort->is_logarithmic()), integer_property_(pPort->integer_property()), enumeration_property_(pPort->enumeration_property()),
               toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()),
               trigger_property_(pPort->trigger_property()),
+              pipedal_ledColor_(pPort->pipedal_ledColor()),
               comment_(pPort->comment()), units_(pPort->units()),
               connection_optional_(pPort->connection_optional())
         {
@@ -540,6 +543,7 @@ namespace pipedal
         bool trigger_property_ = false;
         std::vector<Lv2ScalePoint> scale_points_;
         std::string port_group_;
+        std::string pipedal_ledColor_;
 
         Units units_ = Units::none;
         std::string comment_;
@@ -572,6 +576,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(is_program_controller);
         LV2_PROPERTY_GETSET(custom_units);
         LV2_PROPERTY_GETSET(connection_optional);
+        LV2_PROPERTY_GETSET(pipedal_ledColor);
 
     public:
         static json_map::storage_type<Lv2PluginUiPort> jmap;
@@ -707,6 +712,8 @@ namespace pipedal
             AutoLilvNode pipedalUI__outputPorts;
             AutoLilvNode pipedalUI__text;
 
+            AutoLilvNode pipedalUI__ledColor;
+
             AutoLilvNode time_Position;
             AutoLilvNode time_barBeat;
             AutoLilvNode time_beatsPerMinute;
@@ -717,6 +724,7 @@ namespace pipedal
 
             AutoLilvNode ui__portNotification;
             AutoLilvNode ui__plugin;
+            AutoLilvNode ui__ledColor;
             AutoLilvNode ui__protocol;
             AutoLilvNode ui__floatProtocol;
             AutoLilvNode ui__peakProtocol;
@@ -735,6 +743,7 @@ namespace pipedal
             AutoLilvNode dc__format;
 
             AutoLilvNode mod__fileTypes;
+            AutoLilvNode pipedalui__fileTypes;
 
             
         };

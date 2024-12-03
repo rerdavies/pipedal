@@ -59,6 +59,8 @@
 #define PIPEDAL_UI__yBottom PIPEDAL_UI_PREFIX "yBottom"
 #define PIPEDAL_UI__width PIPEDAL_UI_PREFIX "width"
 
+#define PIPEDAL_UI__ledColor  PIPEDAL_UI_PREFIX "ledColor"
+
 
 namespace pipedal {
 
@@ -122,14 +124,16 @@ namespace pipedal {
         UiFileProperty(PluginHost*pHost, const LilvNode*node, const std::filesystem::path&resourcePath);
         UiFileProperty(const std::string&name, const std::string&patchProperty,const std::string &directory);
 
-
+        
         std::vector<std::string>& modDirectories() { return modDirectories_; }
         const std::vector<std::string>& modDirectories() const { return modDirectories_; }
         
         bool useLegacyModDirectory() const { return useLegacyModDirectory_; }
         void useLegacyModDirectory(bool value) { useLegacyModDirectory_ = value; }
         const std::string &label() const { return label_; }
+
         int32_t index() const { return index_; }
+        void index(int32_t value) { index_ = value; }
         
         const std::string &directory() const { return directory_; }
         void directory(const std::string &path) { directory_ = path; }

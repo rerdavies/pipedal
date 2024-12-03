@@ -32,6 +32,36 @@ import ControlTooltip from './ControlTooltip';
 
 
 
+function makeLedGradient(color: string) {
+    if (color === "green") {
+        if (isDarkMode()) {
+            return "radial-gradient(circle at center, #0F0 0, #0F0 20%, #333 100%)";
+        } else {
+            return "radial-gradient(circle at center, #4F4 0, #4F4 40%, #464 100%)";
+        }
+    }
+    if (color === "blue") {
+        if (isDarkMode()) {
+            return "radial-gradient(circle at center, #00F 0, #00F 20%, #333 100%)";
+        } else {
+            return "radial-gradient(circle at center, #44F 0, #44F 40%, #446 100%)";
+        }
+    }
+    if (color === "yellow") {
+        if (isDarkMode()) {
+            return "radial-gradient(circle at center, #FF0 0, #FF0 20%, #333 100%)";
+        } else {
+            return "radial-gradient(circle at center, #FF4 0, #FF4 40%, #664 100%)";
+        }
+    }
+    if (isDarkMode()) {
+        return "radial-gradient(circle at center, #F000 0, #F00 20%, #333 100%)";
+    } else {
+        return "radial-gradient(circle at center, #F44 0, #F44 40%, #644 100%)";
+    }
+
+}
+
 
 
 const styles = (theme: Theme) => createStyles({
@@ -60,7 +90,26 @@ const styles = (theme: Theme) => createStyles({
         background: "white",
         color: "#666",
         // zIndex: -1,
-    }
+    },
+    controlFrame: {
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", height: 116
+    },
+
+    titleSection: {
+        flex: "0 0 auto", alignSelf:"stretch", marginBottom: 8, marginLeft: 0, marginRight: 0
+    },
+
+    midSection: {
+        flex: "1 1 1", display: "flex",flexFlow: "column nowrap",alignContent: "center",justifyContent: "center"
+    },
+
+    editSection: {
+        flex: "0 0 28", position: "relative", width: 60, height: 28, minHeight: 28
+    },
+    editSectionNoContent: {
+        flex: "0 0 28", position: "relative", width: 1, height: 28, minHeight: 28         
+    }    
+
 });
 
 
@@ -251,7 +300,10 @@ const PluginOutputControl =
                 }
             }
 
-            isShortSelect(control: UiControl) {
+            isShortSelectOrText(control: UiControl) {
+                if (control.scale_points.length === 0) {
+                    return true;
+                }
                 for (let scale_point of control.scale_points) {
                     if (scale_point.label.length > 12) return false;
                 }
@@ -276,9 +328,9 @@ const PluginOutputControl =
                 let y = (control.max_value - value) * this.VU_HEIGHT / (control.max_value - control.min_value);
                 return y;
             }
-
             render() {
 
+                let classes = this.props.classes;
                 let control: UiControl = this.props.uiControl;
 
 
@@ -292,11 +344,11 @@ const PluginOutputControl =
                     }
                 }
 
-                let isSelect = control.isOutputSelect();
+                let isText = control.isOutputText();
 
-                let item_width: number | undefined = isSelect ? 160 : 80;
-                if (isSelect) {
-                    if (this.isShortSelect(control)) {
+                let item_width: number | undefined = isText ? 160 : 80;
+                if (isText) {
+                    if (this.isShortSelectOrText(control)) {
                         item_width = 80;
                     }
                 }
@@ -316,11 +368,13 @@ const PluginOutputControl =
                     let redLevel = this.dbVuMap(0);
                     let yellowLevel = this.dbVuMap(-10);
                     return (
-                        <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
+                        <div className={classes.controlFrame} 
+                            style={{ width: item_width }}>
                             {/* TITLE SECTION */}
-                            <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                            <div className={classes.titleSection} 
+                                style={{ width: "100%"  }}>
                                 <ControlTooltip uiControl={control}>
-                                    <Typography variant="caption" display="block" style={{
+                                    <Typography  variant="caption" display="block" style={{
                                         width: "100%",
                                         textAlign: "center"
                                     }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
@@ -328,7 +382,8 @@ const PluginOutputControl =
                             </div>
                             {/* CONTROL SECTION */}
 
-                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
+                            <div className={classes.midSection} 
+                                style={{ flex: "1 1 1", display: "flex", justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
                                 <div style={{ width: 8, height: this.DB_VU_HEIGHT + 4, background: "#000", }}>
                                     <div style={{ height: this.DB_VU_HEIGHT, width: 4, overflow: "hidden", position: "absolute", margin: 2 }}>
                                         <div style={{ width: 4, height: redLevel, position: "absolute", marginTop: 0, background: "#F00" }} />
@@ -341,27 +396,33 @@ const PluginOutputControl =
                                 </div>
 
                             </div>
+                            <div className={classes.editSectionNoContent}>
+
+                            </div>
 
                         </div >
 
                     );
                 }
                 else if (control.isVu()) {
+                    // yyx: convert this to a horizontal progress bar.
                     item_width = undefined;
                     return (
-                        <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
+                        <div className={classes.controlFrame} style={{ width: item_width}}>
                             {/* TITLE SECTION */}
-                            <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                            <div className={classes.titleSection} 
+                                style={{ width: "100%" }}>
                                 <ControlTooltip uiControl={control}>
-                                    <Typography variant="caption" display="block" style={{
-                                        width: "100%",
+                                    <Typography noWrap display="block"  variant="caption" style={{
+                                        width: item_width,
                                         textAlign: "center"
                                     }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
                                 </ControlTooltip>
                             </div>
                             {/* CONTROL SECTION */}
 
-                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
+                            <div className={classes.midSection}
+                                 style={{ display: "flex", justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
                                 <div style={{ width: 8, height: this.VU_HEIGHT + 4, background: "#000", }}>
                                     <div style={{ height: this.VU_HEIGHT, overflow: "hidden", position: "absolute", margin: 2 }}>
                                         <div ref={this.vuRef} style={{ width: 4, height: this.VU_HEIGHT, background: "#0C0", }} />
@@ -371,8 +432,7 @@ const PluginOutputControl =
                             </div>
 
                             {/* LABEL/EDIT SECTION*, strictly a placeholder for visual alignment purposes.*/}
-                            <div style={{ flex: "0 0 auto", position: "relative", width: 30, height: 27 }}>
-                                &nbsp;
+                            <div className={this.props.classes.editSectionNoContent}>
                             </div>
                         </div >
 
@@ -380,15 +440,23 @@ const PluginOutputControl =
                 } else if (control.isLamp()) {
                     item_width = undefined;
                     let attachedLamp = control.name === "" || control.name === "\u00A0";
+
+                    let ledGradient: string;
+                    if (this.props.uiControl.pipedal_ledColor.length === 0) {
+                        ledGradient = (isDarkMode() ? "radial-gradient(circle at center, #F00 0, #F00 20%, #333 100%)"
+                            : "radial-gradient(circle at center, #F44 0, #F44 40%, #644 100%)");
+                    } else {
+                        ledGradient = makeLedGradient(this.props.uiControl.pipedal_ledColor);
+                    }
                     return (
-                        <div style={{
-                            display: "flex", flexDirection: "column", width: item_width,
-                            marginTop: 8, marginBottom: 8, marginRight: 8, marginLeft: (attachedLamp ? 0 : 8), height: 98
-                        }}>
+                        <div className={classes.controlFrame}
+                            style={{width: attachedLamp? 15: item_width}}
+                            >
                             {/* TITLE SECTION */}
-                            <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                            <div className={classes.titleSection} 
+                                    style={{ flex: "0 0 auto", width: "100%"}}>
                                 <ControlTooltip uiControl={control}>
-                                    <Typography variant="caption" display="block" style={{
+                                    <Typography noWrap variant="caption" display="block" style={{
                                         width: "100%",
                                         textAlign: "center"
                                     }}> {control.name === "" ? "\u00A0" : (control.name)}</Typography>
@@ -396,12 +464,17 @@ const PluginOutputControl =
                             </div>
                             {/* CONTROL SECTION */}
 
-                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "left", alignItems: "start", flexFlow: "row nowrap" }}>
-                                <div style={{ width: 12, height: 12, background: isDarkMode() ? "#111" : "#444", borderRadius: 5, position: "relative" }}>
+                            <div className={classes.midSection} 
+                                style={{
+                                    display: "flex", justifyContent: "center", alignItems: "center", flexFlow: "row nowrap",
+                                }}>
+                                <div style={{
+                                    width: 12, height: 12, background: isDarkMode() ? "#111" :
+                                        "#444", borderRadius: 5, position: "relative"
+                                }}>
                                     <div ref={this.lampRef} style={{
                                         width: 8, height: 8,
-                                        background: (isDarkMode() ? "radial-gradient(circle at center, #F00 0, #F00 20%, #333 100%)"
-                                            : "radial-gradient(circle at center, #F44 0, #F44 40%, #644 100%)"),
+                                        background: ledGradient,
                                         opacity: 0, borderRadius: 3, margin: 2, position: "absolute"
                                     }} />
                                 </div>
@@ -409,46 +482,52 @@ const PluginOutputControl =
                             </div>
 
                             {/* LABEL/EDIT SECTION*, strictly a placeholder for visual alignment purposes.*/}
-                            <div style={{ flex: "0 0 auto", position: "relative", width: 30, height: 27 }}>
-                                &nbsp;
+                            <div className={this.props.classes.editSectionNoContent}>
                             </div>
                         </div >
                     );
-                } if (control.isOutputSelect()) {
+                } if (control.isOutputText()) {
                     return (
-                        <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
+                        <div className={classes.controlFrame} 
+                                style={{ display: "flex", flexDirection: "column", width: item_width }}>
                             {/* TITLE SECTION */}
-                            <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                            <div className={classes.titleSection} 
+                                style={{ flex: "0 0 auto", width: "100%" }}>
                                 <ControlTooltip uiControl={control}>
-                                    <Typography variant="caption" display="block" style={{
+                                    <Typography noWrap variant="caption" display="block" style={{
                                         width: "100%",
                                         textAlign: "left"
-                                    }}> {control.name}</Typography>
+                                    }}> {control.name === "" ? "\u00A0": control.name}</Typography>
                                 </ControlTooltip>
                             </div>
 
                             {/* CONTROL SECTION */}
 
-                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "start", alignItems: "center", flexFlow: "row nowrap" }}>
+                            <div className={classes.midSection} style={{
+                                display: "flex", justifyContent: "center", 
+                                flexFlow: "row nowrap", paddingTop: 6
+
+                            }}>
                                 <Typography variant="caption" display="block" noWrap style={{ width: "100%" }}>
                                     {text}
                                 </Typography>
                             </div>
 
                             {/* LABEL/EDIT SECTION*, strictly a placeholder for visual alignment purposes.*/}
-                            <div style={{ flex: "0 0 auto", position: "relative", width: 40, height: 27 }}>
-                                &nbsp;
+                            <div className={this.props.classes.editSectionNoContent}>
                             </div>
                         </div >
                     );
 
                 } else {
                     return (
-                        <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
+                        <div className={classes.controlFrame} 
+                            style={{ display: "flex", flexDirection: "column", width: item_width  }}>
                             {/* TITLE SECTION */}
-                            <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                            <div className={classes.titleSection} 
+                                style={{ flex: "0 0 auto", width: "100%" }}>
                                 <ControlTooltip uiControl={control}>
-                                    <Typography variant="caption" display="block" style={{
+                                    <Typography noWrap variant="caption" display="block" style={{
                                         width: "100%",
                                         textAlign: "left"
                                     }}> {control.name}</Typography>
@@ -456,15 +535,15 @@ const PluginOutputControl =
                             </div>
                             {/* CONTROL SECTION */}
 
-                            <div style={{ flex: "1 1 auto", display: "flex", justifyContent: "start", alignItems: "center", flexFlow: "row nowrap" }}>
-                                <Typography variant="caption" display="block" noWrap style={{ width: "100%" }}>
+                            <div className={classes.midSection} 
+                                style={{ display: "flex", justifyContent: "start", alignItems: "center", flexFlow: "row nowrap" }}>
+                                <Typography noWrap variant="caption" display="block" style={{ width: "100%" }}>
                                     {text}
                                 </Typography>
                             </div>
 
                             {/* LABEL/EDIT SECTION*, strictly a placeholder for visual alignment purposes.*/}
-                            <div style={{ flex: "0 0 auto", position: "relative", width: 40, height: 27 }}>
-                                &nbsp;
+                            <div className={this.props.classes.editSectionNoContent}>
                             </div>
                         </div >
                     );

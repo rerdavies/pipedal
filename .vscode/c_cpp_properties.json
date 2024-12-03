@@ -5,11 +5,12 @@
             "includePath": [
                 "${default}",
                 "${workspaceFolder}",
-                "${workspaceFolder}/src",
+                "${workspaceFolder}/build/src/**",
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/**",
                 "/usr/include/lilv-0",
                 "/usr/include/x86_64-linux-gnu",
-                "/usr/lib",
-                "~/src/vst3sdk"
+                "/usr/lib"
             ],
             "compilerPath": "/usr/bin/gcc-12",
             "cStandard": "c17",

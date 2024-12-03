@@ -25,6 +25,16 @@ interface Deserializable<T> {
     deserialize(input: any): T;
 }
 
+const noteNames: string[] = [
+    "C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B","C"
+];
+
+function semitone12TETValue(value: number) : string {
+    let iValue = Math.round(value) % 12;
+    return noteNames[iValue];
+
+}
+
 
 export class Port implements Deserializable<Port> {
     deserialize(input: any): Port {
@@ -445,7 +455,30 @@ export enum ControlType {
     Tuner,
     Vu,
     DbVu,
-    OutputSelect
+    OutputText
+}
+
+const textUnits : Set<Units> = new Set<Units>([
+    Units.none,
+    Units.unknown,
+    Units.bar,
+    Units.beat,
+    Units.bpm,
+    Units.cent,
+    Units.cm,
+    Units.hz,
+    Units.khz,
+    Units.km,
+    Units.m,
+    Units.min,
+    Units.ms,
+    Units.s,
+    Units.semitone12TET
+]);
+
+function displayUnitAsText(unit: Units): boolean
+{
+    return textUnits.has(unit);
 }
 
 export class UiControl implements Deserializable<UiControl> {
@@ -468,6 +501,7 @@ deserialize(input: any): UiControl {
         this.scale_points = ScalePoint.deserialize_array(input.scale_points);
         this.port_group = input.port_group;
         this.units = input.units as Units;
+        this.pipedal_ledColor = input.pipedal_ledColor;
 
         this.comment = input.comment ?? "";
         this.is_bypass = input.is_bypass ? true : false;
@@ -489,10 +523,13 @@ deserialize(input: any): UiControl {
             } else if (this.units === Units.db) {
                 this.controlType = ControlType.DbVu;
             } else if (this.enumeration_property) {
-                this.controlType = ControlType.OutputSelect;
+                this.controlType = ControlType.OutputText;
+            } else if (displayUnitAsText(this.units))
+            {
+                this.controlType = ControlType.OutputText
             } else {
                 this.controlType = ControlType.Vu;
-            }
+            } 
         }
         if (this.isValidEnumeration()) {
             this.controlType = ControlType.Select;
@@ -566,6 +603,7 @@ deserialize(input: any): UiControl {
     is_program_controller: boolean = true;
     custom_units: string = "";
     connection_optional: boolean = false;
+    pipedal_ledColor: string = "";
 
 
     // Return the value of the closest scale_point.
@@ -602,8 +640,8 @@ deserialize(input: any): UiControl {
     isTrigger(): boolean {
         return this.controlType === ControlType.Trigger;
     }
-    isOutputSelect(): boolean {
-        return !this.is_input && this.controlType === ControlType.OutputSelect;
+    isOutputText(): boolean {
+        return !this.is_input && this.controlType === ControlType.OutputText;
     }
 
 
@@ -666,6 +704,29 @@ deserialize(input: any): UiControl {
                 return scalePoint.label;
             }
         }
+
+        if (this.units === Units.s)
+        {
+            let iValue = Math.round(value);
+            if (iValue >= 60)
+            {
+                let minutes = Math.floor(iValue/60);
+                let seconds = iValue % 60;
+                if (seconds < 10)
+                {
+                    return minutes + ":0" + seconds;
+
+                }
+                return minutes + ":" + seconds;
+            } else {
+                return this.formatShortValue(value);
+            }
+        }
+        if (this.units === Units.semitone12TET)
+        {
+            return semitone12TETValue(value);
+        }
+    
         let text = this.formatShortValue(value);
 
         switch (this.units) {
@@ -705,13 +766,8 @@ deserialize(input: any): UiControl {
             case Units.pc:
                 text += "%";
                 break;
-            case Units.s:
-                text += "s";
+            default:
                 break;
-            // Midinote: not handled.
-            // semitone12TET not handled. 
-
-
 
         }
         return text;

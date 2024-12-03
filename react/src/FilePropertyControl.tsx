@@ -56,6 +56,9 @@ const styles = (theme: Theme) => createStyles({
         backgroundColor: theme.palette.secondary.main,
         opacity: theme.palette.mode === 'light' ? 0.38 : 0.3
     },
+    controlFrame: {
+        display: "flex", flexDirection: "column", alignItems: "start", justifyContent: "space-between", height: 116
+    },
     displayValue: {
         position: "absolute",
         top: 0,
@@ -63,10 +66,20 @@ const styles = (theme: Theme) => createStyles({
         right: 0,
         bottom: 4,
         textAlign: "center",
-        background: "white",
-        color: "#666",
+        background: theme.mainBackground,
+        color: theme.palette.text.secondary,
         // zIndex: -1,
+    },
+    titleSection: {
+        flex: "0 0 auto", alignSelf:"stretch", marginBottom: 8, marginLeft: 8, marginRight: 0 
+    },
+    midSection: {
+        flex: "1 1 1", display: "flex",flexFlow: "column nowrap",alignContent: "center",justifyContent: "center"
+    },
+    editSection: {
+        flex: "0 0 0", position: "relative", width: 60, height: 28,minHeight: 28        
     }
+
 });
 
 
@@ -191,6 +204,7 @@ const FilePropertyControl =
             render() {
                 //let classes = this.props.classes;
                 let fileProperty = this.props.fileProperty;
+                let classes = this.props.classes;
 
                 let value = "\u00A0";
                 if (this.state.hasValue)
@@ -206,9 +220,11 @@ const FilePropertyControl =
                 let item_width = 264;
 
                 return (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", width: item_width, margin: 8, paddingLeft: 8 }}>
+                    <div className={classes.controlFrame}
+                        style={{ width: item_width }}>
                         {/* TITLE SECTION */}
-                        <div style={{ flex: "0 0 auto", width: "100%", marginBottom: 8, marginLeft: 0, marginRight: 0 }}>
+                        <div className={classes.titleSection}
+                        >
                             <Tooltip title={fileProperty.label} placement="top-start" arrow
                             enterDelay={1000} enterNextDelay={1000}
                             >
@@ -220,9 +236,9 @@ const FilePropertyControl =
                         </div>
                         {/* CONTROL SECTION */}
 
-                        <div style={{ flex: "0 0 auto", width: "100%" }}>
+                        <div className={classes.midSection} style={{ width: "100%", paddingLeft: 8 }}>
 
-                            <ButtonBase style={{ width: "100%", borderRadius: "4px 4px 0px 0px", overflow: "hidden", marginTop: 8 }} onClick={() => { this.onFileClick() }} >
+                            <ButtonBase style={{ width: "100%", borderRadius: "4px 4px 0px 0px", overflow: "hidden" }} onClick={() => { this.onFileClick() }} >
                                 <div style={{ width: "100%", background: 
                                         isDarkMode()? "rgba(255,255,255,0.03)": "rgba(0,0,0,0.07)", 
                                         borderRadius: "4px 4px 0px 0px" }}>
@@ -238,7 +254,7 @@ const FilePropertyControl =
                         </div>
 
                         {/* LABEL/EDIT SECTION*/}
-                        <div style={{ flex: "0 0 auto", position: "relative", width: 60 }}>
+                        <div className={classes.editSection} >
                         </div>
                     </div >
                 );
