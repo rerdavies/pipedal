@@ -252,15 +252,21 @@ namespace pipedal
         virtual uint64_t GetInstanceId() const { return instanceId; }
         virtual int GetNumberOfInputAudioPorts() const { return inputAudioPortIndices.size(); }
         virtual int GetNumberOfOutputAudioPorts() const { return outputAudioPortIndices.size(); }
+
         virtual int GetNumberOfInputAtomPorts() const { return inputAtomPortIndices.size(); }
+
         virtual int GetNumberOfOutputAtomPorts() const { return outputAtomPortIndices.size(); }
         virtual int GetNumberOfMidiInputPorts() const { return inputMidiPortIndices.size(); }
         virtual int GetNumberOfMidiOutputPorts() const { return outputMidiPortIndices.size(); }
 
 
 
+        virtual int GetNumberOfInputAudioBuffers() const { return this->inputAudioBuffers.size(); }
+        virtual int GetNumberOfOutputAudioBuffers() const {return this->outputAudioBuffers.size(); }
+
         virtual void SetAudioInputBuffer(int index, float *buffer);
         virtual float *GetAudioInputBuffer(int index) const { return this->inputAudioBuffers[index]; }
+
 
         virtual void SetAudioInputBuffer(float *buffer);
         virtual void SetAudioInputBuffers(float *left, float *right);

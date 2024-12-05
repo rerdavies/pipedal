@@ -20,10 +20,16 @@
 #pragma once
 
 #include "json.hpp"
+#include <cstdint>
+#include <string>
+#include <vector>
+#include <lv2/urid/urid.h>
+
 
 
 namespace pipedal {
 
+class MapFeature;
 
 #define GETTER_SETTER_REF(name) \
     const decltype(name##_)& name() const { return name##_;} \
@@ -32,6 +38,9 @@ namespace pipedal {
 #define GETTER_SETTER_VEC(name) \
     decltype(name##_)& name()  { return name##_;}  \
     const decltype(name##_)& name() const  { return name##_;} 
+
+    //void name(decltype(const name##_) &value) { name##_ =  value; } 
+    //void name(decltype(const name##_) &&value) { name##_ =  std::move(value); }
 
 
 
@@ -101,6 +110,85 @@ public:
     DECLARE_JSON_MAP(MidiBinding);
 
 };
+
+
+enum class MidiDeviceSelection {
+    DeviceAny = 0,
+    DeviceNone = 1,
+    DeviceList = 2
+};
+
+class MidiChannelBinding {
+public:
+    static constexpr std::int32_t CHANNEL_OMNI = -1;
+private:
+    int32_t deviceSelection_ = (int32_t)(MidiDeviceSelection::DeviceAny);
+
+    std::vector<std::string> midiDevices_;
+
+    std::vector<LV2_URID> midiDeviceUrids;
+
+    std::int32_t channel_ = CHANNEL_OMNI;
+    bool acceptProgramChanges_ = true;
+    bool acceptCommonMessages_ = true;
+public:
+    MidiDeviceSelection deviceSelection() const { return (MidiDeviceSelection)deviceSelection_; }
+    void deviceSelection(MidiDeviceSelection value) { deviceSelection_ = (int32_t)value; }
+    GETTER_SETTER_VEC(midiDevices);
+    GETTER_SETTER(channel);
+    GETTER_SETTER(acceptProgramChanges);
+    GETTER_SETTER(acceptCommonMessages);
+
+    void Prepare(MapFeature &mapFeature);
+
+    static MidiChannelBinding DefaultForMissingValue();
+
+    bool WantsMidiMessage(uint8_t midi_cc0,uint8_t midi_cc1, uint8_t midi_cc2);
+    bool WantProgramChange(uint8_t midi_cc0,uint8_t midi_cc1);
+
+    // must call Prepare first.
+    bool WantsDevice(LV2_URID deviceUrid);
+
+
+    DECLARE_JSON_MAP(MidiChannelBinding);
+
+};
+///////////////////////////////////////
+
+inline bool MidiChannelBinding::WantsMidiMessage(uint8_t midi_cc0,uint8_t midi_cc1, uint8_t midi_cc2)
+{
+    if (midi_cc0 < 0xF0)
+    {
+        if (channel_ < 0) return true;
+
+        return midi_cc0 & 0x0F == channel_;
+    } else {
+        return acceptCommonMessages_;
+    }
+}
+
+inline bool MidiChannelBinding::WantProgramChange(uint8_t midi_cc0,uint8_t midi_cc1)
+{
+    if (!acceptProgramChanges_)
+    {
+        return false;
+    }
+    if (channel_ < 0) return true;
+    return midi_cc0 & 0x0F == channel_;
+}
+
+inline bool MidiChannelBinding::WantsDevice(LV2_URID deviceUrid)
+{
+    if (this->midiDeviceUrids.size() == 0) return true;
+    for (LV2_URID urid: midiDeviceUrids)
+    {
+        if (urid == deviceUrid) return true;
+    }
+    return false;
+}
+
+//////////////////////////////////////////
+
 
 #undef GETTER_SETTER_REF
 #undef GETTER_SETTER_VEC

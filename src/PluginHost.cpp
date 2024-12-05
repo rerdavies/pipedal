@@ -495,6 +495,10 @@ void PluginHost::Load(const char *lv2Path)
             {
                 Lv2Log::debug("Plugin %s (%s) skipped. No audio i/o.", plugin->name().c_str(), plugin->uri().c_str());
                 
+            } else if (info.audio_inputs() == 0) 
+            {
+                // temporarily disable this feature.
+                Lv2Log::debug("Plugin %s (%s) skipped. No inputs.", plugin->name().c_str(), plugin->uri().c_str());
             }
 #elif SUPPORT_MIDI
             if (info.audio_inputs() == 0 && !info.has_midi_input())
@@ -519,9 +523,6 @@ void PluginHost::Load(const char *lv2Path)
             {
                 if (info.audio_inputs() == 0) {
                     Lv2Log::debug("************* ZERO INPUTS: %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
-                }
-                if (info.audio_outputs() == 0) {
-                    Lv2Log::debug("************* ZERO OUTPUTS: %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
                 }
                 ui_plugins_.push_back(std::move(info));
             }

@@ -1862,8 +1862,9 @@ public:
                         VuUpdate v;
                         v.instanceId_ = instanceId;
                         // Display mono VUs if a stereo device is being fed identical L/R inputs.
-                        v.isStereoInput_ = effect->GetNumberOfInputAudioPorts() != 1 && effect->GetAudioInputBuffer(0) != effect->GetAudioInputBuffer(1);
-                        v.isStereoOutput_ = effect->GetNumberOfOutputAudioPorts() != 1;
+                        v.isStereoInput_ = effect->GetNumberOfInputAudioBuffers() >= 2 
+                            && effect->GetAudioInputBuffer(0) != effect->GetAudioInputBuffer(1);
+                        v.isStereoOutput_ = effect->GetNumberOfOutputAudioBuffers() >= 2;
 
                         vuConfig->vuUpdateWorkingData.push_back(v);
                         vuConfig->vuUpdateResponseData.push_back(v);

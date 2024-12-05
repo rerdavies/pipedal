@@ -49,8 +49,11 @@ namespace pipedal {
         virtual void SetBypass(bool enable)  = 0;
         virtual float GetOutputControlValue(int controlIndex) const = 0;
 
-        virtual int GetNumberOfInputAudioPorts() const = 0;
-        virtual int GetNumberOfOutputAudioPorts() const = 0;
+        virtual int GetNumberOfInputAudioPorts() const = 0; // as declared
+        virtual int GetNumberOfOutputAudioPorts() const = 0; // as declared.
+
+        virtual int GetNumberOfInputAudioBuffers() const = 0; // may be different if plugin has zero inputs.
+        virtual int GetNumberOfOutputAudioBuffers() const = 0; // may be different if plugin has zero inputs.
         virtual float *GetAudioInputBuffer(int index) const = 0;
         virtual float *GetAudioOutputBuffer(int index) const = 0;
         virtual void ResetAtomBuffers() = 0;

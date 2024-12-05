@@ -19,6 +19,7 @@
 
 import { PiPedalArgumentError } from './PiPedalError';
 import MidiBinding from './MidiBinding';
+import MidiChannelBinding from './MidiChannelBinding';
 
 
 const SPLIT_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Split";
@@ -64,6 +65,12 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
         this.pluginName = input.pluginName;
         this.isEnabled = input.isEnabled;
         this.midiBindings = MidiBinding.deserialize_array(input.midiBindings);
+        if (input.midiChannelBinding)
+        {
+            this.midiChannelBinding = input.midiChannelBinding;
+        } else {
+            this.midiChannelBinding = null;
+        }
 
         this.controlValues = ControlValue.deserializeArray(input.controlValues);
         this.vstState = input.vstState ?? "";
@@ -197,6 +204,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     pluginName?: string;
     controlValues: ControlValue[] = ControlValue.EmptyArray;
     midiBindings: MidiBinding[] = [];
+    midiChannelBinding: MidiChannelBinding | null = null;
     vstState: string = "";
     stateUpdateCount: number = 0;
     lv2State: [boolean,any] = [false,{}];

@@ -414,12 +414,12 @@ void Lv2Effect::SetAudioInputBuffer(int index, float *buffer)
 
 void Lv2Effect::SetAudioInputBuffer(float *left)
 {
-    if (GetNumberOfInputAudioPorts() > 1)
+    if (GetNumberOfInputAudioBuffers() > 1)
     {
         SetAudioInputBuffer(0, left);
         SetAudioInputBuffer(1, left);
     }
-    else if (GetNumberOfInputAudioPorts() != 0) /// yyx MIXING!
+    else if (GetNumberOfInputAudioBuffers() != 0) 
     {
         SetAudioInputBuffer(0, left);
     }
@@ -427,11 +427,11 @@ void Lv2Effect::SetAudioInputBuffer(float *left)
 
 void Lv2Effect::SetAudioInputBuffers(float *left, float *right)
 {
-    if (GetNumberOfInputAudioPorts() == 1)
+    if (GetNumberOfInputAudioBuffers() == 1)
     {
         SetAudioInputBuffer(0, left);
     }
-    else if (GetNumberOfInputAudioPorts() > 1)
+    else if (GetNumberOfInputAudioBuffers() > 1)
     {
         SetAudioInputBuffer(0, left);
         SetAudioInputBuffer(1, right);

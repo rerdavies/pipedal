@@ -136,11 +136,11 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                     if (inputBuffers.size() == 1)
                     {
-                        if (pLv2Effect->GetNumberOfInputAudioPorts() == 1)
+                        if (pLv2Effect->GetNumberOfInputAudioBuffers() == 1)
                         {
                             pLv2Effect->SetAudioInputBuffer(0, inputBuffers[0]);
                         }
-                        else
+                        else if (pLv2Effect->GetNumberOfInputAudioBuffers() >= 2)
                         {
                             pLv2Effect->SetAudioInputBuffer(0, inputBuffers[0]);
                             pLv2Effect->SetAudioInputBuffer(1, inputBuffers[0]);
@@ -148,13 +148,13 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                     }
                     else
                     {
-                        if (pLv2Effect->GetNumberOfInputAudioPorts() == 1)
+                        if (pLv2Effect->GetNumberOfInputAudioBuffers() == 1)
                         {
                             pLv2Effect->SetAudioInputBuffer(0, inputBuffers[0]);
 
                             auto inputBuffer = inputBuffers[0];
                         }
-                        else
+                        else if (pLv2Effect->GetNumberOfInputAudioBuffers() >= 2)
                         {
                             pLv2Effect->SetAudioInputBuffer(0, inputBuffers[0]);
                             pLv2Effect->SetAudioInputBuffer(1, inputBuffers[1]);
@@ -178,37 +178,15 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                 std::vector<float *> effectOutput;
 
-#ifdef RECYCLE_AUDIO_BUFFERS
-                // can't do this anymore if we're going to do pop-less bypbass.
-                if (pEffect->GetNumberOfOutputAudioPorts() == 1)
-                {
-                    float *pLeft = inputBuffers[0];
-                    effectOutput.push_back(pLeft);
-                }
-                else
-                {
-                    if (inputBuffers.size() == 1)
-                    {
-                        effectOutput.push_back(inputBuffers[0]);
-                        effectOutput.push_back(CreateNewAudioBuffer());
-                    }
-                    else
-                    {
-                        effectOutput.push_back(inputBuffers[0]);
-                        effectOutput.push_back(inputBuffers[1]);
-                    }
-                }
-#else
-                if (pEffect->GetNumberOfOutputAudioPorts() == 1)
+                if (pEffect->GetNumberOfOutputAudioBuffers() == 1)
                 {
                     effectOutput.push_back(CreateNewAudioBuffer());
                 }
-                else
+                else if (pEffect->GetNumberOfOutputAudioBuffers() >= 2)
                 {
                     effectOutput.push_back(CreateNewAudioBuffer());
                     effectOutput.push_back(CreateNewAudioBuffer());
                 }
-#endif
                 for (size_t i = 0; i < effectOutput.size(); ++i) 
                 {
                     pEffect->SetAudioOutputBuffer(i, effectOutput[i]);
@@ -475,21 +453,21 @@ void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samp
         {
             auto effect = this->realtimeEffects[index];
 
-            if (effect->GetNumberOfInputAudioPorts() == 1)
+            if (effect->GetNumberOfInputAudioBuffers() == 1)
             {
                 pUpdate->AccumulateInputs(effect->GetAudioInputBuffer(0), samples);
             }
-            else
+            else if (effect->GetNumberOfInputAudioBuffers() >= 2)
             {
                 pUpdate->AccumulateInputs(
                     effect->GetAudioInputBuffer(0),
                     effect->GetAudioInputBuffer(1), samples);
             }
-            if (effect->GetNumberOfOutputAudioPorts() == 1)
+            if (effect->GetNumberOfOutputAudioBuffers() == 1)
             {
                 pUpdate->AccumulateOutputs(effect->GetAudioOutputBuffer(0), samples);
             }
-            else
+            else if (effect->GetNumberOfOutputAudioBuffers() >= 2)
             {
                 pUpdate->AccumulateOutputs(
                     effect->GetAudioOutputBuffer(0),

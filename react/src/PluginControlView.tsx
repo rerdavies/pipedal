@@ -41,6 +41,8 @@ import PluginOutputControl from './PluginOutputControl';
 import Units from './Units';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 import Tooltip from '@mui/material/Tooltip';
+import MidiChannelBindingControl from './MidiChannelBindingControl';
+import MidiChannelBinding from './MidiChannelBinding';
 
 
 export const StandardItemSize = { width: 80, height: 110 };
@@ -90,35 +92,57 @@ const styles = (theme: Theme) => createStyles({
         paddingTop: "8px",
         paddingBottom: "0px",
         height: "100%",
+        overflowX: "hidden",
+        overflowY: "hidden"
+    },
+    frameScrollLandscape: {
+        display: "block",
+        position: "absolute",
+        left: 0, top: 0, right: 0, bottom:0,
+        flexDirection: "row",
+        flexWrap: "nowrap",
+        paddingTop: "0px",
+        paddingBottom: "0px",
         overflowX: "auto",
+        overflowY: "hidden"
+    },
+    frameScrollPortrait: {
+        display: "block",
+        position: "absolute",
+        left: 0, top: 0, right: 0, bottom:0,
+        flexDirection: "row",
+        flexWrap: "nowrap",
+        paddingTop: "0px",
+        paddingBottom: "0px",
+        overflowX: "hidden",
         overflowY: "auto"
     },
     vuMeterL: {
-        position: "fixed",
+        position: "absolute",
+        left: 0, top: 0,
         paddingLeft: 6,
         paddingRight: 4,
-        paddingBottom: 24,
-        left: 0,
+        paddingBottom: 12, // cover bottom line of a portgroup in landscape.
         background: theme.mainBackground,
         zIndex: 3
 
     },
     vuMeterR: {
-        position: "fixed",
-        right: 0,
-        marginRight: 22,
+        position: "absolute",
+        right: 0, top: 0,
+        marginRight: 20, // has to potentially clear a scrollbar.
         paddingLeft: 4,
-        paddingBottom: 24,
+        paddingBottom: 12,
         background: theme.mainBackground,
         zIndex: 3
 
     },
     vuMeterRLandscape: {
-        position: "fixed",
-        right: 0,
-        paddingRight: 22,
+        position: "absolute",
+        right: 0, top: 0,
+        paddingRight: 6,
         paddingLeft: 12,
-        paddingBottom: 24,
+        paddingBottom: 12, // cover bottom line of a portgroup in landscape.
         background: theme.mainBackground,
         zIndex: 3
 
@@ -126,21 +150,28 @@ const styles = (theme: Theme) => createStyles({
 
     normalGrid: {
         position: "relative",
-        paddingLeft: 25,
-        paddingRight: 34,
+        paddingLeft: 30,
+        paddingRight: 30,
+        paddingTop: 8,
         flex: "1 1 auto",
         display: "flex", flexDirection: "row", flexWrap: "wrap",
         justifyContent: "flex-start", alignItems: "flex_start",
-        rowGap: 10
+        rowGap: 14,
+        height: "fit-content"
+
 
 
     },
     landscapeGrid: {
-        paddingLeft: 40,
-        // marginRight: 40, : bug in chrome layout engine wrt/ right margin/padding. See the spacer div added after all controls in render() with provides the same effect.
+        paddingLeft: 40, paddingRight: 40, paddingTop: 8,
+        // marginRight: 40, : bug in chrome layout engine wrt/ right margin/padding. 
+        // See the spacer div added after all controls in render() with provides the same effect.
         display: "flex", flexDirection: "row", flexWrap: "nowrap",
-        justifyContent: "flex-start", alignItems: "flex_start",
-        flex: "0 0 auto"
+        justifyContent: "flex-start", alignItems: "flex-start",
+        overflowX: "hidden",
+        overflowY: "hidden",
+        flex: "0 0 auto",
+        width: "fit-content"
     },
     portgroupControlPadding: {
         flex: "0 0 auto",
@@ -198,10 +229,12 @@ const styles = (theme: Theme) => createStyles({
         border: "2pt #AAA solid",
         borderRadius: 8,
         elevation: 12,
-        display: "flex",
+        display: "inline-flex",
         textOverflow: "ellipsis",
         flexDirection: "row", flexWrap: "nowrap",
-        flex: "0 0 auto"
+        flex: "0 0 auto", 
+        width: "fit-content",
+        minWidth: "max-content"
     },
     portGroupTitle: {
         position: "absolute",
@@ -217,6 +250,13 @@ const styles = (theme: Theme) => createStyles({
     portGroupControls: {
         display: "flex",
         flexDirection: "row", flexWrap: "wrap",
+        paddingTop: 6,
+        paddingBottom: 8
+    },
+    portGroupControlsLandscape: {
+        display: "flex",
+        flexFlow: "row nowrap",
+        width: "fit-content",
         paddingTop: 6,
         paddingBottom: 8
     }
@@ -600,7 +640,8 @@ const PluginControlView =
                                         <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
                                     </Tooltip>
                                 </div>
-                                <div className={classes.portGroupControls} >
+                                <div className={
+                                    this.state.landscapeGrid ? classes.portGroupControlsLandscape : classes.portGroupControls} >
                                     {
                                         controls
                                     }
@@ -625,6 +666,20 @@ const PluginControlView =
 
             static endPluginInfo: UiPlugin =
                 makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
+
+            midiBindingControl(pedalboardItem: PedalboardItem): ReactNode {
+                if (!pedalboardItem.midiChannelBinding) {
+                    return false;
+                }
+                return (
+                    <MidiChannelBindingControl key="channelBindingCtl" midiChannelBinding={pedalboardItem.midiChannelBinding}
+                        onChange={(result)=> { 
+
+                        }}
+                    />
+                )
+            }
+
 
 
             render(): ReactNode {
@@ -663,6 +718,7 @@ const PluginControlView =
 
 
                 let gridClass = this.state.landscapeGrid ? classes.landscapeGrid : classes.normalGrid;
+                let scrollClass = this.state.landscapeGrid ? classes.frameScrollLandscape : classes.frameScrollPortrait;
                 let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
                 let controlNodes: ControlNodes;
 
@@ -675,6 +731,16 @@ const PluginControlView =
 
                 let nodes = this.controlNodesToNodes(controlNodes);
 
+                if (plugin.has_midi_input && !pedalboardItem.midiChannelBinding)
+                {
+                    pedalboardItem.midiChannelBinding = MidiChannelBinding.CreateMissingValue();
+                
+                }
+                if (pedalboardItem.midiChannelBinding) {
+                    nodes.push(this.midiBindingControl(pedalboardItem));
+                }
+
+
                 return (
                     <div className={classes.frame}>
                         <div className={classes.vuMeterL}>
@@ -683,16 +749,19 @@ const PluginControlView =
                         <div className={vuMeterRClass}>
                             <VuMeter displayText={true} display="output" instanceId={pedalboardItem.instanceId} />
                         </div>
-                        <div className={gridClass}  >
-                            {
-                                nodes
-                            }
-                            <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
-                            {
-                                (!this.state.landscapeGrid) && (
-                                    <div style={{ flex: "0 1 100%", width: "0px", height: 40 }} />
-                                )
-                            }
+                        <div className={scrollClass}>
+                            <div className={gridClass}  >
+                                {
+                                    nodes
+                                }
+                                {/* Extra space to allow scrolling right to the end in lascape especially */}
+                                <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
+                                {
+                                    (!this.state.landscapeGrid) && (
+                                        <div style={{ flex: "0 1 100%", width: "0px", height: 40 }} />
+                                    )
+                                }
+                            </div>
                         </div>
                         {this.state.showFileDialog && (
 

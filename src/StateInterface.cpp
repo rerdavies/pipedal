@@ -199,7 +199,7 @@ const void *StateInterface::StateRetrieveFunction(
     *size = entry.value_.size();
     *type = map.GetUrid(entry.atomType_.c_str());
     *flags = entry.flags_;
-    return (void*)&entry.value_[0];
+    return entry.value_.data();
 
 }
 

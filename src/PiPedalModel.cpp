@@ -1876,6 +1876,18 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
     }
     if (pPlugin)
     {
+        if (pPlugin->hasMidiInput())
+        {
+            if (!pedalboardItem->midiChannelBinding())
+            {
+                pedalboardItem->midiChannelBinding(MidiChannelBinding::DefaultForMissingValue());
+            }
+        } else {
+            if (pedalboardItem->midiChannelBinding())
+            {
+                pedalboardItem->midiChannelBinding(std::optional<MidiChannelBinding>()); // clear it.
+            }
+        }
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {
             auto port = pPlugin->ports()[i];

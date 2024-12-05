@@ -52,7 +52,7 @@ export const StandardItemSize = { width: 80, height: 140 }
 
 
 
-const styles = (theme: Theme) => createStyles({
+export const pluginControlStyles = (theme: Theme) => createStyles({
     frame: {
         position: "relative",
         margin: "12px"
@@ -90,13 +90,13 @@ const styles = (theme: Theme) => createStyles({
         flex: "1 1 1", display: "flex",flexFlow: "column nowrap",alignContent: "center",justifyContent: "center"
     },
     editSection: {
-        flex: "0 0 0", position: "relative", width: 60, height: 28,minHeight: 28
+        flex: "0 0 0", display: "flex", flexFlow: "column nowrap", justifyContent: "center",position: "relative", width: 60, height: 28,minHeight: 28
     }
 
 });
 
 
-export interface PluginControlProps extends WithStyles<typeof styles> {
+export interface PluginControlProps extends WithStyles<typeof pluginControlStyles> {
     uiControl?: UiControl;
     instanceId: number;
     value: number;
@@ -110,7 +110,7 @@ type PluginControlState = {
 };
 
 const PluginControl =
-    withStyles(styles, { withTheme: true })(
+    withStyles(pluginControlStyles, { withTheme: true })(
         class extends Component<PluginControlProps, PluginControlState> {
 
             frameRef: React.RefObject<HTMLDivElement>;
@@ -802,8 +802,8 @@ const PluginControl =
                             {(!(isSelect || isOnOffSwitch || isTrigger)) &&
                                 (
                                     (isAbSwitch) ? (
-                                        <Typography variant="caption" display="block" noWrap style={{
-                                            width: "100%", textAlign: "center"
+                                        <Typography variant="caption" display="block" textAlign="center" noWrap style={{
+                                            width: "100%"
                                         }}> {switchText} </Typography>
                                     ) : (
                                         <div>

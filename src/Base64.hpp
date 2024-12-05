@@ -41,7 +41,7 @@ namespace macaron
     public:
         static std::string Encode(const std::vector<uint8_t> &data)
         {
-            return Encode(data.size(),&(data[0]));
+            return Encode(data.size(),data.data());
         }
         static std::string Encode(size_t size, const uint8_t *data)
         {
@@ -112,6 +112,9 @@ namespace macaron
             if (in_len % 4 != 0)
                 throw std::invalid_argument("Input data size is not a multiple of 4");
 
+            if (in_len < 4) {
+                return std::vector<uint8_t>();
+            }
             size_t out_len = in_len / 4 * 3;
             if (input[in_len - 1] == '=')
                 out_len--;

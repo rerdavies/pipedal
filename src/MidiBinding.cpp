@@ -17,11 +17,40 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "pch.h"
 #include "MidiBinding.hpp"
+#include "MapFeature.hpp"
 
 
 using namespace pipedal;
+
+MidiChannelBinding MidiChannelBinding::DefaultForMissingValue()
+{
+    MidiChannelBinding result {};
+
+    return result;
+}
+
+
+void MidiChannelBinding::Prepare(MapFeature &mapFeature)
+{
+    midiDeviceUrids.resize(0);
+    midiDeviceUrids.reserve(midiDevices_.size());
+
+    for (const auto&midiDevice: midiDevices_)
+    {
+        midiDeviceUrids.push_back(mapFeature.GetUrid(midiDevice.c_str()));
+    }
+}
+
+
+JSON_MAP_BEGIN(MidiChannelBinding)
+    JSON_MAP_REFERENCE(MidiChannelBinding,deviceSelection)
+    JSON_MAP_REFERENCE(MidiChannelBinding,midiDevices)
+    JSON_MAP_REFERENCE(MidiChannelBinding,channel)
+    JSON_MAP_REFERENCE(MidiChannelBinding,acceptProgramChanges)
+    JSON_MAP_REFERENCE(MidiChannelBinding,acceptCommonMessages)
+JSON_MAP_END()
+
 
 JSON_MAP_BEGIN(MidiBinding)
     JSON_MAP_REFERENCE(MidiBinding,channel)

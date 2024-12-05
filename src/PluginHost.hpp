@@ -432,6 +432,7 @@ namespace pipedal
                     return true;
                 }
             }
+            return false;
         }
         bool hasMidiOutput() const
         {

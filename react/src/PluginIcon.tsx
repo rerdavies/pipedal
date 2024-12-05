@@ -65,7 +65,6 @@ import { ReactComponent as FxEmptyIcon } from './svg/fx_empty.svg';
 import { ReactComponent as FxTerminalIcon } from './svg/fx_terminal.svg';
 
 import {isDarkMode} from './DarkMode';
-import { Color } from '@mui/material';
 
 
 
