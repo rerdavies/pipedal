@@ -43,8 +43,8 @@ export default class MidiBinding {
             result.push(new MidiBinding().deserialize(input[i]));
         }
         return result;
-
     }
+
     clone(): MidiBinding { return new MidiBinding().deserialize(this);}
     equals(other: MidiBinding) : boolean
     {
@@ -62,6 +62,12 @@ export default class MidiBinding {
     static  BINDING_TYPE_NOTE: number = 1;
     static  BINDING_TYPE_CONTROL: number = 2;
 
+    setBindingType(bindingType:number)
+    {
+        this.bindingType = bindingType;        
+    }
+
+
     symbol: string = "";
 
     bindingType: number = MidiBinding.BINDING_TYPE_NONE;
@@ -76,9 +82,14 @@ export default class MidiBinding {
 
     linearControlType: number = MidiBinding.LINEAR_CONTROL_TYPE;
 
-    static LATCH_CONTROL_TYPE: number = 0;
+    static TRIGGER_ON_RISING_EDGE: number = 0;
+    static TOGGLE_ON_RISING_EDGE: number = 0;
     static MOMENTARY_CONTROL_TYPE: number = 1;
+    static TOGGLE_ON_VALUE: number = 1;
+    static TOGGLE_ON_ANY: number = 2;
+    static TRIGGER_ON_ANY: number = 2;
 
-    switchControlType: number = MidiBinding.LATCH_CONTROL_TYPE;
+
+    switchControlType: number = MidiBinding.TRIGGER_ON_RISING_EDGE;
 
 };

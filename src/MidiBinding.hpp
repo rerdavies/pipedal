@@ -57,9 +57,19 @@ class MapFeature;
     const int LINEAR_CONTROL_TYPE = 0;
     const int  CIRCULAR_CONTROL_TYPE = 1;
 
-    const int LATCH_CONTROL_TYPE = 0;
-    const int MOMENTARY_CONTROL_TYPE = 1;
 
+
+enum class SwitchControlTypeT {
+    TRIGGER_ON_RISING_EDGE =  0,
+    TRIGGER_ON_ANY =  2,
+    TOGGLE_ON_RISING_EDGE =  0,
+    TOGGLE_ON_VALUE =  1,
+    TOGGLE_ON_ANY =  2,
+
+    LATCH_CONTROL_TYPE = 0,
+    MOMENTARY_CONTROL_TYPE = 1,
+
+};
 
 
 class MidiBinding {
@@ -74,7 +84,7 @@ private:
     float maxValue_ = 1;
     float rotaryScale_ = 1;
     int linearControlType_ = LINEAR_CONTROL_TYPE;
-    int switchControlType_ = LATCH_CONTROL_TYPE;
+    int switchControlType_ = (int)SwitchControlTypeT::LATCH_CONTROL_TYPE;
 public:
     static MidiBinding SystemBinding(const std::string&symbol)
     {
@@ -105,8 +115,15 @@ public:
     GETTER_SETTER(maxValue);
     GETTER_SETTER(rotaryScale);
     GETTER_SETTER(linearControlType);
-    GETTER_SETTER(switchControlType);
 
+    SwitchControlTypeT switchControlType() const { return (SwitchControlTypeT)switchControlType_; }
+    void switchControlType(SwitchControlTypeT  value) { switchControlType_ = (int)value; }
+
+
+    float adjustRange(float range)
+    {
+        return maxValue_*range+minValue_*(1.0f-range);
+    }
     DECLARE_JSON_MAP(MidiBinding);
 
 };

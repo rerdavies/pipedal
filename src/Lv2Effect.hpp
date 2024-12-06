@@ -96,6 +96,7 @@ namespace pipedal
         uint64_t maxInputControlPort = 0;
         std::vector<bool> isInputControlPort;
         std::vector<float> defaultInputControlValues;
+        std::vector<bool> isInputTriggerControlPort;;
 
         virtual std::string GetUri() const { return info->uri(); }
 

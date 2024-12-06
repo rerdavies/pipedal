@@ -1488,6 +1488,10 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
+    sendPedalboardControlTrigger(instanceId: number, key: string, value: number) : void {
+        // no state change, no saving the value, just send it to the realtime thread/
+        this._setServerControl("previewControl", instanceId, key, value);
+    }
 
 
     setPedalboardControl(instanceId: number, key: string, value: number): void {

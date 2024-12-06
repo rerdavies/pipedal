@@ -502,15 +502,16 @@ const PluginControl =
                 let uiControl = this.props.uiControl;
                 if (uiControl)
                 {
-                    this.model.setPedalboardControl(this.props.instanceId,uiControl.symbol,1);
+                    let value = uiControl.max_value;
+                    if (uiControl.max_value === uiControl.default_value)
+                    {
+                        value = uiControl.min_value;
+                    }
+                    this.model.sendPedalboardControlTrigger(this.props.instanceId,uiControl.symbol,value);
                 }
             }
             handleTriggerMouseUp() {
-                let uiControl = this.props.uiControl;
-                if (uiControl)
-                {
-                    this.model.setPedalboardControl(this.props.instanceId,uiControl.symbol,0);
-                }
+                // triggers are reset on the audio thread.
             }
             previewInputValue(value: number, commitValue: boolean) {
                 let range = this.valueToRange(value);

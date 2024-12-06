@@ -23,24 +23,35 @@ import { Theme } from '@mui/material/styles';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import createStyles from '@mui/styles/createStyles';
+import { UiPlugin } from './Lv2Plugin';
+
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import MidiBinding from './MidiBinding';
-import Utility, { nullCast } from './Utility';
+import Utility from './Utility';
 import Typography from '@mui/material/Typography';
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
 import IconButton from '@mui/material/IconButton';
 import NumericInput from './NumericInput';
-import { UiPlugin } from './Lv2Plugin';
 
 
 
 const styles = (theme: Theme) => createStyles({
-    controlDiv: { flex: "0 0 auto", marginRight: 12,verticalAlign: "center", height: 48, paddingTop: 8, paddingBottom: 8  },
-    controlDiv2: { flex: "0 0 auto", marginRight: 12,verticalAlign: "center", 
-            height: 48, paddingTop: 0, paddingBottom: 0, whiteSpace: "nowrap"  }
+    controlDiv: { flex: "0 0 auto", marginRight: 12, verticalAlign: "center", height: 48, paddingTop: 8, paddingBottom: 8 },
+    controlDiv2: {
+        flex: "0 0 auto", marginRight: 12, verticalAlign: "center",
+        height: 48, paddingTop: 0, paddingBottom: 0, whiteSpace: "nowrap"
+    }
 });
+
+enum MidiControlType {
+    None,
+    Toggle,
+    Trigger,
+    Dial,
+    Select,
+}
 
 interface MidiBindingViewProps extends WithStyles<typeof styles> {
     instanceId: number;
@@ -53,6 +64,7 @@ interface MidiBindingViewProps extends WithStyles<typeof styles> {
 
 
 interface MidiBindingViewState {
+    midiControlType: MidiControlType;
 }
 
 
@@ -68,37 +80,50 @@ const MidiBindingView =
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
+                    midiControlType: this.getControlType()
                 };
             }
 
-            handleTypeChange(e: any, extra: any) {
+            handleBindingTypeChange(e: any, extra: any) {
                 let newValue = parseInt(e.target.value);
                 let newBinding = this.props.midiBinding.clone();
-                newBinding.bindingType = newValue;
+                newBinding.setBindingType(newValue);
+                this.validateSwitchControlType(newBinding);
                 this.props.onChange(this.props.instanceId, newBinding);
             }
             handleNoteChange(e: any, extra: any) {
                 let newValue = parseInt(e.target.value);
                 let newBinding = this.props.midiBinding.clone();
                 newBinding.note = newValue;
+                this.validateSwitchControlType(newBinding);
                 this.props.onChange(this.props.instanceId, newBinding);
             }
             handleControlChange(e: any, extra: any) {
                 let newValue = parseInt(e.target.value);
                 let newBinding = this.props.midiBinding.clone();
                 newBinding.control = newValue;
+                this.validateSwitchControlType(newBinding);
                 this.props.onChange(this.props.instanceId, newBinding);
             }
             handleLatchControlTypeChange(e: any, extra: any) {
                 let newValue = parseInt(e.target.value);
                 let newBinding = this.props.midiBinding.clone();
                 newBinding.switchControlType = newValue;
+                this.validateSwitchControlType(newBinding);
+                this.props.onChange(this.props.instanceId, newBinding);
+            }
+            handleTriggerControlTypeChange(e: any, extra: any) {
+                let newValue = parseInt(e.target.value);
+                let newBinding = this.props.midiBinding.clone();
+                newBinding.switchControlType = newValue;
+                this.validateSwitchControlType(newBinding);
                 this.props.onChange(this.props.instanceId, newBinding);
             }
             handleLinearControlTypeChange(e: any, extra: any) {
                 let newValue = parseInt(e.target.value);
                 let newBinding = this.props.midiBinding.clone();
                 newBinding.linearControlType = newValue;
+                this.validateSwitchControlType(newBinding);
                 this.props.onChange(this.props.instanceId, newBinding);
             }
             handleMinChange(value: number): void {
@@ -118,7 +143,7 @@ const MidiBindingView =
             }
 
 
-            generateMidiSelects(): React.ReactNode[] {
+            generateMidiNoteSelects(): React.ReactNode[] {
                 let result: React.ReactNode[] = [];
 
                 for (let i = 0; i < 127; ++i) {
@@ -129,14 +154,50 @@ const MidiBindingView =
 
                 return result;
             }
+
+            validateSwitchControlType(midiBinding: MidiBinding) {
+                // :-(
+
+                let controlType = this.state.midiControlType;
+                if (controlType === MidiControlType.Toggle
+                    && midiBinding.bindingType === MidiBinding.BINDING_TYPE_NOTE) {
+                    if (midiBinding.switchControlType !== MidiBinding.TRIGGER_ON_RISING_EDGE // Toggle on Note On.
+                        && midiBinding.switchControlType !== MidiBinding.MOMENTARY_CONTROL_TYPE // Note on/Note off.
+                    ) {
+                        midiBinding.switchControlType = MidiBinding.TRIGGER_ON_RISING_EDGE;
+                    }
+                }
+
+            }
             generateControlSelects(): React.ReactNode[] {
 
                 return Utility.validMidiControllers.map((control) => (
                     <MenuItem key={control.value} value={control.value}>{control.displayName}</MenuItem>
-                    )
+                )
                 );
             }
 
+            getControlType(): MidiControlType {
+
+                if (this.props.midiBinding.symbol === "__bypass") {
+                    return MidiControlType.Toggle;
+                }
+                if (!this.props.uiPlugin) return MidiControlType.None;
+
+                let port = this.props.uiPlugin.getControl(this.props.midiBinding.symbol);
+
+                if (!port) return MidiControlType.None;
+                if (port.trigger_property) {
+                    return MidiControlType.Trigger;
+                }
+                if (port.isAbToggle() || port.isOnOffSwitch()) {
+                    return MidiControlType.Toggle;
+                }
+                if (port.isSelect()) {
+                    return MidiControlType.Select;
+                }
+                return MidiControlType.Dial;
+            }
 
             render() {
                 let classes = this.props.classes;
@@ -145,37 +206,30 @@ const MidiBindingView =
                 if (!uiPlugin) {
                     return (<div />);
                 }
+                let controlType = this.state.midiControlType;
 
-                let canLatch: boolean = false;
-                let canTrigger: boolean = false;
-                let showLinearControlTypeSelect: boolean = false;
-                let isBinaryControl: boolean = false;
-                let showLinearRange: boolean = false;
-                let canRotaryScale: boolean = false;
-                if (this.props.midiBinding.symbol === "__bypass") {
-                    isBinaryControl = true;
-                    canLatch = midiBinding.bindingType !== MidiBinding.BINDING_TYPE_NONE;
-                } else {
-                    let port = nullCast(uiPlugin!.getControl(this.props.midiBinding.symbol));
-                    isBinaryControl = (port.isAbToggle() || port.isOnOffSwitch());
-                    if (midiBinding.bindingType !== MidiBinding.BINDING_TYPE_NONE) {
-                        canLatch = isBinaryControl;
-                        canTrigger = port.trigger_property;
-                        showLinearControlTypeSelect = !(canLatch || canTrigger);
-                        showLinearRange = showLinearControlTypeSelect && midiBinding.linearControlType === MidiBinding.LINEAR_CONTROL_TYPE;
-                        canRotaryScale = showLinearControlTypeSelect && midiBinding.linearControlType === MidiBinding.CIRCULAR_CONTROL_TYPE;
-                    }
-                }
+                let showLinearRange =
+                    controlType === MidiControlType.Dial &&
+                    midiBinding.bindingType === MidiBinding.BINDING_TYPE_CONTROL
+                    && midiBinding.linearControlType === MidiBinding.LINEAR_CONTROL_TYPE;
+
+
+                let canRotaryScale: boolean =
+                    controlType === MidiControlType.Dial &&
+                    midiBinding.bindingType === MidiBinding.BINDING_TYPE_CONTROL
+                    && midiBinding.linearControlType === MidiBinding.CIRCULAR_CONTROL_TYPE;
+
+
                 return (
                     <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", justifyContent: "left", alignItems: "center", minHeight: 48 }}>
                         <div className={classes.controlDiv} >
                             <Select variant="standard"
                                 style={{ width: 80, }}
-                                onChange={(e, extra) => this.handleTypeChange(e, extra)}
+                                onChange={(e, extra) => this.handleBindingTypeChange(e, extra)}
                                 value={midiBinding.bindingType}
                             >
                                 <MenuItem value={0}>None</MenuItem>
-                                {(isBinaryControl) && (
+                                {(controlType === MidiControlType.Toggle || controlType === MidiControlType.Trigger) && (
                                     <MenuItem value={1}>Note</MenuItem>
                                 )}
                                 <MenuItem value={2}>Control</MenuItem>
@@ -186,29 +240,28 @@ const MidiBindingView =
                             (
                                 <div className={classes.controlDiv2} >
                                     <Select variant="standard"
-                                        style={{ width:80}}
+                                        style={{ width: 80 }}
                                         onChange={(e, extra) => this.handleNoteChange(e, extra)}
                                         value={midiBinding.note}
-                                        
+
                                     >
                                         {
-                                            this.generateMidiSelects()
+                                            this.generateMidiNoteSelects()
                                         }
                                     </Select>
                                     <IconButton
-                                        onClick={()=> {
-                                            if (this.props.listen)
-                                            {
+                                        onClick={() => {
+                                            if (this.props.listen) {
                                                 this.props.onListen(-2, "", false)
                                             } else {
                                                 this.props.onListen(this.props.instanceId, this.props.midiBinding.symbol, false)
                                             }
                                         }}
                                         size="large">
-                                        { this.props.listen ? (
+                                        {this.props.listen ? (
                                             <MicOutlinedIcon />
                                         ) : (
-                                        <MicNoneOutlinedIcon />
+                                            <MicNoneOutlinedIcon />
                                         )}
                                     </IconButton>
                                 </div>
@@ -223,26 +276,25 @@ const MidiBindingView =
                                         style={{ width: 80 }}
                                         onChange={(e, extra) => this.handleControlChange(e, extra)}
                                         value={midiBinding.control}
-                                        renderValue={(value)=> { return "CC-" + value}}
+                                        renderValue={(value) => { return "CC-" + value }}
                                     >
                                         {
                                             this.generateControlSelects()
                                         }
                                     </Select>
                                     <IconButton
-                                        onClick={()=> {
-                                            if (this.props.listen)
-                                            {
+                                        onClick={() => {
+                                            if (this.props.listen) {
                                                 this.props.onListen(-2, "", false)
                                             } else {
                                                 this.props.onListen(this.props.instanceId, this.props.midiBinding.symbol, true)
                                             }
                                         }}
                                         size="large">
-                                        { this.props.listen ? (
+                                        {this.props.listen ? (
                                             <MicOutlinedIcon />
                                         ) : (
-                                        <MicNoneOutlinedIcon />
+                                            <MicNoneOutlinedIcon />
                                         )}
                                     </IconButton>
 
@@ -250,35 +302,58 @@ const MidiBindingView =
                             )
                         }
                         {
-                            ((canLatch) &&
+                            ((controlType === MidiControlType.Toggle && midiBinding.bindingType === MidiBinding.BINDING_TYPE_NOTE) &&
+                                (
+
+                                    <div className={classes.controlDiv} >
+                                        <Select variant="standard"
+                                            style={{}}
+                                            onChange={(e, extra) => this.handleLatchControlTypeChange(e, extra)}
+                                            value={midiBinding.switchControlType}
+                                        >
+                                            <MenuItem value={MidiBinding.TRIGGER_ON_RISING_EDGE}>Toggle on Note On</MenuItem>
+                                            <MenuItem value={MidiBinding.MOMENTARY_CONTROL_TYPE}>Note On/Note off</MenuItem>
+                                        </Select>
+                                    </div>
+                                ))
+                        }
+                        {
+                            ((controlType === MidiControlType.Toggle && midiBinding.bindingType === MidiBinding.BINDING_TYPE_CONTROL) &&
+                                (
+
+                                    <div className={classes.controlDiv} >
+                                        <Select variant="standard"
+                                            style={{}}
+                                            onChange={(e, extra) => this.handleLatchControlTypeChange(e, extra)}
+                                            value={midiBinding.switchControlType}
+                                        >
+                                            <MenuItem value={MidiBinding.TOGGLE_ON_RISING_EDGE}>Toggle on rising edge</MenuItem>
+                                            <MenuItem value={MidiBinding.TOGGLE_ON_ANY}>Toggle on any value</MenuItem>
+                                            <MenuItem value={MidiBinding.TOGGLE_ON_VALUE}>Use control value</MenuItem>
+                                        </Select>
+                                    </div>
+                                ))
+                        }
+                        {
+                            (controlType === MidiControlType.Trigger && midiBinding.bindingType === MidiBinding.BINDING_TYPE_CONTROL) &&
                             (
                                 <div className={classes.controlDiv} >
                                     <Select variant="standard"
-                                        style={{ width: 120 }}
-                                        onChange={(e, extra) => this.handleLatchControlTypeChange(e, extra)}
+                                        style={{}}
+                                        onChange={(e, extra) => this.handleTriggerControlTypeChange(e, extra)}
                                         value={midiBinding.switchControlType}
                                     >
-                                        <MenuItem value={MidiBinding.LATCH_CONTROL_TYPE}>Toggle</MenuItem>
-                                        <MenuItem value={MidiBinding.MOMENTARY_CONTROL_TYPE}>{
-                                            (midiBinding.bindingType === MidiBinding.BINDING_TYPE_NOTE) ? 
-                                                "Note on/off"
-                                                : "Control value"
-                                        }</MenuItem>
+                                        <MenuItem value={MidiBinding.TRIGGER_ON_RISING_EDGE}>Trigger on rising edge</MenuItem>
+                                        <MenuItem value={MidiBinding.TRIGGER_ON_ANY}>
+                                            Trigger on any value
+                                        </MenuItem>
                                     </Select>
-                                </div>
-                            ))
-                        }
-                        {
-                            (canTrigger) &&
-                            (
-                                <div className={classes.controlDiv2} >
-                                    <Typography noWrap style={{paddingTop: 12, paddingBottom: 12}}>(Trigger)</Typography>
                                 </div>
                             )
 
                         }
                         {
-                            (showLinearControlTypeSelect) && 
+                            (controlType === MidiControlType.Dial && midiBinding.bindingType === MidiBinding.BINDING_TYPE_CONTROL) &&
                             (
                                 <div className={classes.controlDiv} >
                                     <Select variant="standard"
@@ -286,8 +361,8 @@ const MidiBindingView =
                                         onChange={(e, extra) => this.handleLinearControlTypeChange(e, extra)}
                                         value={midiBinding.linearControlType}
                                     >
-                                        <MenuItem value={MidiBinding.LATCH_CONTROL_TYPE}>Linear</MenuItem>
-                                        <MenuItem value={MidiBinding.MOMENTARY_CONTROL_TYPE}>Rotary</MenuItem>
+                                        <MenuItem value={MidiBinding.LINEAR_CONTROL_TYPE}>Linear</MenuItem>
+                                        <MenuItem value={MidiBinding.CIRCULAR_CONTROL_TYPE}>Rotary</MenuItem>
                                     </Select>
                                 </div>
 
@@ -298,8 +373,8 @@ const MidiBindingView =
                                 <div className={classes.controlDiv}>
                                     <Typography display="inline">Min:&nbsp;</Typography>
                                     <NumericInput defaultValue={midiBinding.minValue} ariaLabel='min'
-                                        min={0} max={1} onChange={(value) => { this.handleMinChange(value); } }
-                                />
+                                        min={0} max={1} onChange={(value) => { this.handleMinChange(value); }}
+                                    />
                                 </div>
                             )
                         }
@@ -308,7 +383,7 @@ const MidiBindingView =
                                 <div className={classes.controlDiv}>
                                     <Typography display="inline">Max:&nbsp;</Typography>
                                     <NumericInput defaultValue={midiBinding.maxValue} ariaLabel='max'
-                                        min={0} max={1} onChange={(value) => { this.handleMaxChange(value); } } />
+                                        min={0} max={1} onChange={(value) => { this.handleMaxChange(value); }} />
                                 </div>
                             )
                         }
@@ -317,7 +392,7 @@ const MidiBindingView =
                                 <div className={classes.controlDiv}>
                                     <Typography display="inline">Scale:&nbsp;</Typography>
                                     <NumericInput defaultValue={midiBinding.maxValue} ariaLabel='scale'
-                                        min={-100} max={100} onChange={(value) => { this.handleScaleChange(value); } } />
+                                        min={-100} max={100} onChange={(value) => { this.handleScaleChange(value); }} />
                                 </div>
                             )
                         }

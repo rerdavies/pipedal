@@ -305,6 +305,7 @@ void Lv2Effect::PreparePortIndices()
     size_t nPorts = info->ports().size();
     isInputControlPort.resize(nPorts);
     this->defaultInputControlValues.resize(nPorts);
+    this->isInputTriggerControlPort.resize(nPorts);
 
     for (int i = 0; i < info->ports().size(); ++i)
     {
@@ -343,11 +344,16 @@ void Lv2Effect::PreparePortIndices()
         }
         else if (port->is_control_port())
         {
-            controlIndex[port->symbol()] = port->index();
+            controlIndex[port->symbol()] = portIndex;
             if (port->is_input())
             {
-                this->isInputControlPort[i] = true;
-                this->defaultInputControlValues[i] = port->default_value();
+                this->isInputControlPort[portIndex] = true;
+                this->defaultInputControlValues[portIndex] = port->default_value();
+                if (port->trigger_property())
+                {
+                    this->isInputTriggerControlPort[portIndex] = true;
+                }
+
             }
         }
     }
