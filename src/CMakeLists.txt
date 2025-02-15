@@ -14,9 +14,14 @@ set(CXX_STANDARD 20)
 
 include(FetchContent)
 
+# FOR FTXUI
 if(CMAKE_VERSION VERSION_GREATER 3.30)
     cmake_policy(SET CMP0169 OLD) # Allow use of old FETCHCONTENT macros.
 endif()
+
+# Our FTXUI option takes precedence over the one in the ftxui CMakeLists.txt
+# because FTXUI uses cmake_minimum_required(VERSION 3.12)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 set(FETCHCONTENT_QUIET ON)
 set(FTXUI_QUIET ON)
