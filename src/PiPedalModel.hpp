@@ -259,6 +259,7 @@ namespace pipedal
         PiPedalConfiguration configuration;
 
         void CheckForResourceInitialization(Pedalboard &pedalboard);
+        UiFileProperty::ptr FindLoadedPatchProperty(int64_t instanceId,const std::string&patchPropertyUri);
 
     public:
         PiPedalModel();
@@ -447,15 +448,14 @@ namespace pipedal
         void SetFavorites(const std::map<std::string, bool> &favorites);
         void SetUpdatePolicy(UpdatePolicyT updatePolicy);
         void ForceUpdateCheck();
-        std::vector<std::string> GetFileList(const UiFileProperty &fileProperty);
         FileRequestResult GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty);
 
         void DeleteSampleFile(const std::filesystem::path &fileName);
         std::string CreateNewSampleDirectory(const std::string &relativePath, const UiFileProperty &uiFileProperty);
         std::string RenameFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty);
-        FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty);
+        FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath);
 
-        std::string UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, std::istream &inputStream, size_t streamLength);
+        std::string UploadUserFile(const std::string &directory, int64_t instanceId, const std::string &patchProperty, const std::string &filename, std::istream &inputStream, size_t streamLength);
         uint64_t CreateNewPreset();
 
         bool LoadCurrentPedalboard();

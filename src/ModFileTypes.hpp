@@ -21,33 +21,45 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <set>
 
-namespace pipedal {
-    class ModFileTypes {
+namespace pipedal
+{
+    class ModFileTypes
+    {
+    public:
 
-    public: 
-        ModFileTypes(const std::string&fileTypes);
-        const std::vector<std::string> &rootDirectories() { return rootDirectories_; }
-        const std::vector<std::string> &fileTypes() { return fileTypes_;}
+        ModFileTypes(const std::string &fileTypes);
+        const std::vector<std::string> &rootDirectories() const { return rootDirectories_; }
+        std::vector<std::string> &rootDirectories()  { return rootDirectories_; }
+        const std::vector<std::string> &fileTypes() const { return fileTypes_; }
+
+        static constexpr const char *DEFAULT_FILE_TYPES = "audio,nammodel,mlmodel,sf2,sfz,midisong,midiclip,*"; // (everything)
 
     private:
         std::vector<std::string> rootDirectories_;
         std::vector<std::string> fileTypes_;
 
-
     public:
-        class ModDirectory {
+        class ModDirectory
+        {
         public:
+            ModDirectory(
+                const std::string modType,
+                const std::string pipedalPath,
+                const std::string displayName,
+                const std::vector<std::string> defaultFileExtensions);
             const std::string modType;
-            const std::string pipedalPath;
+            const std::filesystem::path pipedalPath;
             const std::string displayName;
-            const std::vector<std::string> defaultFileExtensions;
+            const std::vector<std::string> fileTypesX; // mixture of .ext and mime types. Use fileExtensions instead.
+            const std::set<std::string> fileExtensions;
+
         };
 
-        const static std::vector<ModDirectory> ModDirectories;
-        static const ModDirectory* GetModDirectory(const std::string&modType);
+        static const std::vector<ModDirectory> &ModDirectories();
+        static const ModDirectory *GetModDirectory(const std::string &modType);
 
-        static void CreateDefaultDirectories(const std::filesystem::path&rootDirectory);
-
+        static void CreateDefaultDirectories(const std::filesystem::path &rootDirectory);
     };
 }

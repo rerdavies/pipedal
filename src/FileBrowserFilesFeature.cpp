@@ -30,9 +30,11 @@
 #include <stdexcept>
 #include "util.hpp"
 #include "ofstream_synced.hpp"
+#include "ModFileTypes.hpp"
 
 using namespace pipedal;
 using namespace pipedal::implementation;
+namespace fs = std::filesystem;
 
 
 namespace pipedal::implementation {
@@ -128,7 +130,9 @@ void FileBrowserFilesFeature::Initialize(
     lv2_log_logger_init(&this->lv2Logger,const_cast<LV2_URID_Map *>(lv2Map),const_cast<LV2_Log_Log *>(lv2Log));
 
     this->bundleDirectory = bundleDirectory;
-    this->browserDirectory = browserDirectory;
+    this->browserRootDirectory = browserDirectory;
+    this->privateDirectory = browserDirectory / this->bundleDirectory.filename();
+    MakeDirectoryMap(browserDirectory);
 
 
     featureData.handle = (void *)this;
@@ -155,9 +159,73 @@ LV2_FileBrowser_Status FileBrowserFilesFeature::FN_publish_resource_files(LV2_Fi
     return ((FileBrowserFilesFeature *)handle)->PublishResourceFiles(version, resourcePath, uploadDirectory);
 }
 
+
+const char*FileBrowserFilesFeature::GetWellKnownDirectory(const std::string&directory)
+{
+    if (strcmp(directory.c_str(), "~") == 0) {
+        return privateDirectory.c_str();
+    }
+    const auto &f = g_wellKnownDirectoryMap->find(directory);
+    if (f != g_wellKnownDirectoryMap->end())
+    {
+        return f->second.c_str();
+    }
+    return nullptr;
+}
+
+
+using WellKnownDirectoryMap = std::map<std::string,std::string>;
+std::mutex FileBrowserFilesFeature::g_DirectoryMap_mutex;
+
+std::unique_ptr<WellKnownDirectoryMap> FileBrowserFilesFeature::g_wellKnownDirectoryMap;
+
+void FileBrowserFilesFeature::MakeDirectoryMap(const std::filesystem::path&rootBrowserDirectory)
+{
+    std::lock_guard lock { g_DirectoryMap_mutex};
+
+    if (!g_wellKnownDirectoryMap)
+    {
+        g_wellKnownDirectoryMap = std::make_unique<WellKnownDirectoryMap>();
+        for (const auto&modDirectory: ModFileTypes::ModDirectories())
+        {
+            (*g_wellKnownDirectoryMap)[modDirectory.modType] =
+                (rootBrowserDirectory / modDirectory.pipedalPath).string();
+        }
+
+    }
+}
+
+
+
 char *FileBrowserFilesFeature::GetUploadPath(const char *fileBrowserPath)
 {
-    std::filesystem::path result = this->browserDirectory / fileBrowserPath;
+    if (fileBrowserPath == nullptr | fileBrowserPath[0] == '\0')
+    {
+        return strdup("");
+    }
+    std::filesystem::path path {fileBrowserPath};
+
+    auto iter = path.begin();
+    if (iter == path.end()) 
+    {
+        return strdup("");
+    }
+    std::string firstSegment = iter->string();
+
+    const auto f = (g_wellKnownDirectoryMap)->find(firstSegment);
+    if (f == g_wellKnownDirectoryMap->end())
+    {
+        return nullptr;
+    }
+
+    fs::path result = f->second;
+
+    ++iter;
+    while (iter != path.end())
+    {
+        result /= (*iter);
+        ++iter;
+    }
     return strdup(result.c_str());
 }
 void FileBrowserFilesFeature::FreePath(char *path)
@@ -224,7 +292,7 @@ char *FileBrowserFilesFeature::MapPath(const char *path,const char*resourcePathB
         } else {
             targetDirectory = fileBrowserPath;
         }
-        targetDirectory = this->browserDirectory / targetDirectory;
+        targetDirectory = this->browserRootDirectory / targetDirectory;
         std::filesystem::create_directories(targetDirectory);
 
         std::filesystem::path targetPath = targetDirectory / relativePath;
@@ -297,7 +365,7 @@ LV2_FileBrowser_Status FileBrowserFilesFeature::PublishResourceFiles(uint32_t ve
     static std::string VERSION_FILENAME_PREFIX = ".versionInfo.";
 
     // generate a filename that will allow multiple plugins to install files into the same directory.
-    std::filesystem::path versionFileName = this->browserDirectory / uploadDirectory / 
+    std::filesystem::path versionFileName = this->browserRootDirectory / uploadDirectory / 
         (VERSION_FILENAME_PREFIX + GetPluginTag(this->bundleDirectory)); 
 
     bool loaded = versionInfo.Load(versionFileName);
@@ -325,8 +393,8 @@ LV2_FileBrowser_Status FileBrowserFilesFeature::PublishResourceFiles(uint32_t ve
             LogError("uploadDirectory must be relative.");
             return LV2_FileBrowser_Status::LV2_FileBrowser_Status_Err_InvalidParameter;
         }
-        targetDirectory = this->browserDirectory / targetDirectory;
-        PublishRecursive(versionInfo, sourcePath,sourcePath, this->browserDirectory / uploadDirectory);
+        targetDirectory = this->browserRootDirectory / targetDirectory;
+        PublishRecursive(versionInfo, sourcePath,sourcePath, this->browserRootDirectory / uploadDirectory);
         versionInfo.Save(versionFileName);  
     } catch (const std::exception & e)
     {

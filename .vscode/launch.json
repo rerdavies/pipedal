@@ -142,6 +142,7 @@
                 //"[pipedal_alsa_test]"
                 // "[wifi_channels_test]"
                 // "[locale]"
+                "[modFileTypes]"
             ],
 
             "stopAtEntry": false,

@@ -43,7 +43,8 @@ import EditIcon from '@mui/icons-material//Edit';
 import RenameDialog from './RenameDialog';
 
 import Slide, {SlideProps} from '@mui/material/Slide';
-import { createStyles, Theme } from '@mui/material/styles';
+import createStyles from '@mui/styles/createStyles';
+import { Theme } from '@mui/material/styles';
 import { WithStyles, withStyles} from '@mui/styles';
 import {ReactComponent as PluginPresetIcon} from "./svg/ic_pluginpreset2.svg";
 

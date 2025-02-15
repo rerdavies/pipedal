@@ -49,7 +49,8 @@ import SystemMidiBindingsDialog from './SystemMidiBindingsDialog';
 import SelectThemeDialog from './SelectThemeDialog';
 
 import Slide, { SlideProps } from '@mui/material/Slide';
-import { createStyles, Theme } from '@mui/material/styles';
+import createStyles from '@mui/styles/createStyles';
+import { Theme } from '@mui/material/styles';
 import { WithStyles, withStyles } from '@mui/styles';
 import { canScaleWindow, getWindowScaleOptions, getWindowScaleText, setWindowScale, getWindowScale } from './WindowScale';
 import OptionsDialog from './OptionsDialog';

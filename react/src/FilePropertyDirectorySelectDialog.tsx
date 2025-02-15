@@ -121,9 +121,11 @@ class DirectoryTree {
 
 export interface FilePropertyDirectorySelectDialogProps {
     open: boolean,
+    dialogTitle: string,
     uiFileProperty: UiFileProperty;
     defaultPath: string,
     excludeDirectory: string,
+    selectedFile: string,
     onOk: (path: string) => void,
     onClose: () => void
 };
@@ -181,7 +183,7 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
     requestDirectoryTree() {
         if (!this.props.open) return;
 
-        this.model.getFilePropertyDirectoryTree(this.props.uiFileProperty)
+        this.model.getFilePropertyDirectoryTree(this.props.uiFileProperty,this.props.selectedFile)
             .then((filePropertyDirectoryTree) => {
                 let myTree = new DirectoryTree(filePropertyDirectoryTree);
                 if (this.props.excludeDirectory.length !== 0)
@@ -327,7 +329,7 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
                 PaperProps={{ style: { minHeight: "80%", maxHeight: "80%", minWidth: "75%", maxWidth: "75%", overflowY: "visible" } }}
             >
                 <DialogTitle>
-                    <Typography variant="body1">Select folder</Typography>
+                    <Typography variant="body1">{this.props.dialogTitle}</Typography>
                 </DialogTitle>
                 <Divider />
                 <DialogContent style={{marginLeft: 0, paddingLeft: 0}} >

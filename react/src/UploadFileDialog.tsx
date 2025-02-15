@@ -284,23 +284,39 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
         return this.state.files.length !== 0;
     }
 
-    getIcon(status: FileUploadStatus) {
-        let size = 14;
-
+    private innerGetIcon(status: FileUploadStatus)
+    {
+        let size=16;
         let style = { width: size, height: size, opacity: 0.75 };
-        let top = 0;
 
         switch (status) {
             case FileUploadStatus.Error:
-                return (<div style={{ position: "relative", top: top }}><ErrorIcon color="error" style={style} /></div>);
+                 return (<ErrorIcon color="error" style={style} />);
             case FileUploadStatus.Uploaded:
-                return (<div style={{ position: "relative", top: top }}><CheckCircleOutlineIcon color="success" style={style}/></div >);
+                 return (
+                    <CheckCircleOutlineIcon  color="success" style={style}/>);
             case FileUploadStatus.Uploading:
-                return (<CircularProgress size={size } style={{ margin: 2  }} />);
+
+                return (<CircularProgress size={size + "px"}  />);
+
 
             default:
-                return (<SvgIcon style={{ width: size, height: size, }} />);
-        }
+                return (<SvgIcon style={{ width: size, height: size, }} />)
+            } 
+
+    }
+    getIcon(status: FileUploadStatus) {
+        let size = 16;
+
+        //let top = 0;
+
+        return (
+            <div style={{ width: size, position: "relative", top: 1 }}>
+            {
+                this.innerGetIcon(status)
+            }
+            </div>
+        );
     }
     makeBrowserAcceptList() {
         let result = UiFileType.MergeMimeTypes(this.props.fileProperty.fileTypes);
@@ -368,9 +384,13 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
                                                 return (
                                                     <tr>
                                                         <td style={{ verticalAlign: "middle" }}>
-                                                            <div ref={myRef} style={{ display: "flex", flexFlow: "row nowrap", alignItems: "center" }}>
+                                                            <div ref={myRef} style={{ 
+                                                                display: "flex", 
+                                                                flexFlow: "row nowrap", 
+                                                                alignItems: "center",
+                                                                }}>
                                                                 {this.getIcon(upload.status)}
-                                                                <Typography variant="caption" noWrap display="block" style={{ marginLeft: 4 }}> {upload.name} </Typography>
+                                                                <Typography variant="caption" noWrap display="inline-block" style={{ marginLeft: 4 }}> {upload.name} </Typography>
                                                             </div>
                                                         </td>
                                                         <td style={{ verticalAlign: "middle" }}>

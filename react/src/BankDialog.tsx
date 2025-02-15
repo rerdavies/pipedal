@@ -27,7 +27,9 @@ import ButtonBase from "@mui/material/ButtonBase";
 import Slide, { SlideProps } from '@mui/material/Slide';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
-import { Theme, createStyles } from '@mui/material/styles';
+import createStyles from '@mui/styles/createStyles';
+
+import { Theme } from '@mui/material/styles';
 import { WithStyles, withStyles } from "@mui/styles";
 import DraggableGrid, { ScrollDirection } from './DraggableGrid';
 import Fade from '@mui/material/Fade';
@@ -304,8 +306,8 @@ const BankDialog = withStyles(styles, { withTheme: true })(
                     >
                         <SelectHoverBackground selected={bankEntry.instanceId === selectedItem} showHover={true} />
                         <div className={classes.itemFrame}>
-                            <div className={classes.ListItemIcon}>
-                                <BankIcon className={classes.listIcon}/>
+                            <div className={classes.listIcon}>
+                                <BankIcon />
                             </div>
                             <div className={classes.itemLabel}>
                                 <Typography noWrap variant="body2" color="textPrimary">

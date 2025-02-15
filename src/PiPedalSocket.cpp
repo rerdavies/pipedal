@@ -102,6 +102,23 @@ JSON_MAP_REFERENCE(RenameSampleFileArgs, newRelativePath)
 JSON_MAP_REFERENCE(RenameSampleFileArgs, uiFileProperty)
 JSON_MAP_END()
 
+class GetFilePropertyDirectoryTreeArgs
+{
+public:
+    UiFileProperty fileProperty_;
+    std::string selectedPath_;
+
+    DECLARE_JSON_MAP(GetFilePropertyDirectoryTreeArgs);
+};
+
+
+JSON_MAP_BEGIN(GetFilePropertyDirectoryTreeArgs)
+JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, fileProperty)
+JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, selectedPath)
+JSON_MAP_END()
+
+
+
 class Lv2StateChangedBody
 {
 public:
@@ -1585,10 +1602,7 @@ public:
         }
         else if (message == "requestFileList")
         {
-            UiFileProperty fileProperty;
-            pReader->read(&fileProperty);
-            std::vector<std::string> list = this->model.GetFileList(fileProperty);
-            this->Reply(replyTo, "requestFileList", list);
+            throw std::runtime_error("No longer implemented.");
         }
         else if (message == "requestFileList2")
         {
@@ -1628,9 +1642,12 @@ public:
         }
         else if (message == "getFilePropertyDirectoryTree")
         {
-            UiFileProperty uiFileProperty;
-            pReader->read(&uiFileProperty);
-            FilePropertyDirectoryTree::ptr result = model.GetFilePropertydirectoryTree(uiFileProperty);
+            GetFilePropertyDirectoryTreeArgs args;
+            pReader->read(&args);
+            FilePropertyDirectoryTree::ptr result = 
+                model.GetFilePropertydirectoryTree(
+                    args.fileProperty_,
+                    args.selectedPath_);
             this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
         }
 

@@ -24,10 +24,12 @@
 
 #pragma once
 
-#include "FileBrowserFiles.h"
+#include "lv2ext/pipedal.lv2/ext/fileBrowser.h"
 #include <filesystem>
 #include <lv2/core/lv2.h>
 #include <lv2/log/logger.h>
+#include <mutex>
+#include <filesystem>
 
 
 
@@ -47,19 +49,31 @@ namespace pipedal {
             const std::string&browserDirectory);
         const LV2_Feature*GetFeature() { return &feature; }
     private:
+        static void MakeDirectoryMap(const std::filesystem::path&rootBrowserDirectory);
+
+        using WellKnownDirectoryMap = std::map<std::string,std::string>;
+        static std::mutex g_DirectoryMap_mutex;
+        static std::unique_ptr<WellKnownDirectoryMap> g_wellKnownDirectoryMap;
+
 
         LV2_Feature feature;
         const LV2_URID_Map *lv2Map = nullptr;
         LV2_Log_Logger lv2Logger = {nullptr,0,0,0,0};
 
         std::filesystem::path bundleDirectory;
-        std::filesystem::path browserDirectory;
+        std::filesystem::path browserRootDirectory;
+        std::filesystem::path privateDirectory;
         LV2_FileBrowser_Files featureData;
+
+        std::map<std::string,std::string> wellKnownPaths;
+
 
         static char* FN_get_upload_path(LV2_FileBrowser_Files_Handle handle, const char* fileBrowserDirectory);
         static char* FN_map_path(LV2_FileBrowser_Files_Handle handle, const char* path, const char *resourcePathBase,const char*fileBrowserDirectory);
         static void FN_free_path(LV2_FileBrowser_Files_Handle handle, char* path);
         static LV2_FileBrowser_Status FN_publish_resource_files(LV2_FileBrowser_Files_Handle handle,uint32_t version,const char*resourcePath, const char*uploadDirectory);
+
+        const char*GetWellKnownDirectory(const std::string&directory);
 
         void LogError(const char*message);
         char* GetUploadPath(const char* fileBrowserDirectory);

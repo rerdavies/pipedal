@@ -14,6 +14,8 @@
 - Feature for directory locations.
 
 
+- center ellipsis on file properties.
+
 - State of MIDI plugins:
    - plugin routing is implemented. (maybe needs a not-cheating UI)
    - MIDI message routing is not.

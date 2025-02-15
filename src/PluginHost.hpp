@@ -346,7 +346,11 @@ namespace pipedal
         bool isSplit() const ;
 
     private:
-        std::shared_ptr<PiPedalUI> FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin *pPlugin);
+        struct FindWritablePathPropertiesResult {
+            std::shared_ptr<PiPedalUI> pipedalUi;
+            bool hasUnsupportedPatchProperties = false;
+        };
+        FindWritablePathPropertiesResult FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin *pPlugin);
 
         bool HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin);
         std::string bundle_path_;
@@ -369,6 +373,7 @@ namespace pipedal
         std::vector<std::shared_ptr<Lv2PortGroup>> port_groups_;
         bool is_valid_ = false;
         PiPedalUI::ptr piPedalUI_;
+        bool hasUnsupportedPatchProperties_ = false;
 
         bool IsSupportedFeature(const std::string &feature) const;
 
@@ -391,6 +396,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(port_groups)
         LV2_PROPERTY_GETSET(has_factory_presets)
         LV2_PROPERTY_GETSET(piPedalUI)
+        LV2_PROPERTY_GETSET(hasUnsupportedPatchProperties)
 
         const Lv2PortInfo &getPort(const std::string &symbol)
         {
@@ -779,6 +785,7 @@ namespace pipedal
         void free_world();
 
         std::vector<std::shared_ptr<Lv2PluginInfo>> plugins_;
+        std::map<std::string,std::shared_ptr<Lv2PluginInfo>> pluginsByUri;
         std::vector<Lv2PluginUiInfo> ui_plugins_;
 
         std::map<std::string, std::shared_ptr<Lv2PluginClass>> classesMap;

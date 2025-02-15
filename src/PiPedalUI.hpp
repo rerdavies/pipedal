@@ -29,6 +29,8 @@
 #include <lilv/lilv.h>
 #include "json.hpp"
 #include <filesystem>
+#include <set>
+#include "ModFileTypes.hpp"
 
 
 #define PIPEDAL_UI "http://github.com/rerdavies/pipedal/ui"
@@ -83,7 +85,7 @@ namespace pipedal {
         const std::string& label() const { return label_;}
         const std::string &fileExtension() const { return fileExtension_; }
         const std::string &mimeType() const { return mimeType_; }
-
+        bool IsValidExtension(const std::string&extension) const;
     public:
         DECLARE_JSON_MAP(UiFileType);
 
@@ -118,13 +120,20 @@ namespace pipedal {
         std::string resourceDirectory_;
         std::vector<std::string> modDirectories_;
         bool useLegacyModDirectory_= false;
+        std::map<std::string,std::set<std::string>> fileExtensionsByModDirectory; // non-serialized.
+        void PrecalculateFileExtensions();
     public:
         using ptr = std::shared_ptr<UiFileProperty>;
         UiFileProperty() { }
         UiFileProperty(PluginHost*pHost, const LilvNode*node, const std::filesystem::path&resourcePath);
-        UiFileProperty(const std::string&name, const std::string&patchProperty,const std::string &directory);
+        UiFileProperty(const std::string&label, const std::string&patchProperty,const std::string &directory);
+        UiFileProperty(
+            const std::string&label, 
+            const std::string&patchProperty, 
+            const ModFileTypes&modFileType);
 
-        
+        void setModFileTypes(const ModFileTypes&modFileType);
+
         std::vector<std::string>& modDirectories() { return modDirectories_; }
         const std::vector<std::string>& modDirectories() const { return modDirectories_; }
         
@@ -144,11 +153,19 @@ namespace pipedal {
         std::vector<UiFileType> &fileTypes() { return fileTypes_; }
 
         const std::string &patchProperty() const { return patchProperty_; }
-        bool IsValidExtension(const std::string&extension) const;
+
+        bool IsValidExtension(const std::filesystem::path&relativePath) const;
+
         static  bool IsDirectoryNameValid(const std::string&value);
 
+        static std::string GetFileExtension(const std::filesystem::path&path);
+        
         const std::string&resourceDirectory() const { return resourceDirectory_; }
 
+
+        const std::set<std::string>& GetPermittedFileExtensions(const std::string &modDirectory) const;
+
+        std::string getParentModDirectory(const std::filesystem::path&path) const;
     public:
         DECLARE_JSON_MAP(UiFileProperty);
     };
@@ -202,6 +219,8 @@ namespace pipedal {
             return frequencyPlots_;
         }
 
+
+
         const std::vector<UiPortNotification::ptr> &portNotifications() const { return portNotifications_; }
 
         const UiFileProperty*GetFileProperty(const std::string &propertyUri) const
@@ -215,14 +234,16 @@ namespace pipedal {
             }
             return nullptr;
         }
-
+        bool unsupportedPatchProperty() const { return unsupportedPatchProperty_; }
+        void  unsupportedPatchProperty(bool value) { unsupportedPatchProperty_ = value; }
     private:
+        bool unsupportedPatchProperty_ = false; // not serialized.
         std::vector<UiFileProperty::ptr> fileProperties_;
         std::vector<UiFrequencyPlot::ptr> frequencyPlots_;
         std::vector<UiPortNotification::ptr> portNotifications_;
     };
 
-    // Utiltities for validating file paths received via PiPedalFileProperty-related APIs.
+    // utilities for validating file paths received via PiPedalFileProperty-related APIs.
     bool IsAlphaNumeric(const std::string&value);
   
 

@@ -550,10 +550,20 @@ public:
 
                     res.set(HttpField::content_type, "application/json");
                     res.set(HttpField::cache_control, "no-cache");
-                    std::string instanceId = request_uri.query("id");
+                    std::string instanceIdString = request_uri.query("id");
                     std::string directory = request_uri.query("directory");
                     std::string filename = request_uri.query("filename");
                     std::string patchProperty = request_uri.query("property");
+
+                    int64_t instanceId;
+                    {
+                        std::istringstream ss { instanceIdString};
+                        ss >> instanceId;
+                        if (!ss)
+                        {
+                            throw PiPedalException("Invalid instanceID");
+                        }
+                    }
 
                     if (patchProperty.length() == 0 && directory.length() == 0)
                     {
@@ -588,7 +598,7 @@ public:
                                     if (extensionChecker.IsValidExtension(extension))
                                     {
                                         auto si = zipFile->GetFileInputStream(inputFile);
-                                        std::string path = this->model->UploadUserFile(directory, patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
+                                        std::string path = this->model->UploadUserFile(directory, instanceId,patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
                                     }
                                 }
                             }
@@ -606,7 +616,7 @@ public:
                     }
                     else
                     {
-                        outputFileName = this->model->UploadUserFile(directory, patchProperty, filename, req.get_body_input_stream(), req.content_length());
+                        outputFileName = this->model->UploadUserFile(directory, instanceId,patchProperty, filename, req.get_body_input_stream(), req.content_length());
                     }
 
                     if (outputFileName.is_relative())

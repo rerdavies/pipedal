@@ -190,6 +190,7 @@ set (PIPEDAL_SOURCES
     CpuTemperatureMonitor.cpp CpuTemperatureMonitor.hpp
     SchedulerPriority.hpp SchedulerPriority.cpp
     ModFileTypes.cpp ModFileTypes.hpp
+    MimeTypes.cpp MimeTypes.hpp
     PatchPropertyWriter.hpp
     PresetBundle.cpp PresetBundle.hpp
     RealtimeMidiEventType.hpp
@@ -208,9 +209,8 @@ set (PIPEDAL_SOURCES
     FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp 
     FileEntry.cpp FileEntry.hpp
     atom_object.hpp atom_object.cpp
-    FileBrowserFiles.h
+    lv2ext/pipedal.lv2/ext/fileBrowser.h
     FileBrowserFilesFeature.hpp FileBrowserFilesFeature.cpp
-    MimeTypes.cpp MimeTypes.hpp
     inverting_mutex.hpp
     DbDezipper.hpp DbDezipper.cpp
     WebServerLog.hpp
@@ -372,8 +372,10 @@ set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL true)
 
 
 
-add_executable(pipedaltest testMain.cpp
+add_executable(pipedaltest 
+testMain.cpp
 
+    ModFileTypesTest.cpp
     jsonTest.cpp
     UpdaterTest.cpp
     
@@ -692,6 +694,7 @@ add_executable(pipedalconfig
     alsaCheck.hpp
     BootConfig.cpp BootConfig.hpp
     ModFileTypes.cpp ModFileTypes.hpp
+    MimeTypes.cpp MimeTypes.hpp
     PiPedalConfiguration.hpp PiPedalConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp

@@ -105,15 +105,34 @@
         "text_encoding": "cpp"
     },
     "cSpell.words": [
+        "Alsa",
+        "flac",
         "Guitarix",
         "hostapd",
+        "Hotspot",
+        "invada",
+        "jmap",
+        "Lilv",
+        "midiclip",
+        "midisong",
+        "mlmodel",
+        "Pedalboard",
         "pipedal",
         "pipedal_0",
         "pipedalconfig",
         "pipedald",
         "pipedalshutdownd",
         "pipedaltest",
-        "ToobAmp"
+        "pipedalui",
+        "rdfs",
+        "ToobAmp",
+        "urids",
+        "Writables",
+        "xruns"
     ],
-    "C_Cpp.default.compilerPath": "/usr/bin/g++-13"
+    "C_Cpp.default.compilerPath": "/usr/bin/g++-13",
+    "cSpell.ignoreWords": [
+        "nammodel"
+    ],
+    "cSpell.enabled": false
 }

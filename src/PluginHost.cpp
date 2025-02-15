@@ -195,7 +195,6 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     dc__format = lilv_new_uri(pWorld, "http://purl.org/dc/terms/format");
 
     mod__fileTypes = lilv_new_uri(pWorld, "http://moddevices.com/ns/mod#fileTypes");
-    pipedalui__fileTypes =lilv_new_uri(pWorld, PIPEDAL_UI__fileTypes);
 }
 
 void PluginHost::LilvUris::Free()
@@ -367,7 +366,7 @@ void PluginHost::LoadPluginClassesFromLilv()
     LILV_FOREACH(plugin_classes, iPluginClass, classes)
     {
         const LilvPluginClass *pClass = lilv_plugin_classes_get(classes, iPluginClass);
-        // Get it to prepopulate the map.
+        // Get it to pre-populate the map.
         MakePluginClass(pClass);
     }
     for (auto value : classesMap)
@@ -432,6 +431,9 @@ void PluginHost::Load(const char *lv2Path)
         if (pluginInfo->hasCvPorts())
         {
             Lv2Log::debug("Plugin %s (%s) skipped. (Has CV ports).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
+        } else if (pluginInfo->hasUnsupportedPatchProperties())
+        {
+            Lv2Log::debug("Plugin %s (%s) skipped. (Has unsupported patch parameters).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
         }
 #if !SUPPORT_MIDI
         else if (pluginInfo->plugin_class() == LV2_MIDI_PLUGIN)
@@ -481,10 +483,15 @@ void PluginHost::Load(const char *lv2Path)
 
     for (auto plugin : this->plugins_)
     {
+        pluginsByUri[plugin->uri()] = plugin;
+
         Lv2PluginUiInfo info(this, plugin.get());
         if (plugin->is_valid())
         {
 #if 1
+        // no plugins with more than 2 inputs or outputs.
+        // no zero-input or zero-output plugins (temporarily disables midi plugins)
+        // no zero output devices (permanent, I think)
             if (info.audio_inputs() > 2 || info.audio_outputs() > 2) {
                 Lv2Log::debug(
                     "Plugin %s (%s) skipped. %d inputs, %d outputs.", plugin->name().c_str(), plugin->uri().c_str(),
@@ -598,7 +605,8 @@ bool Lv2PluginInfo::HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plu
     return result;
 }
 
-std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin *pPlugin)
+Lv2PluginInfo::FindWritablePathPropertiesResult
+Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin *pPlugin)
 {
     // example:
 
@@ -615,6 +623,7 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
 
     std::vector<UiFileProperty::ptr> fileProperties;
 
+    bool unsupportedPatchProperty = false;
     LILV_FOREACH(nodes, iNode, patchWritables)
     {
         AutoLilvNode propertyUri = lilv_nodes_get(patchWritables, iNode);
@@ -631,99 +640,91 @@ std::shared_ptr<PiPedalUI> Lv2PluginInfo::FindWritablePathProperties(PluginHost 
                     AutoLilvNode label = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->rdfs__label, nullptr);
                     std::string strLabel = label.AsString();
 
-                    if (strLabel.length() != 0)
+                    if (strLabel.length() == 0)
                     {
-                        std::filesystem::path path = this->bundle_path();
-                        path = path.parent_path();
-                        std::string lv2DirectoryName = path.filename().string();
-                        // we have a valid path property!
-
-                        auto fileProperty =
-                            std::make_shared<UiFileProperty>(
-                                strLabel, propertyUri.AsUri(), lv2DirectoryName);
-
-
-                        AutoLilvNode indexNode = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->lv2core__index, nullptr);
-                        int32_t index = indexNode.AsInt(-1);
-                        fileProperty->index(index);
-
-
-                        // if there's a pipedalui_fileTypes node, use that instead.
-
-                        AutoLilvNodes mod__fileTypes = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->pipedalui__fileTypes, nullptr);
-                        if (!mod__fileTypes) 
-                        {
-                            mod__fileTypes = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->mod__fileTypes, nullptr);
-                        }
-
-                        LILV_FOREACH(nodes, i, mod__fileTypes)
-                        {
-                            // "nam,nammodel"
-                            AutoLilvNode lilvfileType{lilv_nodes_get(mod__fileTypes, i)};
-                            std::string fileTypes = lilvfileType.AsString();
-                            ModFileTypes modFileTypes(fileTypes);
-
-                            for (const std::string &rootDirectory : modFileTypes.rootDirectories())
-                            {
-                                fileProperty->modDirectories().push_back(rootDirectory);
-                            }
-                            for (const std::string &type : modFileTypes.fileTypes())
-                            {
-                                fileProperty->fileTypes().push_back(UiFileType(SS(type << " file"), SS('.' << type)));
-                            }
-                            // Legacy case: audio_uploads/<plugin_directory> exists.
-
-                            std::filesystem::path bundleDirectoryName = std::filesystem::path(bundle_path()).parent_path().filename();
-                            std::filesystem::path legacyUploadPath = lv2Host->MapPath(bundleDirectoryName.string());
-
-                            if (std::filesystem::exists(legacyUploadPath))
-                            {
-                                if (!std::filesystem::exists(legacyUploadPath / ".migrated"))
-                                {
-                                    fileProperty->useLegacyModDirectory(true);
-                                    fileProperty->directory(bundleDirectoryName);
-                                }
-                            }
-                            if (fileProperty->modDirectories().size() == 0)
-                            {
-                                fileProperty->directory(bundleDirectoryName);
-                            }
-                            else if (fileProperty->modDirectories().size() == 1 && !fileProperty->useLegacyModDirectory()) // no synthetic root.
-                            {
-                                auto modType = ModFileTypes::GetModDirectory(fileProperty->modDirectories()[0]);
-                                if (modType)
-                                {
-                                    fileProperty->directory(modType->pipedalPath);
-                                }
-                            } else {
-                                // handled at request time.
-                            }
-                        }
-                        if (!mod__fileTypes)
-                        {
-                            AutoLilvNodes dc_types = lilv_world_find_nodes(pWorld, propertyUri, lv2Host->lilvUris->dc__format, nullptr);
-                            LILV_FOREACH(nodes, i, dc_types)
-                            {
-                                AutoLilvNode dc_type = lilv_nodes_get(dc_types, i);
-                                std::string fileType = dc_type.AsString();
-                                std::string label = "";
-                                fileProperty->fileTypes().push_back(UiFileType(label, fileType));
-                            }
-                        }
-
-                        fileProperties.push_back(
-                            fileProperty);
+                        strLabel = "File";
                     }
+
+                    std::filesystem::path path = this->bundle_path();
+                    path = path.parent_path();
+                    std::string lv2DirectoryName = path.filename().string();
+                    // we have a valid path property!
+
+                    auto fileProperty =
+                        std::make_shared<UiFileProperty>(
+                            strLabel, propertyUri.AsUri(), lv2DirectoryName);
+
+
+                    AutoLilvNode indexNode = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->lv2core__index, nullptr);
+                    int32_t index = indexNode.AsInt(-1);
+                    fileProperty->index(index);
+
+
+                    // if there's a pipedalui_fileTypes node, use that instead.
+
+
+                    AutoLilvNode mod__fileTypes = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->mod__fileTypes, nullptr);
+
+                    // default: everything.
+                    std::string fileTypes = ModFileTypes::DEFAULT_FILE_TYPES; 
+                    if (mod__fileTypes)
+                    {
+                        // "nam,nammodel"
+                        fileTypes = mod__fileTypes.AsString();
+                    }
+                    ModFileTypes modFileTypes(fileTypes);
+
+
+
+                    // Legacy case: audio_uploads/<plugin_directory> exists.
+
+                    std::filesystem::path bundleDirectoryName = std::filesystem::path(bundle_path()).parent_path().filename();
+                    std::filesystem::path legacyUploadPath = lv2Host->MapPath(bundleDirectoryName.string());
+
+                    if (std::filesystem::exists(legacyUploadPath))
+                    {
+                        if (!std::filesystem::exists(legacyUploadPath / ".migrated"))
+                        {
+                            fileProperty->useLegacyModDirectory(true);
+                            fileProperty->directory(bundleDirectoryName);
+                        }
+                        modFileTypes.rootDirectories().push_back(bundleDirectoryName.filename()); // push the private directory!
+                    }
+                    fileProperty->setModFileTypes(modFileTypes);
+
+                    fileProperty->directory(bundleDirectoryName);
+
+                    fileProperties.push_back(fileProperty);
+                } else {
+                    unsupportedPatchProperty = true;
                 }
             }
         }
     }
+    FindWritablePathPropertiesResult result;
+
+
+
     if (fileProperties.size() != 0)
     {
-        return std::make_shared<PiPedalUI>(std::move(fileProperties));
-    }
+        std::sort(fileProperties.begin(),fileProperties.end(),[](const UiFileProperty::ptr& left,const UiFileProperty::ptr&right) {
+            // properies with indexes first.
+            int32_t indexL = left->index();
+            if (indexL < 0) indexL = std::numeric_limits<int32_t>::max();
+            int32_t indexR = right->index();
+            if (indexR < 0) indexR = std::numeric_limits<int32_t>::max();
+            if (indexL < indexR) return true;
+            if (indexL > indexR) return false;
 
-    return std::shared_ptr<PiPedalUI>();
+            // there is no natural order. TTL indexing means that the order we see them in is random.
+            // We can't order them sensibly. Let's at least order them consistently.
+            return left->label() < right->label();
+
+        });
+        result.pipedalUi = std::make_shared<PiPedalUI>(std::move(fileProperties));
+    }
+    result.hasUnsupportedPatchProperties = unsupportedPatchProperty;
+    return result;
 }
 
 Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvPlugin *pPlugin)
@@ -837,7 +838,9 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     else
     {
         // look for
-        this->piPedalUI_ = FindWritablePathProperties(lv2Host, pPlugin);
+        auto result = FindWritablePathProperties(lv2Host, pPlugin);
+        this->piPedalUI_ = result.pipedalUi;
+        this->hasUnsupportedPatchProperties_ = result.hasUnsupportedPatchProperties;
     }
 
     int nInputs = 0;
@@ -1220,14 +1223,12 @@ std::shared_ptr<Lv2PluginClass> PluginHost::GetLv2PluginClass() const
 
 std::shared_ptr<Lv2PluginInfo> PluginHost::GetPluginInfo(const std::string &uri) const
 {
-    for (auto i = this->plugins_.begin(); i != this->plugins_.end(); ++i)
+    auto ff = pluginsByUri.find(uri);
+    if (ff == pluginsByUri.end())
     {
-        if ((*i)->uri() == uri)
-        {
-            return (*i);
-        }
+        return nullptr;
     }
-    return nullptr;
+    return ff->second;
 }
 
 Lv2Pedalboard *PluginHost::CreateLv2Pedalboard(Pedalboard &pedalboard, Lv2PedalboardErrorList &errorMessages)

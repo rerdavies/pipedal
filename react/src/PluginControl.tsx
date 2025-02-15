@@ -73,7 +73,7 @@ export const pluginControlStyles = (theme: Theme) => createStyles({
     },
 
     titleSection: {
-        flex: "0 0 auto", alignSelf:"stretch", marginBottom: 8, marginLeft: 0, marginRight: 0
+        flex: "0 0 auto", alignSelf: "stretch", marginBottom: 8, marginLeft: 0, marginRight: 0
     },
     displayValue: {
         position: "absolute",
@@ -87,10 +87,10 @@ export const pluginControlStyles = (theme: Theme) => createStyles({
         // zIndex: -1,
     },
     midSection: {
-        flex: "1 1 1", display: "flex",flexFlow: "column nowrap",alignContent: "center",justifyContent: "center"
+        flex: "1 1 1", display: "flex", flexFlow: "column nowrap", alignContent: "center", justifyContent: "center"
     },
     editSection: {
-        flex: "0 0 0", display: "flex", flexFlow: "column nowrap", justifyContent: "center",position: "relative", width: 60, height: 28,minHeight: 28
+        flex: "0 0 0", display: "flex", flexFlow: "column nowrap", justifyContent: "center", position: "relative", width: 60, height: 28, minHeight: 28
     }
 
 });
@@ -500,14 +500,12 @@ const PluginControl =
             }
             handleTriggerMouseDown() {
                 let uiControl = this.props.uiControl;
-                if (uiControl)
-                {
+                if (uiControl) {
                     let value = uiControl.max_value;
-                    if (uiControl.max_value === uiControl.default_value)
-                    {
+                    if (uiControl.max_value === uiControl.default_value) {
                         value = uiControl.min_value;
                     }
-                    this.model.sendPedalboardControlTrigger(this.props.instanceId,uiControl.symbol,value);
+                    this.model.sendPedalboardControlTrigger(this.props.instanceId, uiControl.symbol, value);
                 }
             }
             handleTriggerMouseUp() {
@@ -650,13 +648,39 @@ const PluginControl =
                     }
                     let range: number;
                     if (uiControl.is_logarithmic) {
-                        range = Math.log(value / uiControl.min_value) / Math.log(uiControl.max_value / uiControl.min_value);
+                        let minValue = uiControl.min_value;
+                        if (minValue === 0) // LSP plugins do this.
+                        {
+                            minValue = 0.0001;
+                        }
+                        range = Math.log(value / minValue) / Math.log(uiControl.max_value / minValue);
+                        if (!isFinite(range)) {
+                            if (range < 0)
+                            {
+                                range = 0;
+                            } else {
+                                range = 1.0;
+                            }
+                        } else if (isNaN(range)) {
+                            range = 0;
+                        }
                         if (uiControl.range_steps > 1) {
                             range = Math.round(range * (uiControl.range_steps - 1)) / (uiControl.range_steps - 1);
                         }
                     } else {
                         range = (value - uiControl.min_value) / (uiControl.max_value - uiControl.min_value);
+                        if (!isFinite(range)) {
+                            if (range < 0)
+                            {
+                                range = 0;
+                            } else {
+                                range = 1.0;
+                            }
+                        } else if (isNaN(range)) {
+                            range = 0;
+                        }
                     }
+
                     if (range > 1) range = 1;
                     if (range < 0) range = 0;
                     return range;
@@ -676,7 +700,17 @@ const PluginControl =
                         value = uiControl.min_value;
                     } else {
                         if (uiControl.is_logarithmic) {
-                            value = uiControl.min_value * Math.pow(uiControl.max_value / uiControl.min_value, range);
+                            let minValue = uiControl.min_value;
+                            if (minValue === 0) // LSP controls.    
+                            {
+                                minValue = 0.0001;
+                            }
+                            value = minValue * Math.pow(uiControl.max_value / minValue, range);
+                            if (!isFinite(value)) {
+                                value = uiControl.max_value;
+                            } else if (isNaN(value)) {
+                                value = uiControl.min_value;
+                            }
                         } else {
                             value = range * (uiControl.max_value - uiControl.min_value) + uiControl.min_value;
                         }
@@ -731,23 +765,23 @@ const PluginControl =
                 }
 
                 let item_width: number | undefined = isSelect ? 160 : 80;
-                if (isTrigger)
-                {
+                if (isTrigger) {
                     item_width = undefined;
                 }
 
 
                 return (
-                    <div ref={this.frameRef} 
+                    <div ref={this.frameRef}
                         className={this.props.classes.controlFrame}
                         style={{ width: item_width }}
-                       >
+                    >
                         {/* TITLE SECTION */}
                         <div className={this.props.classes.titleSection}
-                         style={
-                            { alignSelf:"stretch", marginBottom: 8, marginLeft: isSelect ? 8 : 0, marginRight: 0 
+                            style={
+                                {
+                                    alignSelf: "stretch", marginBottom: 8, marginLeft: isSelect ? 8 : 0, marginRight: 0
 
-                         }}>
+                                }}>
                             <ControlTooltip uiControl={control} >
                                 <Typography variant="caption" display="block" noWrap style={{
                                     width: "100%",
@@ -758,27 +792,56 @@ const PluginControl =
                         {/* CONTROL SECTION */}
 
                         <div className={this.props.classes.midSection}>
-                        
-                            {isTrigger ? (
-                                <Button variant="contained" color="primary" size="small"
-                                    onMouseDown={ 
-                                        (evt)=> { this.handleTriggerMouseDown(); }
-                                        }
-                                    onMouseUp={
-                                        (evt)=> { this.handleTriggerMouseUp(); }
-                                    }
-                                style={{
-                                    textTransform: "none",
-                                    background: (isDarkMode() ? "#6750A4" : undefined),
-                                    marginLeft: 8, marginRight: 8,minWidth:60,
-                                    marginTop: 0
 
-                                }}
+                            {isTrigger ?
+                                (
+                                    control.name.length !== 1 ? (
+                                        <Button variant="contained" color="primary" size="small"
+                                            onMouseDown={
+                                                (evt) => { this.handleTriggerMouseDown(); }
+                                            }
+                                            onMouseUp={
+                                                (evt) => { this.handleTriggerMouseUp(); }
+                                            }
+                                            style={{
+                                                textTransform: "none",
+                                                background: (isDarkMode() ? "#6750A4" : undefined),
+                                                marginLeft: 8, marginRight: 8, minWidth: 60,
+                                                marginTop: 0
 
-                                >
-                                    {control.name}
-                                </Button>
-                            )
+                                            }}
+
+                                        >
+                                            {control.name}
+                                        </Button>
+
+                                    ) : (
+                                        <Button variant="contained" color="primary" size="small"
+                                            onMouseDown={
+                                                (evt) => { this.handleTriggerMouseDown(); }
+                                            }
+                                            onMouseUp={
+                                                (evt) => { this.handleTriggerMouseUp(); }
+                                            }
+                                            style={{
+                                                textTransform: "none",
+                                                background: (isDarkMode() ? "#6750A4" : undefined),
+                                                marginLeft: 8, marginRight: 8,
+                                                paddingLeft: 0, paddingRight: 0,
+                                                width: 36, height: 36,
+                                                marginTop: 0,
+                                                borderRadius: 8,
+                                                minWidth: 0,
+                                                fontSize: "1.2em"
+
+                                            }}
+
+                                        >
+                                            {control.name}
+                                        </Button>
+                                    )
+                                )
+
                                 : ((isSelect || isAbSwitch || isOnOffSwitch) ? (
                                     this.makeSelect(control, value)
                                 ) : (

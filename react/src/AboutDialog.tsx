@@ -12,7 +12,9 @@ import JackHostStatus from './JackHostStatus';
 import { PiPedalError } from './PiPedalError';
 import DialogEx from './DialogEx';
 
-import { Theme, createStyles } from '@mui/material/styles';
+import createStyles from '@mui/styles/createStyles';
+
+import { Theme } from '@mui/material/styles';
 import { withStyles, WithStyles } from '@mui/styles';
 import Slide, { SlideProps } from '@mui/material/Slide';
 

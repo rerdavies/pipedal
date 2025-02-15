@@ -2610,7 +2610,7 @@ export class PiPedalModel //implements PiPedalModel
         });
     }
 
-    getFilePropertyDirectoryTree(uiFileProperty: UiFileProperty): Promise<FilePropertyDirectoryTree> {
+    getFilePropertyDirectoryTree(uiFileProperty: UiFileProperty,selectedPath: string): Promise<FilePropertyDirectoryTree> {
         return new Promise<FilePropertyDirectoryTree>((resolve, reject) => {
             let ws = this.webSocket;
             if (!ws) {
@@ -2619,7 +2619,7 @@ export class PiPedalModel //implements PiPedalModel
             }
             ws.request<FilePropertyDirectoryTree>(
                 "getFilePropertyDirectoryTree",
-                uiFileProperty
+                {fileProperty: uiFileProperty, selectedPath: selectedPath}
             ).then((result) => {
                 resolve(new FilePropertyDirectoryTree().deserialize(result));
             }).catch((e) => {

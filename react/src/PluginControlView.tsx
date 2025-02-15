@@ -767,6 +767,7 @@ const PluginControlView =
 
                             <FilePropertyDialog open={this.state.showFileDialog}
                                 fileProperty={this.state.dialogFileProperty}
+                                instanceId={this.props.instanceId}
                                 selectedFile={this.state.dialogFileValue}
                                 onCancel={() => {
                                     this.setState({ showFileDialog: false });

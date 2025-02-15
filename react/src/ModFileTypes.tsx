@@ -38,8 +38,8 @@ export const modDirectories: ModDirectory[] = [
         {modType: "ir", pipedalPath: "ReverbImpulseFiles", displayName: "Impulse Responses", defaultFileExtensions: ["audio/*"]},    // Impulse Responses
         {modType: "midiclip", pipedalPath: "shared/midiClips",displayName:  "MIDI Clips", defaultFileExtensions: [".mid", ".midi"]}, // MIDI Clips, to be used in sync with host tempo, must have mid or midi file extension
         {modType: "midisong", pipedalPath: "shared/midiSongs", displayName: "MIDI Songs", defaultFileExtensions: [".mid", ".midi"]}, // MIDI Songs, meant to be used as full-performance/song or backtrack
-        {modType: "sf2", pipedalPath: "shared/sf2",displayName:  "Sound Fonts", defaultFileExtensions: ["sf2", "sf3"]},              // SF2 Instruments, must have sf2 or sf3 file extension
-        {modType: "sfz", pipedalPath: "shared/sfz",displayName:  "Sfz Files", defaultFileExtensions: ["sfz"]},                       // SFZ Instruments, must have sfz file extension
+        {modType: "sf2", pipedalPath: "shared/sf2",displayName:  "Sound Fonts", defaultFileExtensions: [".sf2", ".sf3"]},              // SF2 Instruments, must have sf2 or sf3 file extension
+        {modType: "sfz", pipedalPath: "shared/sfz",displayName:  "Sfz Files", defaultFileExtensions: [".sfz"]},                       // SFZ Instruments, must have sfz file extension
         // extensions observed in the field.
         {modType: "audio", pipedalPath: "shared/audio", displayName: "Audio", defaultFileExtensions: ["audio/*"]},                              // all audio files (Ratatoille)
         {modType: "nammodel", pipedalPath: "NeuralAmpModels", displayName: "Neural Amp Models", defaultFileExtensions: [".nam"]},              // Ratatoille, Mike's NAM.

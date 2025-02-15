@@ -2309,18 +2309,6 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
     }
 }
 
-std::vector<std::string> PiPedalModel::GetFileList(const UiFileProperty &fileProperty)
-{
-    try
-    {
-        return this->storage.GetFileList(fileProperty);
-    }
-    catch (const std::exception &e)
-    {
-        Lv2Log::warning("GetFileList() failed:  (%s)", e.what());
-        return std::vector<std::string>(); // don't disclose to users what the problem is.
-    }
-}
 FileRequestResult PiPedalModel::GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty)
 {
     try
@@ -2354,15 +2342,44 @@ std::string PiPedalModel::CreateNewSampleDirectory(const std::string &relativePa
     std::lock_guard<std::recursive_mutex> lock(mutex);
     return storage.CreateNewSampleDirectory(relativePath, uiFileProperty);
 }
-FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty)
+FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    return storage.GetFilePropertydirectoryTree(uiFileProperty);
+    return storage.GetFilePropertydirectoryTree(uiFileProperty,selectedPath);
 }
 
-std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, std::istream &stream, size_t contentLength)
+UiFileProperty::ptr PiPedalModel::FindLoadedPatchProperty(int64_t instanceId,const std::string&patchPropertyUri)
 {
-    return storage.UploadUserFile(directory, patchProperty, filename, stream, contentLength);
+
+    auto pedalboardItems = pedalboard.GetAllPlugins();
+
+    for (const auto&pedalboardItem: pedalboardItems) {
+        if (pedalboardItem->instanceId() == instanceId)
+        {
+            Lv2PluginInfo::ptr pluginInfo = GetPluginInfo(pedalboardItem->uri());
+            if (pluginInfo && pluginInfo->piPedalUI())
+            {
+                for (const auto&fileProperty: pluginInfo->piPedalUI()->fileProperties())
+                if (fileProperty->patchProperty() == patchPropertyUri)
+                {
+                    return fileProperty;
+                }
+            }
+        }
+    }
+    return nullptr;
+    throw std::runtime_error("Permission denied. Plugin not currently loaded.");
+}
+
+std::string PiPedalModel::UploadUserFile(const std::string &directory, int64_t instanceId,const std::string &patchProperty, const std::string &filename, std::istream &stream, size_t contentLength)
+{
+    UiFileProperty::ptr fileProperty = FindLoadedPatchProperty(instanceId,patchProperty);
+    if (!fileProperty)
+    {
+        Lv2Log::error(SS("Upload fle: Permission denied. No currently-loaded plugin provides that patch property: " << patchProperty));
+        throw std::runtime_error("Permission denied.");
+    }
+    return storage.UploadUserFile(directory, fileProperty, filename, stream, contentLength);
 }
 
 uint64_t PiPedalModel::CreateNewPreset()

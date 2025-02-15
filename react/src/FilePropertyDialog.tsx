@@ -19,7 +19,9 @@
 
 
 import React from 'react';
-import { Theme, createStyles } from '@mui/material/styles';
+import createStyles from '@mui/styles/createStyles';
+
+import { Theme } from '@mui/material/styles';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import RenameDialog from './RenameDialog';
 import Divider from '@mui/material/Divider';
@@ -32,7 +34,7 @@ import Button from '@mui/material/Button';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import FolderIcon from '@mui/icons-material/Folder';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DialogActions from '@mui/material/DialogActions';
@@ -92,6 +94,7 @@ function isAudioFile(filename: string) {
 export interface FilePropertyDialogProps extends WithStyles<typeof styles> {
     open: boolean,
     fileProperty: UiFileProperty,
+    instanceId: number,
     selectedFile: string,
     onOk: (fileProperty: UiFileProperty, selectedItem: string) => void,
     onCancel: () => void
@@ -557,7 +560,7 @@ export default withStyles(styles, { withTheme: true })(
             }
             if (fileEntry.isDirectory) {
                 return (
-                    <FolderOutlinedIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
+                    <FolderIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
                 );
             }
             if (isAudioFile(fileEntry.pathname)) {
@@ -750,6 +753,8 @@ export default withStyles(styles, { withTheme: true })(
                             }
                             uploadPage={
                                 "uploadUserFile?directory=" + encodeURIComponent(this.state.uploadDirectory)
+                                + "&id=" + this.props.instanceId.toString()
+                                + "&property=" + encodeURIComponent(this.props.fileProperty.patchProperty)
                                 + "&ext="
                                 + encodeURIComponent(this.getFileExtensionList(this.props.fileProperty))
                             }
@@ -794,8 +799,10 @@ export default withStyles(styles, { withTheme: true })(
                                 (
                                     <FilePropertyDirectorySelectDialog
                                         open={this.state.moveDialogOpen}
+                                        dialogTitle="Move to"
                                         uiFileProperty={this.props.fileProperty}
                                         defaultPath={this.getDefaultPath()}
+                                        selectedFile={this.state.selectedFile}
                                         excludeDirectory={
                                             this.isDirectory(this.state.selectedFile)
                                                 ? this.state.selectedFile : ""}
