@@ -1,5 +1,17 @@
 # Release Notes
 
+## PiPedal 1.4.70 Beta
+
+- Support for Ubuntu 24.04 (arm64 and amd64)
+- Ubunto CPU Freq/governor/thermal status display.
+- Support for WiFi on on Ubuntu 
+- TooB Plugin compatibility issues on x64/amd64.
+- Restart audio automatically after ALSA stalls.
+- Improvements to File Upload UI for plugins that have complex file types (e.g. Ratatoille)
+- Support for LV2 Trigger controls, and MIDI bindings to LV2 trigger controls (common in looper and recording/playback plugsin).
+- MIDI bindings for LV2 trigger controls.
+- Port Web app from CRA to Vite framework to avoid deprecated dependencies.
+
 ## PiPedal 1.3.69
 
 Bug fixes:

@@ -1,5 +1,5 @@
 
-<a href="Installing.html"><i>v1.3.69</i></a>
+<a href="Installing.html"><i>v1.4.70</i></a>
 
 &nbsp;
 
@@ -10,7 +10,7 @@ To view PiPedal documentation, click [here](Documentation.md).
 be enormously grateful. Note that media and model files are included in patch files, so you can share patches that 
 include model files or audio samples. If you make use of plugins that are not included in the PiPedal distribution, please include a link to the plugin in the patch description.
 
-#### NEW version 1.3.69 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.4.70 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 

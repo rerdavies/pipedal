@@ -178,7 +178,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
 
                             </div>
                             <Typography noWrap display="block" variant="body2" style={{ marginBottom: 12 }}  >
-                                Copyright &#169; 2022-2024 Robin Davies.
+                                Copyright &#169; 2022-2025 Robin Davies.
                             </Typography>
                             {this.model.isAndroidHosted() && (
                                 <Typography noWrap display="block" variant="body2" style={{ marginBottom: 0 }}  >
@@ -216,7 +216,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                                     {this.model.serverVersion?.osVersion ?? ""}
                                 </Typography>
                             </div>
-                        </div><div>
+                        </div><div style={{marginLeft: 24, marginRight: 24}}>
 
                             <Divider />
                             <Typography display="block" variant="caption"  >
