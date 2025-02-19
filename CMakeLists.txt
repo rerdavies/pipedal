@@ -19,7 +19,7 @@ enable_testing()
 
 add_subdirectory("PiPedalCommon")
 
-add_subdirectory("react")
+add_subdirectory("vite")
 
 add_subdirectory("src")
 
