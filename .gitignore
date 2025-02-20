@@ -11,3 +11,5 @@ react/package-lock.json
 
 src/dbus/bluez_adaptor.h
 src/dbus/bluez_proxy.h
+
+CMakeFiles

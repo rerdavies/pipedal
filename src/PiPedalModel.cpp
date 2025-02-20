@@ -50,6 +50,7 @@
 #endif /* NO_MLOCK */
 
 using namespace pipedal;
+namespace fs = std::filesystem;
 
 template <typename T>
 T &constMutex(const T &mutex)
@@ -137,6 +138,8 @@ void PiPedalModel::Close()
             return;
         }
         closed = true;
+
+        CancelAudioRetry();
 
         if (avahiService)
         {
@@ -1301,6 +1304,10 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
 {
     try
     {
+        if (useDummyAudioDriver)
+        {
+            CancelAudioRetry();
+        }
         if (this->audioHost->IsOpen())
         {
 
@@ -1380,6 +1387,8 @@ void PiPedalModel::SetJackChannelSelection(int64_t clientId, const JackChannelSe
         this->storage.SetJackChannelSelection(channelSelection);
 
         this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
+
+        CancelAudioRetry();
     }
 
     RestartAudio(); // no lock to avoid mutex deadlock when reader thread is sending notifications..
@@ -1791,6 +1800,8 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
 
     FireJackConfigurationChanged(this->jackConfiguration);
 
+    CancelAudioRetry();
+
     guard.unlock();
     RestartAudio();
 
@@ -1866,6 +1877,18 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
     }
     if (pPlugin)
     {
+        if (pPlugin->hasMidiInput())
+        {
+            if (!pedalboardItem->midiChannelBinding())
+            {
+                pedalboardItem->midiChannelBinding(MidiChannelBinding::DefaultForMissingValue());
+            }
+        } else {
+            if (pedalboardItem->midiChannelBinding())
+            {
+                pedalboardItem->midiChannelBinding(std::optional<MidiChannelBinding>()); // clear it.
+            }
+        }
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {
             auto port = pPlugin->ports()[i];
@@ -2287,22 +2310,46 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
     }
 }
 
-std::vector<std::string> PiPedalModel::GetFileList(const UiFileProperty &fileProperty)
+PedalboardItem*PiPedalModel::GetPedalboardItemForFileProperty(const UiFileProperty& fileProperty) 
 {
-    try
+    for (PedalboardItem*pedalboardItem: this->pedalboard.GetAllPlugins())
     {
-        return this->storage.GetFileList(fileProperty);
+        if (pedalboardItem->pathProperties_.contains(fileProperty.patchProperty()))
+        {
+            return pedalboardItem;
+        }
     }
-    catch (const std::exception &e)
-    {
-        Lv2Log::warning("GetFileList() failed:  (%s)", e.what());
-        return std::vector<std::string>(); // don't disclose to users what the problem is.
-    }
+    return nullptr;
 }
-FileRequestResult PiPedalModel::GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty)
+FileRequestResult PiPedalModel::GetFileList2(const std::string &relativePath_, const UiFileProperty &fileProperty)
 {
+    std::string relativePath = relativePath_;
     try
     {
+        if (!storage.IsInUploadsDirectory(relativePath)) 
+        {
+            // if relativePath is in a resource directory of the plugin, then we have loaded a factory preset or are using a default property.
+            // map the resource path to the corresponding file in the uploads directory. 
+            // :-(
+            PedalboardItem *pedalboardItem = GetPedalboardItemForFileProperty(fileProperty);
+            if (pedalboardItem)
+            {
+                auto pluginInfo = GetPluginInfo(pedalboardItem->uri());
+                if (pluginInfo) {
+                    std::filesystem::path resourcePath = fs::path(pluginInfo->bundle_path())
+                        / fileProperty.resourceDirectory();
+                    if (IsSubdirectory(relativePath,resourcePath))
+                    {
+                        fs::path t = MakeRelativePath(relativePath,resourcePath);
+                        t  = fileProperty.directory() / t;
+                        if (fs::exists(t)) 
+                        {
+                            relativePath = t;
+                        }
+                    }
+                }
+            }
+        }
         return this->storage.GetFileList2(relativePath, fileProperty);
     }
     catch (const std::exception &e)
@@ -2332,15 +2379,44 @@ std::string PiPedalModel::CreateNewSampleDirectory(const std::string &relativePa
     std::lock_guard<std::recursive_mutex> lock(mutex);
     return storage.CreateNewSampleDirectory(relativePath, uiFileProperty);
 }
-FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty)
+FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    return storage.GetFilePropertydirectoryTree(uiFileProperty);
+    return storage.GetFilePropertydirectoryTree(uiFileProperty,selectedPath);
 }
 
-std::string PiPedalModel::UploadUserFile(const std::string &directory, const std::string &patchProperty, const std::string &filename, std::istream &stream, size_t contentLength)
+UiFileProperty::ptr PiPedalModel::FindLoadedPatchProperty(int64_t instanceId,const std::string&patchPropertyUri)
 {
-    return storage.UploadUserFile(directory, patchProperty, filename, stream, contentLength);
+
+    auto pedalboardItems = pedalboard.GetAllPlugins();
+
+    for (const auto&pedalboardItem: pedalboardItems) {
+        if (pedalboardItem->instanceId() == instanceId)
+        {
+            Lv2PluginInfo::ptr pluginInfo = GetPluginInfo(pedalboardItem->uri());
+            if (pluginInfo && pluginInfo->piPedalUI())
+            {
+                for (const auto&fileProperty: pluginInfo->piPedalUI()->fileProperties())
+                if (fileProperty->patchProperty() == patchPropertyUri)
+                {
+                    return fileProperty;
+                }
+            }
+        }
+    }
+    return nullptr;
+    throw std::runtime_error("Permission denied. Plugin not currently loaded.");
+}
+
+std::string PiPedalModel::UploadUserFile(const std::string &directory, int64_t instanceId,const std::string &patchProperty, const std::string &filename, std::istream &stream, size_t contentLength)
+{
+    UiFileProperty::ptr fileProperty = FindLoadedPatchProperty(instanceId,patchProperty);
+    if (!fileProperty)
+    {
+        Lv2Log::error(SS("Upload fle: Permission denied. No currently-loaded plugin provides that patch property: " << patchProperty));
+        throw std::runtime_error("Permission denied.");
+    }
+    return storage.UploadUserFile(directory, fileProperty, filename, stream, contentLength);
 }
 
 uint64_t PiPedalModel::CreateNewPreset()
@@ -2735,4 +2811,71 @@ std::map<std::string,std::string> PiPedalModel::GetWifiRegulatoryDomains()
         Lv2Log::warning(SS("Unable to query Wifi Regulatory domains. " << e.what()));
     }
     return result;
+}
+
+void PiPedalModel::CancelAudioRetry() {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    if (audioRetryPostHandle) 
+    {
+        // don't think this can ever happen, but if it did, it would be bad.
+        this->CancelPost(audioRetryPostHandle);
+        audioRetryPostHandle = 0;
+    }
+
+}
+void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
+    // notification from the realtime thread, via the audiohost that the 
+    // ALSA stream has broken. We want to restart.
+
+    // get off the service thread as promptly as possible
+    this->Post([&]() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (closed) return;
+
+        auto now = clock::now();
+        clock::duration timeSinceLastRetry = now-this->lastRestartTime;
+        this->lastRestartTime = now;
+        if (timeSinceLastRetry > std::chrono::duration_cast<clock::duration>(std::chrono::milliseconds(1000))) {
+            audioRestartRetries = 0;
+        }
+        CancelAudioRetry();
+
+        if (audioRestartRetries == 0)
+        {
+            this->audioRetryPostHandle = this->Post(
+                // No lock to avoid deadlocks!
+                [this]() {
+                    Lv2Log::info("Restarting audio.");
+                    this->RestartAudio();
+                });
+            ++audioRestartRetries;
+        } else if (audioRestartRetries < 3) 
+        {
+            this->audioRetryPostHandle = this->PostDelayed(
+                std::chrono::milliseconds(100 * audioRestartRetries),
+                [this]() {
+                    if (closed) {
+                        return;
+                    }
+                    Lv2Log::info(SS("Restarting audio. (retry " << audioRestartRetries << ")"));
+
+                    RestartAudio();
+                });
+            ++audioRestartRetries;
+        } else if (audioRestartRetries == 3)  // one attempt to start the dummy driver.
+        {
+            {
+                this->audioRetryPostHandle = this->Post(
+                    // No lock to avoid deadlocks!
+                    [this]() {
+                        Lv2Log::info(SS("Switching to dummy driver."));
+                        RestartAudio(true); // switch to the dummy driver.
+                    });
+            } 
+            ++audioRestartRetries;
+        } else {
+            Lv2Log::error(SS("Unable to reastart audio."));
+
+        }
+    });
 }

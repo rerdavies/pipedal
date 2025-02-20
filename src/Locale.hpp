@@ -27,6 +27,7 @@ namespace pipedal {
     public:
         using ptr = std::shared_ptr<Collator>;
         virtual int Compare(const std::string &left, const std::string&right) = 0;
+        virtual int Compare(const std::u16string &left, const std::u16string&right) = 0;
         virtual ~Collator();
     };
     class Locale {
@@ -43,6 +44,7 @@ namespace pipedal {
         using ptr = std::shared_ptr<Locale>;
 
         static ptr GetInstance();
+        static ptr GetTestInstance(const std::string&locale); // testing only. 
 
         virtual const std::string &CurrentLocale() const = 0;
         virtual Collator::ptr GetCollator() = 0;

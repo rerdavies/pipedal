@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include "PluginHost.hpp"
 #include "PatchPropertyWriter.hpp"
+#include "CpuTemperatureMonitor.hpp"
 
 using namespace pipedal;
 
@@ -182,7 +183,8 @@ namespace pipedal
                             reader.read(&vProperty);
                             if (!vProperty.is_null())
                             {
-                                try {
+                                try
+                                {
                                     vProperty = pluginHost.MapPath(vProperty);
 
                                     // now to atom format (what we want on the rt thread0)
@@ -193,7 +195,8 @@ namespace pipedal
                                     pathPatchProperty.atomBuffer.resize(atomValue->size + sizeof(LV2_Atom));
                                     memcpy(pathPatchProperty.atomBuffer.data(), atomValue, pathPatchProperty.atomBuffer.size());
                                     this->pathPatchProperties.push_back(std::move(pathPatchProperty));
-                                } catch (const std::exception &e)
+                                }
+                                catch (const std::exception &e)
                                 {
                                     Lv2Log::info(SS("IndexedSnapshotValue: Failed to map path property " << pathProperty.first << ". " << e.what()));
                                 }
@@ -206,7 +209,7 @@ namespace pipedal
         void ApplyValues(IEffect *effect)
         {
 
-            effect->SetBypass(this->enabled);            
+            effect->SetBypass(this->enabled);
             if (effect != pEffect)
             {
                 throw std::runtime_error("Wrong effect");
@@ -387,6 +390,7 @@ private:
     std::mutex atomConverterMutex;
     AtomConverter atomConverter;
 
+    CpuTemperatureMonitor::ptr cpuTemperatureMonitor;
     static constexpr size_t DEFERRED_MIDI_BUFFER_SIZE = 1024;
 
     uint8_t deferredMidiMessages[DEFERRED_MIDI_BUFFER_SIZE];
@@ -905,7 +909,7 @@ private:
 
     bool onMidiEvent(Lv2EventBufferWriter &eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent &event)
     {
-        //eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
+        // eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
 
         this->realtimeActivePedalboard->OnMidiMessage(event.size, event.buffer, this, fnMidiValueChanged);
         if (listenForMidiEvent)
@@ -1098,10 +1102,12 @@ private:
     {
         return this->active && (!this->audioStopped) && !this->isDummyAudioDriver;
     }
-    virtual void OnAudioStopped() override
+    virtual void OnAlsaDriverStopped() override
     {
+
         this->audioStopped = true;
         Lv2Log::info("Audio stopped.");
+        this->realtimeWriter.AudioTerminatedAbnormally();
     }
     virtual void OnAudioTerminated() override
     {
@@ -1211,7 +1217,7 @@ private:
         }
         catch (const std::exception &e)
         {
-            Lv2Log::error("Fatal error while processing jack audio. (%s)", e.what());
+            Lv2Log::error("Fatal error while processing realtime audio. (%s)", e.what());
             throw;
         }
     }
@@ -1231,6 +1237,8 @@ public:
     {
         realtimeAtomBuffer.resize(32 * 1024);
         lv2_atom_forge_init(&inputWriterForge, pHost->GetMapFeature().GetMap());
+
+        cpuTemperatureMonitor = CpuTemperatureMonitor::Get();
     }
     virtual ~AudioHostImpl()
     {
@@ -1252,12 +1260,14 @@ public:
         return this->sampleRate;
     }
 
-    void OnAudioComplete()
+    void HandleAudioTerminatedAbnormally()
     {
-        // there is actually no compelling circumstance in which this should ever happen.
-
         Lv2Log::error("Audio processing terminated unexpectedly.");
-        realtimeWriter.AudioStopped();
+
+        if (pNotifyCallbacks)
+        {
+            pNotifyCallbacks->OnAlsaDriverTerminatedAbnormally();
+        }
     }
     std::vector<uint8_t> atomBuffer;
     std::vector<uint8_t> realtimeAtomBuffer;
@@ -1267,7 +1277,7 @@ public:
     {
         SetThreadName("rtsvc");
         SetThreadPriority(SchedulerPriority::AudioService);
-        
+
         int underrunMessagesGiven = 0;
         try
         {
@@ -1452,7 +1462,7 @@ public:
                                             {
                                                 LV2_URID propertyUrid = ((LV2_Atom_URID *)property)->body;
                                                 this->pNotifyCallbacks->OnPatchSetReply(instanceId, propertyUrid, value);
-                                                //this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
+                                                // this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
                                             }
                                         }
                                     }
@@ -1488,11 +1498,11 @@ public:
                                 hostReader.read(&buffer);
                                 OnPathPropertyReceived(buffer);
                             }
-                            else if (command == RingBufferCommand::AudioStopped)
+                            else if (command == RingBufferCommand::AudioTerminatedAbnormally)
                             {
                                 AudioStoppedBody body;
                                 hostReader.read(&body);
-                                OnAudioComplete();
+                                HandleAudioTerminatedAbnormally();
                                 return;
                             }
                             else if (command == RingBufferCommand::
@@ -1617,7 +1627,7 @@ public:
         if (jackServerSettings.IsDummyAudioDevice())
         {
             this->isDummyAudioDriver = true;
-            this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this,jackServerSettings.GetAlsaInputDevice()));
+            this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this, jackServerSettings.GetAlsaInputDevice()));
         }
         else
         {
@@ -1852,8 +1862,9 @@ public:
                         VuUpdate v;
                         v.instanceId_ = instanceId;
                         // Display mono VUs if a stereo device is being fed identical L/R inputs.
-                        v.isStereoInput_ = effect->GetNumberOfInputAudioPorts() != 1 && effect->GetAudioInputBuffer(0) != effect->GetAudioInputBuffer(1);
-                        v.isStereoOutput_ = effect->GetNumberOfOutputAudioPorts() != 1;
+                        v.isStereoInput_ = effect->GetNumberOfInputAudioBuffers() >= 2 
+                            && effect->GetAudioInputBuffer(0) != effect->GetAudioInputBuffer(1);
+                        v.isStereoOutput_ = effect->GetNumberOfOutputAudioBuffers() >= 2;
 
                         vuConfig->vuUpdateWorkingData.push_back(v);
                         vuConfig->vuUpdateResponseData.push_back(v);
@@ -1923,7 +1934,7 @@ public:
     }
 
 private:
-    //virtual bool UpdatePluginStates(Pedalboard &pedalboard) override;
+    // virtual bool UpdatePluginStates(Pedalboard &pedalboard) override;
     virtual bool UpdatePluginState(PedalboardItem &pedalboardItem) override;
 
     class RestartThread
@@ -2032,21 +2043,6 @@ public:
         this->hostWriter.ParameterRequest(pParameterRequest);
     }
 
-    static int32_t GetRaspberryPiTemperature()
-    {
-        try
-        {
-            std::ifstream f("/sys/class/thermal/thermal_zone0/temp");
-            int32_t temp;
-            f >> temp;
-            return temp;
-        }
-        catch (std::exception &)
-        {
-            return -1000000;
-        }
-    }
-
     virtual JackHostStatus getJackStatus()
     {
         CleanRestartThreads(false);
@@ -2062,7 +2058,7 @@ public:
 
         result.msSinceLastUnderrun_ = (uint64_t)dt;
 
-        result.temperaturemC_ = GetRaspberryPiTemperature();
+        result.temperaturemC_ = (int32_t)(std::round(cpuTemperatureMonitor->GetTemperatureC() * 1000));
 
         result.active_ = IsAudioRunning();
         result.restarting_ = this->restarting;
@@ -2071,12 +2067,14 @@ public:
         {
             result.cpuUsage_ = audioDriver->CpuUse();
         }
-        GetCpuFrequency(&result.cpuFreqMax_, &result.cpuFreqMin_);
+        GetCpuFrequency(&result.cpuFreqMin_, &result.cpuFreqMax_);
         result.hasCpuGovernor_ = HasCpuGovernor();
         if (result.hasCpuGovernor_)
         {
             result.governor_ = GetGovernor();
-        } else {
+        }
+        else
+        {
             result.governor_ = "";
         }
 
@@ -2121,7 +2119,7 @@ void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindin
         else if (i->symbol() == "prevBank")
         {
             this->prevBankMidiBinding.SetBinding(*i);
-        } 
+        }
         else if (i->symbol() == "nextProgram")
         {
             this->nextPresetMidiBinding.SetBinding(*i);

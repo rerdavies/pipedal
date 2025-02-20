@@ -3,7 +3,7 @@ Copyright (c) 2007, 2008	Johannes Berg
 Copyright (c) 2007		Andy Lutomirski
 Copyright (c) 2007		Mike Kershaw
 Copyright (c) 2008		Luis R. Rodriguez
-Copyright (c) 2024      Robin Davies
+Copyright (c) 2024      Robin E. R. Davies
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

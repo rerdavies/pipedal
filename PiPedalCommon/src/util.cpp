@@ -21,6 +21,7 @@
  *   SOFTWARE.
  */
 #include "util.hpp"
+#include "ss.hpp"
 
 #include <pthread.h>
 #include <thread>
@@ -135,4 +136,83 @@ std::vector<std::string> pipedal::split(const std::string &value, char delimiter
         }
     }
     return result;
+}
+
+
+bool pipedal::IsChildDirectory(const std::filesystem::path &path, const std::filesystem::path&rootPath)
+{
+    auto iter = path.begin();
+
+    for (auto i = rootPath.begin(); i != rootPath.end(); ++i)
+    {
+        if (iter == path.end() || *iter != *i)
+        {
+            return false;
+        }
+        ++iter;
+    }
+    return true;
+}
+
+
+std::string pipedal::ToLower(const std::string&value)
+{
+    std::string result;
+    result.resize(value.length());
+    for (size_t i = 0; i < value.length(); ++i)
+    {
+        result[i] = (char)tolower(value[i]);
+    }
+    return result;
+}
+
+
+std::filesystem::path pipedal::MakeRelativePath(const std::filesystem::path &path, const std::filesystem::path&parentPath)
+{
+    if (path.is_relative()) return path;
+
+    auto iter = path.begin();
+    
+    for (auto i = parentPath.begin(); i != parentPath.end(); ++i)
+    {
+        if (iter == path.end() || *iter != *i) {
+            // not a child directory of parent directory.
+            throw std::runtime_error("Not a child directory.");
+        }
+        ++iter;
+    }
+    std::filesystem::path remander;
+    while (iter != path.end())
+    {
+        remander /= *iter++;
+    }
+    return remander;
+
+}
+
+bool pipedal::IsSubdirectory(const std::filesystem::path &path, const std::filesystem::path &basePath)
+{
+    auto iPath = path.begin();
+    for (auto i = basePath.begin(); i != basePath.end(); ++i)
+    {
+        if (iPath == path.end())
+        {
+            return false;
+        }
+
+        if ((*i) != (*iPath))
+        {
+            return false;
+        }
+        ++iPath;
+    }
+    while (iPath != path.end())
+    {
+        if (iPath->string() == "..")
+        {
+            return false;
+        }
+        ++iPath;
+    }
+    return true;
 }

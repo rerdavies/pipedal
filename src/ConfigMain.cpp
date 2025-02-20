@@ -27,6 +27,8 @@
 #include "alsaCheck.hpp"
 #include "RegDb.hpp"
 #include "Locale.hpp"
+#include "Finally.hpp"
+#include "BootConfig.hpp"
 
 #include <filesystem>
 #include <stdlib.h>
@@ -560,38 +562,6 @@ void InstallAudioService()
 #endif
 }
 
-int SudoExec(int argc, char **argv)
-{
-    // re-execute with SUDO in order to prompt for SUDO credentials once only.
-    std::vector<char *> args;
-    std::string pkexec = "/usr/bin/sudo"; // staged because "ISO C++ forbids converting a string constant to std::vector<char*>::value_type"(!)
-    args.push_back((char *)(pkexec.c_str()));
-
-    std::string sPath = getSelfExePath();
-    args.push_back(const_cast<char *>(sPath.c_str()));
-    for (int arg = 1; arg < argc; ++arg)
-    {
-        args.push_back(const_cast<char *>(argv[arg]));
-    }
-
-    args.push_back(nullptr);
-
-    char **newArgs = &args[0];
-
-    int pbPid;
-    int returnValue = 0;
-
-    if ((pbPid = fork()) == 0)
-    {
-        return execv(newArgs[0], newArgs);
-    }
-    else
-    {
-        waitpid(pbPid, &returnValue, 0);
-        int exitStatus = WEXITSTATUS(returnValue);
-        return exitStatus;
-    }
-}
 
 static bool IsP2pServiceEnabled()
 {
@@ -953,6 +923,132 @@ void InstallPgpKey()
         sysExec(cmd.c_str());
     }
 }
+
+
+static uint32_t autoSelectPorts[] = { 
+    80,
+    81, // unofficial alternate 
+    8080, // unofficial alternate 
+    8081, // unofficial alternate 
+    8008, // unofficial alternate 
+    83  // Not official at all.
+    };
+
+
+
+static bool isPortInUse(int port) {
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        throw std::runtime_error(SS("Socket creation failed: " << strerror(errno)));
+    }
+    Finally ff{[sockfd]() {
+        close(sockfd);
+    }};
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+
+    // Try to bind to the port
+    int result = bind(sockfd, (struct sockaddr*)&addr, sizeof(addr));
+
+    if (result < 0) {
+        if (errno == EADDRINUSE) {
+            return true;  // Port is in use
+        } else {
+            cout << "Warning: Unexpected error  binding socket to port " << port << ": " << strerror(errno) << endl;
+            return true;
+        }
+    }
+
+    return false;  // Port is free
+}
+
+
+static std::string AutoSelectPort() {
+    constexpr size_t MAX_PORT = sizeof(autoSelectPorts)/sizeof(autoSelectPorts[0]);
+
+    int32_t port = -1;
+    for (size_t i = 0; i < MAX_PORT; ++i)
+    {
+        if (!isPortInUse(autoSelectPorts[i]))
+        {
+            port = autoSelectPorts[i];
+            break;
+        }
+    }
+    if (port == -1) {
+        cout << "Warning: Can't find an available HTTP port. Setting to port 80 anyway." << endl;
+        port = 80;
+    } else if (port != 80)
+    {
+        cout << "Warning: Port 80 is already in use. Using port " << port << " instead." << endl; 
+    }
+
+    return SS(port);
+
+}
+
+
+bool SetWebServerPort(std::string portOption)
+{
+
+    try {
+        auto nPos = portOption.find_last_of(':');
+        std::string strPort;
+        if (nPos != std::string::npos)
+        {
+            strPort = portOption.substr(nPos+1);
+        } else {
+            strPort = portOption;
+        }
+        std::istringstream ss(strPort);
+
+        uint16_t iPort = 0;
+        ss >> iPort;
+        if (!ss)
+        {
+            throw std::runtime_error(SS("Invalid port number: " << strPort));
+        }
+
+        StopService(false);
+
+        PrepareServiceConfigurationFile(iPort);
+
+        StartService(true);
+
+        cout << "PiPedal web server is listening on port " << iPort << endl;
+    } catch (const std::exception&e)
+    {
+        cout << "Error: " << e.what() << endl;
+        return false;
+    }
+    return true;
+}
+
+void CheckPreemptDynamicConfig()
+{
+    try {
+        BootConfig bootConfig;
+
+        if (bootConfig.KernelType() == "PREEMPT_DYNAMIC")
+        {
+            if (bootConfig.DynamicScheduler() != BootConfig::DynamicSchedulerT::Full)
+            {
+                cout << endl;
+                cout << "Warning: PREEMPT_DYNAMIC kernel has not been configured for 'preempt=full'" << endl;
+                cout << "Run pipedal_kconfig to configure the kernel for real-time audio." << endl;
+                cout << endl;
+            }
+        }
+
+    } catch(const std::exception& /* ignore */)
+    {
+    }
+}
+
+
 void Install(const fs::path &programPrefix, const std::string endpointAddress)
 {
     cout << "Configuring pipedal" << endl;
@@ -1000,14 +1096,14 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         {
             throw std::runtime_error("Invalid endpoint address: " + endpointAddress);
         }
-        uint16_t port;
+        uint16_t port = 80;
         auto strPort = endpointAddress.substr(endpos + 1);
         try
         {
             auto lport = std::stoul(strPort);
             if (lport == 0 || lport >= std::numeric_limits<uint16_t>::max())
             {
-                throw std::runtime_error("out of range.");
+                throw std::runtime_error("Port number is too large.");
             }
             port = (uint16_t)lport;
             std::stringstream s;
@@ -1020,6 +1116,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
             s << "Invalid port number: " << strPort;
             throw std::runtime_error(s.str());
         }
+
         PrepareServiceConfigurationFile(port);
 
         bool authBindRequired = port < 512;
@@ -1183,14 +1280,25 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 
         // Restart Wi-Fi Direct if neccessary.
         OnWifiReinstall();
+
+        CheckPreemptDynamicConfig();
     }
     catch (const std::exception &e)
     {
         // don't allow abnormal termination, which leaves the package in a state that's
         // difficult to uninstall.
-        cout << "Error: " << e.what();
+        cout << "Error: " << e.what() << endl;
         cout << "      Run 'pipedalconfig  --install' again to complete setup of PiPedal." << endl;
     }
+    const std::string ADDR_ANY = "0.0.0.0:";
+
+    if (endpointAddress.starts_with(ADDR_ANY))
+    {
+        cout << "PiPedal web server is listening on port " << endpointAddress.substr(ADDR_ANY.length()) << endl;
+    } else {
+        cout << "PiPedal web server is listening on port " << endpointAddress << endl;
+    }
+
 }
 
 static std::string GetCurrentWebServicePort()
@@ -1199,7 +1307,7 @@ static std::string GetCurrentWebServicePort()
     config.Load("/etc/pipedal/config", "");
 
     std::ostringstream ss;
-    ss << config.GetSocketServerPort();
+    ss << config.GetSocketServerAddress() << ":" << config.GetSocketServerPort();
     return ss.str();
 }
 
@@ -1208,7 +1316,7 @@ static void PrintHelp()
     PrettyPrinter pp;
     pp << "pipedalconfig - Command-line post-install configuration for PiPedal"
        << "\n"
-       << "Copyright (c) 2022-2024 Robin Davies."
+       << "Copyright (c) 2022-2024 Robin E. R. Davies."
        << "\n"
        << "\n"
        << "See https://rerdavies.github.io/pipedal/Documentation.html for "
@@ -1238,6 +1346,10 @@ static void PrintHelp()
         << "\n"
         << "The --port option controls which TCP/IP port the web server uses."
         << "\n\n"
+
+        << HangingIndent() << "    --port <port#>\t"
+        << "Set the TCP/IP port that the web server will use."
+        << "\n"
 
         << HangingIndent() << "    --uninstall\t"
         << "Remove installed services."
@@ -1401,6 +1513,29 @@ void ListValidCountryCodes()
     }
 }
 
+static std::string ProcessPortOption(std::string portOption)
+{
+    if (portOption == "" || portOption == "0")  // allow testing of port autodetect.
+    {
+        std::string t = GetCurrentWebServicePort();
+        if (portOption != "0")  {// allows easy debugging of port AutoSelectPort.
+            portOption = t;
+        } else {
+            portOption = "";
+        }
+        if (portOption == "")
+        {
+            portOption = AutoSelectPort();
+        }
+    }
+    std::string ADDR_ANY = "0.0.0.0:";
+
+    if (portOption.find(':') == string::npos)
+    {
+        portOption = ADDR_ANY + portOption;
+    }
+    return portOption;
+}
 
 int main(int argc, char **argv)
 {
@@ -1457,6 +1592,10 @@ int main(int argc, char **argv)
                 uninstall + stop + start + enable + disable + enable_hotspot + 
                 disable_hotspot + restart + enable_p2p + disable_p2p + list_p2p_channels + 
                 fix_permissions + list_wifi_country_codes;
+        if (actionCount == 0 && portOption.length() != 0)
+        {
+            ++actionCount;
+        }
         if (actionCount > 1)
         {
             throw std::runtime_error("Please provide only one action.");
@@ -1553,12 +1692,6 @@ int main(int argc, char **argv)
     {
         return ListP2PChannels(parser.Arguments());
     }
-    if (portOption.size() != 0 && !install)
-    {
-        cout << "Error: -port option can only be specified with the -install option."
-             << "\n";
-        exit(EXIT_FAILURE);
-    }
 
     auto uid = getuid();
     if (uid != 0 && !nosudo)
@@ -1568,6 +1701,12 @@ int main(int argc, char **argv)
 
     try
     {
+        if (portOption.length() != 0 && !install)
+        {
+            portOption = ProcessPortOption(portOption);
+            SetWebServerPort(portOption);
+            return EXIT_SUCCESS;
+        }
         if (fix_permissions)
         {
             FixPermissions();
@@ -1595,20 +1734,11 @@ int main(int argc, char **argv)
                     }
                 }
 
-                if (portOption == "")
-                {
-                    portOption = GetCurrentWebServicePort();
-                    if (portOption == "")
-                    {
-                        portOption = "80";
-                    }
-                }
-                if (portOption.find(':') == string::npos)
-                {
-                    portOption = "0.0.0.0:" + portOption;
-                }
+                portOption = ProcessPortOption(portOption);
+
                 Install(prefix, portOption);
                 FileSystemSync();
+
             }
             catch (const std::exception &e)
             {

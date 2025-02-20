@@ -1,13 +1,42 @@
+- Test midi bindings.
 
-- Start and end connectors are missing in PedalboardView when no device selected (Do they have zero outputs?)
+    -- Toggle
+    -- Switch
+    -- List 
+    -- Dial.
 
+-- make sure trigger controls are set to default value after load/save.
+
+- reset trigger controls after processing.
+- reset triggers before loading.
+- review trigger binding behavior.
+- triggers dont' change save state.
+- Feature for directory locations.
+
+
+- center ellipsis on file properties.
+
+- State of MIDI plugins:
+   - plugin routing is implemented. (maybe needs a not-cheating UI)
+   - MIDI message routing is not.
+   - No routing of midi messages yet. 
+   - Midi Channel Filter dialog is implemented, but not yet hooked up. 
+   - Need to think about Midi Channel filters for system and control bindings. A separate filter?
+   - Bunch of new LV2 interfaces probably needed -- most especially program selection.
+   - SF2 plugin loads the SF2 file on the Scheduler thread, blocking everyone else fo sevearl seconds. Completion
+   - becomes a SIGNIFICANT issue, since it's going to leak upward of 1G of memory!
+   - Severe memory trash/state trash of the SF2 plugin in LV2 restore state. (starts complaining about DBus notification failures!)
+   - Suspect the bin64 library which has several buffer overrun problems.
+
+
+X Start and end connectors are missing in PedalboardView when no device selected (Do they have zero outputs?)
 X Review docs changes once we go live.
 
 - Localisation: support non-UTF8 code pages.
 - unicode commandline arguments. (probably the hotspot name)
 - review unicode filenames (this is probably ok)
 
-- BUG: gcs when we have an animated output control
+- BUG: gc problems when we have an animated output control on phones only.
 
 
 Pri Description

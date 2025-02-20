@@ -181,6 +181,7 @@ void AvahiService::EntryGroupCallback(AvahiEntryGroup *g, AvahiEntryGroupState s
         char *n = avahi_alternative_service_name(avahiNameString);
         avahi_free(avahiNameString);
         avahiNameString = n;
+        this->serviceName = n;
         Lv2Log::warning(SS("Service name collision, renaming service to '" << avahiNameString << "'\n"));
         /* And recreate the services */
         create_group(avahi_entry_group_get_client(g));
@@ -253,7 +254,7 @@ void AvahiService::create_group(AvahiClient *c)
      * because it was reset previously, add our entries.  */
     if (this->makeAnnouncement && avahi_entry_group_is_empty(group))
     {
-        Lv2Log::debug(SS("Adding service '" << avahiNameString << "'"));
+        Lv2Log::debug(SS("Adding service '" << serviceName << "'"));
 
         std::string instanceTxtRecord = SS("id=" << this->instanceId);
 

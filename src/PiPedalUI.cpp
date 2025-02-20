@@ -27,6 +27,10 @@
 #include "ss.hpp"
 #include "MimeTypes.hpp"
 #include "AutoLilvNode.hpp"
+#include "ModFileTypes.hpp"
+#include <algorithm>
+#include "util.hpp"
+#include "MimeTypes.hpp"
 
 using namespace pipedal;
 
@@ -122,17 +126,20 @@ UiFileType::UiFileType(PluginHost *pHost, const LilvNode *node)
     }
     if (fileExtension_ == "")
     {
-        fileExtension_ = MimeTypes::ExtensionFromMimeType(mimeType_);
+        fileExtension_ = MimeTypes::instance().ExtensionFromMimeType(mimeType_);
     }
     if (mimeType_ == "")
     {
-        mimeType_ = MimeTypes::MimeTypeFromExtension(fileExtension_);
+        mimeType_ = MimeTypes::instance().MimeTypeFromExtension(fileExtension_);
         if (mimeType_ == "")
         {
             mimeType_ = "application/octet-stream";
         }
     }
 }
+
+
+
 UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const std::filesystem::path &resourcePath)
 {
     auto pWorld = pHost->getWorld();
@@ -182,6 +189,8 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
         throw std::logic_error("PipedalUI::fileProperty: must specify at least a directory.");
     }
 
+    this->modDirectories_.push_back(directory_);
+
     AutoLilvNode patchProperty = lilv_world_get(
         pWorld,
         node,
@@ -207,6 +216,8 @@ UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const st
         this->resourceDirectory_ =  resourceDirectory.AsString();
     }
     this->fileTypes_ = UiFileType::GetArray(pHost, node, pHost->lilvUris->pipedalUI__fileTypes);
+
+    PrecalculateFileExtensions();
 }
 
 std::vector<UiFileType> UiFileType::GetArray(PluginHost *pHost, const LilvNode *node, const LilvNode *uri)
@@ -271,21 +282,41 @@ bool UiFileProperty::IsDirectoryNameValid(const std::string &value)
     return true;
 }
 
-bool UiFileProperty::IsValidExtension(const std::string &extension) const
-{
-    if (fileTypes_.size() == 0)
-    {
-        return true;
-    }
+// bool UiFileProperty::IsValidExtension(const std::filesystem::path&relativePath,const std::string &extension) const
+// {
+//     std::string modDirectory = this->getParentModDirectory(relativePath);
+//     const auto&validExtensions = GetPermittedFileExtensions(modDirectory);
+//     return validExtensions.contains(extension);
+// }
 
-    for (auto &fileType : fileTypes_)
+std::string UiFileProperty::GetFileExtension(const std::filesystem::path&path)
+{
+    if (path.has_extension())
     {
-        if (fileType.fileExtension() == extension)
-        {
-            return true;
-        }
+        return ToLower(path.extension());
     }
-    return false;
+    return "";
+}
+
+bool UiFileProperty::IsValidExtension(const std::filesystem::path&relativePath) const
+{
+    std::string extension = GetFileExtension(relativePath);
+    if (this->fileTypes().size() != 0) {
+        for (const auto&fileType: fileTypes())
+        {
+            UiFileType x;
+            if (fileType.IsValidExtension(extension)) return true;
+        }
+        return false;
+    }
+    if (this->modDirectories().size() != 0)
+    {
+        std::string modDirectory = this->getParentModDirectory(relativePath);
+        const auto&validExtensions = GetPermittedFileExtensions(modDirectory);
+        if (validExtensions.contains(extension)) return true;
+        return  validExtensions.contains(".*");
+    }
+    return true;
 }
 
 UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
@@ -343,6 +374,52 @@ UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
     }
 }
 
+UiFileProperty::UiFileProperty(const std::string&label, const std::string&patchProperty, const ModFileTypes&modFileTypes)
+: label_(label),
+    patchProperty_(patchProperty),
+    directory_("")
+{
+    setModFileTypes(modFileTypes);
+}
+
+void UiFileProperty::setModFileTypes(const ModFileTypes&modFileTypes)
+{
+    modDirectories_.resize(0);
+    fileTypes_.resize(0);
+    for (const std::string &type : modFileTypes.fileTypes())
+    {
+        fileTypes().push_back(UiFileType(SS(type << " file"), SS('.' << type)));
+    }
+
+    if (modFileTypes.rootDirectories().size() != 0)
+    {
+        for (const std::string &rootDirectory : modFileTypes.rootDirectories())
+        {
+            modDirectories().push_back(rootDirectory);
+        }
+    } else {
+        if (fileTypes().size() == 0)
+        {
+            // add everything.
+            for (const auto&modDirectory: split(ModFileTypes::DEFAULT_FILE_TYPES,','))
+            {
+                modDirectories().push_back(modDirectory);
+            }
+        } else {
+            // add only those mod directories that contain one or more of our fileTypes.
+            for (const auto&modDirectory: split(ModFileTypes::DEFAULT_FILE_TYPES,','))
+             {
+                modDirectories().push_back(modDirectory);
+            }
+        }
+    }
+
+    PrecalculateFileExtensions();
+
+
+}
+
+
 UiFileProperty::UiFileProperty(const std::string &name, const std::string &patchProperty, const std::string &directory)
     : label_(name),
       patchProperty_(patchProperty),
@@ -362,6 +439,22 @@ PiPedalUI::PiPedalUI(
     this->fileProperties_ = std::move(fileProperties);
 }
 
+bool UiFileType::IsValidExtension(const std::string&extension) const {
+    if (fileExtension_.length() != 0)
+    {
+        if (fileExtension_ == ".*")
+        {
+            return true;
+        }
+        return fileExtension_ == extension;
+    }
+    if (mimeType_.length() != 0)
+    {
+        return MimeTypes::instance().IsValidExtension(mimeType_,extension);
+    }
+    return false;
+}
+
 UiFileType::UiFileType(const std::string&label, const std::string &fileType) 
 : label_(label)
 , fileExtension_(fileType)
@@ -369,13 +462,12 @@ UiFileType::UiFileType(const std::string&label, const std::string &fileType)
     if (fileType.starts_with('.'))
     {
         fileExtension_ = fileType;
-        mimeType_ = MimeTypes::MimeTypeFromExtension(fileType);
+        mimeType_ = MimeTypes::instance().MimeTypeFromExtension(fileType);
         if (mimeType_ == "")
         {
             mimeType_ = "application/octet-stream";
         }
     } else {
-        fileExtension_ = MimeTypes::ExtensionFromMimeType(fileType); // (may be blank, esp. for audio/* and video/*.
         mimeType_ = fileType;
     }
     if (mimeType_ == "*")
@@ -442,6 +534,157 @@ UiFrequencyPlot::UiFrequencyPlot(PluginHost*pHost, const LilvNode*node,
     this->width_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__width,60);
 }
 
+
+static std::set<std::string> emptySet;
+
+const std::set<std::string>& UiFileProperty::GetPermittedFileExtensions(const std::string &modDirectory) const {
+    auto result = fileExtensionsByModDirectory.find(modDirectory);
+    if (result != fileExtensionsByModDirectory.end())
+    {
+        return result->second;
+    }
+    if (modDirectory == this->directory_)
+    {
+        std::set<std::string> result;
+        for (auto &x : this->fileTypes_)
+        {
+
+        }
+        return emptySet;
+    }
+    return emptySet;
+}
+
+void UiFileProperty::PrecalculateFileExtensions()
+{
+    std::set<std::string> explicitlySpecifiedExtensions;
+    bool allAudioTypes = false;
+    bool allVideoTypes = false;
+    for (const auto &fileType: this->fileTypes())
+    {
+        if (!fileType.fileExtension().empty())
+        {
+            explicitlySpecifiedExtensions.insert(fileType.fileExtension());
+        } else if (fileType.mimeType().length() != 0)
+        {
+            if (fileType.mimeType() == "audio/*")
+            {
+                allAudioTypes = true;
+            } else if (fileType.mimeType() == "video/*")
+            {
+                allVideoTypes = true;
+            } else {
+                // The principle risk being that there is more than one commonly used extension. e.g. midi.
+                // If the right extension isn't picked, the client should explicitly list which extensions are wanted
+                // instead of using a mime type. :-/ Not a good implementation, but not a use case that's actually going to
+                // come up.
+                std::string extension =  MimeTypes::instance().ExtensionFromMimeType(fileType.mimeType());
+                if (extension.length() == 0)
+                {
+                    Lv2Log::warning(SS("Unknown MIME type: " << fileType.mimeType()));
+                } else {
+                    explicitlySpecifiedExtensions.insert(extension);
+                }
+            }
+        }
+    }
+    if (allAudioTypes)
+    {
+        const auto&audioExtensions = MimeTypes::instance().AudioExtensions();
+        explicitlySpecifiedExtensions.insert(
+            audioExtensions.begin(),audioExtensions.end()
+        );
+    }
+
+    if (allVideoTypes)
+    {
+        const auto&videoExtensions = MimeTypes::instance().VideoExtensions();
+        explicitlySpecifiedExtensions.insert(
+            videoExtensions.begin(),videoExtensions.end()
+        );
+
+    }
+    if (this->modDirectories().size() == 0) // not specified? Add all directories, (and prune later, if we have filetypes).
+    {
+        this->modDirectories_ = split(ModFileTypes::DEFAULT_FILE_TYPES,',');      
+    }
+    if (fileTypes().size() != 0)
+    {
+        // delete any modDirectories that do not contain one of the given filetyeps.
+        auto iter = this->modDirectories_.begin();
+        while(iter != this->modDirectories_.end())
+        {
+            const auto *pDirectory = ModFileTypes::GetModDirectory(*iter);
+            if (pDirectory == nullptr)
+            {
+                // a custom directory! How cool is that!?
+                this->fileExtensionsByModDirectory[*iter] = explicitlySpecifiedExtensions;
+                ++iter;
+            } else {
+                std::set<std::string> extensions = Intersect(pDirectory->fileExtensions,explicitlySpecifiedExtensions);
+                if (extensions.size() == 0)
+                {
+                    iter = modDirectories_.erase(iter);
+                } else {
+                    this->fileExtensionsByModDirectory[*iter] = std::move(extensions);
+                    ++iter;
+                }
+            }
+        }
+    } else {
+        auto iter = this->modDirectories_.begin();
+        while(iter != this->modDirectories_.end())
+        {
+            const auto *pDirectory = ModFileTypes::GetModDirectory(*iter);
+            if (pDirectory) 
+            {
+                this->fileExtensionsByModDirectory[*iter] = pDirectory->fileExtensions;
+            } else {
+                Lv2Log::warning(SS("Unknown Mod Directory: " << *iter));
+            }
+            ++iter;
+        }
+
+    }
+}
+// std::set<std::string> modDirectoryFileTypes = rootModDirectory->fileExtensions;
+    // if (fileProperty.fileTypes().size() != 0)
+    // {
+    //     std::set<std::string> specifiedFileTypes;
+
+    //     for (const auto&fileType: fileProperty.fileTypes())
+    //     {
+    //         if (!fileType.fileExtension().empty())
+    //         {
+
+    //         }
+    //     }
+    // }
+
+
+
+std::string UiFileProperty::getParentModDirectory(const std::filesystem::path&path) const
+{
+    for (const auto &modDirectory: this->modDirectories_)
+    {
+        const auto pModDirectory = ModFileTypes::GetModDirectory(modDirectory);
+        if (pModDirectory)
+        {
+            if (IsChildDirectory(path,pModDirectory->pipedalPath))
+            {
+                return modDirectory;
+            }
+        }
+    }
+    if (this->directory_.length() != 0)
+    {
+        if (IsChildDirectory(path,this->directory_))
+        {
+            return this->directory_;
+        }   
+    }
+    return "";
+}
 
 
 JSON_MAP_BEGIN(UiPortNotification)

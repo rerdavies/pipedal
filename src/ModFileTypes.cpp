@@ -22,34 +22,61 @@
 #include <stdexcept>
 #include <iostream>
 #include "ss.hpp"
+#include "MimeTypes.hpp"
 
 using namespace pipedal;
 
-const std::vector<ModFileTypes::ModDirectory> ModFileTypes::ModDirectories =
+
+static std::mutex gModDirectoriesMutex;
+static std::unique_ptr< std::vector<ModFileTypes::ModDirectory> > gModDirectories;
+
+
+static std::vector<ModFileTypes::ModDirectory> *CreateModDirectories()
+{
+    return new std::vector<ModFileTypes::ModDirectory>(
     {
         {"audioloop", "shared/audio/Loops", "Loops", {"audio/*"}}, // Audio Loops, meant to be used for looper-style plugins
-        //"audiorecording","shared/audio/Audio Recordings", {"audio/*"}}, : Audio Recordings, triggered by plugins and stored in the unit
+        {"audiorecording","shared/audio/Audio Recordings", "Audio Recordings",{"audio/*"}}, // Audio Recordings, triggered by plugins and stored in the unit
         {"audiosample", "shared/audio/Samples", "Samples", {"audio/*"}}, // One-shot Audio Samples, meant to be used for sampler-style plugins
         {"audiotrack", "shared/audio/Tracks", "Tracks", {"audio/*"}},    // Audio Tracks, meant to be used as full-performance/song or backtrack
         {"cabsim", "CabIR", "Cab IRs", {"audio/*"}},                     // Speaker Cabinets, meant as small IR audio files
 
-        /// - h2drumkit: Hydrogen Drumkits, must use h2drumkit file extension
+        {"h2drumkit", "shared/h2drumkit", "Hydrogen Drumkits",{".h2drumkit"}}, // Hydrogen Drumkits, must use h2drumkit file extension"
         {"ir", "ReverbImpulseFiles", "Impulse Responses", {"audio/*"}},    // Impulse Responses
         {"midiclip", "shared/midiClips", "MIDI Clips", {".mid", ".midi"}}, // MIDI Clips, to be used in sync with host tempo, must have mid or midi file extension
         {"midisong", "shared/midiSongs", "MIDI Songs", {".mid", ".midi"}}, // MIDI Songs, meant to be used as full-performance/song or backtrack
-        {"sf2", "shared/sf2", "Sound Fonts", {"sf2", "sf3"}},              // SF2 Instruments, must have sf2 or sf3 file extension
-        {"sfz", "shared/sfz", "Sfz Files", {"sfz"}},                       // SFZ Instruments, must have sfz file extension
+        {"sf2", "shared/sf2", "Sound Fonts", {".sf2", ".sf3"}},              // SF2 Instruments, must have sf2 or sf3 file extension
+        {"sfz", "shared/sfz", "Sfz Files", {".sfz"}},                       // SFZ Instruments, must have sfz file extension
         // extensions observed in the field.
-        {"audio", "shared/audio", "Audio", {"audio/*"}},                              // all audio files (Ratatoille)
-        {"nammodel", "NeuralAmpModels", "Neural Amp Models", {".nam"}},              // Ratatoille, Mike's NAM.
-        {"aidadspmodel", "shared/aidaaix", "AIDA IAX Models", {".json", ".aidaiax"}}, // Ratatoille
+        {"audio", "shared/audio", "Audio", {"audio/*"}},                              // all audio files (Ratatouille)
+        {"nammodel", "NeuralAmpModels", "Neural Amp Models", {".nam"}},              // Ratatouille, Mike's NAM.
+        {"aidadspmodel", "shared/aidaaix", "AIDA IAX Models", {".json", ".aidaiax"}}, // Ratatouille
         {"mlmodel", "ToobMlModels", "ML Models", {".json"}},                         //
-        //
-};
+
+
+        // For plugins that don't secify a modDirectory (allows upload of arbitrary extension)
+        {"*", "shared/other", "Other", {".*"}},                         //
+
+    });
+}
+
+
+
+const std::vector<ModFileTypes::ModDirectory>&ModFileTypes::ModDirectories()
+{
+    std::lock_guard lock { gModDirectoriesMutex };
+
+    if (!gModDirectories)
+    {
+        gModDirectories = std::unique_ptr<std::vector<ModFileTypes::ModDirectory>>(CreateModDirectories());
+    }
+    return *gModDirectories;
+}
+
 
 const ModFileTypes::ModDirectory *ModFileTypes::GetModDirectory(const std::string &type)
 {
-    for (const ModFileTypes::ModDirectory &modType : ModFileTypes::ModDirectories)
+    for (const ModFileTypes::ModDirectory &modType : ModFileTypes::ModDirectories())
     {
         if (modType.modType == type)
         {
@@ -74,41 +101,6 @@ ModFileTypes::ModFileTypes(const std::string &fileTypes)
             fileTypes_.push_back(type);
         }
     }
-    // for Ratatoille.lv2.
-    // If rootDirectories contains "nammodel" and fileTypes contains "json", add "mlmodel" too.
-    // if (contains(rootDirectories_,"nammodel") && contains(fileTypes_,"json"))
-    // {
-    //     if (!contains(rootDirectories_,"mlmodel"))
-    //     {
-    //         rootDirectories_.push_back("mlmodel");
-    //     }
-    // }
-    if (fileTypes_.empty())
-    {
-        for (const auto &type : types)
-        {
-            const ModDirectory *wellKnownType = GetModDirectory(type);
-            if (wellKnownType)
-            {
-                for (const std::string &newType : wellKnownType->defaultFileExtensions)
-                {
-                    bool found = false;
-                    for (const std::string &oldType : fileTypes_)
-                    {
-                        if (newType == oldType)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found)
-                    {
-                        fileTypes_.push_back(newType);
-                    }
-                }
-            }
-        }
-    }
 }
 
 static std::filesystem::path getModDirectoryPath(
@@ -128,13 +120,13 @@ void ModFileTypes::CreateDefaultDirectories(const std::filesystem::path &rootDir
     using namespace std;
     try
     {
-        for (const auto &modType : ModDirectories)
+        for (const auto &modType : ModDirectories())
         {
             fs::path path = rootDirectory / modType.pipedalPath;
 
             fs::create_directories(path);
         }
-
+ 
         if (!fs::exists(rootDirectory / "shared" / "audio" / "Cab IR Files"))
         {
             fs::create_symlink(
@@ -154,3 +146,38 @@ void ModFileTypes::CreateDefaultDirectories(const std::filesystem::path &rootDir
     }
 }
 
+static std::set<std::string> makeFileExtensions(const std::vector<std::string>&fileTypes)
+{
+    std::set<std::string> result;
+
+    for (const std::string&fileType: fileTypes)
+    {
+        if (fileType.starts_with('.')) {
+            result.insert(fileType);
+        } else {
+            if (fileType == "audio/*")
+            {
+                const auto&audioExtensions = MimeTypes::instance().AudioExtensions();
+                result.insert(audioExtensions.begin(),audioExtensions.end());
+            } else if (fileType == "video/*")
+            {
+                const auto&videoExtensions = MimeTypes::instance().VideoExtensions();
+                result.insert(videoExtensions.begin(),videoExtensions.end());
+            }
+        }
+    }
+    return result;
+}
+
+ModFileTypes::ModDirectory::ModDirectory(
+    const std::string modType,
+    const std::string pipedalPath,
+    const std::string displayName,
+    const std::vector<std::string> fileTypes)
+    :modType(modType),
+    pipedalPath(pipedalPath),
+    displayName(displayName),
+    fileTypesX(fileTypes),
+    fileExtensions(makeFileExtensions(fileTypes))
+{
+}

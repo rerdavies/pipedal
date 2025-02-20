@@ -576,7 +576,7 @@ static std::string getIpv4Address(const std::string interface)
     /* I want to get an IPv4 IP address */
     ifr.ifr_addr.sa_family = AF_INET;
 
-    /* I want an IP address attached to "eth0" */
+    /* I want an IP address attached to "ethernet" */
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1);
 
     int result = ioctl(fd, SIOCGIFADDR, &ifr);
@@ -636,6 +636,40 @@ std::string GetFromAddress(const tcp::socket &socket)
     s << socket.remote_endpoint().address().to_string() << ':' << socket.remote_endpoint().port();
     return s.str();
 }
+
+static bool encoding_allowed(const std::string&acceptEncodingHeader,const std::string&encoding)
+{
+    auto npos = acceptEncodingHeader.find(encoding);
+    if (npos == std::string::npos)
+        return false;
+    std::vector<std::string> encodings = split(acceptEncodingHeader, ',');
+    for (auto &e : encodings)
+    {
+        if (e.starts_with(encoding)) {
+            if (e.length() == encoding.length())
+                return true;
+            if (e[encoding.length()] == ';')
+                return true;
+        }
+    }
+    return false;
+}
+
+static bool can_use_gzip_encoding(
+    const std::string &acceptEncodingHeader, 
+    const std::filesystem::path &filename, 
+    std::filesystem::path *gzName)
+{
+    if (!encoding_allowed(acceptEncodingHeader, "gzip"))
+        return false;
+    *gzName = filename.string() + ".gz";
+    if (std::filesystem::exists(*gzName)) {
+        return true;    
+    }
+    return false;
+}
+
+
 namespace pipedal
 {
 
@@ -1125,12 +1159,22 @@ namespace pipedal
                 }
             }
 
+
+            std::string mimeType = mime_type(filename);
+
+            std::filesystem::path gzName;
+
+            if (can_use_gzip_encoding(req.get(HttpField::accept_encoding) ,filename,&gzName) )
+            {   
+                filename = gzName;
+                res.set(HttpField::content_encoding,"gzip");
+            }
+
             if (req.method() != HttpVerb::get)
             {
                 ServerError(*con, "Unknown HTTP-Method");
                 return;
             }
-            std::string mimeType = mime_type(filename);
 
             file.open(filename.c_str(), std::ios::in);
             if (!file)
@@ -1413,21 +1457,22 @@ void WebServerImpl::DisplayIpAddresses()
         ss << "Listening on mDns address " << hostName << ":" << this->port;
         Lv2Log::info(ss.str());
     }
-    std::string ipv4Address = getIpv4Address("eth0");
-    if (ipv4Address.length() != 0)
+    auto ethAddresses = GetEthernetIpv4Addresses();
+    for (const auto&ethAddress: ethAddresses)
     {
-        Lv2Log::info(SS("Listening on eth0 address " << ipv4Address << ":" << this->port));
+        Lv2Log::info(SS("Listening on " << ethAddress << ":" << this->port));
+
     }
-    std::string wifiAddress = getIpv4Address("wlan0");
-    if (wifiAddress.length() != 0)
+    auto wifiAddress = GetWlanIpv4Address();
+    if (wifiAddress)
     {
-        if (wifiAddress == "10.42.0.1")
+        if (*wifiAddress == "10.42.0.1")
         {
-            Lv2Log::info(SS("Listening on Wi-Fi hotspot address " << wifiAddress << ":" << this->port));
+            Lv2Log::info(SS("Listening on Wi-Fi hotspot address " << *wifiAddress << ":" << this->port));
         }
         else
         {
-            Lv2Log::info(SS("Listening on Wi-Fi address " << wifiAddress << ":" << this->port));
+            Lv2Log::info(SS("Listening on Wi-Fi address " << *wifiAddress << ":" << this->port));
         }
     }
 }

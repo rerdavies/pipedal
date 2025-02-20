@@ -20,67 +20,105 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *   SOFTWARE.
  */
-#pragma once 
+#pragma once
 #include <string>
 #include <filesystem>
 #include <vector>
 #include <barrier>
 #include <atomic>
+#include <set>
 
-namespace pipedal {
+namespace pipedal
+{
 
-    inline bool endsWith(const std::string& str, const std::string& suffix)
+    inline bool endsWith(const std::string &str, const std::string &suffix)
     {
-        return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+        return str.size() >= suffix.size() && 0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
     }
     void SetThreadName(const std::string &name);
 
     std::u32string ToUtf32(const std::string &s);
 
-    inline bool isPathSeperator(char c) { return c == '/' || c == std::filesystem::path::preferred_separator;}
+    inline bool isPathSeparator(char c) { return c == '/' || c == std::filesystem::path::preferred_separator; }
 
     std::string GetHostName();
 
     std::vector<std::string> split(const std::string &value, char delimiter);
 
-    inline void ReadBarrier() {
+    inline void ReadBarrier()
+    {
         std::atomic_thread_fence(std::memory_order::acquire);
     }
-    inline void WriteBarrier() {
+    inline void WriteBarrier()
+    {
         std::atomic_thread_fence(std::memory_order::release);
-
     }
 
     template <typename T>
-    inline bool contains(const std::vector<T>&vector,const T&value)
+    inline bool contains(const std::vector<T> &vector, const T &value)
     {
         for (auto i = vector.begin(); i != vector.end(); ++i)
         {
-            if ((*i) == value) {
+            if ((*i) == value)
+            {
                 return true;
             }
         }
         return false;
     }
-    inline bool contains(const std::vector<std::string>&vector,const char*value)
+    inline bool contains(const std::vector<std::string> &vector, const char *value)
     {
-        return contains(vector,std::string(value));
+        return contains(vector, std::string(value));
     }
 
-    class NoCopy {
+    class NoCopy
+    {
     public:
-        NoCopy() { }
-        NoCopy(const NoCopy&) = delete;
-        NoCopy&operator=(const NoCopy&) = delete;
+        NoCopy() {}
+        NoCopy(const NoCopy &) = delete;
+        NoCopy &operator=(const NoCopy &) = delete;
         ~NoCopy() {}
     };
-    class NoMove {
+    class NoMove
+    {
     public:
-        NoMove() { }
-        NoMove(NoMove&&) = delete;
-        NoMove&operator=(NoMove&&) = delete;
-        ~NoMove() { }
-
+        NoMove() {}
+        NoMove(NoMove &&) = delete;
+        NoMove &operator=(NoMove &&) = delete;
+        ~NoMove() {}
     };
+
+    bool IsChildDirectory(const std::filesystem::path &path, const std::filesystem::path&rootPath);
+
+    template <typename T>
+    std::set<T> Intersect(const std::set<T> &left, const std::set<T> &right)
+    {
+        std::set<T> result;
+        for (const T &v : left)
+        {
+            if (right.contains(v))
+            {
+                result.insert(v);
+            }
+        }
+        return result;
+    }
+    template <typename T>
+    bool IsSubset(const std::set<T> &subset, const std::set<T> &set)
+    {
+        std::set<T> result;
+        for (const T &v : subset)
+        {
+            if (!set.contains(v)) return false;
+        }
+        return true;
+    }
+
+    // C locale to lower. Only does 'A'-'Z'.
+    std::string ToLower(const std::string&value);
+
+    std::filesystem::path MakeRelativePath(const std::filesystem::path &path, const std::filesystem::path&parentPath);
+
+    bool IsSubdirectory(const std::filesystem::path &path, const std::filesystem::path &basePath);
 
 }

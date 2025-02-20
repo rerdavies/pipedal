@@ -24,25 +24,22 @@
 #include "ss.hpp"
 #include <stdexcept>
 
-#ifdef __linux__
-#include "unistd.h" // for nice()`
-#endif
+#include <unistd.h> // for nice().
+
 
 using namespace pipedal;
 
-static constexpr int EXPECTED_RT_THREAD_PRIORITY_MAX = 81;
+static constexpr int EXPECTED_RT_THREAD_PRIORITY_MAX = 95;
 
-static constexpr int RT_AUDIO_THREAD_PRIORITY = 80;
-static constexpr int NICE_AUDIO_THREAD_PRIORITY = -19;
+static constexpr int RT_AUDIO_THREAD_PRIORITY = 90; // one above pipewire.
 
-static constexpr int RT_AUDIOSERVICE_THREAD_PRIORITY = 10;
-static constexpr int NICE_AUDIOSERVICE_THREAD_PRIORITY = -17;
+static constexpr int RT_AUDIOSERVICE_THREAD_PRIORITY = 85; // one above pipewire service thread
 
-static constexpr int RT_LV2SCHEDULER_THREAD_PRIORITY = -1;
-static constexpr int NICE_LV2SCHEDULER_THREAD_PRIORITY = 2; // nice(2): don't let plugins screw things up by pinning the CPU 
+static constexpr int RT_LV2SCHEDULER_THREAD_PRIORITY = 5;
 
 static constexpr int RT_WEBSERVER_THREAD_PRIORITY = -1;
-static constexpr int NICE_WEBSERVER_THREAD_PRIORITY = -2; // don't get bogged down by UI threads.
+
+static constexpr int NICE_WEBSERVER_PROCESS_PRIORITY = -9; // above chrome renderer, below pipewire..
 
 bool pipedal::IsRtPreemptKernel(SchedulerPriority priority)
 {
@@ -71,7 +68,7 @@ bool pipedal::IsRtPreemptKernel(SchedulerPriority priority)
     #endif
 }
 
-static void SetPriority(int realtimePriority, int nicePriority, const char *priorityName)
+static void SetPriority(int realtimePriority, const char *priorityName)
 {
 
     if (realtimePriority != -1)
@@ -79,11 +76,19 @@ static void SetPriority(int realtimePriority, int nicePriority, const char *prio
         int initialPriority = realtimePriority;
         int min = sched_get_priority_min(SCHED_RR);
         int max = sched_get_priority_max(SCHED_RR);
+        if (max > EXPECTED_RT_THREAD_PRIORITY_MAX)
+        {
+            max = EXPECTED_RT_THREAD_PRIORITY_MAX;
+        }
         if (realtimePriority > max) {
             realtimePriority = max + EXPECTED_RT_THREAD_PRIORITY_MAX-realtimePriority;
         }
         if (realtimePriority < min) {
             realtimePriority = min;
+        }
+        if (realtimePriority < 1) 
+        {
+            realtimePriority = 1;
         }
         if (initialPriority != realtimePriority)
         {
@@ -104,14 +109,8 @@ static void SetPriority(int realtimePriority, int nicePriority, const char *prio
         }
         else
         {
-            Lv2Log::debug(SS("Failed to set RT thread priority for " << priorityName << " (" << strerror(result) << ")"));
+            Lv2Log::warning(SS("Failed to set RT thread priority for " << priorityName << " (" << strerror(result) << ")"));
         }
-    }
-    // If the RT scheduler isn't working, fall back to using NICE priority.
-    int result = nice(nicePriority);
-    if (result == -1)
-    {
-        Lv2Log::error(SS("Failed Failed to set thread priority. (" << priorityName << ")"));
     }
 }
 
@@ -122,16 +121,27 @@ void pipedal::SetThreadPriority(SchedulerPriority priority)
     switch (priority)
     {
     case SchedulerPriority::RealtimeAudio:
-        SetPriority(RT_AUDIO_THREAD_PRIORITY, NICE_AUDIO_THREAD_PRIORITY, "RealtimeAudio");
+        SetPriority(RT_AUDIO_THREAD_PRIORITY, "RealtimeAudio");
         break;
     case SchedulerPriority::AudioService:
-        SetPriority(RT_AUDIOSERVICE_THREAD_PRIORITY, NICE_AUDIOSERVICE_THREAD_PRIORITY, "AudioService");
+        SetPriority(RT_AUDIOSERVICE_THREAD_PRIORITY, "AudioService");
         break;
     case SchedulerPriority::Lv2Scheduler:
-        SetPriority(RT_LV2SCHEDULER_THREAD_PRIORITY, NICE_LV2SCHEDULER_THREAD_PRIORITY, "Lv2Scheduler");
+        SetPriority(RT_LV2SCHEDULER_THREAD_PRIORITY, "Lv2Scheduler");
         break;
     case SchedulerPriority::WebServerThread:
-        SetPriority(RT_WEBSERVER_THREAD_PRIORITY, NICE_WEBSERVER_THREAD_PRIORITY, "Lv2Scheduler");
+        {
+            // do this by boosting the process priority 
+            int currentNiceValue = nice(0);
+            if (currentNiceValue != NICE_WEBSERVER_PROCESS_PRIORITY)
+            {
+                errno = 0;
+                int ret = nice(NICE_WEBSERVER_PROCESS_PRIORITY-currentNiceValue);
+                if (ret == -1 && errno != 0) {
+                    Lv2Log::error("Failed to set process nice value.");
+                }
+            }
+        }
         break;
     default:
         Lv2Log::error("Invalid scheduler priority.");

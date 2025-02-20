@@ -183,7 +183,12 @@ namespace pipedal
                         {
                             ++startOfOverflow;
                         }
-                        std::string overflow = string(&lineBuffer[startOfOverflow], lineBuffer.size() - startOfOverflow);
+
+                        std::string overflow;
+                        size_t extra = lineBuffer.size() - startOfOverflow;
+                        if (extra) {
+                            overflow = std::string(&lineBuffer[startOfOverflow], extra);
+                        }
                         lineBuffer.resize(breakPos);
 
                         WriteLine();

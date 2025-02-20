@@ -7,13 +7,47 @@ set (USE_PCH 1)
 
 set (ENABLE_BACKTRACE 1)
 
-set (USE_SANITIZE true)
+set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 
 set(CXX_STANDARD 20)
+
+
+include(FetchContent)
+
+# FOR FTXUI
+if(CMAKE_VERSION VERSION_GREATER 3.30)
+    cmake_policy(SET CMP0169 OLD) # Allow use of old FETCHCONTENT macros.
+endif()
+
+# Our FTXUI option takes precedence over the one in the ftxui CMakeLists.txt
+# because FTXUI uses cmake_minimum_required(VERSION 3.12)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+
+set(FETCHCONTENT_QUIET ON)
+set(FTXUI_QUIET ON)
+
+FetchContent_Declare(ftxui
+  GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui
+  GIT_TAG v5.0.0
+)
+
+FetchContent_GetProperties(ftxui)
+if(NOT ftxui_POPULATED)
+  FetchContent_Populate(ftxui)
+  add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+message(STATUS "*** ${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR}")
+
+
 
 include(FindPkgConfig)
 
 find_package(sdbus-c++ REQUIRED)
+
+
+find_package(ICU REQUIRED COMPONENTS uc i18n  )
+message(STATUS  "ICU_LIBRARIES: ${ICU_LIBRARIES}")
 
 
 if(DEFINED ENV{GITHUB_ACTIONS})
@@ -115,16 +149,16 @@ add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -DDEBUG -D_GLIBCXX_DEBUG" )
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG -D_GLIBCXX_DEBUG" )
     if (USE_SANITIZE) 
         set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -static-libasan  " )
     endif()
 elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     message(STATUS "RelWithgDebInfo build")
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DNDEBUG" )
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g -O3 -DNDEBUG" )
 else()
     message(STATUS "Release build")
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DNDEBUG" )
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG" )
 endif()
 
 if (ENABLE_BACKTRACE)
@@ -158,8 +192,10 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    CpuTemperatureMonitor.cpp CpuTemperatureMonitor.hpp
     SchedulerPriority.hpp SchedulerPriority.cpp
     ModFileTypes.cpp ModFileTypes.hpp
+    MimeTypes.cpp MimeTypes.hpp
     PatchPropertyWriter.hpp
     PresetBundle.cpp PresetBundle.hpp
     RealtimeMidiEventType.hpp
@@ -178,9 +214,8 @@ set (PIPEDAL_SOURCES
     FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp 
     FileEntry.cpp FileEntry.hpp
     atom_object.hpp atom_object.cpp
-    FileBrowserFiles.h
+    lv2ext/pipedal.lv2/ext/fileBrowser.h
     FileBrowserFilesFeature.hpp FileBrowserFilesFeature.cpp
-    MimeTypes.cpp MimeTypes.hpp
     inverting_mutex.hpp
     DbDezipper.hpp DbDezipper.cpp
     WebServerLog.hpp
@@ -272,16 +307,15 @@ set (PIPEDAL_INCLUDES
     .
 )
 
+
 set(PIPEDAL_LIBS libpipedald zip
     PiPedalCommon
-    icui18n
-    icuuc
-    icudata
     pthread atomic stdc++fs asound avahi-common avahi-client systemd
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 
      # ${JACK_LIBRARIES} - pending delete for JACK support.
-      )
+
+     )
 
 
 
@@ -298,6 +332,24 @@ if(${USE_PCH})
   target_precompile_headers(libpipedald PRIVATE pch.h)
 endif()
 
+
+#################################
+
+add_executable(pipedal_kconfig
+    kconfigMain.cpp
+    BootConfig.cpp BootConfig.hpp
+    SystemConfigFile.hpp SystemConfigFile.cpp
+
+
+)
+
+target_link_libraries(pipedal_kconfig
+  PRIVATE ftxui::screen
+  PRIVATE ftxui::dom
+  PRIVATE ftxui::component  # Not needed for this example.
+  PRIVATE PiPedalCommon
+  systemd
+)
 
 #################################
 add_executable(pipedald 
@@ -325,9 +377,10 @@ set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL true)
 
 
 
-add_executable(pipedaltest testMain.cpp
+add_executable(pipedaltest 
+testMain.cpp
 
-    InvertingMutexTest.cpp
+    ModFileTypesTest.cpp
     jsonTest.cpp
     UpdaterTest.cpp
     
@@ -339,6 +392,8 @@ add_executable(pipedaltest testMain.cpp
     PiPedalAlsaTest.cpp
     UnixSocketTest.cpp
 
+    LocaleTest.cpp
+
     Lv2HostLeakTest.cpp
 
 
@@ -348,7 +403,7 @@ add_executable(pipedaltest testMain.cpp
     MemDebug.cpp
     MemDebug.hpp
     )
-target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS})
+target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} ${ICU_LIBRARIES})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
 
@@ -642,7 +697,9 @@ add_executable(pipedalconfig
     ConfigMain.cpp
     alsaCheck.cpp
     alsaCheck.hpp
+    BootConfig.cpp BootConfig.hpp
     ModFileTypes.cpp ModFileTypes.hpp
+    MimeTypes.cpp MimeTypes.hpp
     PiPedalConfiguration.hpp PiPedalConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
@@ -653,9 +710,6 @@ add_executable(pipedalconfig
     )
 
 target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs asound
-        icui18n
-        icuuc
-        icudata
 
     )
 
@@ -774,7 +828,7 @@ add_custom_target (
 )
 
 
-install (TARGETS pipedalconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+install (TARGETS pipedalconfig pipedal_kconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
    EXPORT pipedalTargets)
 
    install (TARGETS pipedald pipedaladmind pipedal_update DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin

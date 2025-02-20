@@ -21,7 +21,9 @@
             "request": "launch",
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
-            "args": [    ],
+            "args": [ 
+                "--no-sudo"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [
@@ -138,7 +140,9 @@
                 //"[inverting_mutex_test]"
                 // "[utf8_to_utf32]"
                 //"[pipedal_alsa_test]"
-                "[wifi_channels_test]"
+                // "[wifi_channels_test]"
+                // "[locale]"
+                "[modFileTypes]"
             ],
 
             "stopAtEntry": false,
@@ -266,6 +270,48 @@
                 }
             ]
         },
+        {
+            "name": "(gdb) pipedalconfigX",
+            "type": "cppdbg",
+            "request": "launch",
+            // Resolved by CMake Tools:
+            "program": "/home/robin/src/pipedal/build/src/pipedalconfig",
+            "args": [ 
+                "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
+                //"--get-current-port"
+                // "--uninstall"
+                //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
+                // "--alsa-devices"
+                "--prefix", "/usr",
+                "--install", "--port", "0"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
+                },
+                {
+                    "name": "ASAN_OPTIONS",
+                    "value": "detect_leaks=0"
+
+                },
+               {
+                    "name": "OTHER_VALUE",
+                    "value": "Something something"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
 
 
         {
@@ -298,46 +344,6 @@
                 },
 
                 {
-                    "name": "OTHER_VALUE",
-                    "value": "Something something"
-                }
-            ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) pipedalconfig",
-            "type": "cppdbg",
-            "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [ 
-                "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
-                //"--get-current-port"
-                // "--uninstall"
-                //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
-                "--alsa-devices"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                },
-                {
-                    "name": "ASAN_OPTIONS",
-                    "value": "detect_leaks=0"
-
-                },
-               {
                     "name": "OTHER_VALUE",
                     "value": "Something something"
                 }

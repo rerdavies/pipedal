@@ -1257,7 +1257,7 @@ namespace pipedal
                         {
                             message =
                                 SS("Device " << alsa_device_name << " in use. The following applications are using your soundcard: " << apps
-                                             << ". Stop them as neccesary before trying to restart pipedald.");
+                                             << ". Stop them as neccesary before trying to   pipedald.");
                         }
                         else
                         {
@@ -1657,7 +1657,7 @@ namespace pipedal
                 Lv2Log::error(e.what());
                 Lv2Log::error("ALSA audio thread terminated abnormally.");
             }
-            this->driverHost->OnAudioStopped();
+            this->driverHost->OnAlsaDriverStopped();
 
             // if we terminated abnormally, pump messages until we have been terminated.
             if (!terminateAudio())
@@ -1671,11 +1671,16 @@ namespace pipedal
                         pBuffer[j] = 0;
                     }
                 }
-                while (!terminateAudio())
+                try {
+                    while (!terminateAudio())
+                    {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        // zero out input buffers.
+                        this->driverHost->OnProcess(this->bufferSize);
+                    }
+                } catch (const std::exception &e)
                 {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                    // zero out input buffers.
-                    this->driverHost->OnProcess(this->bufferSize);
+
                 }
             }
             this->driverHost->OnAudioTerminated();

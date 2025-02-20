@@ -34,6 +34,7 @@
 #include <limits>
 #include <stdexcept>
 #include <chrono>
+#include <optional>
 
 #define DECLARE_JSON_MAP(CLASSNAME) \
     static pipedal::json_map::storage_type<CLASSNAME> jmap
@@ -593,6 +594,17 @@ namespace pipedal
             }
         }
         template <typename T>
+        void write(const std::optional<T> &obj)
+        {
+            if (!obj) {
+                write_raw("null");
+            } else {
+                write(obj.get());
+            }
+        }
+
+
+        template <typename T>
         void write(const std::weak_ptr<T> &obj)
         {
             auto p = obj.lock();
@@ -880,6 +892,20 @@ namespace pipedal
 
                 read(p.get());
                 (*pUniquePtr) = std::move(p);
+            }
+        }
+        template <typename T>
+        void read(std::optional<T> *pOptional)
+        {
+            if (peek() == 'n')
+            {
+                consumeToken("null", "Expecting '{' or 'null'.");
+                *pOptional = std::optional<T>();
+
+            } else {
+                T value;
+                read(&value);
+                *pOptional = std::move(value);
             }
         }
         template <typename T>

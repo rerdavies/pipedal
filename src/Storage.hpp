@@ -37,6 +37,7 @@ namespace pipedal {
 
 class UiFileProperty;
 class Lv2PluginInfo;
+class UiFileProperty;
 
 class CurrentPreset {
 public:
@@ -153,7 +154,8 @@ public:
     void MoveBank(int from, int to);
     int64_t DeleteBank(int64_t bankId);
 
-    std::vector<std::string> GetFileList(const UiFileProperty&fileProperty);
+    bool IsInUploadsDirectory(const std::filesystem::path&path) const;
+    
     FileRequestResult GetFileList2(const std::string&relativePath,const UiFileProperty&fileProperty);
 
     FileRequestResult GetModFileList2(const std::string &relativePath,const UiFileProperty &fileProperty);
@@ -222,13 +224,14 @@ public:
     void SetSystemMidiBindings(const std::vector<MidiBinding>&bindings);
     std::vector<MidiBinding> GetSystemMidiBindings();
     void DeleteSampleFile(const std::filesystem::path &fileName);
-    std::string UploadUserFile(const std::string &directory, const std::string &patchProperty,const std::string&filename,std::istream&stream, size_t contentLength);
+    std::string UploadUserFile(const std::string &directory, 
+        std::shared_ptr<UiFileProperty> uiFileProperty ,const std::string&filename,std::istream&stream, size_t contentLength);
     std::string CreateNewSampleDirectory(const std::string&relativePath, const UiFileProperty&uiFileProperty);
     std::string RenameFilePropertyFile(
         const std::string&oldRelativePath,
         const std::string&newRelativePath,
         const UiFileProperty&uiFileProperty);
-    FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty);
+    FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty,const std::filesystem::path&selectedPath);
 };
 
 

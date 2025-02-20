@@ -1,39 +1,30 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.3.69
+    VERSION 1.4.70
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
 EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 
-set (DISPLAY_VERSION "PiPedal v1.3.69-Release")
+set (DISPLAY_VERSION "PiPedal v1.4.70-Beta")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
 include(CTest)
 enable_testing()
 
+
 #add_subdirectory("submodules/pipedal_p2pd")
 
 add_subdirectory("PiPedalCommon")
 
-add_subdirectory("react")
+add_subdirectory("vite")
 
 add_subdirectory("src")
 
-# Replaced with hotspot.
-#add_subdirectory("NetworkManagerP2P")
 
-# install (TARGETS pipedal_p2pd DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
-#    )
-
-# install (TARGETS pipedal_nm_p2pd DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
-# )
-
-# add_test(NAME Test COMMAND piddletest)
-
-set (REACT_BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/build/react/build/)
+set (VITE_BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/vite/dist/)
 
 # install
 
@@ -51,7 +42,7 @@ install (
     FILES ${PROJECT_SOURCE_DIR}/src/polkit-1/rules/10-pipedal-networkmanager.rules DESTINATION /etc/polkit-1/rules.d/
 )
 install (
-    DIRECTORY ${REACT_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
+    DIRECTORY ${VITE_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
 )
 install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
     DESTINATION /etc/pipedal/react/var/)
@@ -98,7 +89,7 @@ endif()
 
 set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Robin E. R. Davies<rerdavies@gmail.com>") # required
-set(CPACK_PACKAGE_VENDOR "Robin Davies")
+set(CPACK_PACKAGE_VENDOR "Robin E. R. Davies")
 set(CPACK_PACKAGE_DESCRIPTION "IoT guitar effect pedal for Raspberry Pi, with phone-friendly web interface.")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IoT guitar effect pedal for Raspberry Pi")
 set(CPACK_DEBIAN_PACKAGE_SECTION sound)

@@ -61,7 +61,7 @@ toobNam:eqGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 53 ;
+        lv2:microVersion 57 ;
         rdfs:comment """
 A port of Steven Atkinson's Neural Amp Modeler to LV2. 
 
@@ -326,7 +326,7 @@ toobNam:ui
         pipedal_ui:fileProperties 
         [
                 a pipedal_ui:fileProperty;
-                rdfs:label "Model (*.nam)" ;
+                rdfs:label "Model" ;
                 pipedal_ui:directory "NeuralAmpModels";
                 lv2:index 2 ;
                 pipedal_ui:patchProperty toobNam:modelFile ;

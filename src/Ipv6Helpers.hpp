@@ -22,10 +22,31 @@
 #include <string>
 #include <utility>
 #include <boost/asio.hpp>
-namespace pipedal {
+#include <optional>
 
+namespace pipedal {
+    enum class NetworkInterfaceType {
+        Loopback,
+        Ethernet,
+        WiFi,
+        WiFiDirect,
+        Other,
+    };
+
+    NetworkInterfaceType GetNetworkInterfaceType(const char*interfaceName);
+    inline NetworkInterfaceType GetNetworkInterfaceType(const std::string&interfaceName)
+    {
+        return GetNetworkInterfaceType(interfaceName.c_str());
+    }
 
     std::string GetInterfaceIpv4Address(const std::string& interfaceName);
+
+
+    std::optional<std::string> GetWlanInterfaceName();
+    std::optional<std::string> GetWlanIpv4Address();
+
+    std::vector<std::string> GetEthernetIpv4Addresses();
+
 
 
     // bool IsLinkLocalAddress(const std::string &fromAddress);

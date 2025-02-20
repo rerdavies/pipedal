@@ -92,6 +92,7 @@ public:
     std::vector<PedalboardItem> topChain_;
     std::vector<PedalboardItem> bottomChain_;
     std::vector<MidiBinding> midiBindings_;
+    std::optional<MidiChannelBinding> midiChannelBinding_;
     std::string vstState_;
     uint32_t stateUpdateCount_ = 0;
     Lv2PluginState lv2State_;
@@ -122,6 +123,7 @@ public:
     GETTER_SETTER_VEC(topChain)
     GETTER_SETTER_VEC(bottomChain)
     GETTER_SETTER_VEC(midiBindings)
+    GETTER_SETTER_REF(midiChannelBinding)
     GETTER_SETTER(stateUpdateCount)
     GETTER_SETTER_REF(lv2State)
     Lv2PluginState&lv2State() { return lv2State_; } // non-const version.

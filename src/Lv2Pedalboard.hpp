@@ -72,12 +72,13 @@ namespace pipedal
 
         RealtimeRingBufferWriter *ringBufferWriter;
 
-        enum class MappingType
+        enum class MidiControlType
         {
-            Linear,
-            Circular,
-            Momentary,
-            Latched,
+            None,
+            Select,
+            Dial,
+            Toggle,
+            Trigger
         };
         class MidiMapping
         {
@@ -89,8 +90,9 @@ namespace pipedal
             int controlIndex = -1;
             int key; // key to the note or control. internal use only.
             bool hasLastValue = false;
-            float lastValue = -1;
-            MappingType mappingType;
+            bool lastValueIncreasing = false;
+            float lastValue = 0;
+            MidiControlType mappingType;
             MidiBinding midiBinding;
         };
 

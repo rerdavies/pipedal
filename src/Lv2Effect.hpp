@@ -96,6 +96,7 @@ namespace pipedal
         uint64_t maxInputControlPort = 0;
         std::vector<bool> isInputControlPort;
         std::vector<float> defaultInputControlValues;
+        std::vector<bool> isInputTriggerControlPort;;
 
         virtual std::string GetUri() const { return info->uri(); }
 
@@ -193,8 +194,11 @@ namespace pipedal
 
         bool requestStateChangedNotification = false;
 
+        float zeroInputMix = 0.5f;
+        int actualAudioInputs = 0;
+        int actualAudioOutputs = 0;
+        std::vector<std::vector<float>> outputMixBuffers;
         void BypassTo(float value);
-
 
     public:
 
@@ -242,17 +246,28 @@ namespace pipedal
         bool HasErrorMessage() const { return this->hasErrorMessage; }
         const char*TakeErrorMessage() { this->hasErrorMessage = false; return this->errorMessage; }
 
+        virtual void PrepareNoInputEffect(int numberOfInputs,size_t maxBufferSize) override;
+
+
         virtual void ResetAtomBuffers();
         virtual uint64_t GetInstanceId() const { return instanceId; }
         virtual int GetNumberOfInputAudioPorts() const { return inputAudioPortIndices.size(); }
         virtual int GetNumberOfOutputAudioPorts() const { return outputAudioPortIndices.size(); }
+
         virtual int GetNumberOfInputAtomPorts() const { return inputAtomPortIndices.size(); }
+
         virtual int GetNumberOfOutputAtomPorts() const { return outputAtomPortIndices.size(); }
         virtual int GetNumberOfMidiInputPorts() const { return inputMidiPortIndices.size(); }
         virtual int GetNumberOfMidiOutputPorts() const { return outputMidiPortIndices.size(); }
 
+
+
+        virtual int GetNumberOfInputAudioBuffers() const { return this->inputAudioBuffers.size(); }
+        virtual int GetNumberOfOutputAudioBuffers() const {return this->outputAudioBuffers.size(); }
+
         virtual void SetAudioInputBuffer(int index, float *buffer);
         virtual float *GetAudioInputBuffer(int index) const { return this->inputAudioBuffers[index]; }
+
 
         virtual void SetAudioInputBuffer(float *buffer);
         virtual void SetAudioInputBuffers(float *left, float *right);

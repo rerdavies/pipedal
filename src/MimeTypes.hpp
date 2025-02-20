@@ -25,17 +25,26 @@
 
 namespace pipedal {
     class MimeTypes {
-    public:
-
-        static const std::string& MimeTypeFromExtension(const std::string &extension);
-        static const std::string& ExtensionFromMimeType(const std::string &mimeType);
     private:
-        static void AddMimeType(const std::string&extension, const std::string&mimeType);
-        static std::map<std::string,std::string> mimeTypeToExtension;
-        static std::map<std::string,std::string> extensionToMimeType;
-        static std::set<std::string> audioExtensions;
-        static std::set<std::string> videoExtensions;
-        static void MaybeInitialize();
-        static bool initialized;
+        MimeTypes();
+    public:
+        static const MimeTypes&instance();
+
+        const std::string& MimeTypeFromExtension(const std::string &extension) const;
+        // the best possible extension if we had to pick one.
+        const std::string& ExtensionFromMimeType(const std::string &mimeType) const;
+        // All possible extensions that other people might have picked.
+        const std::set<std::string> &AudioExtensions() const;
+        const std::set<std::string> &VideoExtensions() const;
+        const std::set<std::string> &MidiExtensions() const;
+        const bool IsValidExtension(const std::string&mimeType, const std::string&extension) const;
+    private:
+        void AddMimeType(const std::string&extension, const std::string&mimeType);
+        std::map<std::string,std::set<std::string>> mimeTypeToExtensions;
+        std::map<std::string,std::string> mimeTypeToExtension;
+        std::map<std::string,std::string> extensionToMimeType;
+        std::set<std::string> audioExtensions;
+        std::set<std::string> midiExtensions;
+        std::set<std::string> videoExtensions;
     };
 }

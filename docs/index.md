@@ -1,16 +1,17 @@
 
-
-<img src="GithubBanner.png" width="100%"/>
-<a href="Installing.html"><i>v1.3.69</i></a>
+<a href="Installing.html"><i>v1.4.70</i></a>
 
 &nbsp;
 
 To download PiPedal, click [here](download.md). 
 To view PiPedal documentation, click [here](Documentation.md).
 
-#### Important notice: PiPedal has a submitted a request to support sharing of Pipedal presets at [PatchStorage.com](https:///patchstorage.com). We urgently need your support! Please vote for PiPedal [here](https://patchstorage.com/requests/pipedal/).
+#### Important notice: [PatchStorage.com](https:///patchstorage.com) has added support for PiPedal. We urgently need your support! I you could please upload patches  [here](https://patchstorage.com/platform/pipedal/) I would 
+be enormously grateful. Note that media and model files are included in patch files, so you can share patches that 
+include model files or audio samples. If you make use of plugins that are not included in the PiPedal distribution, please include a link to the plugin in the patch description.
 
-#### NEW version 1.3.69 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.4.70 Beta, plus alpha releases of 
+PiPedal for Ubuntu on aarch64 and amd64. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 

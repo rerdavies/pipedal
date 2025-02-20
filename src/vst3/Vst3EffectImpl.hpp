@@ -126,8 +126,21 @@ namespace pipedal
 		{
 			return info.pluginInfo_.audio_outputs();
 		}
+		
+        virtual int GetNumberOfInputAudioBuffers() const { return buffers.inputs.size(); }
+        virtual int GetNumberOfOutputAudioPorts() const {return buffers.outputs.size(); }
+
 		virtual float *GetAudioInputBuffer(int index) const { return buffers.inputs[index]; }
 		virtual float *GetAudioOutputBuffer(int index) const { return buffers.outputs[index]; }
+
+		virtual int GetNumberOfInputAudioBuffers() const {
+			return buffers.inputs.size();
+		}
+		virtual int GetNumberOfInputAudioBuffers() const {
+			return buffers.outputs.size();
+		}
+
+
 		virtual void ResetAtomBuffers() {}
 		virtual void RequestParameter(LV2_URID uridUri) {}					// no vst equivalent.
 		virtual void GatherPatchProperties(RealtimePatchPropertyRequest *pRequest) {} // no vst equivalent.

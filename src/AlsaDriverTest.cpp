@@ -212,7 +212,7 @@ public:
         
     }
 
-    virtual void OnAudioStopped() {
+    virtual void OnAlsaDriverStopped() {
     }
     virtual void OnProcess(size_t nFrames) {
         if (testType == TestType::NullTest) return;

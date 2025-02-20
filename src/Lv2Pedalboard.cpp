@@ -121,6 +121,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                 if (pLv2Effect)
                 {
+
                     if (pLv2Effect->HasErrorMessage())
                     {
                         std::string error = pLv2Effect->TakeErrorMessage();
@@ -131,14 +132,15 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                     pEffect = pLv2Effect;
 
                     uint64_t instanceId = pEffect->GetInstanceId();
+                    pLv2Effect->PrepareNoInputEffect(inputBuffers.size(),pHost->GetMaxAudioBufferSize());
 
                     if (inputBuffers.size() == 1)
                     {
-                        if (pLv2Effect->GetNumberOfInputAudioPorts() == 1)
+                        if (pLv2Effect->GetNumberOfInputAudioBuffers() == 1)
                         {
                             pLv2Effect->SetAudioInputBuffer(0, inputBuffers[0]);
                         }
-                        else
+                        else if (pLv2Effect->GetNumberOfInputAudioBuffers() >= 2)
                         {
                             pLv2Effect->SetAudioInputBuffer(0, inputBuffers[0]);
                             pLv2Effect->SetAudioInputBuffer(1, inputBuffers[0]);
@@ -146,13 +148,13 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                     }
                     else
                     {
-                        if (pLv2Effect->GetNumberOfInputAudioPorts() == 1)
+                        if (pLv2Effect->GetNumberOfInputAudioBuffers() == 1)
                         {
                             pLv2Effect->SetAudioInputBuffer(0, inputBuffers[0]);
 
                             auto inputBuffer = inputBuffers[0];
                         }
-                        else
+                        else if (pLv2Effect->GetNumberOfInputAudioBuffers() >= 2)
                         {
                             pLv2Effect->SetAudioInputBuffer(0, inputBuffers[0]);
                             pLv2Effect->SetAudioInputBuffer(1, inputBuffers[1]);
@@ -167,6 +169,33 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                         {
                             pLv2Effect->Run(frames, this->ringBufferWriter);
                         });
+
+                    // Reset any trigger controls to default state after processing
+                    if (pLv2Effect->IsLv2Effect())
+                    {
+                        Lv2Effect*lv2Effect = (Lv2Effect*)pLv2Effect;
+                        auto pluginInfo = pHost->GetPluginInfo(item.uri());
+                        if (pluginInfo) {
+                            for (auto control: pluginInfo->ports())
+                            {
+                                if (control->trigger_property() && control->is_input() && control->is_control_port())
+                                {
+                                    int controlIndex = lv2Effect->GetControlIndex(control->symbol());
+                                    if (controlIndex >= 0) 
+                                    {
+                                        float defaultValue = control->default_value();
+                                        this->processActions.push_back(
+                                            [pLv2Effect,controlIndex,defaultValue](int32_t frames) {
+                                                pLv2Effect->SetControl(controlIndex,defaultValue);
+                                            }
+                                        );
+                                    }
+
+                                }
+                            }
+                        }
+
+                    }
                 }
             }
             if (pEffect)
@@ -176,38 +205,16 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                 std::vector<float *> effectOutput;
 
-#ifdef RECYCLE_AUDIO_BUFFERS
-                // can't do this anymore if we're going to do pop-less bypbass.
-                if (pEffect->GetNumberOfOutputAudioPorts() == 1)
-                {
-                    float *pLeft = inputBuffers[0];
-                    effectOutput.push_back(pLeft);
-                }
-                else
-                {
-                    if (inputBuffers.size() == 1)
-                    {
-                        effectOutput.push_back(inputBuffers[0]);
-                        effectOutput.push_back(CreateNewAudioBuffer());
-                    }
-                    else
-                    {
-                        effectOutput.push_back(inputBuffers[0]);
-                        effectOutput.push_back(inputBuffers[1]);
-                    }
-                }
-#else
-                if (pEffect->GetNumberOfOutputAudioPorts() == 1)
+                if (pEffect->GetNumberOfOutputAudioBuffers() == 1)
                 {
                     effectOutput.push_back(CreateNewAudioBuffer());
                 }
-                else
+                else if (pEffect->GetNumberOfOutputAudioBuffers() >= 2)
                 {
                     effectOutput.push_back(CreateNewAudioBuffer());
                     effectOutput.push_back(CreateNewAudioBuffer());
                 }
-#endif
-                for (size_t i = 0; i < effectOutput.size(); ++i)
+                for (size_t i = 0; i < effectOutput.size(); ++i) 
                 {
                     pEffect->SetAudioOutputBuffer(i, effectOutput[i]);
                 }
@@ -307,13 +314,21 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
                     mapping.controlIndex = controlIndex;
                     mapping.midiBinding = binding;
                     mapping.instanceId = pedalboardItem.instanceId();
-                    if (pPortInfo->IsSwitch())
+
+                    if (pPortInfo->trigger_property())
                     {
-                        mapping.mappingType = binding.switchControlType() == LATCH_CONTROL_TYPE ? MappingType::Latched : MappingType::Momentary;
+                        mapping.mappingType = MidiControlType::Trigger;
+                    } else if (pPortInfo->IsSwitch())
+                    {
+                        mapping.mappingType = MidiControlType::Toggle;
                     }
-                    else
+                    else if (pPortInfo->enumeration_property())
                     {
-                        mapping.mappingType = binding.linearControlType() == LATCH_CONTROL_TYPE ? MappingType::Linear : MappingType::Circular;
+                        mapping.mappingType = MidiControlType::Select;
+                    }
+                    else 
+                    {
+                        mapping.mappingType = MidiControlType::Dial;
                     }
                     if (binding.bindingType() == BINDING_TYPE_NOTE)
                     {
@@ -473,21 +488,21 @@ void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samp
         {
             auto effect = this->realtimeEffects[index];
 
-            if (effect->GetNumberOfInputAudioPorts() == 1)
+            if (effect->GetNumberOfInputAudioBuffers() == 1)
             {
                 pUpdate->AccumulateInputs(effect->GetAudioInputBuffer(0), samples);
             }
-            else
+            else if (effect->GetNumberOfInputAudioBuffers() >= 2)
             {
                 pUpdate->AccumulateInputs(
                     effect->GetAudioInputBuffer(0),
                     effect->GetAudioInputBuffer(1), samples);
             }
-            if (effect->GetNumberOfOutputAudioPorts() == 1)
+            if (effect->GetNumberOfOutputAudioBuffers() == 1)
             {
                 pUpdate->AccumulateOutputs(effect->GetAudioOutputBuffer(0), samples);
             }
-            else
+            else if (effect->GetNumberOfOutputAudioBuffers() >= 2)
             {
                 pUpdate->AccumulateOutputs(
                     effect->GetAudioOutputBuffer(0),
@@ -671,46 +686,108 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
             {
                 switch (mapping.mappingType)
                 {
-                case MappingType::Circular:
-                case MappingType::Linear:
+                case MidiControlType::Trigger:
                 {
-                    float thisRange = (mapping.midiBinding.maxValue() - mapping.midiBinding.minValue()) * range + mapping.midiBinding.minValue();
-                    float value = mapping.pPortInfo->rangeToValue(thisRange);
-                    this->SetControlValue(mapping.effectIndex, mapping.controlIndex, value);
-                    pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), value);
-                    break;
-                }
-                case MappingType::Latched:
-                {
-                    range = std::round(range);
-
-                    if (!mapping.hasLastValue)
+                    bool triggered = false;
+                    if (mapping.midiBinding.switchControlType() == SwitchControlTypeT::TRIGGER_ON_RISING_EDGE
+                        || mapping.midiBinding.bindingType() == BINDING_TYPE_NOTE
+                    )
                     {
-                        mapping.lastValue = 0;
-                        mapping.hasLastValue = true;
+                        if (mapping.lastValue < range)
+                        {
+                            if (!mapping.lastValueIncreasing) {
+                                triggered = true;
+                            }
+                            mapping.lastValueIncreasing = true;
+                            mapping.lastValue = range;
+                        } else {
+                            mapping.lastValueIncreasing = false;
+                            mapping.lastValue = range;
+                        }
+                    } else {
+                        triggered = true;
                     }
-                    if (range != mapping.lastValue && range == 1)
+                    if (triggered)
                     {
                         IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
+                        float value = mapping.pPortInfo->max_value();
+                        if (value == mapping.pPortInfo->default_value())
+                        {
+                            value = mapping.pPortInfo->min_value();
+                        }
+                        this->SetControlValue(mapping.effectIndex, mapping.controlIndex, value);
+                        // do NOT notify anyone!
+                    }
+                    break;
+                }
+                case MidiControlType::Toggle:
+                {
+                    bool triggered = false;
+
+                    range = std::round(range);
+
+                    if (mapping.midiBinding.switchControlType() == SwitchControlTypeT::TOGGLE_ON_RISING_EDGE)
+                    {
+                        if (range > mapping.lastValue)
+                        {
+                            if (!mapping.lastValueIncreasing) {
+                                triggered = true;
+                            }
+                            mapping.lastValueIncreasing = true;
+                            mapping.lastValue = range;
+                        } else {
+                            mapping.lastValueIncreasing = false;
+                            mapping.lastValue = range;
+                        }
+                        if (triggered)
+                        {
+                            IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
+                            float currentValue = pEffect->GetControlValue(mapping.controlIndex);
+
+                            currentValue = currentValue == 0 ? 1 : 0;
+                            pEffect->SetControl(mapping.controlIndex, currentValue);
+                            pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
+                        }
+                    } else if (mapping.midiBinding.switchControlType() == SwitchControlTypeT::TOGGLE_ON_VALUE)
+                    {
+                        triggered = true;
+                        mapping.lastValue = range;
+                            IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
                         float currentValue = pEffect->GetControlValue(mapping.controlIndex);
-                        currentValue = currentValue == 0 ? 1 : 0;
+                        if (currentValue != range)
+                        {
+                            pEffect->SetControl(mapping.controlIndex, range);
+                            pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), range);
+                        }
+
+                    } else {
+                        // any control value toggles.
+                        triggered = true;
+                        mapping.lastValue = range;
+                            IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
+                        float currentValue = pEffect->GetControlValue(mapping.controlIndex);
+                        currentValue = currentValue == 0 ? 1: 0;
                         pEffect->SetControl(mapping.controlIndex, currentValue);
                         pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
                     }
-                    mapping.lastValue = range;
                     break;
                 }
-                case MappingType::Momentary:
+                case MidiControlType::Select:
+                case MidiControlType::Dial:
                 {
                     IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
-                    float value = mapping.pPortInfo->rangeToValue(range);
-                    if (pEffect->GetControlValue(mapping.controlIndex) != value)
+                    range = mapping.midiBinding.adjustRange(range);
+                    float currentValue = mapping.pPortInfo->rangeToValue(range);
+                    if (pEffect->GetControlValue(mapping.controlIndex) != currentValue)
                     {
-                        this->SetControlValue(mapping.effectIndex, mapping.controlIndex, value);
-                        pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), value);
+                        this->SetControlValue(mapping.effectIndex, mapping.controlIndex,currentValue);
+                        pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
                     }
                     break;
                 }
+                case  MidiControlType::None:
+                default:
+                    break;
                 }
             }
         }

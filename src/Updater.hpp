@@ -27,6 +27,7 @@
 #include "json.hpp"
 #include <chrono>
 #include "UpdaterStatus.hpp"
+#include <filesystem>
 
 
 namespace pipedal

@@ -20,6 +20,7 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
 
 namespace pipedal {
     class PiPedalModel;

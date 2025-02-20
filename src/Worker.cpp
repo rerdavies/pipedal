@@ -39,7 +39,6 @@
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include "Lv2Log.hpp"
 #include <iostream>
-#include <unistd.h> // for nice(
 #include <utility>
 #include "util.hpp"
 #include "SchedulerPriority.hpp"

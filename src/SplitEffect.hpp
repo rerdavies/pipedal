@@ -370,6 +370,9 @@ namespace pipedal
         virtual void RequestAllPathPatchProperties() {}
 
 
+        virtual void PrepareNoInputEffect(int numberOfInputs,size_t maxBufferSize) override {
+            // do nothing.
+        }
         virtual int GetNumberOfOutputAudioPorts() const
         {
             return numberOfOutputPorts;
@@ -378,10 +381,15 @@ namespace pipedal
         {
             return (int)this->inputs.size();
         }
+        virtual int GetNumberOfInputAudioBuffers() const { return this->inputs.size(); }
+
         virtual float *GetAudioInputBuffer(int index) const
         {
             return inputs[index];
         }
+
+        virtual int GetNumberOfOutputAudioBuffers() const {return this->outputBuffers.size(); }
+
         virtual float *GetAudioOutputBuffer(int index) const
         {
             return this->outputBuffers[index];

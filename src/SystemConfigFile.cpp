@@ -109,6 +109,16 @@ static inline std::string ValuePart(const std::string &line)
     return line.substr(pos + 1);
 }
 
+void SystemConfigFile::Set(int position,const std::string&line)
+{
+    if ((size_t)position == lines.size())
+    {
+        lines.push_back(line);
+    } else {
+        lines[position] = line;
+    }
+}
+
 std::string SystemConfigFile::Get(const std::string &key) const
 {
     int64_t lineIndex = GetLine(key);

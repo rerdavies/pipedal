@@ -170,6 +170,8 @@ namespace pipedal
         virtual void OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error) = 0;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) = 0;
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) = 0;
+
+        virtual void OnAlsaDriverTerminatedAbnormally() = 0;
     };
 
     class JackHostStatus
