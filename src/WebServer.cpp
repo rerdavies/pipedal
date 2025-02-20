@@ -636,6 +636,40 @@ std::string GetFromAddress(const tcp::socket &socket)
     s << socket.remote_endpoint().address().to_string() << ':' << socket.remote_endpoint().port();
     return s.str();
 }
+
+static bool encoding_allowed(const std::string&acceptEncodingHeader,const std::string&encoding)
+{
+    auto npos = acceptEncodingHeader.find(encoding);
+    if (npos == std::string::npos)
+        return false;
+    std::vector<std::string> encodings = split(acceptEncodingHeader, ',');
+    for (auto &e : encodings)
+    {
+        if (e.starts_with(encoding)) {
+            if (e.length() == encoding.length())
+                return true;
+            if (e[encoding.length()] == ';')
+                return true;
+        }
+    }
+    return false;
+}
+
+static bool can_use_gzip_encoding(
+    const std::string &acceptEncodingHeader, 
+    const std::filesystem::path &filename, 
+    std::filesystem::path *gzName)
+{
+    if (!encoding_allowed(acceptEncodingHeader, "gzip"))
+        return false;
+    *gzName = filename.string() + ".gz";
+    if (std::filesystem::exists(*gzName)) {
+        return true;    
+    }
+    return false;
+}
+
+
 namespace pipedal
 {
 
@@ -1125,12 +1159,22 @@ namespace pipedal
                 }
             }
 
+
+            std::string mimeType = mime_type(filename);
+
+            std::filesystem::path gzName;
+
+            if (can_use_gzip_encoding(req.get(HttpField::accept_encoding) ,filename,&gzName) )
+            {   
+                filename = gzName;
+                res.set(HttpField::content_encoding,"gzip");
+            }
+
             if (req.method() != HttpVerb::get)
             {
                 ServerError(*con, "Unknown HTTP-Method");
                 return;
             }
-            std::string mimeType = mime_type(filename);
 
             file.open(filename.c_str(), std::ios::in);
             if (!file)
