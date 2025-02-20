@@ -77,16 +77,12 @@ export function pushDialogStack(dialog: IDialogStackable): void {
             historyState: dialogStackState
         });
 
-    console.log("pushDialogStack " + stackId + " #" + dialog.getTag());
+    
     window.history.pushState(
         topState,
         "",
         "#" + dialog.getTag());
 
-    if (window.history.state.id != stackId)
-    {
-        console.log("pushDialogStack: nav deferred.");
-    }
     if (!gWatchingHistory) {
         gWatchingHistory = true;
         window.addEventListener("popstate", handlePopState);
@@ -103,7 +99,6 @@ let handlePopState = (ev: PopStateEvent) => {
 
     ev.stopPropagation();
 
-    console.log("handlePopState: " + evTag?.tag + " " + evTag?.id + " " + gPopFromBack);
     let id = evTag.id;
     let ix = dialogStack.length-1;
     while (ix >= 0) {
@@ -151,9 +146,7 @@ let handlePopState = (ev: PopStateEvent) => {
         {
             if (window.history.state != null)
             {
-                console.log("handlePopState: nav back");
                 window.setTimeout(() => {   window.history.back(); }, 0);
-                console.log("handlePopState: id= "+ (window.history?.state?.id??"null"));
             } else {
                 dialogStack.pop();
             }
@@ -169,7 +162,6 @@ export function popDialogStack(dialog: IDialogStackable): void {
     while (ix >= 0) {
         let entry = dialogStack[ix];
         if (entry.dialog === dialog) {
-            console.log("popDialogStack " + entry.historyState.id + " #" + dialog.getTag());
             break;
         }
         ix--;
@@ -181,7 +173,6 @@ export function popDialogStack(dialog: IDialogStackable): void {
     dialogStack[ix].dialog = null;
     if (dialogStack.length != 0 && dialogStack[dialogStack.length - 1].dialog === null)
     {
-        console.log("popDialogStack nav back: " + dialogStack[ix].historyState.id );
         window.history.back();
     }
 }
