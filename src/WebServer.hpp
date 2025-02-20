@@ -71,6 +71,8 @@ public:
     constexpr static const char* date = "Date";
     constexpr static const char* referer = "Referer";
     constexpr static const char * location = "Location";
+    constexpr static const char* accept_encoding = "Accept-Encoding";
+    constexpr static const char* content_encoding = "Content-Encoding";
 };
 
 

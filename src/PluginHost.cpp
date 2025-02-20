@@ -681,18 +681,25 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                     std::filesystem::path bundleDirectoryName = std::filesystem::path(bundle_path()).parent_path().filename();
                     std::filesystem::path legacyUploadPath = lv2Host->MapPath(bundleDirectoryName.string());
 
-                    if (std::filesystem::exists(legacyUploadPath))
-                    {
-                        if (!std::filesystem::exists(legacyUploadPath / ".migrated"))
-                        {
-                            fileProperty->useLegacyModDirectory(true);
-                            fileProperty->directory(bundleDirectoryName);
-                        }
-                        modFileTypes.rootDirectories().push_back(bundleDirectoryName.filename()); // push the private directory!
-                    }
                     fileProperty->setModFileTypes(modFileTypes);
 
                     fileProperty->directory(bundleDirectoryName);
+
+                    if (std::filesystem::exists(legacyUploadPath) 
+                        && !std::filesystem::exists(legacyUploadPath / ".migrated"))
+                    {
+                        fileProperty->useLegacyModDirectory(true);
+                        fileProperty->directory(bundleDirectoryName);
+                        modFileTypes.rootDirectories().push_back(bundleDirectoryName.filename()); // push the private directory!
+                    } else {
+                        if (modFileTypes.rootDirectories().size() == 1)
+                        {
+                            std::string modName = modFileTypes.rootDirectories()[0];
+                            auto modDirectory = modFileTypes.GetModDirectory(modName);
+                            fileProperty->directory(modDirectory->pipedalPath);
+                        }
+                    }
+
 
                     fileProperties.push_back(fileProperty);
                 } else {
@@ -1540,6 +1547,20 @@ static void createTargetLinks(const std::filesystem::path &sourceDirectory, cons
         }
     }
 }
+
+std::string PluginHost::MapResourcePath(const std::string&pluginUri, const std::string&filePath)
+{
+    auto plugin = GetPluginInfo(pluginUri);
+    if (plugin) {
+        
+        return filePath;
+    }
+
+
+    return filePath;
+
+}
+
 void PluginHost::CheckForResourceInitialization(const std::string &pluginUri, const std::filesystem::path &pluginUploadDirectory)
 {
 

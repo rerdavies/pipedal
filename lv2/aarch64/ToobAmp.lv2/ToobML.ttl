@@ -65,7 +65,7 @@ toobml:sagGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 55 ;
+        lv2:microVersion 57 ;
         rdfs:comment """
 The TooB ML Amplifier plugin provides emulation of a variety of amplifiers and overdrive pedals that are implemented 
 using neural-network-based machine learning models of real amplifiers.
@@ -313,7 +313,7 @@ and uses model files from the GuitarML Neural Pi project (https://github.com/Gui
                 lv2:default 3.0 ;
                 lv2:minimum 0.0 ;
                 lv2:maximum 10.0 ;
-                rdfs:comment "Model gain parameter (used by BluesJR model only)"
+                rdfs:comment "Model gain parameter (if supported by model) ()"
         ],  
         [
                 a lv2:InputPort ,

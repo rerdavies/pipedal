@@ -46,32 +46,6 @@ const char *BANKS_FILENAME = "index.banks";
 
 #define USER_SETTINGS_FILENAME "userSettings.json";
 
-static bool isSubdirectory(const fs::path &path, const fs::path &basePath)
-{
-    auto iPath = path.begin();
-    for (auto i = basePath.begin(); i != basePath.end(); ++i)
-    {
-        if (iPath == path.end())
-        {
-            return false;
-        }
-
-        if ((*i) != (*iPath))
-        {
-            return false;
-        }
-        ++iPath;
-    }
-    while (iPath != path.end())
-    {
-        if (iPath->string() == "..")
-        {
-            return false;
-        }
-        ++iPath;
-    }
-    return true;
-}
 
 static bool hasSyntheticModRoot(const UiFileProperty &fileProperty)
 {
@@ -1755,7 +1729,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         const ModFileTypes::ModDirectory *modDirectoryInfo = ModFileTypes::GetModDirectory(modDirectory);
         if (modDirectoryInfo)
         {
-            if (isSubdirectory(fsRelativePath, uploadsDirectory / modDirectoryInfo->pipedalPath))
+            if (IsSubdirectory(fsRelativePath, uploadsDirectory / modDirectoryInfo->pipedalPath))
             {
                 rootModDirectory = modDirectoryInfo;
                 modDirectoryPath = uploadsDirectory / modDirectoryInfo->pipedalPath;
@@ -1766,7 +1740,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
     }
     if (modDirectoryPath.empty() && fileProperty.useLegacyModDirectory())
     {
-        if (isSubdirectory(fsRelativePath, uploadsDirectory / fileProperty.directory()))
+        if (IsSubdirectory(fsRelativePath, uploadsDirectory / fileProperty.directory()))
         {
             modDirectoryPath = uploadsDirectory / fileProperty.directory();
             result.breadcrumbs_.push_back({modDirectoryPath.string(), fs::path(fileProperty.directory()).filename().string()});
@@ -1881,7 +1855,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
             ++iAbsolutePath;
         }
     }
-    if (!isSubdirectory(absolutePath, pluginRootDirectory))
+    if (!IsSubdirectory(absolutePath, pluginRootDirectory))
     {
         throw std::runtime_error(SS("Improper location. " << absolutePath));
     }
@@ -2237,6 +2211,11 @@ FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFil
         FillSampleDirectoryTree(result.get(), rootDirectory);
         return result;
     }
+}
+
+bool Storage::IsInUploadsDirectory(const std::filesystem::path&path) const
+{
+    return IsSubdirectory(path,this->GetPluginUploadDirectory());
 }
 
 const PluginPresetIndex &Storage::GetPluginPresetIndex()

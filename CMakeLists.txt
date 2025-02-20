@@ -7,7 +7,7 @@ project(pipedal
 
 EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 
-set (DISPLAY_VERSION "PiPedal v1.4.70-Release")
+set (DISPLAY_VERSION "PiPedal v1.4.70-Beta")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
 

@@ -3,6 +3,22 @@ page_icon: img/Setup.jpg
 icon_width: 320px
 icon_float: left
 ---
+## Selecting a real-time kernel on Ubuntu. 
+
+This step is unneccesary on Raspberry Pi OS, which installs an RT_PREEMPT kernel by default.
+
+By default, Ubuntu installs a PREEMT_DYNAMIC kernel, configured to run with volutary preemption. You will need to change this. You can do this by running the following command after you have installed PiPedal:
+
+```
+   pipedal_kconfig
+```
+
+In order to support real-time audio processing, select Preempt=full. 
+
+An RT_PREEMPT kernel provides slightly better realtime audio than a PREEMPT_DYNAMIC/preempt=full kernel, but the PREEMPT_DYNAMIC should be perfectly adequate. If you are having problems with audio dropouts, you may want to try an RT_PREEMPT kernel instead. Ubuntu provides a pre-built RT_PREEMPT kernel; but on our test systems, you can acheive stable low-latency audio using only the PREEMPT_DYNAMIC/preempt=full kernel. The pre-build Ubuntu RT_PREEMPT 
+kernel is only available if yo have an Ubuntu Pro subscription. But it is relatively easy to build the Ubuntu RT_PREEMPT kernel from source. That is, however, outside the scope of this document. We recommend using the PREEMPT_DYNAMIC/preempt=full Ubuntu kernel. 
+
+
 ## Configuring PiPedal After Installation
 
 

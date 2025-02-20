@@ -2,15 +2,16 @@
 
 ## PiPedal 1.4.70 Beta
 
-- Support for Ubuntu 24.04 (arm64 and amd64)
-- Ubunto CPU Freq/governor/thermal status display.
+- Ubuntu 24.x compatibility (arm64 and amd64)
+- Ubuntu CPU Freq/governor/thermal status display.
 - Support for WiFi on on Ubuntu 
-- TooB Plugin compatibility issues on x64/amd64.
+- TooB Plugin compatibility issues on x64/amd64 (handling of NaNs)
 - Restart audio automatically after ALSA stalls.
-- Improvements to File Upload UI for plugins that have complex file types (e.g. Ratatoille)
+- Improvements to File Upload UI for plugins that have complex file types (e.g. Ratatouille)
 - Support for LV2 Trigger controls, and MIDI bindings to LV2 trigger controls (common in looper and recording/playback plugsin).
 - MIDI bindings for LV2 trigger controls.
 - Port Web app from CRA to Vite framework to avoid deprecated dependencies.
+- ToobAmp 1.1.57: Correctly set file path of the default file property for Toob Convolution Reverb.
 
 ## PiPedal 1.3.69
 

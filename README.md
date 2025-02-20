@@ -15,7 +15,7 @@ Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](htt
 #### Important notice: PiPedal has a submitted a request to support sharing of Pipedal presets at [PatchStorage.com](https:///patchstorage.com). We need your support! Please vote for PiPedal [here](https://patchstorage.com/requests/pipedal/).
 
 
-#### NEW version 1.4.70 Release, providing [snapshots](https://rerdavies.github.io/pipedal/Snaphots.html), and a new Performance View. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.4.70 Beta. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 

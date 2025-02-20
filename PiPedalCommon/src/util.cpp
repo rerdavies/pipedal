@@ -189,3 +189,30 @@ std::filesystem::path pipedal::MakeRelativePath(const std::filesystem::path &pat
     return remander;
 
 }
+
+bool pipedal::IsSubdirectory(const std::filesystem::path &path, const std::filesystem::path &basePath)
+{
+    auto iPath = path.begin();
+    for (auto i = basePath.begin(); i != basePath.end(); ++i)
+    {
+        if (iPath == path.end())
+        {
+            return false;
+        }
+
+        if ((*i) != (*iPath))
+        {
+            return false;
+        }
+        ++iPath;
+    }
+    while (iPath != path.end())
+    {
+        if (iPath->string() == "..")
+        {
+            return false;
+        }
+        ++iPath;
+    }
+    return true;
+}

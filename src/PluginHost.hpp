@@ -838,6 +838,9 @@ namespace pipedal
     public:
         virtual MapFeature &GetMapFeature() { return this->mapFeature; }
         void CheckForResourceInitialization(const std::string& pluginUri,const std::filesystem::path& pluginUploadDirectory);
+
+        std::string MapResourcePath(const std::string&uri, const std::string&relativePath);
+
         void ReloadPlugins();
 
         // equivalent to LV2 MapPath AbstractPath features.

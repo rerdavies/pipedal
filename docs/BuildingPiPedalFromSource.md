@@ -5,7 +5,7 @@ page_icon: img/Compiling.jpg
 
 {% include pageIcon.html %}
 
-PiPedal has only been tested on Raspberry Pi OS, and Ubuntu, but should run with some modifications on most Linux distributions. Pull requests to correct problems with building PiPedal on other versions of Linux are welcome. However, getting build pre-requisites installed on non-Debian-derived Linux distrubutions (distros that don't use `apt`) will be challenging.
+PiPedal has only been tested on Raspberry Pi OS, and Ubuntu 24.x, but should run with some modifications on most Linux distributions. Pull requests to correct problems with building PiPedal on other versions of Linux are welcome. However, getting build pre-requisites installed on non-Debian-derived Linux distrubutions (distros that don't use `apt`) will be challenging.
 
 To build and debug PiPedal using Visual Studio Code, you need 8GB of memory. You can build PiPedal with 2GB of memory.
 

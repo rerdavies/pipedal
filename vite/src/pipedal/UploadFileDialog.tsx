@@ -29,7 +29,8 @@ import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import Typography from '@mui/material/Typography';
 import { UiFileProperty,UiFileType } from './Lv2Plugin';
 import SvgIcon from '@mui/material/SvgIcon';
-import ErrorIcon from '@mui/icons-material/Error';
+//import ErrorIcon from '@mui/icons-material/Error';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -291,7 +292,7 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
 
         switch (status) {
             case FileUploadStatus.Error:
-                 return (<ErrorIcon color="error" style={style} />);
+                 return (<ErrorOutlineIcon color="error" style={style} />);
             case FileUploadStatus.Uploaded:
                  return (
                     <CheckCircleOutlineIcon  color="success" style={style}/>);
