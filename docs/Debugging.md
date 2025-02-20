@@ -2,7 +2,7 @@
 
 PipPedal consists of the following components:
 
-*    A web application build in React, found in the react subdirectory.
+*    A web application built using vite/React, found in the `vite` subdirectory.
 
 *   `pipedald`
 
@@ -40,7 +40,7 @@ same /etc/pipedal and /var/pipedal directories as an instance of  `pipedal` runn
 under systemd. Note that when running under systemd, `pipedald` runs under an unprivileged 
 `piedal_d` service account, and relies it's group (also 'pipedal_d`) in order to access its 
 data files, and to communicate with the `pipedaladmin` service, which does run with root 
-priveleges when `pipedald` needs to perform operations that do required root privileges. 
+privileges when `pipedald` needs to perform operations that do required root privileges (e.g. shutdown/reboot and starting  and stopping WiFi services). 
 
 For what it's worth, `pipedaldmin` is virtually undebuggable, becuase it does require root privileges to run.
 If you really _must_ debug pipedaladmin, you can fire up a sudo isntance of Visual Studio Code 
@@ -53,8 +53,8 @@ audio and Wi-Fi configuration changes) may fail if the pipedaladmind service is 
 with pipedaladmin via Unix docket that can only be opened by members of the pipedal_d group. So if you have 
 added your own account to the `pipedal_d` group, debug instances of `pipedald` will in fact work properly.
 
-In production, the pipedald web server serves the PiPedal web socket, as well as static HTML from the  built 
-react components. But while debugging, it is much more convenient to use the React debug server for 
+In production, the pipedald web server serves the PiPedal web socket, as well as static HTML from the built 
+vite/React components. But while debugging, it is much more convenient to use the Vite debug server for 
 React sources, and configure pipedald to serve only the websocket. 
 
 Note that a debug instance of `pipedald` cannot bind to port 80, since that requires either root privileges or 
@@ -72,23 +72,26 @@ make the systemd instance of `pipedald` bind to port 8080 instead of port 80:
 
 (which will also restart the `pipedald` service).
 
-To start the React debug server, from a shell, `cd` to the react directory, and run `./start`. The react debug 
-server will detect any changes to React sources, and rebuild them automatically (no build step required). 
-Actual debugging is performed using the Chrome debugger (which is remarkably well integrated with React). 
+To start the web app debug server, from a shell, `cd` to the `./vite` directory, and run `npm run dev`. The 
+Vite debug server will automatically detect any changes to web app sources, and rebuild them automatically (no build step required). Note that the `pipedald` service must be running in order for the web app to function properly, either 
+as a the `pipedald` service, or by running `pipedald` in a debugger.
+Actual debugging is performed using the Chrome debugger (which is remarkably well integrated with Vite/React). 
 You won't actually see changes to the version of the systemd version of the static web app until you 
 do a full _Release_ or _RelWithDebInfo_ build of PiPedal, followed by running `./install.sh` which pushes 
 the built react app in the location where the systemd version of `pipedald` serves static web content. 
 
 By default, the debug React app will attempt to contact the pipedald server on ws:*:8080 -- the address on which
 the debug version of pipedald listens on. This can be reconfigured 
-in the file `react/src/public/var/config.json` if desired. If you connect to the the pipedald server port (port 80), pipedald intercepts requests for this file and  points the react app at itself, so the file has no effect when running in production. 
+in the file `react/src/public/var/config.json` if desired. If you connect to the the pipedald server port (port 80), pipedald intercepts requests for `http://./var/config.json`  and  points the react app at itself, so the file has no effect when running in production. 
 
 The React app will display the message "Error: Failed to connect to the server", until you start the pipedald websocket server in the VSCode debugger. However, it's quite reasonable to point the react debug app at a systemd instance of the pipedald server instead, if you don't intend to debug C++ code.
 
     react/public/var/config.json: 
     {
         ...
-        "socket_server_port": 8080,  # (PiPedald's port number)
+        # (PiPedald's port number. 80 for the production service, 8080 (by default) for 
+        # pipedal running under a debugger.
+        "socket_server_port": 8080,  
         "socket_server_address": "*",
         ...
     }
