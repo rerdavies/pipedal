@@ -118,4 +118,7 @@ namespace pipedal
     std::string ToLower(const std::string&value);
 
     std::filesystem::path MakeRelativePath(const std::filesystem::path &path, const std::filesystem::path&parentPath);
+
+    bool IsSubdirectory(const std::filesystem::path &path, const std::filesystem::path &basePath);
+
 }

@@ -109,6 +109,7 @@ namespace pipedal
         using NetworkChangedListener = std::function<void(void)>;
 
     private:
+        PedalboardItem* GetPedalboardItemForFileProperty(const UiFileProperty& fileProperty);
 
         void CancelAudioRetry();
         clock::time_point lastRestartTime = clock::time_point::min();

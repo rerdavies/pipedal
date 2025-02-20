@@ -1547,6 +1547,20 @@ static void createTargetLinks(const std::filesystem::path &sourceDirectory, cons
         }
     }
 }
+
+std::string PluginHost::MapResourcePath(const std::string&pluginUri, const std::string&filePath)
+{
+    auto plugin = GetPluginInfo(pluginUri);
+    if (plugin) {
+        
+        return filePath;
+    }
+
+
+    return filePath;
+
+}
+
 void PluginHost::CheckForResourceInitialization(const std::string &pluginUri, const std::filesystem::path &pluginUploadDirectory)
 {
 

@@ -50,6 +50,7 @@
 #endif /* NO_MLOCK */
 
 using namespace pipedal;
+namespace fs = std::filesystem;
 
 template <typename T>
 T &constMutex(const T &mutex)
@@ -2309,10 +2310,46 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
     }
 }
 
-FileRequestResult PiPedalModel::GetFileList2(const std::string &relativePath, const UiFileProperty &fileProperty)
+PedalboardItem*PiPedalModel::GetPedalboardItemForFileProperty(const UiFileProperty& fileProperty) 
 {
+    for (PedalboardItem*pedalboardItem: this->pedalboard.GetAllPlugins())
+    {
+        if (pedalboardItem->pathProperties_.contains(fileProperty.patchProperty()))
+        {
+            return pedalboardItem;
+        }
+    }
+    return nullptr;
+}
+FileRequestResult PiPedalModel::GetFileList2(const std::string &relativePath_, const UiFileProperty &fileProperty)
+{
+    std::string relativePath = relativePath_;
     try
     {
+        if (!storage.IsInUploadsDirectory(relativePath)) 
+        {
+            // if relativePath is in a resource directory of the plugin, then we have loaded a factory preset or are using a default property.
+            // map the resource path to the corresponding file in the uploads directory. 
+            // :-(
+            PedalboardItem *pedalboardItem = GetPedalboardItemForFileProperty(fileProperty);
+            if (pedalboardItem)
+            {
+                auto pluginInfo = GetPluginInfo(pedalboardItem->uri());
+                if (pluginInfo) {
+                    std::filesystem::path resourcePath = fs::path(pluginInfo->bundle_path())
+                        / fileProperty.resourceDirectory();
+                    if (IsSubdirectory(relativePath,resourcePath))
+                    {
+                        fs::path t = MakeRelativePath(relativePath,resourcePath);
+                        t  = fileProperty.directory() / t;
+                        if (fs::exists(t)) 
+                        {
+                            relativePath = t;
+                        }
+                    }
+                }
+            }
+        }
         return this->storage.GetFileList2(relativePath, fileProperty);
     }
     catch (const std::exception &e)

@@ -11,6 +11,7 @@
 - Support for LV2 Trigger controls, and MIDI bindings to LV2 trigger controls (common in looper and recording/playback plugsin).
 - MIDI bindings for LV2 trigger controls.
 - Port Web app from CRA to Vite framework to avoid deprecated dependencies.
+- ToobAmp 1.1.57: Correctly set file path of the default file property for Toob Convolution Reverb.
 
 ## PiPedal 1.3.69
 
