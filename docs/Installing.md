@@ -13,24 +13,25 @@ page_icon: img/Install4.jpg
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS bookworm (64-bit) v1.4.70](https://github.com/rerdavies/pipedal/releases/download/)
-- [Ubuntu/Raspberry Pi OS bullseyeye (64-bit) v1.2.31](https://github.com/rerdavies/pipedal/releases/download/v1.1.31/pipedal_1.1.31_arm64.deb)
+- [Raspberry Pi OS bookworm (aarch64) v1.4.70 Beta](https://github.com/rerdavies/pipedal/releases/download/)
+- [Ubuntu 24.x (aarch64) v1.4.70 Alpha](https://github.com/rerdavies/pipedal/releases/download/)
+- [Ubuntu 24.x (amd64) v1.4.70 Alpha](https://github.com/rerdavies/pipedal/releases/download/)
 
-Version 1.4.70 has not yet been tested on Ubuntu or Raspberry Pi OS bullseye. On these platforms, we recommend that you use version 1.1.31.
 
-Install the package by running 
+Version 1.4.70 has been tested on Raspberry Pi OS bookworm, Ubuntu 24.04 (amd64), and Ubuntu 24.10 (aarch64). Download the appropriate package for your platform, and install using the following proceduer:
 
 ```
   sudo apt update
   cd ~/Downloads  
   sudo apt-get install pipedal_1.4.70_arm64.deb 
 ```
-Adjust accordingly if you have downloaded v1.1.31.
+Adjust accordingly depending which package you downloaded.
 
 On Raspberry Pi OS, if you have a graphical desktop installed, you can also install the package by double-clicking on the downloaded package in the File Manager.
 
 
-After installing, follow the instructions in [Configuring PiPedal after Installation](Configuring.md).
+After installing, follow the instructions in [Configuring PiPedal after Installation](Configuring.md). If 
+you are using Ubuntu, you will need to reconfigure Ubuntu to use a real-time kernel. 
 
 
 --------
