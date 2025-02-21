@@ -10,12 +10,10 @@ Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.4.
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-&nbsp;
+_Important notice_: [PatchStorage.com](https:///patchstorage.com) has added support for [PiPedal](https://patchstorage.com/platform/pipedal/). We urgently need your support! If you could please upload patches  [here](https://patchstorage.com/platform/pipedal/) I would be enormously grateful. Note that media and model files are included in patch files, so you can share patches that
+include model files or audio samples. If you make use of plugins that are not included in the PiPedal distribution, please include a link to the plugin in the patch description.
 
-#### Important notice: PiPedal has a submitted a request to support sharing of Pipedal presets at [PatchStorage.com](https:///patchstorage.com). We need your support! Please vote for PiPedal [here](https://patchstorage.com/requests/pipedal/).
-
-
-#### NEW version 1.4.70 Beta. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### _NEW version 1.4.70 Beta, PiPedal now supports Ubuntu 24.x,  on aarch64 and amd64/x64 platforms. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details._
 
 &nbsp;
 
@@ -30,10 +28,9 @@ PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp colle
 
 If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
 
-<img src="docs/gallery/rig.jpg" width="90%"></img>  
+<img src="docs/gallery/dark-sshot1.png"></img>
 
-<!-- {% include gallery.html %} -->
-<img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
+<img src="docs/gallery/rig.jpg" width="45%"></img>  <img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
 
 ----
 &nbsp;
