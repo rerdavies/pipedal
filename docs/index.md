@@ -1,7 +1,4 @@
-## PiPedal
 <a href="Installing.html"><i>v1.4.70</i></a>
-
-&nbsp;
 
 _To download PiPedal, click [*here*](download.md). 
 To view PiPedal documentation, click [*here*](Documentation.md)._
