@@ -6,14 +6,14 @@
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.4.70</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.4.71</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
 _Important notice_: [PatchStorage.com](https:///patchstorage.com) has added support for [PiPedal](https://patchstorage.com/platform/pipedal/). We urgently need your support! If you could please upload patches  [here](https://patchstorage.com/platform/pipedal/) I would be enormously grateful. Note that media and model files are included in patch files, so you can share patches that
 include model files or audio samples. If you make use of plugins that are not included in the PiPedal distribution, please include a link to the plugin in the patch description.
 
-#### _NEW version 1.4.70 Beta, PiPedal now supports Ubuntu 24.x,  on aarch64 and amd64/x64 platforms. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details._
+#### _NEW version 1.4.71 Beta, PiPedal now supports Ubuntu 24.x,  on aarch64 and amd64/x64 platforms. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details._
 
 &nbsp;
 
