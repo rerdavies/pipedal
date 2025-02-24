@@ -30,6 +30,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <algorithm>
+#include "SysExec.hpp"
 
 using namespace pipedal;
 using namespace dbus::networkmanager;
@@ -1101,9 +1102,51 @@ static std::vector<std::string> get_wireless_interfaces_sysfs()
     return wireless_interfaces;
 }
 
+static bool gNetworkManagerTestExecuted = false;
+static bool gUsingNetworkManager = false;
+
+static bool IsNetworkManagerRunning()
+{
+    if (gNetworkManagerTestExecuted)
+    {
+        return gUsingNetworkManager;
+    }
+    bool bResult = false;
+    auto result = sysExecForOutput("systemctl","is-active NetworkManager");
+    if (result.exitCode == EXIT_SUCCESS)
+    {
+        std::string text = result.output.erase(result.output.find_last_not_of(" \n\r\t")+1);
+        if (text == "active")
+        {
+            bResult = true;
+        } else if (text == "inactive")
+        {
+            bResult = false;
+        } else {
+            throw std::runtime_error(SS("UsingNetworkManager: unexpected result (" << text << ")"));
+        }
+        gNetworkManagerTestExecuted = true;
+        gUsingNetworkManager = bResult;
+        return bResult;
+    }
+
+    // does the neworkManager service path exists?
+    return false;
+}
+
+
 bool HotspotManager::HasWifiDevice()
 {
     // use procfs to decide this, as NetworkManager may not be available yet.
+    if ( !(get_wireless_interfaces_sysfs().empty()) )
+    {
+        return false;
+    }
 
-    return !(get_wireless_interfaces_sysfs().empty());
+    if (!IsNetworkManagerRunning()) 
+    {
+        return false;
+    }
+    return true;
+
 }

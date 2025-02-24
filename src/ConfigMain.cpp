@@ -1055,7 +1055,11 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
 
     if (!UsingNetworkManager())
     {
-        throw std::runtime_error("The current OS is not using NetworkManager. Services not configured.");
+        cout << "Warning: The current OS is not using the NetworkManager network stack." << endl;
+        cout << "   The PiPedal Auto-Hotspot feature will be disabled." << endl << endl;
+        cout << "   Consult PiPedal documentation to find out how to correct this " << endl;
+        cout << "   issue on Ubuntu Server." << endl;
+
     }
     try
     {
@@ -1763,28 +1767,23 @@ int main(int argc, char **argv)
         }
         else if (stop)
         {
-            RequireNetworkManager();
             StopService();
         }
         else if (start)
         {
-            RequireNetworkManager();
             StartService();
         }
         else if (restart)
         {
-            RequireNetworkManager();
             RestartService(excludeShutdownService);
         }
         else if (enable)
         {
-            RequireNetworkManager();
             EnableService();
             FileSystemSync();
         }
         else if (disable)
         {
-            RequireNetworkManager();
             DisableService();
             FileSystemSync();
         }
@@ -1809,7 +1808,6 @@ int main(int argc, char **argv)
         }
         else if (disable_p2p)
         {
-            RequireNetworkManager();
             WifiDirectConfigSettings settings;
             settings.Load();
             settings.enable_ = false;
@@ -1854,7 +1852,6 @@ int main(int argc, char **argv)
         }
         else if (disable_hotspot)
         {
-            RequireNetworkManager();
 
             WifiConfigSettings settings;
             settings.valid_ = true;

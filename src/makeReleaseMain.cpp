@@ -66,7 +66,12 @@ void SignPackage()
     packagePath = fs::absolute(packagePath);
     if (!fs::exists(packagePath))
     {
-        throw std::runtime_error(SS("File does not exist: " << packagePath));
+        packagePath = SS("build/pipedal_" << PROJECT_VER << "_amd64.deb");
+        packagePath = fs::absolute(packagePath);
+        if (!fs::exists(packagePath)) {
+            packagePath = SS("build/pipedal_" << PROJECT_VER << "_*.deb");
+            throw std::runtime_error(SS("File does not exist: " << packagePath));
+        }
     }
 
     // sign the package.

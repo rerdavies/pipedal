@@ -3,11 +3,11 @@ page_icon: img/Setup.jpg
 icon_width: 320px
 icon_float: left
 ---
-## Selecting a real-time kernel on Ubuntu. 
+## Selecting a real-time kernel on Ubuntu 24.x 
 
 This step is unneccesary on Raspberry Pi OS, which installs an RT_PREEMPT kernel by default.
 
-By default, Ubuntu installs a PREEMT_DYNAMIC kernel, configured to run with volutary preemption. You will need to change this. You can do this by running the following command after you have installed PiPedal:
+By default, Ubuntu installs a PREEMT_DYNAMIC kernel, configured to run with volutary preemption. You will need to change this. PREEMPT_DYNAMIC/preempt=voluntary kernels are not capable of supporting real-time audio. You can do this by running the following command-line command after you have installed PiPedal:
 
 ```
    pipedal_kconfig
@@ -15,8 +15,24 @@ By default, Ubuntu installs a PREEMT_DYNAMIC kernel, configured to run with volu
 
 In order to support real-time audio processing, select Preempt=full. 
 
-An RT_PREEMPT kernel provides slightly better realtime audio than a PREEMPT_DYNAMIC/preempt=full kernel, but the PREEMPT_DYNAMIC should be perfectly adequate. If you are having problems with audio dropouts, you may want to try an RT_PREEMPT kernel instead. Ubuntu provides a pre-built RT_PREEMPT kernel; but on our test systems, you can acheive stable low-latency audio using only the PREEMPT_DYNAMIC/preempt=full kernel. The pre-build Ubuntu RT_PREEMPT 
-kernel is only available if yo have an Ubuntu Pro subscription. But it is relatively easy to build the Ubuntu RT_PREEMPT kernel from source. That is, however, outside the scope of this document. We recommend using the PREEMPT_DYNAMIC/preempt=full Ubuntu kernel. 
+An RT_PREEMPT kernel provides slightly better realtime audio than a PREEMPT_DYNAMIC/preempt=full kernel, but the PREEMPT_DYNAMIC should be perfectly adequate. If you are having problems with intermittent audio dropouts, you may want to try an RT_PREEMPT kernel instead. Ubuntu provides a pre-built RT_PREEMPT kernel; but on our test systems, you can acheive stable low-latency audio using only the PREEMPT_DYNAMIC/preempt=full kernel. The pre-built Ubuntu RT_PREEMPT kernel can be installed using `apt` but is only available if you have an Ubuntu Pro subscription. Ubuntu Pro is free for non-commercial use. Reportedly, it is relatively easy to build the Ubuntu RT_PREEMPT kernel from source; but that is outside the scope of this document. We recommend using the PREEMPT_DYNAMIC/preempt=full Ubuntu kernel. 
+
+## Support for WIFI Auto-Hotspots on Ubuntu Server
+
+The following information applies when installing PiPedal on Ubuntu Server 24.0x only. This information does not apply 
+to Unbuntu Desktop installs or Raspberry Pi OS Lite installs. 
+
+PiPedal's Auto-Hotspot feature only works on Linux systems that are using the Network Manager network services stack.
+Ubuntu Server 24.x (and probably other server-specific installs on other Debian distros) uses the Netplan network services stack by instead. It does so because the Netplan network stack is the preferred network stack when managing 
+farms of cloud servers. 
+
+It's easy enough to reconfigure Ubuntu Server to run the Network Manager network stack instead. However you should be 
+aware that Netplan TCP/IP configuration settings will not be migrated to Network Manager. If you perform this step on a server on which changes have beeen madce to Netplan configuration files, you will need to manually migrate those 
+changes to Network Manager configuration files. On a clean install of Ubuntu Server, this will not be a problem. 
+
+To reconfigure Ubuntu Server to use the Network Manager network stack (and therefore enable PiPedal's Auto-Hotspot feature), run the following command: 
+
+    sudo apt install network-manager
 
 
 ## Configuring PiPedal After Installation

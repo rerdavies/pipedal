@@ -1,5 +1,9 @@
 # Release Notes
 
+## PiPedal 1.4.71 Beta
+
+- Resolves installation issues on Ubuntu Server.
+
 ## PiPedal 1.4.70 Beta
 
 - Ubuntu 24.x compatibility (arm64 and amd64)
