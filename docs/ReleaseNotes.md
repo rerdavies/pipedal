@@ -1,5 +1,9 @@
 # Release Notes
 
+## PiPedal 1.4.72 Beta
+
+- Resolves installation issues on Raspberry Pi OS (no alsa-base)
+
 ## PiPedal 1.4.71 Beta
 
 - Resolves installation issues on Ubuntu Server.
