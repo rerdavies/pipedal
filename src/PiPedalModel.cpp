@@ -2879,3 +2879,8 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
         }
     });
 }
+
+bool PiPedalModel::IsInUploadsDirectory(const std::string &path)
+{
+    return !storage.IsInUploadsDirectory(path);
+}

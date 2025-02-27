@@ -167,6 +167,10 @@ MimeTypes::MimeTypes()
     AddMimeType("MPG", "video/mp2p");
     AddMimeType("MPEG", "video/mp2p");
 
+    // custom.
+    AddMimeType("NAM", "application/x-nam+json");
+
+
 }
 
 const MimeTypes&MimeTypes::instance()

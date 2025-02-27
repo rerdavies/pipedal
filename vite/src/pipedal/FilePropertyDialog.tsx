@@ -19,7 +19,7 @@
 
 
 import React from 'react';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 
 import { Theme } from '@mui/material/styles';
@@ -33,6 +33,7 @@ import { PiPedalModel, PiPedalModelFactory, FileEntry, BreadcrumbEntry, FileRequ
 import { isDarkMode } from './DarkMode';
 import Button from '@mui/material/Button';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -108,9 +109,11 @@ export interface FilePropertyDialogState {
     selectedFileIsDirectory: boolean;
     selectedFileProtected: boolean;
     hasSelection: boolean;
+    hasFileSelection: boolean;
     canDelete: boolean;
     fileResult: FileRequestResult;
     navDirectory: string;
+    windowWidth: number;
     uploadDirectory: string;
     isProtectedDirectory: boolean;
     columns: number;
@@ -199,10 +202,12 @@ export default withStyles(
                 fullScreen: this.getFullScreen(),
                 selectedFile: selectedFile,
                 selectedFileProtected: true,
+                windowWidth: this.windowSize.width,
                 selectedFileIsDirectory: false,
                 navDirectory: this.getNavDirectoryFromFile(selectedFile, props.fileProperty),
                 uploadDirectory: "",
                 hasSelection: false,
+                hasFileSelection: false,
                 canDelete: false,
                 columns: 0,
                 columnWidth: 1,
@@ -259,12 +264,13 @@ export default withStyles(
                         // }
                         filesResult.files.splice(0, 0, { pathname: "", displayName: "<none>", isDirectory: false, isProtected: true });
 
-                        let fileEntry = this.getFileEntry(filesResult.files, this.state.selectedFile);
+                        let fileEntry  = this.getFileEntry(filesResult.files, this.state.selectedFile);
                         this.setState({
                             isProtectedDirectory: filesResult.isProtected,
                             fileResult: filesResult,
                             hasSelection: !!fileEntry,
-                            selectedFileProtected: fileEntry ? fileEntry.isProtected: true,
+                            hasFileSelection: !!fileEntry && (!fileEntry.isDirectory) && (!fileEntry.isProtected),
+                            selectedFileProtected: fileEntry ? fileEntry.isProtected : true,
                             navDirectory: navPath,
                             uploadDirectory: filesResult.currentDirectory
                         });
@@ -297,7 +303,8 @@ export default withStyles(
         onWindowSizeChanged(width: number, height: number): void {
 
             this.setState({
-                fullScreen: this.getFullScreen()
+                fullScreen: this.getFullScreen(),
+                windowWidth: width
             })
             if (this.lastDivRef !== null) {
                 this.onMeasureRef(this.lastDivRef);
@@ -377,7 +384,8 @@ export default withStyles(
                 selectedFile: fileEntry.pathname,
                 selectedFileIsDirectory: fileEntry.isDirectory,
                 selectedFileProtected: fileEntry.isProtected,
-                hasSelection: this.isFileInList(this.state.fileResult.files, fileEntry.pathname)
+                hasSelection: this.isFileInList(this.state.fileResult.files, fileEntry.pathname),
+                hasFileSelection: !fileEntry.isDirectory && !fileEntry.isDirectory && !fileEntry.isProtected
             })
         }
         onDoubleClickValue(selectedFile: string) {
@@ -392,14 +400,21 @@ export default withStyles(
             this.setState({ menuAnchorEl: null });
         }
         handleDelete() {
-            if (this.state.selectedFileProtected) { 
-                return; 
+            if (this.state.selectedFileProtected) {
+                return;
             }
             this.setState({ openConfirmDeleteDialog: true });
         }
+        handleDownloadFile() {
+            if (this.state.selectedFileProtected || !this.state.hasFileSelection) {
+                return;
+            }
+            let file = this.state.selectedFile;
+            this.model.downloadAudioFile(file);
+        }
         handleConfirmDelete() {
-            if (this.state.selectedFileProtected) { 
-                return; 
+            if (this.state.selectedFileProtected) {
+                return;
             }
             this.setState({ openConfirmDeleteDialog: false });
             if (this.state.hasSelection) {
@@ -424,20 +439,21 @@ export default withStyles(
                 this.model.deleteUserFile(this.state.selectedFile)
                     .then(
                         () => {
-                            if (newSelection)
-                            {
-                                this.setState({ 
+                            if (newSelection) {
+                                this.setState({
                                     selectedFile: newSelection.pathname,
                                     selectedFileIsDirectory: newSelection.isDirectory,
                                     selectedFileProtected: newSelection.isProtected,
-                                    hasSelection: true
+                                    hasSelection: true,
+                                    hasFileSelection: !newSelection.isDirectory && !newSelection.isProtected
                                 });
                             } else {
                                 this.setState({
                                     selectedFile: "",
                                     selectedFileIsDirectory: false,
                                     selectedFileProtected: true,
-                                    hasSelection: false
+                                    hasSelection: false,
+                                    hasFileSelection: false
                                 });
 
                             }
@@ -580,8 +596,7 @@ export default withStyles(
             }
             let protectedDirectory = this.state.fileResult.isProtected;
             let protectedItem = true;
-            if (this.state.hasSelection)
-            {
+            if (this.state.hasSelection) {
                 protectedItem = this.state.selectedFileProtected;
             }
             let canMoveOrRename = this.hasSelectedFileOrFolder() && !protectedItem;
@@ -719,31 +734,79 @@ export default withStyles(
                         </DialogContent>
                         <Divider />
                         <DialogActions style={{ justifyContent: "stretch" }}>
-                            <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
-                                    disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
-                                    onClick={() => this.handleDelete()} >
-                                    <OldDeleteIcon fontSize='small' />
-                                </IconButton>
+                            {this.state.windowWidth > 500 ? (
+                                <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                    <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                        disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
+                                        onClick={() => this.handleDelete()} >
+                                        <OldDeleteIcon fontSize='small' />
+                                    </IconButton>
 
-                                <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
-                                    onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
-                                >
-                                    <div>Upload</div>
-                                </Button>
-                                <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+                                    <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
+                                        onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
+                                    >
+                                        <div>Upload</div>
+                                    </Button>
 
-                                <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
-                                    Cancel
-                                </Button>
-                                <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
-                                    onClick={() => { this.openSelectedFile(); }}
+                                    <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
+                                        onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
+                                    >
+                                        <div>Download</div>
+                                    </Button>
 
-                                    disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
-                                >
-                                    {okButtonText}
-                                </Button>
-                            </div>
+                                    <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+
+                                    <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
+                                        Cancel
+                                    </Button>
+                                    <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
+                                        onClick={() => { this.openSelectedFile(); }}
+
+                                        disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
+                                    >
+                                        {okButtonText}
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div style={{width: "100%"}}>
+                                    <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                        <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                            disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
+                                            onClick={() => this.handleDelete()} >
+                                            <OldDeleteIcon fontSize='small' />
+                                        </IconButton>
+
+                                        <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
+                                            onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
+                                        >
+                                            <div>Upload</div>
+                                        </Button>
+
+                                        <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
+                                            onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
+                                            
+                                        >
+                                            <div>Download</div>
+                                        </Button>
+
+                                        <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+                                    </div>
+                                    <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                        <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+
+                                        <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
+                                            Cancel
+                                        </Button>
+                                        <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
+                                            onClick={() => { this.openSelectedFile(); }}
+
+                                            disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
+                                        >
+                                            {okButtonText}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </DialogActions>
                         <UploadFileDialog
                             open={this.state.openUploadFileDialog}
@@ -897,10 +960,10 @@ export default withStyles(
         private onExecuteNewFolder(newName: string) {
             this.model.createNewSampleDirectory(pathConcat(this.state.navDirectory, newName), this.props.fileProperty)
                 .then((newPath) => {
-                    this.setState({ 
+                    this.setState({
                         selectedFile: newPath,
-                        selectedFileIsDirectory: 
-                        true,selectedFileProtected: false 
+                        selectedFileIsDirectory:
+                            true, selectedFileProtected: false
                     });
                     this.requestFiles(this.state.navDirectory);
                     this.requestScroll = true

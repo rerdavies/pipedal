@@ -790,7 +790,7 @@ const PluginControlView =
 
                                         })
                                         .catch((error) => {
-                                            this.model.showAlert("Unable to complete the operation. Audio is not running." + error);
+                                            this.model.showAlert("Unable to complete the operation. " + error);
                                         });
                                     this.setState({ showFileDialog: false });
                                 }

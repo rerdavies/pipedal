@@ -2388,6 +2388,16 @@ export class PiPedalModel //implements PiPedalModel
         this.webSocket?.send("cancelListenForMidiEvent", listenHandle._handle);
     }
 
+    downloadAudioFile(filePath: string) {
+        let downloadUrl = this.varServerUrl + "downloadMediaFile?path=" + encodeURIComponent(filePath);
+
+        // download with no flashing temporary tab.
+        let link = window.document.createElement("A") as HTMLLinkElement;
+        link.href = downloadUrl;
+        link.setAttribute("download", "");
+        link.click();
+    }
+
     download(targetType: string, instanceId: number | string): void {
         if (instanceId === -1) return;
         let url = this.varServerUrl + targetType + "?id=" + instanceId;

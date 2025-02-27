@@ -153,7 +153,7 @@ namespace pipedal
             }
         }
         template <class Clock, class Duration>
-        RingBufferStatus readWait_until(size_t size,const std::chrono::time_point<Clock, Duration> &time_point)
+        RingBufferStatus readWait_until(size_t size, const std::chrono::time_point<Clock, Duration> &time_point)
         {
             while (true)
             {
@@ -161,7 +161,7 @@ namespace pipedal
                 {
                     std::unique_lock lock(mutex);
                     size_t available = readSpace_();
-                    if (available >= size) 
+                    if (available >= size)
                     {
                         return RingBufferStatus::Ready;
                     }
@@ -215,12 +215,69 @@ namespace pipedal
             return (size_t)size;
         }
 
-
         size_t readSpace()
         {
             std::unique_lock lock(mutex);
             return readSpace_();
         }
+
+        bool write_packet(size_t bytes, void *data)
+        {
+            if (MULTI_WRITER)
+            {
+                std::lock_guard writeLock{writeMutex};
+                if (writeSpace() < bytes + sizeof(bytes))
+                {
+                    return false;
+                }
+                size_t index = this->writePosition;
+                for (size_t i = 0; i < sizeof(bytes); ++i)
+                {
+                    buffer[(index++() & ringBufferMask] = ((uint8_t*)(&bytes))[i];
+
+                }
+                for (size_t i = 0; i < bytes; ++i)
+                {
+                    buffer[(index++) & ringBufferMask] = data[i];
+                }
+                {
+                    std::lock_guard lock(mutex);
+                    this->writePosition = (index) & ringBufferMask;
+                }
+                if (SEMAPHORE_READER)
+                {
+                    cvRead.notify_all();
+                }
+                return true;
+            }
+            else
+            {
+                if (writeSpace() < bytes + sizeof(bytes))
+                {
+                    return false;
+                }
+                size_t index = this->writePosition;
+                for (size_t i = 0; i < sizeof(bytes); ++i)
+                {
+                    buffer[(index++() & ringBufferMask] = ((uint8_t*)(&bytes))[i];
+
+                }
+                for (size_t i = 0; i < bytes; ++i)
+                {
+                    buffer[(index++) & ringBufferMask] = data[i];
+                }
+                {
+                    std::lock_guard lock(mutex);
+                    this->writePosition = (index) & ringBufferMask;
+                }
+                if (SEMAPHORE_READER)
+                {
+                    cvRead.notify_all();
+                }
+                return true;
+            }
+        }
+
         bool write(size_t bytes, uint8_t *data)
         {
             if (MULTI_WRITER)
@@ -273,7 +330,7 @@ namespace pipedal
             if (MULTI_WRITER)
             {
                 std::lock_guard guard(writeMutex);
-                if (writeSpace() <= sizeof(bytes) + bytes +bytes2)
+                if (writeSpace() <= sizeof(bytes) + bytes + bytes2)
                 {
                     return false;
                 }
@@ -340,6 +397,23 @@ namespace pipedal
             }
         }
 
+        size_t read_packet(size_t maxSize, void*data) {
+            size_t packet_size;
+            if (!read(sizeof(packet_size), (uint8_t*)&packet_size))
+            {
+                throw std::runtime_error("RingBuffer::read_packet: failed to read packet size.");
+            }
+            if (packet_size > maxSize)
+            {
+                throw std::runtime_error("RingBuffer::read_packet: packet size too large.");
+            }
+            if (!read(packet_size, (uint8_t*)data))
+            {
+                throw std::runtime_error("RingBuffer::read_packet: failed to read packet data.");
+            }
+            return packet_size;
+        }
+
         bool read(size_t bytes, uint8_t *data)
         {
             if (readSpace() < bytes)
@@ -366,18 +440,20 @@ namespace pipedal
 
             delete[] buffer;
         }
-        bool isReadReady() {
+        bool isReadReady()
+        {
             std::lock_guard lock(mutex);
-            if (isReadReady_()) return true;
+            if (isReadReady_())
+                return true;
             return !this->is_open;
         }
-        bool isReadReady(size_t size) {
+        bool isReadReady(size_t size)
+        {
             size_t available = readSpace();
             return available >= size;
         }
 
     private:
-
         size_t readSpace_()
         {
             int64_t size = writePosition - readPosition;
@@ -389,7 +465,7 @@ namespace pipedal
         uint32_t peekSize()
         {
             volatile uint32_t result;
-            uint8_t *p = (uint8_t*)&result;
+            uint8_t *p = (uint8_t *)&result;
             size_t ix = this->readPosition;
             for (size_t i = 0; i < sizeof(result); ++i)
             {
@@ -400,14 +476,12 @@ namespace pipedal
         bool isReadReady_()
         {
             size_t available = readSpace_();
-            if (available < sizeof(uint32_t)) return false;
+            if (available < sizeof(uint32_t))
+                return false;
             // peak to get the size!
             uint32_t packetSize = peekSize();
-            return packetSize+sizeof(uint32_t) <= available;
+            return packetSize + sizeof(uint32_t) <= available;
         }
-
-
     };
-
 
 };

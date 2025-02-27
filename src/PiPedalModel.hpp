@@ -456,6 +456,8 @@ namespace pipedal
         std::string RenameFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty);
         FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath);
 
+        bool IsInUploadsDirectory(const std::string &path);
+
         std::string UploadUserFile(const std::string &directory, int64_t instanceId, const std::string &patchProperty, const std::string &filename, std::istream &inputStream, size_t streamLength);
         uint64_t CreateNewPreset();
 

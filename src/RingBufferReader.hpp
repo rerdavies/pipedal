@@ -327,6 +327,7 @@ namespace pipedal
                 return;
             }
         }
+        
         template <typename T>
         void write(RingBufferCommand command, const T &value, size_t dataLength, uint8_t *variableData)
         {
