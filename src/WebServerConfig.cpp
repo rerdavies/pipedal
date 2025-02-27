@@ -246,6 +246,26 @@ public:
         try
         {
             std::string segment = request_uri.segment(1);
+            if (segment == "downloadMediaFile") {
+                fs::path path = request_uri.query("path");
+                
+                if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                {
+                    throw PiPedalException("File not found.");
+                }
+                auto mimeType = GetMimeType(path);
+                if (mimeType.empty()) {
+                    throw PiPedalException("Can't download files of this type.");
+                }
+                res.set(HttpField::content_type, mimeType);
+                res.set(HttpField::cache_control, "no-cache");
+                std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
+                res.set(HttpField::content_disposition, disposition);
+                size_t contentLength = std::filesystem::file_size(path);
+                res.setContentLength(contentLength);
+                return;
+            }
+
             if (segment == "downloadPluginPresets")
             {
                 std::string name;
@@ -263,6 +283,7 @@ public:
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PLUGIN_PRESETS_EXTENSION));
                 return;
             }
+
             if (segment == "downloadPreset")
             {
                 std::string name;
@@ -322,7 +343,29 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "downloadPluginPresets")
+            if (segment == "downloadMediaFile") {
+                fs::path path = request_uri.query("path");
+                
+                bool t = this->model->IsInUploadsDirectory(path);
+                std::cout << (t? "true": "false") << std::endl;
+                (void)t;
+                if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                {
+                    throw PiPedalException("File not found.");
+                }
+                auto mimeType = GetMimeType(path);
+                if (mimeType.empty()) {
+                    throw PiPedalException("Can't download files of this type.");
+                }
+                res.set(HttpField::content_type, mimeType);
+                res.set(HttpField::cache_control, "no-cache");
+                std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
+                res.set(HttpField::content_disposition, disposition);
+                size_t contentLength = std::filesystem::file_size(path);
+                res.setContentLength(contentLength);
+                res.setBodyFile(path,false);
+                return;
+            } else if (segment == "downloadPluginPresets")
             {
                 std::string name;
                 std::string content;
@@ -451,23 +494,6 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "downloadMediaFile") {
-                fs::path path = request_uri.query("path");
-                
-                if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
-                {
-                    throw PiPedalException("File not found.");
-                }
-                auto mimeType = GetMimeType(path);
-                if (mimeType.empty()) {
-                    throw PiPedalException("Can't download files of this type.");
-                }
-                res.set(HttpField::content_type, mimeType);
-                res.set(HttpField::cache_control, "no-cache");
-                std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
-                res.set(HttpField::content_disposition, disposition);
-                res.setBodyFile(path,false);
-            }
             if (segment == "uploadPluginPresets")
             {
                 PluginPresets presets;

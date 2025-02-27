@@ -101,6 +101,7 @@ export interface FilePropertyDialogProps extends WithStyles<typeof styles> {
     instanceId: number,
     selectedFile: string,
     onOk: (fileProperty: UiFileProperty, selectedItem: string) => void,
+    onApply: (fileProperty: UiFileProperty, selectedItem: string) => void,
     onCancel: () => void
 };
 export interface FilePropertyDialogState {
@@ -124,6 +125,7 @@ export interface FilePropertyDialogState {
     newFolderDialogOpen: boolean;
     renameDialogOpen: boolean;
     moveDialogOpen: boolean;
+    initialSelection: string;
 };
 
 function pathExtension(path: string) {
@@ -218,7 +220,8 @@ export default withStyles(
                 menuAnchorEl: null,
                 newFolderDialogOpen: false,
                 renameDialogOpen: false,
-                moveDialogOpen: false
+                moveDialogOpen: false,
+                initialSelection: this.props.selectedFile
             };
             this.requestScroll = true;
         }
@@ -380,6 +383,10 @@ export default withStyles(
 
         onSelectValue(fileEntry: FileEntry) {
             this.requestScroll = true;
+            if (!fileEntry.isDirectory)
+            {
+                this.props.onApply(this.props.fileProperty,fileEntry.pathname);
+            }
             this.setState({
                 selectedFile: fileEntry.pathname,
                 selectedFileIsDirectory: fileEntry.isDirectory,
@@ -756,7 +763,10 @@ export default withStyles(
 
                                     <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
 
-                                    <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
+                                    <Button variant="dialogSecondary" onClick={() => { 
+                                        this.props.onApply(this.props.fileProperty,this.state.initialSelection);
+                                        this.props.onCancel(); 
+                                    }} aria-label="cancel">
                                         Cancel
                                     </Button>
                                     <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}

@@ -779,6 +779,20 @@ const PluginControlView =
                                 onCancel={() => {
                                     this.setState({ showFileDialog: false });
                                 }}
+                                onApply={(fileProperty,selectedFile) => {
+                                    this.model.setPatchProperty(
+                                        this.props.instanceId,
+                                        fileProperty.patchProperty,
+                                        JsonAtom.Path(selectedFile)
+                                    )
+                                        .then(() => {
+
+                                        })
+                                        .catch((error) => {
+                                            this.model.showAlert("Unable to complete the operation. " + error);
+                                        });
+
+                                }}
                                 onOk={(fileProperty, selectedFile) => {
 
                                     this.model.setPatchProperty(

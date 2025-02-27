@@ -221,63 +221,7 @@ namespace pipedal
             return readSpace_();
         }
 
-        bool write_packet(size_t bytes, void *data)
-        {
-            if (MULTI_WRITER)
-            {
-                std::lock_guard writeLock{writeMutex};
-                if (writeSpace() < bytes + sizeof(bytes))
-                {
-                    return false;
-                }
-                size_t index = this->writePosition;
-                for (size_t i = 0; i < sizeof(bytes); ++i)
-                {
-                    buffer[(index++() & ringBufferMask] = ((uint8_t*)(&bytes))[i];
-
-                }
-                for (size_t i = 0; i < bytes; ++i)
-                {
-                    buffer[(index++) & ringBufferMask] = data[i];
-                }
-                {
-                    std::lock_guard lock(mutex);
-                    this->writePosition = (index) & ringBufferMask;
-                }
-                if (SEMAPHORE_READER)
-                {
-                    cvRead.notify_all();
-                }
-                return true;
-            }
-            else
-            {
-                if (writeSpace() < bytes + sizeof(bytes))
-                {
-                    return false;
-                }
-                size_t index = this->writePosition;
-                for (size_t i = 0; i < sizeof(bytes); ++i)
-                {
-                    buffer[(index++() & ringBufferMask] = ((uint8_t*)(&bytes))[i];
-
-                }
-                for (size_t i = 0; i < bytes; ++i)
-                {
-                    buffer[(index++) & ringBufferMask] = data[i];
-                }
-                {
-                    std::lock_guard lock(mutex);
-                    this->writePosition = (index) & ringBufferMask;
-                }
-                if (SEMAPHORE_READER)
-                {
-                    cvRead.notify_all();
-                }
-                return true;
-            }
-        }
-
+ 
         bool write(size_t bytes, uint8_t *data)
         {
             if (MULTI_WRITER)
