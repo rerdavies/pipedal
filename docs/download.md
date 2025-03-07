@@ -4,7 +4,9 @@
 
 Download the most recent Debian (.deb) package for your platform:
 
-- <a href="https://github.com/rerdavies/pipedal/releases/download/v1.4.72a/pipedal_1.4.72_arm64.deb">Raspberry Pi OS Bookworm (64-bit) v1.4.72</a>
+- [Raspberry Pi OS bookworm (aarch64) v1.4.72 Beta](https://github.com/rerdavies/pipedal/releases/download/v1.4.72a/pipedal_1.4.72_arm64.deb)
+- [Ubuntu 24.x (aarch64) v1.4.72 Alpha](https://github.com/rerdavies/pipedal/releases/download/v1.4.72a/pipedal_1.4.72_arm64.deb)
+- [Ubuntu 24.x (amd64) v1.4.72 Alpha](https://github.com/rerdavies/pipedal/releases/download/v1.4.72a/pipedal_1.4.72_amd64.deb)
 
 
 Install the package by running 
@@ -14,5 +16,7 @@ Install the package by running
   cd ~/Downloads  
   sudo apt-get install ./pipedal_1.4.72_arm64.deb
 ```
+You MUST use `apt-get` to install the package. `apt install` will NOT install the package correctly. The message about missing permissions given by `apt-get` is
+expected, and can be safely ignored.
 
 Follow the instructions in [_Configuring PiPedal After Installation_](https://rerdavies.github.io/pipedal/Configuring.html) to complete the installation.
