@@ -13,9 +13,9 @@ page_icon: img/Install4.jpg
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS bookworm (aarch64) v1.4.72 Beta](https://github.com/rerdavies/pipedal/releases/download/)
-- [Ubuntu 24.x (aarch64) v1.4.72 Alpha](https://github.com/rerdavies/pipedal/releases/download/)
-- [Ubuntu 24.x (amd64) v1.4.72 Alpha](https://github.com/rerdavies/pipedal/releases/download/)
+- [Raspberry Pi OS bookworm (aarch64) v1.4.72 Beta](https://github.com/rerdavies/pipedal/releases/download/v1.4.72a/pipedal_1.4.72_arm64.deb)
+- [Ubuntu 24.x (aarch64) v1.4.72 Alpha](https://github.com/rerdavies/pipedal/releases/download/v1.4.72a/pipedal_1.4.72_arm64.deb)
+- [Ubuntu 24.x (amd64) v1.4.72 Alpha](https://github.com/rerdavies/pipedal/releases/download/v1.4.72a/pipedal_1.4.72_amd64.deb)
 
 
 Version 1.4.72 has been tested on Raspberry Pi OS bookworm, Ubuntu 24.04 (amd64), and Ubuntu 24.10 (aarch64). Download the appropriate package for your platform, and install using the following procedure:
