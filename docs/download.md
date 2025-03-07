@@ -4,7 +4,7 @@
 
 Download the most recent Debian (.deb) package for your platform:
 
-- <a href="https://github.com/rerdavies/pipedal/releases/download/v1.4.72/pipedal_1.4.72_arm64.deb">Raspberry Pi OS Bookworm (64-bit) v1.4.72</a>
+- <a href="https://github.com/rerdavies/pipedal/releases/download/v1.4.72a/pipedal_1.4.72_arm64.deb">Raspberry Pi OS Bookworm (64-bit) v1.4.72</a>
 
 
 Install the package by running 
