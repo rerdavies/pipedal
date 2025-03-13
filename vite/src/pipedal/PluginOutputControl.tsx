@@ -130,6 +130,7 @@ const PluginOutputControl =
 
             private model: PiPedalModel;
             private vuRef: React.RefObject<HTMLDivElement|null>;
+            private progressRef: React.RefObject<HTMLDivElement|null>;
             private dbVuRef: React.RefObject<HTMLDivElement|null>;
             private dbVuTelltaleRef: React.RefObject<HTMLDivElement|null>;
             private lampRef: React.RefObject<HTMLDivElement|null>;
@@ -138,6 +139,7 @@ const PluginOutputControl =
             constructor(props: PluginOutputControlProps) {
                 super(props);
                 this.vuRef = React.createRef<HTMLDivElement>();
+                this.progressRef = React.createRef<HTMLDivElement>();
                 this.dbVuRef = React.createRef<HTMLDivElement>();
                 this.dbVuTelltaleRef = React.createRef<HTMLDivElement>();
                 this.lampRef = React.createRef<HTMLDivElement>();
@@ -182,6 +184,7 @@ const PluginOutputControl =
                 }
             }
 
+            private PROGRESS_WIDTH = 40-4;
             private VU_HEIGHT = 60 - 4;
             private DB_VU_HEIGHT = 60 - 4;
             private animationHandle: number | undefined = undefined;
@@ -257,7 +260,23 @@ const PluginOutputControl =
                 } else if (this.dbVuRef.current) {
                     this.dbVuValue = value;
                     this.requestDbVuAnimation();
-                }
+                } else if (this.progressRef.current) {
+                    let control = this.props.uiControl;
+                    let range = (value - control.min_value) / (control.max_value - control.min_value);
+                    let w = this.PROGRESS_WIDTH * range;
+
+                    if (!this.animationHandle) {
+                        this.animationHandle = requestAnimationFrame(
+                            () => {
+                                if (this.progressRef.current) {
+                                    this.progressRef.current.style.width = w + "px";
+                                }
+                                this.animationHandle = undefined;
+                            }
+                        )
+                    }
+
+                } 
                 else if (this.vuRef.current) {
                     let control = this.props.uiControl;
                     let range = (value - control.min_value) / (control.max_value - control.min_value);
@@ -364,6 +383,43 @@ const PluginOutputControl =
                         </div >
 
                     );
+                } else if (control.isProgress()) {
+                    item_width = undefined;
+                    return (
+                        <div className={classes.controlFrame} 
+                            style={{ width: item_width }}>
+                            {/* TITLE SECTION */}
+                            <div className={classes.titleSection} 
+                                style={{ width: "100%"  }}>
+                                <ControlTooltip uiControl={control}>
+                                    <Typography  variant="caption" display="block" style={{
+                                        width: "100%",
+                                        textAlign: "center"
+                                    }}> {control.name === "" ? "\u00A0" : control.name}</Typography>
+                                </ControlTooltip>
+                            </div>
+                            {/* CONTROL SECTION */}
+
+                            <div className={classes.midSection} 
+                                style={{ flex: "1 1 1", display: "flex", justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
+                                <div style={{ width: this.PROGRESS_WIDTH+2, height: 12, marginLeft: 8, marginRight: 8, background: "#181818", }}>
+                                    <div style={{ height:  8, width: this.PROGRESS_WIDTH,  overflow: "hidden", position: "absolute", 
+                                        margin: "1px 1px 1px 1px", background: "#282828" }}>
+                                        <div ref={this.progressRef} style={{ height:  10, width: this.PROGRESS_WIDTH,   position: "absolute", marginTop: 0, background: "#0C0" }} />
+                                        <div style={{ height:  10, width: this.PROGRESS_WIDTH,   position: "absolute", 
+                                            boxShadow: "inset 0px 2px 4px #000D", background: "transparent"
+                                          }} />
+                                    </div>
+                                </div>
+
+                            </div>
+                            <div className={classes.editSectionNoContent}>
+
+                            </div>
+
+                        </div >
+
+                    );
 
                 } else if (control.isDbVu()) {
                     item_width = undefined;
@@ -407,7 +463,6 @@ const PluginOutputControl =
                     );
                 }
                 else if (control.isVu()) {
-                    // yyx: convert this to a horizontal progress bar.
                     item_width = undefined;
                     return (
                         <div className={classes.controlFrame} style={{ width: item_width}}>

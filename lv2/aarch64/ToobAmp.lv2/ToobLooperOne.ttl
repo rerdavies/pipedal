@@ -1,0 +1,598 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ui: <http://lv2plug.in/ns/extensions/ui#> .
+@prefix pprop: <http://lv2plug.in/ns/ext/port-props#>  .
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+
+@prefix myprefix: <http://two-play.com/plugins/toob-looper-one#> .
+
+
+myprefix:stereoInGroup 
+   a pg:StereoGroup, pg:InputGroup ;
+   rdfs:label "Stereo Input" ;
+   lv2:symbol "in_g" .
+  
+myprefix:steroOutGroup a pg:Group ;
+   a pg:StereoGroup, pg:OuputGroup ;
+   rdfs:label "Stereo Output" ;
+   lv2:symbol "out_g" .
+  
+
+myprefix:syncGroup 
+    a pg:ControlGroup ;
+    lv2:name "Clock" ;
+    lv2:symbol "sync_g" .
+
+
+myprefix:loop_main_group 
+    a pg:ControlGroup ;
+    lv2:name "Control" ;
+    lv2:symbol "loop_main_group" .
+
+
+myprefix:options_group 
+    a pg:ControlGroup ;
+    lv2:name "Record Options" ;
+    lv2:symbol "options_group" .
+
+myprefix:output_group 
+    a pg:ControlGroup ;
+    lv2:name "Output" ;
+    lv2:symbol "output_group" .
+
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+
+<http://two-play.com/plugins/toob-looper-one>
+        a lv2:Plugin ,
+                lv2:UtilityPlugin ;
+                doap:name "TooB One-Button Looper (stereo)" 
+                ;
+        doap:license <https://opensource.org/license/mit/> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+        lv2:minorVersion 1 ;
+        lv2:microVersion 57 ;
+
+        ui:ui <http://two-play.com/plugins/toob-looper-one-ui>;
+
+
+        lv2:extensionData state:interface ;
+
+        rdfs:comment """
+## TooB One-Button Looper. 
+
+TooB One-Button Looper is designed to be controlled by a single MIDI foot controller. If you will be controlling your looper from a screen user-interface, use Toob 4Looper instead. 
+
+### Basic Operation
+
+To use the One-Button Looper with PiPedal, bind a MIDI foot switch to the control port using the PiPedal MIDI Bindings user-interface. It's easiest to configure
+the MIDI foot controller to send Note-On/Note-Off midi messages, since the control values that a MIDI foot controller sends may not be consistent with what the
+One-Button Looper expects. However, if you must use a MIDI foot controller that sends Control Change messages, then you must configure the MIDI foot controller 
+to send a CC value of zero when not pressed, and a non-zero value when pressed.
+
+
+Loop overdubs are stored in a stack, so that they can be erased one at a time. To erase the most recent overdub, and return to the previous state of the loop,
+long-press the MIDI controller (or the Control button if you are using the PiPedal user interface). A long-press is a press of at least 1/2 second, but 
+less than two seconds. The current loop will be undone when you release the control. To stop looping altogether, press the MIDI foot controller (or the Control button) for at least two seconds. The looper will stop when you 
+release the control.
+
+### Clock Options
+
+Clock options determine the tempo and number of beats in a bar. They affect the behavior of the looper when the Bars control (see below) is set to 
+a numeric value, and also affect the rate of the flashing LEDs when counting in. 
+
+### Record Options
+
+Record Options control the behavior of the looper.  
+
+When Count In is enabled, The looper will Count In before starting the main loop. The Record LED will flash when counting in, and go solid 
+once recording starts. The pattern of blinking lights depends on the TimeSig setting, so for example, if the Time Signature is set to 4/4, the 
+blinking LED will signal a count-in pattern of "1 - 2 - 1 2 3 4".
+
+When Bars is set to Free (the minimum value), the length of the main loop will be set by the second tap of the 
+Control button after recording of the main loop starts. If Bars is set to a numeric value, the length of the main loop will be determined by the number 
+of bars set in the Bars control, and the current settings of the Clock controls. 
+
+If Dub Sync is off, overdubs will start recording as soon as you tap the Control button. If enabled, the start 
+of the secondary loop will sync with main loop. Tapping the Control button will put the looper in "Cue Overdub" state
+and the LEDs will flash until the end of the main loop is reached, at which point the new loop will start recording. 
+
+The Loop End option only has effect when the Bars control is set to a numeric value, and does nothing if Bars is set to "Free". 
+When set to REC-PLAY, the main loop will record exactly N bars of audio, and switch to play mode when the end of the loop is reached. 
+When set to REC-DUB, the main loop will record exactly N bars of audio, and then continue on in overdub mode. 
+
+### Looper State Table
+
+```
++-----------+--------------+----------------------------------+
+| State     | Action       | Effect                           |
+|-----------|--------------|----------------------------------|
+| Empty     | Tap          | Start counting in if COUNT IN is |
+|           |              | enabled; otherwise start         |
+|           |              | recording immediately.           |
+|-----------|--------------|----------------------------------|
+| Count-In  | Tap/         | Return to empty state            |
+|           | Long-press   |                                  |
+|           |              |                                  |
+|           | Complete     | Start recording                  |
+|-----------|--------------|----------------------------------|
+| Recording | Tap          | Set the loop length and go to    |
+|           |              | play state.                      |
+|           |              |                                  |
+|           | Long-press   | Discard the current loop and     |
+|           |              | return to Empty state            |
+|           |              |                                  |
+|           | End of loop  | go to play or overdub state      |
+|           |              | depending on ON REC END          |
+|-----------|--------------|----------------------------------|
+| Playing   | Tap          | If DUB SYNC is on, go to         |
+|           |              | Cue Ovdb state; otherwise        |
+|           |              | start overdubbing immediately.   |
+|           |              |                                  |
+|           | Long-press   | Undo the most recent             |
+|           |              | overdub and go to play           |
+|           |              | state.                           |
+|-----------|--------------|----------------------------------|
+| Cue Ovdb  | End-of-loop  | Start overdubbing.               |
+|           |              |                                  |
+|           | Tap          | Cancel the pending overdub.      |      
+|           |              |                                  |
+|           | Long-press   | Cancel the pending overdub.      |
+|-----------|--------------|----------------------------------|
+| Overdub   | Tap          | Start playing.                   |
+|           |              |                                  |
+|           | End of loop  | (If DUB SYNC is on, and          |
+|           |              | REC->PLAY is selected) Go to     |
+|           |              | play state, otherwise, continue  |
+|           |              | in overdub state.                |
++-----------|--------------|----------------------------------+
+```
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "One-Looper";
+        lv2:optionalFeature lv2:hardRTCapable;
+
+        lv2:port
+        ################# MAIN Loop
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  0;
+                lv2:symbol "control" ;
+                lv2:name "〇";
+                rdfs:comment "Looper control. See the plugin documentation for details.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:integer, lv2:toggled, mod:preferMomentaryOffByDefault;
+                pg:group myprefix:loop_main_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  1;
+                lv2:symbol "record_led" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:loop_main_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  2 ;
+                lv2:symbol "play_led" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pg:group myprefix:loop_main_group ;
+                pipedal_ui:ledColor "green";
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  3;
+                lv2:symbol "position" ;
+                rdfs:comment "Loop position"; 
+                lv2:name "\u00A0\u00A0\u00A0\u00A0";
+                units:unit units:pc ;
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+                pg:group myprefix:loop_main_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  4;
+                lv2:symbol "loop_level" ;
+                rdfs:comment "Loop Level"; 
+                lv2:name "\u00A0\u00A0\u00A0\u00A0";
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 21.0 ;
+                pg:group myprefix:loop_main_group ;
+                lv2:portProperty lv2:enumeration ;
+
+                lv2:scalePoint [
+                        rdfs:label "-" ;
+                        rdf:value 0.0
+                ] , 
+                [
+                        rdfs:label "1" ;
+                        rdf:value 1.0
+                ],
+                [
+                        rdfs:label "2" ;
+                        rdf:value 2.0
+                ],
+                [
+                        rdfs:label "3" ;
+                        rdf:value 3.0
+                ],
+                [
+                        rdfs:label "4" ;
+                        rdf:value 4.0
+                ],
+                [
+                        rdfs:label "5" ;
+                        rdf:value 5.0
+                ],
+                [
+                        rdfs:label "6" ;
+                        rdf:value 6.0
+                ],
+                [
+                        rdfs:label "7" ;
+                        rdf:value 7.0
+                ],
+                [
+                        rdfs:label "8" ;
+                        rdf:value 8.0
+                ],
+                [
+                        rdfs:label "9" ;
+                        rdf:value 9.0
+                ],
+                [
+                        rdfs:label "10" ;
+                        rdf:value 10.0
+                ],
+                [
+                        rdfs:label "11" ;
+                        rdf:value 11.0
+                ],
+                [
+                        rdfs:label "12" ;
+                        rdf:value 12.0
+                ],
+                [
+                        rdfs:label "13" ;
+                        rdf:value 13.0
+                ],
+                [
+                        rdfs:label "14" ;
+                        rdf:value 14.0
+                ],
+                [
+                        rdfs:label "15" ;
+                        rdf:value 15.0
+                ],
+                [
+                        rdfs:label "16" ;
+                        rdf:value 16.0
+                ],
+                [
+                        rdfs:label "17" ;
+                        rdf:value 17.0
+                ],
+                [
+                        rdfs:label "18" ;
+                        rdf:value 18.0
+                ],
+                [
+                        rdfs:label "19" ;
+                        rdf:value 19.0
+                ],
+                [
+                        rdfs:label "20" ;
+                        rdf:value 20.0
+                ],
+                [
+                        rdfs:label "+" ;
+                        rdf:value 21.0
+                ]
+                ;
+
+        ],  
+
+
+        ###### Sync
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  5;
+                lv2:symbol "bar_led" ;
+                lv2:name "\u00A0\u00A0Bar\u00A0\u00A0";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:syncGroup ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  6;
+                lv2:symbol "beat_led" ;
+                lv2:name "\u00A0Beat\u00A0";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:syncGroup ;
+        ],  
+        [
+            a lv2:InputPort ,
+            lv2:ControlPort ;
+
+            lv2:index 7;
+            lv2:symbol "tempo" ;
+            lv2:name "Tempo";
+            lv2:default 120.0 ;
+            lv2:minimum 40.0;
+            lv2:maximum 240.0;
+            units:unit units:bpm;
+            rdfs:comment "Tempo in quarter-notes per minute"
+            ; pg:group myprefix:syncGroup
+        ],
+        [
+            a lv2:InputPort ,
+            lv2:ControlPort ;
+
+            lv2:index 8;
+            lv2:symbol "timesig" ;
+            rdfs:comment "Time Signature";
+            lv2:name "TimeSig";
+            lv2:default 2 ;
+            lv2:minimum 0;
+            lv2:maximum 5;
+            lv2:portProperty lv2:enumeration ;
+
+            lv2:scalePoint [
+                rdfs:label "2/2" ;
+                rdf:value 0
+            ] , [
+                rdfs:label "3/4" ;
+                rdf:value 1
+            ] , [
+                rdfs:label "4/4" ;
+                rdf:value 2
+            ] , 
+            [
+                rdfs:label "5/4" ;
+                rdf:value 3
+            ] ,
+            [
+                rdfs:label "6/8" ;
+                rdf:value 4
+            ] ,            
+            [
+                rdfs:label "7/4" ;
+                rdf:value 5
+            ];
+            pg:group myprefix:syncGroup 
+        ],
+
+        ########## Options
+
+        [
+                lv2:name "Count In" ;
+
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+        
+                lv2:index 9;
+                lv2:symbol "rec_count_in" ;
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled;
+                rdfs:comment "Whether to count in when starting the main loop.";
+
+                pg:group myprefix:options_group ;
+        ],
+        [
+            a lv2:InputPort ,
+            lv2:ControlPort ;
+
+            lv2:index 10;
+            lv2:symbol "bars" ;
+            lv2:name "Bars";
+            lv2:default 0.0 ;
+            lv2:minimum 0.0 ;
+            lv2:maximum 32.0 ;
+            units:unit units:bar ;
+            lv2:portProperty lv2:integer;
+            rdfs:comment "Loop length in bars. Set to minimum for arbitrary length loops.";
+            pg:group myprefix:options_group ;
+            lv2:scalePoint [
+                rdfs:label "Free" ;
+                rdf:value 0.0 ;
+            ] ;
+        ],
+        [
+                lv2:name "Dub Sync" ;
+
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+        
+                lv2:index 11;
+                lv2:symbol "rec_sync_option" ;
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled;
+                rdfs:comment "Whether to sync the start of the loop with the main loop when recording secondary loops.";
+
+                pg:group myprefix:options_group ;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+        
+                lv2:index 12;
+                lv2:symbol "loop_end_option" ;
+                lv2:name "On Rec End";
+                lv2:default 1.0 ;
+                lv2:minimum 1.0;
+                lv2:maximum 2.0;
+                lv2:portProperty lv2:enumeration;
+                rdfs:comment "Whether to go to OVERDUB or PLAY state a loop ends.";
+
+                lv2:scalePoint [
+                        rdfs:label "REC->PLAY" ;
+                        rdf:value 1.0
+                ] , [
+                        rdfs:label "REC->DUB" ;
+                        rdf:value 2.0
+                ] ;
+
+                pg:group myprefix:options_group ;
+        ],
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  13;
+                lv2:symbol "level" ;
+                lv2:name "Level";
+                lv2:name "Level";
+                pg:group myprefix:output_group ;
+ 
+                lv2:default 0 ;
+                lv2:minimum -60.0;
+                lv2:maximum 30.0;
+                lv2:scalePoint [
+                        rdfs:label "-INF" ;
+                        rdf:value -60.0
+                ];
+                units:unit units:db
+        ],
+
+        ################# Audio/Control Busses
+
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 14 ;
+                lv2:symbol "in" ;
+                lv2:name "In";
+                pg:group myprefix:stereoInGroup ;
+                lv2:designation pg:left
+
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 15 ;
+                lv2:symbol "out" ;
+                lv2:name "Out" ;
+                pg:group myprefix:stereoOutGroup ;
+                lv2:designation pg:left
+        ],  
+
+        [
+                a atom:AtomPort ,
+                        lv2:InputPort ;
+                lv2:index 16 ;
+                lv2:symbol "controlIn" ;
+                lv2:name "ControlIn"
+        ],
+        [
+                a atom:AtomPort ,
+                        lv2:OutputPort ;
+                lv2:index 17 ;
+                lv2:symbol "controlOut" ;
+                lv2:name "ControlOut"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 18;
+                lv2:symbol "inR" ;
+                lv2:name "InR" ;
+                pg:group myprefix:stereoInGroup ;
+                lv2:designation pg:right
+
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 19 ;
+                lv2:symbol "outR" ;
+                lv2:name "OutR" ;
+                pg:group myprefix:stereoOutGroup ;
+                lv2:designation pg:right
+        ]  
+        
+        
+        ;
+         
+        .
+
+      
+
+<http://two-play.com/plugins/toob-record-stereo-ui> 
+    a  ui:X11UI ;
+    lv2:binary <.so>;
+
+    lv2:extensionData ui:resize ;
+    lv2:extensionData ui:idleInterface ;
+    lv2:requiredFeature ui:idleInterface ;
+.
+

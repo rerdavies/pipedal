@@ -20,15 +20,15 @@ An RT_PREEMPT kernel provides slightly better realtime audio than a PREEMPT_DYNA
 ## Support for WIFI Auto-Hotspots on Ubuntu Server
 
 The following information applies when installing PiPedal on Ubuntu Server 24.0x only. This information does not apply 
-to Unbuntu Desktop installs or Raspberry Pi OS Lite installs. 
+to Unbuntu Desktop installs or Raspberry Pi OS Lite installs, which use the Network Manager TCP/IP stack by default. 
 
 PiPedal's Auto-Hotspot feature only works on Linux systems that are using the Network Manager network services stack.
 Ubuntu Server 24.x (and probably other server-specific installs on other Debian distros) uses the Netplan network services stack by instead. It does so because the Netplan network stack is the preferred network stack when managing 
 farms of cloud servers. 
 
 It's easy enough to reconfigure Ubuntu Server to run the Network Manager network stack instead. However you should be 
-aware that Netplan TCP/IP configuration settings will not be migrated to Network Manager. If you perform this step on a server on which changes have beeen madce to Netplan configuration files, you will need to manually migrate those 
-changes to Network Manager configuration files. On a clean install of Ubuntu Server, this will not be a problem. 
+aware that Netplan TCP/IP configuration settings will not be migrated to Network Manager. If you perform this step on a server on which changes have beeen made to Netplan configuration files, you will lose those configuration changes, and will need to reimplement them in Network Manager. If you are 
+a Netplan configuration (or are working with a clean install), then the default Network Manager configuration will work perfectly well too.
 
 To reconfigure Ubuntu Server to use the Network Manager network stack (and therefore enable PiPedal's Auto-Hotspot feature), run the following command: 
 
@@ -123,11 +123,33 @@ The following table shows measured round-trip audio latencies for a MOTU M2 exte
     <tr><td>128</td><td>442/9.2ms</td><td>571/11.9ms</td><td>699/14.6ms</td></tr>
 </table>
 
-LINUX Kernel version 5.16 includes fixes to ALSA audio that are supposed to dramatically improve USB audio latency. As of July 2022, these fixes have not yet made it into Raspberry Pi OS, but are probably available on non-LTS versions of Ubuntu.
+Selecting 2 buffers provides lower latency, but leaves very little CPU time for audio processing, so you may experience more underruns if 
+you select 2. Selecting 4 buffers provides much more time for proessing.  Using a buffer size of 16 increases CPU load slightly, since there a 
+certain amoung of CPU overhead associated with handling of each buffer. That being said, 16x4 audio buffer configuration is a highly recommended
+choice if your audio adapter can support it. It provides excellent latency with very little chance of overruns.
 
-PiPedal uses the ALSA audio stack; so (unlike Jack Audio) there is no performance penalty for using 44100Hz sample rates. However, using a 48000Hz sampling rates does provide significant improvements in high-frequency audio quality when performing digital audio signal processing.
+All things being equal, you should perfer 48000hz sample rates to 44100Hz sample rates. The higher sample rate makes it easier for plugins to implement 
+audio effects without high-frequency artifacts; and Nueral Amp Models are usually designed to work best at 48000Hz sample rates.
 
-### Activating the Wi-Fi Auto-Hotspot
+### Configuring Input Trim Levels on Older USB Audio Devices
+
+For best results, you should set the input gain of your audio device so that the signal level is as high as possible without clipping. If you click on the 
+input node of a preset, the left VU meter will show the audio input levels as received directly from your audio adapter. 
+
+Some older USB audio devices do not provide volume knobs to control input gain of the audio signal, and the default trim settings are often less than 
+ideal. To configure the input gain on these devices, use the following procedure. 
+
+- ssh to the host, or launch a terminal window on the host if you have configured your Raspberry Pi to boot to a graphical desktop.
+- Run `alsamixer` to configure the input gain.
+- Press F6 to select the sound card. 
+- Press TAB to scroll across pages/channels until you reach the CAPTURE slider(s). 
+- Connect and play your instrument, while watch the input VU meter in the PiPedal UI. Use the UP and DOWN arrow keys to adjust the input gain.
+- Press the ESC key to close alsa mixer. 
+- Run `sudo alsactl store` to save the settings permanantly.
+
+
+
+## Activating the Wi-Fi Auto-Hotspot
 
 The PiPedal <b><i>Auto-Hotspot</i></b> feature allows you to connect to your Raspberry Pi even if you don't have
 access to a Wi-Fi router. For example, if you are performing at a live venue, you probably will not
@@ -188,14 +210,12 @@ automatically connect to your laptop hotspot whenever it sees it, after you have
 credentials on your Raspberry Pi. After the first time, all you need to do is turn on your laptop hotspot, and Raspberry Pi OS will 
 connect to it. 
 
-Usually, you cannect from your laptop using the same web address:  http://raspberrpi (or the hostname of your raspberry pi, if you have 
-changed it). Unlike Android phones (where mDNS name resolution doesn't work on Android-hosted hotspots), mDNS/Bonjour name resolution usually 
+Usually, you can conect from your laptop using the same web address:  `http://raspberrypi` (`http://raspberrypi.local` on Ubuntu), or the hostname of your raspberry pi, if you have changed it. Unlike Android phones (where mDNS name resolution doesn't work on Android-hosted hotspots), mDNS/Bonjour name resolution usually 
 works on laptop-hosted hotspots when using Windows or Mac OS. If are running Linux on your laptop, you may need to install and configure the
 Avahi package to get mDNS/Bonjour name resolution to work.
 
 And if that doesn't work, you can configure PiPedal to launch an auto-hotspot, and then connect from your laptop to the PiPedal hotspot on your Raspberry Pi.
-When the Raspberry Pi hosts the hotspot, mDNS discovery is definitely enabled; so you should be able to connect using http://raspberrypi. But if that doesn't work, PiPedal's IP address will always be 10.40.1, when the PiPedal Wi-Fi hotspot is running, so you can always connect using  http://10.40.0.1.
-
+When the Raspberry Pi hosts the hotspot, mDNS discovery is definitely enabled; so you should be able to connect using http://raspberrypi. But if that doesn't work, PiPedal's IP address will always be 10.40.0.1, when the PiPedal Wi-Fi hotspot is running, so you can always connect using  http://10.40.0.1.
 
 
 --------

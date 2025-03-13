@@ -145,7 +145,7 @@ namespace pipedal
         public:
             int64_t clientId;
             int64_t clientHandle;
-            bool listenForControlsOnly;
+            bool listenForControls;
         };
         class AtomOutputListener
         {
@@ -436,7 +436,7 @@ namespace pipedal
         JackServerSettings GetJackServerSettings();
         void SetJackServerSettings(const JackServerSettings &jackServerSettings);
 
-        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly);
+        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControls);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
 
         void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri);

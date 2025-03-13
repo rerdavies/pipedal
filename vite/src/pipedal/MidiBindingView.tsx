@@ -48,10 +48,11 @@ const styles = (theme: Theme) => createStyles({
 
 enum MidiControlType {
     None,
+    Select,
+    Dial,
     Toggle,
     Trigger,
-    Dial,
-    Select,
+    MomentarySwitch
 }
 
 interface MidiBindingViewProps extends WithStyles<typeof styles> {
@@ -149,7 +150,7 @@ const MidiBindingView =
 
                 for (let i = 0; i < 127; ++i) {
                     result.push(
-                        <MenuItem value={i}>{Utility.midiNoteName(i)}</MenuItem>
+                        <MenuItem key={"k" + i} value={i}>{Utility.midiNoteName(i)}</MenuItem>
                     )
                 }
 
@@ -188,6 +189,12 @@ const MidiBindingView =
                 let port = this.props.uiPlugin.getControl(this.props.midiBinding.symbol);
 
                 if (!port) return MidiControlType.None;
+                if (port.mod_momentaryOffByDefault || port.mod_momentaryOnByDefault) {
+                    return MidiControlType.MomentarySwitch;
+                }
+                if (port.trigger_property) {
+                    return MidiControlType.Trigger;
+                }
                 if (port.trigger_property) {
                     return MidiControlType.Trigger;
                 }
@@ -230,7 +237,9 @@ const MidiBindingView =
                                 value={midiBinding.bindingType}
                             >
                                 <MenuItem value={0}>None</MenuItem>
-                                {(controlType === MidiControlType.Toggle || controlType === MidiControlType.Trigger) && (
+                                {(controlType === MidiControlType.Toggle 
+                                    || controlType === MidiControlType.Trigger 
+                                    || controlType === MidiControlType.MomentarySwitch) && (
                                     <MenuItem value={1}>Note</MenuItem>
                                 )}
                                 <MenuItem value={2}>Control</MenuItem>

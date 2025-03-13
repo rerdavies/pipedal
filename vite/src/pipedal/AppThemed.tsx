@@ -44,7 +44,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import CircularProgress from '@mui/material/CircularProgress';
 import { type OnChangedHandler } from './ObservableProperty';
-import ErrorOutlineIcon from '@mui/icons-material/Error';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import Button from '@mui/material/Button';
 import PresetSelector from './PresetSelector';

@@ -199,9 +199,14 @@ namespace pipedal
         int actualAudioOutputs = 0;
         std::vector<std::vector<float>> outputMixBuffers;
         void BypassTo(float value);
+        bool borrowedEffect = false;
+        bool activated = false;
 
     public:
-
+        bool IsBorrowedEffect() const { return borrowedEffect; }
+        void SetBorrowedEffect(bool value) { borrowedEffect = value; }
+        void UpdateAudioPorts();
+        
         // non RT-thread use only.
         std::string GetPathPatchProperty(const std::string&propertyUri);
         // non RT-thread use only.

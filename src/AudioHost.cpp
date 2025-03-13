@@ -867,6 +867,7 @@ private:
                             pEffect->RequestAllPathPatchProperties();
                         }
                     }
+                    realtimeActivePedalboard->UpdateAudioPorts();
                 }
                 reEntered = false;
 
@@ -1696,7 +1697,6 @@ public:
     {
         if (pPedalboard)
         {
-            pPedalboard->Deactivate();
             std::lock_guard guard(mutex);
 
             for (auto it = activePedalboards.begin(); it != activePedalboards.end(); ++it)

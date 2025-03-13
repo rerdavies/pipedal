@@ -197,7 +197,7 @@ const GxTunerControl =
 
                     let nameIndex = noteNumber -octave* tet;
                     if (nameIndex < 0) nameIndex += tet;
-                    name = names[ nameIndex ] + (octave-2); 
+                    name = names[ nameIndex ] + (octave-1); 
                     valid = true;
                     fraction = note-noteNumber;
                     if (fraction >= 0) {

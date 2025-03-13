@@ -353,7 +353,6 @@ void Lv2Effect::PreparePortIndices()
                 {
                     this->isInputTriggerControlPort[portIndex] = true;
                 }
-
             }
         }
     }
@@ -402,6 +401,13 @@ void Lv2Effect::SetAudioInputBuffer(int index, float *buffer)
 {
     this->inputAudioBuffers[index] = buffer;
 
+    if (borrowedEffect)
+    {
+        // Already running on the realtime thread,
+        // so don't update the audio ports until the effect gets placed on the realtime thread.
+        return;
+    }
+
     if (inputAudioPortIndices.size() == inputAudioBuffers.size())
     {
         int pluginIndex = this->inputAudioPortIndices[index];
@@ -409,12 +415,13 @@ void Lv2Effect::SetAudioInputBuffer(int index, float *buffer)
     }
     else
     {
-        // cases: 1->0, 1->1, 2->0, 2->1
-        if (index < inputAudioPortIndices.size())
-        {
-            int pluginIndex = this->inputAudioPortIndices[index];
-            lilv_instance_connect_port(this->pInstance, pluginIndex, buffer);
-        }
+        throw std::runtime_error("Invalid input buffer index.");
+        // // cases: 1->0, 1->1, 2->0, 2->1
+        // if (index < inputAudioPortIndices.size())
+        // {
+        //     int pluginIndex = this->inputAudioPortIndices[index];
+        //     lilv_instance_connect_port(this->pInstance, pluginIndex, buffer);
+        // }
     }
 }
 
@@ -425,7 +432,7 @@ void Lv2Effect::SetAudioInputBuffer(float *left)
         SetAudioInputBuffer(0, left);
         SetAudioInputBuffer(1, left);
     }
-    else if (GetNumberOfInputAudioBuffers() != 0) 
+    else if (GetNumberOfInputAudioBuffers() != 0)
     {
         SetAudioInputBuffer(0, left);
     }
@@ -447,6 +454,13 @@ void Lv2Effect::SetAudioInputBuffers(float *left, float *right)
 void Lv2Effect::SetAudioOutputBuffer(int index, float *buffer)
 {
     this->outputAudioBuffers[index] = buffer;
+
+    if (borrowedEffect)
+    {
+        // Effect is already running on the realtime thread,
+        // so don't update the audio ports until the updated pedalboard gets placed on the realtime thread.
+        return;
+    }
 
     if (this->inputAudioPortIndices.size() != 0) // i.e. we're not mixing a zero-input control
     {
@@ -470,6 +484,10 @@ int Lv2Effect::GetControlIndex(const std::string &key) const
 
 Lv2Effect::~Lv2Effect()
 {
+    if (activated)
+    {
+        Deactivate();
+    }
     if (worker)
     {
         worker->Close();
@@ -489,9 +507,38 @@ Lv2Effect::~Lv2Effect()
 
 void Lv2Effect::Activate()
 {
+    if (this->activated)
+    {
+        return;
+    }
+    this->activated = true;
     this->AssignUnconnectedPorts();
     lilv_instance_activate(pInstance);
     this->BypassTo(this->bypass ? 1.0f : 0.0f);
+}
+
+void Lv2Effect::UpdateAudioPorts()
+{
+    // called on realtime thread to switch borrowed effects to the new buffer pointers.
+    if (borrowedEffect)
+    {
+        for (size_t i = 0; i < this->inputAudioPortIndices.size(); ++i)
+        {
+            int portIndex = this->inputAudioPortIndices[i];
+            if (GetAudioInputBuffer(i) != nullptr)
+            {
+                lilv_instance_connect_port(pInstance, portIndex, GetAudioInputBuffer(i));
+            }
+        }
+        for (size_t i = 0; i < this->outputAudioPortIndices.size(); ++i)
+        {
+            int portIndex = this->outputAudioPortIndices[i];
+            if (GetAudioOutputBuffer(i) != nullptr)
+            {
+                lilv_instance_connect_port(pInstance, portIndex, GetAudioOutputBuffer(i));
+            }
+        }
+    }
 }
 
 void Lv2Effect::AssignUnconnectedPorts()
@@ -545,6 +592,11 @@ void Lv2Effect::AssignUnconnectedPorts()
 }
 void Lv2Effect::Deactivate()
 {
+    if (!activated)
+    {
+        return;
+    }
+    activated = false;
     if (worker)
     {
         worker->Close();
@@ -591,15 +643,18 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
             for (size_t i = 0; i < this->outputMixBuffers.size(); ++i)
             {
                 float *__restrict input;
-                if (i >= this->inputAudioBuffers.size()) {
+                if (i >= this->inputAudioBuffers.size())
+                {
                     if (this->inputAudioBuffers.size() == 0)
                     {
                         break;
                     }
                     input = this->inputAudioBuffers[0];
-                } else {
+                }
+                else
+                {
                     input = this->inputAudioBuffers[i];
-                } 
+                }
                 float *__restrict pluginOutput = this->outputMixBuffers[i].data();
                 float *__restrict finalOutput = this->outputAudioBuffers[i];
 

@@ -1,0 +1,916 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ui: <http://lv2plug.in/ns/extensions/ui#> .
+@prefix pprop: <http://lv2plug.in/ns/ext/port-props#>  .
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+
+
+@prefix looperPrefix: <http://two-play.com/plugins/toob-looper#> .
+
+@prefix myprefix: <http://two-play.com/plugins/toob-looper-four#> .
+
+
+myprefix:stereoInGroup 
+   a pg:StereoGroup, pg:InputGroup ;
+   rdfs:label "Stereo Input" ;
+   lv2:symbol "in_g" .
+  
+myprefix:steroOutGroup a pg:Group ;
+   a pg:StereoGroup, pg:OuputGroup ;
+   rdfs:label "Stereo Output" ;
+   lv2:symbol "out_g" .
+  
+
+myprefix:syncGroup 
+    a pg:ControlGroup ;
+    lv2:name "Clock" ;
+    lv2:symbol "sync_g" .
+
+
+myprefix:loop_main_group 
+    a pg:ControlGroup ;
+    lv2:name "Main Loop" ;
+    lv2:symbol "loop_main_group" .
+
+myprefix:loop2_group 
+    a pg:ControlGroup ;
+    lv2:name "Loop 2" ;
+    lv2:symbol "loop2_group" .
+
+myprefix:loop3_group 
+    a pg:ControlGroup ;
+    lv2:name "Loop 3" ;
+    lv2:symbol "loop3_group" .
+
+myprefix:loop4_group 
+    a pg:ControlGroup ;
+    lv2:name "Loop 4" ;
+    lv2:symbol "loop4_group" .
+
+myprefix:options_group 
+    a pg:ControlGroup ;
+    lv2:name "Record Options" ;
+    lv2:symbol "options_group" .
+
+myprefix:output_group 
+    a pg:ControlGroup ;
+    lv2:name "Output" ;
+    lv2:symbol "output_group" .
+
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ; 
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+
+<http://two-play.com/plugins/toob-looper-four>
+        a lv2:Plugin ,
+                lv2:UtilityPlugin ;
+                doap:name "TooB 4Looper (stereo)" 
+                ;
+        doap:license <https://opensource.org/license/mit/> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+        lv2:minorVersion 1 ;
+        lv2:microVersion 57 ;
+
+        ui:ui <http://two-play.com/plugins/toob-looper-four-ui>;
+
+        patch:readable 
+                looperPrefix:audioFile;
+        patch:writable 
+                looperPrefix:audioFile;
+
+        lv2:extensionData state:interface ;
+
+        rdfs:comment """
+## Toob 4Looper
+
+A 4-channel looper. If you are using a MIDI foot controller, you may want to consider using Toob One-Control looper, which allows control of 
+looping using a single footswitch. TooB 4Looper does support MIDI control using four footswitches. See the Midi Operation section below for
+more information. 
+
+### Basic Operation
+
+You must record a main loop before loops 2 through 4 are available. 
+
+To start recording the main loop, press the Main Loop record button. The red Record LED will light up to indicate that the main loop is recording.
+You can configure TooB 4Looper to use a variable length main loop, or a fixed length loop. See the documentation on the Bars control for more 
+information on how to use a fixed-length loop. If the Bars control is set to "Free", the length of the main loop will be established when 
+you next press the Record or Play button after the main loop has started recording. Pressing the record button will mark the end of the 
+loop, and continue on in Overdub mode. Pressing the Play button will mark the end of the loop, and start playback. 
+
+Once the main loop has been established, you can toggle back and forth between Overdub and Play modes by pressing the Record and Play buttons 
+resepectively. 
+
+You can also mute the loop by going to Play mode, and pushing the Play button once more. Pushing the Play button while in Mute mode will 
+re-enable audio output from the loop. 
+
+Pressing the Main Loop stop buton will stop playback of of all loops, and return the looper to its initial state.
+
+To record a secondary loop, press the Record button for the loop you want to record. The Record LED will light up to indicate that the loop 
+is recording. If the Rec Sync option is enabled, the loop will go to Cue Overdub mode, and once the main loop reaches the end of its loop, 
+the loop will switch to Record mode. If the Rec Sync option is disabled, the loop will start recording immediately. The length of secondary 
+loops will always be the same as the length of the main loop. Once the loop has started, pressing the play button will start playback. 
+Pressing the record button will overdub content of the loop. In Play mode, pushing the Play button again will mute the loop. Pressing 
+the Play button when the loop is muted will re-enable audio output from the loop. Pressing the Stop button will stop playback, and erase
+the contents of the loop. There is no concept of "undoing" individual overdubs in TooB 4Looper. If you're done with a loop, just erase it.
+
+### Clock Options
+
+Clock options determine the tempo and number of beats in a bar. They affect the behavior of the looper when the Bars control (see below) is set to 
+a numeric value, and also affect the rate and pattern of the flashing LEDs when counting in. 
+
+### Record Options
+
+Record Options control the behavior of the looper.  
+
+When Count In is enabled, The looper will Count In before starting the main loop. The Record LED will flash when counting in, and go solid 
+once recording starts. The pattern of blinking lights depends on the TimeSig setting, so for example, if the Time Signature is set to 4/4, the 
+blinking LED will signal a count-in pattern of "1 - 2 - 1 2 3 4".
+
+When Bars is set to Free (the minimum value), the length of the main loop will be set by a second tap of the 
+Control button after recording of the main loop starts. If Bars is set to a numeric value, the length of the main loop will be determined by the number 
+of bars set in the Bars control, and the current settings of the Clock controls. 
+
+If Dub Sync is off, overdubs will start recording as soon as you tap the Control button. If enabled, the start 
+of the secondary loop will sync with main loop. Tapping the Control button will put the looper in "Cue Overdub" state
+and the LEDs will flash until the end of the main loop is reached, at which point the new loop will start recording. 
+
+The Loop End option only has effect when the Bars control is set to a numeric value, and does nothing if Bars is set to "Free". 
+When set to REC-PLAY, the main loop will record exactly N bars of audio, and switch to play mode when the end of the loop is reached. 
+When set to REC-DUB, the main loop will record exactly N bars of audio, and then continue on in overdub mode. 
+
+
+### MIDI Operation
+
+If you want to control your looper with one foot controller switch, please use Toob One-Control Looper instead. Toob 4Looper 
+allows you to control loops with four foot controller switches (one for each loop). In order to do this, TooB 4Looper provides 
+a hidden controls only visible in PiPedal's MIDI Bindings user-interface. The hidden controls are named `Midi CTL`; there's one 
+control for each loop. A single tap of the control will cause the loop to start  
+recording or playing or overdubbing, depending on the state of the loop. Long-pressing the control will erase the loop. Erasing the main loop
+will stop all playback, erasing all other loops as well, and return the Toob 4Looper to its initial state. 
+
+To use the hidden controls, you must bind each of them to your MIDI controller's footswitches. It is recommended that you configure
+your MIDI controller to send MIDI Note-on/Note off messages. You can bind the controls to MIDI CC messages as well, but the behavior
+of your controller may not match what TooB 4Looper expects. If you must use MIDI CC messages, you should configure your MIDI 
+controller to set a CC value of zero when not pressed, and a value of 127 when pressed, and adjust PiPedal's MIDI bindings appropriately.
+
+The following state table controls how the hidden controls operate. Each loop has an independent state. 
+
+### State Table for Looop Operations
+
+The following table describes state transitions for each loop. Note that loops 2 to 4 are not available until the main loop has been recorded.
+
+```
++-----------+--------------+----------------------------------+
+| State     | Action       | Effect                           |
+|-----------|--------------|----------------------------------|
+| Empty     | Record /     | Start counting in if COUNT IN is |
+|           | Control Tap  | enabled; otherwise start         |
+|           |              | recording immediately.           |
+|-----------|--------------|----------------------------------|
+| Count-In  | Stop /       | Return to empty state            |
+|           | Long-press   |                                  |
+|           |              |                                  |
+|           | Complete     | Start recording                  |
+|-----------|--------------|----------------------------------|
+| Recording | Play         | Set the loop length (main loop   |
+|           |              | only_) and go to play state .    |
+|           |              |                                  |
+|           | Record       | Set the loop length (main loop   |
+|           |              | only_) and go to Overdub state . |
+|           |              |                                  |
+|           | Stop/        | Discard the current loop and     |
+|           | Long-Press   | return to Empty state            |
+|           |              |                                  |
+|           | Control Tap  | Set the loop length (main loop   |
+|           |              | only_) and go to play or Overdub |
+|           |              | state depending on ON REC END.   |
+|           |              |                                  |
+|           | End of loop  | go to play or overdub state      |
+|           |              | depending on ON REC END          |
+|-----------|--------------|----------------------------------|
+| Playing   | Record / Tap | If DUB SYNC is on, go to         |
+|           |              | Cue Ovdb state; otherwise        |
+|           |              | start overdubbing immediately.   |
+|           |              |                                  |
+|           | Play         | Mute the loop, and go to Mute    |
+|           |              | state.                           |
+|           |              |                                  |
+|           | Stop /       | Discard the current loop and go  |
+|           | Long-press   | to Empty state.                  |
+|-----------|--------------|----------------------------------|
+| Mute      | Play / Tap   | Unmute the loop and go to Play   |
+|           |              | state.                           |
+|           |              |                                  |
+|           | Record       | Start overdubbing.               |
+|           |              |                                  |
+|           | Stop /       | Discard the current loop and go  |
+|           | Long-press   | to Empty state.                  |
+|-----------|--------------|----------------------------------|
+| Cue Ovdb  | End-of-loop  | Start overdubbing.               |
+|           |              |                                  |
+|           | Tap          | Cancel the pending overdub.      |      
+|           |              |                                  |
+|           | Long-press   | Discard the current loop and go  |
+|           |              | to Empty state.                  |
+|-----------|--------------|----------------------------------|
+| Overdub   | Play / Tap   | Start playing.                   |
+|           |              |                                  |
+|           | End of loop  | (If DUB SYNC is on, and          |
+|           |              | REC->PLAY is selected) Go to     |
+|           |              | play state, otherwise, continue  |
+|           |              | in overdub state.                |
++-----------|--------------|----------------------------------+
+```
+
+
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "4Looper";
+        lv2:optionalFeature lv2:hardRTCapable;
+
+        lv2:port
+        ################# MAIN Loop
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  0;
+                lv2:symbol "control1" ;
+                lv2:name "MIDI Ctl";
+                rdfs:comment "Hidden control for MIDI operation. See documentation for details.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:integer, lv2:toggled, mod:preferMomentaryOffByDefault, pprop:notOnGUI;
+
+                pg:group myprefix:loop_main_group ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  1;
+                lv2:symbol "stop1" ;
+                lv2:name "⏹";
+                rdfs:comment "Reset all loops.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop_main_group ;
+        ],      
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  2;
+                lv2:symbol "record1" ;
+                lv2:name "⏺";
+                rdfs:comment "Recording/overdub the main loop";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop_main_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  3;
+                lv2:symbol "record_led1" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:loop_main_group ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  4;
+                lv2:symbol "play1" ;
+                lv2:name "⏵";
+                rdfs:comment "Play Loop 1. Click again to stop.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop_main_group ;
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  5;
+                lv2:symbol "play_led1" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "green";
+                pg:group myprefix:loop_main_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  6;
+                lv2:symbol "position1" ;
+                rdfs:comment "Time"; 
+                lv2:name "\u00A0\u00A0\u00A0\u00A0";
+                units:unit units:pc ;
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+                pg:group myprefix:loop_main_group ;
+        ],  
+
+
+        ################# Loop2
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  7;
+                lv2:symbol "control2" ;
+                lv2:name "MIDI Ctl";
+                rdfs:comment "Hidden control for MIDI operation. See documentation for details.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:integer, lv2:toggled, mod:preferMomentaryOffByDefault, pprop:notOnGUI;
+                pg:group myprefix:loop2_group ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  8;
+                lv2:symbol "stop2" ;
+                lv2:name "⏹";
+                rdfs:comment "Reset loop 2.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop2_group ;
+        ],      
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  9;
+                lv2:symbol "record2" ;
+                lv2:name "⏺";
+                rdfs:comment "Record/Overdub loop 2";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop2_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  10;
+                lv2:symbol "record_led2" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:loop2_group ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  11;
+                lv2:symbol "play2" ;
+                lv2:name "⏵";
+                rdfs:comment "Play Loop 2. Click again to stop.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop2_group ;
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  12;
+                lv2:symbol "play_led2" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "green";
+                pg:group myprefix:loop2_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  13;
+                lv2:symbol "position2" ;
+                rdfs:comment "Time"; 
+                lv2:name "\u00A0\u00A0\u00A0\u00A0";
+                units:unit units:pc ;
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+                pg:group myprefix:loop2_group ;
+        ],  
+
+        ################# Loop3
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  14;
+                lv2:symbol "control3" ;
+                lv2:name "MIDI Ctl";
+                rdfs:comment "Hidden control for MIDI operation. See documentation for details.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:integer, lv2:toggled, mod:preferMomentaryOffByDefault, pprop:notOnGUI;
+                pg:group myprefix:loop3_group ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  15;
+                lv2:symbol "stop3" ;
+                lv2:name "⏹";
+                rdfs:comment "Reset loop 3.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop3_group ;
+        ],      
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  16;
+                lv2:symbol "record3" ;
+                lv2:name "⏺";
+                rdfs:comment "Record/Overdub loop 3";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop3_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  17;
+                lv2:symbol "record_led3" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:loop3_group ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  18;
+                lv2:symbol "play3" ;
+                lv2:name "⏵";
+                rdfs:comment "Play Loop 3. Click again to stop.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop3_group ;
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  19;
+                lv2:symbol "play_led3" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "green";
+                pg:group myprefix:loop3_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  20;
+                lv2:symbol "position3" ;
+                rdfs:comment "Time"; 
+                lv2:name "\u00A0\u00A0\u00A0\u00A0";
+                units:unit units:pc ;
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+                pg:group myprefix:loop3_group ;
+        ],  
+
+
+        ################# Loop4
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  21;
+                lv2:symbol "control4" ;
+                lv2:name "Midi Ctl";
+                rdfs:comment "Hidden control for MIDI operation. See documentation for details.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:integer, lv2:toggled, mod:preferMomentaryOffByDefault, pprop:notOnGUI;
+                pg:group myprefix:loop4_group ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  22;
+                lv2:symbol "stop4" ;
+                lv2:name "⏹";
+                rdfs:comment "Reset loop 4.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop4_group ;
+        ],      
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  23;
+                lv2:symbol "record4" ;
+                lv2:name "⏺";
+                rdfs:comment "Record/Overdub loop 4";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop4_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  24;
+                lv2:symbol "record_led4" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:loop4_group ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  25;
+                lv2:symbol "play4" ;
+                lv2:name "⏵";
+                rdfs:comment "Play Loop 4. Click again to stop.";
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+                pg:group myprefix:loop4_group ;
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  26;
+                lv2:symbol "play_led4" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "green";
+                pg:group myprefix:loop4_group ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  27;
+                lv2:symbol "position4" ;
+                rdfs:comment "Time"; 
+                lv2:name "\u00A0\u00A0\u00A0\u00A0";
+                units:unit units:pc ;
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+                pg:group myprefix:loop4_group ;
+        ],  
+
+
+        ###### Sync
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  28;
+                lv2:symbol "bar_led" ;
+                lv2:name "\u00A0\u00A0Bar\u00A0\u00A0";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:syncGroup ;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  29;
+                lv2:symbol "beat_led" ;
+                lv2:name "\u00A0Beat\u00A0";
+                lv2:portProperty lv2:toggled ;
+                lv2:default 0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+                pg:group myprefix:syncGroup ;
+        ],  
+        [
+            a lv2:InputPort ,
+            lv2:ControlPort ;
+
+            lv2:index 30;
+            lv2:symbol "tempo" ;
+            lv2:name "Tempo";
+            lv2:default 120.0 ;
+            lv2:minimum 40.0;
+            lv2:maximum 240.0;
+            units:unit units:bpm;
+            rdfs:comment "Tempo in quarter-notes per minute"
+            ; pg:group myprefix:syncGroup
+        ],
+        [
+            a lv2:InputPort ,
+            lv2:ControlPort ;
+
+            lv2:index 31 ;
+            lv2:symbol "timesig" ;
+            rdfs:comment "Time Signature";
+            lv2:name "TimeSig";
+            lv2:default 2 ;
+            lv2:minimum 0;
+            lv2:maximum 5;
+            lv2:portProperty lv2:enumeration ;
+
+            lv2:scalePoint [
+                rdfs:label "2/2" ;
+                rdf:value 0
+            ] , [
+                rdfs:label "3/4" ;
+                rdf:value 1
+            ] , [
+                rdfs:label "4/4" ;
+                rdf:value 2
+            ] , 
+            [
+                rdfs:label "5/4" ;
+                rdf:value 3
+            ] ,
+            [
+                rdfs:label "6/8" ;
+                rdf:value 4
+            ] ,            
+            [
+                rdfs:label "7/4" ;
+                rdf:value 5
+            ];
+            pg:group myprefix:syncGroup 
+        ],
+
+        ########## Options
+
+        [
+                lv2:name "Count In" ;
+
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+        
+                lv2:index 32;
+                lv2:symbol "rec_count_in" ;
+                lv2:default 1.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled;
+                rdfs:comment "Whether to count in when starting the main loop.";
+
+                pg:group myprefix:options_group ;
+        ],
+        [
+            a lv2:InputPort ,
+            lv2:ControlPort ;
+
+            lv2:index 33 ;
+            lv2:symbol "bars" ;
+            lv2:name "Bars";
+            lv2:default 0 ;
+            lv2:minimum 0;
+            lv2:maximum 32;
+            units:unit units:bar ;
+            lv2:portProperty lv2:integer;
+            rdfs:comment "Loop length in bars. Set to minimum for arbitrary length loops.";
+            pg:group myprefix:options_group ;
+            lv2:scalePoint [
+                rdfs:label "Free" ;
+                rdf:value 0.0
+            ] 
+        ],
+        [
+                lv2:name "Rec Sync" ;
+
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+        
+                lv2:index 34;
+                lv2:symbol "rec_sync_option" ;
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled;
+                rdfs:comment "Whether to sync the start of the loop with the main loop when recording secondary loops.";
+
+                pg:group myprefix:options_group ;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+        
+                lv2:index 35;
+                lv2:symbol "loop_end_option" ;
+                lv2:name "On Rec End";
+                lv2:default 1.0 ;
+                lv2:minimum 1.0;
+                lv2:maximum 2.0;
+                lv2:portProperty lv2:enumeration;
+                rdfs:comment "(One-control MIDI operation only) Whether to go to OVERDUB or PLAY state when recording of the main loop ends.";
+
+                lv2:scalePoint [
+                        rdfs:label "REC->PLAY" ;
+                        rdf:value 1.0
+                ] , [
+                        rdfs:label "REC->DUB" ;
+                        rdf:value 2.0
+                ] ;
+
+                pg:group myprefix:options_group ;
+        ],
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  36;
+                lv2:symbol "level" ;
+                lv2:name "Level";
+                lv2:name "Level";
+                pg:group myprefix:output_group ;
+ 
+                lv2:default 0 ;
+                lv2:minimum -60.0;
+                lv2:maximum 30.0;
+                lv2:scalePoint [
+                        rdfs:label "-INF" ;
+                        rdf:value -60.0
+                ];
+                units:unit units:db
+        ],
+
+        ################# Audio/Control Busses
+
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 37 ;
+                lv2:symbol "in" ;
+                lv2:name "In";
+                pg:group myprefix:stereoInGroup ;
+                lv2:designation pg:left
+
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 38 ;
+                lv2:symbol "out" ;
+                lv2:name "Out" ;
+                pg:group myprefix:stereoOutGroup ;
+                lv2:designation pg:left
+        ],  
+
+        [
+                a atom:AtomPort ,
+                        lv2:InputPort ;
+                lv2:index 39 ;
+                lv2:symbol "controlIn" ;
+                lv2:name "ControlIn"
+        ],
+        [
+                a atom:AtomPort ,
+                        lv2:OutputPort ;
+                lv2:index 40 ;
+                lv2:symbol "controlOut" ;
+                lv2:name "ControlOut"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 41;
+                lv2:symbol "inR" ;
+                lv2:name "InR" ;
+                pg:group myprefix:stereoInGroup ;
+                lv2:designation pg:right
+
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 42 ;
+                lv2:symbol "outR" ;
+                lv2:name "OutR" ;
+                pg:group myprefix:stereoOutGroup ;
+                lv2:designation pg:right
+        ]  
+        
+        
+        ;
+         
+        .
+
+      
+
+<http://two-play.com/plugins/toob-record-stereo-ui> 
+    a  ui:X11UI ;
+    lv2:binary <.so>;
+
+    lv2:extensionData ui:resize ;
+    lv2:extensionData ui:idleInterface ;
+    lv2:requiredFeature ui:idleInterface ;
+.
+
+ 

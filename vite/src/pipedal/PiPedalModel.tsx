@@ -2297,12 +2297,12 @@ export class PiPedalModel //implements PiPedalModel
     private monitorPatchPropertyListeners: PatchPropertyListenerItem[] = [];
 
     nextListenHandle = 1;
-    listenForMidiEvent(listenForControlsOnly: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle {
+    listenForMidiEvent(listenForControl: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle {
         let handle = this.nextListenHandle++;
 
         this.midiListeners.push(new MidiEventListener(handle, onComplete));
 
-        this.webSocket?.send("listenForMidiEvent", { listenForControlsOnly: listenForControlsOnly, handle: handle });
+        this.webSocket?.send("listenForMidiEvent", { listenForControls: listenForControl, handle: handle });
         return {
             _handle: handle
         };

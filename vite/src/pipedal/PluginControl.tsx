@@ -21,8 +21,8 @@ import React, { TouchEvent, PointerEvent, ReactNode, Component, SyntheticEvent }
 import { css } from '@emotion/react';
 import Button from '@mui/material/Button';
 import { Theme } from '@mui/material/styles';
-import WithStyles, {withTheme} from './WithStyles';
-import {createStyles} from './WithStyles';
+import WithStyles, { withTheme } from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 import { UiControl, ScalePoint } from './Lv2Plugin';
@@ -37,10 +37,16 @@ import DialIcon from './svg/fx_dial.svg?react';
 import { isDarkMode } from './DarkMode';
 import ControlTooltip from './ControlTooltip';
 
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+
 const MIN_ANGLE = -135;
 const MAX_ANGLE = 135;
 const FONT_SIZE = "0.8em";
 
+
+enum ButtonStyle { None, Trigger, Momentary, MomentaryOnByDefault }
 
 
 const SELECTED_OPACITY = 0.8;
@@ -53,6 +59,20 @@ const ULTRA_FINE_RANGE_SCALE = RANGE_SCALE * 50; // 12000 pixels to move from 0 
 export const StandardItemSize = { width: 80, height: 140 }
 
 
+function androidEmoji(text: string) {
+    // android chrome doesn't support these characters properly.
+    if (text === "⏹") {
+        return (<StopIcon fontSize={"medium"} />);
+    }
+    if (text === "⏺") {
+        return (<FiberManualRecordIcon fontSize={"medium"} />)
+    }
+    if (text === "⏵")
+    {
+        return (<PlayArrowIcon fontSize={"medium"}/>);
+    }
+    return text;
+}
 
 export const pluginControlStyles = (theme: Theme) => createStyles({
     frame: css({
@@ -115,12 +135,12 @@ const PluginControl =
     withTheme(withStyles(
         class extends Component<PluginControlProps, PluginControlState> {
 
-            frameRef: React.RefObject<HTMLDivElement|null>;
-            imgRef: React.RefObject<SVGSVGElement|null>;
-            inputRef: React.RefObject<HTMLInputElement|null>;
-            selectRef: React.RefObject<HTMLSelectElement|null>;
+            frameRef: React.RefObject<HTMLDivElement | null>;
+            imgRef: React.RefObject<SVGSVGElement | null>;
+            inputRef: React.RefObject<HTMLInputElement | null>;
+            selectRef: React.RefObject<HTMLSelectElement | null>;
 
-            displayValueRef: React.RefObject<HTMLDivElement|null>;
+            displayValueRef: React.RefObject<HTMLDivElement | null>;
             model: PiPedalModel;
 
 
@@ -498,19 +518,50 @@ const PluginControl =
                         this.isTap = false;
                     }
                 }
+            
             }
-            handleTriggerMouseDown() {
+            handleButtonMouseLeave(buttonStyle: ButtonStyle) {
+            }
+            handleButtonMouseDown(buttonStyle: ButtonStyle) {
                 let uiControl = this.props.uiControl;
                 if (uiControl) {
-                    let value = uiControl.max_value;
-                    if (uiControl.max_value === uiControl.default_value) {
-                        value = uiControl.min_value;
+                    switch (buttonStyle) {
+                        case ButtonStyle.Momentary:
+                            this.model.setPedalboardControl(this.props.instanceId, uiControl.symbol,uiControl.max_value);
+                            break;
+                        case ButtonStyle.MomentaryOnByDefault:
+                            this.model.setPedalboardControl(this.props.instanceId, uiControl.symbol,uiControl.min_value);
+                            break;
+                        case ButtonStyle.Trigger:
+                            {
+                                let value = uiControl.max_value;
+                                if (uiControl.max_value === uiControl.default_value) {
+                                    value = uiControl.min_value;
+                                }
+                                this.model.sendPedalboardControlTrigger(this.props.instanceId, uiControl.symbol, value);
+            
+                            }
+                            break;
                     }
-                    this.model.sendPedalboardControlTrigger(this.props.instanceId, uiControl.symbol, value);
                 }
             }
-            handleTriggerMouseUp() {
-                // triggers are reset on the audio thread.
+            handleButtonMouseUp(buttonStyle: ButtonStyle) {
+                let uiControl = this.props.uiControl;
+                if (uiControl) {
+                    switch (buttonStyle) {
+                        case ButtonStyle.Momentary:
+                            this.model.setPedalboardControl(this.props.instanceId, uiControl.symbol,uiControl.min_value);
+                            break;
+                        case ButtonStyle.MomentaryOnByDefault:
+                            this.model.setPedalboardControl(this.props.instanceId, uiControl.symbol,uiControl.max_value);
+                            break;
+                        case ButtonStyle.Trigger:
+                            {
+                                // trigger values are reset automatically.
+                            }
+                            break;
+                    }
+                }
             }
             previewInputValue(value: number, commitValue: boolean) {
                 let range = this.valueToRange(value);
@@ -657,8 +708,7 @@ const PluginControl =
                         }
                         range = Math.log(value / minValue) / Math.log(uiControl.max_value / minValue);
                         if (!isFinite(range)) {
-                            if (range < 0)
-                            {
+                            if (range < 0) {
                                 range = 0;
                             } else {
                                 range = 1.0;
@@ -672,8 +722,7 @@ const PluginControl =
                     } else {
                         range = (value - uiControl.min_value) / (uiControl.max_value - uiControl.min_value);
                         if (!isFinite(range)) {
-                            if (range < 0)
-                            {
+                            if (range < 0) {
                                 range = 0;
                             } else {
                                 range = 1.0;
@@ -760,14 +809,28 @@ const PluginControl =
                 let isSelect = control.isSelect();
                 let isAbSwitch = control.isAbToggle();
                 let isOnOffSwitch = control.isOnOffSwitch();
-                let isTrigger = control.isTrigger();
+
+                let isButton = false;
+                let buttonStyle: ButtonStyle = ButtonStyle.None;
+                if (control.isTrigger()) {
+                    isButton = true;
+                    buttonStyle = ButtonStyle.Trigger;
+                }
+                if (control.isMomentary()) {
+                    isButton = true;
+                    buttonStyle = ButtonStyle.Momentary;
+                }
+                if (control.isMomentaryOnByDefault()) {
+                    isButton = true;
+                    buttonStyle = ButtonStyle.MomentaryOnByDefault;
+                }
 
                 if (isAbSwitch) {
                     switchText = control.scale_points[0].value === value ? control.scale_points[0].label : control.scale_points[1].label;
                 }
 
                 let item_width: number | undefined = isSelect ? 160 : 80;
-                if (isTrigger) {
+                if (isButton) {
                     item_width = undefined;
                 }
 
@@ -788,24 +851,38 @@ const PluginControl =
                                 <Typography variant="caption" display="block" noWrap style={{
                                     width: "100%",
                                     textAlign: isSelect ? "left" : "center"
-                                }}> {isTrigger ? "\u00A0" : control.name}</Typography>
+                                }}> {isButton ? "\u00A0" : control.name}</Typography>
                             </ControlTooltip>
                         </div>
                         {/* CONTROL SECTION */}
 
                         <div className={classes.midSection}>
 
-                            {isTrigger ?
+                            {isButton ?
                                 (
                                     control.name.length !== 1 ? (
                                         <Button variant="contained" color="primary" size="small"
-                                            onMouseDown={
-                                                (evt) => { this.handleTriggerMouseDown(); }
+                                        onMouseDown={
+                                            (evt) => { this.handleButtonMouseDown(buttonStyle); }
+                                        }
+                                        onMouseUp={
+                                            (evt) => { this.handleButtonMouseUp(buttonStyle); }
+                                        }
+                                        onTouchStart={
+                                            (evt) => { evt.preventDefault(); 
+                                            this.handleButtonMouseDown(buttonStyle); }
+                                        }
+                                        onTouchEnd={
+                                            (evt) => {
+                                                evt.preventDefault(); 
+                                                this.handleButtonMouseUp(buttonStyle);
                                             }
-                                            onMouseUp={
-                                                (evt) => { this.handleTriggerMouseUp(); }
-                                            }
-                                            style={{
+                                        }
+                                        onMouseLeave={(
+                                            (evet) => { this.handleButtonMouseLeave(buttonStyle); }
+                                        )}
+
+                                        style={{
                                                 textTransform: "none",
                                                 background: (isDarkMode() ? "#6750A4" : undefined),
                                                 marginLeft: 8, marginRight: 8, minWidth: 60,
@@ -820,11 +897,25 @@ const PluginControl =
                                     ) : (
                                         <Button variant="contained" color="primary" size="small"
                                             onMouseDown={
-                                                (evt) => { this.handleTriggerMouseDown(); }
+                                                (evt) => { this.handleButtonMouseDown(buttonStyle); }
                                             }
                                             onMouseUp={
-                                                (evt) => { this.handleTriggerMouseUp(); }
+                                                (evt) => { this.handleButtonMouseUp(buttonStyle); }
                                             }
+                                            onTouchStart={
+                                                (evt) => { evt.preventDefault(); 
+                                                this.handleButtonMouseDown(buttonStyle); }
+                                            }
+                                            onTouchEnd={
+                                                (evt) => {
+                                                    evt.preventDefault(); 
+                                                    this.handleButtonMouseUp(buttonStyle);
+                                                }
+                                            }
+                                            onMouseLeave={(
+                                                (evet) => { this.handleButtonMouseLeave(buttonStyle); }
+                                            )}
+
                                             style={{
                                                 textTransform: "none",
                                                 background: (isDarkMode() ? "#6750A4" : undefined),
@@ -839,7 +930,7 @@ const PluginControl =
                                             }}
 
                                         >
-                                            {control.name}
+                                            {androidEmoji(control.name)}
                                         </Button>
                                     )
                                 )
@@ -865,7 +956,7 @@ const PluginControl =
 
                         {/* LABEL/EDIT SECTION*/}
                         <div className={classes.editSection} >
-                            {(!(isSelect || isOnOffSwitch || isTrigger)) &&
+                            {(!(isSelect || isOnOffSwitch || isButton)) &&
                                 (
                                     (isAbSwitch) ? (
                                         <Typography variant="caption" display="block" textAlign="center" noWrap style={{

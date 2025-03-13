@@ -24,7 +24,7 @@ import { PiPedalModel, PiPedalModelFactory, ListenHandle } from './PiPedalModel'
 import Typography from '@mui/material/Typography';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 import AppBar from '@mui/material/AppBar';
@@ -34,7 +34,7 @@ import IconButton from '@mui/material/IconButton';
 import MidiBinding from './MidiBinding';
 import MidiBindingView from './MidiBindingView';
 import Snackbar from '@mui/material/Snackbar';
-import { UiPlugin,makeSplitUiPlugin } from './Lv2Plugin';
+import { PortGroup, UiPlugin, makeSplitUiPlugin } from './Lv2Plugin';
 import { css } from '@emotion/react';
 
 const styles = (theme: Theme) => createStyles({
@@ -54,6 +54,11 @@ const styles = (theme: Theme) => createStyles({
     pluginHead: css({
         borderTop: "1pt #DDD solid", paddingLeft: 22, paddingRight: 22
     }),
+    groupHead: css({
+        borderBottom: "1px solid " + theme.palette.divider,
+        marginLeft: 0,
+        marginBottom: 0
+    }),
     bindingTd: css({
         verticalAlign: "top",
         paddingLeft: 12, paddingBottom: 8
@@ -65,7 +70,7 @@ const styles = (theme: Theme) => createStyles({
     }),
 });
 
-function not_null<T>(value: T | null) { 
+function not_null<T>(value: T | null) {
     if (!value) throw Error("Unexpected null value");
     return value;
 }
@@ -116,8 +121,7 @@ export const MidiBindingDialog =
                     clearTimeout(this.listenTimeoutHandle);
                     this.listenTimeoutHandle = undefined;
                 }
-                if (this.listenHandle)
-                {
+                if (this.listenHandle) {
                     this.model.cancelListenForMidiEvent(this.listenHandle)
                     this.listenHandle = undefined;
                 }
@@ -126,10 +130,9 @@ export const MidiBindingDialog =
 
             }
 
-            handleListenSucceeded(instanceId: number, symbol: string, isNote: boolean, noteOrControl: number)
-            {
+            handleListenSucceeded(instanceId: number, symbol: string, isNote: boolean, noteOrControl: number) {
                 this.cancelListenForControl();
-                
+
                 let pedalboard = this.model.pedalboard.get();
                 let item = pedalboard.getItem(instanceId);
                 if (!item) return;
@@ -144,7 +147,7 @@ export const MidiBindingDialog =
                     newBinding.control = noteOrControl;
                 }
 
-                this.model.setMidiBinding(instanceId,newBinding);
+                this.model.setMidiBinding(instanceId, newBinding);
             }
 
 
@@ -157,9 +160,9 @@ export const MidiBindingDialog =
 
                 this.listenHandle = this.model.listenForMidiEvent(listenForControl,
                     (isNote: boolean, noteOrControl: number) => {
-                        this.handleListenSucceeded(instanceId,symbol,isNote, noteOrControl);
+                        this.handleListenSucceeded(instanceId, symbol, isNote, noteOrControl);
                     });
-                
+
 
 
             }
@@ -190,6 +193,7 @@ export const MidiBindingDialog =
 
                 let pedalboard = this.model.pedalboard.get();
                 let iter = pedalboard.itemsGenerator();
+                let keyIx = 1;
                 while (true) {
                     let v = iter.next();
                     if (v.done) break;
@@ -197,45 +201,43 @@ export const MidiBindingDialog =
 
 
                     let isSplit = item.uri === "uri://two-play/pipedal/pedalboard#Split";
-                    let plugin : UiPlugin | null = this.model.getUiPlugin(item.uri);
-                    if (plugin === null && isSplit)
-                    {
+                    let plugin: UiPlugin | null = this.model.getUiPlugin(item.uri);
+                    if (plugin === null && isSplit) {
                         plugin = makeSplitUiPlugin();
                         let splitType = item.getControlValue("splitType");
                         not_null(plugin.getControl("splitType")).not_on_gui = true;
-                        switch (splitType)
-                        {
-                        case 0: // A/B
-                            not_null(plugin.getControl("select")).not_on_gui = false;
-                            not_null(plugin.getControl("mix")).not_on_gui = true;
-                            not_null(plugin.getControl("volL")).not_on_gui = true;
-                            not_null(plugin.getControl("panL")).not_on_gui = true;
-                            not_null(plugin.getControl("volR")).not_on_gui = true;
-                            not_null(plugin.getControl("panR")).not_on_gui = true;
-                            break;
-                        case 1: //mixer
-                            not_null(plugin.getControl("select")).not_on_gui = true;
-                            not_null(plugin.getControl("mix")).not_on_gui = false;
-                            not_null(plugin.getControl("volL")).not_on_gui = true;
-                            not_null(plugin.getControl("panL")).not_on_gui = true;
-                            not_null(plugin.getControl("volR")).not_on_gui = true;
-                            not_null(plugin.getControl("panR")).not_on_gui = true;
-                            break;
-                        case 2: // L/R
-                            not_null(plugin.getControl("select")).not_on_gui = true;
-                            not_null(plugin.getControl("mix")).not_on_gui = true;
-                            not_null(plugin.getControl("volL")).not_on_gui = false;
-                            not_null(plugin.getControl("panL")).not_on_gui = false;
-                            not_null(plugin.getControl("volR")).not_on_gui = false;
-                            not_null(plugin.getControl("panR")).not_on_gui = false;
-                            break;                       
+                        switch (splitType) {
+                            case 0: // A/B
+                                not_null(plugin.getControl("select")).not_on_gui = false;
+                                not_null(plugin.getControl("mix")).not_on_gui = true;
+                                not_null(plugin.getControl("volL")).not_on_gui = true;
+                                not_null(plugin.getControl("panL")).not_on_gui = true;
+                                not_null(plugin.getControl("volR")).not_on_gui = true;
+                                not_null(plugin.getControl("panR")).not_on_gui = true;
+                                break;
+                            case 1: //mixer
+                                not_null(plugin.getControl("select")).not_on_gui = true;
+                                not_null(plugin.getControl("mix")).not_on_gui = false;
+                                not_null(plugin.getControl("volL")).not_on_gui = true;
+                                not_null(plugin.getControl("panL")).not_on_gui = true;
+                                not_null(plugin.getControl("volR")).not_on_gui = true;
+                                not_null(plugin.getControl("panR")).not_on_gui = true;
+                                break;
+                            case 2: // L/R
+                                not_null(plugin.getControl("select")).not_on_gui = true;
+                                not_null(plugin.getControl("mix")).not_on_gui = true;
+                                not_null(plugin.getControl("volL")).not_on_gui = false;
+                                not_null(plugin.getControl("panL")).not_on_gui = false;
+                                not_null(plugin.getControl("volR")).not_on_gui = false;
+                                not_null(plugin.getControl("panR")).not_on_gui = false;
+                                break;
                         }
 
                         // xxx
                     }
                     if (plugin) {
                         result.push(
-                            <tr>
+                            <tr key={"k" + keyIx++}>
                                 <td colSpan={2} className={classes.pluginHead}>
                                     <Typography variant="caption" color="textSecondary" noWrap>
                                         {plugin.name}
@@ -243,10 +245,9 @@ export const MidiBindingDialog =
                                 </td>
                             </tr>
                         );
-                        if (!isSplit)
-                        {
+                        if (!isSplit) {
                             result.push(
-                                <tr>
+                                <tr key={"k" + keyIx++}>
                                     <td className={classes.nameTd}>
                                         <Typography noWrap style={{ verticalAlign: "center", height: 48 }}>
                                             Bypass
@@ -256,8 +257,7 @@ export const MidiBindingDialog =
                                         <MidiBindingView instanceId={item.instanceId} midiBinding={item.getMidiBinding("__bypass")}
                                             uiPlugin={plugin}
                                             onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {
-                                                if (instanceId === -2)
-                                                {
+                                                if (instanceId === -2) {
                                                     this.cancelListenForControl();
                                                 } else {
                                                     this.handleListenForControl(instanceId, symbol, listenForControl);
@@ -271,21 +271,35 @@ export const MidiBindingDialog =
                             );
                         }
 
+                        let lastPortGroup: PortGroup | null = null;
                         for (let i = 0; i < plugin.controls.length; ++i) {
                             let control = plugin.controls[i];
-                            if (control.isHidden())
-                            {
+                            if (!control.is_input) {
                                 continue;
                             }
-                            if (!control.is_input)
-                            {
-                                continue;
+                            let portGroup = plugin.getPortGroupBySymbol(control.port_group);
+                            if (portGroup != lastPortGroup) {
+                                lastPortGroup = portGroup;
+                                if (portGroup != null) {
+                                    result.push(
+                                        <tr key={"k" + keyIx++}>
+                                            <td colSpan={2} className={classes.nameTd} >
+                                                <div className={classes.groupHead}>
+                                                    <Typography variant="caption" color="textSecondary" noWrap>
+                                                        {portGroup?.name}
+                                                    </Typography>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                }
                             }
+
                             let symbol = control.symbol;
                             result.push(
-                                <tr>
+                                <tr key={"k" + keyIx++}>
                                     <td className={classes.nameTd}>
-                                        <Typography noWrap style={{ verticalAlign: "middle", maxWidth: 120 }} >
+                                        <Typography noWrap style={{ verticalAlign: "middle", maxWidth: 120, marginLeft: portGroup ? 24:0 }} >
                                             {control.name}
                                         </Typography>
                                     </td>
@@ -319,66 +333,66 @@ export const MidiBindingDialog =
 
             render() {
                 let props = this.props;
-                let { open} = props;
+                let { open } = props;
                 const classes = withStyles.getClasses(props);
                 if (!open) {
                     return (<div />);
                 }
 
                 return (
-                    <DialogEx tag="midiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title" 
-                        fullScreen={true} 
-                        style={{userSelect: "none"}}
-                        onEnterKey={()=>{}}
+                    <DialogEx tag="midiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title"
+                        fullScreen={true}
+                        style={{ userSelect: "none" }}
+                        onEnterKey={() => { }}
 
                     >
-                            <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
-                                <div style={{ flex: "0 0 auto" }}>
-                                    <AppBar className={classes.dialogAppBar} >
-                                        <Toolbar>
-                                            <IconButton
-                                                edge="start"
-                                                color="inherit"
-                                                onClick={this.handleClose}
-                                                aria-label="back"
-                                                size="large">
-                                                <ArrowBackIcon />
-                                            </IconButton>
-                                            <Typography noWrap variant="h6" className={classes.dialogTitle}>
-                                                Preset MIDI Bindings
-                                            </Typography>
-                                        </Toolbar>
-                                    </AppBar>
-                                </div>
-                                <div style={{ overflow: "auto", flex: "1 1 auto", width: "100%" }}>
-                                    <table className={classes.pluginTable} >
-                                        <colgroup>
-                                            <col style={{ width: "auto" }} />
-                                            <col style={{ width: "100%" }} />
-                                        </colgroup>
-
-                                        <tbody>
-                                            {this.generateTable()}
-
-                                        </tbody>
-                                    </table>
-                                </div>
+                        <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
+                            <div style={{ flex: "0 0 auto" }}>
+                                <AppBar className={classes.dialogAppBar} >
+                                    <Toolbar>
+                                        <IconButton
+                                            edge="start"
+                                            color="inherit"
+                                            onClick={this.handleClose}
+                                            aria-label="back"
+                                            size="large">
+                                            <ArrowBackIcon />
+                                        </IconButton>
+                                        <Typography noWrap variant="h6" className={classes.dialogTitle}>
+                                            Preset MIDI Bindings
+                                        </Typography>
+                                    </Toolbar>
+                                </AppBar>
                             </div>
-                            <Snackbar
-                                anchorOrigin={{
-                                    vertical: 'bottom',
-                                    horizontal: 'left',
-                                }}
-                                open={this.state.listenSnackbarOpen}
-                                autoHideDuration={1500}
-                                onClose={() => this.setState({ listenSnackbarOpen: false })}
-                                message="Listening for MIDI input"
-                            />
+                            <div style={{ overflow: "auto", flex: "1 1 auto", width: "100%" }}>
+                                <table className={classes.pluginTable} >
+                                    <colgroup>
+                                        <col style={{ width: "auto" }} />
+                                        <col style={{ width: "100%" }} />
+                                    </colgroup>
+
+                                    <tbody>
+                                        {this.generateTable()}
+
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <Snackbar
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'left',
+                            }}
+                            open={this.state.listenSnackbarOpen}
+                            autoHideDuration={1500}
+                            onClose={() => this.setState({ listenSnackbarOpen: false })}
+                            message="Listening for MIDI input"
+                        />
                     </DialogEx >
                 );
             }
         },
-    styles);
+        styles);
 
 
 export default MidiBindingDialog;
