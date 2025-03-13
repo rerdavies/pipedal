@@ -112,7 +112,8 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
             {
                 std::shared_ptr<IEffect> pLv2Effect;
 
-                if (existingEffects && existingEffects->contains(item.instanceId()))
+                if (existingEffects && existingEffects->contains(item.instanceId())
+                )
                 {
                     pLv2Effect = existingEffects->at(item.instanceId());
                     ((Lv2Effect*)pLv2Effect.get())->SetBorrowedEffect(true);

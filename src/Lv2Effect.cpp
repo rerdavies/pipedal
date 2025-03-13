@@ -464,7 +464,7 @@ void Lv2Effect::SetAudioOutputBuffer(int index, float *buffer)
 
     if (this->inputAudioPortIndices.size() != 0) // i.e. we're not mixing a zero-input control
     {
-        if ((size_t)index < this->inputAudioPortIndices.size())
+        if ((size_t)index < this->outputAudioPortIndices.size())
         {
             int pluginIndex = this->outputAudioPortIndices[index];
             lilv_instance_connect_port(pInstance, pluginIndex, buffer);
@@ -562,6 +562,7 @@ void Lv2Effect::AssignUnconnectedPorts()
             {
                 float *buffer = bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize());
                 int pluginIndex = this->outputAudioPortIndices[i];
+                lilv_instance_connect_port(pInstance, pluginIndex, buffer);
             }
         }
     }
