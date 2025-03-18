@@ -1,5 +1,28 @@
 # Release Notes
 
+## PiPedal 1.4.73 Beta
+
+New plugins:
+
+- **TooB 4Looper** - a 4-track looper. See the plugin information dialog for details on how to use 4Looper with MIDI footswitches.
+
+- **TooB One-Button Looper** - A 1-button looper with overdubbing and undo/redo, designed for use with a single MIDI footswitch. See the plugin information dialog for details on how use TooB One-Button Looper with MIDI.
+
+- **TooB Record Input (mono and stereo versions)** - A plugin that records audio input to a file.
+
+New features: 
+
+- Recorded audio files can be downloaded from the PiPedal server.
+
+Bug Fixes/Minor Features:
+
+- Support for momentary MIDI controls using MOD-compatible LV2 declarations.
+
+- Apply grouping to controls in the Info dialog and MIDI binding dialogs.
+
+- TooB Amp LV2 plugin compatibility fixes for native LV2 hosts other than PiPedal. (Reaper particularly)
+
+
 ## PiPedal 1.4.72 Beta
 
 - Resolves installation issues on Raspberry Pi OS (no alsa-base)
