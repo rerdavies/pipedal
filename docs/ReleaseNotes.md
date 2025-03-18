@@ -6,7 +6,7 @@
 
 ## PiPedal 1.4.71 Beta
 
-- Resolves installation issues on Ubuntu Server.
+- Resolves installation issues on Ubuntu Server./
 
 ## PiPedal 1.4.70 Beta
 

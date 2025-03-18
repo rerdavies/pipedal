@@ -172,6 +172,8 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 #define MOD_PREFIX "http://moddevices.com/ns/mod#"
     mod__label = lilv_new_uri(pWorld, MOD_PREFIX "label");
     mod__brand = lilv_new_uri(pWorld, MOD_PREFIX "brand");
+    mod__preferMomentaryOffByDefault = lilv_new_uri(pWorld, MOD_PREFIX "preferMomentaryOffByDefault");
+    mod__preferMomentaryOnByDefault = lilv_new_uri(pWorld, MOD_PREFIX "preferMomentaryOnByDefault");
     // ui:portNotification
     // [
     //         ui:portIndex 3;
@@ -191,6 +193,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     patch__writable = lilv_new_uri(pWorld, LV2_PATCH__writable);
     patch__readable = lilv_new_uri(pWorld, LV2_PATCH__readable);
+    pipedal_patch__readable = lilv_new_uri(pWorld,  PIPEDAL_PATCH__readable);
 
     dc__format = lilv_new_uri(pWorld, "http://purl.org/dc/terms/format");
 
@@ -1000,7 +1003,8 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
         }
     }
     this->integer_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->integer_property_uri);
-
+    this->mod_momentaryOffByDefault_ = lilv_port_has_property(plugin, pPort, host->lilvUris->mod__preferMomentaryOffByDefault);
+    this->mod_momentaryOnByDefault_ = lilv_port_has_property(plugin, pPort, host->lilvUris->mod__preferMomentaryOnByDefault);
     this->enumeration_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->enumeration_property_uri);
 
     this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__toggled);
@@ -1236,6 +1240,32 @@ std::shared_ptr<Lv2PluginInfo> PluginHost::GetPluginInfo(const std::string &uri)
         return nullptr;
     }
     return ff->second;
+}
+
+Lv2Pedalboard *PluginHost::UpdateLv2PedalboardStructure(Pedalboard &pedalboard,Lv2Pedalboard *existingPedalboard,Lv2PedalboardErrorList &errorList)
+{
+    ExistingEffectMap existingEffects;
+
+    if (existingPedalboard)
+    {
+        for (auto &effect : existingPedalboard->GetSharedEffectList())
+        {
+            if (effect->IsLv2Effect()) {
+                existingEffects[effect->GetInstanceId()] = effect;
+            }
+        }
+    }
+    Lv2Pedalboard *pPedalboard = new Lv2Pedalboard();
+    try
+    {
+        pPedalboard->Prepare(this, pedalboard, errorList,&existingEffects);
+        return pPedalboard;
+    }
+    catch (const std::exception &e)
+    {
+        delete pPedalboard;
+        throw;
+    }
 }
 
 Lv2Pedalboard *PluginHost::CreateLv2Pedalboard(Pedalboard &pedalboard, Lv2PedalboardErrorList &errorMessages)
@@ -1697,6 +1727,8 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      MAP_REF(Lv2PortInfo, integer_property),
      MAP_REF(Lv2PortInfo, enumeration_property),
      MAP_REF(Lv2PortInfo, toggled_property),
+     MAP_REF(Lv2PortInfo, mod_momentaryOffByDefault),
+     MAP_REF(Lv2PortInfo, mod_momentaryOnByDefault),
      MAP_REF(Lv2PortInfo, not_on_gui),
      MAP_REF(Lv2PortInfo, buffer_type),
      MAP_REF(Lv2PortInfo, port_group),
@@ -1761,6 +1793,9 @@ json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
 
     MAP_REF(Lv2PluginUiPort, range_steps),
     MAP_REF(Lv2PluginUiPort, integer_property),
+
+    MAP_REF(Lv2PluginUiPort, mod_momentaryOffByDefault),
+    MAP_REF(Lv2PluginUiPort, mod_momentaryOnByDefault),
     MAP_REF(Lv2PluginUiPort, enumeration_property),
     MAP_REF(Lv2PluginUiPort, not_on_gui),
     MAP_REF(Lv2PluginUiPort, toggled_property),

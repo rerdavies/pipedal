@@ -508,6 +508,7 @@ void PiPedalModel::FireBanksChanged(int64_t clientId)
     }
 }
 
+
 void PiPedalModel::FirePedalboardChanged(int64_t clientId, bool loadAudioThread)
 {
     if (loadAudioThread)
@@ -593,10 +594,28 @@ void PiPedalModel::UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalbo
 
         UpdateVst3Settings(pedalboard);
 
-        this->pedalboard = pedalboard;
-        UpdateDefaults(&this->pedalboard);
 
-        this->FirePedalboardChanged(clientId);
+
+        Lv2PedalboardErrorList errorMessages;
+        std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{
+            this->pluginHost.UpdateLv2PedalboardStructure(pedalboard, this->lv2Pedalboard.get(), errorMessages)
+        };
+        this->lv2Pedalboard = lv2Pedalboard;
+    
+        // apply the error messages to the lv2Pedalboard.
+        // return true if the error messages have changed
+        audioHost->SetPedalboard(lv2Pedalboard);
+        this->pedalboard = pedalboard;
+        previousPedalboard = this->pedalboard;
+        previousPedalboardLoaded = true;
+        this->pedalboard = pedalboard;
+
+        UpdateRealtimeVuSubscriptions();
+        UpdateRealtimeMonitorPortSubscriptions();
+
+        
+
+        this->FirePedalboardChanged(clientId,false);
         this->SetPresetChanged(clientId, true);
     }
 }
@@ -2159,10 +2178,10 @@ void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
-    for (int i = 0; i < midiEventListeners.size(); ++i)
+    for (int i = 0; i < midiEventListeners.size(); ++i) 
     {
         auto &listener = midiEventListeners[i];
-        if ((!isNote) || (!listener.listenForControlsOnly))
+        if ((!isNote) == (listener.listenForControls))
         {
             auto subscriber = this->GetNotificationSubscriber(listener.clientId);
             if (subscriber)
@@ -2179,10 +2198,10 @@ void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
     audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
 }
 
-void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly)
+void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControls)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    MidiListener listener{clientId, clientHandle, listenForControlsOnly};
+    MidiListener listener{clientId, clientHandle, listenForControls};
     midiEventListeners.push_back(listener);
     audioHost->SetListenForMidiEvent(true);
 }
@@ -2878,4 +2897,9 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
 
         }
     });
+}
+
+bool PiPedalModel::IsInUploadsDirectory(const std::string &path)
+{
+    return storage.IsInUploadsDirectory(path);
 }

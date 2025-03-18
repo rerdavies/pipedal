@@ -34,6 +34,7 @@
 #include "PresetBundle.hpp"
 #include "json.hpp"
 #include "HotspotManager.hpp"
+#include "MimeTypes.hpp"
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
@@ -51,6 +52,22 @@ using namespace pipedal;
 using namespace boost::system;
 namespace fs = std::filesystem;
 
+
+
+static bool HasDotDot(const std::filesystem::path &path) {
+    for (auto &part : path)
+    {
+        if (part == "..") {
+            return true;
+        }
+        if (part == ".") 
+        {
+            return true;
+        }
+    }
+    return false;   
+}
+
 class UserUploadResponse
 {
 public:
@@ -63,6 +80,13 @@ JSON_MAP_REFERENCE(UserUploadResponse, errorMessage)
 JSON_MAP_REFERENCE(UserUploadResponse, path)
 JSON_MAP_END()
 
+static std::string GetMimeType(const std::filesystem::path&path) {
+    std::string extension = path.extension();
+    const MimeTypes&mimeTypes = MimeTypes::instance();
+    auto result = mimeTypes.MimeTypeFromExtension(extension);
+    return result;
+
+}
 static bool IsZipFile(const std::filesystem::path &path)
 {
     std::ifstream f(path);
@@ -119,6 +143,10 @@ public:
             return false;
         }
         std::string segment = request_uri.segment(1);
+        if (segment == "downloadMediaFile")
+        {
+            return true;
+        }
         if (segment == "uploadPluginPresets")
         {
             return true;
@@ -154,7 +182,7 @@ public:
         return false;
     }
 
-    std::string GetContentDispositionHeader(const std::string &name, const std::string &extension)
+    static std::string GetContentDispositionHeader(const std::string &name, const std::string &extension)
     {
         std::string fileName = name.substr(0, 64) + extension;
         std::stringstream s;
@@ -218,6 +246,26 @@ public:
         try
         {
             std::string segment = request_uri.segment(1);
+            if (segment == "downloadMediaFile") {
+                fs::path path = request_uri.query("path");
+                
+                if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                {
+                    throw PiPedalException("File not found.");
+                }
+                auto mimeType = GetMimeType(path);
+                if (mimeType.empty()) {
+                    throw PiPedalException("Can't download files of this type.");
+                }
+                res.set(HttpField::content_type, mimeType);
+                res.set(HttpField::cache_control, "no-cache");
+                std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
+                res.set(HttpField::content_disposition, disposition);
+                size_t contentLength = std::filesystem::file_size(path);
+                res.setContentLength(contentLength);
+                return;
+            }
+
             if (segment == "downloadPluginPresets")
             {
                 std::string name;
@@ -235,6 +283,7 @@ public:
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PLUGIN_PRESETS_EXTENSION));
                 return;
             }
+
             if (segment == "downloadPreset")
             {
                 std::string name;
@@ -294,7 +343,29 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "downloadPluginPresets")
+            if (segment == "downloadMediaFile") {
+                fs::path path = request_uri.query("path");
+                
+                bool t = this->model->IsInUploadsDirectory(path);
+                std::cout << (t? "true": "false") << std::endl;
+                (void)t;
+                if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                {
+                    throw PiPedalException("File not found.");
+                }
+                auto mimeType = GetMimeType(path);
+                if (mimeType.empty()) {
+                    throw PiPedalException("Can't download files of this type.");
+                }
+                res.set(HttpField::content_type, mimeType);
+                res.set(HttpField::cache_control, "no-cache");
+                std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
+                res.set(HttpField::content_disposition, disposition);
+                size_t contentLength = std::filesystem::file_size(path);
+                res.setContentLength(contentLength);
+                res.setBodyFile(path,false);
+                return;
+            } else if (segment == "downloadPluginPresets")
             {
                 std::string name;
                 std::string content;

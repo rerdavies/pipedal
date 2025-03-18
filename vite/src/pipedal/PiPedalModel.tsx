@@ -2297,12 +2297,12 @@ export class PiPedalModel //implements PiPedalModel
     private monitorPatchPropertyListeners: PatchPropertyListenerItem[] = [];
 
     nextListenHandle = 1;
-    listenForMidiEvent(listenForControlsOnly: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle {
+    listenForMidiEvent(listenForControl: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle {
         let handle = this.nextListenHandle++;
 
         this.midiListeners.push(new MidiEventListener(handle, onComplete));
 
-        this.webSocket?.send("listenForMidiEvent", { listenForControlsOnly: listenForControlsOnly, handle: handle });
+        this.webSocket?.send("listenForMidiEvent", { listenForControls: listenForControl, handle: handle });
         return {
             _handle: handle
         };
@@ -2386,6 +2386,16 @@ export class PiPedalModel //implements PiPedalModel
             console.log('cancelListenForMidiEvent: event not found.');
         }
         this.webSocket?.send("cancelListenForMidiEvent", listenHandle._handle);
+    }
+
+    downloadAudioFile(filePath: string) {
+        let downloadUrl = this.varServerUrl + "downloadMediaFile?path=" + encodeURIComponent(filePath);
+
+        // download with no flashing temporary tab.
+        let link = window.document.createElement("A") as HTMLLinkElement;
+        link.href = downloadUrl;
+        link.setAttribute("download", "");
+        link.click();
     }
 
     download(targetType: string, instanceId: number | string): void {

@@ -181,13 +181,13 @@ JSON_MAP_END()
 class ListenForMidiEventBody
 {
 public:
-    bool listenForControlsOnly_;
+    bool listenForControls_;
     int64_t handle_;
     DECLARE_JSON_MAP(ListenForMidiEventBody);
 };
 
 JSON_MAP_BEGIN(ListenForMidiEventBody)
-JSON_MAP_REFERENCE(ListenForMidiEventBody, listenForControlsOnly)
+JSON_MAP_REFERENCE(ListenForMidiEventBody, listenForControls)
 JSON_MAP_REFERENCE(ListenForMidiEventBody, handle)
 JSON_MAP_END()
 
@@ -1072,7 +1072,7 @@ public:
         {
             ListenForMidiEventBody body;
             pReader->read(&body);
-            this->model.ListenForMidiEvent(this->clientId, body.handle_, body.listenForControlsOnly_);
+            this->model.ListenForMidiEvent(this->clientId, body.handle_, body.listenForControls_);
         }
         else if (message == "cancelListenForMidiEvent")
         {

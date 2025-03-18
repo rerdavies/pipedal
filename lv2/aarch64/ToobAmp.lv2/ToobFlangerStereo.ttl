@@ -41,7 +41,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 57 ;
+        lv2:microVersion 58 ;
         rdfs:comment """
 Digital emulation of a Boss BF-2 Flanger.
 
@@ -99,6 +99,7 @@ should use the monophonic version of this effect.
                 a lv2:OutputPort ,
                 lv2:ControlPort ;
 
+                lv2:portProperty epp:notOnGUI;
                 lv2:index 3 ;
                 lv2:symbol "lfo" ;
                 lv2:name "LFO";

@@ -22,6 +22,7 @@
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix pipedal_patch: <http://github.com/rerdavies/pipedal/patch#> .
 @prefix toob: <http://two-play.com/plugins/toob#> .
 
 @prefix cabsim: <two-play.com/plugins/toob-cab-sim#> .
@@ -49,13 +50,13 @@ toob:frequencyResponseVector
     doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
     doap:maintainer <http://two-play.com/rerdavies#me> ;
     lv2:minorVersion 0 ;
-    lv2:microVersion 57 ;
+    lv2:microVersion 58 ;
 
     mod:brand "TooB";
     mod:label "TooB CabSim";
     lv2:requiredFeature urid:map ;
     lv2:optionalFeature lv2:hardRTCapable;
-    patch:readable 
+    pipedal_patch:readable 
             toob:frequencyResponseVector;
 
 rdfs:comment """

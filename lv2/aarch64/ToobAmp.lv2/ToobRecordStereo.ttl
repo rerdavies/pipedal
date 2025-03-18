@@ -1,0 +1,325 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ui: <http://lv2plug.in/ns/extensions/ui#> .
+@prefix pprop: <http://lv2plug.in/ns/ext/port-props#>  .
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+
+@prefix recordPrefix: <http://two-play.com/plugins/toob-record#> .
+@prefix myprefix: <http://two-play.com/plugins/toob-record-stereo#> .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+recordPrefix:audioFile
+        a lv2:Parameter;
+        rdfs:label "File";
+	mod:fileTypes "audiorecording,audio";
+        rdfs:range atom:Path;
+        lv2:index  6
+        .
+
+myprefix:stereoInGroup 
+   a pg:StereoGroup, pg:InputGroup ;
+   rdfs:label "Stereo Input" ;
+   lv2:symbol "in_g" .
+  
+myprefix:steroOutGroup a pg:Group ;
+   a pg:StereoGroup, pg:OuputGroup ;
+   rdfs:label "Stereo Output" ;
+   lv2:symbol "out_g" .
+  
+
+myprefix:loop0_group
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Master" ;
+    lv2:symbol "loop0_group" .
+
+myprefix:loop1_group
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "1" ;
+    lv2:symbol "loop1_group" .
+
+myprefix:loop2_group
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "2" ;
+    lv2:symbol "loop2_group" .
+
+myprefix:loop3_group
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "3" ;
+    lv2:symbol "loop3_group" .
+
+
+
+
+<http://two-play.com/plugins/toob-record-stereo>
+        a lv2:Plugin ,
+                lv2:UtilityPlugin ;
+                doap:name "TooB Record Input (stereo)" 
+                ;
+        doap:license <https://opensource.org/license/mit/> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+        lv2:minorVersion 1 ;
+        lv2:microVersion 58 ;
+
+        ui:ui <http://two-play.com/plugins/toob-record-stereo-ui>;
+
+        patch:readable 
+                recordPrefix:audioFile;
+        patch:writable 
+                recordPrefix:audioFile;
+
+        lv2:extensionData state:interface ;
+
+
+        rdfs:comment """
+Record the plugin's audio input signal to a stereophonic file. See also: TooB Record Input (mono), which records a monophonic file.
+""" ;
+
+        mod:brand "TooB";
+        mod:label "Record Input";
+        lv2:optionalFeature lv2:hardRTCapable;
+
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  0;
+                lv2:symbol "stop" ;
+                lv2:name "⏹";
+                rdfs:comment "Stop.";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  1;
+                lv2:symbol "record" ;
+                lv2:name "⏺";
+                rdfs:comment "Start recording. Click again to stop.";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  2;
+                lv2:symbol "record_led" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "red";
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  3;
+                lv2:symbol "play" ;
+                lv2:name "⏵";
+                rdfs:comment "Preview the recorded file. Click again to stop.";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,pprop:trigger;
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  4;
+                lv2:symbol "play_led" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                pipedal_ui:ledColor "green";
+        ],  
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  5;
+                lv2:symbol "record_time" ;
+                rdfs:comment "Time"; 
+                lv2:name "";
+                units:unit units:s ;
+
+                lv2:minimum 0.0;
+                lv2:maximum 1000000.0;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  6;
+                lv2:symbol "fformat" ;
+                lv2:name "Format";
+                rdfs:comment "Recording File Format";
+
+                lv2:portProperty lv2:integer, lv2:enumeration ;
+
+                lv2:default 0.0 ;
+                lv2:minimum 0 ;
+                lv2:maximum 3 ;
+                lv2:scalePoint [
+                        rdfs:label "WAV" ;
+                        rdf:value 0
+                ],
+                [
+                        rdfs:label "WAV (float32)" ;
+                        rdf:value 1
+                ],
+                [
+                        rdfs:label "FLAC" ;
+                        rdf:value 2;
+                ],
+                [
+                        rdfs:label "MP3" ;
+                        rdf:value 3
+                ]
+                ;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  7;
+                lv2:symbol "level" ;
+                lv2:name "Level";
+                lv2:name "Input trim level for recording";
+                lv2:default 0.0 ;
+                lv2:minimum -60.0;
+                lv2:maximum 30.0;
+                lv2:scalePoint [
+                        rdfs:label "-INF" ;
+                        rdf:value -60.0
+                ];
+                units:unit units:db
+
+
+
+        ],  
+         
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 8 ;
+                lv2:symbol "level_vu" ;
+                lv2:name "";
+                rdfs:comment "Recording level";
+
+                lv2:default -60 ;
+                lv2:minimum -60 ;
+                lv2:maximum 20 ;
+                units:unit units:db
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 9 ;
+                lv2:symbol "in" ;
+                lv2:name "In";
+                pg:group myprefix:stereoInGroup ;
+                lv2:designation pg:left
+
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 10 ;
+                lv2:symbol "out" ;
+                lv2:name "Out";
+                pg:group myprefix:stereoOutGroup ;
+                lv2:designation pg:left
+        ],  
+
+        [
+                a atom:AtomPort ,
+                        lv2:InputPort ;
+                lv2:index 11 ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+
+                lv2:symbol "controlIn" ;
+                lv2:name "ControlIn"
+        ],
+        [
+                a atom:AtomPort ,
+                        lv2:OutputPort ;
+                lv2:index 12 ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+
+                lv2:symbol "controlOut" ;
+                lv2:name "ControlOut"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 13 ;
+                lv2:symbol "inR" ;
+                lv2:name "InR" ;
+                pg:group myprefix:stereoInGroup ;
+                lv2:designation pg:right
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 14 ;
+                lv2:symbol "outR" ;
+                lv2:name "OutR" ;
+                pg:group myprefix:stereoOutGroup ;
+                lv2:designation pg:right
+                
+        ]
+        .
+
+
+<http://two-play.com/plugins/toob-record-stereo-ui> 
+    a  ui:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+    lv2:extensionData ui:resize ;
+    lv2:extensionData ui:idleInterface ;
+    lv2:requiredFeature ui:idleInterface ;
+.
+
+ 

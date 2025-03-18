@@ -20,8 +20,7 @@
 import React from 'react';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
-
+import { createStyles } from './WithStyles';
 import { withStyles } from "tss-react/mui";
 import Button from '@mui/material/Button';
 import DialogEx from './DialogEx';
@@ -34,7 +33,7 @@ import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import { PiPedalModelFactory } from "./PiPedalModel";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { UiPlugin, UiControl } from './Lv2Plugin';
+import { UiPlugin, PortGroup } from './Lv2Plugin';
 import PluginIcon from './PluginIcon';
 import { Remark } from 'react-remark';
 import { css } from '@emotion/react';
@@ -56,6 +55,9 @@ const styles = (theme: Theme) => {
         icon: {
             fill: theme.palette.text.primary,
             opacity: 0.6
+        },
+        controlHeader: {
+            borderBottom: "1px solid " + theme.palette.divider,
         }
     });
 };
@@ -88,7 +90,7 @@ const PluginInfoDialogContent = withStyles(
     (theme: Theme) => ({
         root: {
             padding: theme.spacing(2),
-        }    
+        }
     })
 );
 
@@ -146,7 +148,8 @@ function ioDescription(plugin: UiPlugin): string {
 
 //     );
 // }
-function makeControls(controls: UiControl[]) {
+function makeControls(plugin: UiPlugin, controlHeadeClass: string) {
+    let controls = plugin.controls;
     let hasComments = false;
 
     for (let i = 0; i < controls.length; ++i) {
@@ -156,14 +159,32 @@ function makeControls(controls: UiControl[]) {
         }
     }
     hasComments = true;
+    let lastPortGroup: PortGroup | null = null;
+
     if (hasComments) {
         let trs: React.ReactElement[] = [];
         for (let i = 0; i < controls.length; ++i) {
             let control = controls[i];
-            if (!(control.not_on_gui) && control.is_input)
+            if (!(control.not_on_gui) && control.is_input) {
+                let portGroup = plugin.getPortGroupBySymbol(control.port_group);
+                if (portGroup !== lastPortGroup) {
+                    if (portGroup !== null) 
+                    {
+                        trs.push((
+                            <tr>
+                                <td className={controlHeadeClass} style={{ verticalAlign: "top", paddingTop: 8 }} colSpan={2}>
+                                    <Typography variant="body2" style={{ whiteSpace: "nowrap" }}>
+                                        {portGroup?.name ?? ""}
+                                    </Typography>
+                                </td>
+                            </tr >
+                        ));
+                    }
+                    lastPortGroup = portGroup;
+                }
                 trs.push((
                     <tr>
-                        <td style={{ verticalAlign: "top" }}>
+                        <td style={{ verticalAlign: "top", paddingLeft: portGroup ? 24 : 0 }}>
                             <Typography variant="body2" style={{ whiteSpace: "nowrap" }}>
                                 {control.name}
                             </Typography>
@@ -175,14 +196,14 @@ function makeControls(controls: UiControl[]) {
                         </td>
                     </tr >
                 ));
-
+            }
         }
         return (
-            <table style={{ paddingLeft: "24px", verticalAlign: "top" }}>
+            <table style={{ paddingLeft: "24px", verticalAlign: "top" }}><tbody>
                 {
                     trs
                 }
-            </table>
+            </tbody></table>
         );
 
     } else {
@@ -290,7 +311,7 @@ const PluginInfoDialog = withStyles((props: PluginInfoProps) => {
                             Controls:
                         </Typography>
                         {
-                            makeControls(plugin.controls)
+                            makeControls(plugin, classes.controlHeader)
                         }
                         {plugin.description.length > 0 && (
                             <div>
@@ -338,6 +359,6 @@ const PluginInfoDialog = withStyles((props: PluginInfoProps) => {
         </div >
     );
 },
-styles);
+    styles);
 
 export default PluginInfoDialog;

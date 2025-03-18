@@ -5,7 +5,7 @@ set (CMAKE_INSTALL_PREFIX "/usr/")
 
 set (USE_PCH 1)
 
-set (ENABLE_BACKTRACE 1)
+set (ENABLE_BACKTRACE 0)
 
 set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 

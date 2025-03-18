@@ -155,6 +155,7 @@ const styles = (theme: Theme) => createStyles({
         paddingLeft: 30,
         paddingRight: 30,
         paddingTop: 8,
+        
         flex: "1 1 auto",
         display: "flex", flexDirection: "row", flexWrap: "wrap",
         justifyContent: "flex-start", alignItems: "flex_start",
@@ -170,6 +171,7 @@ const styles = (theme: Theme) => createStyles({
         // See the spacer div added after all controls in render() with provides the same effect.
         display: "flex", flexDirection: "row", flexWrap: "nowrap",
         justifyContent: "flex-start", alignItems: "flex-start",
+        
         overflowX: "hidden",
         overflowY: "hidden",
         flex: "0 0 auto",
@@ -208,7 +210,7 @@ const styles = (theme: Theme) => createStyles({
         marginBottom: 12,
         position: "relative",
         paddingLeft: 3,
-        paddingRight: 0,
+        paddingRight: 8,
         paddingTop: 0,
         paddingBottom: 0,
         border: "2pt #AAA solid",
@@ -216,6 +218,7 @@ const styles = (theme: Theme) => createStyles({
         elevation: 12,
         display: "flex",
         flexDirection: "row", flexWrap: "wrap",
+        
         flex: "0 1 auto",
     }),
     portGroupLandscape: css({
@@ -226,6 +229,7 @@ const styles = (theme: Theme) => createStyles({
         position: "relative",
         paddingLeft: 0,
         paddingRight: 0,
+        
         paddingTop: 0,
         paddingBottom: 0,
         border: "2pt #AAA solid",
@@ -253,6 +257,7 @@ const styles = (theme: Theme) => createStyles({
         display: "flex",
         flexDirection: "row", flexWrap: "wrap",
         paddingTop: 6,
+        rowGap: 16,
         paddingBottom: 8
     }),
     portGroupControlsLandscape: css({
@@ -260,6 +265,7 @@ const styles = (theme: Theme) => createStyles({
         flexFlow: "row nowrap",
         width: "fit-content",
         paddingTop: 6,
+        rowGap: 16,
         paddingBottom: 8
     })
 
@@ -779,6 +785,20 @@ const PluginControlView =
                                 onCancel={() => {
                                     this.setState({ showFileDialog: false });
                                 }}
+                                onApply={(fileProperty,selectedFile) => {
+                                    this.model.setPatchProperty(
+                                        this.props.instanceId,
+                                        fileProperty.patchProperty,
+                                        JsonAtom.Path(selectedFile)
+                                    )
+                                        .then(() => {
+
+                                        })
+                                        .catch((error) => {
+                                            this.model.showAlert("Unable to complete the operation. " + error);
+                                        });
+
+                                }}
                                 onOk={(fileProperty, selectedFile) => {
 
                                     this.model.setPatchProperty(
@@ -790,7 +810,7 @@ const PluginControlView =
 
                                         })
                                         .catch((error) => {
-                                            this.model.showAlert("Unable to complete the operation. Audio is not running." + error);
+                                            this.model.showAlert("Unable to complete the operation. " + error);
                                         });
                                     this.setState({ showFileDialog: false });
                                 }

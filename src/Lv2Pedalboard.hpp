@@ -35,6 +35,8 @@ namespace pipedal
     class RealtimePatchPropertyRequest;
     class RealtimeRingBufferWriter;
 
+    using ExistingEffectMap = std::map<uint64_t, std::shared_ptr<IEffect>>;
+
     struct Lv2PedalboardError
     {
         int64_t intanceId;
@@ -78,7 +80,8 @@ namespace pipedal
             Select,
             Dial,
             Toggle,
-            Trigger
+            Trigger,
+            MomentarySwitch
         };
         class MidiMapping
         {
@@ -101,7 +104,8 @@ namespace pipedal
         std::vector<float *> PrepareItems(
             std::vector<PedalboardItem> &items,
             std::vector<float *> inputBuffers,
-            Lv2PedalboardErrorList &errorList);
+            Lv2PedalboardErrorList &errorList,
+            ExistingEffectMap *existingEffects);
 
         void PrepareMidiMap(const Pedalboard &pedalboard);
         void PrepareMidiMap(const PedalboardItem &pedalboardItem);
@@ -114,9 +118,12 @@ namespace pipedal
         Lv2Pedalboard() {}
         ~Lv2Pedalboard() {}
 
-        void Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList);
+
+        void Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList, ExistingEffectMap *existingEffects = nullptr);
 
         std::vector<IEffect *> &GetEffects() { return realtimeEffects; }
+        std::vector<std::shared_ptr<IEffect>> &GetSharedEffectList() { return effects; }
+
 
         int GetIndexOfInstanceId(uint64_t instanceId)
         {
@@ -140,6 +147,8 @@ namespace pipedal
         }
         void Activate();
         void Deactivate();
+        void UpdateAudioPorts();
+        
         bool Run(float **inputBuffers, float **outputBuffers, uint32_t samples, RealtimeRingBufferWriter *realtimeWriter);
 
         void ResetAtomBuffers();

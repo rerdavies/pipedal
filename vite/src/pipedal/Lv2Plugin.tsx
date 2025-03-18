@@ -451,9 +451,12 @@ export enum ControlType {
     ABSwitch,
     Select,
     Trigger,
+    Momentary,
+    MomentaryOnByDefault,
 
     Tuner,
     Vu,
+    Progress,
     DbVu,
     OutputText
 }
@@ -494,6 +497,8 @@ deserialize(input: any): UiControl {
         this.display_priority = input.display_priority;
         this.range_steps = input.range_steps;
         this.integer_property = input.integer_property;
+        this.mod_momentaryOffByDefault = input.mod_momentaryOffByDefault;
+        this.mod_momentaryOnByDefault = input.mod_momentaryOnByDefault;
         this.enumeration_property = input.enumeration_property;
         this.toggled_property = input.toggled_property;
         this.trigger_property = input.trigger_property;
@@ -522,6 +527,8 @@ deserialize(input: any): UiControl {
 
             } else if (this.units === Units.db) {
                 this.controlType = ControlType.DbVu;
+            } else if (this.units === Units.pc) {
+                this.controlType = ControlType.Progress;
             } else if (this.enumeration_property) {
                 this.controlType = ControlType.OutputText;
             } else if (displayUnitAsText(this.units))
@@ -533,7 +540,7 @@ deserialize(input: any): UiControl {
         }
         if (this.isValidEnumeration()) {
             this.controlType = ControlType.Select;
-            if (this.scale_points.length === 2) {
+            if (this.scale_points.length === 2 && this.min_value === 0 && this.max_value === 1) {
                 this.controlType = ControlType.ABSwitch;
             }
         } else {
@@ -541,9 +548,15 @@ deserialize(input: any): UiControl {
                 this.controlType = ControlType.OnOffSwitch;
             }
         }
-        if (this.is_input && this.trigger_property)
+        if (this.is_input)
         {
-            this.controlType = ControlType.Trigger;
+            if (this.mod_momentaryOnByDefault) {
+                this.controlType = ControlType.MomentaryOnByDefault;
+            } else if (this.mod_momentaryOffByDefault) {
+                this.controlType = ControlType.Momentary;
+            } else if (this.trigger_property) {
+                this.controlType = ControlType.Trigger;
+            } 
         }
         return this;
     }
@@ -591,6 +604,8 @@ deserialize(input: any): UiControl {
     display_priority: number = -1;
     range_steps: number = 0;
     integer_property: boolean = false;
+    mod_momentaryOffByDefault: boolean = false;
+    mod_momentaryOnByDefault: boolean = false;
     enumeration_property: boolean = false;
     trigger_property: boolean = false;
     not_on_gui: boolean = false;
@@ -640,6 +655,14 @@ deserialize(input: any): UiControl {
     isTrigger(): boolean {
         return this.controlType === ControlType.Trigger;
     }
+    isMomentary(): boolean {
+        return this.controlType === ControlType.Momentary;
+    }
+    isMomentaryOnByDefault(): boolean {
+        return this.controlType === ControlType.MomentaryOnByDefault;
+    }
+
+
     isOutputText(): boolean {
         return !this.is_input && this.controlType === ControlType.OutputText;
     }
@@ -661,6 +684,9 @@ deserialize(input: any): UiControl {
 
     isDbVu(): boolean {
         return this.controlType === ControlType.DbVu;
+    }
+    isProgress(): boolean {
+        return this.controlType === ControlType.Progress;
     }
 
     valueToRange(value: number): number {

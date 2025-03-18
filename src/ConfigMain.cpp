@@ -724,7 +724,8 @@ void SetVarPermissions(
 
                     if (chown(entry.path().c_str(), uid, gid) != 0)
                     {
-                        std::cout << "Error: failed to set ownership of file " << entry.path() << std::endl;
+                        // Expect spurious pulse config files to be un-chown-able.
+                        // std::cout << "Error: failed to set ownership of file " << entry.path() << std::endl;
                     }
 
                     try
@@ -740,7 +741,8 @@ void SetVarPermissions(
                     }
                     catch (const std::exception &e)
                     {
-                        std::cout << "Error: failed to set permissions on file " << entry.path() << std::endl;
+                        // spurious errors on pulse config files.
+                       // std::cout << "Error: failed to set permissions on file " << entry.path() << std::endl;
                     }
                 }
             }

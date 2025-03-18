@@ -15,6 +15,8 @@
 @prefix work:  <http://lv2plug.in/ns/ext/worker#> .
 @prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
 @prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix pipedal_patch: <http://github.com/rerdavies/pipedal/patch#> .
+
 @prefix toob: <http://two-play.com/plugins/toob#> .
 
 @prefix atom: <http://lv2plug.in/ns/ext/atom#> .
@@ -65,7 +67,7 @@ toobml:sagGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 57 ;
+        lv2:microVersion 58 ;
         rdfs:comment """
 The TooB ML Amplifier plugin provides emulation of a variety of amplifiers and overdrive pedals that are implemented 
 using neural-network-based machine learning models of real amplifiers.
@@ -127,7 +129,7 @@ and uses model files from the GuitarML Neural Pi project (https://github.com/Gui
         patch:writable 
                 toobml:modelFile;
 
-        patch:readable 
+        pipedal_patch:readable 
                 <http://two-play.com/plugins/toob#frequencyResponseVector>
                 ;
 

@@ -145,7 +145,7 @@ namespace pipedal
         public:
             int64_t clientId;
             int64_t clientHandle;
-            bool listenForControlsOnly;
+            bool listenForControls;
         };
         class AtomOutputListener
         {
@@ -436,7 +436,7 @@ namespace pipedal
         JackServerSettings GetJackServerSettings();
         void SetJackServerSettings(const JackServerSettings &jackServerSettings);
 
-        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControlsOnly);
+        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControls);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
 
         void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri);
@@ -455,6 +455,8 @@ namespace pipedal
         std::string CreateNewSampleDirectory(const std::string &relativePath, const UiFileProperty &uiFileProperty);
         std::string RenameFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty);
         FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath);
+
+        bool IsInUploadsDirectory(const std::string &path);
 
         std::string UploadUserFile(const std::string &directory, int64_t instanceId, const std::string &patchProperty, const std::string &filename, std::istream &inputStream, size_t streamLength);
         uint64_t CreateNewPreset();

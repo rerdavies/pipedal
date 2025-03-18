@@ -218,6 +218,10 @@ namespace pipedal
         bool integer_property_ = false;
         bool enumeration_property_ = false;
         bool toggled_property_ = false;
+
+        bool mod_momentaryOffByDefault_ = false;
+        bool mod_momentaryOnByDefault_ = false;
+
         bool not_on_gui_ = false;
         std::string buffer_type_;
         std::string port_group_;
@@ -288,6 +292,8 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(range_steps);
         LV2_PROPERTY_GETSET_SCALAR(trigger_property);
         LV2_PROPERTY_GETSET_SCALAR(integer_property);
+        LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOffByDefault);
+        LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOnByDefault);
         LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
         LV2_PROPERTY_GETSET_SCALAR(toggled_property);
         LV2_PROPERTY_GETSET_SCALAR(not_on_gui);
@@ -503,7 +509,12 @@ namespace pipedal
             : symbol_(pPort->symbol()), index_(pPort->index()),
               is_input_(pPort->is_input()), name_(pPort->name()), min_value_(pPort->min_value()), max_value_(pPort->max_value()),
               default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()),
-              is_logarithmic_(pPort->is_logarithmic()), integer_property_(pPort->integer_property()), enumeration_property_(pPort->enumeration_property()),
+              is_logarithmic_(pPort->is_logarithmic()), 
+              integer_property_(pPort->integer_property()), 
+              mod_momentaryOffByDefault_(pPort->mod_momentaryOffByDefault()),
+              mod_momentaryOnByDefault_(pPort->mod_momentaryOnByDefault()),
+              
+              enumeration_property_(pPort->enumeration_property()),
               toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()),
               trigger_property_(pPort->trigger_property()),
               pipedal_ledColor_(pPort->pipedal_ledColor()),
@@ -544,6 +555,9 @@ namespace pipedal
 
         int range_steps_ = 0;
         bool integer_property_ = false;
+
+        bool mod_momentaryOffByDefault_ = false;
+        bool mod_momentaryOnByDefault_ = false;
         bool enumeration_property_ = false;
         bool not_on_gui_ = false;
         bool toggled_property_ = false;
@@ -743,10 +757,12 @@ namespace pipedal
 
             AutoLilvNode patch__writable;
             AutoLilvNode patch__readable;
+            AutoLilvNode pipedal_patch__readable;
 
             AutoLilvNode mod__brand;
             AutoLilvNode mod__label;
-
+            AutoLilvNode mod__preferMomentaryOffByDefault;
+            AutoLilvNode mod__preferMomentaryOnByDefault;
             AutoLilvNode dc__format;
 
             AutoLilvNode mod__fileTypes;
@@ -884,6 +900,8 @@ namespace pipedal
         IHost *asIHost() { return this; }
 
         virtual Lv2Pedalboard *CreateLv2Pedalboard(Pedalboard &pedalboard,Lv2PedalboardErrorList &errorList);
+
+        virtual Lv2Pedalboard *UpdateLv2PedalboardStructure(Pedalboard &pedalboard,Lv2Pedalboard *existingPedalboard,Lv2PedalboardErrorList &errorList);
 
         void setSampleRate(double sampleRate)
         {

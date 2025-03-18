@@ -25,6 +25,7 @@
 @prefix modgui: <http://moddevices.com/ns/modgui#> .
 @prefix pstage: <http://two-play.com/plugins/toob-power-stage-2#> .
 
+@prefix pipedal_patch: <http://github.com/rerdavies/pipedal/patch#> .
 
 pstage:stage1
     a param:ControlGroup ,
@@ -67,13 +68,13 @@ pstage:stage3
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 57 ;
+        lv2:microVersion 58 ;
 
         mod:brand "TooB";
         mod:label "Power Stage";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
-        patch:readable 
+        pipedal_patch:readable 
                 <http://two-play.com/plugins/toob-power-stage-2#uiState>;
 
 rdfs:comment """

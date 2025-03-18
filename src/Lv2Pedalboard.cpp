@@ -60,18 +60,20 @@ int Lv2Pedalboard::GetControlIndex(uint64_t instanceId, const std::string &symbo
 std::vector<float *> Lv2Pedalboard::PrepareItems(
     std::vector<PedalboardItem> &items,
     std::vector<float *> inputBuffers,
-    Lv2PedalboardErrorList &errorList)
+    Lv2PedalboardErrorList &errorList,
+    ExistingEffectMap *existingEffects)
 {
     for (int i = 0; i < items.size(); ++i)
     {
         auto &item = items[i];
         if (!item.isEmpty())
         {
-            IEffect *pEffect = nullptr;
+            std::shared_ptr<IEffect> pEffect = nullptr;
+
             if (item.isSplit())
             {
                 auto pSplit = new SplitEffect(item.instanceId(), pHost->GetSampleRate(), inputBuffers);
-                pEffect = pSplit;
+                pEffect = std::shared_ptr<IEffect>(pSplit);
 
                 int topInputChannels = inputBuffers.size();
                 int bottomInputChannels = inputBuffers.size();
@@ -84,8 +86,8 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                 this->processActions.push_back(preMixAction);
 
-                std::vector<float *> topResult = PrepareItems(item.topChain(), topInputs, errorList);
-                std::vector<float *> bottomResult = PrepareItems(item.bottomChain(), bottomInputs, errorList);
+                std::vector<float *> topResult = PrepareItems(item.topChain(), topInputs, errorList,existingEffects);
+                std::vector<float *> bottomResult = PrepareItems(item.bottomChain(), bottomInputs, errorList,existingEffects);
 
                 this->processActions.push_back(
                     [pSplit](uint32_t frames)
@@ -94,7 +96,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                 // if split is L/R, always output stereo.
 
                 bool forceStereo = (controlValue != nullptr && controlValue->value() == 2);
-                pSplit->SetChainBuffers(topInputs, bottomInputs, topResult, bottomResult,forceStereo);
+                pSplit->SetChainBuffers(topInputs, bottomInputs, topResult, bottomResult, forceStereo);
 
                 for (int i = 0; i < item.controlValues().size(); ++i)
                 {
@@ -108,31 +110,40 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
             }
             else
             {
+                std::shared_ptr<IEffect> pLv2Effect;
 
-                IEffect *pLv2Effect = nullptr;
-                try
+                if (existingEffects && existingEffects->contains(item.instanceId())
+                )
                 {
-                    pLv2Effect = this->pHost->CreateEffect(item);
+                    pLv2Effect = existingEffects->at(item.instanceId());
+                    ((Lv2Effect*)pLv2Effect.get())->SetBorrowedEffect(true);
                 }
-                catch (const std::exception &e)
+                else
                 {
-                    Lv2Log::warning(SS(e.what()));
-                }
+                    try
+                    {
+                        pLv2Effect = std::shared_ptr<IEffect>(this->pHost->CreateEffect(item));
+                    }
+                    catch (const std::exception &e)
+                    {
+                        Lv2Log::warning(SS(e.what()));
+                    }
 
-                if (pLv2Effect)
-                {
-
-                    if (pLv2Effect->HasErrorMessage())
+                    if (pLv2Effect && pLv2Effect->HasErrorMessage())
                     {
                         std::string error = pLv2Effect->TakeErrorMessage();
                         Lv2Log::error(error);
                         errorList.push_back({item.instanceId(), error});
                     }
+                }
+
+                if (pLv2Effect)
+                {
 
                     pEffect = pLv2Effect;
 
                     uint64_t instanceId = pEffect->GetInstanceId();
-                    pLv2Effect->PrepareNoInputEffect(inputBuffers.size(),pHost->GetMaxAudioBufferSize());
+                    pLv2Effect->PrepareNoInputEffect(inputBuffers.size(), pHost->GetMaxAudioBufferSize());
 
                     if (inputBuffers.size() == 1)
                     {
@@ -173,35 +184,34 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                     // Reset any trigger controls to default state after processing
                     if (pLv2Effect->IsLv2Effect())
                     {
-                        Lv2Effect*lv2Effect = (Lv2Effect*)pLv2Effect;
+                        Lv2Effect *lv2Effect = (Lv2Effect *)pLv2Effect.get();
                         auto pluginInfo = pHost->GetPluginInfo(item.uri());
-                        if (pluginInfo) {
-                            for (auto control: pluginInfo->ports())
+                        if (pluginInfo)
+                        {
+                            for (auto control : pluginInfo->ports())
                             {
                                 if (control->trigger_property() && control->is_input() && control->is_control_port())
                                 {
                                     int controlIndex = lv2Effect->GetControlIndex(control->symbol());
-                                    if (controlIndex >= 0) 
+                                    if (controlIndex >= 0)
                                     {
                                         float defaultValue = control->default_value();
                                         this->processActions.push_back(
-                                            [pLv2Effect,controlIndex,defaultValue](int32_t frames) {
-                                                pLv2Effect->SetControl(controlIndex,defaultValue);
-                                            }
-                                        );
+                                            [pLv2Effect, controlIndex, defaultValue](int32_t frames)
+                                            {
+                                                pLv2Effect->SetControl(controlIndex, defaultValue);
+                                            });
                                     }
-
                                 }
                             }
                         }
-
                     }
                 }
             }
             if (pEffect)
             {
-                this->effects.push_back(std::shared_ptr<IEffect>(pEffect)); // for ownership.
-                this->realtimeEffects.push_back(pEffect);                   // because std::shared_ptr is not threadsafe.
+                this->effects.push_back(pEffect);               // for ownership.
+                this->realtimeEffects.push_back(pEffect.get()); // because std::shared_ptr is not threadsafe.
 
                 std::vector<float *> effectOutput;
 
@@ -214,7 +224,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                     effectOutput.push_back(CreateNewAudioBuffer());
                     effectOutput.push_back(CreateNewAudioBuffer());
                 }
-                for (size_t i = 0; i < effectOutput.size(); ++i) 
+                for (size_t i = 0; i < effectOutput.size(); ++i)
                 {
                     pEffect->SetAudioOutputBuffer(i, effectOutput[i]);
                 }
@@ -225,7 +235,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
     return inputBuffers;
 }
 
-void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList)
+void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList, ExistingEffectMap *existingEffects)
 {
     this->pHost = pHost;
 
@@ -242,7 +252,7 @@ void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardE
         this->pedalboardInputBuffers.push_back(bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize()));
     }
 
-    auto outputs = PrepareItems(pedalboard.items(), this->pedalboardInputBuffers, errorList);
+    auto outputs = PrepareItems(pedalboard.items(), this->pedalboardInputBuffers, errorList, existingEffects);
     int nOutputs = pHost->GetNumberOfOutputAudioChannels();
     if (nOutputs == 1)
     {
@@ -276,7 +286,6 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
         else
         {
             pluginInfo = pHost->GetPluginInfo(pedalboardItem.uri());
-            
         }
 
         int effectIndex = this->GetIndexOfInstanceId(pedalboardItem.instanceId());
@@ -315,10 +324,15 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
                     mapping.midiBinding = binding;
                     mapping.instanceId = pedalboardItem.instanceId();
 
-                    if (pPortInfo->trigger_property())
+                    if (pPortInfo->mod_momentaryOffByDefault() || pPortInfo->mod_momentaryOnByDefault())
+                    {
+                        mapping.mappingType = MidiControlType::MomentarySwitch;
+                    }
+                    else if (pPortInfo->trigger_property())
                     {
                         mapping.mappingType = MidiControlType::Trigger;
-                    } else if (pPortInfo->IsSwitch())
+                    }
+                    else if (pPortInfo->IsSwitch())
                     {
                         mapping.mappingType = MidiControlType::Toggle;
                     }
@@ -326,7 +340,7 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
                     {
                         mapping.mappingType = MidiControlType::Select;
                     }
-                    else 
+                    else
                     {
                         mapping.mappingType = MidiControlType::Dial;
                     }
@@ -365,12 +379,25 @@ void Lv2Pedalboard::PrepareMidiMap(const Pedalboard &pedalboard)
     {
         auto &item = pedalboard.items()[i];
         PrepareMidiMap(item);
-
     }
     std::sort(this->midiMappings.begin(), this->midiMappings.end(),
-                [](const MidiMapping &left, const MidiMapping &right)
-                { return left.key < right.key; });
+              [](const MidiMapping &left, const MidiMapping &right)
+              { return left.key < right.key; });
 }
+
+void Lv2Pedalboard::UpdateAudioPorts()
+{
+    for (int i = 0; i < this->effects.size(); ++i)
+    {
+        IEffect *effect = this->realtimeEffects[i];
+        if (effect->IsLv2Effect())
+        {
+            Lv2Effect *lv2Effect = (Lv2Effect *)effect;
+            lv2Effect->UpdateAudioPorts();
+        }   
+    }
+}
+
 void Lv2Pedalboard::Activate()
 {
     for (int i = 0; i < this->effects.size(); ++i)
@@ -522,18 +549,17 @@ void Lv2Pedalboard::ResetAtomBuffers()
     }
 }
 
-
-void Lv2Pedalboard::GatherPathPatchProperties(IPatchWriterCallback*cbPatchWriter)
+void Lv2Pedalboard::GatherPathPatchProperties(IPatchWriterCallback *cbPatchWriter)
 {
-    for (auto& pEffect : this->effects) {
+    for (auto &pEffect : this->effects)
+    {
         if (pEffect->IsLv2Effect())
         {
-            Lv2Effect *pLv2Effect = (Lv2Effect*)pEffect.get();
+            Lv2Effect *pLv2Effect = (Lv2Effect *)pEffect.get();
             pLv2Effect->GatherPathPatchProperties(cbPatchWriter);
         }
     }
 }
-
 
 void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pParameterRequests)
 {
@@ -571,7 +597,6 @@ void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pPara
         pParameterRequests = pParameterRequests->pNext;
     }
 }
-
 
 void Lv2Pedalboard::GatherPatchProperties(RealtimePatchPropertyRequest *pParameterRequests)
 {
@@ -630,7 +655,7 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
         if (size < 3)
             return;
         index = message[1];
-        value = message[2] == 0? 0: 127; // zero velocity = note off.
+        value = message[2] == 0 ? 0 : 127; // zero velocity = note off.
     }
     else if (cmd == 0xB0) // midi control.
     {
@@ -689,22 +714,25 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
                 case MidiControlType::Trigger:
                 {
                     bool triggered = false;
-                    if (mapping.midiBinding.switchControlType() == SwitchControlTypeT::TRIGGER_ON_RISING_EDGE
-                        || mapping.midiBinding.bindingType() == BINDING_TYPE_NOTE
-                    )
+                    if (mapping.midiBinding.switchControlType() == SwitchControlTypeT::TRIGGER_ON_RISING_EDGE || mapping.midiBinding.bindingType() == BINDING_TYPE_NOTE)
                     {
                         if (mapping.lastValue < range)
                         {
-                            if (!mapping.lastValueIncreasing) {
+                            if (!mapping.lastValueIncreasing)
+                            {
                                 triggered = true;
                             }
                             mapping.lastValueIncreasing = true;
                             mapping.lastValue = range;
-                        } else {
+                        }
+                        else
+                        {
                             mapping.lastValueIncreasing = false;
                             mapping.lastValue = range;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         triggered = true;
                     }
                     if (triggered)
@@ -730,12 +758,15 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
                     {
                         if (range > mapping.lastValue)
                         {
-                            if (!mapping.lastValueIncreasing) {
+                            if (!mapping.lastValueIncreasing)
+                            {
                                 triggered = true;
                             }
                             mapping.lastValueIncreasing = true;
                             mapping.lastValue = range;
-                        } else {
+                        }
+                        else
+                        {
                             mapping.lastValueIncreasing = false;
                             mapping.lastValue = range;
                         }
@@ -748,30 +779,40 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
                             pEffect->SetControl(mapping.controlIndex, currentValue);
                             pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
                         }
-                    } else if (mapping.midiBinding.switchControlType() == SwitchControlTypeT::TOGGLE_ON_VALUE)
+                    }
+                    else if (mapping.midiBinding.switchControlType() == SwitchControlTypeT::TOGGLE_ON_VALUE)
                     {
                         triggered = true;
                         mapping.lastValue = range;
-                            IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
+                        IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
                         float currentValue = pEffect->GetControlValue(mapping.controlIndex);
                         if (currentValue != range)
                         {
                             pEffect->SetControl(mapping.controlIndex, range);
                             pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), range);
                         }
-
-                    } else {
+                    }
+                    else
+                    {
                         // any control value toggles.
                         triggered = true;
                         mapping.lastValue = range;
-                            IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
+                        IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
                         float currentValue = pEffect->GetControlValue(mapping.controlIndex);
-                        currentValue = currentValue == 0 ? 1: 0;
+                        currentValue = currentValue == 0 ? 1 : 0;
                         pEffect->SetControl(mapping.controlIndex, currentValue);
                         pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
                     }
                     break;
                 }
+                case MidiControlType::MomentarySwitch:
+                {
+                    IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
+                    pEffect->SetControl(mapping.controlIndex, range != 0 ? mapping.pPortInfo->max_value() : mapping.pPortInfo->min_value());
+                    // do NOT notify anyone!
+                }
+                break;
+
                 case MidiControlType::Select:
                 case MidiControlType::Dial:
                 {
@@ -780,12 +821,12 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
                     float currentValue = mapping.pPortInfo->rangeToValue(range);
                     if (pEffect->GetControlValue(mapping.controlIndex) != currentValue)
                     {
-                        this->SetControlValue(mapping.effectIndex, mapping.controlIndex,currentValue);
+                        this->SetControlValue(mapping.effectIndex, mapping.controlIndex, currentValue);
                         pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
                     }
                     break;
                 }
-                case  MidiControlType::None:
+                case MidiControlType::None:
                 default:
                     break;
                 }

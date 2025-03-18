@@ -720,7 +720,7 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->captureBuffers;
             int channels = this->captureChannels;
-            constexpr float scale = 1.0f / (std::numeric_limits<int16_t>::max() + 1L);
+            constexpr double scale = 1.0f / (std::numeric_limits<int16_t>::max() + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -891,7 +891,7 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
-            constexpr float scale = std::numeric_limits<int32_t>::max();
+            constexpr double scale = std::numeric_limits<int32_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -913,7 +913,7 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
-            constexpr float scale = 0x00FFFFFF;
+            constexpr double  scale = 0x00FFFFFF;
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -935,7 +935,7 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
-            constexpr float scale = 0x00FFFFFF;
+            constexpr double scale = 0x00FFFFFF;
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -955,7 +955,7 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
-            constexpr float scale = std::numeric_limits<int32_t>::max();
+            constexpr double scale = std::numeric_limits<int32_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -975,7 +975,7 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
-            constexpr float scale = std::numeric_limits<int32_t>::max();
+            constexpr double scale = std::numeric_limits<int32_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -1000,7 +1000,7 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
-            constexpr float scale = std::numeric_limits<int32_t>::max();
+            constexpr double scale = std::numeric_limits<int32_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
