@@ -7,7 +7,6 @@
 @prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
 @prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
 @prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
-@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
 @prefix foaf:  <http://xmlns.com/foaf/0.1/> .
 @prefix mod:   <http://moddevices.com/ns/mod#> .
@@ -19,7 +18,8 @@
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix ui: <http://lv2plug.in/ns/extensions/ui#> .
+@prefix ui:      <http://lv2plug.in/ns/extensions/ui#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix pprop: <http://lv2plug.in/ns/ext/port-props#>  .
 @prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
 
@@ -73,10 +73,12 @@ myprefix:output_group
                 lv2:UtilityPlugin ;
                 doap:name "TooB One-Button Looper (stereo)" 
                 ;
+
+
         doap:license <https://opensource.org/license/mit/> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 1 ;
-        lv2:microVersion 57 ;
+        lv2:microVersion 58 ;
 
         ui:ui <http://two-play.com/plugins/toob-looper-one-ui>;
 
@@ -189,7 +191,7 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
                 lv2:symbol "control" ;
                 lv2:name "〇";
                 rdfs:comment "Looper control. See the plugin documentation for details.";
-                lv2:default 0 ;
+                lv2:default 0.0 ;
                 lv2:minimum 0.0;
                 lv2:maximum 1.0;
                 lv2:portProperty lv2:integer, lv2:toggled, mod:preferMomentaryOffByDefault;
@@ -203,7 +205,7 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
                 lv2:symbol "record_led" ;
                 lv2:name "";
                 lv2:portProperty lv2:toggled ;
-                lv2:default 0 ;
+                lv2:default 0.0 ;
                 lv2:minimum 0.0;
                 lv2:maximum 1.0;
                 pipedal_ui:ledColor "red";
@@ -217,7 +219,7 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
                 lv2:symbol "play_led" ;
                 lv2:name "";
                 lv2:portProperty lv2:toggled ;
-                lv2:default 0 ;
+                lv2:default 0.0 ;
                 lv2:minimum 0.0;
                 lv2:maximum 1.0;
                 pg:group myprefix:loop_main_group ;
@@ -355,7 +357,7 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
                 lv2:symbol "bar_led" ;
                 lv2:name "\u00A0\u00A0Bar\u00A0\u00A0";
                 lv2:portProperty lv2:toggled ;
-                lv2:default 0 ;
+                lv2:default 0.0 ;
                 lv2:minimum 0.0;
                 lv2:maximum 1.0;
                 pipedal_ui:ledColor "red";
@@ -369,7 +371,7 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
                 lv2:symbol "beat_led" ;
                 lv2:name "\u00A0Beat\u00A0";
                 lv2:portProperty lv2:toggled ;
-                lv2:default 0 ;
+                lv2:default 0.0 ;
                 lv2:minimum 0.0;
                 lv2:maximum 1.0;
                 pipedal_ui:ledColor "red";
@@ -514,7 +516,7 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
                 lv2:name "Level";
                 pg:group myprefix:output_group ;
  
-                lv2:default 0 ;
+                lv2:default 0.0 ;
                 lv2:minimum -60.0;
                 lv2:maximum 30.0;
                 lv2:scalePoint [
@@ -549,6 +551,9 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
         [
                 a atom:AtomPort ,
                         lv2:InputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+
                 lv2:index 16 ;
                 lv2:symbol "controlIn" ;
                 lv2:name "ControlIn"
@@ -556,6 +561,8 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
         [
                 a atom:AtomPort ,
                         lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
                 lv2:index 17 ;
                 lv2:symbol "controlOut" ;
                 lv2:name "ControlOut"
@@ -587,9 +594,10 @@ When set to REC-DUB, the main loop will record exactly N bars of audio, and then
 
       
 
-<http://two-play.com/plugins/toob-record-stereo-ui> 
+<http://two-play.com/plugins/toob-looper-one-ui> 
     a  ui:X11UI ;
-    lv2:binary <.so>;
+    lv2:binary <ToobAmpUI.so>;
+
 
     lv2:extensionData ui:resize ;
     lv2:extensionData ui:idleInterface ;

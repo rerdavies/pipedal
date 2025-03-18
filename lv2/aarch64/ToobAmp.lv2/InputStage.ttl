@@ -24,6 +24,7 @@
 
 @prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
 @prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix pipedal_patch: <http://github.com/rerdavies/pipedal/patch#> .
 @prefix toob: <http://two-play.com/plugins/toob#> .
 
 @prefix inputStage: <http://two-play.com/plugins/toob-input_stage#> .
@@ -65,16 +66,14 @@ inputStage:filterGroup
         doap:license <https://two-play.com/TooB/licenses/isc> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 57 ;
+        lv2:microVersion 58 ;
 
         mod:brand "TooB";
         mod:label "TooB Input";
         lv2:requiredFeature urid:map ;
         lv2:optionalFeature lv2:hardRTCapable;
         
-        patch:writable 
-                <http://two-play.com/plugins/toob#frequencyResponseVector>;
-        patch:readable 
+        pipedal_patch:readable 
                 <http://two-play.com/plugins/toob#frequencyResponseVector>;
 
 rdfs:comment """
@@ -282,8 +281,6 @@ The GateT control provides a noise gate. Set to minimum value to disable.
     lv2:extensionData uiext:resize ;
     lv2:extensionData uiext:idleInterface;
     lv2:requiredFeature uiext:idleInterface ;
-    patch:writable 
-        <http://two-play.com/plugins/toob#frequencyResponseVector>;
     .
 
 <http://two-play.com/plugins/toob-input_stage> 

@@ -193,6 +193,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     patch__writable = lilv_new_uri(pWorld, LV2_PATCH__writable);
     patch__readable = lilv_new_uri(pWorld, LV2_PATCH__readable);
+    pipedal_patch__readable = lilv_new_uri(pWorld,  PIPEDAL_PATCH__readable);
 
     dc__format = lilv_new_uri(pWorld, "http://purl.org/dc/terms/format");
 

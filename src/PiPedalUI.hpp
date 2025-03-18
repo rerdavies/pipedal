@@ -33,6 +33,10 @@
 #include "ModFileTypes.hpp"
 
 
+#define PIPEDAL_PATCH "http://github.com/rerdavies/pipedal/patch"
+#define PIPEDAL_PATCH_PREFIX PIPEDAL_PATCH "#"
+#define PIPEDAL_PATCH__readable (PIPEDAL_PATCH_PREFIX "readable")
+
 #define PIPEDAL_UI "http://github.com/rerdavies/pipedal/ui"
 #define PIPEDAL_UI_PREFIX PIPEDAL_UI "#"
 

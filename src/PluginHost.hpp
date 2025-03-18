@@ -757,6 +757,7 @@ namespace pipedal
 
             AutoLilvNode patch__writable;
             AutoLilvNode patch__readable;
+            AutoLilvNode pipedal_patch__readable;
 
             AutoLilvNode mod__brand;
             AutoLilvNode mod__label;
