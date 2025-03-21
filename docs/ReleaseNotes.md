@@ -1,5 +1,25 @@
 # Release Notes
 
+## PiPedal 1.4.74 Release
+
+New plugins:
+
+- **TooB 4Looper** - a 4-track looper. See the plugin information dialog for details on how to use 4Looper with MIDI footswitches.
+
+- **TooB One-Button Looper** - A 1-button looper with overdubbing and undo/redo, designed for use with a single MIDI footswitch. See the plugin information dialog for details on how use TooB One-Button Looper with MIDI.
+
+- **TooB Record Input (mono and stereo versions)** - Plugins that record audio input to a file in .wav, .flac, or .mp3 format. Recorded files can be downloaded from the PiPedal server using the Download button in the file dialog.
+
+
+New features:
+
+- Official support for Ubuntu 24.x (arm64 and amd64)
+- Support for WiFi hotspots on Ubuntu.
+- Recorded audio files can be downloaded from the PiPedal server.
+- Added Trigger Recording mode to looper plugins.
+- Increased maximum number of audio buffers from 4 to 6.
+- Support for momentary LV2 MIDI footswitches using MOD-compatible LV2 declarations (commonly used in 3rd-party looper plugins)
+
 ## PiPedal 1.4.73 Beta
 
 New plugins:
@@ -25,7 +45,7 @@ Bug Fixes/Minor Features:
 
 ## PiPedal 1.4.72 Beta
 
-- Resolves installation issues on Raspberry Pi OS (no alsa-base)
+- Resolves installation issues on Raspberry Pi OS (no alsa-base package)
 
 ## PiPedal 1.4.71 Beta
 

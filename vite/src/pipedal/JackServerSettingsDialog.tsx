@@ -97,10 +97,10 @@ function getValidBufferCounts(bufferSize: number, alsaDeviceInfo?: AlsaDeviceInf
     let result: number[] = [];
     if (bufferSize * 2 >= alsaDeviceInfo.minBufferSize)
     {
-        result =  [2,3,4];
+        result =  [2,3,4,5,6];
     } else {
         let minBuffers = Math.ceil(alsaDeviceInfo.minBufferSize/bufferSize/2-0.0001);
-        result = [minBuffers*2,minBuffers*3, minBuffers*4];
+        result = [minBuffers*2,minBuffers*3, minBuffers*4, minBuffers*5, minBuffers*6];
     }
     for (let i = 0; i < result.length; ++i)
     {
