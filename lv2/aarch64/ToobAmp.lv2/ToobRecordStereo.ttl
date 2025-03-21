@@ -37,9 +37,9 @@
 recordPrefix:audioFile
         a lv2:Parameter;
         rdfs:label "File";
-	mod:fileTypes "audiorecording,audio";
+	mod:fileTypes "audiorecording,audio,wav,flac,mp3";
         rdfs:range atom:Path;
-        lv2:index  6
+        lv2:index  6 
         .
 
 myprefix:stereoInGroup 
