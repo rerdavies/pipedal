@@ -21,7 +21,7 @@
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix urid: <http://lv2plug.in/ns/ext/urid#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix toobChorus: <http://two-play.com/plugins/toob-chorus#> .
+@prefix toobMix: <http://two-play.com/plugins/toob-mix#> .
 
 
 <http://two-play.com/rerdavies#me>
@@ -30,24 +30,24 @@
 	foaf:mbox <mailto:rerdavies@gmail.com> ;
 	foaf:homepage <https://github.com/sponsors/rerdavies> .
 
-<http://two-play.com/plugins/toob-chorus>
+<http://two-play.com/plugins/toob-mix>
         a lv2:Plugin ,
-                lv2:ChorusPlugin ;
-                doap:name "TooB CE-2 Chorus" ,
-                "TooB CE-2 Chorus"@en-gb 
+                lv2:UtilityPlugin ;
+        doap:name "TooB Mix" ,
+                "TooB Mix"@en-gb 
                 ;
-        uiext:ui <http://two-play.com/plugins/toob-chorus-ui> ;
+        uiext:ui <http://two-play.com/plugins/toob-mix-ui> ;
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
         lv2:microVersion 61 ;
         rdfs:comment """
-Emulation of a Boss CE-2 Chorus.
+Remix a stereo input signal.
 
 """ ;
 
         mod:brand "TooB";
-        mod:label "TooB CE-2";
+        mod:label "TooB Mix";
         lv2:optionalFeature lv2:hardRTCapable;
 
         lv2:port
@@ -55,49 +55,97 @@ Emulation of a Boss CE-2 Chorus.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index  0;
-                lv2:symbol "rate" ;
-                lv2:name "Rate";
-                lv2:default 0.5 ;
-                lv2:minimum 0.0;
-                lv2:maximum 1.0;
+                lv2:index 0 ;
+                lv2:symbol "trimL" ;
+                lv2:name "Trim L";
+
+                lv2:default 0.0 ;
+                lv2:minimum -60.0 ;
+                lv2:maximum 30.0 ; 
+                units:unit units:db ;
+                lv2:scalePoint    
+                [
+                        rdfs:label "-INF" ;
+                        rdf:value -60.0
+                ];
+                rdfs:comment "Left Volume";
+                
         ],  
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 1 ;
-                lv2:symbol "depth" ;
-                lv2:name "Depth";
+                lv2:index  1;
+                lv2:symbol "panL" ;
+                lv2:name "Pan L";
+                lv2:default -1.0 ;
+                lv2:minimum -1.0;
+                lv2:maximum 1.0;
+                rdfs:comment "Left Pan";
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
 
-                lv2:default 0.5 ;
-                lv2:minimum 0.0 ;
-                lv2:maximum 1.0 ;
+                lv2:index 2 ;
+                lv2:symbol "trimR" ;
+                lv2:name "Trim R";
+
+                lv2:default 0.0 ;
+                lv2:minimum -60.0 ;
+                lv2:maximum 30.0 ;    
+                units:unit units:db ;
+                lv2:scalePoint    
+                [
+                        rdfs:label "-INF" ;
+                        rdf:value -60.0
+                ];
+                rdfs:comment "Right Volume";
+                
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  3;
+                lv2:symbol "panR" ;
+                lv2:name "Pan R";
+                lv2:default 1.0 ;
+                lv2:minimum -1.0;
+                lv2:maximum 1.0;
+                rdfs:comment "Right Pan";
+        ],  
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 4 ;
+                lv2:symbol "inl" ;
+                lv2:name "In L"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 2 ;
-                lv2:symbol "in" ;
-                lv2:name "In"
+                lv2:index 5 ;
+                lv2:symbol "inr" ;
+                lv2:name "In R"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 3 ;
-                lv2:symbol "out" ;
-                lv2:name "Out"
+                lv2:index 6 ;
+                lv2:symbol "outl" ;
+                lv2:name "Out L"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 4 ;
+                lv2:index 7 ;
                 lv2:symbol "outr" ;
                 lv2:name "OutR"
         ]
         .
 
-<http://two-play.com/plugins/toob-chorus-ui> 
+<http://two-play.com/plugins/toob-mix-ui> 
     a  uiext:X11UI ;
     lv2:binary <ToobAmpUI.so>;
 
