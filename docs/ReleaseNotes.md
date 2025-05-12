@@ -1,5 +1,18 @@
 # Release Notes
 
+## PiPedal 1.4.75 Release
+
+New pugins:
+- **TooB Noise Gate**. A standalone Noise Gate plugin. 
+- **TooB Volume**. A standalong plugin to adjust signal volume. 
+- **TooB Mix**. A standalone plugin to remix stereo signals.
+
+Bug fixes:
+- TooB Tuner improved stability, and accuracy. Allow tuning of notes above Bb4.
+- Fix TooB Recorder file playback.
+
+
+
 ## PiPedal 1.4.74 Release
 
 New plugins:
