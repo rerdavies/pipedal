@@ -462,8 +462,6 @@ export enum ControlType {
 }
 
 const textUnits : Set<Units> = new Set<Units>([
-    Units.none,
-    Units.unknown,
     Units.bar,
     Units.beat,
     Units.bpm,
