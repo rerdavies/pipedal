@@ -13,12 +13,14 @@ Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](htt
 _Important notice_: [PatchStorage.com](https:///patchstorage.com) has added support for [PiPedal](https://patchstorage.com/platform/pipedal/). We urgently need your support! If you could please upload patches  [here](https://patchstorage.com/platform/pipedal/) I would be enormously grateful. Note that media and model files are included in patch files, so you can share patches that
 include model files or audio samples. If you make use of plugins that are not included in the PiPedal distribution, please include a link to the plugin in the patch description.
 
-#### NEW version 1.4.75 Release, includes new TooB 4Looper, TooB One-Button Looper and TooB Record Input plugins. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
+#### NEW version 1.4.75 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details.
 
 &nbsp;
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats. 
+
+PiPedal will also run on Ubuntu 22.x (amd64/x64 and aarch64). Make sure you follow the [Ubuntu post-install instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure your Ubuntu OS is using a  realtime-capable kernel.
 
 PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
 
@@ -31,6 +33,8 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 <img src="docs/gallery/dark-sshot1.png"></img>
 
 <img src="docs/gallery/rig.jpg" width="45%"></img>  <img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
+
+![Demo](img/DemoTrack.mp3)
 
 ----
 &nbsp;
