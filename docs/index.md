@@ -17,10 +17,9 @@ PiPedal will also run on Ubuntu 22.x (amd64/x64 and aarch64). Make sure you foll
 instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure your Ubuntu OS is using a  realtime-capable kernel.
 
 
+{% include demo.html %}
 
 {% include gallery.html %}
-
-{% include demo.html %}
 
 PiPedal can be remotely controlled via a web interface over Ethernet, or Wi-Fi. If you don't have access to a Wi-Fi router, PiPedal can be configured to 
 start a Wi-Fi hotspot automatically, whenever your Raspberry Pi can't connect to your home network.
