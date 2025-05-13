@@ -34,11 +34,8 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 
 <img src="docs/gallery/rig.jpg" width="45%"></img>  <img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
 
-<audio controls="" style="margin: 16px">
-    <!-- Replace this source with your actual audio file path -->
-    <source src="docs/img/DemoTrack.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio>
+[Demo](docs/img/DemoTrack.mp3" type="audio/mpeg")
+
 ----
 &nbsp;
 
