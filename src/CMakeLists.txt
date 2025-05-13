@@ -376,6 +376,11 @@ target_link_libraries(hotspotManagerTest PRIVATE ${PIPEDAL_LIBS})
 set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL true)
 
 
+add_executable(AuxInTest
+    AuxIn.hpp
+    AuxIn.cpp
+    AuxInTest.cpp
+)
 
 add_executable(pipedaltest 
 testMain.cpp

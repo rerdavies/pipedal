@@ -1,0 +1,238 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix noisegate: <http://two-play.com/plugins/toob-noise-gate#> .
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+
+noisegate:trigger_group
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Trigger" ;
+    lv2:symbol "trigger_group" .
+
+noisegate:envelope_group
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Envelope" ;
+    lv2:symbol "envelope_group" .
+
+
+
+<http://two-play.com/plugins/toob-noise-gate>
+        a lv2:Plugin ,
+                lv2:UtilityPlugin ;
+        doap:name "TooB Noise Gate" ,
+                "TooB Noise Gate"@en-gb 
+                ;
+        uiext:ui <http://two-play.com/plugins/toob-noise-gate-ui> ;
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 61 ;
+        rdfs:comment """
+A noise gate is an audio processing tool that controls the volume of an audio signal 
+by allowing it to pass through only when it exceeds a set threshold. 
+Signals below this threshold are muted or significantly reduced, 
+effectively "gating" unwanted noise, such as background hum, hiss, or crosstalk, 
+while preserving the desired sound, like vocals or instruments.
+
+The Hysteresis control sets a secondary threshold, slightly below 
+the primary threshold, to determine when the gate closes. This creates a "buffer zone" 
+to prevent the gate from rapidly toggling on and off (chattering) when the audio signal
+ hovers near the primary threshold.
+
+For example, if the Threshold contol is set to -30dB and Hysteresis control is set to -5dB, 
+the gate opens when the signal exceeds -30dB but only closes when it drops below -35 dB. 
+This smoother transition ensures cleaner gating, especially for signals with fluctuating levels, 
+like guitar.
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "TooB Noise Gate";
+        lv2:optionalFeature lv2:hardRTCapable;
+
+
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group noisegate:trigger_group ;
+
+                lv2:index 0 ;
+                lv2:symbol "threshold" ;
+                lv2:name "Threshold";
+
+                lv2:default -30.0 ;
+                lv2:minimum -60.0 ;
+                lv2:maximum 0.0 ; 
+                units:unit units:db ;
+                rdfs:comment "The level above which the gate opens.";
+                
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group noisegate:trigger_group ;
+
+                lv2:index 1 ;
+                lv2:symbol "hysteresis" ;
+                lv2:name "Hysteresis";
+
+                lv2:default -6.0 ;
+                lv2:minimum -30.0 ;
+                lv2:maximum 0.0 ; 
+                units:unit units:db ;
+                rdfs:comment "Controls the level at which the gate will be held open.";
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                pg:group noisegate:trigger_group ;
+
+                lv2:index  2;
+                lv2:symbol "trigger_led" ;
+                lv2:name "";
+                lv2:portProperty lv2:toggled ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+        ],  
+
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group noisegate:envelope_group ;
+
+                lv2:index 3 ;
+                lv2:symbol "reduction" ;
+                lv2:name "Range";
+
+                lv2:default -60.0 ;
+                lv2:minimum -60.0 ;
+                lv2:maximum -6.0 ; 
+                units:unit units:db ;
+                rdfs:comment "The amount of attenuation applied when the gate is closed.";
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group noisegate:envelope_group ;
+
+                lv2:index 4 ;
+                lv2:symbol "attack" ;
+                lv2:name "Attack";
+
+                lv2:default 1.0 ;
+                lv2:minimum 1.0 ;
+                lv2:maximum 500.0 ; 
+                units:unit units:ms ;
+                rdfs:comment "Envelope Attack";
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group noisegate:envelope_group ;
+
+                lv2:index 5 ;
+                lv2:symbol "hold" ;
+                lv2:name "Hold";
+
+                lv2:default 100.0 ;
+                lv2:minimum 10.0 ;
+                lv2:maximum 1000.0 ; 
+                units:unit units:ms ;
+                rdfs:comment "Envelope Hold";
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group noisegate:envelope_group ;
+
+                lv2:index 6 ;
+                lv2:symbol "release" ;
+                lv2:name "Release";
+
+                lv2:default 330.0 ;
+                lv2:minimum 10.0 ;
+                lv2:maximum 5000.0 ; 
+                units:unit units:ms ;
+                rdfs:comment "Envelope Release";
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                pg:group noisegate:envelope_group ;
+
+                lv2:index 7 ;
+                lv2:symbol "gate_level" ;
+                lv2:name "";
+                rdfs:comment "Gate Level";
+
+                lv2:default -60 ;
+                lv2:minimum -60 ;
+                lv2:maximum 00 ;
+        ],
+
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 8 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 9 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ]
+        .
+
+<http://two-play.com/plugins/toob-noise-gate-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
+
+
+

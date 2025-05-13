@@ -68,7 +68,7 @@ pstage:stage3
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 59 ;
+        lv2:microVersion 61 ;
 
         mod:brand "TooB";
         mod:label "Power Stage";

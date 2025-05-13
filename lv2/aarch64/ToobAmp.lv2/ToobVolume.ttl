@@ -1,0 +1,103 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+<http://two-play.com/plugins/toob-volume>
+        a lv2:Plugin ,
+                lv2:UtilityPlugin ;
+                doap:name "TooB Volume" ,
+                "TooB Volume"@en-gb 
+                ;
+        uiext:ui <http://two-play.com/plugins/toob-volume-ui> ;
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 61 ;
+        rdfs:comment """
+Volume control.
+
+TooB Volume operates on a monophonic signal. Use the TooB Mix plugin to set volume levels on a 
+stereophonic signal.
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "TooB Volume";
+        lv2:optionalFeature lv2:hardRTCapable;
+
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 0 ;
+                lv2:symbol "vol" ;
+                lv2:name "Volume";
+
+                lv2:default 0.0 ;
+                lv2:minimum -60.0 ;
+                lv2:maximum 30.0 ; 
+                units:unit units:db ;
+                lv2:scalePoint    
+                [
+                        rdfs:label "-INF" ;
+                        rdf:value -60.0
+                ];
+                rdfs:comment "Volume";
+                
+        ],  
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 1 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 2 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ]
+        .
+
+<http://two-play.com/plugins/toob-volume-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
+
+
+
