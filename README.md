@@ -34,7 +34,7 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 
 <img src="docs/gallery/rig.jpg" width="45%"></img>  <img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
 
-[Demo](docs/img/DemoTrack.mp3" type="audio/mpeg")
+[Demo](docs/img/DemoTrack.mp3)
 
 ----
 &nbsp;
