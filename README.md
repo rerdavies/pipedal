@@ -28,13 +28,18 @@ Install the [PiPedal Remote Android app](https://play.google.com/store/apps/deta
 
 PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp collection of plugins; but it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal. Just install them on your Raspberry Pi, and they will show up in PiPedal.  
 
+
+
 If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
 
 <img src="docs/gallery/dark-sshot1.png"></img>
 
 <img src="docs/gallery/rig.jpg" width="45%"></img>  <img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
 
-![Demo](docs/img/DemoTrack.mp3)
+
+https://github.com/user-attachments/assets/4ec98f79-5eda-4264-8fb1-865e56773ea4
+
+
 
 ----
 &nbsp;
