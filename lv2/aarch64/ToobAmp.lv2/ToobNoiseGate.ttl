@@ -170,7 +170,7 @@ like guitar.
                 lv2:symbol "hold" ;
                 lv2:name "Hold";
 
-                lv2:default 40.0 ;
+                lv2:default 100.0 ;
                 lv2:minimum 10.0 ;
                 lv2:maximum 1000.0 ; 
                 units:unit units:ms ;
