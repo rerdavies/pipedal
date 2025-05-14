@@ -36,9 +36,9 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 
 <img src="docs/gallery/rig.jpg" width="45%"></img>  <img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
 
+ 
 
-https://github.com/user-attachments/assets/4ec98f79-5eda-4264-8fb1-865e56773ea4
-
+https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 
 
 ----
