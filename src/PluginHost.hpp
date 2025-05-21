@@ -221,6 +221,7 @@ namespace pipedal
 
         bool mod_momentaryOffByDefault_ = false;
         bool mod_momentaryOnByDefault_ = false;
+        bool pipedal_graphicEq_ = false;
 
         bool not_on_gui_ = false;
         std::string buffer_type_;
@@ -294,6 +295,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(integer_property);
         LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOffByDefault);
         LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOnByDefault);
+        LV2_PROPERTY_GETSET_SCALAR(pipedal_graphicEq);
         LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
         LV2_PROPERTY_GETSET_SCALAR(toggled_property);
         LV2_PROPERTY_GETSET_SCALAR(not_on_gui);
@@ -513,6 +515,7 @@ namespace pipedal
               integer_property_(pPort->integer_property()), 
               mod_momentaryOffByDefault_(pPort->mod_momentaryOffByDefault()),
               mod_momentaryOnByDefault_(pPort->mod_momentaryOnByDefault()),
+              pipedal_graphicEq_(pPort->pipedal_graphicEq()),
               
               enumeration_property_(pPort->enumeration_property()),
               toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()),
@@ -558,6 +561,8 @@ namespace pipedal
 
         bool mod_momentaryOffByDefault_ = false;
         bool mod_momentaryOnByDefault_ = false;
+        bool pipedal_graphicEq_ = false;
+
         bool enumeration_property_ = false;
         bool not_on_gui_ = false;
         bool toggled_property_ = false;
@@ -728,6 +733,7 @@ namespace pipedal
             AutoLilvNode pipedalUI__yTop;
             AutoLilvNode pipedalUI__yBottom;
             AutoLilvNode pipedalUI__width;
+            AutoLilvNode pipedalUI__graphicEq;
 
 
             AutoLilvNode pipedalUI__outputPorts;

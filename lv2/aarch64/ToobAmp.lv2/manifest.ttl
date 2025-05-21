@@ -59,6 +59,11 @@
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobDelay.ttl> .
 
+<http://two-play.com/plugins/toob-phaser> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobPhaser.ttl> .
+
+
 <http://two-play.com/plugins/toob-chorus> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobChorus.ttl> .
@@ -91,6 +96,11 @@
 <http://two-play.com/plugins/toob-mix> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobMix.ttl> .
+
+<http://two-play.com/plugins/toob-graphiceq> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobGraphicEq.ttl> .
+
 
 <http://two-play.com/plugins/toob-volume> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
