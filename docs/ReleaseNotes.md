@@ -1,8 +1,13 @@
 # Release Notes
 
+## PiPedal 1.4.76 Release
+- **TooB Phaser**. A loose emulation of the MXR Phase 90 phaser.
+- **TooB GE-7 Graphic Equalizer**. A 7-band graphic equalizer optimized for use as a guitar effect.
+
+
 ## PiPedal 1.4.75 Release
 
-New pugins:
+New plugins:
 - **TooB Noise Gate**. A standalone Noise Gate plugin. 
 - **TooB Volume**. A standalong plugin to adjust signal volume. 
 - **TooB Mix**. A standalone plugin to remix stereo signals.
