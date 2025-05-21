@@ -324,6 +324,7 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
                     mapping.midiBinding = binding;
                     mapping.instanceId = pedalboardItem.instanceId();
 
+
                     if (pPortInfo->mod_momentaryOffByDefault() || pPortInfo->mod_momentaryOnByDefault())
                     {
                         mapping.mappingType = MidiControlType::MomentarySwitch;

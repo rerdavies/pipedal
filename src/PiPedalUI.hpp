@@ -67,6 +67,8 @@
 
 #define PIPEDAL_UI__ledColor  PIPEDAL_UI_PREFIX "ledColor"
 
+#define PIPEDAL_UI__graphicEq PIPEDAL_UI_PREFIX "graphicEq"
+
 
 namespace pipedal {
 

@@ -453,6 +453,7 @@ export enum ControlType {
     Trigger,
     Momentary,
     MomentaryOnByDefault,
+    GraphicEq,
 
     Tuner,
     Vu,
@@ -497,6 +498,7 @@ deserialize(input: any): UiControl {
         this.integer_property = input.integer_property;
         this.mod_momentaryOffByDefault = input.mod_momentaryOffByDefault;
         this.mod_momentaryOnByDefault = input.mod_momentaryOnByDefault;
+        this.pipedal_graphicEq = input.pipedal_graphicEq;
         this.enumeration_property = input.enumeration_property;
         this.toggled_property = input.toggled_property;
         this.trigger_property = input.trigger_property;
@@ -548,7 +550,11 @@ deserialize(input: any): UiControl {
         }
         if (this.is_input)
         {
-            if (this.mod_momentaryOnByDefault) {
+            if (this.pipedal_graphicEq)
+            {
+                this.controlType = ControlType.GraphicEq;
+            }
+            else if (this.mod_momentaryOnByDefault) {
                 this.controlType = ControlType.MomentaryOnByDefault;
             } else if (this.mod_momentaryOffByDefault) {
                 this.controlType = ControlType.Momentary;
@@ -604,6 +610,7 @@ deserialize(input: any): UiControl {
     integer_property: boolean = false;
     mod_momentaryOffByDefault: boolean = false;
     mod_momentaryOnByDefault: boolean = false;
+    pipedal_graphicEq: boolean = false;
     enumeration_property: boolean = false;
     trigger_property: boolean = false;
     not_on_gui: boolean = false;
@@ -646,6 +653,9 @@ deserialize(input: any): UiControl {
 
     isAbToggle(): boolean {
         return this.controlType === ControlType.ABSwitch;
+    }
+    isGraphicEq() : boolean {
+        return this.controlType === ControlType.GraphicEq;
     }
     isSelect(): boolean {
         return this.controlType === ControlType.Select;
