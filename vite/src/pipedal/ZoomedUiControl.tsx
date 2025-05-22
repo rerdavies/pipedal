@@ -252,7 +252,7 @@ const ZoomedUiControl = withTheme(withStyles(
                             >
                                 {this.props.controlInfo.name}
                             </Typography>
-                            {uiControl.isDial() ? (
+                            {(uiControl.isDial() || uiControl.isGraphicEq()) ? (
 
                                 <ZoomedDial size={200} controlInfo={this.props.controlInfo}
                                     onDoubleTap={()=>{this.onDoubleTap();}}
