@@ -46,7 +46,7 @@ include(FindPkgConfig)
 
 find_package(sdbus-c++ REQUIRED)
 
-find_package(SQLiteCpp REQUIRED)
+# find_package(SQLiteCpp REQUIRED)
 
 
 
@@ -311,7 +311,6 @@ set (PIPEDAL_INCLUDES
     ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  
     ${VST3_INCLUDES}
     ${WEBSOCKETPP_INCLUDE_DIRS}    
-    ${SQLite3_INCLUDE_DIRS}
     .
 )
 
@@ -322,7 +321,6 @@ set(PIPEDAL_LIBS libpipedald zip
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 
      # ${JACK_LIBRARIES} - pending delete for JACK support.
-    ${SQLite3_LIBRARIES}
      )
 
 

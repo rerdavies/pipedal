@@ -26,8 +26,7 @@
  #include <filesystem>
  #include <limits>
 
- #include <sqlite3.h>
-
+ 
 
  using namespace pipedal;
 
