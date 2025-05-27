@@ -12,6 +12,7 @@ set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 set(CXX_STANDARD 20)
 
 
+
 include(FetchContent)
 
 # FOR FTXUI
@@ -44,6 +45,9 @@ message(STATUS "*** ${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR}")
 include(FindPkgConfig)
 
 find_package(sdbus-c++ REQUIRED)
+
+find_package(SQLiteCpp REQUIRED)
+
 
 
 find_package(ICU REQUIRED COMPONENTS uc i18n  )
@@ -192,6 +196,9 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    AudioFiles.cpp AudioFiles.hpp
+    AudioFileMetadata.cpp AudioFileMetadata.hpp
+    LRUCache.hpp
     CpuTemperatureMonitor.cpp CpuTemperatureMonitor.hpp
     SchedulerPriority.hpp SchedulerPriority.cpp
     ModFileTypes.cpp ModFileTypes.hpp
@@ -304,6 +311,7 @@ set (PIPEDAL_INCLUDES
     ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  
     ${VST3_INCLUDES}
     ${WEBSOCKETPP_INCLUDE_DIRS}    
+    ${SQLite3_INCLUDE_DIRS}
     .
 )
 
@@ -314,7 +322,7 @@ set(PIPEDAL_LIBS libpipedald zip
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 
      # ${JACK_LIBRARIES} - pending delete for JACK support.
-
+    ${SQLite3_LIBRARIES}
      )
 
 
@@ -383,8 +391,9 @@ add_executable(AuxInTest
 )
 
 add_executable(pipedaltest 
-testMain.cpp
+    testMain.cpp
 
+    LRUCacheTest.cpp
     ModFileTypesTest.cpp
     jsonTest.cpp
     UpdaterTest.cpp
@@ -822,7 +831,7 @@ add_custom_command(OUTPUT ${REACT_NOTICES_FILE}
         --output ${REACT_NOTICES_FILE} 
         --projectCopyright ${DEBIAN_COPYRIGHT_FILE} 
         liblilv-0-0 ${BOOST_COPYRIGHT_DIR} lv2-dev libsdbus-c++-dev librsvg2-2 libpango-1.0-0 libx11-6 libxrandr2
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${DEBIAN_COPYRIGHT_FILE} "$<TARGET_FILE:processcopyrights>"
     COMMENT "Updating copyright notices."
 )

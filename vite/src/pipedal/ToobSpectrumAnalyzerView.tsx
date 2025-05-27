@@ -61,8 +61,11 @@ const ToobSpectrumAnalyzerView =
                 this.state = {
                 }
             }
+            fullScreen() {
+                return false;
+            }
 
-            ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
+            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
                 controls.splice(0,0,
                     ( <ToobSpectrumResponseView instanceId={this.props.instanceId}  />)

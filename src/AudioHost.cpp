@@ -1173,7 +1173,7 @@ private:
 
                 if (buffersValid)
                 {
-                    pedalboard->ProcessParameterRequests(pParameterRequests);
+                    pedalboard->ProcessParameterRequests(pParameterRequests,nframes);
 
                     processed = pedalboard->Run(inputBuffers, outputBuffers, (uint32_t)nframes, &realtimeWriter);
                     if (processed)

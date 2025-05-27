@@ -103,8 +103,11 @@ const ToobMLView =
             componentWillUnmount() {
                 this.removeGainEnabledSubscription();
             }
+            fullScreen() {
+                return false;
+            }
 
-            ModifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
                 // Find EQ group
                 // let group = controls.find((control) => typeof control !== 'string' && (control as ControlGroup).name === "EQ") as ControlGroup;
                 // if (group) {

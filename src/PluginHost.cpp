@@ -615,7 +615,7 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
     // example:
 
     // <http://github.com/mikeoliphant/neural-amp-modeler-lv2#model>
-    //     a lv2:Parameter;
+//     a lv2:Parameter;
     //     rdfs:label "Model";
     //     rdfs:range atom:Path.
     // ...
@@ -901,6 +901,7 @@ std::vector<std::string> supportedFeatures = {
     LV2_STATE__mapPath,
     LV2_STATE__freePath,
     LV2_CORE__inPlaceBroken,
+    PIPEDAL_HOST_FEATURE,
 
     // UI features that we can ignore, since we won't load their ui.
     "http://lv2plug.in/ns/extensions/ui#makeResident",

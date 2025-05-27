@@ -481,9 +481,6 @@ export default withStyles(
 
         }
         renderBreadcrumbs() {
-            if (this.state.navDirectory === "") {
-                return (<Divider />);
-            }
             let breadcrumbs: React.ReactElement[] = [(
                 <Button variant="text"
                     color="inherit"

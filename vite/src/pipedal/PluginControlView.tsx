@@ -19,8 +19,8 @@
 
 import { ReactNode } from 'react';
 import { Theme } from '@mui/material/styles';
-import WithStyles, {withTheme} from './WithStyles';
-import {createStyles} from './WithStyles';
+import WithStyles, { withTheme } from './WithStyles';
+import { createStyles } from './WithStyles';
 import { css } from '@emotion/react';
 
 import { withStyles } from "tss-react/mui";
@@ -97,10 +97,37 @@ const styles = (theme: Theme) => createStyles({
         overflowX: "hidden",
         overflowY: "hidden"
     }),
+    noScrollFrame: css({
+        display: "block",
+        position: "relative",
+        width: "100%",
+        height: "100%",
+
+        left: 0, top: 0,
+        flexDirection: "row",
+        flexWrap: "nowrap",
+        paddingTop: "0px",
+        paddingBottom: "0px",
+        overflowX: "hidden",
+        overflowY: "hidden"
+
+    }),
+    frameScrollNone: css({
+        display: "block",
+        position: "relative",
+        left: 0, top: 0,
+        width: "100%", height: "100%",
+        flexDirection: "row",
+        flexWrap: "nowrap",
+        paddingTop: "0px",
+        paddingBottom: "0px",
+        overflowX: "auto",
+        overflowY: "hidden"
+    }),
     frameScrollLandscape: css({
         display: "block",
         position: "absolute",
-        left: 0, top: 0, right: 0, bottom:0,
+        left: 0, top: 0, right: 0, bottom: 0,
         flexDirection: "row",
         flexWrap: "nowrap",
         paddingTop: "0px",
@@ -111,7 +138,7 @@ const styles = (theme: Theme) => createStyles({
     frameScrollPortrait: css({
         display: "block",
         position: "absolute",
-        left: 0, top: 0, right: 0, bottom:0,
+        left: 0, top: 0, right: 0, bottom: 0,
         flexDirection: "row",
         flexWrap: "nowrap",
         paddingTop: "0px",
@@ -150,12 +177,26 @@ const styles = (theme: Theme) => createStyles({
 
     }),
 
+    noScrollGrid: css({
+        position: "relative",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: "100%",
+        height: "100%",
+        paddingLeft: 30,
+        paddingRight: 45,
+        paddingTop: 0,
+
+        flex: "1 1 auto",
+    }),
+
     normalGrid: css({
         position: "relative",
         paddingLeft: 30,
-        paddingRight: 30,
+        paddingRight: 45,
         paddingTop: 8,
-        
+
         flex: "1 1 auto",
         display: "flex", flexDirection: "row", flexWrap: "wrap",
         justifyContent: "flex-start", alignItems: "flex_start",
@@ -171,7 +212,8 @@ const styles = (theme: Theme) => createStyles({
         // See the spacer div added after all controls in render() with provides the same effect.
         display: "flex", flexDirection: "row", flexWrap: "nowrap",
         justifyContent: "flex-start", alignItems: "flex-start",
-        
+        position: "relative",
+
         overflowX: "hidden",
         overflowY: "hidden",
         flex: "0 0 auto",
@@ -218,7 +260,7 @@ const styles = (theme: Theme) => createStyles({
         elevation: 12,
         display: "flex",
         flexDirection: "row", flexWrap: "wrap",
-        
+
         flex: "0 1 auto",
     }),
     portGroupLandscape: css({
@@ -229,7 +271,7 @@ const styles = (theme: Theme) => createStyles({
         position: "relative",
         paddingLeft: 0,
         paddingRight: 0,
-        
+
         paddingTop: 0,
         paddingBottom: 0,
         border: "2pt #AAA solid",
@@ -238,7 +280,7 @@ const styles = (theme: Theme) => createStyles({
         display: "inline-flex",
         textOverflow: "ellipsis",
         flexDirection: "row", flexWrap: "nowrap",
-        flex: "0 0 auto", 
+        flex: "0 0 auto",
         width: "fit-content",
         minWidth: "max-content"
     }),
@@ -287,7 +329,8 @@ export type ControlNodes = (ReactNode | ControlGroup)[];
 
 
 export interface ControlViewCustomization {
-    ModifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[];
+    modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[];
+    fullScreen(): boolean;
 
 }
 
@@ -407,11 +450,13 @@ const PluginControlView =
                     />
                 ));
             }
+            private ixKey: number; 
+
             makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
                 let symbol = uiControl.symbol;
                 if (!uiControl.is_input) {
                     return (
-                        <PluginOutputControl instanceId={this.props.instanceId} uiControl={uiControl} />
+                        <PluginOutputControl key={uiControl.symbol } instanceId={this.props.instanceId} uiControl={uiControl} />
 
                     );
                 }
@@ -428,7 +473,7 @@ const PluginControlView =
                 }
                 return ((
 
-                    <PluginControl instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
+                    <PluginControl key={uiControl.symbol} instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
                         onChange={(value: number) => { this.onControlValueChanged(controlValue!.key, value) }}
                         onPreviewChange={(value: number) => { this.onPreviewChange(controlValue!.key, value) }}
                         requestIMEEdit={(uiControl: any, value: any) => this.requestImeEdit(uiControl, value)}
@@ -438,27 +483,25 @@ const PluginControlView =
 
             }
 
-            push_control(controls:ControlNodes, pluginControl: UiControl,controlValues: ControlValue[])
-            {
+            push_control(controls: ControlNodes, pluginControl: UiControl, controlValues: ControlValue[]) {
                 // combine lamps with their previous control
-                if ((pluginControl.isLamp() || pluginControl.isDbVu()) && controls.length !== 0)
-                {
+                if ((pluginControl.isLamp() || pluginControl.isDbVu()) && controls.length !== 0) {
                     const classes = withStyles.getClasses(this.props);
-                    let newControl = this.makeStandardControl(pluginControl,controlValues);
-                    let previousControl = controls[controls.length-1];
+                    let newControl = this.makeStandardControl(pluginControl, controlValues);
+                    let previousControl = controls[controls.length - 1];
                     if (!(previousControl instanceof ControlGroup)) {
                         let pair = (
-                            <div className={classes.controlPair}>
+                            <div key={"k"+this.ixKey++} className={classes.controlPair}>
                                 {previousControl as ReactNode}
                                 {newControl}
                             </div>
                         );
-                        controls[controls.length-1] = pair;
-                    // push a spacer control in order to make placing of extended controls predictable. 
+                        controls[controls.length - 1] = pair;
+                        // push a spacer control in order to make placing of extended controls predictable. 
                         // (e.g.. inserting at position 4 still places the extended control after four previous controls
                         controls.push((
 
-                            <div className={classes.controlSpacer} />
+                            <div key={"k"+this.ixKey++} className={classes.controlSpacer} />
                         ));
                     } else {
                         controls.push(newControl);
@@ -492,7 +535,7 @@ const PluginControlView =
                                 pluginControl = plugin.controls[i];
 
                                 if (!pluginControl.isHidden()) {
-                                    this.push_control(groupControls,pluginControl,controlValues);
+                                    this.push_control(groupControls, pluginControl, controlValues);
                                     indexes.push(pluginControl.index);
                                 }
                             }
@@ -502,7 +545,7 @@ const PluginControlView =
                             )
                             portGroupMap[pluginControl.port_group] = controlGroup;
                         } else {
-                            this.push_control(result,pluginControl,controlValues);
+                            this.push_control(result, pluginControl, controlValues);
                         }
                     }
                 }
@@ -647,8 +690,8 @@ const PluginControlView =
                         result.push((
                             <div key={"ctl" + (this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
                                 <div className={classes.portGroupTitle}>
-                                    <Tooltip title={controlGroup.name} 
-                                    placement="top-start" arrow  enterDelay={1500} enterNextDelay={1500}
+                                    <Tooltip title={controlGroup.name}
+                                        placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
                                     >
                                         <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
                                     </Tooltip>
@@ -663,11 +706,21 @@ const PluginControlView =
                         ));
 
                     } else {
-                        result.push((
-                            <div key={"ctl" + (this.controlKeyIndex++)} className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
-                                {node as ReactNode}
-                            </div>
-                        ));
+                                                    if (this.fullScreen())
+                            {
+                                result.push(
+                                    <div style={{position: "relative", width: "100%", height:"100%"}}
+                                    >
+                                        {node as ReactNode}
+                                    </div>
+                                );
+                            } else {
+                                result.push((
+                                    <div key={"ctl" + (this.controlKeyIndex++)} className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
+                                        {node as ReactNode}
+                                    </div>
+                                ));
+                            }
                     }
 
                 }
@@ -686,7 +739,7 @@ const PluginControlView =
                 }
                 return (
                     <MidiChannelBindingControl key="channelBindingCtl" midiChannelBinding={pedalboardItem.midiChannelBinding}
-                        onChange={(result)=> { 
+                        onChange={(result) => {
 
                         }}
                     />
@@ -694,6 +747,12 @@ const PluginControlView =
             }
 
 
+            fullScreen() {
+                if (this.props.customization) {
+                    return this.props.customization.fullScreen();
+                }
+                return false;
+            }
 
             render(): ReactNode {
                 this.controlKeyIndex = 0;
@@ -734,20 +793,26 @@ const PluginControlView =
                 let scrollClass = this.state.landscapeGrid ? classes.frameScrollLandscape : classes.frameScrollPortrait;
                 let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
                 let controlNodes: ControlNodes;
+                let frameClass = classes.frame;
+
+                if (this.fullScreen()) {
+                    gridClass = classes.noScrollGrid;
+                    scrollClass = classes.frameScrollNone;
+                    frameClass = classes.noScrollFrame;
+                }
 
                 controlNodes = this.getStandardControlNodes(plugin, controlValues);
 
                 if (this.props.customization) {
                     // allow wrapper class to insert/remove/rebuild controls.
-                    controlNodes = this.props.customization.ModifyControls(controlNodes);
+                    controlNodes = this.props.customization.modifyControls(controlNodes);
                 }
 
                 let nodes = this.controlNodesToNodes(controlNodes);
 
-                if (plugin.has_midi_input && !pedalboardItem.midiChannelBinding)
-                {
+                if (plugin.has_midi_input && !pedalboardItem.midiChannelBinding) {
                     pedalboardItem.midiChannelBinding = MidiChannelBinding.CreateMissingValue();
-                
+
                 }
                 if (pedalboardItem.midiChannelBinding) {
                     nodes.push(this.midiBindingControl(pedalboardItem));
@@ -755,7 +820,7 @@ const PluginControlView =
 
 
                 return (
-                    <div className={classes.frame}>
+                    <div className={frameClass}>
                         <div className={classes.vuMeterL}>
                             <VuMeter displayText={true} display="input" instanceId={pedalboardItem.instanceId} />
                         </div>
@@ -768,9 +833,11 @@ const PluginControlView =
                                     nodes
                                 }
                                 {/* Extra space to allow scrolling right to the end in lascape especially */}
-                                <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
+                                {!this.fullScreen() && (
+                                    <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
+                                )}
                                 {
-                                    (!this.state.landscapeGrid) && (
+                                    (!this.state.landscapeGrid) && (!this.fullScreen()) && (
                                         <div style={{ flex: "0 1 100%", width: "0px", height: 40 }} />
                                     )
                                 }
@@ -785,7 +852,7 @@ const PluginControlView =
                                 onCancel={() => {
                                     this.setState({ showFileDialog: false });
                                 }}
-                                onApply={(fileProperty,selectedFile) => {
+                                onApply={(fileProperty, selectedFile) => {
                                     this.model.setPatchProperty(
                                         this.props.instanceId,
                                         fileProperty.patchProperty,

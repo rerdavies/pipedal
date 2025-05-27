@@ -153,7 +153,7 @@ namespace pipedal
 
         void ResetAtomBuffers();
 
-        void ProcessParameterRequests(RealtimePatchPropertyRequest *pParameterRequests);
+        void ProcessParameterRequests(RealtimePatchPropertyRequest *pParameterRequests, size_t samplesThisTime);
         void GatherPatchProperties(RealtimePatchPropertyRequest *pParameterRequests);
         void GatherPathPatchProperties(IPatchWriterCallback *cbPatchWriter);
 

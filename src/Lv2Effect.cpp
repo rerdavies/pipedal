@@ -1116,3 +1116,4 @@ void Lv2Effect::SetPathPatchProperty(const std::string &propertyUri, const std::
 {
     mainThreadPathProperties[propertyUri] = jsonAtom;
 }
+

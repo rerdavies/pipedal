@@ -1809,6 +1809,9 @@ namespace pipedal
             {
                 inputSysexBuffer.resize(1024);
             }
+            ~AlsaMidiDeviceImpl() {
+                Close();
+            }
             void Open(const AlsaMidiDeviceInfo &device)
             {
                 runningStatus = 0;

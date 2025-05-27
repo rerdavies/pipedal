@@ -562,11 +562,13 @@ void Lv2Pedalboard::GatherPathPatchProperties(IPatchWriterCallback *cbPatchWrite
     }
 }
 
-void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pParameterRequests)
+void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pParameterRequests, size_t samplesThisTime)
 {
     while (pParameterRequests != nullptr)
     {
+        pParameterRequests->sampleTimeout -= samplesThisTime;
         IEffect *pEffect = this->GetEffect(pParameterRequests->instanceId);
+
         if (pEffect == nullptr)
         {
             pParameterRequests->errorMessage = "No such effect.";
@@ -574,8 +576,12 @@ void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pPara
         else if (pEffect->IsVst3())
         {
             pParameterRequests->errorMessage = "Not supported for VST3 plugins";
+        } else if (pParameterRequests->sampleTimeout < 0)
+        {
+            pParameterRequests->sampleTimeout = 0;
+            pParameterRequests->errorMessage = "Timed out.";
         }
-        else
+        else 
         {
             if (pEffect->IsLv2Effect())
             {

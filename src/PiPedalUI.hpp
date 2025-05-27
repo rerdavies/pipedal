@@ -33,6 +33,8 @@
 #include "ModFileTypes.hpp"
 
 
+#define PIPEDAL_HOST_FEATURE  "http://github.com/rerdavies/pipedal#host" // Plugin can only be hosted by PiPedal
+
 #define PIPEDAL_PATCH "http://github.com/rerdavies/pipedal/patch"
 #define PIPEDAL_PATCH_PREFIX PIPEDAL_PATCH "#"
 #define PIPEDAL_PATCH__readable (PIPEDAL_PATCH_PREFIX "readable")

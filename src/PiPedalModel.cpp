@@ -1615,19 +1615,30 @@ void PiPedalModel::SendSetPatchProperty(
 {
 
     std::lock_guard<std::recursive_mutex> lock(mutex);
+    if (!audioHost)
+    {
+        onError("Audio not running.");        
+        return;
+    }
 
     // save the property to the preset (currently used to reconstruct snapshots only)
     PedalboardItem *pedalboardItem = this->pedalboard.GetItem(instanceId);
-    if (pedalboardItem)
+    if (pedalboardItem && value.is_string())
     {
-        json_variant abstractPath = pluginHost.AbstractPath(value);
-        std::ostringstream ss;
-        json_writer writer(ss);
-        writer.write(abstractPath);
-        std::string atomString = ss.str();
-        pedalboardItem->pathProperties_[propertyUri] = atomString;
+        std::shared_ptr<Lv2PluginInfo> pluginInfo = GetPluginInfo(pedalboardItem->uri_);
+        auto pipedalUi = pluginInfo->piPedalUI();
+        auto fileProperty = pipedalUi->GetFileProperty(propertyUri);
+        if (fileProperty && value.is_string()) {
+            
+            json_variant abstractPath = pluginHost.AbstractPath(value);
+            std::ostringstream ss;
+            json_writer writer(ss);
+            writer.write(abstractPath);
+            std::string atomString = ss.str();
+            pedalboardItem->pathProperties_[propertyUri] = atomString;
+        }
+        this->SetPresetChanged(clientId, true);
     }
-    this->SetPresetChanged(clientId, true);
     LV2_Atom *atomValue = atomConverter.ToAtom(value);
 
     std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
@@ -1657,7 +1668,7 @@ void PiPedalModel::SendSetPatchProperty(
                     }
                     else
                     {
-                        if (pParameter->onSuccess)
+                        if (onSuccess)
                         {
                             onSuccess();
                         }
@@ -1668,10 +1679,12 @@ void PiPedalModel::SendSetPatchProperty(
         }};
 
     LV2_URID urid = this->pluginHost.GetLv2Urid(propertyUri.c_str());
-
+    size_t sampleTimeout = 0.5*audioHost->GetSampleRate();
     RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
         onRequestComplete,
-        clientId, instanceId, urid, atomValue, nullptr, onError);
+        clientId, instanceId, urid, atomValue, nullptr, onError,
+        sampleTimeout
+    );
 
     outstandingParameterRequests.push_back(request);
     if (this->audioHost)
@@ -1684,7 +1697,7 @@ void PiPedalModel::SendGetPatchProperty(
     int64_t clientId,
     int64_t instanceId,
     const std::string uri,
-    std::function<void(const std::string &jsonResjult)> onSuccess,
+    std::function<void(const std::string &jsonResult)> onSuccess,
     std::function<void(const std::string &error)> onError)
 {
     std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
@@ -1732,16 +1745,20 @@ void PiPedalModel::SendGetPatchProperty(
         }};
 
     LV2_URID urid = this->pluginHost.GetLv2Urid(uri.c_str());
-    RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
-        onRequestComplete,
-        clientId, instanceId, urid, onSuccess, onError);
 
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    outstandingParameterRequests.push_back(request);
-    if (this->audioHost)
+
+    if (!this->audioHost)
     {
-        this->audioHost->sendRealtimeParameterRequest(request);
+        onError("Audio stopped.");
     }
+    size_t sampleTimeout = 0.3*audioHost->GetSampleRate();
+    RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
+        onRequestComplete,
+        clientId, instanceId, urid, onSuccess, onError,sampleTimeout);
+
+    outstandingParameterRequests.push_back(request);
+    this->audioHost->sendRealtimeParameterRequest(request);
 }
 
 BankIndex PiPedalModel::GetBankIndex() const

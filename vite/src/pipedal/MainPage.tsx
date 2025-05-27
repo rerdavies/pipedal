@@ -93,7 +93,7 @@ const styles = ({ palette }: Theme) => { return {
         flex: "0 0 64px", width: "100%", paddingLeft: 24, paddingRight: 16, paddingBottom: 16
     }),
     controlContent: css({
-        flex: "1 1 auto", width: "100%", overflowY: "auto", minHeight: 240
+        flex: "1 1 auto", width: "100%", overflowY: "hidden", minHeight: 300
     }),
     controlContentSmall: css({
         flex: "0 0 162px", width: "100%", height: 162, overflowY: "hidden",
@@ -609,7 +609,7 @@ export const MainPage =
                                 </div>
                             )
                         }
-                        <div className={horizontalScrollLayout ? classes.controlContentSmall : classes.controlContent}>
+                        <div id="mainPageControls" className={horizontalScrollLayout ? classes.controlContentSmall : classes.controlContent}>
                             {
                                 missing ? (
                                     <div style={{ marginLeft: 40, marginTop: 20 }}>

@@ -35,6 +35,9 @@
 #include "json.hpp"
 #include "HotspotManager.hpp"
 #include "MimeTypes.hpp"
+#include "AudioFileMetadata.hpp"
+#include "AudioFiles.hpp"
+
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
@@ -52,20 +55,20 @@ using namespace pipedal;
 using namespace boost::system;
 namespace fs = std::filesystem;
 
-
-
-static bool HasDotDot(const std::filesystem::path &path) {
+static bool HasDotDot(const std::filesystem::path &path)
+{
     for (auto &part : path)
     {
-        if (part == "..") {
+        if (part == "..")
+        {
             return true;
         }
-        if (part == ".") 
+        if (part == ".")
         {
             return true;
         }
     }
-    return false;   
+    return false;
 }
 
 class UserUploadResponse
@@ -80,12 +83,12 @@ JSON_MAP_REFERENCE(UserUploadResponse, errorMessage)
 JSON_MAP_REFERENCE(UserUploadResponse, path)
 JSON_MAP_END()
 
-static std::string GetMimeType(const std::filesystem::path&path) {
+static std::string GetMimeType(const std::filesystem::path &path)
+{
     std::string extension = path.extension();
-    const MimeTypes&mimeTypes = MimeTypes::instance();
+    const MimeTypes &mimeTypes = MimeTypes::instance();
     auto result = mimeTypes.MimeTypeFromExtension(extension);
     return result;
-
 }
 static bool IsZipFile(const std::filesystem::path &path)
 {
@@ -179,6 +182,17 @@ public:
         {
             return true;
         }
+        else if (segment == "AudioMetadata")
+        {
+            return true;
+        } else if (segment == "NextAudioFile")
+        {
+            return true;
+        } else if (segment == "PreviousAudioFile")
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -246,15 +260,17 @@ public:
         try
         {
             std::string segment = request_uri.segment(1);
-            if (segment == "downloadMediaFile") {
+            if (segment == "downloadMediaFile")
+            {
                 fs::path path = request_uri.query("path");
-                
+
                 if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                 {
                     throw PiPedalException("File not found.");
                 }
                 auto mimeType = GetMimeType(path);
-                if (mimeType.empty()) {
+                if (mimeType.empty())
+                {
                     throw PiPedalException("Can't download files of this type.");
                 }
                 res.set(HttpField::content_type, mimeType);
@@ -343,18 +359,20 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "downloadMediaFile") {
+            if (segment == "downloadMediaFile")
+            {
                 fs::path path = request_uri.query("path");
-                
+
                 bool t = this->model->IsInUploadsDirectory(path);
-                std::cout << (t? "true": "false") << std::endl;
+                std::cout << (t ? "true" : "false") << std::endl;
                 (void)t;
                 if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                 {
                     throw PiPedalException("File not found.");
                 }
                 auto mimeType = GetMimeType(path);
-                if (mimeType.empty()) {
+                if (mimeType.empty())
+                {
                     throw PiPedalException("Can't download files of this type.");
                 }
                 res.set(HttpField::content_type, mimeType);
@@ -363,9 +381,10 @@ public:
                 res.set(HttpField::content_disposition, disposition);
                 size_t contentLength = std::filesystem::file_size(path);
                 res.setContentLength(contentLength);
-                res.setBodyFile(path,false);
+                res.setBodyFile(path, false);
                 return;
-            } else if (segment == "downloadPluginPresets")
+            }
+            else if (segment == "downloadPluginPresets")
             {
                 std::string name;
                 std::string content;
@@ -416,6 +435,65 @@ public:
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
                 res.setBodyFile(tmpFile);
             }
+            else if (segment == "AudioMetadata")
+            {
+                res.set(HttpField::content_type, "application/json");
+                // res.set(HttpField::cache_control, "no-cache");
+                fs::path path = request_uri.query("path");
+
+                if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                {
+                    throw PiPedalException("File not found.");
+                }
+                std::string metadata = GetAudioFileMetadataString(path);
+                res.setBody(metadata);
+            }
+            else if (segment == "NextAudioFile")
+            {
+                res.set(HttpField::content_type, "application/json");
+                // res.set(HttpField::cache_control, "no-cache");
+                fs::path path = request_uri.query("path");
+
+                try {
+                    if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
+
+                    std::string nextFile = AudioFileInfo::GetInstance().GetNextAudioFile(path);
+                    std::stringstream ss;
+                    json_writer writer(ss);
+                    writer.write(nextFile);
+
+                    res.setBody(ss.str());
+                } catch (const std::exception&e)
+                {
+                    res.setBody("''");
+                }
+            } 
+            else if (segment == "PreviousAudioFile")
+            {
+                res.set(HttpField::content_type, "application/json");
+                // res.set(HttpField::cache_control, "no-cache");
+                fs::path path = request_uri.query("path");
+
+                try {
+                    if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
+                    std::string previousFile = AudioFileInfo::GetInstance().GetPreviousAudioFile(path);
+                    std::stringstream ss;
+                    json_writer writer(ss);
+                    writer.write(previousFile);
+
+                    res.setBody(ss.str());
+                } catch (const std::exception&e)
+                {
+                    res.setBody("\"\"");
+                }
+            } 
+
             else
             {
                 throw PiPedalException("Not found");
@@ -628,7 +706,7 @@ public:
 
                     int64_t instanceId;
                     {
-                        std::istringstream ss { instanceIdString};
+                        std::istringstream ss{instanceIdString};
                         ss >> instanceId;
                         if (!ss)
                         {
@@ -669,7 +747,7 @@ public:
                                     if (extensionChecker.IsValidExtension(extension))
                                     {
                                         auto si = zipFile->GetFileInputStream(inputFile);
-                                        std::string path = this->model->UploadUserFile(directory, instanceId,patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
+                                        std::string path = this->model->UploadUserFile(directory, instanceId, patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
                                     }
                                 }
                             }
@@ -687,7 +765,7 @@ public:
                     }
                     else
                     {
-                        outputFileName = this->model->UploadUserFile(directory, instanceId,patchProperty, filename, req.get_body_input_stream(), req.content_length());
+                        outputFileName = this->model->UploadUserFile(directory, instanceId, patchProperty, filename, req.get_body_input_stream(), req.content_length());
                     }
 
                     if (outputFileName.is_relative())
@@ -783,7 +861,7 @@ public:
           << ", \"socket_server_address\": \"" << webSocketAddress
           << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
           << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true" : "false")
-          << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true": "false")
+          << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true" : "false")
           << " }";
 
         return s.str();

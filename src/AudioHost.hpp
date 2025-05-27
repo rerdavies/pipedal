@@ -69,6 +69,7 @@ namespace pipedal
 
         const char *errorMessage = nullptr;
         std::string jsonResponse;
+        int64_t sampleTimeout = 0;
 
         RealtimePatchPropertyRequest *pNext = nullptr;
 
@@ -102,13 +103,16 @@ namespace pipedal
             int64_t instanceId_,
             LV2_URID uridUri_,
             std::function<void(const std::string &jsonResjult)> onSuccess_,
-            std::function<void(const std::string &error)> onError_)
+            std::function<void(const std::string &error)> onError_,
+            size_t sampleTimeout)
             : onPatchRequestComplete(onPatchRequestcomplete_),
               clientId(clientId_),
               instanceId(instanceId_),
               uridUri(uridUri_),
               onSuccess(onSuccess_),
-              onError(onError_)
+              onError(onError_),
+              sampleTimeout((int64_t)sampleTimeout)
+
         {
             requestType = RequestType::PatchGet;
         }
@@ -119,13 +123,15 @@ namespace pipedal
             LV2_URID uridUri_,
             LV2_Atom *atomValue,
             std::function<void(const std::string &jsonResjult)> onSuccess_,
-            std::function<void(const std::string &error)> onError_)
+            std::function<void(const std::string &error)> onError_,
+            size_t sampleTimeout)
             : onPatchRequestComplete(onPatchRequestcomplete_),
               clientId(clientId_),
               instanceId(instanceId_),
               uridUri(uridUri_),
               onSuccess(onSuccess_),
-              onError(onError_)
+              onError(onError_),
+              sampleTimeout(sampleTimeout)
         {
             requestType = RequestType::PatchSet;
             size_t size = atomValue->size + sizeof(LV2_Atom);

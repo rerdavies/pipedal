@@ -65,14 +65,14 @@ function preventNextClickAfterDrag() {
     // on ANY element under the mouse. Prevent this click event 
     // (and any other click event) from happening for 100ms
     // after the drag stops.
-    let clickHandler = (e: MouseEvent) => { 
+    let clickHandler = (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
     };
-    document.addEventListener('click',clickHandler,true);
+    document.addEventListener('click', clickHandler, true);
     window.setTimeout(() => {
-        document.removeEventListener('click',clickHandler,true);
-    },100);
+        document.removeEventListener('click', clickHandler, true);
+    }, 100);
 }
 
 function androidEmoji(text: string) {
@@ -119,7 +119,7 @@ export const pluginControlStyles = (theme: Theme) => createStyles({
         right: 0,
         bottom: 4,
         textAlign: "center",
-        background: theme.mainBackground,
+        background: "transparent",
         color: theme.palette.text.secondary,
         // zIndex: -1,
     }),
@@ -214,19 +214,19 @@ const PluginControl =
             inputChanged: boolean = false;
 
             onInputLostFocus(event: any): void {
-                this.setState({editFocused: false});
+                this.setState({ editFocused: false });
                 if (this.inputChanged) // validation requried?
                 {
                     this.inputChanged = false;
                     this.validateInput(event, true);
 
                 }
-                
+
                 //this.displayValueRef.current!.style.display = "block";
             }
             onInputFocus(event: SyntheticEvent): void {
                 //this.displayValueRef.current!.style.display = "none";
-                this.setState({editFocused: true});
+                this.setState({ editFocused: true });
                 if (Utility.hasIMEKeyboard()) {
                     event.preventDefault();
                     event.stopPropagation();
@@ -356,11 +356,9 @@ const PluginControl =
                 if (!this.mouseDown && this.isValidPointer(e)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (document.activeElement)
-                    {
+                    if (document.activeElement) {
                         let e = document.activeElement as any;
-                        if (e.blur)
-                        {
+                        if (e.blur) {
                             e.blur();
                         }
                     }
@@ -492,8 +490,7 @@ const PluginControl =
             onPointerUp(e: PointerEvent<SVGSVGElement>) {
 
                 if (this.isCapturedPointer(e)) {
-                    if (this.pointersDown !== 0)
-                    {
+                    if (this.pointersDown !== 0) {
                         --this.pointersDown;
                     }
 
@@ -515,8 +512,7 @@ const PluginControl =
                     preventNextClickAfterDrag();
 
                 } else {
-                    if (this.pointersDown !==  0) 
-                    {
+                    if (this.pointersDown !== 0) {
                         --this.pointersDown;
                     }
 
@@ -620,7 +616,7 @@ const PluginControl =
                             UpdateGraphicEqPath(imgElement, range);
                         }
                     } else {
-                        
+
                         let transform = this.rangeToRotationTransform(range);
                         if (this.mouseDown && !commitValue) {
                             transform += " scale(1.5, 1.5)";
@@ -1068,21 +1064,30 @@ const PluginControl =
                                                 defaultValue={control.formatShortValue(value)}
                                                 error={this.state.error}
                                                 inputProps={{
+                                                    className: "scrollMod",
                                                     min: this.props.uiControl?.min_value,
                                                     max: this.props.uiControl?.max_value,
-                                                    'aria-label':
-                                                        control.symbol + " value",
-                                                    style: { textAlign: "center", fontSize: FONT_SIZE },
                                                 }}
-                                                inputRef={this.inputRef} onChange={this.onInputChange}
-                                                onBlur={this.onInputLostFocus}
-                                                onFocus={this.onInputFocus}
 
-                                                onKeyPress={this.onInputKeyPress} />
-                                            <div className={classes.displayValue} 
-                                                ref={this.displayValueRef} onClick={(e) => { this.inputRef.current!.focus(); }} 
-                                                style={{display: this.state.editFocused? "none": "block"}}
-                                                >
+                                                sx={{
+                                                    // Style the input element
+                                                    '& input[type=number]': {
+                                                        width: 60,
+                                                        opacity: this.state.editFocused ? 1 : 0,
+                                                        textAlign: "center", fontSize: FONT_SIZE,
+                                                        borderBottom: "0px",
+                                                    },
+                                                }}
+
+                                            inputRef={this.inputRef} onChange={this.onInputChange}
+                                            onBlur={this.onInputLostFocus}
+                                            onFocus={this.onInputFocus}
+
+                                            onKeyPress={this.onInputKeyPress} />
+                                            <div className={classes.displayValue}
+                                                ref={this.displayValueRef} onClick={(e) => { this.inputRef.current!.focus(); }}
+                                                style={{ display: this.state.editFocused ? "none" : "block" }}
+                                            >
                                                 <Typography noWrap color="inherit" style={{ fontSize: "12.8px", paddingTop: 4, paddingBottom: 6 }}
 
                                                 >

@@ -1,3 +1,16 @@
+Sort order.
+Do we have a better plugin category than "Utility"
+.index files.
+- pipewire aux in?
+
+libsqlite3-dev install
+libsqlitecpp-dev install
+
+Check that OnNotifyPatchProperty still worsk for 
+- FilePropertyControl
+- PowerStage2.
+- ToobSpectrumAnaylyzer.
+
 pcm.pipedal_aux_in {
     type file
     file "/tmp/aux_input_fifo"
