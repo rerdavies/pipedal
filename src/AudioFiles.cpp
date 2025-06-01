@@ -8,10 +8,10 @@
  *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *   copies of the Software, and to permit persons to whom the Software is
  *   furnished to do so, subject to the following conditions:
- 
+
  *   The above copyright notice and this permission notice shall be included in all
  *   copies or substantial portions of the Software.
- 
+
  *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,128 +21,697 @@
  *   SOFTWARE.
  */
 
+#include "AudioFiles.hpp"
+#include <filesystem>
+#include <limits>
+#include <stdexcept>
+#include "AudioFileMetadataReader.hpp"
+#include "Locale.hpp"
+#include "MimeTypes.hpp"
+#include <stdexcept>
+#include "AudioFilesDb.hpp"
 
- #include "AudioFiles.hpp"
- #include <filesystem>
- #include <limits>
+#undef _GLIBCXX_DEBUG // Ensure we are not in debug mode, as this file is not compatible with it.
+#include "SQLiteCpp/SQLiteCpp.h"
 
- 
-
- using namespace pipedal;
-
+using namespace pipedal;
+using namespace pipedal::impl;
+namespace fs = std::filesystem;
 
 static constexpr size_t INVALID_INDEX = std::numeric_limits<size_t>::max();
 
- namespace fs = std::filesystem;
-
- namespace {
-    class DirectoryList {
-    public:
-        DirectoryList(const fs::path&path);
-    
-        const std::vector<std::filesystem::path> &files() {
-            return files_;
-        }
-    private:
-
-        std::vector<std::filesystem::path> files_;
-    };
-    
-    class AudioFileInfoImpl: public AudioFileInfo {
-    public:
-        virtual ~AudioFileInfoImpl() { }
-    protected:
-        virtual std::string GetNextAudioFile(const std::string&path) override;
-        virtual std::string GetPreviousAudioFile(const std::string&path) override;
-    };
-    /////////////////////
-
-    DirectoryList::DirectoryList(const fs::path&path)
+void AudioDirectoryInfo::SetTemporaryDirectory(const std::filesystem::path &path)
+{
+    temporaryDirectory = path;
+}
+void AudioDirectoryInfo::SetResourceDirectory(const std::filesystem::path &path)
+{
+    resourceDirectory = path;
+}
+std::filesystem::path AudioDirectoryInfo::GetTemporaryDirectory() const
+{
+    if (temporaryDirectory.empty())
     {
-        for (const auto&dirEntry: fs::directory_iterator(path))
+        return "/tmp/pipedal/audiofiles"; // used during testing.
+    }
+    return temporaryDirectory;
+}
+std::filesystem::path AudioDirectoryInfo::GetResourceDirectory() const
+{
+    if (resourceDirectory.empty())
+    {
+        fs::path path = fs::current_path() / "vite/public/img"; // take from the source directory during testing.
+        return "/usr/share/pipedal/audiofiles";                 // used during testing.
+    }
+    return resourceDirectory;
+}
+
+std::filesystem::path AudioDirectoryInfo::temporaryDirectory;
+std::filesystem::path AudioDirectoryInfo::resourceDirectory;
+
+namespace
+{
+
+    static int64_t fileTimeToInt64(const fs::file_time_type &fileTime)
+    {
+        return fileTime.time_since_epoch().count();
+    }
+    static int64_t GetLastWriteTime(const fs::path &file)
+    {
+        try
         {
-            if (dirEntry.is_regular_file())
+            return fileTimeToInt64(fs::last_write_time(file));
+        }
+        catch (const std::exception &e)
+        {
+            return 0; // Return 0 if we cannot get the last write time.
+        }
+    }
+
+    class AudioDirectoryInfoImpl : public AudioDirectoryInfo
+    {
+    public:
+        AudioDirectoryInfoImpl(const std::string &path)
+            : path(path)
+        {
+        }
+        virtual ~AudioDirectoryInfoImpl() {}
+
+        virtual std::vector<AudioFileMetadata> GetFiles() override;
+        virtual ThumbnailTemporaryFile GetThumbnail(const std::string &fileNameOnly, int32_t width, int32_t height) override;
+
+        virtual ThumbnailTemporaryFile DefaultThumbnailTemporaryFile() override;
+
+        virtual size_t TestGetNumberOfThumbnails() override; // test use only.
+        virtual void TestSetIndexPath(const std::filesystem::path &path) override
+        {
+            indexPath = path;
+        }
+        virtual std::string GetNextAudioFile(const std::string &fileNameOnly) override;
+        virtual std::string GetPreviousAudioFile(const std::string &fileNameOnly) override;
+
+    private:
+        std::filesystem::path indexPath;
+        void OpenAudioDb();
+        ThumbnailTemporaryFile GetUnindexedThunbnail(const std::string &fileNameOnly, int32_t width, int32_t height);
+
+        std::shared_ptr<AudioFilesDb> audioFilesDb;
+        fs::path path;
+        using id_t = int64_t;
+
+        std::vector<DbFileInfo> QueryTracks();
+
+        std::vector<DbFileInfo> UpdateDbFiles();
+        void DbSetThumbnailType(
+            int64_t idFile,
+            ThumbnailType thumbnailType,
+            const std::string &thumbnailFile = "",
+            int64_t thumbnailLastModified = 0);
+        void DbSetThumbnailType(
+            const std::string &fileNameOnly,
+            ThumbnailType thumbnailType,
+            const std::string &thumbnailFile = "",
+            int64_t thumbnailLastModified = 0);
+
+        void DbDeleteFile(DbFileInfo *dbFile);
+        void UpdateMetadata(DbFileInfo *dbFile);
+        static constexpr int DB_VERSION = 1;
+        std::filesystem::path GetFolderFile() const;
+    };
+}
+
+
+AudioDirectoryInfo::Ptr AudioDirectoryInfo::Create(const std::string &path)
+{
+    return std::shared_ptr<AudioDirectoryInfo>(
+        new AudioDirectoryInfoImpl(path));
+}
+
+std::vector<AudioFileMetadata> AudioDirectoryInfoImpl::GetFiles()
+{
+    OpenAudioDb();
+    std::vector<DbFileInfo> dbFiles = UpdateDbFiles();
+    std::vector<AudioFileMetadata> metadataResults;
+    for (const auto &dbFile : dbFiles)
+    {
+        AudioFileMetadata metadata{dbFile}; // slice copy of just the metadata.
+        metadataResults.push_back(std::move(metadata));
+    }
+    return metadataResults;
+}
+
+std::vector<DbFileInfo> AudioDirectoryInfoImpl::QueryTracks()
+{
+    if (audioFilesDb)
+    {
+        return audioFilesDb->QueryTracks();
+    }
+    return std::vector<DbFileInfo>();
+}
+static bool isAudioExtension(const std::string &extension)
+{
+    return MimeTypes::instance().AudioExtensions().contains(extension);
+}
+
+static bool HasPositionInfo(const std::vector<DbFileInfo> &dbFiles)
+{
+    for (const auto &file : dbFiles)
+    {
+        if (file.position() != -1)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+static int DefaultedSortOrder(int track)
+{
+    if (track < 0)
+    {
+        return std::numeric_limits<int>::max();
+    }
+    return track;
+}
+static void SortDbFiles(std::vector<DbFileInfo> &dbFiles, Collator::ptr &collator)
+{
+    std::sort(
+        dbFiles.begin(), dbFiles.end(),
+        [collator](const DbFileInfo &a, const DbFileInfo &b)
+        {
+            if (a.position() != b.position())
             {
-                fs::path t = dirEntry.path();
-                if (!t.filename().string().starts_with('.'))
+                return DefaultedSortOrder(a.position()) < DefaultedSortOrder(b.position());
+            }
+            if (a.track() != b.track())
+            {
+                return DefaultedSortOrder(a.track()) < DefaultedSortOrder(b.track());
+            }
+            if (a.title() != b.title())
+            {
+                return collator->Compare(a.title(), b.title()) < 0;
+            }
+            if (a.album() != b.album())
+            {
+                return collator->Compare(a.title(), b.title()) < 0;
+            }
+            return false;
+            ;
+        });
+}
+
+std::vector<DbFileInfo> AudioDirectoryInfoImpl::UpdateDbFiles()
+{
+    std::shared_ptr<SQLite::Transaction> transaction;
+    if (audioFilesDb)
+    {
+        transaction = audioFilesDb->transaction();
+    }
+    std::vector<DbFileInfo> dbFiles = QueryTracks();
+    std::vector<DbFileInfo> newFiles;
+
+    bool updateRequired = false;
+    std::map<std::string, DbFileInfo *> nameToDbRecord;
+    for (size_t i = 0; i < dbFiles.size(); ++i)
+    {
+        auto *pFile = &(dbFiles[i]);
+        nameToDbRecord[pFile->fileName()] = pFile;
+    }
+
+    for (auto dirEntry : fs::directory_iterator(path))
+    {
+        if (!dirEntry.is_directory())
+        {
+            auto path = dirEntry.path();
+            std::string name = path.filename();
+            std::string extension = path.extension();
+            if (isAudioExtension(extension))
+            {
+                int64_t lastModified = fileTimeToInt64(dirEntry.last_write_time());
+
+                auto f = nameToDbRecord.find(name);
+                if (f != nameToDbRecord.end())
                 {
-                    files_.push_back(std::move(t));
+                    DbFileInfo *dbFile = f->second;
+                    dbFile->present(true);
+                    if (dbFile->lastModified() != lastModified)
+                    {
+                        if (audioFilesDb)
+                        {
+                            audioFilesDb->DeleteThumbnails(dbFile->idFile());
+                        }
+                        dbFile->thumbnailType(ThumbnailType::Unknown);
+                        dbFile->thumbnailFile("");
+                        dbFile->thumbnailLastModified(0);
+                        UpdateMetadata(dbFile);
+                        dbFile->dirty(true);
+                        updateRequired = true;
+                    }
+                }
+                else
+                {
+                    DbFileInfo newFile;
+                    newFile.fileName(name);
+                    newFile.idFile(-1);
+                    newFile.dirty(true);
+                    newFile.present(true);
+                    UpdateMetadata(&newFile);
+                    newFiles.push_back(std::move(newFile));
+                    updateRequired = true;
                 }
             }
         }
     }
-    
-    std::string AudioFileInfoImpl::GetNextAudioFile(const std::string&path_) {
-        try
+    for (auto i = dbFiles.begin(); i != dbFiles.end(); ++i)
+    {
+        if (!i->present())
         {
-            fs::path path {path_};
-            if (fs::exists(path) && fs::is_regular_file(path))
-            {
-                DirectoryList directoryList(path.parent_path());
-                size_t index = INVALID_INDEX;
-                auto &files = directoryList.files();
-                for (size_t i= 0; i < files.size(); ++i)
-                {
-                    if (files[i] == path)
-                    {
-                        size_t next = i;
-                        if (next == files.size()-1)
-                        {
-                            next = 0;
-                        } else {
-                            ++next;
-                        }
-                        return files[next];
-                    }
-                }
-
-            } 
-        } catch (const std::exception&e)
-        {
-
+            DbDeleteFile(&*i);
+            dbFiles.erase(i);
+            updateRequired = true;
+            --i;
         }
-        return "";
-
     }
-    std::string AudioFileInfoImpl::GetPreviousAudioFile(const std::string&path_) 
+    // refresh folder file names.
+    auto folderFile = GetFolderFile();
+    int64_t folderLastModified = 0;
+    std::string folderFileName;
+    if (!folderFile.empty() && fs::exists(folderFile))
+    {
+        folderLastModified = GetLastWriteTime(folderFile);
+        folderFileName = folderFile.filename().string();
+    }
+    for (auto &dbFile : dbFiles)
+    {
+        if (dbFile.thumbnailType() == ThumbnailType::Unknown)
+        {
+            if (!folderFileName.empty())
+            {
+                dbFile.thumbnailType(ThumbnailType::Folder);
+                dbFile.thumbnailFile(folderFileName);
+                dbFile.thumbnailLastModified(folderLastModified);
+                dbFile.dirty(true);
+                updateRequired = true;
+            }
+        }
+        else if (dbFile.thumbnailType() == ThumbnailType::Folder)
+        {
+            // Check if the folder file has changed.
+            if (folderFileName.empty())
+            {
+                // no more folder file. update accordingly.
+                dbFile.thumbnailType(ThumbnailType::None);
+                dbFile.thumbnailFile("");
+                dbFile.thumbnailLastModified(0);
+                dbFile.dirty(true);
+                updateRequired = true;
+            }
+            else
+            {
+                // folder file has changed. update accordingly.
+                if (dbFile.thumbnailFile() != folderFileName ||
+                    dbFile.thumbnailLastModified() != folderLastModified)
+                {
+                    dbFile.thumbnailFile(folderFileName);
+                    dbFile.thumbnailLastModified(folderLastModified);
+                    dbFile.dirty(true);
+                    updateRequired = true;
+                }
+            }
+        }
+    }
+
+    if (!updateRequired && newFiles.empty())
+    {
+        // Nothing to do.
+        return dbFiles;
+    }
+
+    Locale::ptr locale = Locale::GetInstance();
+    Collator::ptr collator = locale->GetCollator();
+    if (!HasPositionInfo(dbFiles))
+    {
+        dbFiles.insert(dbFiles.end(), newFiles.begin(), newFiles.end());
+        SortDbFiles(dbFiles, collator);
+    }
+    else
+    {
+        // We have position info, so we need to update the position.
+        SortDbFiles(dbFiles, collator);
+        SortDbFiles(newFiles, collator);
+        dbFiles.insert(dbFiles.end(), newFiles.begin(), newFiles.end());
+
+        for (size_t i = 0; i < dbFiles.size(); ++i)
+        {
+            auto newPosition = static_cast<int32_t>(i);
+            if (newPosition != dbFiles[i].position())
+            {
+                dbFiles[i].dirty(true);
+            }
+            dbFiles[i].position(newPosition);
+        }
+    }
+    for (auto &dbFile : dbFiles)
+    {
+        if (dbFile.dirty())
+        {
+            if (audioFilesDb)
+            {
+                audioFilesDb->WriteFile(&dbFile);
+            }
+            dbFile.dirty(false);
+        }
+    }
+    if (transaction)
+    {
+        transaction->commit();
+        transaction = nullptr;
+    }
+    return dbFiles;
+}
+
+void AudioDirectoryInfoImpl::DbDeleteFile(DbFileInfo *dbFile)
+{
+    if (this->audioFilesDb)
+    {
+        audioFilesDb->DeleteFile(dbFile);
+    }
+}
+
+// All the varous cover art files I found on my personal music collection.
+// These are used to find the cover art for a directory. Based on
+// scanning a large music collection that have been tagged by various tools
+// including iTunes, Windows Media Playe, and a variety of taggers.
+//
+// Files are listed in order of preference.
+
+static std::vector<std::filesystem::path> COVER_ART_FILES = {
+    "Folder.jpg",  // window media player/explorer.
+    "Cover.jpg",   // itunes.
+    "folder.jpg",  // Linux audio players plex, kodi, Rythmbox, Amorok, Clementine.
+    "cover.jpg",   // Linux audio players plex, kodi, Rythmbox, Amorok, Clementine.
+    "Artwork.jpg", // itunes.
+    "Front.jpg",
+    "front.jpg", // linux.
+    "AlbumArt.jpg",
+    "albumArt.jpg",
+    "Frontcover.jpg",
+    "AlbumArtSmall.jpg"};
+
+fs::path AudioDirectoryInfoImpl::GetFolderFile() const
+{
+    for (const auto &coverArtFile : COVER_ART_FILES)
+    {
+        fs::path thumbnailPath = path / coverArtFile;
+        if (fs::exists(thumbnailPath))
+        {
+            return thumbnailPath;
+        }
+    }
+    return {};
+}
+
+void AudioDirectoryInfoImpl::DbSetThumbnailType(
+    int64_t idFile,
+    ThumbnailType thumbnailType,
+    const std::string &thumbnailFile,
+    int64_t thumbnailLastModified)
+{
+    if (audioFilesDb)
+    {
+        audioFilesDb->UpdateThumbnailInfo(
+            idFile,
+            thumbnailType,
+            thumbnailFile,
+            thumbnailLastModified);
+    }
+}
+void AudioDirectoryInfoImpl::DbSetThumbnailType(
+    const std::string&fileNameOnly,
+    ThumbnailType thumbnailType,
+    const std::string &thumbnailFile,
+    int64_t thumbnailLastModified)
+{
+    if (audioFilesDb)
+    {
+        audioFilesDb->UpdateThumbnailInfo(
+            fileNameOnly,
+            thumbnailType,
+            thumbnailFile,
+            thumbnailLastModified);
+    }
+}
+
+static ThumbnailTemporaryFile GetFolderTemporaryFile(const fs::path &folderFile)
+{
+    ThumbnailTemporaryFile result;
+    result.SetNonDeletedPath(folderFile, MimeTypes::instance().MimeTypeFromExtension(folderFile.extension().string()));
+    return result;
+}
+ThumbnailTemporaryFile AudioDirectoryInfoImpl::GetThumbnail(const std::string &fileNameOnly, int32_t width, int32_t height)
+{
+    fs::path file = this->path / fileNameOnly;
+    OpenAudioDb();
+    if (audioFilesDb)
     {
         try
         {
-            fs::path path {path_};
-            if (fs::exists(path) && fs::is_regular_file(path))
+
+            ThumbnailInfo thumbnailInfo = audioFilesDb->GetThumbnailInfo(file.filename().string());
+
+            if (thumbnailInfo.thumbnailType() == ThumbnailType::Folder)
             {
-                DirectoryList directoryList(path.parent_path());
-                size_t index = INVALID_INDEX;
-                auto &files = directoryList.files();
-                for (size_t i= 0; i < files.size(); ++i)
+                fs::path thumbnailFile = path / thumbnailInfo.thumbnailFile();
+                if (!fs::exists(thumbnailFile) ||
+                    fileTimeToInt64(fs::last_write_time(thumbnailFile)) !=
+                        thumbnailInfo.thumbnailLastModified())
                 {
-                    if (files[i] == path)
-                    {
-                        size_t previous = i;
-                        if (previous == 0)
-                        {
-                            previous = files.size()-1;
-                        } else {
-                            --previous;
-                        }
-                        return files[previous];
-                    }
+                    // reset the thumbnail type and try again.
+                    audioFilesDb->UpdateThumbnailInfo(
+                        fileNameOnly,
+                        ThumbnailType::Unknown);
+                    return GetThumbnail(fileNameOnly, width, height);
                 }
+                fs::path fullFolderPath = this->path / thumbnailInfo.thumbnailFile();
+                return GetFolderTemporaryFile(fullFolderPath);
+            }
+            if (thumbnailInfo.thumbnailType() == ThumbnailType::Embedded)
+            {
+                std::vector<uint8_t> blob = audioFilesDb->GetEmbeddedThumbnail(fileNameOnly, width, height);
 
-            } 
-        } catch (const std::exception&e)
-        {
+                if (!blob.empty())
+                {
+                    ThumbnailTemporaryFile tempFile = ThumbnailTemporaryFile::CreateTemporaryFile(GetTemporaryDirectory(), "image/jpeg");
 
+                    tempFile.SetMimeType("image/jpeg");
+                    // write buffer to tempFile.GetPath()
+                    std::ofstream outFile(tempFile.Path(), std::ios::binary);
+                    if (!outFile)
+                    {
+                        throw std::runtime_error("Failed to open temporary file for writing: " + tempFile.Path().string());
+                    }
+                    outFile.write((const char *)blob.data(), blob.size());
+                    return tempFile;
+                }
+                else
+                {
+                    // fall through and generate the indexed thumbnail.
+                }
+            }
+
+            if (thumbnailInfo.thumbnailType() == ThumbnailType::None)
+            {
+                return DefaultThumbnailTemporaryFile();
+            }
+
+            try
+            {
+                auto tempFile = pipedal::GetAudioFileThumbnail(
+                    this->path / fileNameOnly,
+                    width, height,
+                    GetTemporaryDirectory());
+                auto thumbnailPath = tempFile.Path();
+                ThumbnailTemporaryFile result;
+                result.Attach(tempFile.Detach(), "image/jpeg");
+
+                // Read the thumbnail data from the temporary file.
+                std::ifstream thumbnailStream(thumbnailPath, std::ios::binary);
+                if (!thumbnailStream)
+                {
+                    throw std::runtime_error("Failed to open thumbnail file: " + thumbnailPath.string());
+                }
+                std::vector<uint8_t> thumbnailData(
+                    (std::istreambuf_iterator<char>(thumbnailStream)),
+                    std::istreambuf_iterator<char>());
+
+                if (!thumbnailData.empty())
+                {
+                    audioFilesDb->AddThumbnail(
+                        fileNameOnly,
+                        width,
+                        height,
+                        thumbnailData);
+
+                    // Set the MIME type for the thumbnail.
+                    result.SetMimeType("image/jpeg");
+                    audioFilesDb->UpdateThumbnailInfo(
+                        fileNameOnly,
+                        ThumbnailType::Embedded);
+                    return result;
+                }
+                else
+                {
+                    throw std::runtime_error("Thumbnail data is empty.");
+                }
+                return result;
+            }
+            catch (const std::exception &_)
+            {
+            }
+            auto folderFile = GetFolderFile();
+            if (!folderFile.empty())
+            {
+                // We have a folder thumbnail, set the type and return it.
+                fs::path t = this->path / folderFile;
+                int64_t lastModified = fileTimeToInt64(fs::last_write_time(t));
+                DbSetThumbnailType(fileNameOnly, ThumbnailType::Folder, folderFile, lastModified);
+                auto fullFolderPath = this->path / folderFile;
+                return GetFolderTemporaryFile(fullFolderPath);
+            }
+            DbSetThumbnailType(
+                fileNameOnly,
+                ThumbnailType::None); // No thumbnail available, set to None.
+            return DefaultThumbnailTemporaryFile();
         }
-        return "";
-
+        catch (const std::exception &e)
+        {
+        }
     }
+    return GetUnindexedThunbnail(fileNameOnly, width, height);
+}
 
- }
+ThumbnailTemporaryFile AudioDirectoryInfoImpl::GetUnindexedThunbnail(const std::string &fileNameOnly, int32_t width, int32_t height)
+{
+    fs::path file = this->path / fileNameOnly;
+    ThumbnailTemporaryFile tempFile = ThumbnailTemporaryFile::CreateTemporaryFile(GetTemporaryDirectory(), "image/jpeg");
+    try
+    {
+        auto thumbnailPath = pipedal::GetAudioFileThumbnail(file, width, height, GetTemporaryDirectory());
+        tempFile.Attach(thumbnailPath.Detach(), "image/jpeg");
+        return tempFile;
+    }
+    catch (const std::exception &e)
+    {
+        // If we cannot get the thumbnail, return a default one.
+        return DefaultThumbnailTemporaryFile();
+    }
+}
 
- static AudioFileInfoImpl instance;
+void AudioDirectoryInfoImpl::UpdateMetadata(DbFileInfo *dbFile)
+{
+    fs::path file = this->path / dbFile->fileName();
+    AudioFileMetadata metadata(file);
+    dbFile->title(metadata.title());
+    dbFile->track(metadata.track());
+    dbFile->duration(metadata.duration());
+    dbFile->album(metadata.album());
+    dbFile->lastModified(GetLastWriteTime(file));
+    dbFile->duration(metadata.duration());
+}
 
- AudioFileInfo&AudioFileInfo::GetInstance()
- {
-    return instance;
- }
+ThumbnailTemporaryFile::ThumbnailTemporaryFile(const std::filesystem::path &temporaryDirectory)
+    : TemporaryFile(temporaryDirectory)
+{
+    // Set a default MIME type for the thumbnail.
+    mimeType = "image/jpeg"; // Default MIME type, can be set later.
+}
+
+ThumbnailTemporaryFile ThumbnailTemporaryFile::CreateTemporaryFile(const std::filesystem::path &temporaryDirectory, const std::string &mimeType)
+{
+    ThumbnailTemporaryFile result(temporaryDirectory);
+    result.SetMimeType(mimeType);
+    return result;
+}
+
+ThumbnailTemporaryFile ThumbnailTemporaryFile::FromFile(const std::filesystem::path &filePath, const std::string &mimeType)
+{
+    ThumbnailTemporaryFile result;
+    result.Attach(filePath, mimeType);
+    return result;
+}
+
+void ThumbnailTemporaryFile::Attach(const std::filesystem::path &filePath, const std::string &mimeType)
+{
+    super::Attach(filePath);
+    SetMimeType(mimeType);
+}
+
+size_t AudioDirectoryInfoImpl::TestGetNumberOfThumbnails()
+{
+    if (!audioFilesDb)
+    {
+        throw std::logic_error("DB not open");
+    }
+    return this->audioFilesDb->GetNumberOfThumbnails();
+}
+
+void AudioDirectoryInfoImpl::OpenAudioDb()
+{
+    if (!this->audioFilesDb) {
+        this->audioFilesDb = std::make_shared<AudioFilesDb>(this->path, indexPath);
+    }
+}
+
+ThumbnailTemporaryFile AudioDirectoryInfoImpl::DefaultThumbnailTemporaryFile()
+{
+    ThumbnailTemporaryFile tempFile;
+    fs::path defaultThumbnail = GetResourceDirectory() / "img/missing_thumbnail.jpg";
+    tempFile.SetNonDeletedPath(defaultThumbnail, "image/jpeg");
+    return tempFile;
+}
+
+std::string AudioDirectoryInfoImpl::GetNextAudioFile(const std::string &fileNameOnly) 
+{
+    auto files = this->GetFiles();
+    if (files.empty())
+    {
+        return "";
+    }
+    for (size_t i = 0; i < files.size(); ++i)
+    {
+        if (files[i].fileName() == fileNameOnly)
+        {
+            if (i + 1 < files.size())
+            {
+                return files[i + 1].fileName();
+            }
+            else
+            {
+                return files[0].fileName(); // wrap around to the first file.
+            }
+        }
+    }
+    return "";
+}
+std::string AudioDirectoryInfoImpl::GetPreviousAudioFile(const std::string &fileNameOnly) 
+{
+    auto files = this->GetFiles();
+    if (files.empty())
+    {
+        return "";
+    }
+    for (size_t i = 0; i < files.size(); ++i)
+    {
+        if (files[i].fileName() == fileNameOnly)
+        {
+            if (i > 0)
+            {
+                return files[i - 1].fileName();
+            }
+            else
+            {
+                return files[files.size() - 1].fileName(); // wrap around to the last file.
+            }
+        }
+    }
+    return "";
+}

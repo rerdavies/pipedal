@@ -24,16 +24,82 @@
 #pragma once 
 
 #include <string>
+#include <memory>
+#include <cstdint>
+#include <vector>
+#include <filesystem>
+#include "AudioFileMetadata.hpp"
+#include "TemporaryFile.hpp"
 
 namespace pipedal {
-    class AudioFileInfo {
-    protected:
-        AudioFileInfo() { }
-        virtual ~AudioFileInfo() {}
-    public:
-        static AudioFileInfo&GetInstance();
 
-        virtual std::string GetNextAudioFile(const std::string&path) = 0;
-        virtual std::string GetPreviousAudioFile(const std::string&path) = 0;
+    class ThumbnailTemporaryFile: public TemporaryFile {
+    private:
+        // Private constructor to enforce the use of CreateTemporaryFile or the other constructor.
+        explicit ThumbnailTemporaryFile(const std::filesystem::path&temporaryDirectory);
+    public:
+        using super = TemporaryFile;
+        ThumbnailTemporaryFile() = default;
+        ThumbnailTemporaryFile(const ThumbnailTemporaryFile&) = delete;
+        ThumbnailTemporaryFile(ThumbnailTemporaryFile&&) = default;
+        ThumbnailTemporaryFile&operator=(const ThumbnailTemporaryFile&) = delete;
+        ThumbnailTemporaryFile&operator=(ThumbnailTemporaryFile&&) = default;
+public:
+        static ThumbnailTemporaryFile CreateTemporaryFile(const std::filesystem::path&tempDirectory,const std::string &mimeType);
+        static ThumbnailTemporaryFile FromFile(const std::filesystem::path&filePath,const std::string &mimeType);
+public:
+
+        void SetNonDeletedPath(const std::filesystem::path&path, const std::string&mimeType = "audio/mpeg") {
+            TemporaryFile::SetNonDeletedPath(path);
+            // Set the MIME type for audio files.
+            this->mimeType = mimeType; // Default MIME type, can be set later.
+        }
+        void Attach(const std::filesystem::path&path, const std::string&mimeType);
+
+        std::string GetMimeType() {
+            return mimeType;
+        }
+        void SetMimeType(const std::string&mimeType) {
+            this->mimeType = mimeType;
+        }
+    private: 
+        std::string mimeType = "image/jpeg"; // Default MIME type, can be set later.
+    
     };
-}
+
+    class AudioDirectoryInfo {
+    protected:
+        AudioDirectoryInfo() { }
+        virtual ~AudioDirectoryInfo() { }
+    public:
+        using self = AudioDirectoryInfo;
+        using Ptr = std::shared_ptr<self>;
+
+        static Ptr Create(const std::string&path);
+
+        virtual std::vector<AudioFileMetadata> GetFiles() = 0;
+
+        virtual ThumbnailTemporaryFile GetThumbnail(const std::string&fileNameOnly, int32_t width, int32_t height) = 0;
+
+        virtual std::string GetNextAudioFile(const std::string&fileNameOnly) = 0;
+        virtual std::string GetPreviousAudioFile(const std::string&fileNameOnly) = 0;
+
+        virtual ThumbnailTemporaryFile DefaultThumbnailTemporaryFile() = 0;
+
+        static void SetTemporaryDirectory(const std::filesystem::path&path);
+        static void SetResourceDirectory(const std::filesystem::path&path);
+
+
+        virtual size_t TestGetNumberOfThumbnails() = 0; // test use only.
+        virtual void TestSetIndexPath(const std::filesystem::path&path) = 0;
+
+    protected:
+        std::filesystem::path GetTemporaryDirectory() const;
+        std::filesystem::path GetResourceDirectory() const;
+
+    private:
+        static std::filesystem::path temporaryDirectory;
+        static std::filesystem::path resourceDirectory;;
+
+    };
+ }

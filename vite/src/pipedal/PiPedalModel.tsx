@@ -41,7 +41,7 @@ import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
 import { ColorTheme, getColorScheme, setColorScheme } from './DarkMode';
 import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
-import AudioFileMetadata from './AudioFileMetadaa';
+import AudioFileMetadata from './AudioFileMetadata';
 
 
 export enum State {
@@ -87,6 +87,8 @@ export interface FileEntry {
     displayName: string;
     isDirectory: boolean;
     isProtected: boolean;
+    // optional metadata for audio
+    metadata?: AudioFileMetadata;
 };
 
 export interface BreadcrumbEntry {
@@ -3090,6 +3092,18 @@ export class PiPedalModel //implements PiPedalModel
             },
             30 * 1000);
 
+    }
+
+    reorderAudioFiles(
+        path: string,
+        from: number, 
+        to: number
+    ) {
+        this.webSocket?.send("reorderAudioFiles", {
+            path: path,
+            from: from,
+            to: to
+        })
     }
 };
 

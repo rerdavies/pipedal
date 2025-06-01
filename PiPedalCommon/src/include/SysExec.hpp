@@ -34,7 +34,7 @@ namespace pipedal
         std::string output;
     };
 
-    SysExecOutput sysExecForOutput(const std::string& command, const std::string&args);
+    SysExecOutput sysExecForOutput(const std::string& command, const std::string&args, bool discardStderr = false);
 
     using ProcessId = int64_t; // platform-agnostic wrapper for pid_t;
     // Returns a pid or -1 on errror.

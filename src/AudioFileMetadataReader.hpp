@@ -8,10 +8,10 @@
  *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *   copies of the Software, and to permit persons to whom the Software is
  *   furnished to do so, subject to the following conditions:
- 
+
  *   The above copyright notice and this permission notice shall be included in all
  *   copies or substantial portions of the Software.
- 
+
  *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,24 +21,22 @@
  *   SOFTWARE.
  */
 
+#pragma once
 
-export default class AudioFileMetadata {
-            //AudioFileMetadata&operator=(const AudioFileMetadata&) = default;
-    deserialize(o: any) {
-        this.title = o.title;    
-        this.duration = o.duration;
-        this.track = o.track;
-        this.album = o.album;
-        this.disc = o.disc;
-        this.artist = o.artist;
-        this.albumArtist = o.albumArtist;
-        return this;
-    }
-    duration: number = 0;
-    title: string = "";
-    track: string = "";
-    album: string = "";
-    disc: string = "";
-    artist: string = "";
-    albumArtist: string = "";
+#include <string>
+#include <filesystem>
+#include "TemporaryFile.hpp"
+#include "AudioFileMetadata.hpp"
+
+namespace pipedal
+{
+
+
+    TemporaryFile GetAudioFileThumbnail(const std::filesystem::path &path, int32_t width, int32_t height, const std::filesystem::path &tempDirectory);
+    TemporaryFile GetAudioFileThumbnail(const std::filesystem::path &path, const std::filesystem::path &tempDirectory);
+
+    std::string GetAudioFileMetadataString(const std::filesystem::path &path);
+
+    
+    
 }

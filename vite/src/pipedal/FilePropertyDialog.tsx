@@ -21,7 +21,8 @@
 import React from 'react';
 import { createStyles } from './WithStyles';
 
-
+import DraggableButtonBase from './DraggableButtonBase';
+import CloseIcon from '@mui/icons-material/Close';
 import { Theme } from '@mui/material/styles';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import RenameDialog from './RenameDialog';
@@ -47,19 +48,24 @@ import OldDeleteIcon from './OldDeleteIcon';
 import Toolbar from '@mui/material/Toolbar';
 import WithStyles from './WithStyles';
 import { withStyles } from "tss-react/mui";
+import CircularProgress from '@mui/material/CircularProgress';
 
 
 
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { UiFileProperty } from './Lv2Plugin';
-import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
 import DialogEx from './DialogEx';
 import UploadFileDialog from './UploadFileDialog';
 import OkCancelDialog from './OkCancelDialog';
 import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
+import { getAlbumArtUri } from './AudioFileMetadata';
 
+interface Point {
+    x: number;
+    y: number;
+}
 
 
 const styles = (theme: Theme) => createStyles({
@@ -85,6 +91,20 @@ const audioFileExtensions: { [name: string]: boolean } = {
     ".ra": true
 };
 
+
+function screenToClient(element: HTMLDivElement, point: Point): Point {
+    const dpr = (window.devicePixelRatio || 1) as number;;
+    let rect = element.getBoundingClientRect();
+    const cssScreenX = point.x / dpr;
+    const cssScreenY = point.y / dpr;
+    const cssWindowX = window.screenX / dpr;
+    const cssWindowY = window.screenY / dpr;
+
+    const clientX = cssScreenX - cssWindowX - rect.left;
+    const clientY = cssScreenY - cssWindowY - rect.top;
+
+    return { x: clientX, y: clientY };
+}
 function isAudioFile(filename: string) {
     let npos = filename.lastIndexOf('.');
     let nposSlash = filename.lastIndexOf('/');
@@ -105,6 +125,10 @@ export interface FilePropertyDialogProps extends WithStyles<typeof styles> {
     onCancel: () => void
 };
 export interface FilePropertyDialogState {
+    reordering: boolean;
+    loading: boolean;
+    dragState: DragState | null;
+    showProgress: boolean;
     fullScreen: boolean;
     selectedFile: string;
     selectedFileIsDirectory: boolean;
@@ -115,7 +139,7 @@ export interface FilePropertyDialogState {
     fileResult: FileRequestResult;
     navDirectory: string;
     windowWidth: number;
-    uploadDirectory: string;
+    currentDirectory: string;
     isProtectedDirectory: boolean;
     columns: number;
     columnWidth: number;
@@ -128,6 +152,12 @@ export interface FilePropertyDialogState {
     initialSelection: string;
 };
 
+class DragState {
+    activeItem: string = "";
+    height: number = 0;
+    from: number = 0;
+    to: number = 0;
+};
 function pathExtension(path: string) {
     let dotPos = path.lastIndexOf('.');
     if (dotPos === -1) return "";
@@ -193,6 +223,9 @@ export default withStyles(
             return pathParentDirectory(selectedFile);
         }
 
+        isTracksDirectory(): boolean {
+            return this.state.currentDirectory.startsWith("/var/pipedal/audio_uploads/shared/audio/Tracks");
+        }
         constructor(props: FilePropertyDialogProps) {
             super(props);
 
@@ -201,13 +234,17 @@ export default withStyles(
 
             let selectedFile = props.selectedFile;
             this.state = {
+                reordering: false,
+                loading: false,
+                dragState: null,
+                showProgress: false,
                 fullScreen: this.getFullScreen(),
                 selectedFile: selectedFile,
                 selectedFileProtected: true,
                 windowWidth: this.windowSize.width,
                 selectedFileIsDirectory: false,
                 navDirectory: this.getNavDirectoryFromFile(selectedFile, props.fileProperty),
-                uploadDirectory: "",
+                currentDirectory: "",
                 hasSelection: false,
                 hasFileSelection: false,
                 canDelete: false,
@@ -229,8 +266,17 @@ export default withStyles(
             return window.innerWidth < 450 || window.innerHeight < 450;
         }
 
+        hProgressTimeout: number | null = null;
+
         private scrollRef: HTMLDivElement | null = null;
 
+        cancelProgressTimeout() {
+            if (this.hProgressTimeout !== null) {
+                window.clearTimeout(this.hProgressTimeout);
+                this.hProgressTimeout = null;
+            }
+
+        }
         onScrollRef(element: HTMLDivElement | null) {
             this.scrollRef = element;
             this.maybeScrollIntoView();
@@ -254,36 +300,52 @@ export default withStyles(
             if (this.props.fileProperty.directory === "") {
                 return;
             }
-
+            this.setState({
+                loading: true,
+                showProgress: false,
+                fileResult: new FileRequestResult(),
+                hasFileSelection: false,
+                hasSelection: false,
+            });
+            this.hProgressTimeout = window.setTimeout(() => {
+                if (this.mounted) {
+                    this.setState({ showProgress: true });
+                }
+            }, 1000);
             this.model.requestFileList2(navPath, this.props.fileProperty)
                 .then((filesResult) => {
                     if (this.mounted) {
-                        // let insertionPoint = files.length;
-                        // for (let i = 0; i < files.length; ++i) {
-                        //     if (!files[i].isDirectory) {
-                        //         insertionPoint = i;
-                        //         break;
-                        //     }
-                        // }
+                        this.cancelProgressTimeout();
                         filesResult.files.splice(0, 0, { pathname: "", displayName: "<none>", isDirectory: false, isProtected: true });
 
-                        let fileEntry  = this.getFileEntry(filesResult.files, this.state.selectedFile);
+                        let fileEntry = this.getFileEntry(filesResult.files, this.state.selectedFile);
                         this.setState({
+                            loading: false,
+                            showProgress: false,
                             isProtectedDirectory: filesResult.isProtected,
                             fileResult: filesResult,
                             hasSelection: !!fileEntry,
                             hasFileSelection: !!fileEntry && (!fileEntry.isDirectory) && (!fileEntry.isProtected),
                             selectedFileProtected: fileEntry ? fileEntry.isProtected : true,
                             navDirectory: navPath,
-                            uploadDirectory: filesResult.currentDirectory
+                            currentDirectory: filesResult.currentDirectory
                         });
                     }
                 }).catch((error) => {
+                    this.cancelProgressTimeout();
                     if (!this.mounted) return;
                     if (navPath !== "") // deleted sample directory maybe?
                     {
                         this.navigate("");
                     } else {
+                        this.setState({
+                            loading: false,
+                            showProgress: false,
+                            fileResult: new FileRequestResult(),
+                            isProtectedDirectory: false,
+                            navDirectory: "",
+                            currentDirectory: ""
+                        });
                         this.model.showAlert(error.toString())
                     }
                 });
@@ -291,6 +353,136 @@ export default withStyles(
 
         private lastDivRef: HTMLDivElement | null = null;
 
+        longPressStartPoint: Point | null = null;
+
+        dragFromPosition: number = -1;
+        dragToPosition: number = -1;
+        maxPosition: number = 0;
+
+        handleLongPressStart(currentTarget: HTMLButtonElement, e: React.PointerEvent<HTMLButtonElement>) {
+            if (!this.isTracksDirectory()) {
+                return;
+            }
+            this.dragFromPosition = parseInt(currentTarget.getAttribute("data-position") as string, 10);
+            this.dragToPosition = this.dragToPosition;
+            let element = currentTarget;
+            element.style.position = "relative";
+            element.style.zIndex = "1000";
+            element.style.top = "5px";
+            element.style.left = "5px";
+            element.style.background = isDarkMode() ? "#555": "#EEF" // xxx: dark mode.
+            if (this.lastDivRef) {
+                this.longPressStartPoint = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
+            }
+
+        }
+        handleLongPressMove(e: React.PointerEvent<HTMLButtonElement>) {
+            if (!this.isTracksDirectory()) {
+                return;
+            }
+            if (this.lastDivRef) {
+                let element = e.target as HTMLButtonElement;
+                let point = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
+                if (this.longPressStartPoint) {
+                    let dy = point.y - this.longPressStartPoint.y;
+                    element.style.left = (5) + "px";
+                    element.style.top = (5 + dy) + "px";
+                    let height = element.clientHeight;
+                    let positionChange_: number = 0;
+                    if (dy > 0) {
+                        positionChange_ = Math.floor((dy + height / 2) / height);
+                    } else {
+                        positionChange_ = Math.ceil((dy - height / 2) / height)
+                    }
+                    let toPosition = this.dragFromPosition + positionChange_;
+                    if (toPosition < 0) {
+                        toPosition = 0;
+                    }
+                    if (toPosition > this.maxPosition) {
+                        toPosition = this.maxPosition;
+                    }
+                    if (toPosition !== this.dragToPosition) {
+                        this.dragToPosition = toPosition;
+                        this.setState({
+                            dragState: {
+                                activeItem: element.getAttribute("data-pathname") || "",
+                                height: height,
+                                from: this.dragFromPosition,
+                                to: toPosition
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        handleReorderFiles(from: number, to: number) {
+
+            // Update the local state with the new order so that we don't 
+            // flash the old order while waiting for a server update.
+            let oldFileResult = this.state.fileResult;
+            let newFileResult = new FileRequestResult();
+            newFileResult.files = oldFileResult.files.slice();
+            newFileResult.isProtected = oldFileResult.isProtected;
+            newFileResult.currentDirectory = oldFileResult.currentDirectory;
+            newFileResult.breadcrumbs = oldFileResult.breadcrumbs.slice();
+
+            let ixFrom = -1;
+            let ixTo = -1;
+            let ix = 0;
+            for (let i = 0; i < newFileResult.files.length; ++i) {
+                let fileEntry = newFileResult.files[i];
+                if (fileEntry.metadata) {
+                    if (ix === from) {
+                        ixFrom = i;
+                    }
+                    if (ix === to) {
+                        ixTo = i;
+                    }
+                    ++ix;
+                }
+            }
+            if (ixTo === -1 || ixFrom === -1) {
+                return;
+            }
+            if (ixTo == ixFrom) return;
+            if (ixTo < ixFrom) {
+                // move up.
+                newFileResult.files.splice(ixTo, 0, newFileResult.files[ixFrom]);
+                newFileResult.files.splice(ixFrom + 1, 1);
+            } else {
+                   // move down.
+                newFileResult.files.splice(ixTo+1,0,newFileResult.files[ixFrom]);
+                newFileResult.files.splice(ixFrom, 1);
+            }
+
+            this.setState({ fileResult: newFileResult ,dragState: null});
+
+            // Now send the reorder request to the server.
+            this.model.reorderAudioFiles(
+                this.state.currentDirectory, from, to);
+        }
+        handleLongPressEnd(e: React.PointerEvent<HTMLButtonElement>) {
+            if (!this.isTracksDirectory()) {
+                return;
+            }
+            let dragState = this.state.dragState;
+            if (dragState && dragState.to != dragState.from) {
+                this.handleReorderFiles(dragState.from, dragState.to);
+
+            }
+            // prevent onClick from firing.
+            e.preventDefault();
+            e.stopPropagation();
+
+            let element = e.currentTarget as HTMLButtonElement;
+
+            element.style.position = "";
+            element.style.zIndex = "";
+            element.style.top = "";
+            element.style.left = "";
+            element.style.background = ""; // xxx: dark mode.
+            this.setState({ dragState: null });
+        }
         onMeasureRef(div: HTMLDivElement | null) {
             this.lastDivRef = div;
             if (div) {
@@ -324,13 +516,16 @@ export default withStyles(
             this.requestScroll = true;
         }
         componentWillUnmount() {
+            this.cancelProgressTimeout();
+
             super.componentWillUnmount();
             this.mounted = false;
             this.lastDivRef = null;
         }
         componentDidUpdate(prevProps: Readonly<FilePropertyDialogProps>, prevState: Readonly<FilePropertyDialogState>, snapshot?: any): void {
             super.componentDidUpdate?.(prevProps, prevState, snapshot);
-            if (prevProps.open !== this.props.open || prevProps.fileProperty !== this.props.fileProperty || prevProps.selectedFile !== this.props.selectedFile) {
+            if (prevProps.open !== this.props.open
+            ) {
                 if (this.props.open) {
                     let selectedFile = this.props.selectedFile;
                     let navDirectory = this.getNavDirectoryFromFile(selectedFile, this.props.fileProperty);
@@ -382,10 +577,12 @@ export default withStyles(
         }
 
         onSelectValue(fileEntry: FileEntry) {
+            if (this.state.reordering) {
+                return;
+            }
             this.requestScroll = true;
-            if (!fileEntry.isDirectory)
-            {
-                this.props.onApply(this.props.fileProperty,fileEntry.pathname);
+            if (!fileEntry.isDirectory) {
+                this.props.onApply(this.props.fileProperty, fileEntry.pathname);
             }
             this.setState({
                 selectedFile: fileEntry.pathname,
@@ -396,6 +593,9 @@ export default withStyles(
             })
         }
         onDoubleClickValue(selectedFile: string) {
+            if (this.state.reordering) {
+                return;
+            }
             this.openSelectedFile();
         }
 
@@ -478,7 +678,24 @@ export default withStyles(
         navigate(relativeDirectory: string) {
             this.requestFiles(relativeDirectory);
             this.setState({ navDirectory: relativeDirectory });
-
+        }
+        getTrackTitle(fileEntry: FileEntry): string {
+            if (!fileEntry.metadata) {
+                return fileEntry.displayName;
+            }
+            let metadata = fileEntry.metadata;
+            let trackDisplay = "";
+            if (metadata.track > 0) {
+                if (metadata.track >= 1000) {
+                    trackDisplay = (metadata.track % 1000).toString() + "/" + Math.floor(metadata.track / 1000) + ". ";
+                } else {
+                    trackDisplay = metadata.track.toString() + ".  ";
+                }
+            }
+            return trackDisplay + metadata.title;
+        }
+        getTrackThumbnail(fileEntry: FileEntry): string {
+            return getAlbumArtUri(this.model, fileEntry.metadata, fileEntry.pathname);
         }
         renderBreadcrumbs() {
             let breadcrumbs: React.ReactElement[] = [(
@@ -592,6 +809,8 @@ export default withStyles(
         }
 
         render() {
+            const isTracksDirectory = this.isTracksDirectory();
+
             const classes = withStyles.getClasses(this.props);
             let columnWidth = this.state.columnWidth;
             let okButtonText = "Select";
@@ -603,17 +822,29 @@ export default withStyles(
             if (this.state.hasSelection) {
                 protectedItem = this.state.selectedFileProtected;
             }
-            let canMoveOrRename = this.hasSelectedFileOrFolder() && !protectedItem;
+            let canMove = this.hasSelectedFileOrFolder() && !protectedItem;
+            let canRename = this.hasSelectedFileOrFolder() && !protectedItem && !isTracksDirectory;
+            let canReorder = isTracksDirectory;
+            let needsDivider = canMove || canRename || canReorder;
+            let trackPosition = 0;
 
             return this.props.open &&
                 (
                     <DialogEx
                         fullScreen={this.state.fullScreen}
                         onClose={() => {
-                            this.props.onCancel();
+                            if (this.state.reordering) {
+                                this.setState({ reordering: false, dragState: null });
+                            } else {
+                                this.props.onCancel();
+                            }
                         }}
                         onEnterKey={() => {
-                            this.openSelectedFile();
+                            if (this.state.reordering) {
+                                this.setState({ reordering: false, dragState: null });
+                            } else {
+                                this.openSelectedFile();
+                            }
                         }}
                         open={this.props.open} tag="fileProperty"
                         fullWidth maxWidth="md"
@@ -628,86 +859,150 @@ export default withStyles(
                                     }
                                 }}
                     >
-                        <DialogTitle style={{ paddingBottom: 0 }} >
-                            <Toolbar style={{ padding: 0 }}>
-                                <IconButton
-                                    edge="start"
-                                    color="inherit"
-                                    aria-label="back"
-                                    style={{ opacity: 0.6 }}
-                                    onClick={() => { this.props.onCancel(); }}
-                                >
-                                    <ArrowBackIcon style={{ width: 24, height: 24 }} />
-                                </IconButton>
-                                <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
-                                    {this.props.fileProperty.label}
-                                </Typography>
+                        <DialogTitle style={{
+                            paddingBottom: 0,
+                            background: this.state.reordering ?
+                                (isDarkMode() ? "#523" : "#EDF")
+                                : undefined,
+                            marginBottom: 16, paddingTop: 0
+                        }} >
+                            {this.state.reordering ? (
+                                <Toolbar style={{ padding: 0 }}>
+                                    <IconButton
+                                        edge="start"
+                                        color="inherit"
+                                        aria-label="cancel"
+                                        style={{ opacity: 0.6 }}
+                                        onClick={() => { this.setState({ reordering: false, dragState: null }); }
+                                        }
+                                    >
+                                        <CloseIcon style={{ width: 24, height: 24 }} />
+                                    </IconButton>
+                                    <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
+                                        Reorder files
+                                    </Typography>
+                                </Toolbar>
 
-                                <IconButton
-                                    aria-label="new folder"
-                                    edge="end"
-                                    color="inherit"
-                                    style={{ opacity: 0.6, marginRight: 8 }}
-                                    onClick={(ev) => { this.onNewFolder(); }}
-                                    disabled={protectedDirectory}
-                                >
-                                    <CreateNewFolderIcon />
-                                </IconButton>
+                            ) : (
+                                <>
+                                    <Toolbar style={{ padding: 0 }}>
+                                        <IconButton
+                                            edge="start"
+                                            color="inherit"
+                                            aria-label="back"
+                                            style={{ opacity: 0.6 }}
+                                            onClick={() => { this.props.onCancel(); }}
+                                        >
+                                            <ArrowBackIcon style={{ width: 24, height: 24 }} />
+                                        </IconButton>
+                                        <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
+                                            {this.props.fileProperty.label}
+                                        </Typography>
+
+                                        <IconButton
+                                            aria-label="new folder"
+                                            edge="end"
+                                            color="inherit"
+                                            style={{ opacity: 0.6, marginRight: 8 }}
+                                            onClick={(ev) => { this.onNewFolder(); }}
+                                            disabled={protectedDirectory}
+                                        >
+                                            <CreateNewFolderIcon />
+                                        </IconButton>
 
 
-                                <IconButton
-                                    aria-label="display more actions"
-                                    edge="end"
-                                    color="inherit"
-                                    style={{ opacity: 0.6 }}
-                                    onClick={(ev) => { this.handleMenuOpen(ev); }}
-                                    disabled={protectedDirectory}
+                                        <IconButton
+                                            aria-label="display more actions"
+                                            edge="end"
+                                            color="inherit"
+                                            style={{ opacity: 0.6 }}
+                                            onClick={(ev) => { this.handleMenuOpen(ev); }}
+                                            disabled={protectedDirectory}
 
-                                >
-                                    <MoreIcon />
-                                </IconButton>
-                                <Menu
-                                    id="menu-appbar"
-                                    anchorEl={this.state.menuAnchorEl}
-                                    anchorOrigin={{
-                                        vertical: 'bottom',
-                                        horizontal: 'right',
-                                    }}
-                                    keepMounted
-                                    transformOrigin={{
-                                        vertical: 'top',
-                                        horizontal: 'right',
-                                    }}
-                                    open={this.state.menuAnchorEl !== null}
-                                    onClose={() => { this.handleMenuClose(); }}
-                                >
-                                    <MenuItem onClick={() => { this.handleMenuClose(); this.onNewFolder(); }}>New folder</MenuItem>
-                                    {canMoveOrRename && (<Divider />)}
-                                    {canMoveOrRename && (<MenuItem onClick={() => { this.handleMenuClose(); this.onMove(); }}>Move</MenuItem>)}
-                                    {canMoveOrRename && this.hasSelectedFileOrFolder() && !protectedItem && (<MenuItem onClick={() => { this.handleMenuClose(); this.onRename(); }}>Rename</MenuItem>)}
-                                </Menu>
-                            </Toolbar>
-                            <div style={{ flex: "0 0 auto", marginLeft: 0, marginRight: 0, overflowX: "clip" }}>
-                                {this.renderBreadcrumbs()}
-                            </div>
+                                        >
+                                            <MoreIcon />
+                                        </IconButton>
+                                        <Menu
+                                            id="menu-appbar"
+                                            anchorEl={this.state.menuAnchorEl}
+                                            anchorOrigin={{
+                                                vertical: 'bottom',
+                                                horizontal: 'right',
+                                            }}
+                                            keepMounted
+                                            transformOrigin={{
+                                                vertical: 'top',
+                                                horizontal: 'right',
+                                            }}
+                                            open={this.state.menuAnchorEl !== null}
+                                            onClose={() => { this.handleMenuClose(); }}
+                                        >
+                                            <MenuItem onClick={() => { this.handleMenuClose(); this.onNewFolder(); }}>New folder</MenuItem>
+                                            {(needsDivider) && (<Divider />)}
+                                            {canMove && (<MenuItem onClick={() => { this.handleMenuClose(); this.onMove(); }}>Move</MenuItem>)}
+                                            {canRename && this.hasSelectedFileOrFolder() && !protectedItem && (<MenuItem onClick={() => {
+                                                this.handleMenuClose(); this.onRename();
+                                            }}>Rename</MenuItem>)}
+                                            {canReorder && (
+                                                <MenuItem onClick={() => { this.handleMenuClose(); this.onReorder(); }}>Reorder</MenuItem>)}
+                                        </Menu>
+                                    </Toolbar>
+                                    <div style={{ flex: "0 0 auto", marginLeft: 0, marginRight: 0, overflowX: "clip" }}>
+                                        {this.renderBreadcrumbs()}
+                                    </div>
+                                </>
+
+                            )}
+
                         </DialogTitle>
-                        <DialogContent style={{ paddingLeft: 0, paddingRight: 0, paddingTop: 0, colorScheme: (isDarkMode() ? "dark" : "light") }}>
+                        <DialogContent style={{
+                            paddingLeft: 0, paddingRight: 0, paddingTop: 0, colorScheme: (isDarkMode() ? "dark" : "light"),
+                            position: "relative"
+                        }}>
+
+                            <div style={{
+                                paddingLeft: 16, paddingRight: 16, paddingTop: 8, paddingBottom: 8,
+                                display: this.state.loading ? "flex" : "none", flexFlow: "column nowrap",
+                                justifyContent: "stretch", alignItems: "center",
+                                position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10
+                            }}
+                            >
+                                {this.state.showProgress && (
+                                    <>
+                                        <div style={{ flex: "1 1 1px" }} />
+                                        <CircularProgress />
+                                        <div style={{ flex: "2 2 1px" }} />
+                                    </>
+                                )}
+                            </div>
 
                             <div
                                 ref={(element) => this.onMeasureRef(element)}
                                 style={{
                                     flex: "1 1 100%", display: "flex", flexFlow: "row wrap",
-                                    justifyContent: "flex-start", alignContent: "flex-start", paddingLeft: 16, paddingBottom: 16
+                                    position: "relative", justifyContent: "flex-start", alignContent: "flex-start", paddingLeft: 16, paddingBottom: 16
                                 }}>
                                 {
                                     (this.state.columns !== 0) && // don't render until we have number of columns derived from layout.
                                     this.state.fileResult.files.map(
                                         (value: FileEntry, index: number) => {
+
+                                            if (this.state.reordering && !value.metadata) {
+                                                return null; // don't render non-track files when reordering.
+                                            }
                                             let displayValue = value.displayName;
                                             if (displayValue === "") {
                                                 displayValue = "<none>";
                                             }
-                                            let selected = value.pathname === this.state.selectedFile;
+                                            let dataPosition = "";
+                                            let myTrackPosition = trackPosition;
+
+                                            if (value.metadata && value.metadata.track) {
+                                                dataPosition = trackPosition.toString();
+                                                ++trackPosition;
+                                                this.maxPosition = trackPosition;
+                                            }
+                                            let selected = value.pathname === this.state.selectedFile && !this.state.reordering;
                                             let selectBg = selected ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.0)";
                                             if (isDarkMode()) {
                                                 selectBg = selected ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.0)";
@@ -716,105 +1011,176 @@ export default withStyles(
                                             if (selected) {
                                                 scrollRef = (element) => { this.onScrollRef(element) };
                                             }
-
+                                            let dragOffset = 0;
+                                            let dragState = this.state.dragState;
+                                            if (dragState && value.metadata) {
+                                                if (myTrackPosition !== dragState.from) {
+                                                    if (myTrackPosition >= dragState.to && myTrackPosition < dragState.from) {
+                                                        dragOffset = dragState.height;
+                                                    } else if (myTrackPosition > dragState.from && myTrackPosition <= dragState.to) {
+                                                        dragOffset = -dragState.height;
+                                                    }
+                                                }
+                                            }
                                             return (
-                                                <ButtonBase key={value.pathname}
+                                                <DraggableButtonBase key={value.pathname}
+                                                    longPressDelay={this.state.reordering ? 0 : -1}
+                                                    data-position={dataPosition}
+                                                    data-fileName={
+                                                        value.metadata ? value.metadata.fileName : null
+                                                    }
 
-                                                    style={{ width: columnWidth, flex: "0 0 auto", height: 48, position: "relative" }}
+                                                    style={{
+                                                        width: columnWidth, flex: "0 0 auto", height: value.metadata ? 64 : 48,
+                                                        position: "relative",
+                                                        top: dragOffset + "px",
+                                                    }}
                                                     onClick={() => this.onSelectValue(value)}
                                                     onDoubleClick={() => { this.onDoubleClickValue(value.pathname); }}
+
+                                                    onLongPressEnd={(e) => {
+                                                        this.handleLongPressEnd(e);
+                                                    }
+                                                    }
+                                                    onLongPressStart={(currentTarget, e) => {
+                                                        this.handleLongPressStart(currentTarget, e);
+                                                    }
+                                                    }
+                                                    onLongPressMove={(e) => {
+                                                        this.handleLongPressMove(e);
+                                                    }
+                                                    }
+
                                                 >
                                                     <div ref={scrollRef} style={{ position: "absolute", background: selectBg, width: "100%", height: "100%", borderRadius: 4 }} />
-                                                    <div style={{ display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis", justifyContent: "start", alignItems: "center", width: "100%", height: "100%" }}>
-                                                        {this.getIcon(value)}
-                                                        <Typography noWrap className={classes.secondaryText} variant="body2" style={{ flex: "1 1 auto", textAlign: "left" }}>{displayValue}</Typography>
-                                                    </div>
-                                                </ButtonBase>
+                                                    {value.metadata ?
+                                                        (
+                                                            <div style={{
+                                                                display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis",
+                                                                justifyContent: "start", alignItems: "center", width: "100%", height: "100%"
+                                                            }}>
+                                                                <img
+                                                                    onDragStart={(e) => { e.preventDefault(); }}
+                                                                    src={this.getTrackThumbnail(value)}
+                                                                    style={{ width: 48, height: 48, margin: 8, borderRadius: 4 }} />
+                                                                <div style={{
+                                                                    flex: "1 1 1px", display: "flex", flexFlow: "column nowrap",
+                                                                    marginLeft: 8,
+                                                                    textOverflow: "ellipsis", justifyContent: "center", alignItems: "stretch"
+                                                                }}>
+                                                                    <Typography noWrap
+                                                                        className={classes.secondaryText}
+                                                                        variant="body2"
+                                                                        style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left",marginBottom: 4 }}>
+                                                                        {this.getTrackTitle(value)}
+                                                                    </Typography>
+                                                                    <Typography noWrap className={classes.secondaryText}
+                                                                        variant="body2"
+                                                                        color="textSecondary"
+                                                                        style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left", fontSize: "0.95em" }}>
+                                                                        {value.metadata?.album ?? "#error"}
+
+                                                                    </Typography>
+                                                                </div>
+                                                            </div>
+
+                                                        ) : (
+                                                            <div style={{ display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis", justifyContent: "start", alignItems: "center", width: "100%", height: "100%" }}>
+                                                                {this.getIcon(value)}
+                                                                <Typography noWrap className={classes.secondaryText} variant="body2" style={{ flex: "1 1 auto", textAlign: "left" }}>{displayValue}</Typography>
+                                                            </div>
+                                                        )}
+
+                                                </DraggableButtonBase>
                                             );
                                         }
                                     )
                                 }
                             </div>
                         </DialogContent>
-                        <Divider />
-                        <DialogActions style={{ justifyContent: "stretch" }}>
-                            {this.state.windowWidth > 500 ? (
-                                <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                    <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
-                                        disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
-                                        onClick={() => this.handleDelete()} >
-                                        <OldDeleteIcon fontSize='small' />
-                                    </IconButton>
+                        {!this.state.reordering && (
+                            <>
+                                <Divider />
+                                <DialogActions style={{ justifyContent: "stretch" }}>
+                                    {this.state.windowWidth > 500 ? (
+                                        <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                            <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                                disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
+                                                onClick={() => this.handleDelete()} >
+                                                <OldDeleteIcon fontSize='small' />
+                                            </IconButton>
 
-                                    <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
-                                        onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
-                                    >
-                                        <div>Upload</div>
-                                    </Button>
+                                            <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
+                                                onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
+                                            >
+                                                <div>Upload</div>
+                                            </Button>
 
-                                    <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
-                                        onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
-                                    >
-                                        <div>Download</div>
-                                    </Button>
+                                            <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
+                                                onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
+                                            >
+                                                <div>Download</div>
+                                            </Button>
 
-                                    <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+                                            <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
 
-                                    <Button variant="dialogSecondary" onClick={() => { 
-                                        this.props.onApply(this.props.fileProperty,this.state.initialSelection);
-                                        this.props.onCancel(); 
-                                    }} aria-label="cancel">
-                                        Cancel
-                                    </Button>
-                                    <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
-                                        onClick={() => { this.openSelectedFile(); }}
+                                            <Button variant="dialogSecondary" onClick={() => {
+                                                this.props.onApply(this.props.fileProperty, this.state.initialSelection);
+                                                this.props.onCancel();
+                                            }} aria-label="cancel">
+                                                Cancel
+                                            </Button>
+                                            <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
+                                                onClick={() => { this.openSelectedFile(); }}
 
-                                        disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
-                                    >
-                                        {okButtonText}
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div style={{width: "100%"}}>
-                                    <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                        <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
-                                            disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
-                                            onClick={() => this.handleDelete()} >
-                                            <OldDeleteIcon fontSize='small' />
-                                        </IconButton>
+                                                disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
+                                            >
+                                                {okButtonText}
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ width: "100%" }}>
+                                            <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                                <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                                    disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
+                                                    onClick={() => this.handleDelete()} >
+                                                    <OldDeleteIcon fontSize='small' />
+                                                </IconButton>
 
-                                        <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
-                                            onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
-                                        >
-                                            <div>Upload</div>
-                                        </Button>
+                                                <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
+                                                    onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
+                                                >
+                                                    <div>Upload</div>
+                                                </Button>
 
-                                        <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
-                                            onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
-                                            
-                                        >
-                                            <div>Download</div>
-                                        </Button>
+                                                <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
+                                                    onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
 
-                                        <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
-                                    </div>
-                                    <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                        <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+                                                >
+                                                    <div>Download</div>
+                                                </Button>
 
-                                        <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
-                                            Cancel
-                                        </Button>
-                                        <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
-                                            onClick={() => { this.openSelectedFile(); }}
+                                                <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+                                            </div>
+                                            <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                                <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
 
-                                            disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
-                                        >
-                                            {okButtonText}
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </DialogActions>
+                                                <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
+                                                    Cancel
+                                                </Button>
+                                                <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
+                                                    onClick={() => { this.openSelectedFile(); }}
+
+                                                    disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
+                                                >
+                                                    {okButtonText}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </DialogActions>
+                            </>
+                        )}
                         <UploadFileDialog
                             open={this.state.openUploadFileDialog}
                             onClose=
@@ -824,7 +1190,7 @@ export default withStyles(
                                 }
                             }
                             uploadPage={
-                                "uploadUserFile?directory=" + encodeURIComponent(this.state.uploadDirectory)
+                                "uploadUserFile?directory=" + encodeURIComponent(this.state.currentDirectory)
                                 + "&id=" + this.props.instanceId.toString()
                                 + "&property=" + encodeURIComponent(this.props.fileProperty.patchProperty)
                                 + "&ext="
@@ -932,6 +1298,9 @@ export default withStyles(
 
         private onRename(): void {
             this.setState({ renameDialogOpen: true });
+        }
+        private onReorder(): void {
+            this.setState({ reordering: true });
         }
         private onExecuteRename(newName: string) {
             let newPath: string = "";

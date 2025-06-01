@@ -7,6 +7,7 @@
                 "${workspaceFolder}",
                 "${workspaceFolder}/build/src/**",
                 "${workspaceFolder}/src/**",
+                "${workspaceFolder}/modules/websocketpp/**",
                 "${workspaceFolder}/**",
                 "/usr/include/lilv-0",
                 "/usr/include/x86_64-linux-gnu",

@@ -20,6 +20,7 @@
 #pragma once 
 
 #include "json.hpp"
+#include "AudioFileMetadata.hpp"
 
 namespace pipedal {
 
@@ -31,10 +32,18 @@ namespace pipedal {
         {
 
         }
+        FileEntry(const std::string&pathname,const std::string &displayName, bool isProtected, 
+            std::shared_ptr<AudioFileMetadata> metadata
+        )
+        :pathname_(pathname), displayName_(displayName), isDirectory_(false),isProtected_(isProtected),metadata_(metadata)
+        {
+
+        }
         std::string pathname_;
         std::string displayName_;
         bool isDirectory_ = false;
         bool isProtected_ = false;
+        std::shared_ptr<AudioFileMetadata> metadata_;
 
         DECLARE_JSON_MAP(FileEntry);
 

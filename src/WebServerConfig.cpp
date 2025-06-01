@@ -35,9 +35,8 @@
 #include "json.hpp"
 #include "HotspotManager.hpp"
 #include "MimeTypes.hpp"
-#include "AudioFileMetadata.hpp"
+#include "AudioFileMetadataReader.hpp"
 #include "AudioFiles.hpp"
-
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
@@ -90,6 +89,16 @@ static std::string GetMimeType(const std::filesystem::path &path)
     auto result = mimeTypes.MimeTypeFromExtension(extension);
     return result;
 }
+
+int32_t ConvertThumbnailSize(const std::string &param)
+{
+    if (param.empty())
+    {
+        return 0;
+    }
+    return static_cast<int32_t > (std::stoi(param));
+}
+
 static bool IsZipFile(const std::filesystem::path &path)
 {
     std::ifstream f(path);
@@ -185,10 +194,48 @@ public:
         else if (segment == "AudioMetadata")
         {
             return true;
-        } else if (segment == "NextAudioFile")
+        }
+        else if (segment == "Thumbnail")
         {
             return true;
-        } else if (segment == "PreviousAudioFile")
+        }
+        else if (segment == "PluginPresets")
+        {
+            return true;
+        }
+        else if (segment == "PluginPreset")
+        {
+            return true;
+        }
+        else if (segment == "PluginBanks")
+        {
+            return true;
+        }
+        else if (segment == "PluginBank")
+        {
+            return true;
+        }
+        else if (segment == "GetPluginInfo")
+        {
+            return true;
+        }
+        else if (segment == "GetPluginPresets")
+        {
+            return true;
+        }
+        else if (segment == "GetPreset")
+        {
+            return true;
+        }
+        else if (segment == "GetBank")
+        {
+            return true;
+        }
+        else if (segment == "NextAudioFile")
+        {
+            return true;
+        }
+        else if (segment == "PreviousAudioFile")
         {
             return true;
         }
@@ -437,62 +484,136 @@ public:
             }
             else if (segment == "AudioMetadata")
             {
+
                 res.set(HttpField::content_type, "application/json");
-                // res.set(HttpField::cache_control, "no-cache");
+                res.set(HttpField::cache_control, "no-cache");
                 fs::path path = request_uri.query("path");
 
                 if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                 {
                     throw PiPedalException("File not found.");
                 }
-                std::string metadata = GetAudioFileMetadataString(path);
-                res.setBody(metadata);
+                AudioDirectoryInfo::Ptr audioDirectory = AudioDirectoryInfo::Create(path.parent_path());
+
+                auto files = audioDirectory->GetFiles(); 
+                for (const auto &file : files)
+                {
+                    std::string fileNameOnly = path.filename();
+                    if (file.fileName() == fileNameOnly)
+                    {
+                        std::stringstream ss;
+                        json_writer writer(ss);
+                        writer.write(file);
+                        res.setBody(ss.str());
+                        return;
+                    }
+                }
+                // If we get here, the file was not found in the directory.
+                throw PiPedalException("File not found in directory.");
+            }
+            else if (segment == "Thumbnail")
+            {
+                try
+                {
+                    fs::path path = request_uri.query("path");
+
+                    if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
+
+                    int32_t width = ConvertThumbnailSize(request_uri.query("w"));
+                    int32_t height = ConvertThumbnailSize(request_uri.query("h"));
+
+                    AudioDirectoryInfo::Ptr audioDirectory = AudioDirectoryInfo::Create(path.parent_path());
+                    audioDirectory->GetFiles(); // ensure that the .index file is up to date.
+                    ThumbnailTemporaryFile thumbnail;
+                    try {
+                        thumbnail = audioDirectory->GetThumbnail(path.filename(), width, height);
+                    } catch (const std::exception &e) {
+                        thumbnail = audioDirectory->DefaultThumbnailTemporaryFile();
+                    }
+                    res.set(HttpField::content_type, thumbnail.GetMimeType());
+
+                    res.set(HttpField::cache_control, "max-age=300");
+                    res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnail.Path())));
+
+                    std::filesystem::path t = thumbnail.Path();
+                    res.setBodyFile(t,thumbnail.DeleteFile());
+                    thumbnail.Detach();
+                }
+                catch (const std::exception &e)
+                {
+                    Lv2Log::error("Error getting thumbnail: %s", e.what());
+                    res.set(HttpField::location, "/img/missing_thumbnail.jpg");
+                    // response = 307
+                    throw e;
+                }
             }
             else if (segment == "NextAudioFile")
             {
                 res.set(HttpField::content_type, "application/json");
-                // res.set(HttpField::cache_control, "no-cache");
+                res.set(HttpField::cache_control, "no-cache");
                 fs::path path = request_uri.query("path");
 
-                try {
-                    if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
-                    {
-                        throw PiPedalException("File not found.");
-                    }
-
-                    std::string nextFile = AudioFileInfo::GetInstance().GetNextAudioFile(path);
-                    std::stringstream ss;
-                    json_writer writer(ss);
-                    writer.write(nextFile);
-
-                    res.setBody(ss.str());
-                } catch (const std::exception&e)
+                try
                 {
-                    res.setBody("''");
-                }
-            } 
-            else if (segment == "PreviousAudioFile")
-            {
-                res.set(HttpField::content_type, "application/json");
-                // res.set(HttpField::cache_control, "no-cache");
-                fs::path path = request_uri.query("path");
-
-                try {
                     if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                     {
                         throw PiPedalException("File not found.");
                     }
-                    std::string previousFile = AudioFileInfo::GetInstance().GetPreviousAudioFile(path);
+                    auto directoryPath = path.parent_path();
+                    auto directoryInfo = AudioDirectoryInfo::Create(directoryPath);
+                    std::string result = directoryInfo->GetNextAudioFile(path.filename());
+                    if (!result.empty())
+                    {
+                        result = (directoryPath / result).string();
+                    }
+                    
+                    // json-encode the result.
                     std::stringstream ss;
                     json_writer writer(ss);
-                    writer.write(previousFile);
+                    writer.write(result); 
 
                     res.setBody(ss.str());
-                } catch (const std::exception&e)
+                }
+                catch (const std::exception &e)
                 {
                     res.setBody("\"\"");
                 }
-            } 
+            }
+            else if (segment == "PreviousAudioFile")
+            {
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+                fs::path path = request_uri.query("path");
+
+                try
+                {
+                    if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
+                    auto directoryPath = path.parent_path();
+                    auto directoryInfo = AudioDirectoryInfo::Create(directoryPath);
+                    std::string result = directoryInfo->GetPreviousAudioFile(path.filename());
+                    if (!result.empty())
+                    {
+                        result = (directoryPath / result).string();
+                    }
+                    
+                    // json-encode the result.
+                    std::stringstream ss;
+                    json_writer writer(ss);
+                    writer.write(result); 
+
+                    res.setBody(ss.str());
+                }
+                catch (const std::exception &e)
+                {
+                    res.setBody("\"\"");
+                }
+            }
 
             else
             {

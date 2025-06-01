@@ -155,6 +155,7 @@ public:
     int64_t DeleteBank(int64_t bankId);
 
     bool IsInUploadsDirectory(const std::filesystem::path&path) const;
+    bool IsInAudioTracksDirectory(const std::filesystem::path&path) const;
     
     FileRequestResult GetFileList2(const std::string&relativePath,const UiFileProperty&fileProperty);
 

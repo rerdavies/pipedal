@@ -16,7 +16,7 @@ enable_testing()
 
 
 #add_subdirectory("submodules/pipedal_p2pd")
-
+add_subdirectory("modules/SQLiteCpp")
 add_subdirectory("PiPedalCommon")
 
 add_subdirectory("vite")

@@ -450,7 +450,7 @@ const PluginControlView =
                     />
                 ));
             }
-            private ixKey: number; 
+            private ixKey: number = 1; 
 
             makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
                 let symbol = uiControl.symbol;

@@ -40,6 +40,7 @@ import JsonAtom from './JsonAtom';
 import { UiFileProperty } from './Lv2Plugin';
 import { Divider } from '@mui/material';
 import useWindowSize from './UseWindowSize';
+import { getAlbumArtUri } from './AudioFileMetadata';
 
 let Player__seek = "http://two-play.com/plugins/toob-player#seek"
 const AUDIO_FILE_PROPERTY_URI = "http://two-play.com/plugins/toob-player#audioFile";
@@ -86,15 +87,6 @@ const WallPaper = styled('div')({
     },
 });
 
-function jsonToPath(json: string) {
-    try {
-        let o = JSON.parse(json);
-        return o.value;
-    }
-    catch (_) {
-        return "";
-    }
-}
 
 interface WidgetProps {
     noBorders: boolean;
@@ -192,7 +184,7 @@ export default function ToobPlayerControl(
     const HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK = 500;
 
     const useHorizontalLayout = height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK && width > 573 && width > height;
-    const useVerticalScroll = width < 573;
+    //const useVerticalScroll = width < 573;
     const useQuadMixPanel = width < 720;
     const noBorders = width < 420 || height < 720;
 
@@ -207,22 +199,31 @@ export default function ToobPlayerControl(
     }
     function onAudioFileChanged(path: string) {
         setAudioFile(path);
+        if (path === "") {
+            setTitle("");
+            setAlbum("");
+            setCoverArt(defaultCoverArt);
+            return;
+        }
         model.getAudioFileMetadata(path)
             .then((metadata) => {
-                if (metadata.track !== "") {
-                    let track = metadata.track;
-                    if (!track.endsWith('.')) {
-                        track += '.';
+                let strTrack: string = "";
+                if (metadata.track > 0) {
+                    let disc = (metadata.track /1000);
+                    if (disc >= 1) {
+                        strTrack = (metadata.track % 1000).toString() + '/' + Math.floor(disc).toString();
+                    } else {
+                        strTrack = metadata.track.toString();
                     }
-                    setTitle(track + " " + metadata.title);
+                    strTrack += ". ";
                 }
-                else {
-                    setTitle(metadata.title);
-                }
+                let coverArtUri = getAlbumArtUri(model,metadata,path);
+                setCoverArt(coverArtUri);
+                setTitle(strTrack + metadata.title);
                 setAlbum(metadata.album);
             })
-            .catch(()=>{
-                setTitle("#error");
+            .catch((e)=>{
+                setTitle("#error" + e.message);
                 setAlbum("");
             });
 

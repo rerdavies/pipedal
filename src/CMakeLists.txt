@@ -46,7 +46,6 @@ include(FindPkgConfig)
 
 find_package(sdbus-c++ REQUIRED)
 
-# find_package(SQLiteCpp REQUIRED)
 
 
 
@@ -153,7 +152,8 @@ add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG -D_GLIBCXX_DEBUG" )
+    # Must not -D_GLIBCXX_DEBUG, since it conflict with SQLiteCpp.lol
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG " )
     if (USE_SANITIZE) 
         set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -static-libasan  " )
     endif()
@@ -197,7 +197,9 @@ endif()
 
 set (PIPEDAL_SOURCES
     AudioFiles.cpp AudioFiles.hpp
-    AudioFileMetadata.cpp AudioFileMetadata.hpp
+    AudioFileMetadataReader.cpp AudioFileMetadataReader.hpp
+    AudioFileMetadata.hpp AudioFileMetadata.cpp
+    AudioFilesDb.hpp AudioFilesDb.cpp
     LRUCache.hpp
     CpuTemperatureMonitor.cpp CpuTemperatureMonitor.hpp
     SchedulerPriority.hpp SchedulerPriority.cpp
@@ -332,7 +334,10 @@ add_library(libpipedald STATIC ${PIPEDAL_SOURCES})
 target_include_directories(libpipedald PRIVATE ${PIPEDAL_INCLUDES}
     ) 
 
-target_link_libraries(libpipedald PUBLIC PiPedalCommon)
+target_link_libraries(libpipedald 
+    PUBLIC 
+   PiPedalCommon
+   SQLiteCpp)
 
 if(${USE_PCH})
   target_precompile_headers(libpipedald PRIVATE pch.h)
@@ -355,7 +360,7 @@ target_link_libraries(pipedal_kconfig
   PRIVATE ftxui::component  # Not needed for this example.
   PRIVATE PiPedalCommon
   systemd
-)
+) 
 
 #################################
 add_executable(pipedald 
@@ -391,6 +396,7 @@ add_executable(AuxInTest
 add_executable(pipedaltest 
     testMain.cpp
 
+    AudioFilesTest.cpp
     LRUCacheTest.cpp
     ModFileTypesTest.cpp
     jsonTest.cpp

@@ -13,8 +13,8 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
-
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -DDEBUG -D_GLIBCXX_DEBUG" )
+    # Must not use -D_GLIBCXX_DEBUG (incompatible with SQLiteCpp)
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -DDEBUG " )
 endif()
 
 # Can't get the pkg_check to work.

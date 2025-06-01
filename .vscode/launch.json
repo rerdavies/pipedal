@@ -22,6 +22,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
+                "[ProfileThumbnails]"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

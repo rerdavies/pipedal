@@ -26,6 +26,7 @@ JSON_MAP_BEGIN(FileEntry)
     JSON_MAP_REFERENCE(FileEntry,displayName)
     JSON_MAP_REFERENCE(FileEntry,isProtected)
     JSON_MAP_REFERENCE(FileEntry,isDirectory)
+    JSON_MAP_REFERENCE(FileEntry,metadata)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(BreadcrumbEntry)

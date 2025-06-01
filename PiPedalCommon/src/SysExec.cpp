@@ -268,7 +268,7 @@ int pipedal::sysExecWait(ProcessId pid_)
 
 }
 
-SysExecOutput pipedal::sysExecForOutput(const std::string &program, const std::string &args)
+SysExecOutput pipedal::sysExecForOutput(const std::string &program, const std::string &args, bool discardStderr)
 {
     namespace fs = std::filesystem;
     fs::path fullPath = findOnSystemPath(program);
@@ -277,7 +277,13 @@ SysExecOutput pipedal::sysExecForOutput(const std::string &program, const std::s
         throw std::runtime_error(SS("Path does not exist. " << fullPath));
     }
     std::stringstream s;
-    s << fullPath.c_str() << " " << args << " 2>&1";
+    s << fullPath.c_str() << " " << args;
+    if (discardStderr) 
+    {
+        s << " 2>/dev/null";
+    } else {
+        s << " 2>&1"; // redirect stderr to stdout 
+    }
 
     std::string fullCommand = s.str();
     FILE *output = popen(fullCommand.c_str(), "r");

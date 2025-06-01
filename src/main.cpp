@@ -45,6 +45,7 @@
 #include <signal.h>
 #include <semaphore.h>
 #include "SchedulerPriority.hpp"
+#include "AudioFiles.hpp"
 
 #include <systemd/sd-daemon.h>
 
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
 {
 
 #ifndef WIN32
-    umask(002); // newly created files in /var/pipedal get 7cd75-ish permissions, which improves debugging/live-service interaction.
+    umask(002); // newly created files in /var/pipedal get 775-ish permissions, which improves debugging/live-service interaction.
 #endif
 
 #if ENABLE_BACKTRACE
@@ -233,6 +234,17 @@ int main(int argc, char *argv[])
     {
         configuration.SetSocketServerEndpoint(portOption);
     }
+
+    // clean up orphaned temporary files.
+    const std::filesystem::path webTempDirectory = "/var/pipedal/web_temp";
+    if (!webTempDirectory.empty()) {
+        std::filesystem::remove_all(webTempDirectory); //// user must belong to the pipedald grop when debugging.
+        std::filesystem::create_directories(webTempDirectory); 
+    }
+
+    // configure AudiDirectoryInfo to use the correct directories.
+    AudioDirectoryInfo::SetResourceDirectory(configuration.GetWebRoot());
+    AudioDirectoryInfo::SetTemporaryDirectory(webTempDirectory / "audiofiles");
 
     uint16_t port;
     std::shared_ptr<WebServer> server;
