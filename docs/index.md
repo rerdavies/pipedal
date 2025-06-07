@@ -2,15 +2,13 @@
   <img src="img/pipedal.png" style="width: 100%; height: 160px;object-fit: cover"/>
 </div>
 
-<h2 style="line-height: 1em; padding-top: 32px; padding-bottom: 4px">PiPedal Guitar Effects Processor</h2>
-<p style="padding-top: 0px; opacity: 0.6; padding-bottom: 16px">Raspberry Pi-based stomp box designed to be controlled from a phone or tablet.</p>
+<h2 style="font-weight: 300; font-size: 1.6em;line-height: 1em; padding-top: 32px; padding-bottom: 0px;margin-bottom: 4px">PiPedal Guitar Effects Processor</h2>
+<p style="padding-top: 0px; opacity: 0.6; padding-bottom: 16px">A Raspberry Pi-based stomp box designed to be controlled from a phone or tablet.</p>
 
 _To download PiPedal, click [*here*](download.md). 
 To view PiPedal documentation, click [*here*](Documentation.md)._
 
-#### NEW version 1.4.76 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. New Phaser and Graphic Equalizer plugins.
-
-&nbsp;
+_ NEW version 1.4.76 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. New Phaser and Graphic Equalizer plugins._
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
