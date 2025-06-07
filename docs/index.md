@@ -1,22 +1,12 @@
 <div style="position: relative">
-  <img src="img/pipedal.png" style="width: 100%, height: 60px"/>
+  <img src="img/pipedal.png" style="width: 100%; height: 160px;object-fit: cover"/>
 </div>
 
-<div style="display: flex, flexFlow: row nowrap">
-  <img src="img/PiPedalIcon.png" style="width: 48px, height: 48px">
-  <div>
-    <h2>PiPedal Guitar Effects Processor</h2>
-    <p>Raspberry Pi-based stomp box designed to be controlled from a phone or tablet.</p>
-  </div>
-</div>
-
-<a href="Installing.html"><i>v1.4.76</i></a>
+<h2 style="line-height: 1em; padding-top: 32px; padding-bottom: 4px">PiPedal Guitar Effects Processor</h2>
+<p style="padding-top: 0px; opacity: 0.6; padding-bottom: 16px">Raspberry Pi-based stomp box designed to be controlled from a phone or tablet.</p>
 
 _To download PiPedal, click [*here*](download.md). 
 To view PiPedal documentation, click [*here*](Documentation.md)._
-
-_Important notice_: [PatchStorage.com](https:///patchstorage.com) has added support for [PiPedal](https://patchstorage.com/platform/pipedal/). We urgently need your support! If you could please upload patches  [here](https://patchstorage.com/platform/pipedal/) I would be enormously grateful. Note that media and model files are included in patch files, so you can share patches that
-include model files or audio samples. If you make use of plugins that are not included in the PiPedal distribution, please include a link to the plugin in the patch description.
 
 #### NEW version 1.4.76 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. New Phaser and Graphic Equalizer plugins.
 
