@@ -1,3 +1,15 @@
+<div style="position: relative">
+  <img src="img/pipedal.png" style="width: 100%"/>
+</div>
+
+<div style="display: flex, flexFlow: row nowrap">
+  <img src="img/PiPedalIcon.png">
+  <div>
+    <h2>PiPedal Guitar Effects Processor</h2>
+    <p>Raspberry Pi-based stomp box designed to be controlled from a phone or tablet.</p>
+  </div>
+</div>
+
 <a href="Installing.html"><i>v1.4.76</i></a>
 
 _To download PiPedal, click [*here*](download.md). 
