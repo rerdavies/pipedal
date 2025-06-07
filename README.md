@@ -1,7 +1,7 @@
 
 <img src='docs/GithubBanner.png' width="100%" /><br/>
 
-<a href="https://rerdavies.github.io/pipedal/download.html"><img src="https://img.shields.io/github/v/release/rerdavies/pipedal?color=%23808080"/></a>
+<a href="https://rerdavies.github.io/pipedal/ReleaseNotes"><img src="https://img.shields.io/github/v/release/rerdavies/pipedal?color=%23808080"/></a>
 <a href="#"><img src="https://img.shields.io/github/downloads/rerdavies/pipedal/total?color=%23808080&link=https%3A%2F%2Frerdavies.github.io%2Fpipedal%2Fdownload.html"/></a>
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
