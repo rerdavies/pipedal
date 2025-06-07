@@ -1,5 +1,5 @@
 <div style="position: relative">
-  <img src="img/pipedal.png" style="width: 100%"/>
+  <img src="img/pipedal.png" style="width: 100%, heigh: 60px"/>
 </div>
 
 <div style="display: flex, flexFlow: row nowrap">
