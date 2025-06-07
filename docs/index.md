@@ -1,9 +1,9 @@
 <div style="position: relative">
-  <img src="img/pipedal.png" style="width: 100%, heigh: 60px"/>
+  <img src="img/pipedal.png" style="width: 100%, height: 60px"/>
 </div>
 
 <div style="display: flex, flexFlow: row nowrap">
-  <img src="img/PiPedalIcon.png">
+  <img src="img/PiPedalIcon.png" style="width: 48px, height: 48px">
   <div>
     <h2>PiPedal Guitar Effects Processor</h2>
     <p>Raspberry Pi-based stomp box designed to be controlled from a phone or tablet.</p>
