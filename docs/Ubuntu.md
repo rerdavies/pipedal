@@ -5,7 +5,7 @@ icon_float: right
 ---
 ## PiPedal on Ubuntu
 
-{% include pageIconR.html %}
+{% include pageIcon.html %}
 
 PiPedal will run on Ubuntu 24.04, and 24.10 (both aarch64 and amd64/x64) as well as Raspberry Pi OS. We recommend using Ubuntu Desktop, but Raspberry Pi OS will also run on an Ubuntu Server install. Ubuntu Studio would also be a fine choice. 
 
