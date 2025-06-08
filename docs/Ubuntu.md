@@ -1,7 +1,7 @@
 ---
 page_icon: img/ubuntu.jpg
-icon_width: 320px
-icon_float: left
+icon_width: 120px
+icon_float: right
 ---
 ## PiPedal support for Ubuntu
 
