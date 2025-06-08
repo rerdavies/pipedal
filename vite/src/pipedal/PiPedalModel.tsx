@@ -919,6 +919,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
+
     async onSocketReconnected(): Promise<void> {
         this.cancelOnNetworkChanging();
         this.cancelAndroidReconnectTimer();
@@ -976,6 +977,7 @@ export class PiPedalModel //implements PiPedalModel
             return "";
         }
     }
+
 
     async getAudioFileMetadata(filePath: string): Promise<AudioFileMetadata> {
         try {
@@ -1820,6 +1822,27 @@ export class PiPedalModel //implements PiPedalModel
     setOnboarding(value: boolean): void {
         nullCast(this.webSocket)
             .request("setOnboarding", value);
+    }
+
+    moveAudioFile(
+        path: string,
+        from: number,
+        to: number
+    ): Promise<boolean> {
+        return new Promise<boolean>(
+            (accept, reject) => {
+                this.webSocket?.request<boolean>("moveAudioFile", {
+                    path: path,
+                    from: from,
+                    to: to
+                }).then(() => {
+                    accept(true);
+                }).catch((e) => {
+                    this.setError(getErrorMessage(e));
+                    accept(false);
+                });
+            }
+        );
     }
 
 
@@ -3094,17 +3117,6 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
-    reorderAudioFiles(
-        path: string,
-        from: number, 
-        to: number
-    ) {
-        this.webSocket?.send("reorderAudioFiles", {
-            path: path,
-            from: from,
-            to: to
-        })
-    }
 };
 
 let instance: PiPedalModel | undefined = undefined;

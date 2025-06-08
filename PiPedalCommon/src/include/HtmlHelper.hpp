@@ -21,6 +21,8 @@
 
 #include <string>
 #include <cstdint>
+#include <chrono>
+#include <filesystem>
 
 namespace pipedal {
 
@@ -29,6 +31,7 @@ class HtmlHelper {
 public:
     static std::string timeToHttpDate();
     static std::string timeToHttpDate(time_t time);
+    static std::string timeToHttpDate(std::filesystem::file_time_type time);
 
 
     static std::string encode_url_segment(const char*pStart, const char*pEnd, bool isQuerySegment = false);

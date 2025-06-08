@@ -1689,6 +1689,7 @@ static void AddFilesToResult(
 }
 
 static void AddTracksToResult(
+    const fs::path &audioRootDirectory,
     FileRequestResult &result,
     const ModFileTypes::ModDirectory *modDirectoryInfo, // yyx
     const UiFileProperty &fileProperty,
@@ -1716,7 +1717,22 @@ static void AddTracksToResult(
                 resultFiles.push_back(FileEntry{path, name, true, fs::is_symlink(path)});
             }
         }
-        auto audioFiles = AudioDirectoryInfo::Create(rootPath);
+        auto collator = Locale::GetInstance()->GetCollator();
+        std::sort(
+            resultFiles.begin(), 
+            resultFiles.end(),
+            [collator](const FileEntry &l, const FileEntry &r)
+                  {
+            if (l.isDirectory_ != r.isDirectory_)
+            {
+                return l.isDirectory_ > r.isDirectory_;
+            }
+            return collator->Compare(l.displayName_ ,r.displayName_) < 0; 
+        });
+        // Add audio files.
+        auto audioFiles = AudioDirectoryInfo::Create(rootPath,
+            GetShadowIndexDirectory(audioRootDirectory,rootPath)
+        );
         for (const auto &audioFile : audioFiles->GetFiles())
         {
             fs::path audioFilePath = rootPath / audioFile.fileName();
@@ -1821,7 +1837,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
 
     if (IsInAudioTracksDirectory(relativePath))
     {
-        AddTracksToResult(result, rootModDirectory, fileProperty, relativePath);
+        AddTracksToResult(this->GetPluginUploadDirectory(),result, rootModDirectory, fileProperty, relativePath);
     }
     else
     {
@@ -1921,7 +1937,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
 
     if (IsInAudioTracksDirectory(absolutePath))
     {
-        AddTracksToResult(result, pModDirectory, fileProperty, absolutePath);
+        AddTracksToResult(GetPluginUploadDirectory(), result, pModDirectory, fileProperty, absolutePath);
     }
     else
     {

@@ -35,6 +35,17 @@ export interface DraggableButtonBaseProps extends ButtonBaseProps {
 interface Point {
     x: number;
     y: number;
+};
+
+function isValidPointer(e: React.PointerEvent): boolean {
+    if (e.pointerType === "mouse") {
+        return e.button === 0;
+    } else if (e.pointerType === "pen") {
+        return true;
+    } else if (e.pointerType === "touch") {
+        return true;
+    }
+    return false;
 }
 
 function screenToClient(element: HTMLElement, point: Point): Point {
@@ -81,6 +92,12 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
         <ButtonBase
             {...rest}
             onPointerDown={(e) => {
+                if (!isValidPointer(e)) {
+                    return;
+                }
+                if (pointerId !== null) {
+                    return; //tracking another pointer already.
+                }
                 e.currentTarget.setPointerCapture(e.pointerId);
                 setPointerId(e.pointerId);
                 setPointerDownPoint(screenToClient(e.currentTarget,{ x: e.screenX, y: e.screenY }));

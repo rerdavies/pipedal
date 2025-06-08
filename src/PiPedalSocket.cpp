@@ -60,7 +60,6 @@ JSON_MAP_REFERENCE(PathPatchPropertyChangedBody, propertyUri)
 JSON_MAP_REFERENCE(PathPatchPropertyChangedBody, atomJson)
 JSON_MAP_END()
 
-
 class GetPatchPropertyBody
 {
 public:
@@ -72,6 +71,20 @@ public:
 JSON_MAP_BEGIN(GetPatchPropertyBody)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, propertyUri)
+JSON_MAP_END()
+
+class MoveAudioFileArgs
+{
+public:
+    std::string path_;
+    int32_t from_;
+    int32_t to_;
+    DECLARE_JSON_MAP(MoveAudioFileArgs);
+};
+JSON_MAP_BEGIN(MoveAudioFileArgs)
+JSON_MAP_REFERENCE(MoveAudioFileArgs, path)
+JSON_MAP_REFERENCE(MoveAudioFileArgs, from)
+JSON_MAP_REFERENCE(MoveAudioFileArgs, to)
 JSON_MAP_END()
 
 class CreateNewSampleDirectoryArgs
@@ -111,13 +124,10 @@ public:
     DECLARE_JSON_MAP(GetFilePropertyDirectoryTreeArgs);
 };
 
-
 JSON_MAP_BEGIN(GetFilePropertyDirectoryTreeArgs)
 JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, fileProperty)
 JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, selectedPath)
 JSON_MAP_END()
-
-
 
 class Lv2StateChangedBody
 {
@@ -413,7 +423,8 @@ JSON_MAP_REFERENCE(SetSnapshotsBody, snapshots)
 JSON_MAP_REFERENCE(SetSnapshotsBody, selectedSnapshot)
 JSON_MAP_END()
 
-class SnapshotModifiedBody {
+class SnapshotModifiedBody
+{
 public:
     int64_t snapshotIndex_;
     bool modified_;
@@ -582,7 +593,6 @@ public:
         {
             FinalCleanup();
         }
-
     }
 
     bool finalCleanup = false;
@@ -1100,7 +1110,7 @@ public:
         else if (message == "getHasWifi")
         {
             bool result = model.GetHasWifi();
-            this->Reply(replyTo, "getHasWifi",result);
+            this->Reply(replyTo, "getHasWifi", result);
         }
         else if (message == "updateNow")
         {
@@ -1473,13 +1483,8 @@ public:
             SetPatchPropertyBody body;
             pReader->read(&body);
             model.SendSetPatchProperty(clientId, body.instanceId_, body.propertyUri_, body.value_, [this, replyTo]()
-                                       {
-                                           this->JsonReply(replyTo, "setPatchProperty", "true");
-                                       },
-                                       [this, replyTo](const std::string &error)
-                                       {
-                                           this->SendError(replyTo, error.c_str());
-                                       });
+                                       { this->JsonReply(replyTo, "setPatchProperty", "true"); }, [this, replyTo](const std::string &error)
+                                       { this->SendError(replyTo, error.c_str()); });
         }
 
         else if (message == "getPatchProperty")
@@ -1644,13 +1649,31 @@ public:
         {
             GetFilePropertyDirectoryTreeArgs args;
             pReader->read(&args);
-            FilePropertyDirectoryTree::ptr result = 
+            FilePropertyDirectoryTree::ptr result =
+                model.GetFilePropertydirectoryTree(
+                    args.fileProperty_,
+                    args.selectedPath_);
+            this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
+        }
+        else if (message == "getFilePropertyDirectoryTree")
+        {
+            GetFilePropertyDirectoryTreeArgs args;
+            pReader->read(&args);
+            FilePropertyDirectoryTree::ptr result =
                 model.GetFilePropertydirectoryTree(
                     args.fileProperty_,
                     args.selectedPath_);
             this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
         }
 
+        else if (message == "moveAudioFile")
+        {
+            MoveAudioFileArgs args;
+            pReader->read(&args);
+            this->model.MoveAudioFile(args.path_, args.from_, args.to_);
+            bool result = true;
+            this->Reply(replyTo,"moveAudioFile", result);   
+        }
         else if (message == "setOnboarding")
         {
             bool value;
@@ -1659,7 +1682,7 @@ public:
         }
         else if (message == "getWifiRegulatoryDomains")
         {
-            auto  regulatoryDomains = this->model.GetWifiRegulatoryDomains();
+            auto regulatoryDomains = this->model.GetWifiRegulatoryDomains();
             this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
         }
         else
@@ -1670,7 +1693,9 @@ public:
     }
 
 protected:
-    virtual void onSocketClosed() override {
+    virtual void
+    onSocketClosed() override
+    {
         SocketHandler::OnSocketClosed();
         this->Close();
     }
@@ -1754,10 +1779,10 @@ private:
         Send("onLv2PluginsChanging", true);
         Flush();
     }
-    virtual void OnHasWifiChanged(bool hasWifi){
+    virtual void OnHasWifiChanged(bool hasWifi)
+    {
         Send("onHasWifiChanged", hasWifi);
         Flush();
-
     }
 
     virtual void OnNetworkChanging(bool hotspotConnected) override
@@ -1809,7 +1834,7 @@ private:
         Send("onChannelSelectionChanged", body);
     }
 
-    virtual void OnSnapshotModified(int64_t snapshotIndex, bool modified) 
+    virtual void OnSnapshotModified(int64_t snapshotIndex, bool modified)
     {
         SnapshotModifiedBody body;
         body.snapshotIndex_ = snapshotIndex;
@@ -2124,7 +2149,6 @@ private:
 
 std::atomic<uint64_t> PiPedalSocketHandler::nextClientId = 0;
 
-
 class PiPedalSocketFactory : public ISocketFactory
 {
 private:
@@ -2151,7 +2175,6 @@ public:
         return std::make_shared<PiPedalSocketHandler>(model);
     }
 };
-
 
 std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &model)
 {

@@ -1,6 +1,5 @@
-Sort order.
-Do we have a better plugin category than "Utility"
-.index files.
+Serialize sort order.
+
 - pipewire aux in?
 
 libsqlite3-dev install

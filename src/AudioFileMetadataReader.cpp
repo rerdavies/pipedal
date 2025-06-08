@@ -144,8 +144,12 @@ static int32_t MetadataTrackToInt(const std::string &track, const std::string &d
         int trackNumber = std::stoi(track);
         if (!disc.empty())
         {
-            int discNumber = std::stoi(disc);
-            trackNumber += discNumber + trackNumber; // e.g. disc 1 track 2 becomes 1002
+            if (disc != "" && disc != "1/1" && disc != "1")
+            {
+                int discNumber = std::stoi(disc);
+                trackNumber += discNumber*1000+ trackNumber; // e.g. disc 1 track 2 becomes 1002
+            }
+
         }
         return trackNumber;
     }
@@ -178,8 +182,8 @@ AudioFileMetadata::AudioFileMetadata(const std::filesystem::path &file)
         {
             // not all of this data gets used (e.g. DATE, YEAR, ALBUM_ARTIST,TOTALTRACKS). But ... write once.
             this->album_ = MetadataString(tags, {"ALBUM", "album"});
-            //this->artist_ = MetadataString(tags, {"ARTIST", "artist"});
-            //this->albumArtist_ = MetadataString(tags, {"ALBUM ARTIST", "album_artist", "album artist"});
+            this->artist_ = MetadataString(tags, {"ARTIST", "artist"});
+            this->albumArtist_ = MetadataString(tags, {"ALBUM ARTIST", "album_artist", "album artist"});
             this->title_ = MetadataString(tags, {"TITLE", "title"});
             //this->date_ = MetadataString(tags, {"DATE", "date"});
             //this->year_ = MetadataString(tags, {"YEAR", "year"});

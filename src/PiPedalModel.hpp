@@ -462,6 +462,11 @@ namespace pipedal
         uint64_t CreateNewPreset();
 
         bool LoadCurrentPedalboard();
+
+        void MoveAudioFile(
+            const std::string & path, 
+            int32_t from, 
+            int32_t to);
     };
 
 } // namespace pipedal.

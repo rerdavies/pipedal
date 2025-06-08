@@ -30,6 +30,9 @@
 #include "MimeTypes.hpp"
 #include <stdexcept>
 #include "AudioFilesDb.hpp"
+#include "Lv2Log.hpp"
+#include "ss.hpp"
+#include "util.hpp"
 
 #undef _GLIBCXX_DEBUG // Ensure we are not in debug mode, as this file is not compatible with it.
 #include "SQLiteCpp/SQLiteCpp.h"
@@ -48,7 +51,7 @@ void AudioDirectoryInfo::SetResourceDirectory(const std::filesystem::path &path)
 {
     resourceDirectory = path;
 }
-std::filesystem::path AudioDirectoryInfo::GetTemporaryDirectory() const
+std::filesystem::path AudioDirectoryInfo::GetTemporaryDirectory()
 {
     if (temporaryDirectory.empty())
     {
@@ -56,7 +59,7 @@ std::filesystem::path AudioDirectoryInfo::GetTemporaryDirectory() const
     }
     return temporaryDirectory;
 }
-std::filesystem::path AudioDirectoryInfo::GetResourceDirectory() const
+std::filesystem::path AudioDirectoryInfo::GetResourceDirectory()
 {
     if (resourceDirectory.empty())
     {
@@ -74,7 +77,9 @@ namespace
 
     static int64_t fileTimeToInt64(const fs::file_time_type &fileTime)
     {
-        return fileTime.time_since_epoch().count();
+        std::chrono::system_clock::time_point system_time = std::chrono::clock_cast<std::chrono::system_clock>(fileTime);
+        auto result = std::chrono::duration_cast<std::chrono::milliseconds>(system_time.time_since_epoch()).count();
+        return result;
     }
     static int64_t GetLastWriteTime(const fs::path &file)
     {
@@ -91,9 +96,15 @@ namespace
     class AudioDirectoryInfoImpl : public AudioDirectoryInfo
     {
     public:
-        AudioDirectoryInfoImpl(const std::string &path)
-            : path(path)
+        AudioDirectoryInfoImpl(const std::filesystem::path &path, const std::filesystem::path&indexPath)
+            : path(path), indexPath(
+                (indexPath.empty() ? path: indexPath) / ".index.pipedal"
+            )
         {
+            if (this->indexPath.parent_path() != path)
+            {
+                fs::create_directories(this->indexPath.parent_path());
+            }
         }
         virtual ~AudioDirectoryInfoImpl() {}
 
@@ -110,7 +121,16 @@ namespace
         virtual std::string GetNextAudioFile(const std::string &fileNameOnly) override;
         virtual std::string GetPreviousAudioFile(const std::string &fileNameOnly) override;
 
+        virtual void MoveAudioFile(
+            const std::string &directory,
+            int32_t fromPosition,
+            int32_t toPosition) override;
+
     private:
+        std::vector<DbFileInfo> QueryTracks();
+
+
+        bool opened = false;
         std::filesystem::path indexPath;
         void OpenAudioDb();
         ThumbnailTemporaryFile GetUnindexedThunbnail(const std::string &fileNameOnly, int32_t width, int32_t height);
@@ -119,7 +139,6 @@ namespace
         fs::path path;
         using id_t = int64_t;
 
-        std::vector<DbFileInfo> QueryTracks();
 
         std::vector<DbFileInfo> UpdateDbFiles();
         void DbSetThumbnailType(
@@ -137,14 +156,23 @@ namespace
         void UpdateMetadata(DbFileInfo *dbFile);
         static constexpr int DB_VERSION = 1;
         std::filesystem::path GetFolderFile() const;
+
     };
 }
 
-
-AudioDirectoryInfo::Ptr AudioDirectoryInfo::Create(const std::string &path)
+AudioDirectoryInfo::Ptr AudioDirectoryInfo::Create(const std::filesystem::path &path, const std::filesystem::path&indexPath)
 {
-    return std::shared_ptr<AudioDirectoryInfo>(
-        new AudioDirectoryInfoImpl(path));
+    return std::make_shared<AudioDirectoryInfoImpl>(path,indexPath);
+}
+
+
+std::vector<DbFileInfo> AudioDirectoryInfoImpl::QueryTracks()
+{
+    if (audioFilesDb)
+    {
+        return audioFilesDb->QueryTracks();
+    }
+    return std::vector<DbFileInfo>();
 }
 
 std::vector<AudioFileMetadata> AudioDirectoryInfoImpl::GetFiles()
@@ -160,14 +188,6 @@ std::vector<AudioFileMetadata> AudioDirectoryInfoImpl::GetFiles()
     return metadataResults;
 }
 
-std::vector<DbFileInfo> AudioDirectoryInfoImpl::QueryTracks()
-{
-    if (audioFilesDb)
-    {
-        return audioFilesDb->QueryTracks();
-    }
-    return std::vector<DbFileInfo>();
-}
 static bool isAudioExtension(const std::string &extension)
 {
     return MimeTypes::instance().AudioExtensions().contains(extension);
@@ -340,12 +360,6 @@ std::vector<DbFileInfo> AudioDirectoryInfoImpl::UpdateDbFiles()
         }
     }
 
-    if (!updateRequired && newFiles.empty())
-    {
-        // Nothing to do.
-        return dbFiles;
-    }
-
     Locale::ptr locale = Locale::GetInstance();
     Collator::ptr collator = locale->GetCollator();
     if (!HasPositionInfo(dbFiles))
@@ -415,7 +429,8 @@ static std::vector<std::filesystem::path> COVER_ART_FILES = {
     "AlbumArt.jpg",
     "albumArt.jpg",
     "Frontcover.jpg",
-    "AlbumArtSmall.jpg"};
+    "AlbumArtSmall.jpg" // windows media player.
+};
 
 fs::path AudioDirectoryInfoImpl::GetFolderFile() const
 {
@@ -446,7 +461,7 @@ void AudioDirectoryInfoImpl::DbSetThumbnailType(
     }
 }
 void AudioDirectoryInfoImpl::DbSetThumbnailType(
-    const std::string&fileNameOnly,
+    const std::string &fileNameOnly,
     ThumbnailType thumbnailType,
     const std::string &thumbnailFile,
     int64_t thumbnailLastModified)
@@ -614,6 +629,8 @@ void AudioDirectoryInfoImpl::UpdateMetadata(DbFileInfo *dbFile)
     dbFile->track(metadata.track());
     dbFile->duration(metadata.duration());
     dbFile->album(metadata.album());
+    dbFile->artist(metadata.artist());
+    dbFile->albumArtist(metadata.albumArtist());
     dbFile->lastModified(GetLastWriteTime(file));
     dbFile->duration(metadata.duration());
 }
@@ -656,8 +673,17 @@ size_t AudioDirectoryInfoImpl::TestGetNumberOfThumbnails()
 
 void AudioDirectoryInfoImpl::OpenAudioDb()
 {
-    if (!this->audioFilesDb) {
-        this->audioFilesDb = std::make_shared<AudioFilesDb>(this->path, indexPath);
+
+    if (!this->audioFilesDb)
+    {
+        try
+        {
+            this->audioFilesDb = std::make_shared<AudioFilesDb>(this->path, indexPath);
+        }
+        catch (const SQLite::Exception &e)
+        {
+            Lv2Log::debug("Can't create .index.pipedal: %s - %s", e.what(), this->path.c_str());
+        }
     }
 }
 
@@ -669,7 +695,7 @@ ThumbnailTemporaryFile AudioDirectoryInfoImpl::DefaultThumbnailTemporaryFile()
     return tempFile;
 }
 
-std::string AudioDirectoryInfoImpl::GetNextAudioFile(const std::string &fileNameOnly) 
+std::string AudioDirectoryInfoImpl::GetNextAudioFile(const std::string &fileNameOnly)
 {
     auto files = this->GetFiles();
     if (files.empty())
@@ -692,7 +718,7 @@ std::string AudioDirectoryInfoImpl::GetNextAudioFile(const std::string &fileName
     }
     return "";
 }
-std::string AudioDirectoryInfoImpl::GetPreviousAudioFile(const std::string &fileNameOnly) 
+std::string AudioDirectoryInfoImpl::GetPreviousAudioFile(const std::string &fileNameOnly)
 {
     auto files = this->GetFiles();
     if (files.empty())
@@ -714,4 +740,97 @@ std::string AudioDirectoryInfoImpl::GetPreviousAudioFile(const std::string &file
         }
     }
     return "";
+}
+
+void AudioDirectoryInfoImpl::MoveAudioFile(
+    const std::string &directory,
+    int32_t fromPosition,
+    int32_t toPosition)
+{
+    OpenAudioDb();
+    if (!audioFilesDb)
+    {
+        throw std::runtime_error("Directory is not writable.");
+    }
+    auto files = this->UpdateDbFiles();
+    if (directory.empty() || fromPosition < 0 || toPosition < 0 ||
+        fromPosition >= static_cast<int32_t>(files.size()) ||
+        toPosition > static_cast<int32_t>(files.size()))
+    {
+        throw std::invalid_argument("Invalid arguments for MoveAudioFile");
+    }
+    std::shared_ptr<SQLite::Transaction> transaction;
+    if (audioFilesDb)
+    {
+        transaction = audioFilesDb->transaction();
+    }
+
+    if (fromPosition == toPosition)
+    {
+        return; // No change needed.
+    }
+    if (fromPosition > toPosition)
+    {
+        auto t = files[fromPosition];
+        files.erase(files.begin() + fromPosition);
+        files.insert(files.begin() + toPosition, t);
+    }
+    else
+    {
+        // fromPosition < toPosition
+        auto t = files[fromPosition];
+        files.erase(files.begin() + fromPosition);
+        files.insert(files.begin() + toPosition, t); // insert before the toPosition.
+    }
+    for (size_t i = 0; i < files.size(); ++i)
+    {
+        auto &file = files[i];
+        if (file.position() != static_cast<int32_t>(i))
+        {
+            file.position(static_cast<int32_t>(i));
+            if (this->audioFilesDb)
+            {
+                audioFilesDb->UpdateFilePosition(file.idFile(), file.position());
+            }
+            else
+            {
+                throw std::runtime_error("Directory is not writable.");
+            }
+        }
+    }
+    transaction->commit();
+}
+
+
+namespace pipedal {
+    std::filesystem::path IndexPathToShadowIndexPath(const std::filesystem::path &audioRootDirectory, const std::filesystem::path &path)
+    {
+        std::filesystem::path relativePath = MakeRelativePath(path, audioRootDirectory);
+        if (relativePath.is_absolute())
+        {
+            throw std::runtime_error(SS("Can't write to path " << path << "."));
+        };
+        return audioRootDirectory / "shadow_indexes" / relativePath;
+    }
+
+    // recover the original path fromthe shadow index path.
+    std::filesystem::path ShadowIndexPathToIndexPath(const std::filesystem::path &audioRootDirectory, const std::filesystem::path &path)
+    {
+        auto shadowIndexesPath = audioRootDirectory / "shadow_indexes";
+        std::filesystem::path relativePath = MakeRelativePath(path, shadowIndexesPath);
+        if (relativePath.is_absolute())
+        {
+            throw std::runtime_error(SS("Path must start with " << shadowIndexesPath));
+        }
+        return audioRootDirectory / relativePath; // recover the original path.
+    }
+
+    std::filesystem::path GetShadowIndexDirectory(const std::filesystem::path &audioRootDirectory, const std::filesystem::path &path)
+    {
+        if (HasWritePermissions(path))
+        {
+            return ""; // use default index path.
+        }
+        return IndexPathToShadowIndexPath(audioRootDirectory, path);
+    }
 }

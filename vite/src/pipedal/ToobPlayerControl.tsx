@@ -23,17 +23,19 @@
 
 import React, { useEffect } from 'react';
 import { styled } from '@mui/material/styles';
+import LoopDialog from './LoopDialog';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 import Slider from '@mui/material/Slider';
 import IconButton from '@mui/material/IconButton';
 import Pause from '@mui/icons-material/Pause';
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import FastForward from '@mui/icons-material/FastForward';
 import FastRewind from '@mui/icons-material/FastRewind';
-import { PiPedalModelFactory } from './PiPedalModel';
+import { PiPedalModelFactory, State } from './PiPedalModel';
 import ButtonTooltip from './ButtonTooltip';
-import { pathFileNameOnly } from './FilePropertyDialog'
+import { pathFileNameOnly } from './FileUtils';
 import ButtonBase from '@mui/material/ButtonBase';
 import FilePropertyDialog from './FilePropertyDialog';
 import JsonAtom from './JsonAtom';
@@ -41,6 +43,8 @@ import { UiFileProperty } from './Lv2Plugin';
 import { Divider } from '@mui/material';
 import useWindowSize from './UseWindowSize';
 import { getAlbumArtUri } from './AudioFileMetadata';
+import RepeatIcon from '@mui/icons-material/Repeat';
+import { LoopParameters, TimebaseUnits } from './Timebase';
 
 let Player__seek = "http://two-play.com/plugins/toob-player#seek"
 const AUDIO_FILE_PROPERTY_URI = "http://two-play.com/plugins/toob-player#audioFile";
@@ -55,6 +59,7 @@ class PluginState {
     static Error = 6;
 };
 
+const useWallpaper = false;
 const WallPaper = styled('div')({
     position: 'absolute',
     width: '100%',
@@ -87,6 +92,14 @@ const WallPaper = styled('div')({
     },
 });
 
+function getAlbumLine(album: string, artist: string, albumArtist: string): string  {
+    if (artist === "") {
+        artist = albumArtist;
+    }
+    let joiner = (artist !== "" && album !== "") ? " - " : "";
+    return album + joiner + artist;
+
+}
 
 interface WidgetProps {
     noBorders: boolean;
@@ -104,9 +117,9 @@ const WidgetBorders = styled('div')(({ theme }) => ({
     position: 'relative',
     zIndex: 1,
     backgroundColor: 'rgba(255,255,255,0.4)',
-    boxShadow: "1px 3px 20px #0008",
+    boxShadow: "1px 4px 12px rgba(0,0,0,0.2)",
     ...theme.applyStyles('dark', {
-        backgroundColor: 'rgba(0,0,0,0.6)',
+        backgroundColor: useWallpaper?  'rgba(0,0,0,0.6)' : '#282828',
     }),
 }));
 
@@ -121,12 +134,26 @@ const WidgetNoBorders = styled('div')(({ theme }) => ({
     zIndex: 1,
     backgroundColor: 'rgba(255,255,255,0.4)',
     ...theme.applyStyles('dark', {
-        backgroundColor: 'rgba(0,0,0,0.6)',
+        backgroundColor: useWallpaper ? 'rgba(0,0,0,0.6)' : theme.mainBackground,
     }),
 }));
+// const WidgetNoWallpaper = styled('div')(({ theme }) => ({
+
+//     padding: 16,
+//     borderRadius: 0,
+//     width: "100%",
+//     height: "100%",
+//     margin: 0,
+//     position: 'relative',
+//     zIndex: 1,
+
+// }));
 
 
 function Widget(props: WidgetProps) {
+    // if (!useWallpaper) {
+    //     return(<WidgetNoWallpaper>{props.children} </WidgetNoWallpaper>);
+    // }
     if (props.noBorders) {
         return (<WidgetNoBorders>{props.children} </WidgetNoBorders>);
     } else {
@@ -163,9 +190,17 @@ export interface ToobPlayerControlProps {
 export default function ToobPlayerControl(
     props: ToobPlayerControlProps
 ) {
+
+    const model = PiPedalModelFactory.getInstance();
+
     const defaultCoverArt = "/img/default_album.jpg";
+    const [serverConnected, setServerConnected] = React.useState(model.state.get() == State.Ready);
     const [duration, setDuration] = React.useState(0.0);
     const [position, setPosition] = React.useState(0.0);
+    const [start, setStart] = React.useState(0.0);
+    const [loopStart, setLoopStart] = React.useState(0.0);
+    const [loopEnable, setLoopEnable] = React.useState(false);
+    const [loopEnd, setLoopEnd] = React.useState(0.0);
     const [dragging, setDragging] = React.useState(false);
     const [pluginState, setPluginState] = React.useState(0.0);
     const [sliderValue, setSliderValue] = React.useState(0.0);
@@ -173,9 +208,17 @@ export default function ToobPlayerControl(
     const [audioFile, setAudioFile] = React.useState("");
     const [title, setTitle] = React.useState("");
     const [album, setAlbum] = React.useState("");
+    const [artist, setArtist] = React.useState("");
+    const [albumArtist, setAlbumArtist] = React.useState("");
     const [showFileDialog, setShowFileDialog] = React.useState(false);
+    const [showLoopDialog, setShowLoopDialog] = React.useState(false);
+    const [timebase,setTimebase] = React.useState(
+        {
+            units: TimebaseUnits.Seconds,
+            tempo: 120.0,
+            timeSignature: { numerator: 4, denominator: 4 }
+        });
 
-    const model = PiPedalModelFactory.getInstance();
 
     const [size] = useWindowSize();
     const width = size.width;
@@ -185,8 +228,11 @@ export default function ToobPlayerControl(
 
     const useHorizontalLayout = height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK && width > 573 && width > height;
     //const useVerticalScroll = width < 573;
-    const useQuadMixPanel = width < 720;
     const noBorders = width < 420 || height < 720;
+    let useQuadMixPanel = width < 720;
+    if (noBorders) {
+        useQuadMixPanel = width < 370;
+    }
 
     function SelectFile() {
         setShowFileDialog(true);
@@ -202,6 +248,8 @@ export default function ToobPlayerControl(
         if (path === "") {
             setTitle("");
             setAlbum("");
+            setArtist("");
+            setAlbumArtist("");
             setCoverArt(defaultCoverArt);
             return;
         }
@@ -221,6 +269,8 @@ export default function ToobPlayerControl(
                 setCoverArt(coverArtUri);
                 setTitle(strTrack + metadata.title);
                 setAlbum(metadata.album);
+                setArtist(metadata.artist);
+                setAlbumArtist(metadata.albumArtist);
             })
             .catch((e)=>{
                 setTitle("#error" + e.message);
@@ -311,6 +361,10 @@ export default function ToobPlayerControl(
                 <Box sx={{ display: 'flex', alignItems: 'center', padding: "2px" }}>
                     <CoverImage>
                         <img style={{ opacity: pluginState === PluginState.Idle ? 0.3 : 1.0 }}
+                            onDragStart={(e) => {
+                                e.preventDefault();
+                            }}
+                            alt="Cover Art"
                             src={
                                 coverArt
                             }
@@ -324,10 +378,10 @@ export default function ToobPlayerControl(
                         ) : (
                             <div>
                                 <Typography variant="body1" noWrap>
-                                    {effectiveTitle}
+                                    {titleLine}
                                 </Typography>
                                 <Typography variant="body2" noWrap sx={{}}>
-                                    {album}
+                                    {albumLine}
                                 </Typography>
                             </div>
 
@@ -337,6 +391,16 @@ export default function ToobPlayerControl(
             </ButtonBase>
         );
 
+    }
+    function loopButtonText() {
+        if (start === 0 && !loopEnable) {
+            return "Set loop"; 
+
+        } else if (loopEnable) {
+            return  `${formatDuration(start)} [${formatDuration(loopStart)} - ${formatDuration(loopEnd)}]`;   
+        } else {
+            return `Start: ${formatDuration(start)}`;
+        }
     }
     function getUiFileProperty(uri: string): UiFileProperty {
         let pedalboardItem = model.pedalboard.get().getItem(props.instanceId);
@@ -389,7 +453,17 @@ export default function ToobPlayerControl(
             });
         setSliderValue(value);
     }
+    function onStateChanged(value: State) {
+        setServerConnected(value === State.Ready);
+    }
     useEffect(() => {
+        model.state.addOnChangedHandler(onStateChanged);
+        if (model.state.get() !== State.Ready) {
+            // wait for it.
+            return () => {
+                model.state.removeOnChangedHandler
+            }
+        }
         let durationHandle = model.monitorPort(props.instanceId, "duration", 1.0 / 15,
             (value) => {
                 setDuration(value);
@@ -400,6 +474,27 @@ export default function ToobPlayerControl(
                 setPosition(value);
             }
         );
+        // let startHandle = model.monitorPort(props.instanceId, "start", 1.0,
+        //     (value) => {
+        //         setStart(value);
+        //     }
+        // );
+        // let loopStartHandle = model.monitorPort(props.instanceId, "loopStart", 1.0,
+        //     (value) => {
+        //         setLoopStart(value);
+        //     }
+        // );
+        // let loopEnableHandle = model.monitorPort(props.instanceId, "loopEnable", 1.0,
+        //     (value) => {
+        //         setLoopEnable(value != 0);
+        //     }
+        // );
+        // let loopEndHandle = model.monitorPort(props.instanceId, "loopEnd", 1.0,
+        //     (value) => {
+        //         setLoopEnd(value);
+        //     }
+        // );
+        
         let pluginStateHandle = model.monitorPort(props.instanceId, "state", 1.0 / 1000.0,
             (value) => {
                 setPluginState(value);
@@ -428,17 +523,23 @@ export default function ToobPlayerControl(
 
 
         return () => {
+            model.state.removeOnChangedHandler(onStateChanged);
             model.unmonitorPort(durationHandle);
             model.unmonitorPort(positionHandle);
             model.unmonitorPort(pluginStateHandle);
+            // model.unmonitorPort(loopEnableHandle);
+            // model.unmonitorPort(startHandle);
+            // model.unmonitorPort(loopStartHandle);
+            // model.unmonitorPort(loopEndHandle);
             model.cancelMonitorPatchProperty(filePropertyHandle);
         };
     },
-        []
+        [serverConnected]
     );
     const effectivePosition =
         (pluginState !== PluginState.Idle) ? Math.min(position, duration) : 0.0;
-    const effectiveTitle = title !== "" ? title : pathFileNameOnly(audioFile);
+    const titleLine = title !== "" ? title : pathFileNameOnly(audioFile);
+    const albumLine = getAlbumLine(album,artist,albumArtist);
 
     const paused = (pluginState === PluginState.Idle
         || pluginState === PluginState.CuePlayPaused
@@ -529,12 +630,24 @@ export default function ToobPlayerControl(
                         flex: "0 0 auto",
                         width: "100%",
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'top',
                         justifyContent: 'space-between',
                         marginTop: -4,
                     }}
                 >
                     <TinyText>{formatDuration(dragging ? sliderValue : effectivePosition)}</TinyText>
+                    <Button title="Loop" variant="dialogSecondary" 
+                        style={{flex: "0 1 auto",width: 200,
+                            textTransform: "none", fontSize: "0.9rem", fontWeight: 500, padding: "4px 8px"
+                        }}
+                        startIcon= {(<RepeatIcon />)}
+                        onClick={() => {
+                            setShowLoopDialog(true);
+                        }}
+                        >
+                        {loopButtonText()
+                        }
+                    </Button>
                     <TinyText>{formatDuration(duration)}</TinyText>
                 </div>
             </div>
@@ -554,69 +667,7 @@ export default function ToobPlayerControl(
                     {
                         FilePanel()
                     }
-                    <Slider
-                        value={dragging ? sliderValue : effectivePosition}
-                        min={0}
-                        step={1}
-                        max={duration}
-                        onChange={(_, val) => {
-                            let v = val as number;
-                            setPosition(v);
-                            setSliderValue(v);
-                        }}
-                        onChangeCommitted={(e, value) => {
-                            let v = value as number;
-                            OnSeek(v);
-                        }}
-                        onPointerDown={(e) => {
-                            setDragging(true);
-                        }}
-                        onPointerUp={(e) => {
-                            // setDragging(false);
-                        }}
-                        disabled={duration == 0}
-                        sx={(t) => ({
-                            width: "100%",
-                            color: 'rgba(0,0,0,0.87)',
-                            height: 4,
-                            '& .MuiSlider-thumb': {
-                                width: 8,
-                                height: 8,
-                                transition: '0.3s cubic-bezier(.47,1.64,.41,.8)',
-                                '&::before': {
-                                    boxShadow: '0 2px 12px 0 rgba(0,0,0,0.4)',
-                                },
-                                '&:hover, &.Mui-focusVisible': {
-                                    boxShadow: `0px 0px 0px 8px ${'rgb(0 0 0 / 16%)'}`,
-                                    ...t.applyStyles('dark', {
-                                        boxShadow: `0px 0px 0px 8px ${'rgb(255 255 255 / 16%)'}`,
-                                    }),
-                                },
-                                '&.Mui-active': {
-                                    width: 20,
-                                    height: 20,
-                                },
-                            },
-                            '& .MuiSlider-rail': {
-                                opacity: 0.28,
-                            },
-                            ...t.applyStyles('dark', {
-                                color: '#fff',
-                            }),
-                        })}
-                    />
-                    <Box
-                        sx={{
-                            width: "100%",
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            mt: -2,
-                        }}
-                    >
-                        <TinyText>{formatDuration(dragging ? sliderValue : effectivePosition)}</TinyText>
-                        <TinyText>{formatDuration(duration)}</TinyText>
-                    </Box>
+                    {SliderCluster()}
                     {
                         ControlCluster()
                     }
@@ -683,11 +734,76 @@ export default function ToobPlayerControl(
         <div id="toobPlayerViewFrame" style={{
             width: '100%', height: "100%", overflow: 'hidden', position: 'relative',
         }}>
-            <WallPaper />
+            {useWallpaper && (<WallPaper />)}
             {
                 useHorizontalLayout ?
                     HorizontalWidget() : VerticalWidget()
             }
+            {showLoopDialog && (
+                <LoopDialog isOpen={showLoopDialog}
+                    sampleRate={
+                        model.jackConfiguration.get().sampleRate == 0? 
+                            96000 : 
+                            model.jackConfiguration.get().sampleRate
+                    }
+                    timebase={timebase}
+                    onTimebaseChange={(newTimebase) => {
+                        setTimebase(newTimebase);
+                        // model.setPatchProperty(
+                        //     props.instanceId,
+                        //     "timebase",
+                        //     newTimebase
+                        // );
+                    }}
+
+                    onClose={() => {
+                        setShowLoopDialog(false);
+                    }}
+                    onSetLoop={(start, loopEnable,loopStart, loopEnd) => {
+
+                        let loop: LoopParameters = { start: start, 
+                            loopEnable: loopEnable, 
+                            loopStart: loopStart, 
+                            loopEnd: loopEnd };    
+
+                        let loopSettings = {
+                            timebase: timebase,
+                            loopParameters: loop
+                        };
+                        model.setPatchProperty(
+                            props.instanceId,
+                            "http://two-play.com/plugins/toob-player#loopSettings",
+                            loopSettings.toString());
+
+                        setStart(start);
+                        // model.setPedalboardControl(
+                        //     props.instanceId,
+                        //     "start",
+                        //     start);
+                        setLoopEnable(loopEnable);
+                        // model.setPedalboardControl(
+                        //     props.instanceId,
+                        //     "loopEnable",
+                        //     loopEnable? 1.0: 0.0);
+                        setLoopStart(loopStart);
+                        // model.setPedalboardControl(
+                        //     props.instanceId,
+                        //     "loopStart",
+                        //     loopStart);
+                        setLoopEnd(loopEnd);
+                        // model.setPedalboardControl(
+                        //     props.instanceId,
+                        //     "loopEnd",
+                        //     loopEnd     
+                        // );
+                    }}
+                    start={start}
+                    loopStart={loopStart}
+                    loopEnable={loopEnable}
+                    loopEnd={loopEnd}
+                    duration={duration}
+                />      
+            )}
             {showFileDialog && (
                 <FilePropertyDialog open={showFileDialog}
                     fileProperty={getUiFileProperty(AUDIO_FILE_PROPERTY_URI)}

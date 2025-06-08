@@ -216,3 +216,13 @@ bool pipedal::IsSubdirectory(const std::filesystem::path &path, const std::files
     }
     return true;
 }
+
+
+bool pipedal::HasWritePermissions(const std::filesystem::path &path)
+{
+    // posix, but may not work on windows. 
+    // allegedly windows provies an _access function, which is probably a superset of
+    // access.
+    return access(path.c_str(), W_OK) == 0;
+}
+

@@ -63,7 +63,7 @@ public:
     {
         set("");
     }
-    const std::string& str() {
+    const std::string& str() const {
         return text;
     }
     uri(const char*text)

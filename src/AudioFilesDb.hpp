@@ -106,6 +106,9 @@ namespace pipedal::impl {
             int64_t width,
             int64_t height,
             const std::vector<uint8_t> &thumbnailData);
+        void UpdateFilePosition(
+            int64_t idFile,
+            int32_t position);
 
     private:
 
@@ -124,6 +127,7 @@ namespace pipedal::impl {
         std::unique_ptr<SQLite::Statement> deleteFileQuery;
         std::unique_ptr<SQLite::Statement> updateThumbnailInfoQueryByName;
         std::unique_ptr<SQLite::Statement> updateThumbnailInfoQueryById;
+        std::unique_ptr<SQLite::Statement> updatePositionQuery;
         std::filesystem::path path;
     };
 }

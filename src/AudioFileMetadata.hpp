@@ -63,6 +63,8 @@ namespace pipedal {
         std::string title_;
         int32_t track_ = -1; // track number, 0-based, -1 if not set
         std::string album_;
+        std::string artist_;
+        std::string albumArtist_;
         float duration_ = 0;
         int32_t thumbnailType_ = 0; // 0 = unknown, 1 = embedded, 3 = folder, 4 = none
         std::string thumbnailFile_; // only when thumbnailType is 3= folder.
@@ -80,6 +82,8 @@ namespace pipedal {
         GETTER_SETTER_REF(title)
         GETTER_SETTER_REF(track)
         GETTER_SETTER_REF(album)
+        GETTER_SETTER_REF(albumArtist)
+        GETTER_SETTER_REF(artist)
         GETTER_SETTER(duration)
         ThumbnailType thumbnailType() const { return (ThumbnailType)thumbnailType_;}
         void thumbnailType(ThumbnailType value) { thumbnailType_ = (int32_t)value; }

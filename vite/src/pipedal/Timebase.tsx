@@ -21,24 +21,32 @@
  *   SOFTWARE.
  */
 
-#include "AudioFileMetadata.hpp"
+export enum TimebaseUnits {
+    Seconds = 0,
+    Samples = 1,
+    Beats = 2,
+}
 
-using namespace pipedal;
+export interface TimeSignature {
+    numerator: number;
+    denominator: number;
+}
 
-JSON_MAP_BEGIN(AudioFileMetadata)
-JSON_MAP_REFERENCE(AudioFileMetadata, duration)
-JSON_MAP_REFERENCE(AudioFileMetadata, fileName)
-JSON_MAP_REFERENCE(AudioFileMetadata, lastModified)
+export default interface Timebase {
+    units: TimebaseUnits;
+    tempo: number;
+    timeSignature: TimeSignature;
+}
 
-JSON_MAP_REFERENCE(AudioFileMetadata, title)
-JSON_MAP_REFERENCE(AudioFileMetadata, track)
-JSON_MAP_REFERENCE(AudioFileMetadata, album)
-JSON_MAP_REFERENCE(AudioFileMetadata, albumArtist)
-JSON_MAP_REFERENCE(AudioFileMetadata, artist)
+export interface LoopParameters 
+{
+    start: number;
+    loopEnable: boolean;
+    loopStart: number;
+    loopEnd: number; 
+};
 
-JSON_MAP_REFERENCE(AudioFileMetadata, thumbnailType)
-JSON_MAP_REFERENCE(AudioFileMetadata, thumbnailFile)
-JSON_MAP_REFERENCE(AudioFileMetadata, thumbnailLastModified)
-JSON_MAP_REFERENCE(AudioFileMetadata, position)
-
-JSON_MAP_END()
+export interface ToobPlayerSettings {
+    timebase: Timebase;
+    loopParameters: LoopParameters;
+};

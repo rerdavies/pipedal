@@ -78,7 +78,6 @@ namespace pipedal::impl
                 }
             }
             lockEntry->mutex.lock(); // we now have exclusive access to the database.
-
         }
 
         ~DatabaseLock()
@@ -93,9 +92,7 @@ namespace pipedal::impl
                     // Remove the entry from the map if no other locks are held.
                     databaseLocks.erase(indexFile);
                 }
-
             }
-
         }
     };
 }
@@ -178,6 +175,8 @@ void AudioFilesDb::CreateDb(const std::filesystem::path &dbPathName)
                 "title TEXT NOT NULL,"
                 "track NUMBER NOT NULL,"
                 "album TEXT NOT NULL, "
+                "artist TEXT NOT NULL, "
+                "albumArtist TEXT NOT NULL, "
                 "duration REAL NOT NULL DEFAULT 0.0,"
 
                 "thumbnailType INTEGER NOT NULL DEFAULT 0,"
@@ -292,7 +291,7 @@ std::vector<DbFileInfo> AudioFilesDb::QueryTracks()
     SQLite::Statement query(
         *db,
         "SELECT idFile, fileName, "
-        "lastModified, title, track, album,duration, "
+        "lastModified, title, track, album, artist,albumArtist,duration, "
         "thumbnailType, position, "
         "thumbnailFile, thumbnailLastModified "
         "FROM files ");
@@ -306,11 +305,13 @@ std::vector<DbFileInfo> AudioFilesDb::QueryTracks()
         row.title(query.getColumn(3).getText());
         row.track(query.getColumn(4).getInt());
         row.album(query.getColumn(5).getText());
-        row.duration(query.getColumn(6).getDouble());
-        row.thumbnailType((ThumbnailType)query.getColumn(7).getInt());
-        row.position(query.getColumn(8).getInt());
-        row.thumbnailFile(query.getColumn(9).getText());
-        row.thumbnailLastModified(query.getColumn(10).getInt64());
+        row.artist(query.getColumn(6).getText());
+        row.albumArtist(query.getColumn(7).getText());
+        row.duration(query.getColumn(8).getDouble());
+        row.thumbnailType((ThumbnailType)query.getColumn(9).getInt());
+        row.position(query.getColumn(10).getInt());
+        row.thumbnailFile(query.getColumn(11).getText());
+        row.thumbnailLastModified(query.getColumn(12).getInt64());
         result.push_back(std::move(row));
     }
     return result;
@@ -326,9 +327,9 @@ void AudioFilesDb::WriteFile(DbFileInfo *dbFile)
                 *db,
                 "INSERT INTO files ("
                 "fileName, lastModified,"
-                "title,track,album, "
+                "title,track,album,artist, albumArtist, "
                 "duration, thumbnailType,thumbnailFile, thumbnailLastModified, position "
-                ") VALUES (?, ?, ?, ?, ?,?,?,?,?,?)");
+                ") VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?)");
         }
         insertFileQuery->tryReset();
         insertFileQuery->bind(1, dbFile->fileName());
@@ -336,11 +337,13 @@ void AudioFilesDb::WriteFile(DbFileInfo *dbFile)
         insertFileQuery->bind(3, dbFile->title());
         insertFileQuery->bind(4, dbFile->track());
         insertFileQuery->bind(5, dbFile->album());
-        insertFileQuery->bind(6, dbFile->duration());
-        insertFileQuery->bind(7, (int32_t)dbFile->thumbnailType());
-        insertFileQuery->bind(8, dbFile->thumbnailFile());
-        insertFileQuery->bind(9, dbFile->thumbnailLastModified());
-        insertFileQuery->bind(10, dbFile->position());
+        insertFileQuery->bind(6, dbFile->artist());
+        insertFileQuery->bind(7, dbFile->albumArtist());
+        insertFileQuery->bind(8, dbFile->duration());
+        insertFileQuery->bind(9, (int32_t)dbFile->thumbnailType());
+        insertFileQuery->bind(10, dbFile->thumbnailFile());
+        insertFileQuery->bind(11, dbFile->thumbnailLastModified());
+        insertFileQuery->bind(12, dbFile->position());
         insertFileQuery->exec();
         dbFile->idFile(db->getLastInsertRowid());
     }
@@ -352,7 +355,7 @@ void AudioFilesDb::WriteFile(DbFileInfo *dbFile)
                 *db,
                 "UPDATE files SET "
                 "fileName = ?, lastModified = ?, "
-                "title = ?, track = ?, album = ?, "
+                "title = ?, track = ?, album = ?, artist = ? , albumArtist = ?, "
                 "duration = ?, thumbnailType = ?, "
                 "thumbnailFile = ?, thumbnailLastModified = ?, position = ? "
                 " WHERE idFile = ?");
@@ -363,13 +366,15 @@ void AudioFilesDb::WriteFile(DbFileInfo *dbFile)
         updateFileQuery->bind(3, dbFile->title());
         updateFileQuery->bind(4, dbFile->track());
         updateFileQuery->bind(5, dbFile->album());
-        updateFileQuery->bind(6, dbFile->duration());
-        updateFileQuery->bind(7, (int32_t)dbFile->thumbnailType());
-        updateFileQuery->bind(8, dbFile->thumbnailFile());
-        updateFileQuery->bind(9, dbFile->thumbnailLastModified());
-        updateFileQuery->bind(10, dbFile->position());
+        updateFileQuery->bind(6, dbFile->artist());
+        updateFileQuery->bind(7, dbFile->albumArtist());
+        updateFileQuery->bind(8, dbFile->duration());
+        updateFileQuery->bind(9, (int32_t)dbFile->thumbnailType());
+        updateFileQuery->bind(10, dbFile->thumbnailFile());
+        updateFileQuery->bind(11, dbFile->thumbnailLastModified());
+        updateFileQuery->bind(12, dbFile->position());
 
-        updateFileQuery->bind(11, dbFile->idFile());
+        updateFileQuery->bind(13, dbFile->idFile());
 
         updateFileQuery->exec();
     }
@@ -479,4 +484,20 @@ void AudioFilesDb::AddThumbnail(
     {
         throw std::runtime_error("Failed to add thumbnail: " + std::string(e.what()));
     }
+}
+
+void AudioFilesDb::UpdateFilePosition(
+    int64_t idFile,
+    int32_t position)
+{
+    if (!updateFileQuery)
+    {
+        updateFileQuery = std::make_unique<SQLite::Statement>(
+            *db,
+            "UPDATE files SET position = ? WHERE idFile = ?");
+    }
+    updateFileQuery->tryReset();
+    updateFileQuery->bind(1, position);
+    updateFileQuery->bind(2, idFile);
+    updateFileQuery->exec();
 }

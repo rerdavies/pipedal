@@ -44,6 +44,7 @@
 #include "DBusLog.hpp"
 #include "AvahiService.hpp"
 #include "DummyAudioDriver.hpp"
+#include "AudioFiles.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -2921,4 +2922,17 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
 bool PiPedalModel::IsInUploadsDirectory(const std::string &path)
 {
     return storage.IsInUploadsDirectory(path);
+}
+
+void PiPedalModel::MoveAudioFile(
+    const std::string &directory,
+    int32_t fromPosition, 
+    int32_t toPosition
+) {
+    if (directory.empty())
+    {
+        throw std::runtime_error("Directory is empty.");
+    }
+    AudioDirectoryInfo::Ptr dir = AudioDirectoryInfo::Create(directory);
+    dir->MoveAudioFile(directory, fromPosition, toPosition);    
 }

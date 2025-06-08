@@ -39,6 +39,17 @@ std::string HtmlHelper::timeToHttpDate()
     return timeToHttpDate(time(nullptr));
 }
 
+
+std::string HtmlHelper::timeToHttpDate(std::filesystem::file_time_type time)
+{
+
+    // Convert to time_t.
+    std::chrono::system_clock::time_point system_time = std::chrono::clock_cast<std::chrono::system_clock>(time);
+
+    auto time_t_value = std::chrono::system_clock::to_time_t(system_time);
+    return timeToHttpDate(time_t_value);
+}
+
 std::string HtmlHelper::timeToHttpDate(time_t time)
 {
     // RFC 7231, IMF-fixdate.

@@ -49,7 +49,7 @@ import Toolbar from '@mui/material/Toolbar';
 import WithStyles from './WithStyles';
 import { withStyles } from "tss-react/mui";
 import CircularProgress from '@mui/material/CircularProgress';
-
+import { pathConcat,pathParentDirectory,pathFileName,pathFileNameOnly, pathExtension } from './FileUtils'; './FileUtils';
 
 
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
@@ -139,6 +139,7 @@ export interface FilePropertyDialogState {
     fileResult: FileRequestResult;
     navDirectory: string;
     windowWidth: number;
+    windowHeight: number;
     currentDirectory: string;
     isProtectedDirectory: boolean;
     columns: number;
@@ -158,60 +159,6 @@ class DragState {
     from: number = 0;
     to: number = 0;
 };
-function pathExtension(path: string) {
-    let dotPos = path.lastIndexOf('.');
-    if (dotPos === -1) return "";
-
-    let slashPos = path.lastIndexOf('/');
-    if (slashPos !== -1) {
-        if (dotPos <= slashPos + 1) return "";
-    }
-    return path.substring(dotPos); // include the '.'.
-
-}
-function pathParentDirectory(path: string) {
-    let npos = path.lastIndexOf('/');
-    if (npos === -1) return "";
-    return path.substring(0, npos);
-}
-function pathConcat(left: string, right: string) {
-    if (left === "") return right;
-    if (right === "") return left;
-    if (left.endsWith('/')) {
-        left = left.substring(0, left.length - 1);
-    }
-    if (right.startsWith("/")) {
-        right = right.substring(1);
-    }
-    return left + "/" + right;
-}
-export function pathFileNameOnly(path: string): string {
-    if (path === "..") return path;
-    let slashPos = path.lastIndexOf('/');
-    if (slashPos < 0) {
-        slashPos = 0;
-    } else {
-        ++slashPos;
-    }
-    let extPos = path.lastIndexOf('.');
-    if (extPos < 0 || extPos < slashPos) {
-        extPos = path.length;
-    }
-
-    return path.substring(slashPos, extPos);
-}
-
-export function pathFileName(path: string): string {
-    if (path === "..") return path;
-    let slashPos = path.lastIndexOf('/');
-    if (slashPos < 0) {
-        slashPos = 0;
-    } else {
-        ++slashPos;
-    }
-    return path.substring(slashPos);
-}
-
 
 export default withStyles(
     class FilePropertyDialog extends ResizeResponsiveComponent<FilePropertyDialogProps, FilePropertyDialogState> {
@@ -242,6 +189,7 @@ export default withStyles(
                 selectedFile: selectedFile,
                 selectedFileProtected: true,
                 windowWidth: this.windowSize.width,
+                windowHeight: this.windowSize.height,
                 selectedFileIsDirectory: false,
                 navDirectory: this.getNavDirectoryFromFile(selectedFile, props.fileProperty),
                 currentDirectory: "",
@@ -370,7 +318,7 @@ export default withStyles(
             element.style.zIndex = "1000";
             element.style.top = "5px";
             element.style.left = "5px";
-            element.style.background = isDarkMode() ? "#555": "#EEF" // xxx: dark mode.
+            element.style.background = isDarkMode() ? "#555" : "#EEF" // xxx: dark mode.
             if (this.lastDivRef) {
                 this.longPressStartPoint = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
             }
@@ -450,15 +398,15 @@ export default withStyles(
                 newFileResult.files.splice(ixTo, 0, newFileResult.files[ixFrom]);
                 newFileResult.files.splice(ixFrom + 1, 1);
             } else {
-                   // move down.
-                newFileResult.files.splice(ixTo+1,0,newFileResult.files[ixFrom]);
+                // move down.
+                newFileResult.files.splice(ixTo + 1, 0, newFileResult.files[ixFrom]);
                 newFileResult.files.splice(ixFrom, 1);
             }
 
-            this.setState({ fileResult: newFileResult ,dragState: null});
+            this.setState({ fileResult: newFileResult, dragState: null });
 
             // Now send the reorder request to the server.
-            this.model.reorderAudioFiles(
+            this.model.moveAudioFile(
                 this.state.currentDirectory, from, to);
         }
         handleLongPressEnd(e: React.PointerEvent<HTMLButtonElement>) {
@@ -499,7 +447,8 @@ export default withStyles(
 
             this.setState({
                 fullScreen: this.getFullScreen(),
-                windowWidth: width
+                windowWidth: width,
+                windowHeight: height
             })
             if (this.lastDivRef !== null) {
                 this.onMeasureRef(this.lastDivRef);
@@ -679,9 +628,32 @@ export default withStyles(
             this.requestFiles(relativeDirectory);
             this.setState({ navDirectory: relativeDirectory });
         }
+        getCompactTrackTitle(fileEntry: FileEntry): string {
+            let metadata = fileEntry.metadata;
+            if (!metadata) {
+                return "#error";
+            }
+            let title = this.getTrackTitle(fileEntry);
+            if (metadata.album !== "") {
+                title += " (" + metadata.album + ")";
+            }
+            return title;
+        }
+        getAlbumTitle(fileEntry: FileEntry): string {
+            let artist = fileEntry.metadata?.artist || "";
+            if (artist == "" ) {
+                artist = fileEntry.metadata?.albumArtist || "";
+            }
+            let album = fileEntry.metadata?.album || "";
+            let joiner = (artist !== "" && album !== "") ? " - " : "";
+            return album + joiner + artist;
+        }
         getTrackTitle(fileEntry: FileEntry): string {
             if (!fileEntry.metadata) {
-                return fileEntry.displayName;
+                return pathFileName(fileEntry.pathname);
+            }
+            if (fileEntry.metadata.title === "") {
+                return pathFileName(fileEntry.pathname);
             }
             let metadata = fileEntry.metadata;
             let trackDisplay = "";
@@ -692,7 +664,11 @@ export default withStyles(
                     trackDisplay = metadata.track.toString() + ".  ";
                 }
             }
-            return trackDisplay + metadata.title;
+            let result = trackDisplay + metadata.title;
+            if (result === "") {
+                result = pathFileName(fileEntry.pathname);
+            }
+            return result;
         }
         getTrackThumbnail(fileEntry: FileEntry): string {
             return getAlbumArtUri(this.model, fileEntry.metadata, fileEntry.pathname);
@@ -793,19 +769,29 @@ export default withStyles(
             }
             return result;
         }
-        private getIcon(fileEntry: FileEntry) {
+        private getIcon(fileEntry: FileEntry, largeIcon: boolean) {
+            let style = largeIcon
+                ? {
+                    flex: "0 0 auto", opacity: 0.7, width: 32, height: 32,
+                    marginLeft: 16, marginRight: 24, marginTop: 16, marginBottom: 16,
+                }
+                : { flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 };
+
+
+
+
             if (fileEntry.pathname === "") {
-                return (<InsertDriveFileOutlinedIcon style={{ flex: "0 0 auto", opacity: 0.5, marginRight: 8, marginLeft: 8 }} />);
+                return (<InsertDriveFileOutlinedIcon style={style} />);
             }
             if (fileEntry.isDirectory) {
                 return (
-                    <FolderIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />
+                    <FolderIcon style={style} />
                 );
             }
             if (isAudioFile(fileEntry.pathname)) {
-                return (<AudioFileIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />);
+                return (<AudioFileIcon style={style} />);
             }
-            return (<InsertDriveFileIcon style={{ flex: "0 0 auto", opacity: 0.7, marginRight: 8, marginLeft: 8 }} />);
+            return (<InsertDriveFileIcon style={style} />);
         }
 
         render() {
@@ -827,6 +813,7 @@ export default withStyles(
             let canReorder = isTracksDirectory;
             let needsDivider = canMove || canRename || canReorder;
             let trackPosition = 0;
+            let compactVertical = this.state.windowHeight < 700;
 
             return this.props.open &&
                 (
@@ -1031,7 +1018,7 @@ export default withStyles(
                                                     }
 
                                                     style={{
-                                                        width: columnWidth, flex: "0 0 auto", height: value.metadata ? 64 : 48,
+                                                        width: columnWidth, flex: "0 0 auto", height: (value.metadata && !compactVertical) ? 64 : 48,
                                                         position: "relative",
                                                         top: dragOffset + "px",
                                                     }}
@@ -1054,39 +1041,63 @@ export default withStyles(
                                                 >
                                                     <div ref={scrollRef} style={{ position: "absolute", background: selectBg, width: "100%", height: "100%", borderRadius: 4 }} />
                                                     {value.metadata ?
-                                                        (
-                                                            <div style={{
-                                                                display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis",
-                                                                justifyContent: "start", alignItems: "center", width: "100%", height: "100%"
-                                                            }}>
-                                                                <img
-                                                                    onDragStart={(e) => { e.preventDefault(); }}
-                                                                    src={this.getTrackThumbnail(value)}
-                                                                    style={{ width: 48, height: 48, margin: 8, borderRadius: 4 }} />
+                                                        (!compactVertical ?
+                                                            (
                                                                 <div style={{
-                                                                    flex: "1 1 1px", display: "flex", flexFlow: "column nowrap",
-                                                                    marginLeft: 8,
-                                                                    textOverflow: "ellipsis", justifyContent: "center", alignItems: "stretch"
+                                                                    display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis",
+                                                                    justifyContent: "start", alignItems: "center", width: "100%", height: "100%"
                                                                 }}>
-                                                                    <Typography noWrap
-                                                                        className={classes.secondaryText}
-                                                                        variant="body2"
-                                                                        style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left",marginBottom: 4 }}>
-                                                                        {this.getTrackTitle(value)}
-                                                                    </Typography>
-                                                                    <Typography noWrap className={classes.secondaryText}
-                                                                        variant="body2"
-                                                                        color="textSecondary"
-                                                                        style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left", fontSize: "0.95em" }}>
-                                                                        {value.metadata?.album ?? "#error"}
+                                                                    <img
+                                                                        onDragStart={(e) => { e.preventDefault(); }}
+                                                                        src={this.getTrackThumbnail(value)}
+                                                                        style={{ width: 48, height: 48, margin: 8, borderRadius: 4 }} />
+                                                                    <div style={{
+                                                                        flex: "1 1 1px", display: "flex", flexFlow: "column nowrap",
+                                                                        marginLeft: 8,
+                                                                        textOverflow: "ellipsis", justifyContent: "center", alignItems: "stretch"
+                                                                    }}>
+                                                                        <Typography noWrap
+                                                                            className={classes.secondaryText}
+                                                                            variant="body2"
+                                                                            style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left", marginBottom: 4 }}>
+                                                                            {this.getTrackTitle(value)} 
+                                                                        </Typography>
+                                                                        <Typography noWrap className={classes.secondaryText}
+                                                                            variant="body2"
+                                                                            color="textSecondary"
+                                                                            style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left", fontSize: "0.95em" }}>
+                                                                            {this.getAlbumTitle(value)}
 
-                                                                    </Typography>
+                                                                        </Typography>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
+                                                            ) : (
+                                                                <div style={{
+                                                                    display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis",
+                                                                    justifyContent: "start", alignItems: "center", width: "100%", height: "100%"
+                                                                }}>
+                                                                    <img
+                                                                        onDragStart={(e) => { e.preventDefault(); }}
+                                                                        src={this.getTrackThumbnail(value)}
+                                                                        style={{ width: 24, height: 24, margin: 8, borderRadius: 4 }} />
+                                                                    <div style={{
+                                                                        flex: "1 1 1px", display: "flex", flexFlow: "column nowrap",
+                                                                        marginLeft: 8,
+                                                                        textOverflow: "ellipsis", justifyContent: "center", alignItems: "stretch"
+                                                                    }}>
+                                                                        <Typography noWrap
+                                                                            className={classes.secondaryText}
+                                                                            variant="body2"
+                                                                            style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left", marginBottom: 4 }}>
+                                                                            {this.getCompactTrackTitle(value)}
+                                                                        </Typography>
+                                                                    </div>
+                                                                </div>
+                                                            )
 
                                                         ) : (
                                                             <div style={{ display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis", justifyContent: "start", alignItems: "center", width: "100%", height: "100%" }}>
-                                                                {this.getIcon(value)}
+                                                                {this.getIcon(value, this.isTracksDirectory() && !compactVertical)}
                                                                 <Typography noWrap className={classes.secondaryText} variant="body2" style={{ flex: "1 1 auto", textAlign: "left" }}>{displayValue}</Typography>
                                                             </div>
                                                         )}

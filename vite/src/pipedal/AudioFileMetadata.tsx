@@ -21,6 +21,7 @@
  *   SOFTWARE.
  */
 
+import { pathConcat, pathParentDirectory } from "./FileUtils";
 import { PiPedalModel } from "./PiPedalModel";
 
 export class ThumbnailType {
@@ -39,6 +40,8 @@ export default class AudioFileMetadata {
         this.title = o.title;
         this.track = o.track;
         this.album = o.album;
+        this.artist = o.artist;
+        this.albumArtist = o.albumArtist;
         this.duration = o.duration;
         this.thumbnailType = o.thumbnailType;
         this.thumbnailFile = o.thumbnailFile;
@@ -47,15 +50,19 @@ export default class AudioFileMetadata {
         return this;
     }
     fileName: string = "";
-    lastModified: number = 0;
+    lastModified: number = 0; 
     title: string = "";
     track: number = 0;
     album: string = "";
+    artist: string = "";
+    albumArtist: string = "";
     duration: number = 0;
     thumbnailType: ThumbnailType = new ThumbnailType();
     thumbnailFile = "";
     thumbnailLastModified = 0;
 }
+
+
 
 export function getAlbumArtUri(model: PiPedalModel, metadata: AudioFileMetadata | undefined, path: string): string {
     let coverArtUri: string;
@@ -65,10 +72,21 @@ export function getAlbumArtUri(model: PiPedalModel, metadata: AudioFileMetadata 
     if (metadata.thumbnailType === ThumbnailType.None) {
         return "/img/missing_thumbnail.jpg";
     
+    } else if (metadata.thumbnailType ===  ThumbnailType.Folder) {
+        // Use the thumbnailFile to get the cover art.
+        let thumbnailPath = pathConcat(pathParentDirectory(path) ,metadata.thumbnailFile);
+
+        coverArtUri = model.varServerUrl + "Thumbnail"
+            + "?ffile=" + encodeURIComponent(thumbnailPath)
+            + "&t=" + metadata.thumbnailLastModified
+            + "&w=240&h=240"
+            ;
+        return coverArtUri;
     } else {
+        // for embeed and unknown
         coverArtUri = model.varServerUrl + "Thumbnail"
             + "?path=" + encodeURIComponent(path)
-            + "&t=" + metadata.thumbnailLastModified
+            + "&t=" + metadata.lastModified
             + "&w=240&h=240"
             ;
         return coverArtUri;

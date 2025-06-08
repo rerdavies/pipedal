@@ -37,6 +37,7 @@
 #include "MimeTypes.hpp"
 #include "AudioFileMetadataReader.hpp"
 #include "AudioFiles.hpp"
+#include "util.hpp"
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
@@ -49,6 +50,10 @@ static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
 static const std::string PLUGIN_PRESETS_MIME_TYPE = "application/vnd.pipedal.pluginPresets";
 static const std::string PRESET_MIME_TYPE = "application/vnd.pipedal.preset";
 static const std::string BANK_MIME_TYPE = "application/vnd.pipedal.bank";
+
+static const std::string CACHE_CONTROL_INDEFINITELY =  "max-age=31536000,public,immutable"; // 1 year
+static const std::string CACHE_CONTROL_SHORT = "max-age=300,public"; // 5 minutes
+
 
 using namespace pipedal;
 using namespace boost::system;
@@ -136,6 +141,7 @@ public:
 private:
     std::vector<std::string> extensions;
 };
+
 
 class DownloadIntercept : public RequestHandler
 {
@@ -396,6 +402,20 @@ public:
         }
     }
 
+    static void setLastModifiedFromFile(HttpResponse &res, const std::filesystem::path &path)
+    {
+        auto lastModified = std::filesystem::last_write_time(path);
+        res.set(HttpField::LastModified, HtmlHelper::timeToHttpDate(lastModified));
+    }  
+    AudioDirectoryInfo::Ptr CreateDirectoryInfo(const fs::path &path) {
+        return AudioDirectoryInfo::Create(path,
+        GetShadowIndexDirectory(
+            this->model->GetPluginUploadDirectory(),
+            path));
+    }
+
+
+    
     virtual void get_response(
         const uri &request_uri,
         HttpRequest &req,
@@ -493,8 +513,7 @@ public:
                 {
                     throw PiPedalException("File not found.");
                 }
-                AudioDirectoryInfo::Ptr audioDirectory = AudioDirectoryInfo::Create(path.parent_path());
-
+                AudioDirectoryInfo::Ptr audioDirectory = CreateDirectoryInfo(path.parent_path());
                 auto files = audioDirectory->GetFiles(); 
                 for (const auto &file : files)
                 {
@@ -516,7 +535,26 @@ public:
                 try
                 {
                     fs::path path = request_uri.query("path");
+                    if (path.empty())
+                    {
+                        // path for folder thumbnails.
+                        path = request_uri.query("ffile");
+                        if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                        {
+                            throw PiPedalException("File not found.");
+                        }
+                        std::shared_ptr<TemporaryFile> thumbnail = std::make_shared<TemporaryFile>();
+                        thumbnail->SetNonDeletedPath(path);
 
+                        res.set(HttpField::content_type, MimeTypes::instance().MimeTypeFromExtension(path.extension()));
+                        res.set(HttpField::cache_control, CACHE_CONTROL_INDEFINITELY); // URL is cache-busted, and will change if the file ismodified.
+                        setLastModifiedFromFile(res,path);
+                        res.set(HttpField::content_length, std::to_string(fs::file_size(path)));
+                        res.setBodyFile(thumbnail);
+                        return;
+
+                    }
+                    
                     if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                     {
                         throw PiPedalException("File not found.");
@@ -525,8 +563,10 @@ public:
                     int32_t width = ConvertThumbnailSize(request_uri.query("w"));
                     int32_t height = ConvertThumbnailSize(request_uri.query("h"));
 
-                    AudioDirectoryInfo::Ptr audioDirectory = AudioDirectoryInfo::Create(path.parent_path());
+                    AudioDirectoryInfo::Ptr audioDirectory = CreateDirectoryInfo(
+                        path.parent_path());
                     audioDirectory->GetFiles(); // ensure that the .index file is up to date.
+
                     ThumbnailTemporaryFile thumbnail;
                     try {
                         thumbnail = audioDirectory->GetThumbnail(path.filename(), width, height);
@@ -535,7 +575,8 @@ public:
                     }
                     res.set(HttpField::content_type, thumbnail.GetMimeType());
 
-                    res.set(HttpField::cache_control, "max-age=300");
+                    res.set(HttpField::cache_control, CACHE_CONTROL_INDEFINITELY); // URL is cache-busted with time-stamp.
+                    setLastModifiedFromFile(res, path);
                     res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnail.Path())));
 
                     std::filesystem::path t = thumbnail.Path();
@@ -544,9 +585,7 @@ public:
                 }
                 catch (const std::exception &e)
                 {
-                    Lv2Log::error("Error getting thumbnail: %s", e.what());
-                    res.set(HttpField::location, "/img/missing_thumbnail.jpg");
-                    // response = 307
+                    Lv2Log::error("Error getting thumbnail: %s - (%s)", request_uri.str().c_str(), e.what()); 
                     throw e;
                 }
             }
@@ -563,7 +602,7 @@ public:
                         throw PiPedalException("File not found.");
                     }
                     auto directoryPath = path.parent_path();
-                    auto directoryInfo = AudioDirectoryInfo::Create(directoryPath);
+                    auto directoryInfo = CreateDirectoryInfo(directoryPath);
                     std::string result = directoryInfo->GetNextAudioFile(path.filename());
                     if (!result.empty())
                     {
@@ -595,7 +634,7 @@ public:
                         throw PiPedalException("File not found.");
                     }
                     auto directoryPath = path.parent_path();
-                    auto directoryInfo = AudioDirectoryInfo::Create(directoryPath);
+                    auto directoryInfo = CreateDirectoryInfo(directoryPath);
                     std::string result = directoryInfo->GetPreviousAudioFile(path.filename());
                     if (!result.empty())
                     {
