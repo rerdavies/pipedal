@@ -187,4 +187,4 @@ When the Raspberry Pi hosts the hotspot, mDNS discovery is definitely enabled; s
 
 
 --------
-[<< Installing PiPedal](Installing.md)  | [Up](Documentation.md) | | [An Intro to Snapshots >>](Snapshots.md)
+[<< PiPedal on Ubuntu](Ubuntu.md)  | [Up](Documentation.md) | | [An Intro to Snapshots >>](Snapshots.md)
