@@ -47,6 +47,8 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 ### [What PiPedal Is](https://rerdavies.github.io/pipedal/AboutPiPedal.html)
 ### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.html)
 ### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.html)
+### [PiPedal on Ubuntu](https://rerdavies.github.io/pipedal/Ubuntu.html)
+
 ### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.html)
 ### [An Intro to Snapshots](https://rerdavies.github.io/pipedal/Snapshots.html)
 ### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.html)
