@@ -23,9 +23,9 @@ By default, Ubuntu installs a PREEMT_DYNAMIC kernel, configured to run with volu
    pipedal_kconfig
 ```
 
-and then select Preempt=full. Switching between PREEMPT_DYNAMIC is a configuration-only change, and does not install new components. The switch actually takes place at runtime. Astonishingly, you do not even need to reboot!
+and then select Preempt=full. Switching between PREEMPT_DYNAMIC kernels is a configuration-only change, and does not install new components. The switch actually takes place at runtime. Astonishingly, you do not even need to reboot!
 
-Full realtime kernels (RT_PREEMPT) may provide slightly better realtime audio than a PREEMPT_DYNAMIC/preempt=full kernel, but the PREEMPT_DYNAMIC kernel should be perfectly adequate. As a point of reference, current versions of Ubuntu Studio uses a PREEMPT_DYNMAIC/preempt=full kernel, and the maintainers of Ubuntu Studio consciously chose to not install an RT_PREEMPT kernel. If you are having problems with intermittent audio dropouts that occur very infrequently, you may want to try an RT_PREEMPT kernel instead. The pre-built Ubuntu RT_PREEMPT kernel can be installed using `apt` but is only available if you have an Ubuntu Pro subscription. Ubuntu Pro is free for non-commercial use. 
+Full realtime kernels (RT_PREEMPT) may provide slightly better realtime audio than a PREEMPT_DYNAMIC/preempt=full kernel, but the PREEMPT_DYNAMIC kernel should be perfectly adequate. As a point of reference, current versions of Ubuntu Studio uses a PREEMPT_DYNMAIC/preempt=full kernel, and the maintainers of Ubuntu Studio consciously chose to not install an RT_PREEMPT kernel by default. If you are having problems with intermittent audio dropouts that occur very infrequently, you may want to try an RT_PREEMPT kernel instead. A pre-built Ubuntu RT_PREEMPT kernel can be installed using `apt` but is only available if you have an Ubuntu Pro subscription. Ubuntu Pro is free for non-commercial use. 
 
 ## Support for WIFI Auto-Hotspots on Ubuntu Server
 
@@ -37,8 +37,7 @@ Ubuntu Server 24.x (and probably other server-specific installs on other Debian 
 
 It's easy enough to reconfigure Ubuntu Server to run the Network Manager network stack instead. However you should be 
 aware that Netplan TCP/IP configuration settings will not be migrated to Network Manager. If you perform this step on a server on which changes have beeen made to Netplan configuration files, you will lose those configuration changes, and will need to reimplement them in Network Manager. If you are 
-a Netplan configuration (or are working with a clean install), then the default Network Manager configuration will work perfectly well too. On a clean install, or for ordinary
-home use, switching network stacks is pretty low risk.
+using a default Netplan configuration (or are working with a clean install), then the default Network Manager configuration should work without problems. On a clean install, or for ordinary home use, switching network stacks is pretty low risk.
 
 To reconfigure Ubuntu Server to use the Network Manager network stack (and therefore enable PiPedal's Auto-Hotspot feature), run the following command: 
 
