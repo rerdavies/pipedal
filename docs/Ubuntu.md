@@ -3,15 +3,15 @@ page_icon: img/ubuntu.jpg
 icon_width: 120px
 icon_float: right
 ---
-## PiPedal support for Ubuntu
+## PiPedal on Ubuntu
 
-{% include pageIconL.html %}
+{% include pageIconR.html %}
 
-PiPedal will run on Ubunut 24.x (both aarch64 and amd64/x64) as well as Raspberry Pi OS. We recommend using Ubuntu Desktop, but Raspberry Pi OS will also run on an Ubuntu Server install. Ubuntu Studio would also be a fine choice. 
+PiPedal will run on Ubuntu 24.04, and 24.10 (both aarch64 and amd64/x64) as well as Raspberry Pi OS. We recommend using Ubuntu Desktop, but Raspberry Pi OS will also run on an Ubuntu Server install. Ubuntu Studio would also be a fine choice. 
 
 For best audio latency, you should not use PiPedal with an active desktop. See the Running Headless section below.
 
-You might want to consider purchasing a tiny N95, N100 or N150 micro-pc on which to run PiPedal. They are cheap, provide plenty of CPU power, and are exactly the sort of hardware you need to run PiPedal on at a gig, or away from home where you don't have access to a wi-fi network, or a monitor, or a keyboard. N100-series micro-pcs are in many ways preferrable to a Raspberry Pi 5. They provide significantly more compute power, and cost only slightly more.
+You might want to consider purchasing a tiny N95, N100 or N150 micro-pc on which to run PiPedal. They are cheap, provide plenty of CPU power, and are exactly the sort of hardware you need to run PiPedal at a gig, or away from home where you don't have access to a wi-fi network, or a monitor, or a keyboard. N100-series micro-pcs are in many ways preferrable to a Raspberry Pi 5. They provide significantly more compute power, and cost only slightly more.
 
 PiPedal runs as a systemd service, rather than as a desktop application. By design, it is an IoT sort of device. You plugin in (or power on) your computer, and PiPedal starts up automatically. This may seem a bit odd on a laptop or a desktop computer; but it makes a great deal of sense if  you are using a Raspberry Pi or tiny N100 mini pc to host PiPedal. And it makes a great deal of sense when you are using PiPedal onstage without access to a keyboard or a monitor. Just clip your phone onto your microphone stand, and you're set!
 
@@ -54,4 +54,6 @@ It is not entirely clear why GPUs don't play well with realtime low-latency audi
 Headless, in this context means: nothing is using the GPU. On a Raspberry Pi, it is sufficient to just disconnect the HDMI cables, and not be using a remote desktop connection. It is uncertain whether Ubuntu will stop using the GPU if there is an active desktop that is (for example) updating status indicators on the status bar. If in doubt, try disabling automatic login. The system will then stop at the login screen, which does not do any drawing until you start typing credentials. Configuring your Ubuntu desktop to use a text-mode interface instead of a graphical interface would, of course, be perfect; but it seems unnecessarily inconvenient. On an Ubuntu server install, there is no graphical desktop, so this is not a problem. But see the section above about configuring Ubuntu Server before you choose a Server install of Ubuntu Desktop.
 
 
+--------
+[<< Installing PiPedal](Installing.md) | [Up](Documentation.md) | [Configuring PiPedal after Installation >>](Configuring.md)
 
