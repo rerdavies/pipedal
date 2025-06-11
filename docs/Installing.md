@@ -22,6 +22,7 @@ Version 1.4.76 has been tested on Raspberry Pi OS bookworm, Ubuntu 24.04 (amd64)
 
 ```
   sudo apt update
+  sudo apt upgrade
   cd ~/Downloads  
   sudo apt-get install ./pipedal_1.4.76_arm64.deb 
 ```
