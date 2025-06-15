@@ -36,17 +36,22 @@ import Slider, { SliderProps } from "@mui/material/Slider";
 import Checkbox from "@mui/material/Checkbox";
 import TimebaseSelectorDialog from "./TimebaseselectorDialog";
 import Timebase, { TimebaseUnits } from "./Timebase";
+import { useWindowHeight } from "@react-hook/window-size";
+import Button from "@mui/material/Button";
+import PlayArrow from "@mui/icons-material/PlayArrow";
+import StopIcon from '@mui/icons-material/Stop';
+import { LoopParameters } from './Timebase';
+
 
 export interface LoopDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    onSetLoop: (start: number, loopEnable: boolean, loopStart: number, loopEnd: number) => void;
-    start: number;
-    loopEnable: boolean;
-    loopStart: number;
-    loopEnd: number;
+    onSetLoop: (value: LoopParameters) => void;
+    value: LoopParameters;
+    playing: boolean;
+    onPreview: () => void;
+    onCancelPlaying: () => void;
     duration: number;
-    fullScreen?: boolean;
     timebase: Timebase;
     onTimebaseChange: (timebase: Timebase) => void; // Optional callback for timebase changes
     sampleRate: number;
@@ -74,9 +79,9 @@ function parseTime(timebase: Timebase, sampleRate: number, duration: number, tim
                 if (isNaN(samples)) {
                     return samples;
                 }
-                let result =  samples / sampleRate; // Convert samples to seconds    
+                let result = samples / sampleRate; // Convert samples to seconds    
                 if (result < 0) {
-                    result = 0;     
+                    result = 0;
                 }
                 if (result > duration) {
                     result = duration;
@@ -118,13 +123,13 @@ function parseTime(timebase: Timebase, sampleRate: number, duration: number, tim
 
                 let result = hours * 60 * 60 + minutes * 60 + seconds; // Convert total time to seconds
                 if (result < 0) {
-                    result = 0;     
+                    result = 0;
                 }
                 if (result > duration) {
                     result = duration;
                 }
                 return result;
-                
+
             }
         case TimebaseUnits.Beats:
             {
@@ -141,9 +146,9 @@ function parseTime(timebase: Timebase, sampleRate: number, duration: number, tim
                     if (isNaN(beat)) {
                         throw new Error("Invalid seconds format. Use 'bar:beat' or 'bar:beat.fraction'.");
                     }
-                    if (beat < 1 || beat >= timebase.timeSignature.numerator+1) {
-                        throw new Error(`Beat number must be between 1 and ${timebase.timeSignature.numerator+1}.`);
-                    }   
+                    if (beat < 1 || beat >= timebase.timeSignature.numerator + 1) {
+                        throw new Error(`Beat number must be between 1 and ${timebase.timeSignature.numerator + 1}.`);
+                    }
                 } else if (parts.length === 2) {
                     bar = parseInt(parts[0], 10);
                     if (bar < 1) {
@@ -153,16 +158,16 @@ function parseTime(timebase: Timebase, sampleRate: number, duration: number, tim
                     if (isNaN(bar) || isNaN(beat)) {
                         throw new Error("Invalid bar or beat format. Use 'bar:beat' or 'bar:beat.fraction'.");
                     }
-                    if (beat < 1 || beat >= timebase.timeSignature.numerator+1) {
-                        throw new Error(`Beat number must be between 1 and ${timebase.timeSignature.numerator+1}.`);
+                    if (beat < 1 || beat >= timebase.timeSignature.numerator + 1) {
+                        throw new Error(`Beat number must be between 1 and ${timebase.timeSignature.numerator + 1}.`);
                     }
                 } else {
                     throw new Error("Invalid time format. Use 'hh:mm:ss' or 'mm:ss.mmmm'.");
                 }
-                const actualBeat = (bar-1) * timebase.timeSignature.numerator + (beat-1); // Convert bar and beat to actual beat number
-                let result = actualBeat *60/ timebase.tempo; // Convert beats to seconds based on tempo
+                const actualBeat = (bar - 1) * timebase.timeSignature.numerator + (beat - 1); // Convert bar and beat to actual beat number
+                let result = actualBeat * 60 / timebase.tempo; // Convert beats to seconds based on tempo
                 if (result < 0) {
-                    result = 0;     
+                    result = 0;
                 }
                 if (result > duration) {
                     result = duration;
@@ -172,7 +177,7 @@ function parseTime(timebase: Timebase, sampleRate: number, duration: number, tim
     }
 }
 
-function formatTime(timebase: Timebase, sampleRate: number, seconds: number): string {
+export function formatTime(timebase: Timebase, sampleRate: number, seconds: number): string {
     switch (timebase.units) {
         case TimebaseUnits.Samples:
             {
@@ -197,7 +202,7 @@ function formatTime(timebase: Timebase, sampleRate: number, seconds: number): st
                 let beats = timebase.tempo / 60.0 * seconds;
                 const bars = Math.floor(beats / timebase.timeSignature.numerator);
                 const beat = (beats - bars * timebase.timeSignature.numerator);
-                return `${bars + 1}:${(beat + 1).toFixed(4) }`;
+                return `${bars + 1}:${(beat + 1).toFixed(4)}`;
             }
             break;
         default:
@@ -320,22 +325,23 @@ function SliderWithPreview(props: SliderWithPreviewProps) {
 
 
 function TimeEdit(props: TimeEditProps) {
-    let { value, onValueChange, onBlur, timebase,sampleRate,max, ...extra } = props;
+    let { value, onValueChange, onBlur, timebase, sampleRate, max, ...extra } = props;
     const [text, setText] = React.useState(formatTime(timebase, props.sampleRate, props.value));
     const [error, setError] = React.useState(false);
-    const [editValue, setEditValue] = React.useState(props.value);
     const [focus, setFocus] = React.useState(false);
     // slice props.
 
     React.useEffect(() => {
-        if (!focus ) {
+        if (!focus) {
             setText(formatTime(timebase, sampleRate, props.value));
-        } 
+        }
     },
-    [props.value]);
+        [props.value]);
 
     React.useEffect(() => {
-        setText(formatTime(props.timebase, sampleRate, props.value));
+        if (!focus) {
+            setText(formatTime(props.timebase, sampleRate, props.value));
+        }
     }, [props.timebase, sampleRate]);
 
 
@@ -348,11 +354,9 @@ function TimeEdit(props: TimeEditProps) {
             error={error}
             value={text}
             onBlur={() => {
-                console.log("onBlur", text, props.value, editValue, 
-                    formatTime(props.timebase, sampleRate, props.value));
-                console.log("onBlur", props.value);
                 setText(formatTime(props.timebase, sampleRate, props.value));
                 setFocus(false);
+                onBlur();
             }}
             onChange={(e) => {
                 try {
@@ -362,7 +366,6 @@ function TimeEdit(props: TimeEditProps) {
                         if (val > max) {
                             val = max;
                         }
-                        setEditValue(val);
                         if (props.onValueChange) {
                             props.onValueChange(e, val);
                         }
@@ -389,34 +392,64 @@ function TimeEdit(props: TimeEditProps) {
                 autoCapitalize: "off",
             }}
         />
+
     );
 }
 
 
 
 export default function LoopDialog(props: LoopDialogProps) {
-    const [previewStartValue, setPreviewStartValue] = React.useState<number | null>(null);
-    const [previewLoopStart, setPreviewLoopStart] = React.useState<number | null>(null);
-    const [previewLoopEnd, setPreviewLoopEnd] = React.useState<number | null>(null);
+    const [start, setStart] = React.useState(props.value.start);
+    const [loopEnable, setLoopEnable] = React.useState(props.value.loopEnable);
+    const [loopStart, setLoopStart] = React.useState(props.value.loopStart);
+    const [loopEnd, setLoopEnd] = React.useState(props.value.loopEnd);
 
 
+    const height = useWindowHeight();
+    const fullScreen = height < 500;
+
+    function cancelPlaying() {
+        props.onCancelPlaying();
+    }
+    function commitResults() {
+        let tLoopStart = loopStart;
+        let tLoopEnd = loopEnd;
+        if (tLoopEnd < tLoopStart) {
+            let tmp = tLoopStart;
+            tLoopStart = tLoopEnd;
+            tLoopEnd = tmp;
+            setLoopStart(tLoopStart);
+            setLoopEnd(tLoopEnd);
+        }
+        if (props.onSetLoop) {
+            props.onSetLoop({ start: start, loopEnable: loopEnable, loopStart: tLoopStart, loopEnd: tLoopEnd });
+        }
+    }
+    React.useEffect(() => {
+        setStart(props.value.start);
+        setLoopEnable(props.value.loopEnable);
+        setLoopStart(props.value.loopStart);
+        setLoopEnd(props.value.loopEnd);
+    }, [props.value]);
 
     return (
         <DialogEx
             tag="LoopDialog"
-            onClose={props.onClose}
-            fullScreen={false}
+            onClose={() => {
+                commitResults();
+                props.onClose();
+            }}
 
             maxWidth="xl"
             open={props.isOpen}
             onEnterKey={() => {
             }}
-
+            fullScreen={height < 500}
             sx={{
                 "& .MuiDialog-container": {
                     "& .MuiPaper-root": {
                         width: "100%",
-                        maxWidth: "500px",  // Set your width here
+                        maxWidth: fullScreen ? undefined : "500px",  // Set your width here
                     },
                 },
             }}
@@ -428,7 +461,10 @@ export default function LoopDialog(props: LoopDialogProps) {
                         color="inherit"
                         aria-label="back"
                         style={{ opacity: 0.6 }}
-                        onClick={() => { props.onClose(); }}
+                        onClick={() => {
+                            commitResults();
+                            props.onClose();
+                        }}
                     >
                         <ArrowBackIcon style={{ width: 24, height: 24 }} />
                     </IconButton>
@@ -449,8 +485,8 @@ export default function LoopDialog(props: LoopDialogProps) {
             <DialogContent style={{}}>
                 <div style={{
                     position: "relative",
-                    display: "flex", justifyContent: "stretch", flexFlow: "column nowrap", marginLeft: 32, marginRight: 32,
-                    marginBottom: 16
+                    display: "flex", justifyContent: "stretch", flexFlow: "column nowrap", marginLeft: 24, marginRight: 24,
+                    marginBottom: 8
 
                 }}>
                     <Typography display="block" variant="body1" gutterBottom style={{}}>
@@ -460,53 +496,44 @@ export default function LoopDialog(props: LoopDialogProps) {
                         style={{
                             width: "100%"
                         }}
-                        value={props.start}
+                        value={start}
                         min={0}
                         max={props.duration}
 
                         onChange={(e, v, thumb) => {
                             let val = Array.isArray(v) ? v[0] : v
-
-                            if (props.onSetLoop) {
-                                props.onSetLoop(val, props.loopEnable, props.loopStart, props.loopEnd);
-                            }
+                            setStart(val);
                         }}
                         onPreview={(e, v, thumb) => {
                             let val = Array.isArray(v) ? v[0] : v
 
-                            setPreviewStartValue(val);
+                            setStart(val);
                         }}
                         onCommitPreviewValue={(e, v, thumb) => {
                             let val = Array.isArray(v) ? v[0] : v
 
-                            setPreviewStartValue(null);
-                            if (props.onSetLoop) {
-                                props.onSetLoop(val, props.loopEnable, props.loopStart, props.loopEnd);
-                            }
+                            setStart(val);
+                            cancelPlaying();
+
                         }}
                         valueLabelFormat={(v) => formatTime(props.timebase, props.sampleRate, v)}
                     />
 
                     <TimeEdit variant="standard" spellCheck="false"
-                        value={previewStartValue ? previewStartValue : props.start}
+                        value={start}
                         max={props.duration}
                         timebase={props.timebase}
                         sampleRate={props.sampleRate}
 
 
                         onBlur={() => {
-                            let t = props.start;
-                            if (t > props.duration) {
-                                t = props.duration;
-                                if (props.onSetLoop) {
-                                    props.onSetLoop(t, props.loopEnable, props.loopStart, props.loopEnd);
-                                }
+                            if (start > props.duration) {
+                                setStart(props.duration);
                             }
                         }}
                         onValueChange={(e, val) => {
-                            if (props.onSetLoop) {
-                                props.onSetLoop(val, props.loopEnable, props.loopStart, props.loopEnd);
-                            }
+                            setStart(val);
+                            cancelPlaying();
                         }
                         }
                         style={{ width: 120, alignSelf: "center", textAlign: "center" }} />
@@ -514,9 +541,10 @@ export default function LoopDialog(props: LoopDialogProps) {
                         <FormControlLabel
                             labelPlacement="start"
                             style={{ marginLeft: 0 }}
-                            control={<Checkbox checked={props.loopEnable}
+                            control={<Checkbox checked={loopEnable}
                                 onChange={(e, checked) => {
-                                    props.onSetLoop(props.start, !props.loopEnable, props.loopStart, props.loopEnd);
+                                    setLoopEnable(checked);
+                                    cancelPlaying();
                                 }}
 
                             />} label="Enable loop" />
@@ -525,102 +553,92 @@ export default function LoopDialog(props: LoopDialogProps) {
                     <SliderWithPreview
                         style={{
                             width: "100%",
-                            opacity: props.loopEnable ? 1 : 0.4,
+                            opacity: loopEnable ? 1 : 0.4,
                         }}
-                        disabled={!props.loopEnable}
+                        disabled={!loopEnable}
                         value={
-                            previewLoopStart != null ?
-                                [previewLoopStart as number, previewLoopEnd as number]
-                                : [props.loopStart, props.loopEnd]}
+                            [loopStart, loopEnd]
+                        }
                         min={0}
                         max={props.duration}
                         onChange={(e, v, thumb) => {
-                            if (!Array.isArray(v)) throw new Error("Expected array for loop start and end preview");
-                            if (props.onSetLoop) {
-                                props.onSetLoop(props.start, props.loopEnable, v[0], v[1]);
-                            }
+                            if (!Array.isArray(v)) throw new Error("Expected array for loop start and end");
+
+                            setLoopStart(v[0]);
+                            setLoopEnd(v[1]);
                         }}
                         onPreview={(e, v, thumb) => {
-                            if (!Array.isArray(v)) throw new Error("Expected array for loop start and end preview");
-                            setPreviewLoopStart(v[0]);
-                            setPreviewLoopEnd(v[1]);
+                            if (!Array.isArray(v)) throw new Error("Expected array for loop start and end");
+
+                            setLoopStart(v[0]);
+                            setLoopEnd(v[1]);
                         }}
                         onCommitPreviewValue={(e, v, thumb) => {
-                            if (!Array.isArray(v)) throw new Error("Expected array for loop start and end preview");
-                            setPreviewLoopStart(null);
-                            setPreviewLoopEnd(null);
-                            props.onSetLoop(props.start, props.loopEnable, v[0], v[1]);
+                            if (!Array.isArray(v)) throw new Error("Expected array for loop start and end");
+
+                            setLoopStart(v[0]);
+                            setLoopEnd(v[1]);
+                            cancelPlaying();
+
                         }}
 
                     />
                     <div style={{ display: "flex", justifyContent: "space-evenly", columnGap: 8 }}>
                         <TimeEdit variant="standard" spellCheck="false"
-                            value={previewLoopStart ? previewLoopStart : props.loopStart}
-                            disabled={!props.loopEnable}
+                            value={loopStart}
+                            disabled={!loopEnable}
                             max={props.duration}
                             timebase={props.timebase}
                             sampleRate={props.sampleRate}
 
                             style={{
-                                maxWidth: 120, textAlign: "center", opacity: props.loopEnable ? 1 : 0.4,
+                                maxWidth: 120, textAlign: "center", opacity: loopEnable ? 1 : 0.4,
                                 flex: "1 1 auto"
                             }}
                             onBlur={() => {
-                                let tStart = props.loopStart;
-                                if (tStart > props.duration) {
-                                    tStart = props.duration;
-                                }
-                                let tEnd = props.loopEnd;
-                                if (tStart > tEnd) {
-                                    let t = tStart;
-                                    tStart = tEnd;
-                                    tEnd = t;
-                                    if (props.onSetLoop) {
-                                        props.onSetLoop(props.start, props.loopEnable, tStart, tEnd);
-                                    }
-
-                                }
                             }}
                             onValueChange={(e, val) => {
-                                if (props.onSetLoop) {
-                                    props.onSetLoop(props.start, props.loopEnable, val, props.loopEnd);
-                                }
+                                setLoopStart(val);
+                                cancelPlaying();
+
+
                             }}
                         />
                         <TimeEdit variant="standard" spellCheck="false"
                             max={props.duration}
 
-                            value={previewLoopEnd ? previewLoopEnd : props.loopEnd}
+                            value={loopEnd}
                             sampleRate={props.sampleRate}
 
-                            disabled={!props.loopEnable}
+                            disabled={!loopEnable}
 
                             timebase={props.timebase}
 
                             style={{
-                                maxWidth: 120, textAlign: "center", opacity: props.loopEnable ? 1 : 0.4,
+                                maxWidth: 120, textAlign: "center",
+                                opacity: loopEnable ? 1 : 0.4,
                                 flex: "1 1 auto"
                             }}
 
                             onBlur={() => {
-                                let tStart = props.loopStart;
-                                let tEnd = props.loopEnd;;
-                                if (tEnd < tStart) {
-                                    let t = tEnd;
-                                    tEnd = tStart;
-                                    tStart = t;
-                                    if (props.onSetLoop) {
-                                        props.onSetLoop(props.start, props.loopEnable, tStart, tEnd);
-                                    }
-                                }
                             }}
                             onValueChange={(e, val) => {
-                                if (props.onSetLoop) {
-                                    props.onSetLoop(props.start, props.loopEnable, props.loopStart, val);
-                                }
+                                setLoopEnd(val);
+                                cancelPlaying();
+
                             }}
                         />
                     </div>
+                    <Button variant="dialogSecondary" style={{ alignSelf: "end", marginTop: 16, width: 120 }}
+                        startIcon={
+                            props.playing ? (<StopIcon />) : (<PlayArrow />)
+                        }
+                        onClick={() => {
+                            commitResults();
+                            props.onPreview();
+                        }}>
+                        Preview
+                    </Button>
                 </div>
 
             </DialogContent>

@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SyntheticEvent, Component } from 'react';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import { PiPedalModel, PiPedalModelFactory, PluginPresetsChangedHandle } from './PiPedalModel';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
@@ -293,9 +293,11 @@ const PluginPresetSelector =
                 }
                 return (
                     <div >
-                        <IconButton onClick={(e)=> this.handlePresetMenuClick(e)} size="large">
+                        <IconButtonEx 
+                            tooltip="Plugin presets"
+                            onClick={(e)=> this.handlePresetMenuClick(e)} size="large">
                             <PluginPresetsIcon className={classes.pluginIcon}/>
-                        </IconButton>
+                        </IconButtonEx>
                         <Menu
                             id="edit-plugin-presets-menu"
                             anchorEl={this.state.presetsMenuAnchorRef}

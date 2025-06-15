@@ -115,6 +115,23 @@ JSON_MAP_REFERENCE(RenameSampleFileArgs, newRelativePath)
 JSON_MAP_REFERENCE(RenameSampleFileArgs, uiFileProperty)
 JSON_MAP_END()
 
+class CopySampleFileArgs
+{
+public:
+    std::string oldRelativePath_;
+    std::string newRelativePath_;
+    UiFileProperty uiFileProperty_;
+    bool overwrite_ = false;
+    DECLARE_JSON_MAP(CopySampleFileArgs);
+};
+
+JSON_MAP_BEGIN(CopySampleFileArgs)
+JSON_MAP_REFERENCE(CopySampleFileArgs, oldRelativePath)
+JSON_MAP_REFERENCE(CopySampleFileArgs, newRelativePath)
+JSON_MAP_REFERENCE(CopySampleFileArgs, uiFileProperty)
+JSON_MAP_REFERENCE(CopySampleFileArgs, overwrite)
+JSON_MAP_END()
+
 class GetFilePropertyDirectoryTreeArgs
 {
 public:
@@ -1644,6 +1661,14 @@ public:
 
             std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_);
             this->Reply(replyTo, "renameFilePropertyFile", newFileName);
+        }
+        else if (message == "copyFilePropertyFile")
+        {
+            CopySampleFileArgs args;
+            pReader->read(&args);
+
+            std::string newFileName = this->model.CopyFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_, args.overwrite_);
+            this->Reply(replyTo, "copyFilePropertyFile", newFileName);
         }
         else if (message == "getFilePropertyDirectoryTree")
         {

@@ -1,9 +1,14 @@
-Serialize sort order.
+Numeric up-down buttons blown in light theme.
+
+Tooltips on touch ui? 
+
+pre-cue next decoder stream in big loops.
+
+convolution reverb broken.
+
 
 - pipewire aux in?
 
-libsqlite3-dev install
-libsqlitecpp-dev install
 
 Check that OnNotifyPatchProperty still worsk for 
 - FilePropertyControl

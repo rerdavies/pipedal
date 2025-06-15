@@ -43,6 +43,41 @@ namespace fs = std::filesystem;
 
 static constexpr size_t INVALID_INDEX = std::numeric_limits<size_t>::max();
 
+
+// All the varous cover art files I found on my personal music collection.
+// These are used to find the cover art for a directory. Based on
+// scanning a large music collection that have been tagged by various tools
+// including iTunes, Windows Media Playe, and a variety of taggers.
+//
+// Files are listed in order of preference.
+
+static std::vector<std::string> COVER_ART_FILES = {
+    "Folder.jpg",  // window media player/explorer.
+    "Cover.jpg",   // itunes.
+    "folder.jpg",  // Linux audio players plex, kodi, Rythmbox, Amorok, Clementine.
+    "cover.jpg",   // Linux audio players plex, kodi, Rythmbox, Amorok, Clementine.
+    "Artwork.jpg", // itunes.
+    "Front.jpg",
+    "front.jpg", // linux.
+    "AlbumArt.jpg",
+    "albumArt.jpg",
+    "Frontcover.jpg",
+    "AlbumArtSmall.jpg" // windows media player.
+};
+
+bool pipedal::isArtworkFileName(const std::string &fileName)
+{
+    for (const auto &coverArtFile : COVER_ART_FILES)
+    {
+        if (fileName == coverArtFile)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 void AudioDirectoryInfo::SetTemporaryDirectory(const std::filesystem::path &path)
 {
     temporaryDirectory = path;
@@ -96,10 +131,9 @@ namespace
     class AudioDirectoryInfoImpl : public AudioDirectoryInfo
     {
     public:
-        AudioDirectoryInfoImpl(const std::filesystem::path &path, const std::filesystem::path&indexPath)
+        AudioDirectoryInfoImpl(const std::filesystem::path &path, const std::filesystem::path &indexPath)
             : path(path), indexPath(
-                (indexPath.empty() ? path: indexPath) / ".index.pipedal"
-            )
+                              (indexPath.empty() ? path : indexPath) / ".index.pipedal")
         {
             if (this->indexPath.parent_path() != path)
             {
@@ -129,7 +163,6 @@ namespace
     private:
         std::vector<DbFileInfo> QueryTracks();
 
-
         bool opened = false;
         std::filesystem::path indexPath;
         void OpenAudioDb();
@@ -138,7 +171,6 @@ namespace
         std::shared_ptr<AudioFilesDb> audioFilesDb;
         fs::path path;
         using id_t = int64_t;
-
 
         std::vector<DbFileInfo> UpdateDbFiles();
         void DbSetThumbnailType(
@@ -156,15 +188,13 @@ namespace
         void UpdateMetadata(DbFileInfo *dbFile);
         static constexpr int DB_VERSION = 1;
         std::filesystem::path GetFolderFile() const;
-
     };
 }
 
-AudioDirectoryInfo::Ptr AudioDirectoryInfo::Create(const std::filesystem::path &path, const std::filesystem::path&indexPath)
+AudioDirectoryInfo::Ptr AudioDirectoryInfo::Create(const std::filesystem::path &path, const std::filesystem::path &indexPath)
 {
-    return std::make_shared<AudioDirectoryInfoImpl>(path,indexPath);
+    return std::make_shared<AudioDirectoryInfoImpl>(path, indexPath);
 }
-
 
 std::vector<DbFileInfo> AudioDirectoryInfoImpl::QueryTracks()
 {
@@ -264,7 +294,18 @@ std::vector<DbFileInfo> AudioDirectoryInfoImpl::UpdateDbFiles()
             auto path = dirEntry.path();
             std::string name = path.filename();
             std::string extension = path.extension();
-            if (isAudioExtension(extension))
+            if (isAudioExtension(extension) || isArtworkFileName(name))
+            {
+                // If the file is an audio file or a cover art file, we need to check it.
+                if (name.empty() || name[0] == '.')
+                {
+                    continue; // skip hidden files.
+                }
+            }
+            else
+            {
+                continue; // not an audio file or cover art file.
+            }
             {
                 int64_t lastModified = fileTimeToInt64(dirEntry.last_write_time());
 
@@ -322,7 +363,7 @@ std::vector<DbFileInfo> AudioDirectoryInfoImpl::UpdateDbFiles()
     }
     for (auto &dbFile : dbFiles)
     {
-        if (dbFile.thumbnailType() == ThumbnailType::Unknown)
+        if (dbFile.thumbnailType() == ThumbnailType::None)
         {
             if (!folderFileName.empty())
             {
@@ -410,27 +451,67 @@ void AudioDirectoryInfoImpl::DbDeleteFile(DbFileInfo *dbFile)
         audioFilesDb->DeleteFile(dbFile);
     }
 }
+ThumbnailTemporaryFile AudioDirectoryInfoImpl::DefaultThumbnailTemporaryFile()
+{
+    ThumbnailTemporaryFile tempFile;
+    fs::path defaultThumbnail = GetResourceDirectory() / "img/missing_thumbnail.jpg";
+    tempFile.SetNonDeletedPath(defaultThumbnail, "image/jpeg");
+    return tempFile;
+}
 
-// All the varous cover art files I found on my personal music collection.
-// These are used to find the cover art for a directory. Based on
-// scanning a large music collection that have been tagged by various tools
-// including iTunes, Windows Media Playe, and a variety of taggers.
-//
-// Files are listed in order of preference.
+ThumbnailTemporaryFile AudioDirectoryInfoImpl::GetUnindexedThunbnail(
+    const std::string &fileNameOnly, int32_t width, int32_t height)
+{
+    fs::path file = this->path / fileNameOnly;
+    if (!fs::exists(file))
+    {
+        return DefaultThumbnailTemporaryFile();
+    }
+    try
+    {
+        auto tempFile = pipedal::GetAudioFileThumbnail(
+            file, width, height,
+            GetTemporaryDirectory());
+        auto thumbnailPath = tempFile.Path();
+        ThumbnailTemporaryFile result;
+        result.Attach(tempFile.Detach(), "image/jpeg");
 
-static std::vector<std::filesystem::path> COVER_ART_FILES = {
-    "Folder.jpg",  // window media player/explorer.
-    "Cover.jpg",   // itunes.
-    "folder.jpg",  // Linux audio players plex, kodi, Rythmbox, Amorok, Clementine.
-    "cover.jpg",   // Linux audio players plex, kodi, Rythmbox, Amorok, Clementine.
-    "Artwork.jpg", // itunes.
-    "Front.jpg",
-    "front.jpg", // linux.
-    "AlbumArt.jpg",
-    "albumArt.jpg",
-    "Frontcover.jpg",
-    "AlbumArtSmall.jpg" // windows media player.
-};
+        // Read the thumbnail data from the temporary file.
+        std::ifstream thumbnailStream(thumbnailPath, std::ios::binary);
+        if (!thumbnailStream)
+        {
+            throw std::runtime_error("Failed to open thumbnail file: " + thumbnailPath.string());
+        }
+        std::vector<uint8_t> thumbnailData(
+            (std::istreambuf_iterator<char>(thumbnailStream)),
+            std::istreambuf_iterator<char>());
+
+        if (!thumbnailData.empty())
+        {
+            audioFilesDb->AddThumbnail(
+                fileNameOnly,
+                width,
+                height,
+                thumbnailData);
+
+            // Set the MIME type for the thumbnail.
+            result.SetMimeType("image/jpeg");
+            audioFilesDb->UpdateThumbnailInfo(
+                fileNameOnly,
+                ThumbnailType::Embedded);
+            return result;
+        }
+        else
+        {
+            throw std::runtime_error("Thumbnail data is empty.");
+        }
+    }
+    catch (const std::exception &e)
+    {
+        Lv2Log::error("GetUnindexedThunbnail failed: %s", e.what());
+    }
+    return DefaultThumbnailTemporaryFile();
+}
 
 fs::path AudioDirectoryInfoImpl::GetFolderFile() const
 {
@@ -604,22 +685,6 @@ ThumbnailTemporaryFile AudioDirectoryInfoImpl::GetThumbnail(const std::string &f
     return GetUnindexedThunbnail(fileNameOnly, width, height);
 }
 
-ThumbnailTemporaryFile AudioDirectoryInfoImpl::GetUnindexedThunbnail(const std::string &fileNameOnly, int32_t width, int32_t height)
-{
-    fs::path file = this->path / fileNameOnly;
-    ThumbnailTemporaryFile tempFile = ThumbnailTemporaryFile::CreateTemporaryFile(GetTemporaryDirectory(), "image/jpeg");
-    try
-    {
-        auto thumbnailPath = pipedal::GetAudioFileThumbnail(file, width, height, GetTemporaryDirectory());
-        tempFile.Attach(thumbnailPath.Detach(), "image/jpeg");
-        return tempFile;
-    }
-    catch (const std::exception &e)
-    {
-        // If we cannot get the thumbnail, return a default one.
-        return DefaultThumbnailTemporaryFile();
-    }
-}
 
 void AudioDirectoryInfoImpl::UpdateMetadata(DbFileInfo *dbFile)
 {
@@ -687,13 +752,6 @@ void AudioDirectoryInfoImpl::OpenAudioDb()
     }
 }
 
-ThumbnailTemporaryFile AudioDirectoryInfoImpl::DefaultThumbnailTemporaryFile()
-{
-    ThumbnailTemporaryFile tempFile;
-    fs::path defaultThumbnail = GetResourceDirectory() / "img/missing_thumbnail.jpg";
-    tempFile.SetNonDeletedPath(defaultThumbnail, "image/jpeg");
-    return tempFile;
-}
 
 std::string AudioDirectoryInfoImpl::GetNextAudioFile(const std::string &fileNameOnly)
 {
@@ -801,8 +859,8 @@ void AudioDirectoryInfoImpl::MoveAudioFile(
     transaction->commit();
 }
 
-
-namespace pipedal {
+namespace pipedal
+{
     std::filesystem::path IndexPathToShadowIndexPath(const std::filesystem::path &audioRootDirectory, const std::filesystem::path &path)
     {
         std::filesystem::path relativePath = MakeRelativePath(path, audioRootDirectory);

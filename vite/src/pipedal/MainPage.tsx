@@ -21,12 +21,14 @@ import { SyntheticEvent } from 'react';
 import { Theme } from '@mui/material/styles';
 import WithStyles, {withTheme} from './WithStyles';
 import { withStyles } from "tss-react/mui";
+import IconButtonEx from './IconButtonEx';
+import ButtonEx from './ButtonEx';
+import Tooltip from '@mui/material/Tooltip';
 
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import {
     Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType
 } from './Pedalboard';
-import Button from '@mui/material/Button';
 import InputIcon from '@mui/icons-material/Input';
 import LoadPluginDialog from './LoadPluginDialog';
 import Switch from '@mui/material/Switch';
@@ -34,7 +36,6 @@ import Typography from '@mui/material/Typography';
 
 import PedalboardView from './PedalboardView';
 import { PiPedalStateError } from './PiPedalError';
-import IconButton from '@mui/material/IconButton';
 import AddIcon from '@mui/icons-material/Add';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -529,7 +530,9 @@ export const MainPage =
                             }} >
                                 <div style={{ flex: "0 0 auto", width: this.state.splitControlBar? undefined:  80 }} >
                                     <div style={{ display: bypassVisible ? "block" : "none", width: this.state.splitControlBar? undefined:  80 }} >
-                                        <Switch color="secondary" checked={bypassChecked} onChange={this.handleEnableCurrentItemChanged} />
+                                        <Tooltip title="Bypass" placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}>
+                                            <Switch color="secondary" checked={bypassChecked} onChange={this.handleEnableCurrentItemChanged} />
+                                        </Tooltip>
                                     </div>
                                 </div>
                                 {
@@ -541,9 +544,9 @@ export const MainPage =
                                 {this.props.enableStructureEditing && (
                                     <div style={{ flex: "0 0 auto", display: "flex", flexFlow: "row nowrap",alignItems: "center" }}>
                                         <div style={{ flex: "0 0 auto", display: (canInsert || canAppend) ? "block" : "none", paddingRight: 8 }}>
-                                            <IconButton onClick={(e) => { this.onAddClick(e) }} size="large">
+                                            <IconButtonEx tooltip="Add pedal slot" onClick={(e) => { this.onAddClick(e) }} size="large">
                                                 <AddIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
-                                            </IconButton>
+                                            </IconButtonEx>
                                             <Menu
                                                 id="add-menu"
                                                 anchorEl={this.state.addMenuAnchorEl}
@@ -560,17 +563,18 @@ export const MainPage =
                                             </Menu>
                                         </div>
                                         <div style={{ flex: "0 0 auto", display: canDelete ? "block" : "none", paddingRight: 8 }}>
-                                            <IconButton
+                                            <IconButtonEx tooltip="Delete pedal"
                                                 onClick={() => { this.onDeletePedal(pedalboardItem?.instanceId ?? -1) }}
                                                 size="large">
                                                 <OldDeleteIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
-                                            </IconButton>
+                                            </IconButtonEx>
                                         </div>
                                         <div style={{ flex: "0 0 auto" }}>
-                                            <Button
+                                            <ButtonEx
                                                 variant="contained"
                                                 color="primary"
                                                 size="small"
+                                                tooltip="Load plugin"
                                                 onClick={this.onLoadClick}
                                                 disabled={this.state.selectedPedal === -1 || (!canLoad) || (this.getSelectedPedalboardItem()?.isSplit() ?? true)}
                                                 startIcon={<InputIcon />}
@@ -580,21 +584,21 @@ export const MainPage =
                                                 }}
                                             >
                                                 Load
-                                            </Button>
+                                            </ButtonEx>
                                         </div>
                                         <div style={{ flex: "0 0 auto" }}>
-                                            <IconButton
+                                            <IconButtonEx tooltip="MIDI bindings"
                                                 onClick={(e) => { this.handleMidiConfiguration(instanceId); }}
                                                 size="large">
                                                 <MidiIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
-                                            </IconButton>
+                                            </IconButtonEx>
                                         </div>
                                         <div style={{ flex: "0 0 auto" }}>
-                                            <IconButton
+                                            <IconButtonEx tooltip="Snapshots"
                                                 onClick={(e) => { this.setState({ snapshotDialogOpen: true }); }}
                                                 size="large">
                                                 {this.snapshotIcon(this.props.theme, this.state.selectedSnapshot)}
-                                            </IconButton>
+                                            </IconButtonEx>
                                         </div>
                                     </div>
                                 )}

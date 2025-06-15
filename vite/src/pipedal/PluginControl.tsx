@@ -23,6 +23,7 @@ import Button from '@mui/material/Button';
 import { Theme } from '@mui/material/styles';
 import WithStyles, { withTheme } from './WithStyles';
 import { createStyles } from './WithStyles';
+import ControlTooltip from './ControlTooltip';
 
 import { withStyles } from "tss-react/mui";
 import { UiControl, ScalePoint } from './Lv2Plugin';
@@ -35,7 +36,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import DialIcon from './svg/fx_dial.svg?react';
 import { isDarkMode } from './DarkMode';
-import ControlTooltip from './ControlTooltip';
+
 
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
@@ -699,45 +700,51 @@ const PluginControl =
                 if (control.isOnOffSwitch()) {
                     // normal gray unchecked state.
                     return (
-                        <Switch checked={value !== 0} color="primary"
-                            onChange={(event) => {
-                                this.onCheckChanged(event.target.checked);
-                            }}
-                        />
+                        <ControlTooltip uiControl={control}>
+                            <Switch checked={value !== 0} color="primary"
+                                onChange={(event) => {
+                                    this.onCheckChanged(event.target.checked);
+                                }}
+                            />
+                        </ControlTooltip>
                     );
                 }
                 if (control.isAbToggle()) {
                     let classes = withStyles.getClasses(this.props);
                     // unchecked color is not gray.
                     return (
-                        <Switch checked={value !== 0} color="primary"
-                            onChange={(event) => {
-                                this.onCheckChanged(event.target.checked);
-                            }}
-                            classes={{
-                                track: classes.switchTrack
-                            }}
-                            style={{ color: this.props.theme.palette.primary.main }}
-                        />
+                        <ControlTooltip uiControl={control}>
+                            <Switch checked={value !== 0} color="primary"
+                                onChange={(event) => {
+                                    this.onCheckChanged(event.target.checked);
+                                }}
+                                classes={{
+                                    track: classes.switchTrack
+                                }}
+                                style={{ color: this.props.theme.palette.primary.main }}
+                            />
+                        </ControlTooltip>
                     );
                 } else {
                     return (
-                        <Select variant="standard"
-                            ref={this.selectRef}
-                            value={control.clampSelectValue(value)}
-                            onChange={this.onSelectChanged}
-                            inputProps={{
-                                name: control.name,
-                                id: 'id' + control.symbol,
-                                style: { fontSize: FONT_SIZE }
-                            }}
-                            style={{ marginLeft: 4, marginRight: 4, width: 140, fontSize: 14 }}
-                        >
-                            {control.scale_points.map((scale_point: ScalePoint) => (
-                                <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>
+                        <ControlTooltip uiControl={control}>
+                            <Select variant="standard"
+                                ref={this.selectRef}
+                                value={control.clampSelectValue(value)}
+                                onChange={this.onSelectChanged}
+                                inputProps={{
+                                    name: control.name,
+                                    id: 'id' + control.symbol,
+                                    style: { fontSize: FONT_SIZE }
+                                }}
+                                style={{ marginLeft: 4, marginRight: 4, width: 140, fontSize: 14 }}
+                            >
+                                {control.scale_points.map((scale_point: ScalePoint) => (
+                                    <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>
 
-                            ))}
-                        </Select>
+                                ))}
+                            </Select>
+                        </ControlTooltip>
                     );
                 }
             }
@@ -919,12 +926,10 @@ const PluginControl =
                                     alignSelf: "stretch", marginBottom: 8, marginLeft: isSelect ? 8 : 0, marginRight: 0
 
                                 }}>
-                            <ControlTooltip uiControl={control} >
-                                <Typography variant="caption" display="block" noWrap style={{
-                                    width: "100%",
-                                    textAlign: isSelect ? "left" : "center"
-                                }}> {isButton ? "\u00A0" : control.name}</Typography>
-                            </ControlTooltip>
+                            <Typography variant="caption" display="block" noWrap style={{
+                                width: "100%",
+                                textAlign: isSelect ? "left" : "center"
+                            }}> {isButton ? "\u00A0" : control.name}</Typography>
                         </div>
                         {/* CONTROL SECTION */}
 
@@ -933,81 +938,86 @@ const PluginControl =
                             {isButton ?
                                 (
                                     control.name.length !== 1 ? (
-                                        <Button variant="contained" color="primary" size="small"
-                                            onMouseDown={
-                                                (evt) => { this.handleButtonMouseDown(buttonStyle); }
-                                            }
-                                            onMouseUp={
-                                                (evt) => { this.handleButtonMouseUp(buttonStyle); }
-                                            }
-                                            onTouchStart={
-                                                (evt) => {
-                                                    evt.preventDefault();
-                                                    this.handleButtonMouseDown(buttonStyle);
+                                        <ControlTooltip uiControl={control}>
+
+                                            <Button variant="contained" color="primary" size="small"
+                                                onMouseDown={
+                                                    (evt) => { this.handleButtonMouseDown(buttonStyle); }
                                                 }
-                                            }
-                                            onTouchEnd={
-                                                (evt) => {
-                                                    evt.preventDefault();
-                                                    this.handleButtonMouseUp(buttonStyle);
+                                                onMouseUp={
+                                                    (evt) => { this.handleButtonMouseUp(buttonStyle); }
                                                 }
-                                            }
-                                            onMouseLeave={(
-                                                (evet) => { this.handleButtonMouseLeave(buttonStyle); }
-                                            )}
+                                                onTouchStart={
+                                                    (evt) => {
+                                                        evt.preventDefault();
+                                                        this.handleButtonMouseDown(buttonStyle);
+                                                    }
+                                                }
+                                                onTouchEnd={
+                                                    (evt) => {
+                                                        evt.preventDefault();
+                                                        this.handleButtonMouseUp(buttonStyle);
+                                                    }
+                                                }
+                                                onMouseLeave={(
+                                                    (evet) => { this.handleButtonMouseLeave(buttonStyle); }
+                                                )}
 
-                                            style={{
-                                                textTransform: "none",
-                                                background: (isDarkMode() ? "#6750A4" : undefined),
-                                                marginLeft: 8, marginRight: 8, minWidth: 60,
-                                                marginTop: 0
+                                                style={{
+                                                    textTransform: "none",
+                                                    background: (isDarkMode() ? "#6750A4" : undefined),
+                                                    marginLeft: 8, marginRight: 8, minWidth: 60,
+                                                    marginTop: 0
 
-                                            }}
+                                                }}
 
-                                        >
-                                            {control.name}
-                                        </Button>
+                                            >
+                                                {control.name}
+                                            </Button>
+                                        </ControlTooltip>
 
                                     ) : (
-                                        <Button variant="contained" color="primary" size="small"
-                                            onMouseDown={
-                                                (evt) => { this.handleButtonMouseDown(buttonStyle); }
-                                            }
-                                            onMouseUp={
-                                                (evt) => { this.handleButtonMouseUp(buttonStyle); }
-                                            }
-                                            onTouchStart={
-                                                (evt) => {
-                                                    evt.preventDefault();
-                                                    this.handleButtonMouseDown(buttonStyle);
+                                        <ControlTooltip uiControl={control}>
+                                            <Button variant="contained" color="primary" size="small"
+                                                onMouseDown={
+                                                    (evt) => { this.handleButtonMouseDown(buttonStyle); }
                                                 }
-                                            }
-                                            onTouchEnd={
-                                                (evt) => {
-                                                    evt.preventDefault();
-                                                    this.handleButtonMouseUp(buttonStyle);
+                                                onMouseUp={
+                                                    (evt) => { this.handleButtonMouseUp(buttonStyle); }
                                                 }
-                                            }
-                                            onMouseLeave={(
-                                                (evet) => { this.handleButtonMouseLeave(buttonStyle); }
-                                            )}
+                                                onTouchStart={
+                                                    (evt) => {
+                                                        evt.preventDefault();
+                                                        this.handleButtonMouseDown(buttonStyle);
+                                                    }
+                                                }
+                                                onTouchEnd={
+                                                    (evt) => {
+                                                        evt.preventDefault();
+                                                        this.handleButtonMouseUp(buttonStyle);
+                                                    }
+                                                }
+                                                onMouseLeave={(
+                                                    (evet) => { this.handleButtonMouseLeave(buttonStyle); }
+                                                )}
 
-                                            style={{
-                                                textTransform: "none",
-                                                background: (isDarkMode() ? "#6750A4" : undefined),
-                                                marginLeft: 8, marginRight: 8,
-                                                paddingLeft: 0, paddingRight: 0,
-                                                width: 36, height: 36,
-                                                marginTop: 0,
-                                                borderRadius: 8,
-                                                minWidth: 0,
-                                                fontSize: "1.2em"
+                                                style={{
+                                                    textTransform: "none",
+                                                    background: (isDarkMode() ? "#6750A4" : undefined),
+                                                    marginLeft: 8, marginRight: 8,
+                                                    paddingLeft: 0, paddingRight: 0,
+                                                    width: 36, height: 36,
+                                                    marginTop: 0,
+                                                    borderRadius: 8,
+                                                    minWidth: 0,
+                                                    fontSize: "1.2em"
 
-                                            }}
+                                                }}
 
-                                        >
-                                            {androidEmoji(control.name)}
-                                        </Button>
+                                            >
+                                                {androidEmoji(control.name)}
+                                            </Button>
+                                        </ControlTooltip>
                                     )
                                 )
 
@@ -1016,34 +1026,38 @@ const PluginControl =
                                 )
                                     : (isGraphicEq) ? (
                                         <div style={{ flex: "0 1 auto" }}>
-                                            <GraphicEqCtl
-                                                imgRef={this.imgRef}
-                                                position={this.getEqPosition()}
-                                                dialColor={dialColor}
-                                                opacity={DEFAULT_OPACITY}
+                                            <ControlTooltip uiControl={control}>
+                                                <GraphicEqCtl
+                                                    imgRef={this.imgRef}
+                                                    position={this.getEqPosition()}
+                                                    dialColor={dialColor}
+                                                    opacity={DEFAULT_OPACITY}
 
-                                                onTouchStart={this.onTouchStart}
-                                                onTouchMove={this.onTouchMove}
-                                                onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
-                                                onPointerMoveCapture={this.onPointerMove}
-                                                onDrag={this.onDrag}
+                                                    onTouchStart={this.onTouchStart}
+                                                    onTouchMove={this.onTouchMove}
+                                                    onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
+                                                    onPointerMoveCapture={this.onPointerMove}
+                                                    onDrag={this.onDrag}
 
 
-                                            />
+                                                />
+                                            </ControlTooltip>
                                         </div>
                                     ) : (
                                         <div style={{ flex: "0 1 auto" }}>
-                                            <DialIcon ref={this.imgRef}
-                                                style={{
-                                                    overscrollBehavior: "none", touchAction: "none", fill: dialColor,
-                                                    width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform()
-                                                }}
-                                                onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
-                                                onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
-                                                onPointerMoveCapture={this.onPointerMove}
-                                                onDrag={this.onDrag}
+                                            <ControlTooltip uiControl={control}>
+                                                <DialIcon ref={this.imgRef}
+                                                    style={{
+                                                        overscrollBehavior: "none", touchAction: "none", fill: dialColor,
+                                                        width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform()
+                                                    }}
+                                                    onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
+                                                    onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
+                                                    onPointerMoveCapture={this.onPointerMove}
+                                                    onDrag={this.onDrag}
 
-                                            />
+                                                />
+                                            </ControlTooltip>
                                         </div>
                                     )
                             }
@@ -1079,11 +1093,11 @@ const PluginControl =
                                                     },
                                                 }}
 
-                                            inputRef={this.inputRef} onChange={this.onInputChange}
-                                            onBlur={this.onInputLostFocus}
-                                            onFocus={this.onInputFocus}
+                                                inputRef={this.inputRef} onChange={this.onInputChange}
+                                                onBlur={this.onInputLostFocus}
+                                                onFocus={this.onInputFocus}
 
-                                            onKeyPress={this.onInputKeyPress} />
+                                                onKeyPress={this.onInputKeyPress} />
                                             <div className={classes.displayValue}
                                                 ref={this.displayValueRef} onClick={(e) => { this.inputRef.current!.focus(); }}
                                                 style={{ display: this.state.editFocused ? "none" : "block" }}

@@ -472,7 +472,6 @@ const PluginControlView =
                     throw new PiPedalStateError("Missing control value.");
                 }
                 return ((
-
                     <PluginControl key={uiControl.symbol} instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
                         onChange={(value: number) => { this.onControlValueChanged(controlValue!.key, value) }}
                         onPreviewChange={(value: number) => { this.onPreviewChange(controlValue!.key, value) }}
@@ -480,6 +479,14 @@ const PluginControlView =
 
                     />
                 ));
+                // return ((
+                //     <PluginControl key={uiControl.symbol} instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
+                //         onChange={(value: number) => { this.onControlValueChanged(controlValue!.key, value) }}
+                //         onPreviewChange={(value: number) => { this.onPreviewChange(controlValue!.key, value) }}
+                //         requestIMEEdit={(uiControl: any, value: any) => this.requestImeEdit(uiControl, value)}
+
+                //     />
+                // ));
 
             }
 

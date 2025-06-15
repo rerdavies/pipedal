@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
 import { createStyles } from './WithStyles';
@@ -27,8 +28,7 @@ import DialogEx from './DialogEx';
 import MuiDialogTitle from '@mui/material/DialogTitle';
 import MuiDialogContent from '@mui/material/DialogContent';
 import MuiDialogActions from '@mui/material/DialogActions';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
+import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import { PiPedalModelFactory } from "./PiPedalModel";
@@ -255,32 +255,36 @@ const PluginInfoDialog = withStyles((props: PluginInfoProps) => {
 
     return (
         <div>
-            <IconButton
+            <IconButtonEx tooltip="Plugin info"
                 style={{ display: (props.plugin_uri !== "") ? "inline-flex" : "none" }}
                 onClick={handleClickOpen}
                 size="large">
                 <InfoOutlinedIcon className={classes.icon} color='inherit' />
-            </IconButton>
+            </IconButtonEx>
             {open && (
                 <DialogEx tag="info" onClose={handleClose} open={open} fullWidth maxWidth="md"
                     onEnterKey={handleClose}
                 >
                     <MuiDialogTitle >
-                        <div style={{ display: "flex", flexDirection: "row", alignItems: "start", flexWrap: "nowrap" }}>
-                            <div style={{ flex: "0 0 auto", marginRight: 16 }}>
-                                <PluginIcon pluginType={plugin.plugin_type} offsetY={3} />
+                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", flexWrap: "nowrap" }}>
+
+                            <IconButtonEx
+                                edge="start"
+                                color="inherit"
+                                tooltip="Back"
+                                aria-label="back"
+                                style={{ opacity: 0.6 }}
+                                onClick={() => { handleClose()}}
+                            >
+                                <ArrowBackIcon style={{ width: 24, height: 24 }} />
+                            </IconButtonEx>
+
+                            <div style={{ flex: "0 0 auto", marginLeft: 16,marginRight: 8, position: "relative", top: 3  }}>
+                                <PluginIcon pluginType={plugin.plugin_type}  />
                             </div>
                             <div style={{ flex: "1 1 auto" }}>
                                 <Typography variant="h6">{plugin.name}</Typography>
                             </div>
-                            <IconButton
-                                aria-label="close"
-                                className={classes.closeButton}
-                                onClick={() => handleClose()}
-                                style={{ flex: "0 0 auto" }}
-                                size="large">
-                                <CloseIcon />
-                            </IconButton>
                         </div>
                     </MuiDialogTitle>
                     <PluginInfoDialogContent dividers style={{ width: "100%", maxHeight: "80%", overflowX: "hidden" }}>

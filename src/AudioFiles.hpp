@@ -124,4 +124,5 @@ namespace pipedal
     std::filesystem::path ShadowIndexPathToIndexPath(const std::filesystem::path &audioRootDirectory,  const std::filesystem::path &path);
     std::filesystem::path GetShadowIndexDirectory(const std::filesystem::path &audioRootDirectory, const std::filesystem::path &path);
 
+    bool isArtworkFileName(const std::string &fileName);
 }

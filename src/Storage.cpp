@@ -1705,6 +1705,13 @@ static void AddTracksToResult(
     std::set<std::string> validExtensions = fileProperty.GetPermittedFileExtensions(
         modDirectoryInfo ? modDirectoryInfo->modType : "");
 
+    if (validExtensions.size() == 0) 
+    {
+        const auto &audioExtensions = MimeTypes::instance().AudioExtensions();
+        validExtensions.insert(audioExtensions.begin(), audioExtensions.end());
+    }
+    validExtensions.insert(".jpg");
+    validExtensions.insert(".png");
     try
     {
         // Add directories first.
@@ -1828,9 +1835,11 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
                 ++iRp;
             }
         }
+        fs::path cumulativePath = modDirectoryPath;
         while (iRp != rp.end())
         {
-            result.breadcrumbs_.push_back({*iRp, *iRp});
+            cumulativePath /= (*iRp);
+            result.breadcrumbs_.push_back({cumulativePath, *iRp});
             ++iRp;
         }
     }
@@ -2036,6 +2045,17 @@ std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, co
     }
     return result;
 }
+
+
+bool Storage::IsValidArtworkFile(const std::filesystem::path& fullPath) 
+{
+    if (IsInAudioTracksDirectory(fullPath) && isArtworkFileName(fullPath.filename().string()))
+    {
+        // allow artwork files.
+        return true;    
+    }
+    return false;
+}
 std::string Storage::UploadUserFile(const std::string &directory,
                                     UiFileProperty::ptr uiFileProperty,
                                     const std::string &filename,
@@ -2060,7 +2080,7 @@ std::string Storage::UploadUserFile(const std::string &directory,
         throw std::logic_error("Permission denied. Path is outside the upload storage directory.");
     }
 
-    if (!uiFileProperty->IsValidExtension(relativePath))
+    if (!(uiFileProperty->IsValidExtension(relativePath) || IsValidArtworkFile(path)))
     {
         throw std::logic_error("Permission denied. Invalid file extension for this directory.");
     }
@@ -2160,6 +2180,52 @@ std::string Storage::RenameFilePropertyFile(
     }
 
     std::filesystem::rename(oldPath, newPath);
+    return newPath;
+}
+std::string Storage::CopyFilePropertyFile(
+    const std::string &oldRelativePath,
+    const std::string &newRelativePath,
+    const UiFileProperty &uiFileProperty,
+    bool overwrite)
+{
+    if (uiFileProperty.directory().empty())
+    {
+        throw std::runtime_error("Invalid UI File Property.");
+    }
+    std::filesystem::path oldPath = this->GetPluginUploadDirectory() / uiFileProperty.directory() / oldRelativePath;
+    if (!this->IsValidSampleFileName(oldPath))
+    {
+        throw std::runtime_error("Invalid file name.");
+    }
+    if (!std::filesystem::exists(oldPath))
+    {
+        throw std::runtime_error("Original path does not exist.");
+    }
+
+    std::filesystem::path newPath = this->GetPluginUploadDirectory() / uiFileProperty.directory() / newRelativePath;
+
+
+    if (!this->IsValidSampleFileName(newPath))
+    {
+        throw std::runtime_error("Invalid file name.");
+    }
+    if (std::filesystem::exists(newPath))
+    {
+        if (std::filesystem::is_directory(newPath))
+        {
+            throw std::runtime_error("A directory with that name already exists.");
+        }
+        else
+        {
+            if (!overwrite) {
+                return ""; // signal a portential overwrite.
+            } else {
+                fs::remove(newPath);
+            }
+        }
+    }
+
+    std::filesystem::create_hard_link(oldPath, newPath);
     return newPath;
 }
 

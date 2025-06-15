@@ -41,12 +41,38 @@ import CircularProgress from '@mui/material/CircularProgress';
 // const BANK_EXTENSION = ".piBank";
 // const PLUGIN_PRESETS_EXTENSION = ".piPluginPresets";
 
+let COVER_ART_FILES = [
+    "Folder.jpg",  // window media player/explorer.
+    "Cover.jpg",   // itunes.
+    "folder.jpg",  // Linux audio players plex, kodi, Rythmbox, Amorok, Clementine.
+    "cover.jpg",   // Linux audio players plex, kodi, Rythmbox, Amorok, Clementine.
+    "Artwork.jpg", // itunes.
+    "Front.jpg",
+    "front.jpg", // linux.
+    "AlbumArt.jpg",
+    "albumArt.jpg",
+    "Frontcover.jpg",
+    "AlbumArtSmall.jpg" // windows media player.
+];
+
+function isCoverArtFile(fileName: string) : boolean {
+    // does COVER_ART_FILES contain the file name?
+    for (let coverArtFile of COVER_ART_FILES) {
+        if (fileName === coverArtFile) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 export interface UploadFileDialogProps {
     open: boolean,
     onClose: () => void,
     onUploaded: (fileName: string) => void,
     uploadPage: string,
-    fileProperty: UiFileProperty
+    fileProperty: UiFileProperty,
+    isTracksDirectory: boolean
 
 };
 
@@ -251,7 +277,15 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
 
     private wantsFile(file: File | null) {
         if (file === null) return false;
-        return this.props.fileProperty.wantsFile(file.name);
+        if (this.props.fileProperty.wantsFile(file.name)) 
+        {
+            return true;
+        }
+        if (this.props.isTracksDirectory) {
+            if (isCoverArtFile(file.name)) {
+                return true;
+            }        }
+        return false;
 
     }
     private wantsTransfer(fileList: DataTransfer): boolean {

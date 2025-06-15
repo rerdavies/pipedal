@@ -33,6 +33,7 @@ import MoreIcon from '@mui/icons-material/MoreVert';
 import { PiPedalModel, PiPedalModelFactory, FileEntry, BreadcrumbEntry, FileRequestResult } from './PiPedalModel';
 import { isDarkMode } from './DarkMode';
 import Button from '@mui/material/Button';
+import ButtonEx from './ButtonEx';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
@@ -44,12 +45,13 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import OldDeleteIcon from './OldDeleteIcon';
 import Toolbar from '@mui/material/Toolbar';
 import WithStyles from './WithStyles';
 import { withStyles } from "tss-react/mui";
 import CircularProgress from '@mui/material/CircularProgress';
-import { pathConcat,pathParentDirectory,pathFileName,pathFileNameOnly, pathExtension } from './FileUtils'; './FileUtils';
+import { pathConcat, pathParentDirectory, pathFileName, pathFileNameOnly, pathExtension } from './FileUtils'; './FileUtils';
 
 
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
@@ -77,13 +79,14 @@ const styles = (theme: Theme) => createStyles({
 const audioFileExtensions: { [name: string]: boolean } = {
     ".wav": true,
     ".flac": true,
+    ".mp3": true,
+    ".m4a": true,
     ".ogg": true,
     ".aac": true,
     ".au": true,
     ".snd": true,
     ".mid": true,
     ".rmi": true,
-    ".mp3": true,
     ".mp4": true,
     ".aif": true,
     ".aifc": true,
@@ -146,10 +149,16 @@ export interface FilePropertyDialogState {
     columnWidth: number;
     openUploadFileDialog: boolean;
     openConfirmDeleteDialog: boolean;
+    confirmCopyDialogState: {
+        fileName: string;
+        oldFilePath: string;
+        newFilePath: string;
+    } | null;
     menuAnchorEl: null | HTMLElement;
     newFolderDialogOpen: boolean;
     renameDialogOpen: boolean;
     moveDialogOpen: boolean;
+    copyDialogOpen: boolean;
     initialSelection: string;
 };
 
@@ -173,6 +182,12 @@ export default withStyles(
         isTracksDirectory(): boolean {
             return this.state.currentDirectory.startsWith("/var/pipedal/audio_uploads/shared/audio/Tracks");
         }
+        isFolderArtwork(filePath: string): boolean {
+            if (!this.isTracksDirectory()) return false;
+            let extension = pathExtension(filePath);
+            return extension === ".png" || extension === ".jpg" || extension === ".jpeg";
+        }
+
         constructor(props: FilePropertyDialogProps) {
             super(props);
 
@@ -202,10 +217,12 @@ export default withStyles(
                 isProtectedDirectory: true,
                 openUploadFileDialog: false,
                 openConfirmDeleteDialog: false,
+                confirmCopyDialogState: null,
                 menuAnchorEl: null,
                 newFolderDialogOpen: false,
                 renameDialogOpen: false,
                 moveDialogOpen: false,
+                copyDialogOpen: false,
                 initialSelection: this.props.selectedFile
             };
             this.requestScroll = true;
@@ -485,6 +502,7 @@ export default withStyles(
                         newFolderDialogOpen: false,
                         renameDialogOpen: false,
                         moveDialogOpen: false,
+                        copyDialogOpen: false,
                         navDirectory: navDirectory
                     });
                     this.requestFiles(navDirectory)
@@ -531,7 +549,9 @@ export default withStyles(
             }
             this.requestScroll = true;
             if (!fileEntry.isDirectory) {
-                this.props.onApply(this.props.fileProperty, fileEntry.pathname);
+                if (!this.isFolderArtwork(fileEntry.pathname)) {
+                    this.props.onApply(this.props.fileProperty, fileEntry.pathname);
+                }
             }
             this.setState({
                 selectedFile: fileEntry.pathname,
@@ -641,7 +661,7 @@ export default withStyles(
         }
         getAlbumTitle(fileEntry: FileEntry): string {
             let artist = fileEntry.metadata?.artist || "";
-            if (artist == "" ) {
+            if (artist == "") {
                 artist = fileEntry.metadata?.albumArtist || "";
             }
             let album = fileEntry.metadata?.album || "";
@@ -814,6 +834,8 @@ export default withStyles(
             let needsDivider = canMove || canRename || canReorder;
             let trackPosition = 0;
             let compactVertical = this.state.windowHeight < 700;
+            let canSelectFile = this.state.hasSelection && !this.isFolderArtwork(this.state.selectedFile);
+
 
             return this.props.open &&
                 (
@@ -886,7 +908,8 @@ export default withStyles(
                                             {this.props.fileProperty.label}
                                         </Typography>
 
-                                        <IconButton
+                                        <IconButtonEx
+                                            tooltip="New folder"
                                             aria-label="new folder"
                                             edge="end"
                                             color="inherit"
@@ -895,10 +918,11 @@ export default withStyles(
                                             disabled={protectedDirectory}
                                         >
                                             <CreateNewFolderIcon />
-                                        </IconButton>
+                                        </IconButtonEx>
 
 
-                                        <IconButton
+                                        <IconButtonEx
+                                            tooltip="More..."
                                             aria-label="display more actions"
                                             edge="end"
                                             color="inherit"
@@ -908,7 +932,7 @@ export default withStyles(
 
                                         >
                                             <MoreIcon />
-                                        </IconButton>
+                                        </IconButtonEx>
                                         <Menu
                                             id="menu-appbar"
                                             anchorEl={this.state.menuAnchorEl}
@@ -927,6 +951,7 @@ export default withStyles(
                                             <MenuItem onClick={() => { this.handleMenuClose(); this.onNewFolder(); }}>New folder</MenuItem>
                                             {(needsDivider) && (<Divider />)}
                                             {canMove && (<MenuItem onClick={() => { this.handleMenuClose(); this.onMove(); }}>Move</MenuItem>)}
+                                            {canMove && (<MenuItem onClick={() => { this.handleMenuClose(); this.onCopy(); }}>Copy</MenuItem>)}
                                             {canRename && this.hasSelectedFileOrFolder() && !protectedItem && (<MenuItem onClick={() => {
                                                 this.handleMenuClose(); this.onRename();
                                             }}>Rename</MenuItem>)}
@@ -1013,7 +1038,7 @@ export default withStyles(
                                                 <DraggableButtonBase key={value.pathname}
                                                     longPressDelay={this.state.reordering ? 0 : -1}
                                                     data-position={dataPosition}
-                                                    data-fileName={
+                                                    data-pathname={
                                                         value.metadata ? value.metadata.fileName : null
                                                     }
 
@@ -1047,10 +1072,20 @@ export default withStyles(
                                                                     display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis",
                                                                     justifyContent: "start", alignItems: "center", width: "100%", height: "100%"
                                                                 }}>
+                                                                {
+                                                                    this.isFolderArtwork(value.pathname) ? (
+                                                                    <img
+                                                                        onDragStart={(e) => { e.preventDefault(); }}
+                                                                        src={this.getTrackThumbnail(value)}
+                                                                        style={{ width: 24, height: 24, margin: 20, borderRadius: 4 }} />
+                                                                    ):(
                                                                     <img
                                                                         onDragStart={(e) => { e.preventDefault(); }}
                                                                         src={this.getTrackThumbnail(value)}
                                                                         style={{ width: 48, height: 48, margin: 8, borderRadius: 4 }} />
+
+                                                                    )
+                                                                }
                                                                     <div style={{
                                                                         flex: "1 1 1px", display: "flex", flexFlow: "column nowrap",
                                                                         marginLeft: 8,
@@ -1060,7 +1095,7 @@ export default withStyles(
                                                                             className={classes.secondaryText}
                                                                             variant="body2"
                                                                             style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left", marginBottom: 4 }}>
-                                                                            {this.getTrackTitle(value)} 
+                                                                            {this.getTrackTitle(value)}
                                                                         </Typography>
                                                                         <Typography noWrap className={classes.secondaryText}
                                                                             variant="body2"
@@ -1115,23 +1150,24 @@ export default withStyles(
                                 <DialogActions style={{ justifyContent: "stretch" }}>
                                     {this.state.windowWidth > 500 ? (
                                         <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                            <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                            <IconButtonEx style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                                tooltip="Delete selected file or folder"
                                                 disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
                                                 onClick={() => this.handleDelete()} >
                                                 <OldDeleteIcon fontSize='small' />
-                                            </IconButton>
+                                            </IconButtonEx>
 
-                                            <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
+                                            <ButtonEx tooltip="Upload file" style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
                                                 onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
                                             >
                                                 <div>Upload</div>
-                                            </Button>
+                                            </ButtonEx>
 
-                                            <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
+                                            <ButtonEx tooltip="Download file" style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
                                                 onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
                                             >
                                                 <div>Download</div>
-                                            </Button>
+                                            </ButtonEx>
 
                                             <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
 
@@ -1144,7 +1180,8 @@ export default withStyles(
                                             <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
                                                 onClick={() => { this.openSelectedFile(); }}
 
-                                                disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
+                                                disabled={(!canSelectFile)
+                                                } aria-label="select"
                                             >
                                                 {okButtonText}
                                             </Button>
@@ -1182,7 +1219,8 @@ export default withStyles(
                                                 <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
                                                     onClick={() => { this.openSelectedFile(); }}
 
-                                                    disabled={(!this.state.hasSelection) && this.state.selectedFile !== ""} aria-label="select"
+                                                    disabled={!canSelectFile}
+                                                    aria-label="select"
                                                 >
                                                     {okButtonText}
                                                 </Button>
@@ -1200,6 +1238,7 @@ export default withStyles(
                                     this.setState({ openUploadFileDialog: false });
                                 }
                             }
+                            isTracksDirectory={this.isTracksDirectory()}
                             uploadPage={
                                 "uploadUserFile?directory=" + encodeURIComponent(this.state.currentDirectory)
                                 + "&id=" + this.props.instanceId.toString()
@@ -1224,6 +1263,17 @@ export default withStyles(
                             }}
 
                         />
+                        <OkCancelDialog open={this.state.confirmCopyDialogState !== null}
+                            text={
+                                "The target file already exists. Would you like to overwrite it?"}
+                            okButtonText="Overwrite"
+                            onOk={() => { this.handleConfirmCopy(); }}
+                            onClose={() => {
+                                this.setState({ confirmCopyDialogState: null });
+                            }}
+
+                        />
+
                         {
                             this.state.newFolderDialogOpen && (
                                 <RenameDialog open={this.state.newFolderDialogOpen} defaultName=""
@@ -1244,23 +1294,28 @@ export default withStyles(
                             )
                         }
                         {
-                            this.state.moveDialogOpen && (
+                            (this.state.moveDialogOpen || this.state.copyDialogOpen)
+                            && (
                                 (
                                     <FilePropertyDirectorySelectDialog
-                                        open={this.state.moveDialogOpen}
-                                        dialogTitle="Move to"
+                                        open={this.state.moveDialogOpen || this.state.copyDialogOpen}
+                                        dialogTitle={this.state.moveDialogOpen ? "Move to" : "Copy Link to"}
                                         uiFileProperty={this.props.fileProperty}
                                         defaultPath={this.getDefaultPath()}
                                         selectedFile={this.state.selectedFile}
                                         excludeDirectory={
                                             this.isDirectory(this.state.selectedFile)
                                                 ? this.state.selectedFile : ""}
-                                        onClose={() => { this.setState({ moveDialogOpen: false }); }}
+                                        onClose={() => { this.setState({ moveDialogOpen: false, copyDialogOpen: false }); }}
                                         onOk={
                                             (path) => {
                                                 this.setState({ moveDialogOpen: false });
                                                 this.setDefaultPath(path);
-                                                this.onExecuteMove(path);
+                                                if (this.state.copyDialogOpen) {
+                                                    this.onExecuteCopy(path);
+                                                } else {
+                                                    this.onExecuteMove(path);
+                                                }
                                             }
                                         }
 
@@ -1272,6 +1327,9 @@ export default withStyles(
                 );
         }
         openSelectedFile(): void {
+            if (this.isFolderArtwork(this.state.selectedFile)) {
+                return;
+            }
             if (this.isDirectory(this.state.selectedFile)) {
                 this.requestFiles(this.state.selectedFile);
                 this.setState({ navDirectory: this.state.selectedFile });
@@ -1292,6 +1350,9 @@ export default withStyles(
         private onMove(): void {
             this.setState({ moveDialogOpen: true });
         }
+        private onCopy(): void {
+            this.setState({ copyDialogOpen: true });
+        }
         private onExecuteMove(newDirectory: string) {
             let fileName = pathFileName(this.state.selectedFile);
             let oldFilePath = pathConcat(this.state.navDirectory, fileName);
@@ -1300,6 +1361,46 @@ export default withStyles(
             this.model.renameFilePropertyFile(oldFilePath, newFilePath, this.props.fileProperty)
                 .then(() => {
                     this.requestFiles(this.state.navDirectory);
+                })
+                .catch((e) => {
+                    this.model.showAlert(e.toString());
+                });
+
+        }
+        private handleConfirmCopy() {
+            if (this.state.confirmCopyDialogState) {
+                this.model.copyFilePropertyFile(
+                    this.state.confirmCopyDialogState.oldFilePath,
+                    this.state.confirmCopyDialogState.newFilePath,
+                    this.props.fileProperty, true)
+                    .then((filename) => {
+                        this.requestFiles(this.state.navDirectory);
+                    })
+                    .catch((e) => {
+                        this.model.showAlert(e.toString());
+                    });
+                this.setState({ confirmCopyDialogState: null });
+            }
+        }
+        private onExecuteCopy(newDirectory: string) {
+            this.setState({ copyDialogOpen: false });
+            let fileName = pathFileName(this.state.selectedFile);
+            let oldFilePath = pathConcat(this.state.navDirectory, fileName);
+            let newFilePath = pathConcat(newDirectory, fileName);
+
+            this.model.copyFilePropertyFile(oldFilePath, newFilePath, this.props.fileProperty, false)
+                .then((filename) => {
+                    if (filename === "") {
+                        // the file already exists. prompt for overrwrite.
+                        this.setState({
+                            confirmCopyDialogState: {
+                                fileName: fileName,
+                                oldFilePath: oldFilePath,
+                                newFilePath
+                            }
+                        });
+
+                    }
                 })
                 .catch((e) => {
                     this.model.showAlert(e.toString());

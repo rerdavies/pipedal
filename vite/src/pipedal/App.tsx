@@ -58,8 +58,50 @@ const theme = createTheme(
         {
             cssVariables: true,
             components: {
+                // MuiTouchRipple: {
+                //     styleOverrides: {
+                //         root: {
+                //             borderRadius: 'inherit',
+                //             overflow: 'hidden',
+                //         },
+                //         ripple: {
+                //             color: '#F88 !important',
+                //             borderRadius: 'inherit',
+
+                //             '&.MuiTouchRipple-ripplePulsate': {
+                //                 //animation: 'none !important',
+
+                //                 // Make focus ripple fill the entire button
+                //                 '&.MuiTouchRipple-child': {
+                //                     width: '100%',
+                //                     height: '100%',
+                //                     borderRadius: 'inherit',
+                //                     transform: 'scale(1.4)', // Override the default scaling
+                //                 }
+                //             },
+                //             '&.MuiTouchRipple-ripple': {
+                //                 '&:focus': {
+                //                     // Make focus ripple fill the entire button
+                //                     transform: 'scale(1.4)',
+                //                     width: '100%',
+                //                     height: '100%',
+                //                     color: '#F88',
+                //                     borderRadius: 'inherit',
+                //                 },
+                //             },
+                //         },
+                //         child: {
+                //             borderRadius: 'inherit',
+                //         }
+                //     }
+                // },
                 MuiButton: {
                     styleOverrides: {
+                        root: {
+                            '& .MuiTouchRipple-ripple': {
+                                transform: 'scale(1.9)',
+                            }
+                        },
                         containedPrimary: {
                             borderRadius: '9999px',
                             paddingLeft: "16px", paddingRight: "16px",
@@ -80,7 +122,7 @@ const theme = createTheme(
                             }
                         },
                         {
-                            props: { variant: 'dialogSecondary',  },
+                            props: { variant: 'dialogSecondary', },
                             style: {
                                 color: "rgb(255,255,255,0.7)"
                             },
@@ -108,18 +150,26 @@ const theme = createTheme(
                 /* make the selection state for MuiListItemButtons a smidgen darker (light theme only) */
                 MuiListItemButton: {
                     styleOverrides: {
-                    root: ({ theme }) => ({
-                        '&.Mui-selected': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.2)', // Adjust for desired darkness
-                        '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.25)', // Slightly darker on hover
-                        },
-                        },
-                    }),
+                        root: ({ theme }) => ({
+                            '&.Mui-selected': {
+                                backgroundColor: 'rgba(0, 0, 0, 0.2)', // Adjust for desired darkness
+                                '&:hover': {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.25)', // Slightly darker on hover
+                                },
+                            },
+                        }),
                     },
                 },
                 MuiButton: {
                     styleOverrides: {
+                        root: {
+                            '& .MuiTouchRipple-root': {
+                                borderRadius: 'inherit',
+                            },
+                            '& .MuiTouchRipple-ripple': {
+                                transform: 'scale(1.9)!important',
+                            }
+                        },
                         containedPrimary: {
                             borderRadius: '9999px',
                             paddingLeft: "16px", paddingRight: "16px",
@@ -140,7 +190,7 @@ const theme = createTheme(
                             }
                         },
                         {
-                            props: { variant: 'dialogSecondary',  },
+                            props: { variant: 'dialogSecondary', },
                             style: {
                                 color: "rgb(0,0,0,0.6)"
                             },
@@ -178,8 +228,7 @@ const App = (class extends React.Component {
         super(props);
         this.state = {
         };
-        if (!App.virtualKeyboardHandler)
-        {   
+        if (!App.virtualKeyboardHandler) {
             App.virtualKeyboardHandler = new VirtualKeyboardHandler();
         }
     }
@@ -192,7 +241,7 @@ const App = (class extends React.Component {
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
 
-                        <AppThemed />
+                    <AppThemed />
                 </ThemeProvider>
             </StyledEngineProvider>
         );

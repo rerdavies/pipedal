@@ -156,6 +156,7 @@ public:
 
     bool IsInUploadsDirectory(const std::filesystem::path&path) const;
     bool IsInAudioTracksDirectory(const std::filesystem::path&path) const;
+    bool IsValidArtworkFile(const std::filesystem::path& fullPath);
     
     FileRequestResult GetFileList2(const std::string&relativePath,const UiFileProperty&fileProperty);
 
@@ -232,6 +233,11 @@ public:
         const std::string&oldRelativePath,
         const std::string&newRelativePath,
         const UiFileProperty&uiFileProperty);
+    std::string CopyFilePropertyFile(
+        const std::string&oldRelativePath,
+        const std::string&newRelativePath,
+        const UiFileProperty&uiFileProperty,
+        bool overwrite = false);
     FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty,const std::filesystem::path&selectedPath);
 };
 

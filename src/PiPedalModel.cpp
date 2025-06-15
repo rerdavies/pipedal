@@ -2407,6 +2407,17 @@ std::string PiPedalModel::RenameFilePropertyFile(
     return storage.RenameFilePropertyFile(oldRelativePath, newRelativePath, uiFileProperty);
 }
 
+std::string PiPedalModel::CopyFilePropertyFile(
+    const std::string &oldRelativePath,
+    const std::string &newRelativePath,
+    const UiFileProperty &uiFileProperty,
+    bool overwrite)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return storage.CopyFilePropertyFile(oldRelativePath, newRelativePath, uiFileProperty,overwrite);
+}
+
+
 void PiPedalModel::DeleteSampleFile(const std::filesystem::path &fileName)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);

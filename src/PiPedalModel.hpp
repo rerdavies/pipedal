@@ -454,6 +454,7 @@ namespace pipedal
         void DeleteSampleFile(const std::filesystem::path &fileName);
         std::string CreateNewSampleDirectory(const std::string &relativePath, const UiFileProperty &uiFileProperty);
         std::string RenameFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty);
+        std::string CopyFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty,bool overwrite);
         FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath);
 
         bool IsInUploadsDirectory(const std::string &path);

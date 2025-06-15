@@ -2697,6 +2697,36 @@ export class PiPedalModel //implements PiPedalModel
                 });
         });
     }
+    copyFilePropertyFile(
+        oldRelativePath: string, 
+        newRelativePath: string, 
+        uiFileProperty: UiFileProperty,
+        overwrite: boolean
+    ): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+
+            let ws = this.webSocket;
+            if (!ws) {
+                resolve("");
+                return;
+            }
+            ws.request<string>(
+                "copyFilePropertyFile",
+                {
+                    oldRelativePath: oldRelativePath,
+                    newRelativePath: newRelativePath,
+                    uiFileProperty: uiFileProperty,
+                    overwrite: overwrite
+                }
+            )
+                .then((newPath) => {
+                    resolve(newPath);
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
+    }
 
     setWifiConfigSettings(wifiConfigSettings: WifiConfigSettings): Promise<void> {
         let result = new Promise<void>((resolve, reject) => {
