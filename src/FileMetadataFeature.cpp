@@ -34,8 +34,6 @@ FileMetadataFeature::FileMetadataFeature()
     interface.setFileMetadata = &FileMetadataFeature::S_setFileMetadata;
     interface.getFileMetadata = &FileMetadataFeature::S_getFileMetadata;
 
-    xxx publish the feature. 
-    xxx restrict to tracks directory.
 }
 
 FileMetadataFeature::~FileMetadataFeature()
