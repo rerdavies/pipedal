@@ -789,6 +789,8 @@ export default withStyles(
             }
             return result;
         }
+
+
         private getIcon(fileEntry: FileEntry, largeIcon: boolean) {
             let style = largeIcon
                 ? {
@@ -1001,6 +1003,9 @@ export default withStyles(
 
                                             if (this.state.reordering && !value.metadata) {
                                                 return null; // don't render non-track files when reordering.
+                                            }
+                                            if (this.state.reordering && this.isFolderArtwork(value.pathname)) {
+                                                return null;
                                             }
                                             let displayValue = value.displayName;
                                             if (displayValue === "") {
@@ -1400,6 +1405,14 @@ export default withStyles(
                             }
                         });
 
+                    } else {
+                        this.requestFiles(this.state.navDirectory);
+                        this.setState({
+                            selectedFile: filename,
+                            selectedFileIsDirectory: this.isDirectory(filename),
+                            selectedFileProtected: false
+                        });
+                        this.requestScroll = true;
                     }
                 })
                 .catch((e) => {

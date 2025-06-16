@@ -191,6 +191,14 @@ void AudioFilesDb::CreateDb(const std::filesystem::path &dbPathName)
                      "thumbnail BLOB, "
                      "width INTEGER, "
                      "height INTEGER)");
+
+            db->exec("CREATE TABLE IF NOT EXISTS extraMetadata ("
+                     "idExtra INTEGER PRIMARY KEY AUTOINCREMENT, "
+                     "idFile INT64 NOT NULL, "
+                     "key TEXT NOT NULL, "
+                     "value TEXT NOT NULL, "
+                     "FOREIGN KEY (idFile) REFERENCES files(idFile) ON DELETE CASCADE, "
+                     "UNIQUE(idFile, key))");
         }
         catch (const SQLite::Exception &e)
         {
@@ -500,4 +508,47 @@ void AudioFilesDb::UpdateFilePosition(
     updateFileQuery->bind(1, position);
     updateFileQuery->bind(2, idFile);
     updateFileQuery->exec();
+}
+
+void AudioFilesDb::DeleteFileExtraMetadata(
+    const std::string &fileNameOnly,
+    const std::string &key)
+{
+    auto deleteExtraMetadataQuery = std::make_unique<SQLite::Statement>(
+            *db,
+            "DELETE FROM extraMetadata WHERE idFile = (SELECT idFile FROM files WHERE fileName = ?) AND key = ?");
+    deleteExtraMetadataQuery->bind(1, fileNameOnly);
+    deleteExtraMetadataQuery->bind(2, key);
+    deleteExtraMetadataQuery->exec();
+}
+void AudioFilesDb::SetFileExtraMetadata(
+    const std::string &fileNameOnly,
+    const std::string &key,
+    const std::string &value)
+{
+
+    auto setExtraMetadataQuery = std::make_unique<SQLite::Statement>(
+        *db,
+        "INSERT OR REPLACE INTO extraMetadata (idFile, key, value) "
+        "VALUES ((SELECT idFile FROM files WHERE fileName = ?), ?, ?)");
+    setExtraMetadataQuery->bind(1, fileNameOnly);   
+    setExtraMetadataQuery->bind(2, key);
+    setExtraMetadataQuery->bind(3, value);
+    setExtraMetadataQuery->exec();
+}
+std::string AudioFilesDb::GetFileExtraMetadata(
+    const std::string &fileNameOnly,
+    const std::string &key)
+{
+    auto getExtraMetadataQuery = std::make_unique<SQLite::Statement>(
+        *db,
+        "SELECT value FROM extraMetadata WHERE idFile = (SELECT idFile FROM files WHERE fileName = ?) AND key = ?");
+    getExtraMetadataQuery->bind(1, fileNameOnly);
+    getExtraMetadataQuery->bind(2, key);
+    
+    if (getExtraMetadataQuery->executeStep())
+    {
+        return getExtraMetadataQuery->getColumn(0).getText();
+    }
+    return "";
 }

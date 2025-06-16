@@ -160,6 +160,16 @@ namespace
             int32_t fromPosition,
             int32_t toPosition) override;
 
+        virtual void SetFileMetadata(
+            const std::string &fileNameOnly,
+            const std::string &key,
+            const std::string &value) override;
+
+        virtual std::string GetFileMetadata(
+            const std::string &fileNameOnly,
+            const std::string &key) override;
+
+
     private:
         std::vector<DbFileInfo> QueryTracks();
 
@@ -242,12 +252,22 @@ static int DefaultedSortOrder(int track)
     }
     return track;
 }
+
+static bool isFolderArtwork(const std::string &name)
+{
+    return name.ends_with(".jpg") || name.ends_with(".png");
+}
+
 static void SortDbFiles(std::vector<DbFileInfo> &dbFiles, Collator::ptr &collator)
 {
     std::sort(
         dbFiles.begin(), dbFiles.end(),
         [collator](const DbFileInfo &a, const DbFileInfo &b)
         {
+            if (isFolderArtwork(a.fileName()) != isFolderArtwork(b.fileName()))
+            {
+                return isFolderArtwork(a.fileName()) < isFolderArtwork(b.fileName());
+            }
             if (a.position() != b.position())
             {
                 return DefaultedSortOrder(a.position()) < DefaultedSortOrder(b.position());
@@ -411,9 +431,8 @@ std::vector<DbFileInfo> AudioDirectoryInfoImpl::UpdateDbFiles()
     else
     {
         // We have position info, so we need to update the position.
-        SortDbFiles(dbFiles, collator);
-        SortDbFiles(newFiles, collator);
         dbFiles.insert(dbFiles.end(), newFiles.begin(), newFiles.end());
+        SortDbFiles(dbFiles, collator);
 
         for (size_t i = 0; i < dbFiles.size(); ++i)
         {
@@ -892,3 +911,34 @@ namespace pipedal
         return IndexPathToShadowIndexPath(audioRootDirectory, path);
     }
 }
+
+void AudioDirectoryInfoImpl::SetFileMetadata(
+    const std::string &fileNameOnly,
+    const std::string &key,
+    const std::string &value)
+{
+    OpenAudioDb();
+    if (!audioFilesDb)
+    {
+        throw std::runtime_error("Directory is not writable.");
+    }
+    this->UpdateDbFiles();
+
+    audioFilesDb->SetFileExtraMetadata(fileNameOnly, key, value);
+}
+
+std::string AudioDirectoryInfoImpl::GetFileMetadata(
+            const std::string &fileNameOnly,
+            const std::string &key) 
+{
+    OpenAudioDb();
+    if (!audioFilesDb)
+    {
+        throw std::runtime_error("Directory is not writable.");
+    }
+    this->UpdateDbFiles(); // check for deletions.
+
+    return audioFilesDb->GetFileExtraMetadata(fileNameOnly, key);       
+}
+
+

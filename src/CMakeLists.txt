@@ -275,6 +275,7 @@ set (PIPEDAL_SOURCES
     LogFeature.hpp LogFeature.cpp
     Worker.hpp Worker.cpp
     OptionsFeature.hpp OptionsFeature.cpp
+    FileMetadataFeature.hpp FileMetadataFeature.cpp
     VuUpdate.hpp VuUpdate.cpp
     Units.hpp Units.cpp
     RingBuffer.hpp

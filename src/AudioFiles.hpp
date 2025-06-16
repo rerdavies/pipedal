@@ -95,6 +95,15 @@ namespace pipedal
         virtual std::string GetNextAudioFile(const std::string &fileNameOnly) = 0;
         virtual std::string GetPreviousAudioFile(const std::string &fileNameOnly) = 0;
 
+        virtual void SetFileMetadata(
+            const std::string &fileNameOnly,
+            const std::string &key,
+            const std::string &value) = 0;
+
+        virtual std::string GetFileMetadata(
+            const std::string &fileNameOnly,
+            const std::string &key) = 0;
+
         virtual void MoveAudioFile(
             const std::string &directory,
             int32_t fromPosition,

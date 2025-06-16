@@ -2182,6 +2182,44 @@ std::string Storage::RenameFilePropertyFile(
     std::filesystem::rename(oldPath, newPath);
     return newPath;
 }
+
+fs::path MakeVersionedPath(const fs::path &path)
+{
+    if (!fs::exists(path))
+    {
+        return path; // no need to version a non-existing file.
+    }
+    fs::path newPath = path;
+    auto stem = newPath.stem().string();;
+    if (stem.ends_with(")"))
+    {
+        // remove the trailing (n) from the file name.
+        size_t pos = stem.find_last_of('(');
+        std::string stemVersion = stem.substr(pos+1, stem.length()-1-(pos+1)); 
+        // check if it is a number.
+        if (stemVersion.find_first_not_of("0123456789") == std::string::npos)
+        {
+            // it is a number, remove the trailing (n).
+            stem = stem.substr(0, pos);
+            while (stem.ends_with(" "))
+            {
+                // remove trailing space.
+                stem = stem.substr(0, stem.length() - 1);
+            }       
+        }
+    }
+
+    int version = 1;
+    while (fs::exists(newPath))
+    {
+        // append (n) to the file name.
+        std::string newFileName = stem + " (" + std::to_string(version) + ")" + newPath.extension().string();
+        newPath = newPath.parent_path() / newFileName;
+        ++version;
+    }
+    return newPath;
+}
+
 std::string Storage::CopyFilePropertyFile(
     const std::string &oldRelativePath,
     const std::string &newRelativePath,
@@ -2217,11 +2255,7 @@ std::string Storage::CopyFilePropertyFile(
         }
         else
         {
-            if (!overwrite) {
-                return ""; // signal a portential overwrite.
-            } else {
-                fs::remove(newPath);
-            }
+            newPath = MakeVersionedPath(newPath);
         }
     }
 
