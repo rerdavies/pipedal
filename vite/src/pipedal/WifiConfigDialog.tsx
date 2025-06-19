@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -432,11 +432,11 @@ const WifiConfigDialog = withStyles(
                                     <FormHelperText>{NBSP}</FormHelperText>
                                 </FormControl>
                                 {(this.state.compactWidth || this.state.autoStartMode !== 2) && (
-                                    <IconButton style={{ flexGrow: 0, flexShrink: 0, marginTop: 8 }}
+                                    <IconButtonEx tooltip="Help" style={{ flexGrow: 0, flexShrink: 0, marginTop: 8 }}
                                         onClick={() => { this.setState({ showHelpDialog: true }); }}
                                     >
                                         <HelpOutlineIcon />
-                                    </IconButton>
+                                    </IconButtonEx>
                                 )}
                             </div>
                             <div style={{
@@ -472,11 +472,11 @@ const WifiConfigDialog = withStyles(
                                                 }}
                                             />}
                                 />
-                                <IconButton style={{ visibility: this.state.compactWidth ? "hidden" : "visible", flexGrow: 0, flexShrink: 0 }}
+                                <IconButtonEx tooltip="Help" style={{ visibility: this.state.compactWidth ? "hidden" : "visible", flexGrow: 0, flexShrink: 0 }}
                                     onClick={() => { this.setState({ showHelpDialog: true }); }}
                                 >
                                     <HelpOutlineIcon />
-                                </IconButton>
+                                </IconButtonEx>
 
                             </div>
                         </div>
@@ -532,7 +532,9 @@ const WifiConfigDialog = withStyles(
                                                     : ""
                                             ,
                                             endAdornment: (
-                                                <IconButton size="small"
+                                                <IconButtonEx tooltip={
+                                                    this.state.showPassword ? "Hide password": "Show password"
+                                                } size="small"
                                                     aria-label="toggle password visibility"
                                                     onClick={() => { this.handleTogglePasswordVisibility(); }}
                                                 >
@@ -546,7 +548,7 @@ const WifiConfigDialog = withStyles(
 
                                                             )
                                                     }
-                                                </IconButton>
+                                                </IconButtonEx>
                                             )
                                         }}
                                     />

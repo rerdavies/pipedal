@@ -33,7 +33,7 @@ import DialogEx from './DialogEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModelFactory, PiPedalModel } from './PiPedalModel';
 import ZoomedDial from './ZoomedDial';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
@@ -233,13 +233,13 @@ const ZoomedUiControl = withTheme(withStyles(
                         width: 380, height: 300,
                         display: "flex", flexFlow: "row", alignItems: "center", alignContent: " center", justifyContent: "center"
                     }}>
-                        <IconButton sx={{ height: "100%", width: 48, borderRadius: "0% 50% 50% 0%" }} onClick={
+                        <IconButtonEx tooltip="Previous" sx={{ height: "100%", width: 48, borderRadius: "0% 50% 50% 0%" }} onClick={
                             () => {
                                 this.model.onNextZoomedControl();
                             }
                         } >
                             <NavigateBeforeIcon />
-                        </IconButton>
+                        </IconButtonEx>
                         <div style={{
                             width: 200, flexGrow: 1, height: 300, 
                             display: "flex", flexFlow: "column", alignItems: "center", alignContent: "center", justifyContent: "center"
@@ -281,14 +281,14 @@ const ZoomedUiControl = withTheme(withStyles(
                                 {displayValue}
                             </Typography>
                         </div>
-                        <IconButton sx={{ height: "100%", width: 48, borderRadius: "50% 0% 0% 50%" }}
+                        <IconButtonEx tooltip="Next" sx={{ height: "100%", width: 48, borderRadius: "50% 0% 0% 50%" }}
                             onClick={() => {
                                 this.model.onPreviousZoomedControl();
                             }
                             }
                         >
                             <NavigateNextIcon />
-                        </IconButton>
+                        </IconButtonEx>
                     </div>
 
                 </DialogEx>

@@ -67,23 +67,6 @@ export interface PluginInfoDialogTitleProps extends WithStyles<typeof styles> {
     onClose: () => void;
 }
 
-// const PluginInfoDialogTitle = withStyles(styles)((props: PluginInfoDialogTitleProps) => {
-//     const { children, classes, onClose, ...other } = props;
-//     return (
-//         <MuiDialogTitle style={{ display: "flex", flexDirection: "row", alignItems: "start", flexWrap: "nowrap" }}>
-//             <div style={{ flex: "0 0 auto", marginRight: 8 }}>
-//                 <PluginIcon pluginType={plugin.plugin_type} pluginUri={plugin.uri} offsetY={5} />
-//             </div>
-//             <div style={{ flex: "1 1 auto" }}>
-//                 {children}
-//             </div>
-//             <IconButton aria-label="close" className={classes.closeButton} onClick={() => handleClose()}
-//                 style={{ flex: "0 0 auto" }}>
-//                 <CloseIcon />
-//             </IconButton>
-//         </MuiDialogTitle>
-//     );
-// });
 
 const PluginInfoDialogContent = withStyles(
     MuiDialogContent,

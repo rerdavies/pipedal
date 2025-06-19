@@ -24,7 +24,6 @@ import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, PresetIndexEntry, PresetIndex } from './PiPedalModel';
 import Button from '@mui/material/Button';
-import ButtonEx from './ButtonEx';
 import ButtonBase from "@mui/material/ButtonBase";
 import DialogEx from './DialogEx';
 import AppBar from '@mui/material/AppBar';

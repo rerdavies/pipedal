@@ -27,7 +27,7 @@ import { withStyles } from "tss-react/mui";
 import { PiPedalModel, PiPedalModelFactory, PresetIndex } from './PiPedalModel';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import AppBar from '@mui/material/AppBar';
 import SnapshotPanel from './SnapshotPanel';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -246,13 +246,13 @@ export const PerformanceView =
                                     paddingTop: 3, paddingBottom: 3, paddingRight: 8, paddingLeft: 8,
                                     alignItems: "start"
                                 }}>
-                                    <IconButton aria-label="menu" color="inherit"
+                                    <IconButtonEx tooltip="Back" aria-label="menu" color="inherit"
                                         onClick={() => {  this.props.onClose(); }} 
                                         style={{ 
                                             position: "relative",top: 3,
                                             flex: "0 0 auto" }} >
                                         <ArrowBackIcon />
-                                    </IconButton>
+                                    </IconButtonEx>
 
                                     <div style={{
                                         flex: "1 1 1px", display: "flex",
@@ -265,7 +265,7 @@ export const PerformanceView =
                                     }}>
                                         {/********* BANKS *******************/}
                                         <div style={{ flex: "1 1 1px", display: "flex", flexFlow: "row nowrap", maxWidth: 500 }}>
-                                            <IconButton
+                                            <IconButtonEx tooltip="Previous bank"
                                                 aria-label="previous-bank"
                                                 onClick={() => { this.handlePreviousBank(); }}
                                                 size="medium"
@@ -275,7 +275,7 @@ export const PerformanceView =
                                                 }}
                                             >
                                                 <ArrowBackIosIcon style={{ opacity: 0.75 }} />
-                                            </IconButton>
+                                            </IconButtonEx>
 
                                             <Select variant="standard"
                                                 className={classes.select}
@@ -299,18 +299,19 @@ export const PerformanceView =
                                                 }
                                             </Select>
 
-                                            <IconButton
+                                            <IconButtonEx tooltip="Next bank"
                                                 aria-label="next-bank"
                                                 onClick={() => { this.handleNextBank(); }}
                                                 color="inherit"
                                                 style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
                                             >
                                                 <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
-                                                
-                                            </IconButton>
+
+                                            </IconButtonEx>
 
                                             {/** spacer */}
-                                            <IconButton
+                                            <IconButtonEx
+                                                tooltip="Next bank"
                                                 aria-label="next-bank"
                                                 onClick={() => { this.handleNextBank(); }}
                                                 size="medium"
@@ -318,22 +319,22 @@ export const PerformanceView =
                                                 style={{visibility: "hidden"}}
                                             >
                                                 <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
-                                                
-                                            </IconButton>
+
+                                            </IconButtonEx>
 
                                             
 
                                         </div>
                                         {/********* PRESETS *******************/}
                                         <div style={{ flex: "1 1 1px", display: "flex", flexFlow: "row nowrap", maxWidth: 500 }}>
-                                            <IconButton
-                                                aria-label="previous-presest"
+                                            <IconButtonEx tooltip="Previous preset"
+                                                aria-label="previous-preset"
                                                 onClick={() => { this.handlePreviousPreset(); }}
                                                 color="inherit"
                                                 style={{ borderTopRightRadius: "3px", borderBottomRightRadius: "3px", marginRight: 4 }}
                                             >
                                                 <ArrowBackIosIcon style={{ opacity: 0.75 }} />
-                                            </IconButton>
+                                            </IconButtonEx>
                                             <Select variant="standard"
                                                 className={classes.select}
                                                 style={{
@@ -365,24 +366,24 @@ export const PerformanceView =
                                                 }
                                             </Select>
 
-                                            <IconButton
+                                            <IconButtonEx tooltip="Next preset"
                                                 aria-label="next-preset"
                                                 onClick={() => { this.handleNextPreset(); }}
                                                 color="inherit"
                                                 style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
                                             >
                                                 <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
-                                            </IconButton>
+                                            </IconButtonEx>
 
-                                            <IconButton
+                                            <IconButtonEx tooltip="Save preset"
                                                 aria-label="save-preset"
                                                 onClick={() => { this.model.saveCurrentPreset(); }}
                                                 size="medium"
                                                 color="inherit"
                                                 style={{flexShrink: 0,visibility: this.state.presetModified? "visible": "hidden"}}
                                             >
-                                                <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />                                                
-                                            </IconButton>
+                                                <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />
+                                            </IconButtonEx>
 
                                         </div>
                                     </div>

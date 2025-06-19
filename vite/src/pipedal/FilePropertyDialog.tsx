@@ -1176,11 +1176,11 @@ export default withStyles(
                                     ) : (
                                         <div style={{ width: "100%" }}>
                                             <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                                <IconButton style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                                <IconButtonEx tooltip="Delete" style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
                                                     disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
                                                     onClick={() => this.handleDelete()} >
                                                     <OldDeleteIcon fontSize='small' />
-                                                </IconButton>
+                                                </IconButtonEx>
 
                                                 <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
                                                     onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}

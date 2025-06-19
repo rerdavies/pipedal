@@ -21,7 +21,7 @@ import React, { SyntheticEvent, Component } from 'react';
 import Switch from "@mui/material/Switch";
 import OkCancelDialog from './OkCancelDialog';
 import RadioSelectDialog from './RadioSelectDialog';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import { ColorTheme } from './DarkMode';
@@ -570,10 +570,10 @@ const SettingsDialog = withStyles(
                                         :
                                         (
                                             <Toolbar>
-                                                <IconButton edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
+                                                <IconButtonEx tooltip="Back" edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
                                                 >
                                                     <ArrowBackIcon />
-                                                </IconButton>
+                                                </IconButtonEx>
                                                 <Typography variant="h6" className={classes.dialogTitle}>
                                                     Settings
                                                 </Typography>
