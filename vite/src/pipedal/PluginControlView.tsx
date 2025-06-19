@@ -450,13 +450,13 @@ const PluginControlView =
                     />
                 ));
             }
-            private ixKey: number = 1; 
+            private ixKey: number = 1;
 
             makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
                 let symbol = uiControl.symbol;
                 if (!uiControl.is_input) {
                     return (
-                        <PluginOutputControl key={uiControl.symbol } instanceId={this.props.instanceId} uiControl={uiControl} />
+                        <PluginOutputControl key={uiControl.symbol} instanceId={this.props.instanceId} uiControl={uiControl} />
 
                     );
                 }
@@ -472,7 +472,7 @@ const PluginControlView =
                     throw new PiPedalStateError("Missing control value.");
                 }
                 return ((
-                    <PluginControl key={uiControl.symbol} instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
+                    <PluginControl key={"ppc" + uiControl.symbol} instanceId={this.props.instanceId} uiControl={uiControl} value={controlValue.value}
                         onChange={(value: number) => { this.onControlValueChanged(controlValue!.key, value) }}
                         onPreviewChange={(value: number) => { this.onPreviewChange(controlValue!.key, value) }}
                         requestIMEEdit={(uiControl: any, value: any) => this.requestImeEdit(uiControl, value)}
@@ -498,7 +498,7 @@ const PluginControlView =
                     let previousControl = controls[controls.length - 1];
                     if (!(previousControl instanceof ControlGroup)) {
                         let pair = (
-                            <div key={"k"+this.ixKey++} className={classes.controlPair}>
+                            <div key={"k" + this.ixKey++} className={classes.controlPair}>
                                 {previousControl as ReactNode}
                                 {newControl}
                             </div>
@@ -508,7 +508,7 @@ const PluginControlView =
                         // (e.g.. inserting at position 4 still places the extended control after four previous controls
                         controls.push((
 
-                            <div key={"k"+this.ixKey++} className={classes.controlSpacer} />
+                            <div key={"k" + this.ixKey++} className={classes.controlSpacer} />
                         ));
                     } else {
                         controls.push(newControl);
@@ -686,7 +686,7 @@ const PluginControlView =
                             let item = controlGroup.controls[j];
                             controls.push(
                                 (
-                                    <div key={"ctl" + (this.controlKeyIndex++)} className={classes.controlPadding}>
+                                    <div key={"ctlx" + (this.controlKeyIndex++)} className={classes.controlPadding}>
                                         {item}
                                     </div>
 
@@ -695,7 +695,7 @@ const PluginControlView =
                         }
 
                         result.push((
-                            <div key={"ctl" + (this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
+                            <div key={"ctlx" + (this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
                                 <div className={classes.portGroupTitle}>
                                     <Tooltip title={controlGroup.name}
                                         placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
@@ -713,21 +713,20 @@ const PluginControlView =
                         ));
 
                     } else {
-                                                    if (this.fullScreen())
-                            {
-                                result.push(
-                                    <div style={{position: "relative", width: "100%", height:"100%"}}
-                                    >
-                                        {node as ReactNode}
-                                    </div>
-                                );
-                            } else {
-                                result.push((
-                                    <div key={"ctl" + (this.controlKeyIndex++)} className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
-                                        {node as ReactNode}
-                                    </div>
-                                ));
-                            }
+                        if (this.fullScreen()) {
+                            result.push(
+                                <div key={"fullScreen" + this.props.instanceId} style={{ position: "relative", width: "100%", height: "100%" }}
+                                >
+                                    {node as ReactNode}
+                                </div>
+                            );
+                        } else {
+                            result.push((
+                                <div key={"ctl" + (this.controlKeyIndex++)} className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
+                                    {node as ReactNode}
+                                </div>
+                            ));
+                        }
                     }
 
                 }

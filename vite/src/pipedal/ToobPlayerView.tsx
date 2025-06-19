@@ -110,14 +110,14 @@ const ToobPlayerView =
                 for (let mixControl of mixPanel.controls) {
                     extraControls.push(
                         (
-                            <div  key={"k"+ iKey++} style={{flex: "0 0 auto", position: "relative",height: "100%" }}>
+                            <div  key={"kExtra"+ iKey++} style={{flex: "0 0 auto", position: "relative",height: "100%" }}>
                                 {mixControl}
                             </div>
                         ));
                 }
 
                 let panel = (
-                    <ToobPlayerControl key="MusicPlayer" instanceId={this.props.instanceId} extraControls={extraControls} />
+                    <ToobPlayerControl key={"MusicPlayer" + this.props.instanceId}  instanceId={this.props.instanceId} extraControls={extraControls} />
                 );
 
                 let result: (React.ReactNode | ControlGroup)[] = [];
@@ -128,6 +128,7 @@ const ToobPlayerView =
             render() {
                 return (
                     <PluginControlView
+                        key={"ToobPlayerView" + this.props.instanceId}
                         instanceId={this.props.instanceId}
                         item={this.props.item}
                         customization={this}
@@ -145,7 +146,7 @@ class ToobPlayerViewFactory implements IControlViewFactory {
     uri: string = "http://two-play.com/plugins/toob-player";
 
     Create(model: PiPedalModel, pedalboardItem: PedalboardItem): React.ReactNode {
-        return (<ToobPlayerView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
+        return (<ToobPlayerView key={"ppmv"+pedalboardItem.instanceId} instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
     }
 
 

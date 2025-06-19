@@ -62,7 +62,7 @@ import UploadFileDialog from './UploadFileDialog';
 import OkCancelDialog from './OkCancelDialog';
 import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
-import { getAlbumArtUri } from './AudioFileMetadata';
+import { getAlbumArtUri, getTrackTitle  } from './AudioFileMetadata';
 
 interface Point {
     x: number;
@@ -93,6 +93,7 @@ const audioFileExtensions: { [name: string]: boolean } = {
     ".aiff": true,
     ".ra": true
 };
+
 
 
 function screenToClient(element: HTMLDivElement, point: Point): Point {
@@ -650,15 +651,18 @@ export default withStyles(
         }
         getCompactTrackTitle(fileEntry: FileEntry): string {
             let metadata = fileEntry.metadata;
+            let title = getTrackTitle(fileEntry.pathname, metadata);
             if (!metadata) {
-                return "#error";
+                return title;
             }
-            let title = this.getTrackTitle(fileEntry);
+
             if (metadata.album !== "") {
                 title += " (" + metadata.album + ")";
             }
             return title;
         }
+
+
         getAlbumTitle(fileEntry: FileEntry): string {
             let artist = fileEntry.metadata?.artist || "";
             if (artist == "") {
@@ -667,28 +671,6 @@ export default withStyles(
             let album = fileEntry.metadata?.album || "";
             let joiner = (artist !== "" && album !== "") ? " - " : "";
             return album + joiner + artist;
-        }
-        getTrackTitle(fileEntry: FileEntry): string {
-            if (!fileEntry.metadata) {
-                return pathFileName(fileEntry.pathname);
-            }
-            if (fileEntry.metadata.title === "") {
-                return pathFileName(fileEntry.pathname);
-            }
-            let metadata = fileEntry.metadata;
-            let trackDisplay = "";
-            if (metadata.track > 0) {
-                if (metadata.track >= 1000) {
-                    trackDisplay = (metadata.track % 1000).toString() + "/" + Math.floor(metadata.track / 1000) + ". ";
-                } else {
-                    trackDisplay = metadata.track.toString() + ".  ";
-                }
-            }
-            let result = trackDisplay + metadata.title;
-            if (result === "") {
-                result = pathFileName(fileEntry.pathname);
-            }
-            return result;
         }
         getTrackThumbnail(fileEntry: FileEntry): string {
             return getAlbumArtUri(this.model, fileEntry.metadata, fileEntry.pathname);
@@ -1100,7 +1082,7 @@ export default withStyles(
                                                                             className={classes.secondaryText}
                                                                             variant="body2"
                                                                             style={{ flex: "0 0 auto", textOverflow: "ellipsis", textAlign: "left", marginBottom: 4 }}>
-                                                                            {this.getTrackTitle(value)}
+                                                                            {getTrackTitle(value.pathname, value.metadata)}
                                                                         </Typography>
                                                                         <Typography noWrap className={classes.secondaryText}
                                                                             variant="body2"

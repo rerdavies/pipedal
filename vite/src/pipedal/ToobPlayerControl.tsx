@@ -45,6 +45,8 @@ import { getAlbumArtUri } from './AudioFileMetadata';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import Timebase, { LoopParameters, TimebaseUnits } from './Timebase';
 import ControlSlider from './ControlSlider';
+import { getTrackTitle } from './AudioFileMetadata';
+
 
 let Player__seek = "http://two-play.com/plugins/toob-player#seek"
 const AUDIO_FILE_PROPERTY_URI = "http://two-play.com/plugins/toob-player#audioFile";
@@ -320,19 +322,9 @@ export default function ToobPlayerControl(
         }
         model.getAudioFileMetadata(path)
             .then((metadata) => {
-                let strTrack: string = "";
-                if (metadata.track > 0) {
-                    let disc = (metadata.track / 1000);
-                    if (disc >= 1) {
-                        strTrack = (metadata.track % 1000).toString() + '/' + Math.floor(disc).toString();
-                    } else {
-                        strTrack = metadata.track.toString();
-                    }
-                    strTrack += ". ";
-                }
                 let coverArtUri = getAlbumArtUri(model, metadata, path);
                 setCoverArt(coverArtUri);
-                setTitle(strTrack + metadata.title);
+                setTitle(getTrackTitle(path, metadata));
                 setAlbum(metadata.album);
                 setArtist(metadata.artist);
                 setAlbumArtist(metadata.albumArtist);
@@ -419,6 +411,8 @@ export default function ToobPlayerControl(
         );
     }
     function FilePanel() {
+        let textColor = pluginState == PluginState.Error ? "error" : "textPrimary";
+
         return (
             <ButtonBase style={{ display: "block", width: "100%", borderRadius: 10, textAlign: "left" }}
                 onClick={() => { SelectFile() }}
@@ -442,10 +436,10 @@ export default function ToobPlayerControl(
                             </Typography>
                         ) : (
                             <div>
-                                <Typography variant="body1" noWrap>
+                                <Typography variant="body1" color={textColor} noWrap>
                                     {titleLine}
                                 </Typography>
-                                <Typography variant="body2" noWrap sx={{}}>
+                                <Typography variant="body2" color={textColor} noWrap sx={{}}>
                                     {albumLine}
                                 </Typography>
                             </div>
@@ -483,6 +477,27 @@ export default function ToobPlayerControl(
 
     function onLoopPropertyChanged(loopSettingsJson: string) {
         try {
+            if (loopSettingsJson === "") {
+                setTimebase(
+                    {
+                        units: TimebaseUnits.Seconds,
+                        tempo: 120.0,
+                        timeSignature: { numerator: 4, denominator: 4 }
+                    })
+                let loopParameters = {
+                    start: 0.0,
+                    loopEnable: false,
+                    loopStart: 0.0,
+                    loopEnd: 0.0
+                };
+                setLoopParameters(loopParameters);
+
+                setStart(0.0);
+                setLoopEnable(false);
+                setLoopStart(0.0);
+                setLoopEnd(0.0);
+                return;
+            }
             let atomObject = JSON.parse(loopSettingsJson);
             let loopParameters: LoopParameters = atomObject.loopParameters as LoopParameters;
             let newTimebase: Timebase | undefined = atomObject.timebase as (Timebase | undefined);;
@@ -827,7 +842,7 @@ export default function ToobPlayerControl(
                     playing={!paused}
                     onPreview={() => { handlePreview(); }}
                     value={loopParameters}
-                    onCancelPlaying= {()=> { handleCancelPlaying();}}
+                    onCancelPlaying={() => { handleCancelPlaying(); }}
                     timebase={timebase}
                     onTimebaseChange={(newTimebase) => {
                         setTimebase(newTimebase);

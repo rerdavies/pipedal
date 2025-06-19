@@ -22,9 +22,16 @@
 #include "AudioFiles.hpp"
 #include "Lv2Log.hpp"
 #include "ss.hpp"
+#include "util.hpp"
+#include "json.hpp"
+#include "json_variant.hpp"
+
+#include <iostream>
+#include <filesystem>
 
 #include "lv2/lv2plug.in/ns/ext/buf-size/buf-size.h"
 using namespace pipedal;
+namespace fs = std::filesystem;
 
 FileMetadataFeature::FileMetadataFeature()
 {
@@ -33,11 +40,36 @@ FileMetadataFeature::FileMetadataFeature()
     interface.handle = (void *)this;
     interface.setFileMetadata = &FileMetadataFeature::S_setFileMetadata;
     interface.getFileMetadata = &FileMetadataFeature::S_getFileMetadata;
-
+    interface.deleteFileMetadata = &FileMetadataFeature::S_deleteFileMetadata;
 }
 
 FileMetadataFeature::~FileMetadataFeature()
 {
+}
+
+void FileMetadataFeature::SetPluginStoragePath(const std::filesystem::path &storagePath)
+{
+    this->tracksPath = storagePath / "shared" / "audio" / "Tracks";
+}
+
+// Check if the path is within the tracks directory
+bool FileMetadataFeature::IsValidPath(const std::filesystem::path &path) const
+{
+    if (tracksPath.empty())
+    {
+        return false;
+    }
+    if (HasDotDot(path))
+    {
+        return false;
+    }
+    // is a subdirectory of track path
+    // check for directory seperator
+    if (!IsSubdirectory(path, tracksPath))
+    {
+        return false; // Valid subdirectory
+    }
+    return true;
 }
 void FileMetadataFeature::Prepare(MapFeature &map)
 {
@@ -46,88 +78,179 @@ void FileMetadataFeature::Prepare(MapFeature &map)
 
 PIPEDAL_FileMetadata_Status FileMetadataFeature::setFileMetadata(
     const char *absolute_path,
-    LV2_URID key,
-    const char *fileMetadata)
+    const char *key,
+    const char *value)
 {
-    const char *strKey = mapFeature->UridToString(key);
-    if (strKey == nullptr)
+    if (!IsValidPath(absolute_path))
     {
-        return PIPEDAL_FILE_METADATA_INVALID_KEY;
-    }
-    std::filesystem::path path{absolute_path};
-
-    if (!std::filesystem::exists(path))
-    {
-        return PIPEDAL_FILE_METADATA_INVALID_PATH; // File does not exist
-    }
-    if (!std::filesystem::is_regular_file(path))
-    {
-        return PIPEDAL_FILE_METADATA_INVALID_PATH; // Not a regular file
-    }
-    try {
-        AudioDirectoryInfo::Ptr audioDirectoryInfo = AudioDirectoryInfo::Create(path.parent_path());
-        audioDirectoryInfo->SetFileMetadata(path.filename(), strKey, fileMetadata);
-    } catch (const std::exception&e) {
-        Lv2Log::error(SS("Failed to create AudioDirectoryInfo for " << path << ": " << e.what()));
-        return PIPEDAL_FILE_METADATA_INVALID_PATH; // Failed to create AudioDirectoryInfo
+        return PIPEDAL_FILE_METADATA_INVALID_PATH; // Cannot set metadata for files in the tracks directory
     }
 
+    std::filesystem::path path{SS(absolute_path << ".mdata")};
 
-    return PIPEDAL_FILE_METADATA_SUCCESS; // TODO: Implement this
+    json_variant jsonData;
+    if (fs::exists(path))
+    {
+        try
+        {
+            std::ifstream f(path);
+            json_reader reader(f);
+            reader.read(&jsonData);
+        }
+        catch (const std::exception &e)
+        {
+            jsonData = json_variant::make_object();
+        }
+    }
+    else
+    {
+        jsonData = json_variant::make_object();
+    }
+
+    (*jsonData.as_object())[key] = json_variant(value);
+
+    {
+        std::ofstream f(path);
+        if (!f.is_open())
+        {
+            Lv2Log::error(SS("Failed to write metadata file " << path));
+            return PIPEDAL_FILE_METADATA_PERMISSION_DENIED; // Failed to open existing metadata
+        }
+        json_writer writer(f);
+        writer.write(jsonData);
+    }
+    Lv2Log::debug(SS("Set file metadata for " << absolute_path << " key: " << key << " value: " << value));
+    return PIPEDAL_FILE_METADATA_SUCCESS;
 }
 
 uint32_t FileMetadataFeature::getFileMetadata(
     const char *absolute_path,
-    LV2_URID key,
+    const char *key,
     char *fileMetadata,
     uint32_t fileMetadataSize)
 {
-    const char *strKey = mapFeature->UridToString(key);
-    if (strKey == nullptr)
+    if (fileMetadata)
+        fileMetadata[0] = '\0'; // Ensure the buffer is null-terminated
+
+    if (!IsValidPath(absolute_path))
     {
-        return PIPEDAL_FILE_METADATA_INVALID_KEY;
+        return 0; // Cannot set metadata for files in the tracks directory
     }
 
-    std::filesystem::path path{absolute_path};
+    std::filesystem::path path{SS(absolute_path << ".mdata")};
 
-    AudioDirectoryInfo::Ptr audioDirectoryInfo = AudioDirectoryInfo::Create(path.parent_path());
+    json_variant jsonData;
+    std::string result;
 
-    std::string metadata = audioDirectoryInfo->GetFileMetadata(path.filename(), strKey);
-    if (metadata.empty())
+    if (fs::exists(path))
     {
-        return 0; // No metadata found
+        try
+        {
+            std::ifstream f(path);
+            json_reader reader(f);
+            reader.read(&jsonData);
+            result = jsonData.as_object()->at(std::string(key)).as_string();
+        }
+        catch (const std::exception &e)
+        {
+            return 0;
+        }
     }
-    size_t required = metadata.size() + 1;
-    if (required >= std::numeric_limits<uint32_t>::max())
+    else
     {
-        return PIPEDAL_FILE_METADATA_ERR_UNKNOWNM; // Metadata too large
+        Lv2Log::debug(SS("No metadata file found for " << absolute_path << " key: " << key));
+        return 0;
     }
-    if (fileMetadata == nullptr || required > fileMetadataSize)
+    size_t len = result.length() + 1; // +1 for null terminator
+    if (len > fileMetadataSize || fileMetadata == nullptr)
     {
-        return static_cast<uint32_t>(required); // Return size needed including null terminator
+        // Not enough space in the buffer, return the size needed.
+        return len;
     }
-    if (fileMetadataSize < metadata.length() + 1)
+    memcpy(fileMetadata, result.c_str(), len);
+    Lv2Log::debug(SS("Get file metadata for " << absolute_path << " key: " << key << " value: " << result));    
+    return len;
+}
+PIPEDAL_FileMetadata_Status FileMetadataFeature::deleteFileMetadata(
+    const char *absolute_path,
+    const char *key)
+{
+    if (!IsValidPath(absolute_path))
     {
-        return static_cast<uint32_t>(metadata.size() + 1); // Return size needed including null terminator
+        return PIPEDAL_FILE_METADATA_INVALID_PATH; // Cannot set metadata for files in the tracks directory
     }
-    std::strncpy(fileMetadata, metadata.c_str(), fileMetadataSize);
-    return required;
+    Lv2Log::debug(SS("Delete file metadata for " << absolute_path << " key: " << key));
+
+    std::filesystem::path path{SS(absolute_path << ".mdata")};
+
+    if (!fs::exists(path))
+    {
+        return PIPEDAL_FILE_METADATA_NOT_FOUND; // Metadata file does not exist
+    }
+
+    json_variant jsonData;
+    try
+    {
+        std::ifstream f(path);
+        json_reader reader(f);
+        reader.read(&jsonData);
+    }
+    catch (const std::exception &e)
+    {
+        return PIPEDAL_FILE_METADATA_NOT_FOUND; // Failed to read existing metadata
+    }
+
+    auto obj = jsonData.as_object();
+    auto it = obj->find(std::string(key));
+    if (it == obj->end())
+    {
+        return PIPEDAL_FILE_METADATA_NOT_FOUND; // Key not found
+    }
+
+    obj->erase(it);
+
+    if (obj->begin() == obj->end())
+    {
+        // If the object is empty, delete the metadata file
+        fs::remove(path);
+        return PIPEDAL_FILE_METADATA_SUCCESS; // Metadata deleted successfully
+    }
+
+    std::ofstream f(path);
+    if (!f.is_open())
+    {
+        Lv2Log::error(SS("Failed to write metadata file " << path));
+        return PIPEDAL_FILE_METADATA_PERMISSION_DENIED; // Failed to open existing metadata
+    }
+    
+    json_writer writer(f);
+    writer.write(jsonData);
+
+    return PIPEDAL_FILE_METADATA_SUCCESS;
 }
 
 PIPEDAL_FileMetadata_Status FileMetadataFeature::S_setFileMetadata(
     PIPEDAL_FILE_METADATA_Handle handle,
     const char *absolute_path,
-    LV2_URID key,
+    const char *key,
     const char *fileMetadata)
 {
     return ((FileMetadataFeature *)handle)->setFileMetadata(absolute_path, key, fileMetadata);
 }
 uint32_t FileMetadataFeature::S_getFileMetadata(
-    PIPEDAL_FILE_METADATA_Handle handle, 
-    LV2_URID key, 
-    const char *absolute_path, 
-    char *buffer, 
+    PIPEDAL_FILE_METADATA_Handle handle,
+    const char *absolute_path,
+    const char *key,
+    char *buffer,
     uint32_t bufferSize)
 {
     return ((FileMetadataFeature *)handle)->getFileMetadata(absolute_path, key, buffer, bufferSize);
+}
+
+PIPEDAL_FileMetadata_Status FileMetadataFeature::S_deleteFileMetadata(
+    PIPEDAL_FILE_METADATA_Handle handle,
+    const char *absolute_path,
+    const char *key)
+{
+    return ((FileMetadataFeature *)handle)->deleteFileMetadata(absolute_path, key);
 }

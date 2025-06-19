@@ -25,6 +25,7 @@
 #include "PluginType.hpp"
 #include <lilv/lilv.h>
 #include "MapFeature.hpp"
+#include "FileMetadataFeature.hpp"
 #include "OptionsFeature.hpp"
 #include <filesystem>
 #include <cmath>
@@ -794,6 +795,7 @@ namespace pipedal
 
         std::vector<const LV2_Feature *> lv2Features;
         MapFeature mapFeature;
+        FileMetadataFeature fileMetadataFeature;
         OptionsFeature optionsFeature;
         std::string pluginStoragePath;
 
@@ -858,8 +860,10 @@ namespace pipedal
         virtual std::shared_ptr<HostWorkerThread> GetHostWorkerThread();
 
     public:
-        virtual MapFeature &GetMapFeature() { return this->mapFeature; }
+        virtual MapFeature &GetMapFeature() override { return this->mapFeature; }
         void CheckForResourceInitialization(const std::string& pluginUri,const std::filesystem::path& pluginUploadDirectory);
+
+        
 
         std::string MapResourcePath(const std::string&uri, const std::string&relativePath);
 

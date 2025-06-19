@@ -2023,6 +2023,11 @@ void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
         else
         {
             std::filesystem::remove(fileName);
+            if (IsInAudioTracksDirectory(fileName)) 
+            {
+                // remove the metadata file as well.
+                std::filesystem::remove(fileName.string() + ".mdata");
+            }
         }
     }
     catch (const std::exception &)
@@ -2180,6 +2185,10 @@ std::string Storage::RenameFilePropertyFile(
     }
 
     std::filesystem::rename(oldPath, newPath);
+    if (fs::exists(oldPath.string()+".mdata")) {
+        // rename the metadata file as well.
+        std::filesystem::rename(oldPath.string()+".mdata", newPath.string()+".mdata");
+    }
     return newPath;
 }
 
@@ -2209,11 +2218,17 @@ fs::path MakeVersionedPath(const fs::path &path)
         }
     }
 
-    int version = 1;
+    int version = 0;
     while (fs::exists(newPath))
     {
         // append (n) to the file name.
-        std::string newFileName = stem + " (" + std::to_string(version) + ")" + newPath.extension().string();
+        std::string newFileName;
+        if (version == 0) {
+            newFileName = SS(stem << newPath.extension().string());
+        } else {
+            // append (n) to the file name.
+            newFileName = SS(stem << " (" << std::to_string(version) << ")" << newPath.extension().string());
+        } 
         newPath = newPath.parent_path() / newFileName;
         ++version;
     }
@@ -2260,6 +2275,19 @@ std::string Storage::CopyFilePropertyFile(
     }
 
     std::filesystem::create_hard_link(oldPath, newPath);
+
+    if (IsInAudioTracksDirectory(oldPath) 
+    && IsInAudioTracksDirectory(newPath))
+    {
+        std::filesystem::path metadataPath = SS(oldPath.string() << ".mdata");
+        if (fs::exists(metadataPath)) {
+            // copy the metadata file as well.
+            std::filesystem::copy_file(
+                metadataPath, 
+                SS(newPath.string() << ".mdata"),
+                fs::copy_options::overwrite_existing);
+        }
+    }
     return newPath;
 }
 

@@ -21,7 +21,7 @@
  *   SOFTWARE.
  */
 
-import { pathConcat, pathParentDirectory } from "./FileUtils";
+import { pathConcat, pathParentDirectory, pathFileName } from "./FileUtils";
 import { PiPedalModel } from "./PiPedalModel";
 
 export class ThumbnailType {
@@ -30,6 +30,40 @@ export class ThumbnailType {
     static Folder = 2;   // from a albumArt.jpg or similar
     static None = 3;      // Use default thumbnail.
 };
+
+
+const  fileVersionRegex = /\((\d+)\)\.[0-9a-zA-Z]*$/;
+function getVersionSuffix(filePath: string): string | null {
+    const match = filePath.match(fileVersionRegex);
+    return match ? match[1] : null;
+}
+
+
+export function getTrackTitle(pathname: string, metadata: AudioFileMetadata | null | undefined): string {
+    if (!metadata) {
+        return pathFileName(pathname);
+    }
+    if (metadata.title === "") {
+        return pathFileName(pathname);
+    }
+    let trackDisplay = "";
+    if (metadata.track > 0) {
+        if (metadata.track >= 1000) {
+            trackDisplay = (metadata.track % 1000).toString() + "/" + Math.floor(metadata.track / 1000) + ". ";
+        } else {
+            trackDisplay = metadata.track.toString() + ".  ";
+        }
+    }
+    let result = trackDisplay + metadata.title;
+    if (result === "") {
+        result = pathFileName(pathname);
+    }
+    let versionSuffix = getVersionSuffix(pathname);
+    if (versionSuffix) {
+        result += " (" + versionSuffix + ")";
+    }
+    return result;
+}
 
 
 export default class AudioFileMetadata {

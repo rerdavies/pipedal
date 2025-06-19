@@ -59,21 +59,6 @@ using namespace pipedal;
 using namespace boost::system;
 namespace fs = std::filesystem;
 
-static bool HasDotDot(const std::filesystem::path &path)
-{
-    for (auto &part : path)
-    {
-        if (part == "..")
-        {
-            return true;
-        }
-        if (part == ".")
-        {
-            return true;
-        }
-    }
-    return false;
-}
 
 class UserUploadResponse
 {
@@ -535,30 +520,41 @@ public:
                 try
                 {
                     fs::path path = request_uri.query("path");
-                    if (path.empty())
+                    if (path.empty() || 
+                        !fs::exists(path) || 
+                        !this->model->IsInUploadsDirectory(path) ||
+                        HasDotDot(path))
                     {
                         // path for folder thumbnails.
                         path = request_uri.query("ffile");
-                        if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+
+                        std::shared_ptr<TemporaryFile> thumbnail; 
+
+                        if (!path.empty() && fs::exists(path) && 
+                            this->model->IsInUploadsDirectory(path) &&
+                            !HasDotDot(path))
                         {
-                            throw PiPedalException("File not found.");
+                            // path is a folder.
+                            thumbnail = std::make_shared<TemporaryFile>();
+                            thumbnail->SetNonDeletedPath(path);
                         }
-                        std::shared_ptr<TemporaryFile> thumbnail = std::make_shared<TemporaryFile>();
-                        thumbnail->SetNonDeletedPath(path);
+                        else
+                        {
+                            auto t = AudioDirectoryInfo::DefaultThumbnailTemporaryFile();
+                            thumbnail = std::make_shared<TemporaryFile>();
+                            thumbnail->SetNonDeletedPath(t.Path());
+                    
+                        }
 
                         res.set(HttpField::content_type, MimeTypes::instance().MimeTypeFromExtension(path.extension()));
                         res.set(HttpField::cache_control, CACHE_CONTROL_INDEFINITELY); // URL is cache-busted, and will change if the file ismodified.
-                        setLastModifiedFromFile(res,path);
-                        res.set(HttpField::content_length, std::to_string(fs::file_size(path)));
+                        setLastModifiedFromFile(res,thumbnail->Path());
+                        res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnail->Path())));
                         res.setBodyFile(thumbnail);
                         return;
 
                     }
                     
-                    if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
-                    {
-                        throw PiPedalException("File not found.");
-                    }
 
                     int32_t width = ConvertThumbnailSize(request_uri.query("w"));
                     int32_t height = ConvertThumbnailSize(request_uri.query("h"));

@@ -68,11 +68,12 @@ namespace pipedal {
         ZipFileReader&operator=(const ZipFileReader&) = delete;
         virtual ~ZipFileReader();
 
-        virtual std::vector<std::string> GetFiles() = 0;
+        virtual const std::vector<std::string>& GetFiles() = 0;
         virtual void ExtractTo(const std::string &zipName, const std::filesystem::path& path) = 0;
         virtual bool CompareFiles(const std::string &zipName, const std::filesystem::path& path) = 0;
         virtual zip_file_input_stream GetFileInputStream(const std::string& filename,size_t bufferSize = 16*1024) = 0;
         virtual size_t GetFileSize(const std::string&filename) = 0;
+        virtual bool FileExists(const std::string&fileName) const = 0;
 
     };
 

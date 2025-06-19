@@ -95,6 +95,7 @@ namespace pipedal
         virtual void OnNetworkChanging(bool hotspotConnected) = 0;
         virtual void OnHasWifiChanged(bool hasWifi) = 0;
         virtual void Close() = 0;
+
     };
 
     class HotspotManager;

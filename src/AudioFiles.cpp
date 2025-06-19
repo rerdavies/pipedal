@@ -145,8 +145,6 @@ namespace
         virtual std::vector<AudioFileMetadata> GetFiles() override;
         virtual ThumbnailTemporaryFile GetThumbnail(const std::string &fileNameOnly, int32_t width, int32_t height) override;
 
-        virtual ThumbnailTemporaryFile DefaultThumbnailTemporaryFile() override;
-
         virtual size_t TestGetNumberOfThumbnails() override; // test use only.
         virtual void TestSetIndexPath(const std::filesystem::path &path) override
         {
@@ -159,15 +157,6 @@ namespace
             const std::string &directory,
             int32_t fromPosition,
             int32_t toPosition) override;
-
-        virtual void SetFileMetadata(
-            const std::string &fileNameOnly,
-            const std::string &key,
-            const std::string &value) override;
-
-        virtual std::string GetFileMetadata(
-            const std::string &fileNameOnly,
-            const std::string &key) override;
 
 
     private:
@@ -470,7 +459,7 @@ void AudioDirectoryInfoImpl::DbDeleteFile(DbFileInfo *dbFile)
         audioFilesDb->DeleteFile(dbFile);
     }
 }
-ThumbnailTemporaryFile AudioDirectoryInfoImpl::DefaultThumbnailTemporaryFile()
+ThumbnailTemporaryFile AudioDirectoryInfo::DefaultThumbnailTemporaryFile()
 {
     ThumbnailTemporaryFile tempFile;
     fs::path defaultThumbnail = GetResourceDirectory() / "img/missing_thumbnail.jpg";
@@ -783,13 +772,18 @@ std::string AudioDirectoryInfoImpl::GetNextAudioFile(const std::string &fileName
     {
         if (files[i].fileName() == fileNameOnly)
         {
-            if (i + 1 < files.size())
+            size_t next = i;
+            while (true)   
             {
-                return files[i + 1].fileName();
-            }
-            else
-            {
-                return files[0].fileName(); // wrap around to the first file.
+                next = (next + 1) % files.size(); 
+                if (!isFolderArtwork(files[next].fileName()))
+                {
+                    return files[next].fileName();
+                }
+                if (next == i) 
+                {
+                    break; 
+                }
             }
         }
     }
@@ -806,13 +800,25 @@ std::string AudioDirectoryInfoImpl::GetPreviousAudioFile(const std::string &file
     {
         if (files[i].fileName() == fileNameOnly)
         {
-            if (i > 0)
+            size_t next = i;
+            while (true)
             {
-                return files[i - 1].fileName();
-            }
-            else
-            {
-                return files[files.size() - 1].fileName(); // wrap around to the last file.
+                if (next == 0)
+                {
+                    next = files.size() - 1; // wrap around to the last file.
+                }
+                else
+                {
+                    --next; // go to the previous file.
+                }
+                if (!isFolderArtwork(files[next].fileName()))
+                {
+                    return files[next].fileName();
+                }
+                if (next == i) 
+                {
+                    break; 
+                }
             }
         }
     }
@@ -911,34 +917,4 @@ namespace pipedal
         return IndexPathToShadowIndexPath(audioRootDirectory, path);
     }
 }
-
-void AudioDirectoryInfoImpl::SetFileMetadata(
-    const std::string &fileNameOnly,
-    const std::string &key,
-    const std::string &value)
-{
-    OpenAudioDb();
-    if (!audioFilesDb)
-    {
-        throw std::runtime_error("Directory is not writable.");
-    }
-    this->UpdateDbFiles();
-
-    audioFilesDb->SetFileExtraMetadata(fileNameOnly, key, value);
-}
-
-std::string AudioDirectoryInfoImpl::GetFileMetadata(
-            const std::string &fileNameOnly,
-            const std::string &key) 
-{
-    OpenAudioDb();
-    if (!audioFilesDb)
-    {
-        throw std::runtime_error("Directory is not writable.");
-    }
-    this->UpdateDbFiles(); // check for deletions.
-
-    return audioFilesDb->GetFileExtraMetadata(fileNameOnly, key);       
-}
-
 

@@ -140,6 +140,12 @@ void PresetBundleWriterImpl::WriteToFile(const std::filesystem::path &filePath)
         {
             Lv2Log::warning(SS("Media file not found: " << sourcePath));
         }
+        std::filesystem::path metadataPath = SS(sourcePath.string() << ".mdata");
+        if (std::filesystem::exists(metadataPath))
+        {
+            zipFile->WriteFile(SS(zipName << ".mdata"), metadataPath);
+        }
+
     }
     zipFile->Close();
 }
@@ -236,7 +242,28 @@ private:
     void ExtractMediaFile(const std::string &zipFileName);
     bool IsSameFile(const std::string &zipFileName, const std::filesystem::path &filePath)
     {
-        return zipFile->CompareFiles(zipFileName, filePath);
+        if (!zipFile->CompareFiles(zipFileName, filePath))
+        {
+            return false;
+        }
+        std::string metadataZipFilename = SS(zipFileName <<".mdata");
+        std::filesystem::path metadataFilename  = SS(filePath.string() <<".mdata");
+
+        if (!std::filesystem::exists(metadataFilename))
+        {
+            if (!zipFile->FileExists(metadataZipFilename))
+            {
+                return true;
+            }
+            return false;
+        } else {
+            if (!zipFile->FileExists(metadataZipFilename))
+            {
+                return false;
+            }
+            return zipFile->CompareFiles(metadataZipFilename, metadataFilename);
+        }
+        return true;
     }
     void RenameMediaFileProperty(const std::string oldName, const std::string &newName);
 
@@ -266,6 +293,36 @@ void PresetBundleReaderImpl::RenameMediaFileProperty(const std::string oldName, 
                     {
                         state.values_.at(value.first).value_ = ToBinary(newName);
                     }
+                }
+            }
+            std::string fullOldPath = (pluginUploadDirectory / oldName).string();
+            for (auto &property : plugin->pathProperties_)
+            {
+                std::stringstream ss(property.second);
+                json_reader reader(ss);
+                json_variant vProperty;
+                reader.read(&vProperty);
+                if (vProperty.is_object()) 
+                {
+                    auto obj = vProperty.as_object();
+                    if (obj->contains("otype_") && 
+                        (*obj)["otype_"].as_string() == "Path")
+                    {
+                        if (obj->contains("value"))
+                        {
+                            std::string value = (*obj)["value"].as_string();
+                            if (value == fullOldPath)
+                            {
+                                (*obj)["value"] = (pluginUploadDirectory / newName).string();
+                                std::ostringstream ss;
+                                json_writer writer(ss);
+                                writer.write(vProperty);
+                                plugin->pathProperties_[property.first] = ss.str();
+                                break;
+                            }
+                        }
+                    }
+
                 }
             }
         }
@@ -363,6 +420,10 @@ void PresetBundleReaderImpl::ExtractMediaFile(const std::string &zipFileName)
     namespace fs = std::filesystem;
     if (zipFileName.starts_with("media/"))
     {
+        if (zipFileName.ends_with(".mdata")) 
+        {
+            return;
+        }
         std::string baseName = zipFileName.substr(6);
         fs::path targetFileName = this->pluginUploadDirectory / std::filesystem::path(baseName);
         bool renamed = false;
@@ -383,6 +444,10 @@ void PresetBundleReaderImpl::ExtractMediaFile(const std::string &zipFileName)
             else
             {
                 zipFile->ExtractTo(zipFileName, targetFileName);
+                if (zipFile->FileExists(SS(zipFileName << ".mdata")))
+                {
+                    zipFile->ExtractTo(SS(zipFileName << ".mdata"), SS(targetFileName.string() << ".mdata"));
+                }
                 break;
             }
         }

@@ -42,6 +42,7 @@ import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
 import { ColorTheme, getColorScheme, setColorScheme } from './DarkMode';
 import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
 import AudioFileMetadata from './AudioFileMetadata';
+import { pathFileName } from './FileUtils';
 
 
 export enum State {
@@ -2445,10 +2446,13 @@ export class PiPedalModel //implements PiPedalModel
         let downloadUrl = this.varServerUrl + "downloadMediaFile?path=" + encodeURIComponent(filePath);
 
         // download with no flashing temporary tab.
-        let link = window.document.createElement("A") as HTMLLinkElement;
+        let link = window.document.createElement("A") as HTMLAnchorElement;
         link.href = downloadUrl;
-        link.setAttribute("download", "");
+        link.target = "_blank";
+        link.setAttribute("download", pathFileName(filePath));
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     }
 
     download(targetType: string, instanceId: number | string): void {
@@ -2457,10 +2461,13 @@ export class PiPedalModel //implements PiPedalModel
 
         // window.open(url, "_blank");
         // download with no flashing temporary tab.
-        let link = window.document.createElement("A") as HTMLLinkElement;
+        let link = window.document.createElement("A") as HTMLAnchorElement;
         link.href = url;
-        link.setAttribute("download", "");
+        link.target = "_blank";
+        link.download = "download.piPreset";    
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     }
 
     uploadUserFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {

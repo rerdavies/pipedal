@@ -119,6 +119,8 @@ namespace pipedal
     std::filesystem::path MakeRelativePath(const std::filesystem::path &path, const std::filesystem::path&parentPath);
 
     bool IsSubdirectory(const std::filesystem::path &path, const std::filesystem::path &basePath);
+    bool HasDotDot(const std::filesystem::path &path);
+
 
     std::string ToLower(const std::string&value);
 

@@ -249,6 +249,7 @@ static float nodeAsFloat(const LilvNode *node, float default_ = 0)
 void PluginHost::SetPluginStoragePath(const std::filesystem::path &path)
 {
     pluginStoragePath = path;
+    fileMetadataFeature.SetPluginStoragePath(path);
 }
 
 std::string PluginHost::GetPluginStoragePath() const
@@ -265,6 +266,9 @@ PluginHost::PluginHost()
 
     optionsFeature.Prepare(mapFeature, 44100, this->GetMaxAudioBufferSize(), this->GetAtomBufferSize());
     lv2Features.push_back(optionsFeature.GetFeature());
+
+    fileMetadataFeature.Prepare(mapFeature);
+    lv2Features.push_back(fileMetadataFeature.GetFeature());
 
 
     lv2Features.push_back(nullptr);
@@ -902,6 +906,7 @@ std::vector<std::string> supportedFeatures = {
     LV2_STATE__freePath,
     LV2_CORE__inPlaceBroken,
     PIPEDAL_HOST_FEATURE,
+    PIPEDAL__FILE_METADATA_FEATURE,
 
     // UI features that we can ignore, since we won't load their ui.
     "http://lv2plug.in/ns/extensions/ui#makeResident",

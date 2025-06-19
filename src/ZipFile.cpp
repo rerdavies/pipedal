@@ -52,15 +52,27 @@ public:
         {
             throw std::runtime_error("Can't open zip file.");
         }
+        zip_int64_t nEntries = zip_get_num_entries(zipFile, 0);
+        for (zip_int64_t i = 0; i < nEntries; ++i)
+        {
+            const char *name = zip_get_name(zipFile, i, ZIP_FL_ENC_STRICT);
+            if (name)
+            {
+                files.push_back(name);
+                nameMap[name] = i;
+            }
+        }
     }
     virtual ~ZipFileImpl();
-    virtual std::vector<std::string> GetFiles() override;
+    virtual const std::vector<std::string>& GetFiles() override;
     virtual bool CompareFiles(const std::string &zipName, const std::filesystem::path& path) override;
     virtual void ExtractTo(const std::string &zipName, const std::filesystem::path &path) override;
     virtual zip_file_input_stream GetFileInputStream(const std::string& filename,size_t bufferSize = 16*1024) override;
     virtual size_t GetFileSize(const std::string&filename) override;
+    virtual bool FileExists(const std::string &zipName) const override;
 
 private:
+    std::vector<std::string> files;
     std::map<std::string, zip_int64_t> nameMap; // avoid o(2) extraction operations.
     const std::filesystem::path path;
     zip_t *zipFile = nullptr;
@@ -79,20 +91,9 @@ ZipFileImpl::~ZipFileImpl()
     }
 }
 
-std::vector<std::string> ZipFileImpl::GetFiles()
+const std::vector<std::string>& ZipFileImpl::GetFiles()
 {
-    std::vector<std::string> result;
-    zip_int64_t nEntries = zip_get_num_entries(zipFile, 0);
-    for (zip_int64_t i = 0; i < nEntries; ++i)
-    {
-        const char *name = zip_get_name(zipFile, i, ZIP_FL_ENC_STRICT);
-        if (name)
-        {
-            result.push_back(name);
-            nameMap[name] = i;
-        }
-    }
-    return result;
+    return files;
 }
 
 
@@ -292,6 +293,11 @@ zip_file_input_stream ZipFileImpl::GetFileInputStream(const std::string& filenam
         throw std::runtime_error(SS("Failed to open zip content file " << filename));
     }
     return zip_file_input_stream(f,bufferSize);
+}
+
+bool  ZipFileImpl::FileExists(const std::string&fileName) const
+{
+    return nameMap.find(fileName) != nameMap.end();
 }
 size_t ZipFileImpl::GetFileSize(const std::string&filename)
 {

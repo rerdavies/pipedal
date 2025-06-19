@@ -21,7 +21,7 @@
 
 #include "MapFeature.hpp"
 #include "PiPedalUI.hpp"
-#include "ext/PiPedal/FileMetadataFeature.h"
+#include "lv2ext/pipedal.lv2/ext/FileMetadataFeature.h"
 
 namespace pipedal
 {
@@ -32,27 +32,49 @@ namespace pipedal
     private:
         LV2_Feature feature;
         PIPEDAL_FileMetadata_Interface interface;
-        static PIPEDAL_FileMetadata_Status S_setFileMetadata(PIPEDAL_FILE_METADATA_Handle handle, const char *absolute_path, LV2_URID key, const char *fileMetadata);
-        PIPEDAL_FileMetadata_Status setFileMetadata(const char *absolute_path, LV2_URID key, const char *fileMetadata);
+        static PIPEDAL_FileMetadata_Status S_setFileMetadata(
+            PIPEDAL_FILE_METADATA_Handle handle, 
+            const char *absolute_path, 
+            const char*key, 
+            const char *fileMetadata);
+
+        PIPEDAL_FileMetadata_Status setFileMetadata(
+            const char *absolute_path, 
+            const char*key, 
+            const char *fileMetadata);
 
         static uint32_t S_getFileMetadata(
             PIPEDAL_FILE_METADATA_Handle handle,
-            LV2_URID key,
             const char *filePath,
+            const char*key,
             char *buffer,
             uint32_t bufferSize);
+
         uint32_t getFileMetadata(
             const char *absolute_path,
-            LV2_URID key,
+            const char*key,
             char *fileMetadata,
             uint32_t fileMetadataSize);
 
+        static PIPEDAL_FileMetadata_Status S_deleteFileMetadata(
+            PIPEDAL_FILE_METADATA_Handle handle, 
+            const char *absolute_path, 
+            const char*key);
+
+        PIPEDAL_FileMetadata_Status deleteFileMetadata(
+            const char *absolute_path, 
+            const char*key);
+
+
+        bool IsValidPath(const std::filesystem::path &path) const;
     public:
         FileMetadataFeature();
         void Prepare(MapFeature &map);
+        void SetPluginStoragePath(const std::filesystem::path &storagePath);
         ~FileMetadataFeature();
 
     public:
+        std::filesystem::path tracksPath;
         MapFeature *mapFeature = nullptr;
         const LV2_Feature *GetFeature()
         {

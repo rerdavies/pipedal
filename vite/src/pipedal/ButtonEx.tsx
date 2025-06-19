@@ -42,7 +42,10 @@ function ButtonEx(props: ButtonExProps) {
             placement="top-start" arrow
             enterDelay={1500} enterNextDelay={1500}
         >
-            <Button {...extra} style={style} />
+            <span> 
+                {/* Using span to prevent tooltip from disappearing when button is disabled */}
+                <Button {...extra} style={style} />
+            </span>
         </Tooltip>
     );
 }

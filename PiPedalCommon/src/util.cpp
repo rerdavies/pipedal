@@ -190,6 +190,22 @@ std::filesystem::path pipedal::MakeRelativePath(const std::filesystem::path &pat
 
 }
 
+bool pipedal::HasDotDot(const std::filesystem::path &path)
+{
+    for (auto &part : path)
+    {
+        if (part == "..")
+        {
+            return true;
+        }
+        if (part == ".")
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool pipedal::IsSubdirectory(const std::filesystem::path &path, const std::filesystem::path &basePath)
 {
     auto iPath = path.begin();

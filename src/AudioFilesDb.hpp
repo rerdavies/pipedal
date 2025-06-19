@@ -110,17 +110,6 @@ namespace pipedal::impl {
             int64_t idFile,
             int32_t position);
 
-        void DeleteFileExtraMetadata(
-            const std::string &fileNameOnly,
-            const std::string &key);
-        void SetFileExtraMetadata(
-            const std::string &fileNameOnly,
-            const std::string &key,
-            const std::string &value);
-        std::string GetFileExtraMetadata(
-            const std::string &fileNameOnly,
-            const std::string &key);
-        
     private:
 
         void CreateDb(const std::filesystem::path &dbPathName);
