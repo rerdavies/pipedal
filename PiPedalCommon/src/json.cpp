@@ -22,6 +22,8 @@
 #include <cctype>
 #include "json_variant.hpp"
 #include "util.hpp"
+#include <string_view>
+
 using namespace pipedal;
 
 
@@ -123,7 +125,7 @@ void json_writer::write(string_view v,bool enforceValidUtf8Encoding)
         if ((uc >= UTF16_SURROGATE_1_BASE && uc <= UTF16_SURROGATE_1_BASE + UTF16_SURROGATE_MASK) || (uc >= UTF16_SURROGATE_2_BASE && uc <= UTF16_SURROGATE_2_BASE + UTF16_SURROGATE_MASK))
         {
             // MUST not encode UTF16 surrogates in UTF8.
-            // throw_encoding_error();
+            throw_encoding_error();
         }
 
         if (uc == '"' || uc == '\\')
@@ -268,6 +270,29 @@ void json_reader::skip_whitespace()
     }
 }
 
+static void utf32_to_utf8_stream(std::ostream &s, uint32_t uc)
+{
+    if (uc < 0x80u)
+    {
+        s << (char)uc;
+    } else if (uc < 0x800u) {
+        s << (char)(0xC0 + (uc >> 6));
+        s << (char)(0x80 + (uc & 0x3F));
+
+    } else if (uc < 0x10000u) {
+        s << (char)(0xE0 + (uc >> 12));
+        s << (char)(0x80 + ((uc >> 6) & 0x3F));
+        s << (char)(0x80 + (uc & 0x3F));
+    } else if (uc < 0x0110000) {
+        s << (char)(0xF0 + (uc >> 18));
+        s << (char)(0x80 + ((uc >> 12) & 0x3F));
+        s << (char)(0x80 + ((uc >> 6) & 0x3F));
+        s << (char)(0x80 + (uc & 0x3F));
+    } else {
+        throw std::range_error("Illegal UTF-32 character.");
+    }
+}
+
 std::string json_reader::read_string()
 {
     // To completely normalize UTF-32 values we must covert to UTF-16, resolve surrogate pairs, and then convert UTF-32 to UTF-8.
@@ -344,7 +369,7 @@ std::string json_reader::read_string()
                     }
                     uc = ((uc & UTF16_SURROGATE_MASK) << 10) + (uc2 & UTF16_SURROGATE_MASK) + 0x10000U;
                 }
-                HtmlHelper::utf32_to_utf8_stream(s, uc);
+                utf32_to_utf8_stream(s, uc);
             }
             break;
             }
