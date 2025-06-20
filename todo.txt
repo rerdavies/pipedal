@@ -3,7 +3,6 @@ Numeric up-down buttons blown in light theme.
 
 Tooltips on touch ui? 
 
-pre-cue next decoder stream in big loops.
 
 convolution reverb broken.
 

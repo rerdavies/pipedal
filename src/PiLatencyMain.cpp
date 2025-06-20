@@ -32,6 +32,7 @@
 #include "AlsaDriver.hpp"
 #include <iomanip>
 #include <chrono>
+#include <thread>
 
 using namespace pipedal;
 
@@ -213,11 +214,11 @@ public:
 
             audioDriver->Activate();
 
-            sleep(3); // let audio stabilize.
+            std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
             this->SetXruns(0);
 
-            sleep(7); // run for a bit.
+            std::this_thread::sleep_for(std::chrono::milliseconds(7000));
 
             audioDriver->Deactivate();
             audioDriver->Close();

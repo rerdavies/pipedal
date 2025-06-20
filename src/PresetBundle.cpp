@@ -42,6 +42,45 @@ static std::string ToString(const std::vector<uint8_t> &value)
     return std::string(start, end);
 }
 
+static std::string ToJsonAtomPath(const std::string &path) {
+    json_variant v = json_variant::make_object();;
+    auto obj = v.as_object();
+    (*obj)["otype_"] = json_variant("Path");
+    (*obj)["value"] = json_variant(path);
+    std::ostringstream ss;
+    json_writer writer(ss);
+    writer.write(v);
+    return ss.str();
+}
+static bool TryGetAtomPath(const std::string &atomJson, std::string *outPath)
+{
+    if (atomJson.empty())
+        return false;
+    std::stringstream ss(atomJson);
+    json_reader reader(ss);
+    json_variant vProperty;
+    reader.read(&vProperty);
+    if (vProperty.is_object())
+    {
+        auto obj = vProperty.as_object();
+        if (obj->contains("otype_") &&
+            (*obj)["otype_"].as_string() == "Path")
+        {
+            if (obj->contains("value"))
+            {
+                std::string value = (*obj)["value"].as_string();
+                if (!value.empty())
+                {
+                    *outPath = value;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
 static std::vector<uint8_t> ToBinary(const std::string &value)
 {
     std::vector<uint8_t> result(value.length() + 1);
@@ -65,6 +104,9 @@ public:
 
     void LoadPresets(PiPedalModel &model, const std::string &presetJson)
     {
+        pluginUploadDirectory = model.GetPluginUploadDirectory();
+        pluginUploadDirectoryString = pluginUploadDirectory.string();
+
         BankFile bankFile;
 
         std::istringstream s(presetJson);
@@ -73,12 +115,13 @@ public:
         reader.read(&bankFile);
         GatherMediaPaths(model, bankFile);
         configFiles["bankFile.json"] = presetJson;
-
-        pluginUploadDirectory = model.GetPluginUploadDirectory();
     }
 
     void LoadPluginPresets(PiPedalModel &model, const std::string pluginPresetJson)
     {
+        pluginUploadDirectory = model.GetPluginUploadDirectory();
+        pluginUploadDirectoryString = pluginUploadDirectory.string();
+
         PluginPresets pluginPresets;
 
         std::istringstream s(pluginPresetJson);
@@ -88,8 +131,6 @@ public:
 
         GatherMediaPaths(model, pluginPresets);
         configFiles["pluginPresets.json"] = pluginPresetJson;
-
-        pluginUploadDirectory = model.GetPluginUploadDirectory();
     }
     virtual ~PresetBundleWriterImpl() noexcept;
 
@@ -97,6 +138,10 @@ public:
 
 private:
     void AddUsedPlugin(PiPedalModel &model, const std::string &pluginUri, const std::string &name);
+
+    std::string UnmapPath(const std::string &path);
+    std::string MapPath(const std::string &path);
+    bool IsValidMediaPath(const std::string &path);
 
     void GatherMediaPaths(PiPedalModel &model, BankFile &bankFile);
     void GatherMediaPaths(PiPedalModel &model, PluginPresets &pluginPreset);
@@ -107,6 +152,7 @@ private:
     std::vector<std::map<std::string, std::string>> pluginMetadata;
 
     std::filesystem::path pluginUploadDirectory;
+    std::string pluginUploadDirectoryString;
 };
 
 void PresetBundleWriterImpl::WriteToFile(const std::filesystem::path &filePath)
@@ -134,7 +180,14 @@ void PresetBundleWriterImpl::WriteToFile(const std::filesystem::path &filePath)
         std::filesystem::path sourcePath = this->pluginUploadDirectory / std::filesystem::path(mediaPath);
         if (std::filesystem::exists(sourcePath))
         {
-            zipFile->WriteFile(zipName, sourcePath);
+            if (IsValidMediaPath(sourcePath)) // paranoid guard against exfiltration of non-media files.
+            {
+                zipFile->WriteFile(zipName, sourcePath);
+            }
+            else
+            {
+                Lv2Log::warning(SS("Media file is not valid: " << sourcePath));
+            }
         }
         else
         {
@@ -145,7 +198,6 @@ void PresetBundleWriterImpl::WriteToFile(const std::filesystem::path &filePath)
         {
             zipFile->WriteFile(SS(zipName << ".mdata"), metadataPath);
         }
-
     }
     zipFile->Close();
 }
@@ -168,6 +220,54 @@ void PresetBundleWriterImpl::GatherMediaPaths(PiPedalModel &model, BankFile &ban
                     if (!mediaPaths.contains(path))
                     {
                         mediaPaths.insert(std::move(path));
+                    }
+                }
+            }
+            for (const auto &property : plugin->pathProperties_)
+            {
+                std::string path;
+                if (TryGetAtomPath(property.second, &path))
+                {
+                    path = UnmapPath(path);
+                    if (!mediaPaths.contains(path))
+                    {
+                        mediaPaths.insert(std::move(path));
+                    }
+                }
+            }
+            for (const auto &snapshot : pedalboard.snapshots())
+            {
+                if (snapshot)
+                {
+                    for (const auto &value : snapshot->values_)
+                    {
+                        if (value.isEnabled_)
+                        {
+                            const Lv2PluginState &state = value.lv2State_;
+                            for (const auto &v : state.values_)
+                            {
+                                if (v.second.atomType_ == LV2_ATOM__Path)
+                                {
+                                    std::string path = ToString(v.second.value_);
+                                    if (!mediaPaths.contains(path))
+                                    {
+                                        mediaPaths.insert(std::move(path));
+                                    }
+                                }
+                            }
+                            for (const auto &property : value.pathProperties_)
+                            {
+                                std::string path;
+                                if (TryGetAtomPath(property.second, &path))
+                                {
+                                    path = UnmapPath(path);
+                                    if (!mediaPaths.contains(path))
+                                    {
+                                        mediaPaths.insert(std::move(path));
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -246,8 +346,8 @@ private:
         {
             return false;
         }
-        std::string metadataZipFilename = SS(zipFileName <<".mdata");
-        std::filesystem::path metadataFilename  = SS(filePath.string() <<".mdata");
+        std::string metadataZipFilename = SS(zipFileName << ".mdata");
+        std::filesystem::path metadataFilename = SS(filePath.string() << ".mdata");
 
         if (!std::filesystem::exists(metadataFilename))
         {
@@ -256,7 +356,9 @@ private:
                 return true;
             }
             return false;
-        } else {
+        }
+        else
+        {
             if (!zipFile->FileExists(metadataZipFilename))
             {
                 return false;
@@ -267,6 +369,12 @@ private:
     }
     void RenameMediaFileProperty(const std::string oldName, const std::string &newName);
 
+    void RenameState(Lv2PluginState &state, const std::string oldName, const std::string &newName);
+    void RenamePedalboardItem(PedalboardItem *item, const std::string oldName, const std::string &newName);
+    void RenamePedalboard(Pedalboard &pedalboard, const std::string oldName, const std::string &newName);
+    void RenamePreset(PluginPreset &pedalboard, const std::string oldName, const std::string &newName);
+    void RenameSnapshot(Snapshot *snapshot, const std::string oldName, const std::string &newName);
+
     std::filesystem::path pluginUploadDirectory;
     // BankFile bankFile;
     ZipFileReader::ptr zipFile;
@@ -274,73 +382,135 @@ private:
     BankFile bankFile;
     PluginPresets pluginPresets;
 };
-
-void PresetBundleReaderImpl::RenameMediaFileProperty(const std::string oldName, const std::string &newName)
+void PresetBundleReaderImpl::RenameState(Lv2PluginState &state, const std::string oldName, const std::string &newName)
 {
-    for (auto &preset : bankFile.presets())
+    for (auto &value : state.values_)
     {
-        Pedalboard &pedalboard = preset->preset();
-        auto items = pedalboard.GetAllPlugins();
-        for (auto plugin : items)
+        if (value.second.atomType_ == LV2_ATOM__Path)
         {
-            Lv2PluginState &state = plugin->lv2State();
-            for (auto &value : state.values_)
+            std::string path = ToString(value.second.value_);
+            if (path == oldName)
             {
-                if (value.second.atomType_ == LV2_ATOM__Path)
-                {
-                    std::string path = ToString(value.second.value_);
-                    if (path == oldName)
-                    {
-                        state.values_.at(value.first).value_ = ToBinary(newName);
-                    }
-                }
+                state.values_.at(value.first).value_ = ToBinary(newName);
             }
-            std::string fullOldPath = (pluginUploadDirectory / oldName).string();
-            for (auto &property : plugin->pathProperties_)
-            {
-                std::stringstream ss(property.second);
-                json_reader reader(ss);
-                json_variant vProperty;
-                reader.read(&vProperty);
-                if (vProperty.is_object()) 
-                {
-                    auto obj = vProperty.as_object();
-                    if (obj->contains("otype_") && 
-                        (*obj)["otype_"].as_string() == "Path")
-                    {
-                        if (obj->contains("value"))
-                        {
-                            std::string value = (*obj)["value"].as_string();
-                            if (value == fullOldPath)
-                            {
-                                (*obj)["value"] = (pluginUploadDirectory / newName).string();
-                                std::ostringstream ss;
-                                json_writer writer(ss);
-                                writer.write(vProperty);
-                                plugin->pathProperties_[property.first] = ss.str();
-                                break;
-                            }
-                        }
-                    }
+        }
+    }
+}
 
+void PresetBundleReaderImpl::RenamePedalboardItem(PedalboardItem *plugin, const std::string oldName, const std::string &newName)
+{
+    Lv2PluginState &state = plugin->lv2State();
+    RenameState(state, oldName, newName);
+
+    std::vector<std::pair<std::string, std::string>> propertiesToUpdate;
+    std::string fullOldPath = (pluginUploadDirectory / oldName).string();
+    for (auto &property : plugin->pathProperties_)
+    {
+        std::stringstream ss(property.second);
+        json_reader reader(ss);
+        json_variant vProperty;
+        reader.read(&vProperty);
+        if (vProperty.is_object())
+        {
+            auto obj = vProperty.as_object();
+            if (obj->contains("otype_") &&
+                (*obj)["otype_"].as_string() == "Path")
+            {
+                if (obj->contains("value"))
+                {
+                    std::string value = (*obj)["value"].as_string();
+                    if (value == fullOldPath)
+                    {
+                        (*obj)["value"] = (pluginUploadDirectory / newName).string();
+                        std::ostringstream ss;
+                        json_writer writer(ss);
+                        writer.write(vProperty);
+                        propertiesToUpdate.push_back(std::make_pair(property.first, ss.str()));
+                    }
                 }
             }
         }
     }
-    for (auto preset : pluginPresets.presets_)
+    for (auto &property : propertiesToUpdate)
     {
-        Lv2PluginState state = preset.state_;
-        for (auto &value : state.values_)
+        plugin->pathProperties_[property.first] = property.second;
+    }
+}
+
+void PresetBundleReaderImpl::RenameSnapshot(Snapshot *snapshot, const std::string oldName, const std::string &newName)
+{
+    std::string fullOldPath = (pluginUploadDirectory / oldName).string();
+    for (auto &value : snapshot->values_)
+    {
+        if (value.isEnabled_)
         {
-            if (value.second.atomType_ == LV2_ATOM__Path)
+            Lv2PluginState &state = value.lv2State_;
+            RenameState(state, oldName, newName);
+
+            std::vector<std::pair<std::string, std::string>> propertiesToUpdate;
+            // Check the path properties in the snapshot value.
+            for (auto &property : value.pathProperties_)
             {
-                std::string path = ToString(value.second.value_);
-                if (path == oldName)
-                {
-                    state.values_.at(value.first).value_ = ToBinary(newName);
+                std::string path;
+                if (TryGetAtomPath(property.second,&path)) {
+                    if (path == fullOldPath) {
+                        propertiesToUpdate.push_back(std::make_pair(property.first, 
+                            ToJsonAtomPath((pluginUploadDirectory / newName).string())));
+                    }
                 }
             }
+            for (auto &property : propertiesToUpdate)
+            {
+                value.pathProperties_[property.first] = property.second;
+            }
         }
+    }
+}
+void PresetBundleReaderImpl::RenamePedalboard(Pedalboard &pedalboard, const std::string oldName, const std::string &newName)
+{
+    auto items = pedalboard.GetAllPlugins();
+    for (auto pedalboardItem : items)
+    {
+        RenamePedalboardItem(pedalboardItem, oldName, newName);
+    }
+    for (std::shared_ptr<Snapshot> &snapshot : pedalboard.snapshots())
+    {
+        if (snapshot)
+        {
+            RenameSnapshot(snapshot.get(), oldName, newName);
+        }
+    }
+}
+
+void PresetBundleReaderImpl::RenamePreset(PluginPreset &preset, const std::string oldName, const std::string &newName)
+{
+    Lv2PluginState state = preset.state_;
+    for (auto &value : state.values_)
+    {
+        if (value.second.atomType_ == LV2_ATOM__Path)
+        {
+            std::string path = ToString(value.second.value_);
+            if (path == oldName)
+            {
+                state.values_.at(value.first).value_ = ToBinary(newName);
+            }
+        }
+    }
+}
+
+void PresetBundleReaderImpl::RenameMediaFileProperty(const std::string oldName, const std::string &newName)
+{
+    // snapshots.
+    // there should be a dictionary for remapped media files.
+    // there should be a set for saved media files.
+    for (auto &preset : bankFile.presets())
+    {
+        Pedalboard &pedalboard = preset->preset();
+        RenamePedalboard(pedalboard, oldName, newName);
+    }
+    for (auto &preset : pluginPresets.presets_)
+    {
+        RenamePreset(preset, oldName, newName);
     }
 }
 
@@ -420,7 +590,7 @@ void PresetBundleReaderImpl::ExtractMediaFile(const std::string &zipFileName)
     namespace fs = std::filesystem;
     if (zipFileName.starts_with("media/"))
     {
-        if (zipFileName.ends_with(".mdata")) 
+        if (zipFileName.ends_with(".mdata"))
         {
             return;
         }
@@ -530,3 +700,33 @@ void PresetBundleWriterImpl::AddUsedPlugin(PiPedalModel &model, const std::strin
         }
     }
 }
+std::string PresetBundleWriterImpl::UnmapPath(const std::string &path)
+{
+    if (path.starts_with(pluginUploadDirectoryString))
+    {
+        return path.substr(pluginUploadDirectory.string().length() + 1);
+    }
+    return path;
+}
+bool PresetBundleWriterImpl::IsValidMediaPath(const std::string &path)
+{
+    if (path.starts_with(pluginUploadDirectoryString))
+    {
+        if (path.length() >= pluginUploadDirectoryString.length() + 1 &&
+            path[pluginUploadDirectoryString.length()] == '/')
+        {
+            return true;
+            ;
+        }
+    }
+    return false;
+}
+std::string PresetBundleWriterImpl::MapPath(const std::string &path)
+{
+    if (!path.starts_with("/"))
+    {
+        return pluginUploadDirectory / path;
+    }
+    return path;
+}
+

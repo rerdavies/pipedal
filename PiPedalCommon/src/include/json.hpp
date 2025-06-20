@@ -20,12 +20,9 @@
 #pragma once
 #include <iostream>
 #include <cstdint>
-#include <boost/utility/string_view.hpp>
-#include <boost/format.hpp>
 #include <iomanip>
 #include <type_traits>
 #include <sstream>
-#include "HtmlHelper.hpp"
 #include <cctype>
 #include <cmath>
 #include <map>
@@ -35,6 +32,9 @@
 #include <stdexcept>
 #include <chrono>
 #include <optional>
+#include <string_view>
+#include <string.h>
+#include <stdexcept>
 
 #define DECLARE_JSON_MAP(CLASSNAME) \
     static pipedal::json_map::storage_type<CLASSNAME> jmap
@@ -228,7 +228,7 @@ namespace pipedal
         reference(const char *name, MEMBER_TYPE CLASS::*member_pointer)
         {
             return new json_member_reference<CLASS, MEMBER_TYPE>(name, member_pointer);
-        };
+        }
         template <typename CLASS, typename MEMBER_TYPE, typename ENUM_CONVERTER>
         static json_enum_member_reference<CLASS, MEMBER_TYPE> *
         enum_reference(
@@ -237,14 +237,20 @@ namespace pipedal
             const ENUM_CONVERTER *converter)
         {
             return new json_enum_member_reference<CLASS, MEMBER_TYPE>(name, member_pointer, converter);
-        };
+        }
 
         template <typename CLASS, typename MEMBER_TYPE>
         static json_conditional_member_reference<CLASS, MEMBER_TYPE> *
         conditional_reference(const char *name, MEMBER_TYPE CLASS::*member_pointer, typename JsonConditionFunction<CLASS, MEMBER_TYPE>::Pointer condition)
         {
             return new json_conditional_member_reference<CLASS, MEMBER_TYPE>(name, member_pointer, condition);
-        };
+        }
+
+        // for cases where the name is not a valid C++ identifier.
+        #define JSON_MAP_DICTIONARY_REFERENCE(class,name, variable) \
+        json_map::reference(name,&class::variable##_),
+
+
     };
 
     //----------------------------------------------------------------------------------
@@ -254,7 +260,7 @@ namespace pipedal
     {
 
         template <class TYPE>
-        static std::true_type test(decltype(TYPE::jmap) *) { return std::true_type(); };
+        static std::true_type test(decltype(TYPE::jmap) *) { return std::true_type(); }
 
         template <class TYPE>
         static std::false_type test(...);
@@ -268,7 +274,7 @@ namespace pipedal
     {
 
         template <class TYPE>
-        static std::true_type test() { return std::true_type(); };
+        static std::true_type test() { return std::true_type(); }
 
         template <class TYPE>
         static std::false_type test(...);
@@ -320,7 +326,7 @@ namespace pipedal
         {
             os << text;
         }
-        using string_view = boost::string_view;
+        using string_view = std::string_view;
         json_writer(std::ostream &os, bool compressed = true, bool allowNaN = false)
             : os(os), compressed(compressed), allowNaN_(allowNaN), indent_level(0)
         {
@@ -1049,6 +1055,7 @@ namespace pipedal
                 if (peek() == ']')
                 {
                     c = get();
+                    (void)c;
                     break;
                 }
                 T item;
@@ -1057,6 +1064,7 @@ namespace pipedal
                 if (peek() == ',')
                 {
                     c = get();
+                    (void)c;
                 }
             }
             *value = std::move(result);
@@ -1068,7 +1076,7 @@ namespace pipedal
     {
 
         template <typename TYPE, typename ARG>
-        static std::true_type test(decltype(json_reader(std::cin).read((ARG *)nullptr)) *v) { return std::true_type(); };
+        static std::true_type test(decltype(json_reader(std::cin).read((ARG *)nullptr)) *v) { return std::true_type(); }
 
         template <typename TYPE, typename ARG>
         static std::false_type test(...);

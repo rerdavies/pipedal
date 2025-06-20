@@ -38,6 +38,7 @@
 #include "AudioFileMetadataReader.hpp"
 #include "AudioFiles.hpp"
 #include "util.hpp"
+#include "HtmlHelper.hpp"
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
