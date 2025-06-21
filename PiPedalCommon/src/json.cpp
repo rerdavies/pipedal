@@ -122,11 +122,11 @@ void json_writer::write(string_view v,bool enforceValidUtf8Encoding)
                 }
             }
         }
-        if ((uc >= UTF16_SURROGATE_1_BASE && uc <= UTF16_SURROGATE_1_BASE + UTF16_SURROGATE_MASK) || (uc >= UTF16_SURROGATE_2_BASE && uc <= UTF16_SURROGATE_2_BASE + UTF16_SURROGATE_MASK))
-        {
-            // MUST not encode UTF16 surrogates in UTF8.
-            throw_encoding_error();
-        }
+        // if ((uc >= UTF16_SURROGATE_1_BASE && uc <= UTF16_SURROGATE_1_BASE + UTF16_SURROGATE_MASK) || (uc >= UTF16_SURROGATE_2_BASE && uc <= UTF16_SURROGATE_2_BASE + UTF16_SURROGATE_MASK))
+        // {
+        //     // MUST not encode UTF16 surrogates in UTF8.
+        //     throw_encoding_error();
+        // }
 
         if (uc == '"' || uc == '\\')
         {

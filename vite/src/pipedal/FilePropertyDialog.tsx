@@ -62,7 +62,7 @@ import UploadFileDialog from './UploadFileDialog';
 import OkCancelDialog from './OkCancelDialog';
 import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
-import { getAlbumArtUri, getTrackTitle  } from './AudioFileMetadata';
+import { getAlbumArtUri, getTrackTitle } from './AudioFileMetadata';
 
 interface Point {
     x: number;
@@ -156,11 +156,15 @@ export interface FilePropertyDialogState {
         newFilePath: string;
     } | null;
     menuAnchorEl: null | HTMLElement;
+    menuMultiselectAnchorEl: null | HTMLElement;
     newFolderDialogOpen: boolean;
     renameDialogOpen: boolean;
     moveDialogOpen: boolean;
     copyDialogOpen: boolean;
     initialSelection: string;
+    multiSelect: boolean,
+    selectedFiles: string[],
+
 };
 
 class DragState {
@@ -220,11 +224,14 @@ export default withStyles(
                 openConfirmDeleteDialog: false,
                 confirmCopyDialogState: null,
                 menuAnchorEl: null,
+                menuMultiselectAnchorEl: null,
                 newFolderDialogOpen: false,
                 renameDialogOpen: false,
                 moveDialogOpen: false,
                 copyDialogOpen: false,
-                initialSelection: this.props.selectedFile
+                initialSelection: this.props.selectedFile,
+                multiSelect: false,
+                selectedFiles: []
             };
             this.requestScroll = true;
         }
@@ -325,58 +332,86 @@ export default withStyles(
         dragToPosition: number = -1;
         maxPosition: number = 0;
 
-        handleLongPressStart(currentTarget: HTMLButtonElement, e: React.PointerEvent<HTMLButtonElement>) {
-            if (!this.isTracksDirectory()) {
-                return;
+        handleMultisSelectClose() {
+            this.setState({
+                multiSelect: false, selectedFiles: [], menuMultiselectAnchorEl: null
+            });
+        }
+
+
+        handleLongPressStart(
+            currentTarget: HTMLButtonElement,
+            e: React.PointerEvent<HTMLButtonElement>,
+            fileEntry: FileEntry): boolean {
+            if (this.state.reordering) {
+
+                if (!this.isTracksDirectory()) {
+                    return false;
+                }
+                this.dragFromPosition = parseInt(currentTarget.getAttribute("data-position") as string, 10);
+                this.dragToPosition = this.dragToPosition;
+                let element = currentTarget;
+                element.style.position = "relative";
+                element.style.zIndex = "1000";
+                element.style.top = "5px";
+                element.style.left = "5px";
+                element.style.background = isDarkMode() ? "#555" : "#EEF" // xxx: dark mode.
+                if (this.lastDivRef) {
+                    this.longPressStartPoint = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
+                }
+                return true;
+            } else if (!this.state.multiSelect) {
+                if (fileEntry.isProtected) {
+                    return false;
+                }
+                this.setState(
+                    {
+                        multiSelect: true,
+                        selectedFiles: [fileEntry.pathname],
+                    }
+                );
+                return true;
             }
-            this.dragFromPosition = parseInt(currentTarget.getAttribute("data-position") as string, 10);
-            this.dragToPosition = this.dragToPosition;
-            let element = currentTarget;
-            element.style.position = "relative";
-            element.style.zIndex = "1000";
-            element.style.top = "5px";
-            element.style.left = "5px";
-            element.style.background = isDarkMode() ? "#555" : "#EEF" // xxx: dark mode.
-            if (this.lastDivRef) {
-                this.longPressStartPoint = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
-            }
+            return false;
 
         }
         handleLongPressMove(e: React.PointerEvent<HTMLButtonElement>) {
-            if (!this.isTracksDirectory()) {
-                return;
-            }
-            if (this.lastDivRef) {
-                let element = e.target as HTMLButtonElement;
-                let point = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
-                if (this.longPressStartPoint) {
-                    let dy = point.y - this.longPressStartPoint.y;
-                    element.style.left = (5) + "px";
-                    element.style.top = (5 + dy) + "px";
-                    let height = element.clientHeight;
-                    let positionChange_: number = 0;
-                    if (dy > 0) {
-                        positionChange_ = Math.floor((dy + height / 2) / height);
-                    } else {
-                        positionChange_ = Math.ceil((dy - height / 2) / height)
-                    }
-                    let toPosition = this.dragFromPosition + positionChange_;
-                    if (toPosition < 0) {
-                        toPosition = 0;
-                    }
-                    if (toPosition > this.maxPosition) {
-                        toPosition = this.maxPosition;
-                    }
-                    if (toPosition !== this.dragToPosition) {
-                        this.dragToPosition = toPosition;
-                        this.setState({
-                            dragState: {
-                                activeItem: element.getAttribute("data-pathname") || "",
-                                height: height,
-                                from: this.dragFromPosition,
-                                to: toPosition
-                            }
-                        });
+            if (this.state.reordering) {
+                if (!this.isTracksDirectory()) {
+                    return;
+                }
+                if (this.lastDivRef) {
+                    let element = e.target as HTMLButtonElement;
+                    let point = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
+                    if (this.longPressStartPoint) {
+                        let dy = point.y - this.longPressStartPoint.y;
+                        element.style.left = (5) + "px";
+                        element.style.top = (5 + dy) + "px";
+                        let height = element.clientHeight;
+                        let positionChange_: number = 0;
+                        if (dy > 0) {
+                            positionChange_ = Math.floor((dy + height / 2) / height);
+                        } else {
+                            positionChange_ = Math.ceil((dy - height / 2) / height)
+                        }
+                        let toPosition = this.dragFromPosition + positionChange_;
+                        if (toPosition < 0) {
+                            toPosition = 0;
+                        }
+                        if (toPosition > this.maxPosition) {
+                            toPosition = this.maxPosition;
+                        }
+                        if (toPosition !== this.dragToPosition) {
+                            this.dragToPosition = toPosition;
+                            this.setState({
+                                dragState: {
+                                    activeItem: element.getAttribute("data-pathname") || "",
+                                    height: height,
+                                    from: this.dragFromPosition,
+                                    to: toPosition
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -427,27 +462,40 @@ export default withStyles(
             this.model.moveAudioFile(
                 this.state.currentDirectory, from, to);
         }
-        handleLongPressEnd(e: React.PointerEvent<HTMLButtonElement>) {
-            if (!this.isTracksDirectory()) {
-                return;
+        handleLongPressEnd(e: React.PointerEvent<HTMLButtonElement>, fileEntry: FileEntry) {
+            if (this.state.reordering) {
+                if (!this.isTracksDirectory()) {
+                    return;
+                }
+                let dragState = this.state.dragState;
+                if (dragState && dragState.to != dragState.from) {
+                    this.handleReorderFiles(dragState.from, dragState.to);
+
+                }
+                // prevent onClick from firing.
+                e.preventDefault();
+                e.stopPropagation();
+
+                let element = e.currentTarget as HTMLButtonElement;
+
+                element.style.position = "";
+                element.style.zIndex = "";
+                element.style.top = "";
+                element.style.left = "";
+                element.style.background = ""; // xxx: dark mode.
+                this.setState({ dragState: null });
+            } else if (!this.state.multiSelect) {
+                let selectedFile = fileEntry.pathname;
+                if (selectedFile === "") {
+                    return;
+                }
+                this.setState({
+                    multiSelect: true,
+                    selectedFiles: [selectedFile],
+                });
+                e.stopPropagation();
+                e.preventDefault();
             }
-            let dragState = this.state.dragState;
-            if (dragState && dragState.to != dragState.from) {
-                this.handleReorderFiles(dragState.from, dragState.to);
-
-            }
-            // prevent onClick from firing.
-            e.preventDefault();
-            e.stopPropagation();
-
-            let element = e.currentTarget as HTMLButtonElement;
-
-            element.style.position = "";
-            element.style.zIndex = "";
-            element.style.top = "";
-            element.style.left = "";
-            element.style.background = ""; // xxx: dark mode.
-            this.setState({ dragState: null });
         }
         onMeasureRef(div: HTMLDivElement | null) {
             this.lastDivRef = div;
@@ -544,9 +592,56 @@ export default withStyles(
             return undefined;
         }
 
-        onSelectValue(fileEntry: FileEntry) {
+
+        handleFileClick(event: React.MouseEvent<HTMLElement>, fileEntry: FileEntry) {
             if (this.state.reordering) {
                 return;
+            }
+            if (event.ctrlKey || this.state.multiSelect) {
+                if (fileEntry.isProtected) {
+                    // <none> cannot be multiselected.
+                    return;
+                }
+                if (this.state.multiSelect) {
+                    let selectedFiles = this.state.selectedFiles.slice();
+                    let ix = selectedFiles.indexOf(fileEntry.pathname);
+                    if (ix === -1) {
+                        selectedFiles.push(fileEntry.pathname);
+                    } else {
+                        selectedFiles.splice(ix, 1);
+                    }
+                    if (selectedFiles.length === 0) {
+                        this.setState({
+                            multiSelect: false,
+                            selectedFiles: []
+                        });
+                    } else {
+                        this.setState({
+                            multiSelect: true,
+                            selectedFiles: selectedFiles
+                        });
+                    }
+                } else {
+                    let selectedFiles = [fileEntry.pathname];
+                    if (this.state.hasSelection) {
+                        if (this.state.selectedFile !== "") {
+                            selectedFiles.push(this.state.selectedFile);
+                        }
+                    }
+                    this.setState({
+                        multiSelect: true,
+                        selectedFiles: selectedFiles
+                    });
+                }
+                event.stopPropagation();
+                event.preventDefault();
+                return;
+            }
+            if (event.shiftKey) {
+                event.stopPropagation();
+                event.preventDefault();
+                return;
+
             }
             this.requestScroll = true;
             if (!fileEntry.isDirectory) {
@@ -576,8 +671,18 @@ export default withStyles(
         handleMenuClose() {
             this.setState({ menuAnchorEl: null });
         }
+        handleMenuMultiSelectOpen(event: React.MouseEvent<HTMLElement>) {
+            this.setState({ menuMultiselectAnchorEl: event.currentTarget });
+
+        }
+        handleMenuMultiSelectClose() {
+            this.setState({ menuMultiselectAnchorEl: null });
+        }
+        canDeleteEntry(fileEntry: FileEntry): boolean {
+            return fileEntry.isProtected;
+        }
         handleDelete() {
-            if (this.state.selectedFileProtected) {
+            if (this.state.selectedFileProtected && !this.state.multiSelect) {
                 return;
             }
             this.setState({ openConfirmDeleteDialog: true });
@@ -589,65 +694,92 @@ export default withStyles(
             let file = this.state.selectedFile;
             this.model.downloadAudioFile(file);
         }
-        handleConfirmDelete() {
-            if (this.state.selectedFileProtected) {
+        async handleConfirmDelete() {
+            this.setState({ openConfirmDeleteDialog: false });
+            let files: string[] = [];
+            if (this.state.multiSelect) {
+                files = this.state.selectedFiles;
+            } else {
+                if (this.state.selectedFileProtected) {
+                    return;
+                }
+                files = [this.state.selectedFile];
+            }
+            let selectedFile = (!this.state.multiSelect && this.state.hasSelection) ? this.state.selectedFile : undefined;
+            let newSelectedFiles = this.state.selectedFiles.slice();
+            let multiSelect = this.state.multiSelect;
+            let resultFiles = this.state.fileResult.files;
+
+            try {
+                for (let file of files) {
+                    if (!multiSelect) {
+                        if (selectedFile) {
+                            let position = -1;
+                            for (let i = 0; i < resultFiles.length; ++i) {
+                                let file = resultFiles[i];
+                                if (file.pathname === selectedFile) {
+                                    position = i;
+                                    break;
+                                }
+                            }
+                            if (position >= 0 && position < resultFiles.length - 1) {
+                                selectedFile = this.state.fileResult.files[position + 1].pathname;
+                            } else if (position === this.state.fileResult.files.length - 1) {
+                                if (position !== 0) {
+                                    selectedFile = this.state.fileResult.files[position - 1].pathname;
+                                } else {
+                                    selectedFile = undefined;
+                                }
+                            } else {
+                                selectedFile = undefined;
+                            }
+                        }
+                    } else {
+                        let ix = newSelectedFiles.indexOf(file);
+                        if (ix >= 0) {
+                            newSelectedFiles.splice(ix, 1);
+                        }
+                    }
+                    await this.model.deleteUserFile(file);
+                }
+            } catch (e: any) {
+                this.model.showAlert(e);
+            }
+
+            // update state for what we've done.
+            if (!this.mounted) {
                 return;
             }
-            this.setState({ openConfirmDeleteDialog: false });
-            if (this.state.hasSelection) {
-                let selectedFile = this.state.selectedFile;
-                let position = -1;
-                for (let i = 0; i < this.state.fileResult.files.length; ++i) {
-                    let file = this.state.fileResult.files[i];
-                    if (file.pathname === selectedFile) {
-                        position = i;
-                    }
+            if (multiSelect) {
+                if (newSelectedFiles.length === 0) {
+                    this.setState({
+                        multiSelect: false,
+                        selectedFiles: [],
+                    });
+                } else {
+                    this.setState({
+                        multiSelect: true,
+                        selectedFiles: newSelectedFiles,
+                    });
                 }
-                let newSelection: FileEntry | undefined = undefined;
-                if (position >= 0 && position < this.state.fileResult.files.length - 1) {
-                    newSelection = this.state.fileResult.files[position + 1];
-                } else if (position === this.state.fileResult.files.length - 1) {
-                    if (position !== 0) {
-                        newSelection = this.state.fileResult.files[position - 1];
-                    }
-
+            } else {
+                if (selectedFile) {
+                    this.setState({
+                        selectedFile: selectedFile
+                    });
                 }
-
-                this.model.deleteUserFile(this.state.selectedFile)
-                    .then(
-                        () => {
-                            if (newSelection) {
-                                this.setState({
-                                    selectedFile: newSelection.pathname,
-                                    selectedFileIsDirectory: newSelection.isDirectory,
-                                    selectedFileProtected: newSelection.isProtected,
-                                    hasSelection: true,
-                                    hasFileSelection: !newSelection.isDirectory && !newSelection.isProtected
-                                });
-                            } else {
-                                this.setState({
-                                    selectedFile: "",
-                                    selectedFileIsDirectory: false,
-                                    selectedFileProtected: true,
-                                    hasSelection: false,
-                                    hasFileSelection: false
-                                });
-
-                            }
-                            this.requestFiles(this.state.navDirectory);
-                        }
-                    ).catch(
-                        (e: any) => {
-                            this.model.showAlert(e.toString());
-                        }
-                    );
             }
+            this.requestFiles(this.state.navDirectory);
         }
-
 
         navigate(relativeDirectory: string) {
             this.requestFiles(relativeDirectory);
             this.setState({ navDirectory: relativeDirectory });
+        }
+        handleBreadcrumbNavigate(relativeDirectory: string) {
+            if (!this.state.reordering && !this.state.multiSelect) {
+                this.navigate(relativeDirectory);
+            }
         }
         getCompactTrackTitle(fileEntry: FileEntry): string {
             let metadata = fileEntry.metadata;
@@ -679,7 +811,7 @@ export default withStyles(
             let breadcrumbs: React.ReactElement[] = [(
                 <Button variant="text"
                     color="inherit"
-                    key="h" onClick={() => { this.navigate(""); }}
+                    key="h" onClick={() => { this.handleBreadcrumbNavigate(""); }}
                     style={{ textTransform: "none", flexShrink: 0 }}
                     startIcon={(<HomeIcon sx={{ mr: 0.6 }} fontSize="inherit" />)}
                 >
@@ -700,7 +832,7 @@ export default withStyles(
                     <Button variant="text"
                         key={"bc" + i}
                         color="inherit"
-                        onClick={() => { this.navigate(breadcrumb.pathname) }}
+                        onClick={() => { this.handleBreadcrumbNavigate(breadcrumb.pathname) }}
                         style={{ minWidth: 0, textTransform: "none", flexShrink: 0 }}
                     >
                         <Typography variant="body2" style={{}} noWrap>{breadcrumb.displayName}</Typography>
@@ -835,6 +967,8 @@ export default withStyles(
                         onEnterKey={() => {
                             if (this.state.reordering) {
                                 this.setState({ reordering: false, dragState: null });
+                            } else if (this.state.multiSelect) {
+                                this.setState({ multiSelect: false, selectedFiles: [] });
                             } else {
                                 this.openSelectedFile();
                             }
@@ -854,12 +988,12 @@ export default withStyles(
                     >
                         <DialogTitle style={{
                             paddingBottom: 0,
-                            background: this.state.reordering ?
+                            background: this.state.reordering || this.state.multiSelect ?
                                 (isDarkMode() ? "#523" : "#EDF")
                                 : undefined,
                             marginBottom: 16, paddingTop: 0
                         }} >
-                            {this.state.reordering ? (
+                            {this.state.reordering && (
                                 <Toolbar style={{ padding: 0 }}>
                                     <IconButton
                                         edge="start"
@@ -876,7 +1010,65 @@ export default withStyles(
                                     </Typography>
                                 </Toolbar>
 
-                            ) : (
+                            )}
+                            {this.state.multiSelect && (
+                                <Toolbar style={{ padding: 0 }}>
+                                    <IconButton
+                                        edge="start"
+                                        color="inherit"
+                                        aria-label="cancel"
+                                        style={{ opacity: 0.6 }}
+                                        onClick={() => {
+                                            this.handleMultisSelectClose();
+                                        }}
+                                    >
+                                        <CloseIcon style={{ width: 24, height: 24 }} />
+                                    </IconButton>
+                                    <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
+                                        {this.state.selectedFiles.length.toString() + " files selected."}
+                                    </Typography>
+                                    <Button variant="dialogSecondary"
+                                        startIcon={<OldDeleteIcon />}
+                                        onClick={() => {
+                                            this.handleDelete();
+                                        }}
+                                    >
+                                        Delete
+                                    </Button>
+                                    <IconButtonEx
+                                        tooltip="More..."
+                                        aria-label="display more actions"
+                                        edge="end"
+                                        color="inherit"
+                                        style={{ opacity: 0.6 }}
+                                        onClick={(ev) => { this.handleMenuMultiSelectOpen(ev); }}
+                                        disabled={protectedDirectory}
+
+                                    >
+                                        <MoreIcon />
+                                    </IconButtonEx>
+                                    <Menu
+                                        id="menu-multi-select"
+                                        anchorEl={this.state.menuMultiselectAnchorEl}
+                                        anchorOrigin={{
+                                            vertical: 'bottom',
+                                            horizontal: 'right',
+                                        }}
+                                        keepMounted
+                                        transformOrigin={{
+                                            vertical: 'top',
+                                            horizontal: 'right',
+                                        }}
+                                        open={this.state.menuMultiselectAnchorEl !== null}
+                                        onClose={() => { this.handleMenuMultiSelectClose(); }}
+                                    >
+                                        {canMove && (<MenuItem onClick={() => { this.handleMenuMultiSelectClose(); this.handleMove(); }}>Move</MenuItem>)}
+                                        {canMove && (<MenuItem onClick={() => { this.handleMenuMultiSelectClose(); this.handleCopy(); }}>Copy</MenuItem>)}
+                                    </Menu>
+
+                                </Toolbar>
+                            )}
+                            {!(this.state.reordering || this.state.multiSelect) && (
                                 <>
                                     <Toolbar style={{ padding: 0 }}>
                                         <IconButton
@@ -934,8 +1126,8 @@ export default withStyles(
                                         >
                                             <MenuItem onClick={() => { this.handleMenuClose(); this.onNewFolder(); }}>New folder</MenuItem>
                                             {(needsDivider) && (<Divider />)}
-                                            {canMove && (<MenuItem onClick={() => { this.handleMenuClose(); this.onMove(); }}>Move</MenuItem>)}
-                                            {canMove && (<MenuItem onClick={() => { this.handleMenuClose(); this.onCopy(); }}>Copy</MenuItem>)}
+                                            {canMove && (<MenuItem onClick={() => { this.handleMenuClose(); this.handleMove(); }}>Move</MenuItem>)}
+                                            {canMove && (<MenuItem onClick={() => { this.handleMenuClose(); this.handleCopy(); }}>Copy</MenuItem>)}
                                             {canRename && this.hasSelectedFileOrFolder() && !protectedItem && (<MenuItem onClick={() => {
                                                 this.handleMenuClose(); this.onRename();
                                             }}>Rename</MenuItem>)}
@@ -943,12 +1135,12 @@ export default withStyles(
                                                 <MenuItem onClick={() => { this.handleMenuClose(); this.onReorder(); }}>Reorder</MenuItem>)}
                                         </Menu>
                                     </Toolbar>
-                                    <div style={{ flex: "0 0 auto", marginLeft: 0, marginRight: 0, overflowX: "clip" }}>
-                                        {this.renderBreadcrumbs()}
-                                    </div>
                                 </>
 
                             )}
+                            <div style={{ flex: "0 0 auto", marginLeft: 0, marginRight: 0, overflowX: "clip" }}>
+                                {this.renderBreadcrumbs()}
+                            </div>
 
                         </DialogTitle>
                         <DialogContent style={{
@@ -1001,7 +1193,14 @@ export default withStyles(
                                                 ++trackPosition;
                                                 this.maxPosition = trackPosition;
                                             }
-                                            let selected = value.pathname === this.state.selectedFile && !this.state.reordering;
+                                            let selected = false;
+                                            if (this.state.reordering) {
+                                                selected = false;
+                                            } else if (this.state.multiSelect) {
+                                                selected = this.state.selectedFiles.indexOf(value.pathname) !== -1;
+                                            } else {
+                                                selected = value.pathname === this.state.selectedFile;
+                                            }
                                             let selectBg = selected ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.0)";
                                             if (isDarkMode()) {
                                                 selectBg = selected ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.0)";
@@ -1023,7 +1222,7 @@ export default withStyles(
                                             }
                                             return (
                                                 <DraggableButtonBase key={value.pathname}
-                                                    longPressDelay={this.state.reordering ? 0 : -1}
+                                                    longPressDelay={this.state.reordering ? 0 : undefined}
                                                     data-position={dataPosition}
                                                     data-pathname={
                                                         value.metadata ? value.metadata.fileName : null
@@ -1034,15 +1233,15 @@ export default withStyles(
                                                         position: "relative",
                                                         top: dragOffset + "px",
                                                     }}
-                                                    onClick={() => this.onSelectValue(value)}
+                                                    onClick={(e) => this.handleFileClick(e, value)}
                                                     onDoubleClick={() => { this.onDoubleClickValue(value.pathname); }}
 
                                                     onLongPressEnd={(e) => {
-                                                        this.handleLongPressEnd(e);
+                                                        this.handleLongPressEnd(e, value);
                                                     }
                                                     }
                                                     onLongPressStart={(currentTarget, e) => {
-                                                        this.handleLongPressStart(currentTarget, e);
+                                                        return this.handleLongPressStart(currentTarget, e, value);
                                                     }
                                                     }
                                                     onLongPressMove={(e) => {
@@ -1059,20 +1258,20 @@ export default withStyles(
                                                                     display: "flex", flexFlow: "row nowrap", textOverflow: "ellipsis",
                                                                     justifyContent: "start", alignItems: "center", width: "100%", height: "100%"
                                                                 }}>
-                                                                {
-                                                                    this.isFolderArtwork(value.pathname) ? (
-                                                                    <img
-                                                                        onDragStart={(e) => { e.preventDefault(); }}
-                                                                        src={this.getTrackThumbnail(value)}
-                                                                        style={{ width: 24, height: 24, margin: 20, borderRadius: 4 }} />
-                                                                    ):(
-                                                                    <img
-                                                                        onDragStart={(e) => { e.preventDefault(); }}
-                                                                        src={this.getTrackThumbnail(value)}
-                                                                        style={{ width: 48, height: 48, margin: 8, borderRadius: 4 }} />
+                                                                    {
+                                                                        this.isFolderArtwork(value.pathname) ? (
+                                                                            <img
+                                                                                onDragStart={(e) => { e.preventDefault(); }}
+                                                                                src={this.getTrackThumbnail(value)}
+                                                                                style={{ width: 24, height: 24, margin: 20, borderRadius: 4 }} />
+                                                                        ) : (
+                                                                            <img
+                                                                                onDragStart={(e) => { e.preventDefault(); }}
+                                                                                src={this.getTrackThumbnail(value)}
+                                                                                style={{ width: 48, height: 48, margin: 8, borderRadius: 4 }} />
 
-                                                                    )
-                                                                }
+                                                                        )
+                                                                    }
                                                                     <div style={{
                                                                         flex: "1 1 1px", display: "flex", flexFlow: "column nowrap",
                                                                         marginLeft: 8,
@@ -1131,7 +1330,7 @@ export default withStyles(
                                 }
                             </div>
                         </DialogContent>
-                        {!this.state.reordering && (
+                        {(!this.state.reordering && !this.state.multiSelect) && (
                             <>
                                 <Divider />
                                 <DialogActions style={{ justifyContent: "stretch" }}>
@@ -1239,10 +1438,15 @@ export default withStyles(
 
                         />
                         <OkCancelDialog open={this.state.openConfirmDeleteDialog}
+
                             text={
-                                (this.isDirectory(this.state.selectedFile))
-                                    ? "Are you sure you want to delete the selected directory and all its contents?"
-                                    : "Are you sure you want to delete the selected file?"}
+                                this.state.multiSelect ?
+                                    ("Are you sure you want to delete the selected files and directories and all their contents?")
+                                    : (this.state.selectedFileIsDirectory
+                                        ? "Are you sure you want to delete the selected directory and all its contents?"
+                                        : "Are you sure you want to delete the selected file?"
+                                    )
+                            }
                             okButtonText="Delete"
                             onOk={() => this.handleConfirmDelete()}
                             onClose={() => {
@@ -1296,7 +1500,7 @@ export default withStyles(
                                         onClose={() => { this.setState({ moveDialogOpen: false, copyDialogOpen: false }); }}
                                         onOk={
                                             (path) => {
-                                                this.setState({ moveDialogOpen: false });
+                                                this.setState({ moveDialogOpen: false, copyDialogOpen: false });
                                                 this.setDefaultPath(path);
                                                 if (this.state.copyDialogOpen) {
                                                     this.onExecuteCopy(path);
@@ -1314,6 +1518,9 @@ export default withStyles(
                 );
         }
         openSelectedFile(): void {
+            if (this.state.multiSelect || this.state.reordering) {
+                return;
+            }
             if (this.isFolderArtwork(this.state.selectedFile)) {
                 return;
             }
@@ -1334,13 +1541,54 @@ export default withStyles(
                 return pathFileNameOnly(name);
             }
         }
-        private onMove(): void {
+        private handleMove(): void {
             this.setState({ moveDialogOpen: true });
         }
-        private onCopy(): void {
+        private handleCopy(): void {
             this.setState({ copyDialogOpen: true });
         }
+        private async onExecuteMoveMulti(newDirectory: string) {
+            let files = this.state.selectedFiles.slice();
+            let newFileList = this.state.selectedFiles.slice();
+            try {
+                for (let file of files) {
+                    let fileName = pathFileName(file);
+                    let oldFilePath = pathConcat(this.state.navDirectory, fileName);
+                    let newFilePath = pathConcat(newDirectory, fileName);
+
+                    await this.model.renameFilePropertyFile(oldFilePath, newFilePath, this.props.fileProperty);
+                    let index = newFileList.indexOf(file);
+                    if (index !== -1) {
+                        newFileList.splice(index,1);
+                    }
+
+                }
+            } catch (e) {
+                this.model.showAlert(e);
+            }
+            // update state to refelect what we did.
+            if (!this.mounted) {
+                return;
+            }
+            if (newFileList.length === 0 )
+            {
+                this.setState({
+                    multiSelect: false,
+                    selectedFiles: []
+                });
+            } else {
+                this.setState({
+                    multiSelect: true,
+                    selectedFiles: newFileList,
+                });
+            }
+            this.requestFiles(this.state.navDirectory);
+        }
         private onExecuteMove(newDirectory: string) {
+            if (this.state.multiSelect) {
+                this.onExecuteMoveMulti(newDirectory);
+                return;
+            }
             let fileName = pathFileName(this.state.selectedFile);
             let oldFilePath = pathConcat(this.state.navDirectory, fileName);
             let newFilePath = pathConcat(newDirectory, fileName);
@@ -1369,8 +1617,32 @@ export default withStyles(
                 this.setState({ confirmCopyDialogState: null });
             }
         }
+        private async onExecuteCopyMulti(newDirectory: string) {
+
+            let files = this.state.selectedFiles.slice();
+            let fileProperty = this.props.fileProperty;
+            try {
+                for (let fileName of files) {
+                    let oldFilePath = pathConcat(this.state.navDirectory, fileName);
+                    let newFilePath = pathConcat(newDirectory, fileName);
+
+                    await this.model.copyFilePropertyFile(oldFilePath, newFilePath, fileProperty, true);
+                }
+            } catch (e) {
+                this.model.showAlert(e);
+            }
+            // update state to reflect what we did.
+            if (!this.mounted) {
+                return;
+            }
+            this.requestFiles(this.state.navDirectory);
+        }
         private onExecuteCopy(newDirectory: string) {
             this.setState({ copyDialogOpen: false });
+            if (this.state.multiSelect) {
+                this.onExecuteCopyMulti(newDirectory);
+                return;
+            }
             let fileName = pathFileName(this.state.selectedFile);
             let oldFilePath = pathConcat(this.state.navDirectory, fileName);
             let newFilePath = pathConcat(newDirectory, fileName);

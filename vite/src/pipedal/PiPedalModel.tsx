@@ -2019,8 +2019,8 @@ export class PiPedalModel //implements PiPedalModel
         return this.copyPreset(instanceId, -1);
     }
 
-    showAlert(message: string | Error): void {
-        let m = message;
+    showAlert(message: any): void {
+        let m: string;
         if (message instanceof Error) {
             let e = message as Error;
             if (e.message) {

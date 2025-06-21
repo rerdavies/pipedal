@@ -26,7 +26,7 @@ import ButtonBase, { ButtonBaseProps } from "@mui/material/ButtonBase";
 
 export interface DraggableButtonBaseProps extends ButtonBaseProps {
     onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-    onLongPressStart?: (currentTarget: HTMLButtonElement, e: React.PointerEvent<HTMLButtonElement>) => void;
+    onLongPressStart?: (currentTarget: HTMLButtonElement, e: React.PointerEvent<HTMLButtonElement>) => boolean;
     onLongPressMove?: (e: React.PointerEvent<HTMLButtonElement>) => void;
     onLongPressEnd?: (e: React.PointerEvent<HTMLButtonElement>) => void;
     longPressDelay? : number;
@@ -69,8 +69,33 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
     let [hTimeout, setHTimeout] = React.useState<number | null>(null);
     let [pointerId, setPointerId] = React.useState<number | null>(null);
     let [longPressed, setLongPressed] = React.useState<boolean>(false);
-    let [suppressClick, setSuppressClick] = React.useState<boolean>(false);
+    let [clickSuppressed, setClickSuppressed] = React.useState<boolean>(false);
     let [pointerDownPoint, setPointerDownPoint] = React.useState<Point >({x: 0, y: 0});
+
+
+    function handleSuppressClick(e: MouseEvent) {
+            e.stopPropagation();
+            e.preventDefault();
+            setSuppressClick(false);
+    }
+
+    function setSuppressClick(value: boolean) {
+        
+        if (value !== clickSuppressed) {
+            setClickSuppressed(value);
+            if (value) {
+                window.addEventListener(
+                    "click",
+                    handleSuppressClick, 
+                    { 
+                        once: true,
+                        capture: true
+                    });
+            } else {
+                window.removeEventListener("click", handleSuppressClick);
+            }
+        }
+    }
 
     function cancelLongPress() {
         if (hTimeout !== null) {
@@ -82,8 +107,10 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
         setSuppressClick(false);
     }
 
+
     useEffect(() => {
         return () => {
+            setSuppressClick(false);
             cancelLongPress();
         };
     }, []);
@@ -106,10 +133,15 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
                 if (longPressDelay === undefined || longPressDelay >= 0)
                 {
                     setHTimeout(window.setTimeout(() => {
+                        setHTimeout(null);
                         if (props.onLongPressStart) {
-                            props.onLongPressStart(currentTarget,e);
+                            if (!props.onLongPressStart(currentTarget,e))
+                            {
+                                return;
+                            }
                         }
                         setLongPressed(true);
+                        setSuppressClick(true);
                     }, longPressDelay??1250)); 
                 }
             }}
@@ -147,7 +179,7 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
                 }
             }}
             onClick={(e) => {
-                if (suppressClick) {
+                if (clickSuppressed) {
                     e.stopPropagation();
                     e.preventDefault();
                     setSuppressClick(false);
