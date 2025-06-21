@@ -260,81 +260,123 @@ namespace pipedal
         auto p = v.begin();
         while (p != v.end())
         {
-            uint32_t uc;
-            uint8_t c = (uint8_t)*p++;
-            if ((c & UTF8_ONE_BYTE_MASK) == UTF8_ONE_BYTE_BITS)
-            {
-                uc = c;
-            }
-            else
-            {
-                uint32_t c2 = continuation_byte(p, v.end());
-
-                if ((c & UTF8_TWO_BYTES_MASK) == UTF8_TWO_BYTES_BITS)
+            try {
+                uint32_t uc;
+                uint8_t c = (uint8_t)*p++;
+                if ((c & UTF8_ONE_BYTE_MASK) == UTF8_ONE_BYTE_BITS)
                 {
-                    uint32_t c1 = c & (uint32_t)(~UTF8_TWO_BYTES_MASK);
-                    if (c1 <= 1 && enforceValidUtf8Encoding)
-                    {
-                        // overlong encoding.
-                        throw_encoding_error();
-                    }
-                    uc = (c1 << 6) | c2;
+                    uc = c;
                 }
                 else
                 {
-                    uint32_t c3 = continuation_byte(p, v.end());
+                    uint32_t c2 = continuation_byte(p, v.end());
 
-                    if ((c & UTF8_THREE_BYTES_MASK) == UTF8_THREE_BYTES_BITS)
+                    if ((c & UTF8_TWO_BYTES_MASK) == UTF8_TWO_BYTES_BITS)
                     {
-                        uint32_t c1 = c & (uint32_t)~UTF8_THREE_BYTES_MASK;
-                        if (c1 == 0 && c2 < 0x20 && enforceValidUtf8Encoding)
+                        uint32_t c1 = c & (uint32_t)(~UTF8_TWO_BYTES_MASK);
+                        if (c1 <= 1 && enforceValidUtf8Encoding)
                         {
                             // overlong encoding.
                             throw_encoding_error();
                         }
-
-                        uc = (c1) << 12 | (c2 << 6) | c3;
+                        uc = (c1 << 6) | c2;
                     }
                     else
                     {
-                        uint32_t c4 = continuation_byte(p, v.end());
-                        if ((c & UTF8_FOUR_BYTES_MASK) == UTF8_FOUR_BYTES_BITS)
+                        uint32_t c3 = continuation_byte(p, v.end());
+
+                        if ((c & UTF8_THREE_BYTES_MASK) == UTF8_THREE_BYTES_BITS)
                         {
-                            uint32_t c1 = c & (uint32_t)~UTF8_FOUR_BYTES_MASK;
-                            if (c1 == 0 && c2 < 0x10 && enforceValidUtf8Encoding)
+                            uint32_t c1 = c & (uint32_t)~UTF8_THREE_BYTES_MASK;
+                            if (c1 == 0 && c2 < 0x20 && enforceValidUtf8Encoding)
                             {
                                 // overlong encoding.
                                 throw_encoding_error();
                             }
-                            uc = (c1 << 18) | (c2 << 12) | (c3 << 6) | c4;
+
+                            uc = (c1) << 12 | (c2 << 6) | c3;
                         }
                         else
                         {
-                            // outside legal UCS range.
-                            throw_encoding_error();
+                            uint32_t c4 = continuation_byte(p, v.end());
+                            if ((c & UTF8_FOUR_BYTES_MASK) == UTF8_FOUR_BYTES_BITS)
+                            {
+                                uint32_t c1 = c & (uint32_t)~UTF8_FOUR_BYTES_MASK;
+                                if (c1 == 0 && c2 < 0x10 && enforceValidUtf8Encoding)
+                                {
+                                    // overlong encoding.
+                                    throw_encoding_error();
+                                }
+                                uc = (c1 << 18) | (c2 << 12) | (c3 << 6) | c4;
+                            }
+                            else
+                            {
+                                // outside legal UCS range.
+                                throw_encoding_error();
+                            }
                         }
                     }
                 }
-            }
-            if (uc < 0x10000ul)
-            {
-                os << (char16_t)uc;
-            }
-            else
-            {
-                // write UTF-16 surrogate pair.
-                uc -= 0x10000;
+                if (uc < 0x10000ul)
+                {
+                    os << (char16_t)uc;
+                }
+                else
+                {
+                    // write UTF-16 surrogate pair.
+                    uc -= 0x10000;
 
-                char16_t s1 = (char16_t)(UTF16_SURROGATE_1_BASE + ((uc >> 10) & 0x3FFu));
-                char16_t s2 = (char16_t)(UTF16_SURROGATE_2_BASE + (uc & 0x03FFu));
-                // surrogate pair.
-                os << s1;
-                os << s2;
+                    char16_t s1 = (char16_t)(UTF16_SURROGATE_1_BASE + ((uc >> 10) & 0x3FFu));
+                    char16_t s2 = (char16_t)(UTF16_SURROGATE_2_BASE + (uc & 0x03FFu));
+                    // surrogate pair.
+                    os << s1;
+                    os << s2;
+                }
+            } catch (const std::exception &e)
+            {
+                os << u'\uFFFD'; // replacement character for invalid sequences.
             }
         }
         return os.str();
     }
 
+    bool IsValidUtf8(const std::string &text)
+    {
+        auto p = text.begin();
+        while (p != text.end())
+        {
+            uint8_t c = *p++;
+            if ((c & UTF8_ONE_BYTE_MASK) == UTF8_ONE_BYTE_BITS)
+            {
+                // 1-byte character (ASCII)
+                continue;
+            }
+            else if ((c & UTF8_TWO_BYTES_MASK) == UTF8_TWO_BYTES_BITS)
+            {
+                // 2-byte character
+                if (p == text.end() || ((*p++ & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_BITS))
+                    return false;
+            }
+            else if ((c & UTF8_THREE_BYTES_MASK) == UTF8_THREE_BYTES_BITS)
+            {
+                // 3-byte character
+                if (p + 1 >= text.end() || ((*p++ & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_BITS) || ((*p++ & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_BITS))
+                    return false;
+            }
+            else if ((c & UTF8_FOUR_BYTES_MASK) == UTF8_FOUR_BYTES_BITS)
+            {
+                // 4-byte character
+                if (p + 2 >= text.end() || ((*p++ & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_BITS) || ((*p++ & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_BITS))
+                    return false;
+            }
+            else
+            {
+                // Invalid UTF-8
+                return false;
+            }
+        }
+        return true;
+    }
 
  
 }

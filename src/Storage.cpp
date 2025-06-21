@@ -38,6 +38,7 @@
 #include <MimeTypes.hpp>
 #include "util.hpp"
 #include "AudioFiles.hpp"
+#include "Utf8Utils.hpp"
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -202,6 +203,12 @@ static void CopyDirectory(const std::filesystem::path &source, const std::filesy
 {
     for (auto &directoryEntry : std::filesystem::directory_iterator(source))
     {
+        if (!IsValidUtf8(directoryEntry.path().string()))
+        {
+            // skip invalid UTF-8 paths.
+            Lv2Log::warning("Skipping invalid UTF-8 path: %s", directoryEntry.path().string().c_str());
+            continue;
+        }
         if (directoryEntry.is_regular_file())
         {
             std::filesystem::path sourceFile = directoryEntry.path();
@@ -394,6 +401,12 @@ void Storage::ReIndex()
 {
     for (const auto &dirEntry : std::filesystem::directory_iterator(GetPresetsDirectory()))
     {
+        if (!IsValidUtf8(dirEntry.path().string()))
+        {
+            // skip invalid UTF-8 paths.
+            Lv2Log::warning("Skipping invalid UTF-8 path: %s", dirEntry.path().string().c_str());
+            continue;
+        }
         if (!dirEntry.is_directory())
         {
             auto path = dirEntry.path();
@@ -1646,6 +1659,11 @@ static void AddFilesToResult(
     {
         for (auto const &dir_entry : std::filesystem::directory_iterator(rootPath))
         {
+            if (!IsValidUtf8(dir_entry.path().string()))
+            {
+                Lv2Log::warning("Invalid UTF-8 name in directory: " + dir_entry.path().string());
+                continue; // skip invalid UTF-8 names.
+            }
             const auto &path = dir_entry.path();
             auto name = path.filename().string();
             if (dir_entry.is_regular_file())
@@ -1717,6 +1735,11 @@ static void AddTracksToResult(
         // Add directories first.
         for (auto const &dir_entry : std::filesystem::directory_iterator(rootPath))
         {
+            if (!IsValidUtf8(dir_entry.path().string()))
+            {
+                Lv2Log::warning("Invalid UTF-8 name in directory: " + dir_entry.path().string());
+                continue; // skip invalid UTF-8 names.
+            }
             const auto &path = dir_entry.path();
             auto name = path.filename().string();
             if (dir_entry.is_directory())
@@ -2295,6 +2318,12 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree *node, const std
 {
     for (auto child : std::filesystem::directory_iterator(directory))
     {
+        if (!IsValidUtf8(child.path().string()))
+        {
+            Lv2Log::warning("Invalid UTF-8 name in directory: " + child.path().string());
+            // skip invalid UTF-8 paths.
+            continue;
+        }
         if (child.is_directory())
         {
             const auto &childPath = child.path();
@@ -2317,6 +2346,12 @@ static void GetAllExtensions(std::set<std::string> &result, const std::filesyste
 
     for (const auto &dirEnt : fs::directory_iterator(path))
     {
+        if (!IsValidUtf8(dirEnt.path().string()))
+        {
+            // skip invalid UTF-8 paths.
+            Lv2Log::warning("Invalid UTF-8 name in directory: " + dirEnt.path().string());
+            continue;
+        }
         if (dirEnt.is_directory())
         {
             GetAllExtensions(result, dirEnt.path());

@@ -177,7 +177,7 @@
             "args": [
                 //"[Dev]"  -- all dev-machine tests.
                 //"[promise]"  // subtest of your choice, or none to run all of the tests.
-                "[atom_converter]"
+                "[json_variants]"
             ],
 
             "stopAtEntry": false,

@@ -267,11 +267,37 @@ void TestVariantSFINAE()
     int i;
     REQUIRE(x.write(i) == false);
 }
+
+void TestIlleglUtf8Sequences()
+{
+    {
+        std::string json = "\"\x80\x80\x80\"";
+        std::stringstream s(json);
+        json_reader reader(s);
+        std::string v;
+        reader.read(&v);
+        // just sufficient that it doesn't throw.
+    }
+
+
+    {
+    std::string illegalJsonString = "123\x80\x80\x80xyz";
+        std::stringstream ss;
+        json_writer writer(ss);
+        writer.write(illegalJsonString);
+        std::string output = ss.str();
+        std::string result = ss.str();
+        REQUIRE(result == "\"123\\uFFFDyz\""); // U+FFFD is the replacement character for illegal UTF-8 sequences.
+    }
+}   
 TEST_CASE("json variants", "[json_variants][Build][Dev]")
 {
     {
+        TestIlleglUtf8Sequences();
+
         TestVariantSFINAE();
 
+        
         TestVariantRoundTrip(0.0);
         TestVariantRoundTrip(std::string("abc"));
         TestVariantRoundTrip(json_null());
