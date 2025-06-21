@@ -22,7 +22,7 @@
  */
 
 import Button, {ButtonProps} from '@mui/material/Button';
-import Tooltip from "@mui/material/Tooltip";
+import ToolTipEx from './ToolTipEx';
 import Typography from "@mui/material/Typography";
 
 
@@ -34,19 +34,17 @@ function ButtonEx(props: ButtonExProps) {
     const { tooltip, style, ...extra } = props;
 
     return (
-        <Tooltip title={
+        <ToolTipEx title={
             (
-                <Typography variant="caption">{tooltip || extra['aria-label']}</Typography>
+                <Typography variant="caption">{tooltip}</Typography>
             )
         }
-            placement="top-start" arrow
-            enterDelay={1500} enterNextDelay={1500}
         >
             <span> 
                 {/* Using span to prevent tooltip from disappearing when button is disabled */}
                 <Button {...extra} style={style} />
             </span>
-        </Tooltip>
+        </ToolTipEx>
     );
 }
 export default ButtonEx;    

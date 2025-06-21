@@ -1,9 +1,9 @@
 
 import React, { ReactElement } from 'react';
-import Tooltip from "@mui/material/Tooltip"
 import { UiControl } from './Lv2Plugin';
 import Typography from "@mui/material/Typography";
 import Divider from '@mui/material/Divider';
+import ToolTipEx from './ToolTipEx'
 
 
 interface ControlTooltipProps {
@@ -16,7 +16,7 @@ export default function ControlTooltip(props: ControlTooltipProps) {
     let { children, uiControl } = props;
     if (uiControl.comment && (uiControl.comment !== uiControl.name)) {
         return (
-            <Tooltip title={(
+            <ToolTipEx title={(
                 <React.Fragment>
                     <Typography variant="caption">{uiControl.name}</Typography>
                     <Divider />
@@ -24,18 +24,16 @@ export default function ControlTooltip(props: ControlTooltipProps) {
 
                 </React.Fragment>
             )}
-                placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
             >
                 {children}
-            </Tooltip>
+            </ToolTipEx>
         );
     } else {
         return (
-            <Tooltip title={uiControl.name}
-                placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
+            <ToolTipEx title={uiControl.name}
             >
                 {children}
-            </Tooltip>
+            </ToolTipEx>
         );
     }
 }

@@ -42,7 +42,7 @@ import JsonAtom from './JsonAtom';
 import PluginOutputControl from './PluginOutputControl';
 import Units from './Units';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
-import Tooltip from '@mui/material/Tooltip';
+import ToolTipEx from './ToolTipEx';
 import MidiChannelBindingControl from './MidiChannelBindingControl';
 import MidiChannelBinding from './MidiChannelBinding';
 
@@ -697,11 +697,10 @@ const PluginControlView =
                         result.push((
                             <div key={"ctlx" + (this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
                                 <div className={classes.portGroupTitle}>
-                                    <Tooltip title={controlGroup.name}
-                                        placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
+                                    <ToolTipEx title={controlGroup.name}
                                     >
                                         <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
-                                    </Tooltip>
+                                    </ToolTipEx>
                                 </div>
                                 <div className={
                                     this.state.landscapeGrid ? classes.portGroupControlsLandscape : classes.portGroupControls} >

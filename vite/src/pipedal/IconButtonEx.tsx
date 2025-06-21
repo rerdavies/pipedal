@@ -22,7 +22,7 @@
  */
 
 import IconButton, {IconButtonProps} from '@mui/material/IconButton';
-import Tooltip from "@mui/material/Tooltip";
+import ToolTipEx from './ToolTipEx';
 import Typography from "@mui/material/Typography";
 
 interface IconButtonExProps extends IconButtonProps {
@@ -34,16 +34,14 @@ function IconButtonEx(props: IconButtonExProps) {
     const { tooltip,style, ...extra   } = props;
     
     return (
-        <Tooltip title={
+        <ToolTipEx title={
             (
                 <Typography variant="caption">{tooltip || extra['aria-label'] }</Typography>
             )
         }
-            placement="top-start" arrow 
-            enterDelay={1500} enterNextDelay={1500}
         >   
             <IconButton {...extra} style={style}  />
-        </Tooltip>
+        </ToolTipEx>
     );
 }
 

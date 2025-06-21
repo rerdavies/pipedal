@@ -23,8 +23,8 @@ import WithStyles, {withTheme} from './WithStyles';
 import { withStyles } from "tss-react/mui";
 import IconButtonEx from './IconButtonEx';
 import ButtonEx from './ButtonEx';
-import Tooltip from '@mui/material/Tooltip';
 
+import ToolTipEx from './ToolTipEx';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import {
     Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType
@@ -530,9 +530,10 @@ export const MainPage =
                             }} >
                                 <div style={{ flex: "0 0 auto", width: this.state.splitControlBar? undefined:  80 }} >
                                     <div style={{ display: bypassVisible ? "block" : "none", width: this.state.splitControlBar? undefined:  80 }} >
-                                        <Tooltip title="Bypass" placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}>
+                                        <ToolTipEx title="Bypass" 
+                                        >
                                             <Switch color="secondary" checked={bypassChecked} onChange={this.handleEnableCurrentItemChanged} />
-                                        </Tooltip>
+                                        </ToolTipEx>
                                     </div>
                                 </div>
                                 {

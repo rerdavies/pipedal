@@ -22,7 +22,7 @@
  */
 
 import { Typography } from "@mui/material";
-import Tooltip from "@mui/material/Tooltip";
+import ToolTipEx from "./ToolTipEx";
 import { ReactElement } from "react";
 
 
@@ -34,7 +34,7 @@ export interface ButtonTooltipProps {
 export default function ButtonTooltip(props: ButtonTooltipProps)
 {
     return (
-        <Tooltip placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
+        <ToolTipEx
             title={
                 (
                     <Typography variant="body2">
@@ -44,6 +44,6 @@ export default function ButtonTooltip(props: ButtonTooltipProps)
             }
          >
             {props.children}
-        </Tooltip>
+        </ToolTipEx>
     );
 }

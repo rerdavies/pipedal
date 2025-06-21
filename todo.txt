@@ -1,10 +1,6 @@
 
-Numeric up-down buttons blown in light theme.
 
 Tooltips on touch ui? 
-
-
-convolution reverb broken.
 
 
 - pipewire aux in?
