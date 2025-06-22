@@ -29,7 +29,7 @@ import { withStyles } from "tss-react/mui";
 import WithStyles  from './WithStyles';
 import { css } from '@emotion/react';
 
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import MenuButton from '@mui/icons-material/Menu';
 import { TemporaryDrawer } from './TemporaryDrawer';
@@ -802,21 +802,23 @@ export
                                 (
                                     <AppBar position="absolute"  >
                                         <Toolbar variant="dense" className={classes.toolBar}  >
-                                            <IconButton
+                                            <IconButtonEx tooltip="Menu"
                                                 edge="start"
                                                 aria-label="menu"
                                                 color="inherit"
                                                 onClick={() => { this.showDrawer() }}
                                                 size="large">
                                                 <MenuButton style={{ opacity: 0.75 }} />
-                                            </IconButton>
+                                            </IconButtonEx>
                                             <div style={{ flex: "0 1 400px", minWidth: 100 }}>
                                                 <PresetSelector />
                                             </div>
                                             <div style={{ flex: "2 2 30px" }} />
                                             {this.state.canFullScreen &&
-                                                <IconButton
-                                                    aria-label="menu"
+                                                <IconButtonEx
+                                                    aria-label="maximise/minimise"
+                                                    tooltip={this.state.isFullScreen ? "Exit full screen" : "Full screen"}
+                                                    style={{ marginRight: 8, marginLeft: 8 }}
                                                     onClick={() => { this.toggleFullScreen(); }}
                                                     color="inherit"
                                                     size="large">
@@ -827,22 +829,24 @@ export
 
                                                     )}
 
-                                                </IconButton>
+                                                </IconButtonEx>
                                             }
                                         </Toolbar>
                                     </AppBar>
                                 ) : (
                                     <div className={classes.toolBarContent} >
-                                        <IconButton
+                                        <IconButtonEx
+                                            tooltip="Menu"
                                             style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
                                             aria-label="menu"
                                             onClick={() => { this.showDrawer() }}
                                             color="inherit"
                                             size="large">
                                             <MenuButton />
-                                        </IconButton>
+                                        </IconButtonEx>
                                         {this.state.canFullScreen && (
-                                            <IconButton
+                                            <IconButtonEx
+                                                tooltip={this.state.isFullScreen ? "Exit full screen" : "Full screen"}
                                                 style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
                                                 aria-label="menu"
                                                 color="inherit"
@@ -855,7 +859,7 @@ export
 
                                                 )}
 
-                                            </IconButton>
+                                            </IconButtonEx>
                                         )}
                                     </div>
                                 )}

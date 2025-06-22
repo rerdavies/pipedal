@@ -23,7 +23,7 @@
  */
 
 import React from 'react';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import Button from '@mui/material/Button';
@@ -305,14 +305,15 @@ const WifiDirectConfigDialog =
                     {this.state.landscapeLayout && (
                         <DialogContent >
                             <div style={{ display: "flex", gap: 16, alignItems: "left" }}>
-                                <IconButton
+                                <IconButtonEx
+                                    tooltip="Back"
                                     edge="start"
                                     color="inherit"
                                     onClick={() => { this.props.onClose(); }}
                                     aria-label="back"
                                     size="large">
                                     <ArrowBackIcon htmlColor="#888" />
-                                </IconButton>
+                                </IconButtonEx>
                                 <FormControlLabel
                                     control={(
                                         <Switch

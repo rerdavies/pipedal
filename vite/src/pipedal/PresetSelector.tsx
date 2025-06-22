@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SyntheticEvent, Component } from 'react';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import { PiPedalModel, PiPedalModelFactory, PresetIndex } from './PiPedalModel';
 import SaveIconOutline from '@mui/icons-material/Save';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -300,12 +300,12 @@ const PresetSelector =
                         justifyContent: "left", flexWrap: "nowrap", alignItems: "center", height: "100%", position: "relative"
                     }}>
                         <div style={{ flex: "0 0 auto" }}>
-                            <IconButton
+                            <IconButtonEx tooltip="Save current preset"
                                 style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0, color: "#FFFFFF" }}
                                 onClick={(e) => { this.handleSave(); }}
                                 size="large">
                                 <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />
-                            </IconButton>
+                            </IconButtonEx>
                         </div>
 
                         <div style={{ flex: "1 1 auto", minWidth: 60, maxWidth: 300, position: "relative", paddingRight: 12 }} >
@@ -337,13 +337,14 @@ const PresetSelector =
                             </Select>
                         </div>
                         <div style={{ flex: "0 0 auto"}}>
-                            <IconButton
+                            <IconButtonEx
+                                tooltip="More..."
                                 style={{ flex: "0 0 auto",  color: "#FFFFFF" }}
                                 onClick={(e) => this.handlePresetMenuClick(e)}
                                 size="large"
                                 >
                                 <MoreVertIcon style={{ opacity: 0.75 }} color="inherit" />
-                            </IconButton>
+                            </IconButtonEx>
                             <Menu
                                 id="edit-presets-menu"
                                 anchorEl={this.state.presetsMenuAnchorRef}

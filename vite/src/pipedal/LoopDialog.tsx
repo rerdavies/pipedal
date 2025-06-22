@@ -29,7 +29,7 @@ import TextField, { StandardTextFieldProps } from "@mui/material/TextField";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogEx from "./DialogEx";
 import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
+import IconButtonEx from "./IconButtonEx";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Typography from "@mui/material/Typography";
 import Slider, { SliderProps } from "@mui/material/Slider";
@@ -456,7 +456,8 @@ export default function LoopDialog(props: LoopDialogProps) {
         >
             <DialogTitle style={{ paddingTop: 0 }}>
                 <Toolbar style={{ padding: 0 }}>
-                    <IconButton
+                    <IconButtonEx
+                        tooltip="Back"
                         edge="start"
                         color="inherit"
                         aria-label="back"
@@ -467,7 +468,7 @@ export default function LoopDialog(props: LoopDialogProps) {
                         }}
                     >
                         <ArrowBackIcon style={{ width: 24, height: 24 }} />
-                    </IconButton>
+                    </IconButtonEx>
                     <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
                         Loop
                     </Typography>

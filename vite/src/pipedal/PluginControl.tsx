@@ -146,6 +146,7 @@ export interface PluginControlProps extends WithStyles<typeof pluginControlStyle
 type PluginControlState = {
     error: boolean;
     editFocused: boolean;
+    previewValue?: string;
 };
 
 const PluginControl =
@@ -167,7 +168,9 @@ const PluginControl =
 
                 this.state = {
                     error: false,
-                    editFocused: false
+                    editFocused: false,
+                    previewValue: undefined
+
                 };
                 this.model = PiPedalModelFactory.getInstance();
                 this.imgRef = React.createRef();
@@ -406,6 +409,7 @@ const PluginControl =
                             img.style.opacity = "" + SELECTED_OPACITY;
                         }
                     }
+                    this.setState({ previewValue: undefined });
 
                 } else {
                     if (this.isExtraTouch(e)) {
@@ -494,7 +498,9 @@ const PluginControl =
                     if (this.pointersDown !== 0) {
                         --this.pointersDown;
                     }
-
+                    if (this.pointersDown === 0) {
+                        this.setState({ previewValue: undefined });
+                    }
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -543,7 +549,7 @@ const PluginControl =
             }
 
             clickSlop() {
-                return 3.5;  // maybe larger on touch devices.
+                return 5;  // maybe larger on touch devices.
             }
             onPointerMove(e: PointerEvent<SVGSVGElement>): void {
                 if (this.isCapturedPointer(e)) {
@@ -604,6 +610,7 @@ const PluginControl =
                             break;
                     }
                 }
+                this.setState({ previewValue: undefined});
             }
             previewInputValue(value: number, commitValue: boolean) {
                 let range = this.valueToRange(value);
@@ -667,6 +674,12 @@ const PluginControl =
                 if (displayValue) {
                     let v = this.formatDisplayValue(this.props.uiControl, value);
                     displayValue.childNodes[0].textContent = v;
+
+                    if (commitValue) {
+                        this.setState({ previewValue: undefined });
+                    } else {
+                        this.setState({ previewValue: v });
+                    }   
                 }
                 let selectElement = this.selectRef.current;
                 if (selectElement) {
@@ -1026,7 +1039,8 @@ const PluginControl =
                                 )
                                     : (isGraphicEq) ? (
                                         <div style={{ flex: "0 1 auto" }}>
-                                            <ControlTooltip uiControl={control}>
+                                            
+                                            <ControlTooltip uiControl={control} valueTooltip={this.state.previewValue}>
                                                 <GraphicEqCtl
                                                     imgRef={this.imgRef}
                                                     position={this.getEqPosition()}
@@ -1045,7 +1059,8 @@ const PluginControl =
                                         </div>
                                     ) : (
                                         <div style={{ flex: "0 1 auto" }}>
-                                            <ControlTooltip uiControl={control}>
+                                            <ControlTooltip uiControl={control} 
+                                                valueTooltip={this.state.previewValue}>
                                                 <DialIcon ref={this.imgRef}
                                                     style={{
                                                         overscrollBehavior: "none", touchAction: "none", fill: dialColor,
@@ -1053,7 +1068,7 @@ const PluginControl =
                                                     }}
                                                     onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
                                                     onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
-                                                    onPointerMoveCapture={this.onPointerMove}
+                                                    onPointerMove={this.onPointerMove}
                                                     onDrag={this.onDrag}
 
                                                 />

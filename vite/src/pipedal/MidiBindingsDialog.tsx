@@ -30,7 +30,7 @@ import { withStyles } from "tss-react/mui";
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import MidiBinding from './MidiBinding';
 import MidiBindingView from './MidiBindingView';
 import Snackbar from '@mui/material/Snackbar';
@@ -350,14 +350,15 @@ export const MidiBindingDialog =
                             <div style={{ flex: "0 0 auto" }}>
                                 <AppBar className={classes.dialogAppBar} >
                                     <Toolbar>
-                                        <IconButton
+                                        <IconButtonEx
+                                            tooltip="Back"
                                             edge="start"
                                             color="inherit"
                                             onClick={this.handleClose}
                                             aria-label="back"
                                             size="large">
                                             <ArrowBackIcon />
-                                        </IconButton>
+                                        </IconButtonEx>
                                         <Typography noWrap variant="h6" className={classes.dialogTitle}>
                                             Preset MIDI Bindings
                                         </Typography>

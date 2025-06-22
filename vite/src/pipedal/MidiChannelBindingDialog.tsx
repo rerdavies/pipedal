@@ -27,8 +27,7 @@ import DialogActions from '@mui/material/DialogActions';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import ChannelBindingHelpDialog from './ChannelBindingsHelpDialog';
-
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import Checkbox from '@mui/material/Checkbox';
@@ -167,7 +166,9 @@ function MidiChannelBindingDialog(props: MidiChannelBindingDialogProps) {
                         } label="Allow Program Changes"
                         />
                         {false&&( // wait until the implementation stabilizes before exposing the help dialog.
-                            <IconButton
+                            <IconButtonEx
+                                tooltip="Help"
+                                aria-label="help"
                                 onClick={() => { setHelpDialog(true); }}
                                 size="large">
                                 <InfoOutlinedIcon color='inherit'
@@ -176,7 +177,7 @@ function MidiChannelBindingDialog(props: MidiChannelBindingDialogProps) {
                                         opacity: 0.6                                        
                                     }}
                                 />
-                            </IconButton>
+                            </IconButtonEx>
                         )}
                     </div>
 

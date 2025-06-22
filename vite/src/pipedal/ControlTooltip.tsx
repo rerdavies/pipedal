@@ -9,30 +9,42 @@ import ToolTipEx from './ToolTipEx'
 interface ControlTooltipProps {
     children: ReactElement,
     uiControl: UiControl
+    valueTooltip?: React.ReactNode;
 }
 
 
 export default function ControlTooltip(props: ControlTooltipProps) {
-    let { children, uiControl } = props;
+    let { children, uiControl, valueTooltip } = props;
     if (uiControl.comment && (uiControl.comment !== uiControl.name)) {
         return (
-            <ToolTipEx title={(
-                <React.Fragment>
-                    <Typography variant="caption">{uiControl.name}</Typography>
-                    <Divider />
-                    <Typography variant="caption">{uiControl.comment}</Typography>
+            <ToolTipEx
+                valueTooltip={valueTooltip}
+                title={
+                    (
+                        <React.Fragment>
+                            <Typography variant="caption">{uiControl.name}</Typography>
+                            <Divider />
+                            <Typography variant="caption">{uiControl.comment}</Typography>
 
-                </React.Fragment>
-            )}
+                        </React.Fragment>
+                    )}
             >
-                {children}
+                <div>
+                    {children}
+                </div>
             </ToolTipEx>
         );
     } else {
         return (
-            <ToolTipEx title={uiControl.name}
+            <ToolTipEx valueTooltip={valueTooltip}
+                title={
+                    (
+                        <Typography variant="caption">{uiControl.name}</Typography>
+                    )}
             >
-                {children}
+                <div >
+                    {children}
+                </div>
             </ToolTipEx>
         );
     }

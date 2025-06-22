@@ -27,13 +27,12 @@ import LoopDialog from './LoopDialog';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import ButtonEx from './ButtonEx';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import Pause from '@mui/icons-material/Pause';
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import FastForward from '@mui/icons-material/FastForward';
 import FastRewind from '@mui/icons-material/FastRewind';
 import { PiPedalModelFactory, State } from './PiPedalModel';
-import ButtonTooltip from './ButtonTooltip';
 import { pathFileNameOnly } from './FileUtils';
 import ButtonBase from '@mui/material/ButtonBase';
 import FilePropertyDialog from './FilePropertyDialog';
@@ -351,61 +350,56 @@ export default function ToobPlayerControl(
                     },
                 })}
             >
-                <ButtonTooltip title="Previous track">
-                    <IconButton
-                        style={{ opacity: (pluginState === PluginState.Idle ? 0.2 : 0.7) }}
-                        onClick={() => {
-                            if (position > start + 3.0) {
+                <IconButtonEx tooltip="Previous track"
+                    style={{ opacity: (pluginState === PluginState.Idle ? 0.2 : 0.7) }}
+                    onClick={() => {
+                        if (position > start + 3.0) {
+                            model.sendPedalboardControlTrigger(
+                                props.instanceId,
+                                "stop",
+                                1
+                            );
+                        } else {
+                            onPreviousTrack();
+                        }
+                    }}
+                >
+                    <FastRewind fontSize="large" />
+                </IconButtonEx>
+                <IconButtonEx
+                    tooltip={paused ? "Play" : "Pause"}
+
+                    style={{ opacity: (pluginState === PluginState.Idle ? 0.2 : 0.7) }}
+                    onClick={() => {
+                        if (pluginState != PluginState.Idle) {
+                            if (paused) {
                                 model.sendPedalboardControlTrigger(
                                     props.instanceId,
-                                    "stop",
+                                    "play",
                                     1
                                 );
                             } else {
-                                onPreviousTrack();
+                                model.sendPedalboardControlTrigger(
+                                    props.instanceId,
+                                    "pause",
+                                    1
+                                );
                             }
-                        }}
-                    >
-                        <FastRewind fontSize="large" />
-                    </IconButton>
-                </ButtonTooltip>
-                <ButtonTooltip title="Play/Pause">
-                    <IconButton
-
-                        style={{ opacity: (pluginState === PluginState.Idle ? 0.2 : 0.7) }}
-                        onClick={() => {
-                            if (pluginState != PluginState.Idle) {
-                                if (paused) {
-                                    model.sendPedalboardControlTrigger(
-                                        props.instanceId,
-                                        "play",
-                                        1
-                                    );
-                                } else {
-                                    model.sendPedalboardControlTrigger(
-                                        props.instanceId,
-                                        "pause",
-                                        1
-                                    );
-                                }
-                            }
-                        }}
-                    >
-                        {paused ? (
-                            <PlayArrow sx={{ fontSize: '3rem' }} />
-                        ) : (
-                            <Pause sx={{ fontSize: '3rem' }} />
-                        )}
-                    </IconButton>
-                </ButtonTooltip>
-                <ButtonTooltip title="Next track">
-                    <IconButton
-                        style={{ opacity: (pluginState == PluginState.Idle ? 0.2 : 0.7) }}
-                        onClick={() => { onNextTrack(); }}
-                    >
-                        <FastForward fontSize="large" />
-                    </IconButton>
-                </ButtonTooltip>
+                        }
+                    }}
+                >
+                    {paused ? (
+                        <PlayArrow sx={{ fontSize: '3rem' }} />
+                    ) : (
+                        <Pause sx={{ fontSize: '3rem' }} />
+                    )}
+                </IconButtonEx>
+                <IconButtonEx tooltip="Next track"
+                    style={{ opacity: (pluginState == PluginState.Idle ? 0.2 : 0.7) }}
+                    onClick={() => { onNextTrack(); }}
+                >
+                    <FastForward fontSize="large" />
+                </IconButtonEx>
             </Box>
 
         );

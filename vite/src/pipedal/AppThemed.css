@@ -46,3 +46,6 @@ input[type=number] {
 }
 
 
+img {
+    user-select: none;
+}

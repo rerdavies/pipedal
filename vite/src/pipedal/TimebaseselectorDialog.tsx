@@ -32,7 +32,7 @@ import TextField, { StandardTextFieldProps } from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Timebase, { TimebaseUnits } from './Timebase';
 
@@ -198,7 +198,8 @@ export default function TimebaseSelectorDialog(props: TimebaseSelectorDialogProp
             >
                 <DialogTitle style={{ paddingTop: 0 }}>
                     <Toolbar style={{ padding: 0 }}>
-                        <IconButton
+                        <IconButtonEx
+                            tooltip="Back"
                             edge="start"
                             color="inherit"
                             aria-label="back"
@@ -206,7 +207,7 @@ export default function TimebaseSelectorDialog(props: TimebaseSelectorDialogProp
                             onClick={() => { handleClose(); }}
                         >
                             <ArrowBackIcon style={{ width: 24, height: 24 }} />
-                        </IconButton>
+                        </IconButtonEx>
                         <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
                             Timebase Settings
                         </Typography>

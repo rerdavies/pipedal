@@ -27,7 +27,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import {createStyles} from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
@@ -271,14 +271,15 @@ const SnapshotEditor = withStyles(
                     <CssBaseline />
                     <AppBar position="static" sx={{ bgcolor: isDarkMode() ? getBackgroundColor("purple") : "#200040" }} >
                         <Toolbar variant="dense"  >
-                            <IconButton
+                            <IconButtonEx
+                                tooltip="Back"
                                 edge="start"
                                 aria-label="menu"
                                 color="inherit"
                                 onClick={() => { this.handleOk(); }}
                                 size="large">
                                 <ArrowBackIcon />
-                            </IconButton>
+                            </IconButtonEx>
                             {!this.state.collapseLabel && (
                                 <Typography style={{ flex: "0 1 auto", opacity: 0.66 }}
                                     variant="body1" noWrap
@@ -310,7 +311,8 @@ const SnapshotEditor = withStyles(
                                     this.setState({ color: newColor });
                                 }} />
                             {this.state.canFullScreen &&
-                                <IconButton
+                                <IconButtonEx
+                                    tooltip={this.state.isFullScreen ? "Exit Full Screen" : "Full Screen"}
                                     aria-label="full-screen"
                                     onClick={() => { this.toggleFullScreen(); }}
                                     color="inherit"
@@ -322,15 +324,16 @@ const SnapshotEditor = withStyles(
 
                                     )}
 
-                                </IconButton>
+                                </IconButtonEx>
                             }
-                            <IconButton
+                            <IconButtonEx
+                                tooltip="Cancel"
                                 aria-label="cancel"
                                 onClick={() => { this.props.onClose(); }}
                                 color="inherit"
                                 size="medium">
                                 <CloseIcon />
-                            </IconButton>
+                            </IconButtonEx>
 
                         </Toolbar>
                     </AppBar>

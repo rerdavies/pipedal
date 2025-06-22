@@ -44,7 +44,6 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DialogActions from '@mui/material/DialogActions';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
 import IconButtonEx from './IconButtonEx';
 import OldDeleteIcon from './OldDeleteIcon';
 import Toolbar from '@mui/material/Toolbar';
@@ -995,7 +994,8 @@ export default withStyles(
                         }} >
                             {this.state.reordering && (
                                 <Toolbar style={{ padding: 0 }}>
-                                    <IconButton
+                                    <IconButtonEx
+                                        tooltip="Close"
                                         edge="start"
                                         color="inherit"
                                         aria-label="cancel"
@@ -1004,7 +1004,7 @@ export default withStyles(
                                         }
                                     >
                                         <CloseIcon style={{ width: 24, height: 24 }} />
-                                    </IconButton>
+                                    </IconButtonEx>
                                     <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
                                         Reorder files
                                     </Typography>
@@ -1013,7 +1013,8 @@ export default withStyles(
                             )}
                             {this.state.multiSelect && (
                                 <Toolbar style={{ padding: 0 }}>
-                                    <IconButton
+                                    <IconButtonEx
+                                        tooltip="Close"
                                         edge="start"
                                         color="inherit"
                                         aria-label="cancel"
@@ -1023,7 +1024,7 @@ export default withStyles(
                                         }}
                                     >
                                         <CloseIcon style={{ width: 24, height: 24 }} />
-                                    </IconButton>
+                                    </IconButtonEx>
                                     <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
                                         {this.state.selectedFiles.length.toString() + " files selected."}
                                     </Typography>
@@ -1071,7 +1072,8 @@ export default withStyles(
                             {!(this.state.reordering || this.state.multiSelect) && (
                                 <>
                                     <Toolbar style={{ padding: 0 }}>
-                                        <IconButton
+                                        <IconButtonEx
+                                            tooltip="Back"
                                             edge="start"
                                             color="inherit"
                                             aria-label="back"
@@ -1079,7 +1081,7 @@ export default withStyles(
                                             onClick={() => { this.props.onCancel(); }}
                                         >
                                             <ArrowBackIcon style={{ width: 24, height: 24 }} />
-                                        </IconButton>
+                                        </IconButtonEx>
                                         <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
                                             {this.props.fileProperty.label}
                                         </Typography>

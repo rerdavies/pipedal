@@ -31,13 +31,13 @@ import { PiPedalModel, PiPedalModelFactory, ListenHandle } from './PiPedalModel'
 import Typography from '@mui/material/Typography';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import MidiBinding from './MidiBinding';
 import SystemMidiBindingView from './SystemMidiBindingView';
 import Snackbar from '@mui/material/Snackbar';
@@ -69,11 +69,11 @@ const styles = (theme: Theme) => createStyles({
         paddingTop: 12
     }),
     plainRow: css({
-         borderWidth: "1px 0px 0px 0px", borderStyle: "solid", borderColor: "transparent"
+        borderWidth: "1px 0px 0px 0px", borderStyle: "solid", borderColor: "transparent"
     }),
     dividerRow: css({
-        borderWidth: "1px 0px 0px 0px",  borderStyle: "solid", borderColor: theme.palette.divider
-   })
+        borderWidth: "1px 0px 0px 0px", borderStyle: "solid", borderColor: theme.palette.divider
+    })
 
 });
 
@@ -139,7 +139,7 @@ export const SystemMidiBindingDialog =
                     }
                     else if (item.symbol === "nextProgram") {
                         displayName = "Next Preset";
-                    }else if (item.symbol === "prevProgram") {
+                    } else if (item.symbol === "prevProgram") {
                         displayName = "Previous Preset";
                     }
                     else if (item.symbol === "snapshot1") {
@@ -170,8 +170,7 @@ export const SystemMidiBindingDialog =
                     } else {
                         found = false;
                     }
-                    if (found)
-                    {   
+                    if (found) {
                         result.push(new BindingEntry(displayName, listenInstanceId, item));
                         ++listenInstanceId;
                     }
@@ -277,12 +276,11 @@ export const SystemMidiBindingDialog =
 
                 for (var item of items) {
                     let symbol = item.midiBinding.symbol;
-                    let hasDivider = symbol === "snapshot1" || symbol === "stopHotspot"  || symbol === "shotdown";
-                    if (hasDivider)
-                    {
+                    let hasDivider = symbol === "snapshot1" || symbol === "stopHotspot" || symbol === "shotdown";
+                    if (hasDivider) {
                         result.push(
                             <tr>
-                                <td colSpan={2} className={classes.dividerRow}><div style={{height: 1}} /></td>
+                                <td colSpan={2} className={classes.dividerRow}><div style={{ height: 1 }} /></td>
                             </tr>
                         );
                     }
@@ -321,7 +319,7 @@ export const SystemMidiBindingDialog =
 
             render() {
                 let props = this.props;
-                let { open} = props;
+                let { open } = props;
 
                 const classes = withStyles.getClasses(this.props);
                 if (!open) {
@@ -332,20 +330,21 @@ export const SystemMidiBindingDialog =
                     <DialogEx tag="systemMidiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title"
                         fullScreen={true}
                         style={{ userSelect: "none" }}
-                        onEnterKey={()=>{}}
+                        onEnterKey={() => { }}
                     >
                         <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                             <div style={{ flex: "0 0 auto" }}>
                                 <AppBar className={classes.dialogAppBar} >
                                     <Toolbar>
-                                        <IconButton
+                                        <IconButtonEx
+                                            tooltip="Back"
                                             edge="start"
                                             color="inherit"
                                             onClick={this.handleClose}
                                             aria-label="back"
                                             size="large">
                                             <ArrowBackIcon />
-                                        </IconButton>
+                                        </IconButtonEx>
                                         <Typography variant="h6" className={classes.dialogTitle}>
                                             System MIDI Bindings
                                         </Typography>

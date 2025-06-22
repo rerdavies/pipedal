@@ -24,6 +24,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import Typography from '@mui/material/Typography';
 
 import Checkbox from '@mui/material/Checkbox';
 import {AlsaMidiDeviceInfo} from './AlsaMidiDeviceInfo';
@@ -109,6 +110,10 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
                     </ListItemButton>
                 )
 
+                )}
+                {availableChannels.length === 0 && (
+                    <Typography variant="body2" style={{ marginLeft: 32, marginRight: 24,marginTop:8, marginBottom: 16}}>
+                        No MIDI devices found.</Typography>
                 )}
             </List>
             <DialogActions>

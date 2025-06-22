@@ -33,7 +33,8 @@ import Utility from './Utility';
 import Typography from '@mui/material/Typography';
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
+
 import NumericInput from './NumericInput';
 
 
@@ -259,7 +260,8 @@ const MidiBindingView =
                                             this.generateMidiNoteSelects()
                                         }
                                     </Select>
-                                    <IconButton
+                                    <IconButtonEx
+                                        tooltip="Listen for MIDI input"
                                         onClick={() => {
                                             if (this.props.listen) {
                                                 this.props.onListen(-2, "", false)
@@ -273,7 +275,7 @@ const MidiBindingView =
                                         ) : (
                                             <MicNoneOutlinedIcon />
                                         )}
-                                    </IconButton>
+                                    </IconButtonEx>
                                 </div>
                             )
                         }
@@ -292,7 +294,8 @@ const MidiBindingView =
                                             this.generateControlSelects()
                                         }
                                     </Select>
-                                    <IconButton
+                                    <IconButtonEx
+                                        tooltip="Listen for MIDI input"
                                         onClick={() => {
                                             if (this.props.listen) {
                                                 this.props.onListen(-2, "", false)
@@ -306,7 +309,7 @@ const MidiBindingView =
                                         ) : (
                                             <MicNoneOutlinedIcon />
                                         )}
-                                    </IconButton>
+                                    </IconButtonEx>
 
                                 </div>
                             )

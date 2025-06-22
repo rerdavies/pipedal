@@ -1,4 +1,5 @@
 
+channel bindings help dialog. <ChannelBindingHelpDialog
 
 Tooltips on touch ui? 
 
