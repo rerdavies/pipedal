@@ -783,6 +783,11 @@ export
                     onContextMenu={(e) => {
                         if (!this.model_.debug) {
                             e.preventDefault(); e.stopPropagation();
+                        } else {
+                            if ((e.target as any).tagName === "IMG") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
                         }
                     }}
                 >

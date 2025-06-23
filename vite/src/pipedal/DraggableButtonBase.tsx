@@ -48,18 +48,12 @@ function isValidPointer(e: React.PointerEvent): boolean {
     return false;
 }
 
-function screenToClient(element: HTMLElement, point: Point): Point {
-    const dpr = (window.devicePixelRatio || 1) as number;;
+function screenToClient(e: React.PointerEvent): Point {
+    let element = e.currentTarget;
     let rect = element.getBoundingClientRect();
-    const cssScreenX = point.x / dpr;
-    const cssScreenY = point.y / dpr;
-    const cssWindowX = window.screenX / dpr;
-    const cssWindowY = window.screenY / dpr;
-
-    const clientX = cssScreenX - cssWindowX - rect.left;
-    const clientY = cssScreenY - cssWindowY - rect.top;
-
-    return { x: clientX, y: clientY };
+    const x = e.clientX + rect.left;
+    const y = e.clientY + rect.right;
+    return { x: x, y: y };
 }
 
 export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
@@ -118,6 +112,12 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
     return (
         <ButtonBase
             {...rest}
+            className="draggable-button-base"
+            onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }}
             onPointerDown={(e) => {
                 if (!isValidPointer(e)) {
                     return;
@@ -127,7 +127,7 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
                 }
                 e.currentTarget.setPointerCapture(e.pointerId);
                 setPointerId(e.pointerId);
-                setPointerDownPoint(screenToClient(e.currentTarget,{ x: e.screenX, y: e.screenY }));
+                setPointerDownPoint(screenToClient(e));
 
                 let currentTarget = e.currentTarget as HTMLButtonElement;
                 if (longPressDelay === undefined || longPressDelay >= 0)
@@ -144,6 +144,9 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
                         setSuppressClick(true);
                     }, longPressDelay??1250)); 
                 }
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
             }}
             onPointerMove={(e) => {
                 if (e.pointerId === pointerId) {
@@ -152,7 +155,7 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
                             props.onLongPressMove(e);
                         }
                     } else {
-                        let clientPoint = screenToClient(e.currentTarget as HTMLElement, {x: e.screenX, y: e.screenY} );
+                        let clientPoint = screenToClient(e);
 
                         let dx = pointerDownPoint.x- clientPoint.x;
                         let dy = pointerDownPoint.y - clientPoint.y;
@@ -161,6 +164,9 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
                         }
                     }
                 }
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
             }}
             onPointerUp={(e) => {
                 if (e.pointerId === pointerId) {
@@ -176,8 +182,17 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
                         setSuppressClick(true); // only way to cancel the click
                         return;
                     }
+                    e.preventDefault();
+                    e.stopPropagation();
+
                 }
             }}
+            // onTouchStart={(e)=> {
+            //     //e.preventDefault();
+            // }}
+            // onTouchMove={(e)=> {
+            //     //e.preventDefault();
+            // }}
             onClick={(e) => {
                 if (clickSuppressed) {
                     e.stopPropagation();

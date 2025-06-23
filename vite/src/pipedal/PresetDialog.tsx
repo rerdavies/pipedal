@@ -385,7 +385,9 @@ const PresetDialog = withStyles(
                                     {(this.state.presets.getItem(this.state.selectedItem) != null)
                                         && (
 
-                                            <div style={{ flex: "0 0 auto" }}>
+                                            <div style={{ flex: "0 0 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center"
+                                                
+                                             }}>
                                                 <Button color="inherit" onClick={(e) => this.handleCopy()}>
                                                     Copy
                                                 </Button>

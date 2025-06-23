@@ -3,6 +3,7 @@ channel bindings help dialog. <ChannelBindingHelpDialog
 
 Tooltips on touch ui? 
 
+draggable UI: scrolloffset!?
 
 - pipewire aux in?
 

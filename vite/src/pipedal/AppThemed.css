@@ -19,6 +19,10 @@ div {
     min-width: 0;
 }
 
+.draggable-button-base {
+    touch-action: none;
+}
+
 @media not all  /* seems to be ok in current chrome (prefers-color-scheme: light) */{
     input[type="number"].scrollMod::-webkit-outer-spin-button,
     input[type="number"].scrollMod::-webkit-inner-spin-button {

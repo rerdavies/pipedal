@@ -456,7 +456,7 @@ const BankDialog = withStyles(
                                     {(this.state.banks.getEntry(this.state.selectedItem) != null)
                                         && (
 
-                                            <div style={{ flex: "0 0 auto" }}>
+                                            <div style={{ flex: "0 0 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center" }}>
                                                 <Button color="inherit" onClick={(e) => this.handleCopy()}>
                                                     Copy
                                                 </Button>

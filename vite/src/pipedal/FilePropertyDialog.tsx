@@ -93,20 +93,11 @@ const audioFileExtensions: { [name: string]: boolean } = {
     ".ra": true
 };
 
-
-
-function screenToClient(element: HTMLDivElement, point: Point): Point {
-    const dpr = (window.devicePixelRatio || 1) as number;;
-    let rect = element.getBoundingClientRect();
-    const cssScreenX = point.x / dpr;
-    const cssScreenY = point.y / dpr;
-    const cssWindowX = window.screenX / dpr;
-    const cssWindowY = window.screenY / dpr;
-
-    const clientX = cssScreenX - cssWindowX - rect.left;
-    const clientY = cssScreenY - cssWindowY - rect.top;
-
-    return { x: clientX, y: clientY };
+function screenToClient(currentTarget: HTMLElement, e: React.PointerEvent): Point {
+    let rect = currentTarget.getBoundingClientRect();
+    const x = e.clientX + rect.left;
+    const y = e.clientY + rect.right;
+    return { x: x, y: y };
 }
 function isAudioFile(filename: string) {
     let npos = filename.lastIndexOf('.');
@@ -265,6 +256,11 @@ export default withStyles(
         private mounted: boolean = false;
         private model: PiPedalModel;
 
+        transformDragPoint(element: HTMLElement, point: Point): Point {
+            // STUB: will have to deal with scroll offset at some point.
+            return point;
+        }
+
         private requestFiles(navPath: string) {
             if (!this.props.open) {
                 return;
@@ -355,8 +351,8 @@ export default withStyles(
                 element.style.top = "5px";
                 element.style.left = "5px";
                 element.style.background = isDarkMode() ? "#555" : "#EEF" // xxx: dark mode.
-                if (this.lastDivRef) {
-                    this.longPressStartPoint = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
+                if (this.listContainerElementRef) {
+                    this.longPressStartPoint = screenToClient(currentTarget,e);
                 }
                 return true;
             } else if (!this.state.multiSelect) {
@@ -379,9 +375,9 @@ export default withStyles(
                 if (!this.isTracksDirectory()) {
                     return;
                 }
-                if (this.lastDivRef) {
+                if (this.listContainerElementRef) {
                     let element = e.target as HTMLButtonElement;
-                    let point = screenToClient(this.lastDivRef, { x: e.screenX, y: e.screenY });
+                    let point = screenToClient(e.currentTarget,e);
                     if (this.longPressStartPoint) {
                         let dy = point.y - this.longPressStartPoint.y;
                         element.style.left = (5) + "px";
@@ -929,6 +925,8 @@ export default withStyles(
             return (<InsertDriveFileIcon style={style} />);
         }
 
+        listContainerElementRef: HTMLDivElement | null = null;
+
         render() {
             const isTracksDirectory = this.isTracksDirectory();
 
@@ -1167,7 +1165,7 @@ export default withStyles(
                             </div>
 
                             <div
-                                ref={(element) => this.onMeasureRef(element)}
+                                ref={(element) => { this.listContainerElementRef = element; this.onMeasureRef(element); }}
                                 style={{
                                     flex: "1 1 100%", display: "flex", flexFlow: "row wrap",
                                     position: "relative", justifyContent: "flex-start", alignContent: "flex-start", paddingLeft: 16, paddingBottom: 16
