@@ -458,7 +458,7 @@ const BankDialog = withStyles(
 
                                             <div style={{ flex: "0 0 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center" }}>
                                                 <Button color="inherit" onClick={(e) => this.handleCopy()}>
-                                                    Copy
+                                                    Save as
                                                 </Button>
                                                 <Button color="inherit" onClick={() => this.handleRenameClick()}>
                                                     Rename
@@ -466,6 +466,7 @@ const BankDialog = withStyles(
                                                 <RenameDialog
                                                     open={this.state.filenameDialogOpen}
                                                     defaultName={this.getSelectedName()}
+                                                    title={this.state.filenameSaveAs ? "Save Bank As" : "Bank Name"}
                                                     acceptActionName={this.state.filenameSaveAs ? "SAVE AS" : "RENAME"}
                                                     onClose={() => { this.setState({ filenameDialogOpen: false }) }}
                                                     onOk={(text: string) => {

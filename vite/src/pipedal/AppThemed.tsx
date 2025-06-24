@@ -1031,6 +1031,7 @@ export
                         <RenameDialog
                             open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
                             defaultName={this.model_.banks.get().getSelectedEntryName()}
+                            title="Bank Name"
                             acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
                             onClose={() => {
                                 this.setState({

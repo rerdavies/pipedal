@@ -20,6 +20,7 @@
 import React from 'react';
 import Button from '@mui/material/Button';
 import DialogEx from './DialogEx';
+import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import { nullCast } from './Utility';
@@ -33,6 +34,9 @@ export interface RenameDialogProps {
     open: boolean,
     defaultName: string,
     acceptActionName: string,
+    title: string,
+    allowEmpty?: boolean,
+    label?: string,
     onOk: (text: string) => void,
     onClose: () => void
 };
@@ -102,7 +106,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                 model.showAlert(e.toString());
                 return;
             }
-            if (text.length === 0) return;
+            if (text.length === 0 && props.allowEmpty !== true) return;
             onOk(text);
         }
         const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
@@ -119,20 +123,23 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                 style={{userSelect: "none"}}
                 onEnterKey={()=>{}}
                 >
-                <DialogContent style={{minHeight: 96}}>
+                    <DialogTitle>
+                        {props.title ?? "Rename"}
+                    </DialogTitle>
+
+                <DialogContent >
                     <TextField
                     
                         onKeyDown={handleKeyDown}
-                        margin="dense"
-                        variant="outlined"
+                        variant="standard"
                         slotProps={{
                             input: {
                                 style: { scrollMargin: 24 }
                             }
                         }}
                         id="name"
-                        label="Name"
                         type="text"
+                        label={props.label ?? "Name"}
                         fullWidth
                         defaultValue={defaultName}
                         inputRef={this.refText}

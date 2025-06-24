@@ -1599,6 +1599,7 @@ export default withStyles(
                                 <RenameDialog open={this.state.newFolderDialogOpen} defaultName=""
                                     onOk={(newName) => { this.setState({ newFolderDialogOpen: false }); this.onExecuteNewFolder(newName) }}
                                     onClose={() => { this.setState({ newFolderDialogOpen: false }); }}
+                                    title="New folder"
                                     acceptActionName="OK"
                                 />
                             )
@@ -1606,6 +1607,7 @@ export default withStyles(
                         {
                             this.state.renameDialogOpen && (
                                 <RenameDialog open={this.state.renameDialogOpen} defaultName={this.renameDefaultName()}
+                                    title="Rename" 
                                     onOk={(newName) => { this.setState({ renameDialogOpen: false }); this.onExecuteRename(newName) }}
                                     onClose={() => { this.setState({ renameDialogOpen: false }); }}
                                     acceptActionName="OK"

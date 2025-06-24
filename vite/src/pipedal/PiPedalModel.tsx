@@ -3153,7 +3153,22 @@ export class PiPedalModel //implements PiPedalModel
             30 * 1000);
 
     }
-
+    setPedalboardItemTitle(instanceId: number, title: string): void {
+        let pedalboard = this.pedalboard.get();
+        if (!pedalboard) {
+            throw new PiPedalStateError("Pedalboard not loaded.");
+        }
+        let newPedalboard = pedalboard.clone();
+        this.updateVst3State(newPedalboard);
+        let item = newPedalboard.getItem(instanceId);
+        if (item.title === title) {
+            return;
+        }
+        item.title = title;
+        this.pedalboard.set(newPedalboard);
+        // notify the server.
+        // xxx;
+    }
 };
 
 let instance: PiPedalModel | undefined = undefined;

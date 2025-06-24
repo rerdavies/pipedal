@@ -50,6 +50,7 @@ interface PresetSelectorState {
     presetsMenuAnchorRef: HTMLElement | null;
 
     renameDialogOpen: boolean;
+    renameDialogTitle: string;
     renameDialogDefaultName: string;
     renameDialogActionName: string;
     renameDialogOnOk?: (name: string) => void;
@@ -95,6 +96,7 @@ const PresetSelector =
                     showEditPresetsDialog: false,
                     presetsMenuAnchorRef: null,
                     renameDialogOpen: false,
+                    renameDialogTitle: "",
                     renameDialogDefaultName: "",
                     renameDialogActionName: "",
                     renameDialogOnOk: undefined,
@@ -144,7 +146,7 @@ const PresetSelector =
                 if (item == null) return;
                 let name = item.name;
 
-                this.renameDialogOpen(name, "Save As")
+                this.renameDialogOpen(name, "Save Preset As", "OK")
                     .then((newName) => {
                         return this.model.saveCurrentPresetAs(newName);
                     })
@@ -167,7 +169,7 @@ const PresetSelector =
                 if (item == null) return;
                 let name = item.name;
 
-                this.renameDialogOpen(name, "Rename")
+                this.renameDialogOpen(name, "Rename Preset", "OK")
                     .then((newName) => {
                         if (newName === name) return;
                         return this.model.renamePresetItem(this.model.presets.get().selectedInstanceId, newName);
@@ -196,12 +198,13 @@ const PresetSelector =
             showError(error: string) {
                 this.model.showAlert(error);
             }
-            renameDialogOpen(defaultText: string, acceptButtonText: string): Promise<string> {
+            renameDialogOpen(defaultText: string, title: string,acceptButtonText: string): Promise<string> {
                 let result = new Promise<string>(
                     (resolve, reject) => {
                         this.setState(
                             {
                                 renameDialogOpen: true,
+                                renameDialogTitle: title,
                                 renameDialogDefaultName: defaultText,
                                 renameDialogActionName: acceptButtonText,
                                 renameDialogOnOk: (name) => {
@@ -365,6 +368,7 @@ const PresetSelector =
                         </div>
                         <PresetDialog show={this.state.showPresetsDialog} isEditDialog={this.state.showEditPresetsDialog} onDialogClose={() => this.handleDialogClose()} />
                         <RenameDialog open={this.state.renameDialogOpen}
+                            title={this.state.renameDialogTitle}
                             defaultName={this.state.renameDialogDefaultName}
                             acceptActionName={this.state.renameDialogActionName}
                             onClose={() => this.handleRenameDialogClose()}

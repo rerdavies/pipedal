@@ -413,6 +413,7 @@ const PluginPresetsDialog = withStyles(
                                                     Rename
                                                 </Button>
                                                 <RenameDialog
+                                                    title="Rename"
                                                     open={this.state.renameOpen}
                                                     defaultName={this.getSelectedName()}
                                                     acceptActionName={"Rename"}

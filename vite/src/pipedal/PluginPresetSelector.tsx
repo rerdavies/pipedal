@@ -335,6 +335,7 @@ const PluginPresetSelector =
                             isEditDialog={this.state.showEditPresetsDialog} 
                             onDialogClose={() => this.handleDialogClose()} />
                         <RenameDialog open={this.state.renameDialogOpen}
+                            title="Rename"
                             defaultName={this.state.renameDialogDefaultName}
                             acceptActionName={this.state.renameDialogActionName}
                             onClose={() => this.handleRenameDialogClose()}
