@@ -1,7 +1,9 @@
+window.addEventListener .... done wrong everywhere!
+
+touch scroll in file propertty dialog.
 
 channel bindings help dialog. <ChannelBindingHelpDialog
 
-Tooltips on touch ui? 
 
 draggable UI: scrolloffset!?
 

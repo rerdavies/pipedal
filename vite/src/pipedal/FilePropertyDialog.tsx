@@ -63,6 +63,13 @@ import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
 import { getAlbumArtUri, getTrackTitle } from './AudioFileMetadata';
 
+
+const AUTOSCROLL_TICK_DELAY = 30;
+const AUTOSCROLL_THRESHOLD = 48;
+const AUTOSCROLL_SCROLL_PER_SECOND = 500;
+const AUTOSCROLL_SCROLL_RATE = AUTOSCROLL_SCROLL_PER_SECOND * AUTOSCROLL_TICK_DELAY / 1000;
+
+
 interface Point {
     x: number;
     y: number;
@@ -93,7 +100,7 @@ const audioFileExtensions: { [name: string]: boolean } = {
     ".ra": true
 };
 
-function screenToClient(currentTarget: HTMLElement, e: React.PointerEvent): Point {
+function screenToClient(currentTarget: HTMLElement, e: React.PointerEvent | React.MouseEvent): Point {
     let rect = currentTarget.getBoundingClientRect();
     const x = e.clientX + rect.left;
     const y = e.clientY + rect.right;
@@ -157,11 +164,14 @@ export interface FilePropertyDialogState {
 
 };
 
-class DragState {
-    activeItem: string = "";
-    height: number = 0;
-    from: number = 0;
-    to: number = 0;
+interface DragState {
+    activeItem: string;
+    height: number;
+    dragElement: HTMLElement;
+    dragElementDy: number;
+    from: number;
+    to: number;
+    lastMousePoint: Point;
 };
 
 export default withStyles(
@@ -323,8 +333,6 @@ export default withStyles(
 
         longPressStartPoint: Point | null = null;
 
-        dragFromPosition: number = -1;
-        dragToPosition: number = -1;
         maxPosition: number = 0;
 
         handleMultisSelectClose() {
@@ -336,24 +344,29 @@ export default withStyles(
 
         handleLongPressStart(
             currentTarget: HTMLButtonElement,
-            e: React.PointerEvent<HTMLButtonElement>,
+            e: React.PointerEvent<HTMLButtonElement> | React.MouseEvent<HTMLButtonElement>,
             fileEntry: FileEntry): boolean {
             if (this.state.reordering) {
 
                 if (!this.isTracksDirectory()) {
                     return false;
                 }
-                this.dragFromPosition = parseInt(currentTarget.getAttribute("data-position") as string, 10);
-                this.dragToPosition = this.dragToPosition;
                 let element = currentTarget;
-                element.style.position = "relative";
-                element.style.zIndex = "1000";
-                element.style.top = "5px";
-                element.style.left = "5px";
-                element.style.background = isDarkMode() ? "#555" : "#EEF" // xxx: dark mode.
+                let index = parseInt(element.getAttribute("data-position") as string, 10);
                 if (this.listContainerElementRef) {
-                    this.longPressStartPoint = screenToClient(currentTarget,e);
+                    this.longPressStartPoint = screenToClient(currentTarget, e);
+                    let dragState: DragState = {
+                        activeItem: fileEntry.pathname,
+                        dragElement: element,
+                        height: element.clientHeight,
+                        dragElementDy: 0,
+                        from: index,
+                        to: index,
+                        lastMousePoint: {...this.longPressStartPoint}
+                    };
+                    this.setState({ dragState: dragState });
                 }
+
                 return true;
             } else if (!this.state.multiSelect) {
                 if (fileEntry.isProtected) {
@@ -370,6 +383,48 @@ export default withStyles(
             return false;
 
         }
+        dragTarget: HTMLButtonElement | null = null;
+
+
+        updateReorderPosition(element: HTMLButtonElement, point: Point) {
+            if (this.longPressStartPoint) {
+                let dragDy = point.y - this.longPressStartPoint.y;
+                let height = element.clientHeight;
+
+                let dragFromPosition = parseInt(element.getAttribute("data-position") as string, 10);
+
+                let elementOffset = dragFromPosition * height;
+                let newOffset = elementOffset + dragDy;
+                if (newOffset < 0) {
+                    dragDy = -elementOffset;
+                    newOffset = 0;
+                }
+                let maxOffset = (this.maxPosition - 1) * height;
+                if (newOffset > maxOffset) {
+                    dragDy = maxOffset - elementOffset;
+                    newOffset = maxOffset;
+                }
+                let toPosition = Math.floor((newOffset + height / 2) / height);
+                if (toPosition < 0) {
+                    toPosition = 0;
+                }
+                if (toPosition > this.maxPosition) {
+                    toPosition = this.maxPosition;
+                }
+                // console.log("drag from " + dragFromPosition + " to " + toPosition + " dy: " + dragDy);
+                this.setState({
+                    dragState: {
+                        activeItem: element.getAttribute("data-pathname") || "",
+                        dragElement: element,
+                        height: height,
+                        dragElementDy: dragDy,
+                        from: dragFromPosition,
+                        to: toPosition,
+                        lastMousePoint: point
+                    }
+                });
+            }
+        }
         handleLongPressMove(e: React.PointerEvent<HTMLButtonElement>) {
             if (this.state.reordering) {
                 if (!this.isTracksDirectory()) {
@@ -377,37 +432,10 @@ export default withStyles(
                 }
                 if (this.listContainerElementRef) {
                     let element = e.target as HTMLButtonElement;
-                    let point = screenToClient(e.currentTarget,e);
-                    if (this.longPressStartPoint) {
-                        let dy = point.y - this.longPressStartPoint.y;
-                        element.style.left = (5) + "px";
-                        element.style.top = (5 + dy) + "px";
-                        let height = element.clientHeight;
-                        let positionChange_: number = 0;
-                        if (dy > 0) {
-                            positionChange_ = Math.floor((dy + height / 2) / height);
-                        } else {
-                            positionChange_ = Math.ceil((dy - height / 2) / height)
-                        }
-                        let toPosition = this.dragFromPosition + positionChange_;
-                        if (toPosition < 0) {
-                            toPosition = 0;
-                        }
-                        if (toPosition > this.maxPosition) {
-                            toPosition = this.maxPosition;
-                        }
-                        if (toPosition !== this.dragToPosition) {
-                            this.dragToPosition = toPosition;
-                            this.setState({
-                                dragState: {
-                                    activeItem: element.getAttribute("data-pathname") || "",
-                                    height: height,
-                                    from: this.dragFromPosition,
-                                    to: toPosition
-                                }
-                            });
-                        }
-                    }
+                    let point = screenToClient(e.currentTarget, e);
+                    this.updateReorderPosition(element, point);
+                    this.startAutoScroll()
+
                 }
             }
         }
@@ -457,7 +485,7 @@ export default withStyles(
             this.model.moveAudioFile(
                 this.state.currentDirectory, from, to);
         }
-        handleLongPressEnd(e: React.PointerEvent<HTMLButtonElement>, fileEntry: FileEntry) {
+        handleLongPressEnd(e: React.PointerEvent<HTMLButtonElement> | React.MouseEvent<HTMLButtonElement>, fileEntry: FileEntry) {
             if (this.state.reordering) {
                 if (!this.isTracksDirectory()) {
                     return;
@@ -471,14 +499,8 @@ export default withStyles(
                 e.preventDefault();
                 e.stopPropagation();
 
-                let element = e.currentTarget as HTMLButtonElement;
-
-                element.style.position = "";
-                element.style.zIndex = "";
-                element.style.top = "";
-                element.style.left = "";
-                element.style.background = ""; // xxx: dark mode.
                 this.setState({ dragState: null });
+                this.stopAutoScroll();
             } else if (!this.state.multiSelect) {
                 let selectedFile = fileEntry.pathname;
                 if (selectedFile === "") {
@@ -526,6 +548,7 @@ export default withStyles(
             this.requestScroll = true;
         }
         componentWillUnmount() {
+            this.stopAutoScroll();
             this.cancelProgressTimeout();
 
             super.componentWillUnmount();
@@ -925,7 +948,98 @@ export default withStyles(
             return (<InsertDriveFileIcon style={style} />);
         }
 
-        listContainerElementRef: HTMLDivElement | null = null;
+        private listContainerElementRef: HTMLDivElement | null = null;
+        private scrollContainerElementRef: HTMLDivElement | null = null;
+        private autoScrollTimer: number | null = null;
+
+        handleAutoScrollTick() {
+            let dragState = this.state.dragState;
+            if (!dragState) return;
+
+            let scrollContainer = this.scrollContainerElementRef;
+            if (!scrollContainer) {
+                return;
+            }
+            let scrollBounds_ = scrollContainer.getBoundingClientRect();
+            let scrollClientTop = scrollBounds_.top;
+            let scrollClientBottom = scrollClientTop + scrollContainer.clientHeight;
+            let dragBounds = dragState.dragElement?.getBoundingClientRect();
+
+            let dy = 0;
+            let y = scrollContainer.scrollTop;
+            if (dragBounds.top < scrollClientTop + AUTOSCROLL_THRESHOLD) {
+                dy = -AUTOSCROLL_SCROLL_RATE;
+
+                y = scrollContainer.scrollTop + dy;
+                if (y < 0) y = 0;
+                dy = y - scrollContainer.scrollTop;
+            } else if (dragBounds.bottom > scrollClientBottom - AUTOSCROLL_THRESHOLD) {
+                dy = AUTOSCROLL_SCROLL_RATE;
+
+                y = scrollContainer.scrollTop + dy;
+                let maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+                if (y > maxScrollTop) {
+                    y = maxScrollTop;
+                }
+                dy = y - scrollContainer.scrollTop;
+            } else {
+                return;
+            }
+            if (this.longPressStartPoint === null) {
+                return;
+            }
+            if (dy === 0) {
+                return;
+            }
+            this.longPressStartPoint = {
+                x: this.longPressStartPoint.x,
+                y: this.longPressStartPoint.y - dy
+            };
+            let dragElementDy = dragState.lastMousePoint.y - this.longPressStartPoint.y;
+            let originalY = dragState.from * dragState.height;
+            let newY = originalY + dragElementDy;
+            if (newY < 0) 
+            {
+                newY = 0;
+                dragElementDy = -originalY;
+            }
+            let maxDy = (this.maxPosition - 1) * dragState.height;
+            if (newY > maxDy) {
+                newY = maxDy;
+                dragElementDy = maxDy - originalY;
+            }
+            let newTo = Math.floor((newY + dragState.height / 2) / dragState.height);
+
+
+            let newDragState = { ...dragState };
+
+            newDragState.dragElementDy = dragElementDy;
+            newDragState.to = newTo;
+
+            // console.log("autoscroll from " + dragState.from + " to " + newTo + " dy: " + dragElementDy);
+            // avoid jitter.
+            newDragState.dragElement.style.top = (newDragState.dragElementDy + 5) + "px";
+
+            this.setState({ dragState: newDragState });
+            scrollContainer.scrollTo({ left: 0, top: y, behavior: "instant" });
+            this.startAutoScroll();
+
+        }
+
+
+        stopAutoScroll() {
+            if (this.autoScrollTimer !== null) {
+                clearTimeout(this.autoScrollTimer);
+                this.autoScrollTimer = null;
+            }
+        }
+        startAutoScroll() {
+            this.stopAutoScroll();
+
+            this.autoScrollTimer = setTimeout(
+                () => { this.handleAutoScrollTick() }, AUTOSCROLL_TICK_DELAY);
+        }
+
 
         render() {
             const isTracksDirectory = this.isTracksDirectory();
@@ -1146,7 +1260,9 @@ export default withStyles(
                         <DialogContent style={{
                             paddingLeft: 0, paddingRight: 0, paddingTop: 0, colorScheme: (isDarkMode() ? "dark" : "light"),
                             position: "relative"
-                        }}>
+                        }}
+                            ref={(element: HTMLDivElement | null) => { this.scrollContainerElementRef = element; }}
+                        >
 
                             <div style={{
                                 paddingLeft: 16, paddingRight: 16, paddingTop: 8, paddingBottom: 8,
@@ -1210,7 +1326,10 @@ export default withStyles(
                                                 scrollRef = (element) => { this.onScrollRef(element) };
                                             }
                                             let dragOffset = 0;
+                                            let dragLeft = 0;
                                             let dragState = this.state.dragState;
+                                            let zIndex: number | undefined = undefined;
+                                            let background: string | undefined = undefined;
                                             if (dragState && value.metadata) {
                                                 if (myTrackPosition !== dragState.from) {
                                                     if (myTrackPosition >= dragState.to && myTrackPosition < dragState.from) {
@@ -1218,21 +1337,31 @@ export default withStyles(
                                                     } else if (myTrackPosition > dragState.from && myTrackPosition <= dragState.to) {
                                                         dragOffset = -dragState.height;
                                                     }
+                                                } else {
+                                                    dragOffset = dragState.dragElementDy + 5;
+                                                    dragLeft = 5;
+                                                    zIndex = 1000;
+                                                    background = isDarkMode() ? "#555" : "#EEF";
                                                 }
                                             }
+                                            let dragButtonStyle: React.CSSProperties = {
+                                                width: columnWidth, flex: "0 0 auto", height: (value.metadata && !compactVertical) ? 64 : 48,
+                                                position: "relative",
+                                                top: dragOffset,
+                                                left: dragLeft,
+                                                zIndex: zIndex,
+                                                background: background,
+                                            };
                                             return (
                                                 <DraggableButtonBase key={value.pathname}
-                                                    longPressDelay={this.state.reordering ? 0 : undefined}
+                                                    longPressDelay={this.state.reordering ? 300 : undefined}
                                                     data-position={dataPosition}
                                                     data-pathname={
                                                         value.metadata ? value.metadata.fileName : null
                                                     }
+                                                    instantMouseLongPress={this.state.reordering}
 
-                                                    style={{
-                                                        width: columnWidth, flex: "0 0 auto", height: (value.metadata && !compactVertical) ? 64 : 48,
-                                                        position: "relative",
-                                                        top: dragOffset + "px",
-                                                    }}
+                                                    style={dragButtonStyle}
                                                     onClick={(e) => this.handleFileClick(e, value)}
                                                     onDoubleClick={() => { this.onDoubleClickValue(value.pathname); }}
 
@@ -1559,7 +1688,7 @@ export default withStyles(
                     await this.model.renameFilePropertyFile(oldFilePath, newFilePath, this.props.fileProperty);
                     let index = newFileList.indexOf(file);
                     if (index !== -1) {
-                        newFileList.splice(index,1);
+                        newFileList.splice(index, 1);
                     }
 
                 }
@@ -1570,8 +1699,7 @@ export default withStyles(
             if (!this.mounted) {
                 return;
             }
-            if (newFileList.length === 0 )
-            {
+            if (newFileList.length === 0) {
                 this.setState({
                     multiSelect: false,
                     selectedFiles: []
