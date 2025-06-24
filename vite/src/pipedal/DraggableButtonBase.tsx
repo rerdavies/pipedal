@@ -26,6 +26,7 @@ import ButtonBase, { ButtonBaseProps } from "@mui/material/ButtonBase";
 
 export interface DraggableButtonBaseProps extends ButtonBaseProps {
     onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+    onDoubleClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
     onLongPressStart?: (currentTarget: HTMLButtonElement, e: React.PointerEvent<HTMLButtonElement> | React.MouseEvent<HTMLButtonElement>) => boolean;
     onLongPressMove?: (e: React.PointerEvent<HTMLButtonElement>) => void;
     onLongPressEnd?: (e: React.PointerEvent<HTMLButtonElement>| React.MouseEvent<HTMLButtonElement>) => void;
@@ -59,7 +60,7 @@ function screenToClient(e: React.PointerEvent): Point {
 
 export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
     // Ensure that the props are spread correctly
-    const { onClick, onLongPressStart, onLongPressMove: 
+    const { onClick, onDoubleClick, onLongPressStart, onLongPressMove: 
         doLongPressMove,onLongPressEnd, longPressDelay,instantMouseLongPress, ...rest } = props;
 
     let [hTimeout, setHTimeout] = React.useState<number | null>(null);
@@ -68,6 +69,7 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
     let [clickSuppressed, setClickSuppressed] = React.useState<boolean>(false);
     let [pointerDownPoint, setPointerDownPoint] = React.useState<Point>({ x: 0, y: 0 });
     let [ longPressedElement, setLongPressedElement ] = React.useState<HTMLButtonElement | null>(null);
+    let [lastClick, setLastClick] = React.useState<number | null>(null);
 
 
     function handleSuppressClick(e: MouseEvent) {
@@ -278,7 +280,25 @@ export default function DraggableButtonBase(props: DraggableButtonBaseProps) {
                     if (onClick) {
                         onClick(e);
                     }
+                    // check to see whether this is a double-click
+                    let time = Date.now();
+                    if (lastClick && time-lastClick < 500) {
+                        if (onDoubleClick) {
+                            onDoubleClick(e);
+                        }
+                        setLastClick(null);
+                    } else {
+                        setLastClick(time);
+                    }
                 }
+            }}
+            onDoubleClick={(e) => {
+                // chrome doesnt' do double-click for touch events
+                // so we need to re-implement it on the onclick handler.
+                e.stopPropagation();
+                e.preventDefault();
+                return false;
+
             }}
             onPointerCancelCapture={(e) => {
                 if (pointerId !== null) {

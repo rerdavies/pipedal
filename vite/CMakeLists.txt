@@ -105,7 +105,6 @@ add_custom_command(
     public/var/current_pedalboard.json
     public/var/config.json
     public/favicon.ico
-    public/index.html
     public/iso_codes.json
     public/logo512.png
     public/sample_lv2_plugins.json

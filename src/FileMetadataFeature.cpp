@@ -142,25 +142,27 @@ uint32_t FileMetadataFeature::getFileMetadata(
     json_variant jsonData;
     std::string result;
 
-    if (fs::exists(path))
+    try
     {
-        try
+        if (fs::exists(path))
         {
             std::ifstream f(path);
             json_reader reader(f);
             reader.read(&jsonData);
             result = jsonData.as_object()->at(std::string(key)).as_string();
         }
-        catch (const std::exception &e)
+        else
         {
+            Lv2Log::debug(SS("No metadata file found for " << absolute_path << " key: " << key));
             return 0;
         }
     }
-    else
+    catch (const std::exception &e)
     {
-        Lv2Log::debug(SS("No metadata file found for " << absolute_path << " key: " << key));
+            Lv2Log::debug(SS("Permission denied for " << absolute_path << " key: " << key));
         return 0;
     }
+
     size_t len = result.length() + 1; // +1 for null terminator
     if (len > fileMetadataSize || fileMetadata == nullptr)
     {
@@ -168,7 +170,7 @@ uint32_t FileMetadataFeature::getFileMetadata(
         return len;
     }
     memcpy(fileMetadata, result.c_str(), len);
-    Lv2Log::debug(SS("Get file metadata for " << absolute_path << " key: " << key << " value: " << result));    
+    Lv2Log::debug(SS("Get file metadata for " << absolute_path << " key: " << key << " value: " << result));
     return len;
 }
 PIPEDAL_FileMetadata_Status FileMetadataFeature::deleteFileMetadata(
@@ -181,52 +183,57 @@ PIPEDAL_FileMetadata_Status FileMetadataFeature::deleteFileMetadata(
     }
     Lv2Log::debug(SS("Delete file metadata for " << absolute_path << " key: " << key));
 
-    std::filesystem::path path{SS(absolute_path << ".mdata")};
+    try {
+        std::filesystem::path path{SS(absolute_path << ".mdata")};
 
-    if (!fs::exists(path))
-    {
-        return PIPEDAL_FILE_METADATA_NOT_FOUND; // Metadata file does not exist
-    }
+        if (!fs::exists(path))
+        {
+            return PIPEDAL_FILE_METADATA_NOT_FOUND; // Metadata file does not exist
+        }
 
-    json_variant jsonData;
-    try
-    {
-        std::ifstream f(path);
-        json_reader reader(f);
-        reader.read(&jsonData);
-    }
-    catch (const std::exception &e)
-    {
-        return PIPEDAL_FILE_METADATA_NOT_FOUND; // Failed to read existing metadata
-    }
+        json_variant jsonData;
+        try
+        {
+            std::ifstream f(path);
+            json_reader reader(f);
+            reader.read(&jsonData);
+        }
+        catch (const std::exception &e)
+        {
+            return PIPEDAL_FILE_METADATA_NOT_FOUND; // Failed to read existing metadata
+        }
 
-    auto obj = jsonData.as_object();
-    auto it = obj->find(std::string(key));
-    if (it == obj->end())
-    {
-        return PIPEDAL_FILE_METADATA_NOT_FOUND; // Key not found
-    }
+        auto obj = jsonData.as_object();
+        auto it = obj->find(std::string(key));
+        if (it == obj->end())
+        {
+            return PIPEDAL_FILE_METADATA_NOT_FOUND; // Key not found
+        }
 
-    obj->erase(it);
+        obj->erase(it);
 
-    if (obj->begin() == obj->end())
-    {
-        // If the object is empty, delete the metadata file
-        fs::remove(path);
-        return PIPEDAL_FILE_METADATA_SUCCESS; // Metadata deleted successfully
-    }
+        if (obj->begin() == obj->end())
+        {
+            // If the object is empty, delete the metadata file
+            fs::remove(path);
+            return PIPEDAL_FILE_METADATA_SUCCESS; // Metadata deleted successfully
+        }
 
-    std::ofstream f(path);
-    if (!f.is_open())
-    {
-        Lv2Log::error(SS("Failed to write metadata file " << path));
+        std::ofstream f(path);
+        if (!f.is_open())
+        {
+            Lv2Log::error(SS("Failed to write metadata file " << path));
+            return PIPEDAL_FILE_METADATA_PERMISSION_DENIED; // Failed to open existing metadata
+        }
+
+        json_writer writer(f);
+        writer.write(jsonData);
+
+        return PIPEDAL_FILE_METADATA_SUCCESS;
+    } catch (const std::exception &e) {
+        Lv2Log::error(SS("Exception while deleting metadata: " << e.what()));
         return PIPEDAL_FILE_METADATA_PERMISSION_DENIED; // Failed to open existing metadata
     }
-    
-    json_writer writer(f);
-    writer.write(jsonData);
-
-    return PIPEDAL_FILE_METADATA_SUCCESS;
 }
 
 PIPEDAL_FileMetadata_Status FileMetadataFeature::S_setFileMetadata(

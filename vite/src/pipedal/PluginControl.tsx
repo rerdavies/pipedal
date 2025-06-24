@@ -31,7 +31,7 @@ import Typography from '@mui/material/Typography';
 import Input from '@mui/material/Input';
 import Select from '@mui/material/Select';
 import Switch from '@mui/material/Switch';
-import Utility, { nullCast } from './Utility';
+import Utility from './Utility';
 import MenuItem from '@mui/material/MenuItem';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import DialIcon from './svg/fx_dial.svg?react';
@@ -231,12 +231,12 @@ const PluginControl =
             onInputFocus(event: SyntheticEvent): void {
                 //this.displayValueRef.current!.style.display = "none";
                 this.setState({ editFocused: true });
-                if (Utility.hasIMEKeyboard()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    this.inputRef.current?.blur();
-                    this.props.requestIMEEdit(nullCast(this.props.uiControl), this.props.value)
-                }
+                // if (Utility.hasIMEKeyboard()) {
+                //     event.preventDefault();
+                //     event.stopPropagation();
+                //     this.inputRef.current?.blur();
+                //     this.props.requestIMEEdit(nullCast(this.props.uiControl), this.props.value)
+                // }
             }
             onInputKeyPress(e: any): void {
                 if (e.charCode === 13 && this.inputChanged) {

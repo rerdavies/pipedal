@@ -1690,7 +1690,8 @@ static void AddFilesToResult(
     }
     catch (const std::exception &error)
     {
-        throw std::logic_error("GetFileList failed. Directory not found: " + rootPath.string());
+        throw std::logic_error(
+            SS("GetFileList failed. " << rootPath.string() << " - " << error.what()));
     }
 
     // sort lexicographically
@@ -1723,7 +1724,7 @@ static void AddTracksToResult(
     std::set<std::string> validExtensions = fileProperty.GetPermittedFileExtensions(
         modDirectoryInfo ? modDirectoryInfo->modType : "");
 
-    if (validExtensions.size() == 0) 
+    if (validExtensions.size() == 0)
     {
         const auto &audioExtensions = MimeTypes::instance().AudioExtensions();
         validExtensions.insert(audioExtensions.begin(), audioExtensions.end());
@@ -1733,54 +1734,76 @@ static void AddTracksToResult(
     try
     {
         // Add directories first.
-        for (auto const &dir_entry : std::filesystem::directory_iterator(rootPath))
+        try
         {
-            if (!IsValidUtf8(dir_entry.path().string()))
+            for (auto const &dir_entry : std::filesystem::directory_iterator(rootPath))
             {
-                Lv2Log::warning("Invalid UTF-8 name in directory: " + dir_entry.path().string());
-                continue; // skip invalid UTF-8 names.
+                if (!IsValidUtf8(dir_entry.path().string()))
+                {
+                    Lv2Log::warning("Invalid UTF-8 name in directory: " + dir_entry.path().string());
+                    continue; // skip invalid UTF-8 names.
+                }
+                const auto &path = dir_entry.path();
+                auto name = path.filename().string();
+                try {
+                    if (dir_entry.is_directory())
+                    {
+                        resultFiles.push_back(FileEntry{path, name, true, dir_entry.is_symlink()});
+                    }
+                } catch (const std::exception &e)
+                {
+                    Lv2Log::warning(SS("Failed to add directory entry: " << path.string() << " - " << e.what()));
+                }
             }
-            const auto &path = dir_entry.path();
-            auto name = path.filename().string();
-            if (dir_entry.is_directory())
-            {
-                resultFiles.push_back(FileEntry{path, name, true, fs::is_symlink(path)});
-            }
+        }
+        catch (const std::exception &error)
+        {
+            throw std::logic_error(
+                SS("AddTracksToResult failed to enumerate directories. " << rootPath.string() << " - " << error.what()));
         }
         auto collator = Locale::GetInstance()->GetCollator();
         std::sort(
-            resultFiles.begin(), 
+            resultFiles.begin(),
             resultFiles.end(),
             [collator](const FileEntry &l, const FileEntry &r)
-                  {
-            if (l.isDirectory_ != r.isDirectory_)
             {
-                return l.isDirectory_ > r.isDirectory_;
-            }
-            return collator->Compare(l.displayName_ ,r.displayName_) < 0; 
-        });
+                if (l.isDirectory_ != r.isDirectory_)
+                {
+                    return l.isDirectory_ > r.isDirectory_;
+                }
+                return collator->Compare(l.displayName_, r.displayName_) < 0;
+            });
         // Add audio files.
         auto audioFiles = AudioDirectoryInfo::Create(rootPath,
-            GetShadowIndexDirectory(audioRootDirectory,rootPath)
-        );
-        for (const auto &audioFile : audioFiles->GetFiles())
+                                                     GetShadowIndexDirectory(audioRootDirectory, rootPath));
+
+        try
         {
-            fs::path audioFilePath = rootPath / audioFile.fileName();
-            std::string extension = UiFileProperty::GetFileExtension(audioFilePath);
-            if (validExtensions.size() == 0 || validExtensions.contains(extension) || validExtensions.contains(".*"))
+            for (const auto &audioFile : audioFiles->GetFiles())
             {
-                resultFiles.push_back(
-                    FileEntry(
-                        audioFilePath,
-                        audioFile.title(),
-                        false,
-                        std::make_shared<AudioFileMetadata>(audioFile)));
+                fs::path audioFilePath = rootPath / audioFile.fileName();
+                std::string extension = UiFileProperty::GetFileExtension(audioFilePath);
+                if (validExtensions.size() == 0 || validExtensions.contains(extension) || validExtensions.contains(".*"))
+                {
+                    resultFiles.push_back(
+                        FileEntry(
+                            audioFilePath,
+                            audioFile.title(),
+                            false,
+                            std::make_shared<AudioFileMetadata>(audioFile)));
+                }
             }
         }
+        catch (const std::exception &error)
+        {
+            throw std::logic_error(
+                SS("AddTracksToResult failed to enumerate audio files. " << rootPath.string() << " - " << error.what()));
+        }
+
     }
     catch (const std::exception &error)
     {
-        throw std::logic_error("GetFileList failed. Directory not found: " + rootPath.string());
+        throw std::logic_error(SS("GetFileList failed. " << error.what() << "(" << rootPath.string() << ")"));
     }
 }
 
@@ -1869,7 +1892,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
 
     if (IsInAudioTracksDirectory(relativePath))
     {
-        AddTracksToResult(this->GetPluginUploadDirectory(),result, rootModDirectory, fileProperty, relativePath);
+        AddTracksToResult(this->GetPluginUploadDirectory(), result, rootModDirectory, fileProperty, relativePath);
     }
     else
     {
@@ -2046,7 +2069,7 @@ void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
         else
         {
             std::filesystem::remove(fileName);
-            if (IsInAudioTracksDirectory(fileName)) 
+            if (IsInAudioTracksDirectory(fileName))
             {
                 // remove the metadata file as well.
                 std::filesystem::remove(fileName.string() + ".mdata");
@@ -2074,13 +2097,12 @@ std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, co
     return result;
 }
 
-
-bool Storage::IsValidArtworkFile(const std::filesystem::path& fullPath) 
+bool Storage::IsValidArtworkFile(const std::filesystem::path &fullPath)
 {
     if (IsInAudioTracksDirectory(fullPath) && isArtworkFileName(fullPath.filename().string()))
     {
         // allow artwork files.
-        return true;    
+        return true;
     }
     return false;
 }
@@ -2208,9 +2230,10 @@ std::string Storage::RenameFilePropertyFile(
     }
 
     std::filesystem::rename(oldPath, newPath);
-    if (fs::exists(oldPath.string()+".mdata")) {
+    if (fs::exists(oldPath.string() + ".mdata"))
+    {
         // rename the metadata file as well.
-        std::filesystem::rename(oldPath.string()+".mdata", newPath.string()+".mdata");
+        std::filesystem::rename(oldPath.string() + ".mdata", newPath.string() + ".mdata");
     }
     return newPath;
 }
@@ -2222,12 +2245,13 @@ fs::path MakeVersionedPath(const fs::path &path)
         return path; // no need to version a non-existing file.
     }
     fs::path newPath = path;
-    auto stem = newPath.stem().string();;
+    auto stem = newPath.stem().string();
+    ;
     if (stem.ends_with(")"))
     {
         // remove the trailing (n) from the file name.
         size_t pos = stem.find_last_of('(');
-        std::string stemVersion = stem.substr(pos+1, stem.length()-1-(pos+1)); 
+        std::string stemVersion = stem.substr(pos + 1, stem.length() - 1 - (pos + 1));
         // check if it is a number.
         if (stemVersion.find_first_not_of("0123456789") == std::string::npos)
         {
@@ -2237,7 +2261,7 @@ fs::path MakeVersionedPath(const fs::path &path)
             {
                 // remove trailing space.
                 stem = stem.substr(0, stem.length() - 1);
-            }       
+            }
         }
     }
 
@@ -2246,12 +2270,15 @@ fs::path MakeVersionedPath(const fs::path &path)
     {
         // append (n) to the file name.
         std::string newFileName;
-        if (version == 0) {
+        if (version == 0)
+        {
             newFileName = SS(stem << newPath.extension().string());
-        } else {
+        }
+        else
+        {
             // append (n) to the file name.
             newFileName = SS(stem << " (" << std::to_string(version) << ")" << newPath.extension().string());
-        } 
+        }
         newPath = newPath.parent_path() / newFileName;
         ++version;
     }
@@ -2280,7 +2307,6 @@ std::string Storage::CopyFilePropertyFile(
 
     std::filesystem::path newPath = this->GetPluginUploadDirectory() / uiFileProperty.directory() / newRelativePath;
 
-
     if (!this->IsValidSampleFileName(newPath))
     {
         throw std::runtime_error("Invalid file name.");
@@ -2299,14 +2325,14 @@ std::string Storage::CopyFilePropertyFile(
 
     std::filesystem::create_hard_link(oldPath, newPath);
 
-    if (IsInAudioTracksDirectory(oldPath) 
-    && IsInAudioTracksDirectory(newPath))
+    if (IsInAudioTracksDirectory(oldPath) && IsInAudioTracksDirectory(newPath))
     {
         std::filesystem::path metadataPath = SS(oldPath.string() << ".mdata");
-        if (fs::exists(metadataPath)) {
+        if (fs::exists(metadataPath))
+        {
             // copy the metadata file as well.
             std::filesystem::copy_file(
-                metadataPath, 
+                metadataPath,
                 SS(newPath.string() << ".mdata"),
                 fs::copy_options::overwrite_existing);
         }

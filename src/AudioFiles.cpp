@@ -207,7 +207,13 @@ std::vector<DbFileInfo> AudioDirectoryInfoImpl::QueryTracks()
 std::vector<AudioFileMetadata> AudioDirectoryInfoImpl::GetFiles()
 {
     OpenAudioDb();
-    std::vector<DbFileInfo> dbFiles = UpdateDbFiles();
+    std::vector<DbFileInfo> dbFiles;
+    try {
+        dbFiles  = UpdateDbFiles();
+    } catch (const std::exception &e) {
+        Lv2Log::error("Error updating audio file info: %s - %s", 
+                      path.string().c_str(), e.what());
+    }
     std::vector<AudioFileMetadata> metadataResults;
     for (const auto &dbFile : dbFiles)
     {
@@ -298,7 +304,16 @@ std::vector<DbFileInfo> AudioDirectoryInfoImpl::UpdateDbFiles()
 
     for (auto dirEntry : fs::directory_iterator(path))
     {
-        if (!dirEntry.is_directory())
+        bool isDirectory;
+        try {
+            isDirectory = dirEntry.is_directory();
+        } catch (
+            const std::filesystem::filesystem_error &e) {
+            Lv2Log::error("Error accessing directory entry: %s - %s", dirEntry.path().string().c_str(), e.what());
+            continue; // skip this entry if we cannot access it.
+        }
+        
+        if (!isDirectory)
         {
             auto path = dirEntry.path();
             std::string name = path.filename();

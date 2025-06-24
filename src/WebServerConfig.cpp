@@ -52,14 +52,12 @@ static const std::string PLUGIN_PRESETS_MIME_TYPE = "application/vnd.pipedal.plu
 static const std::string PRESET_MIME_TYPE = "application/vnd.pipedal.preset";
 static const std::string BANK_MIME_TYPE = "application/vnd.pipedal.bank";
 
-static const std::string CACHE_CONTROL_INDEFINITELY =  "max-age=31536000,public,immutable"; // 1 year
-static const std::string CACHE_CONTROL_SHORT = "max-age=300,public"; // 5 minutes
-
+static const std::string CACHE_CONTROL_INDEFINITELY = "max-age=31536000,public,immutable"; // 1 year
+static const std::string CACHE_CONTROL_SHORT = "max-age=300,public";                       // 5 minutes
 
 using namespace pipedal;
 using namespace boost::system;
 namespace fs = std::filesystem;
-
 
 class UserUploadResponse
 {
@@ -87,7 +85,7 @@ int32_t ConvertThumbnailSize(const std::string &param)
     {
         return 0;
     }
-    return static_cast<int32_t > (std::stoi(param));
+    return static_cast<int32_t>(std::stoi(param));
 }
 
 static bool IsZipFile(const std::filesystem::path &path)
@@ -127,7 +125,6 @@ public:
 private:
     std::vector<std::string> extensions;
 };
-
 
 class DownloadIntercept : public RequestHandler
 {
@@ -392,16 +389,15 @@ public:
     {
         auto lastModified = std::filesystem::last_write_time(path);
         res.set(HttpField::LastModified, HtmlHelper::timeToHttpDate(lastModified));
-    }  
-    AudioDirectoryInfo::Ptr CreateDirectoryInfo(const fs::path &path) {
+    }
+    AudioDirectoryInfo::Ptr CreateDirectoryInfo(const fs::path &path)
+    {
         return AudioDirectoryInfo::Create(path,
-        GetShadowIndexDirectory(
-            this->model->GetPluginUploadDirectory(),
-            path));
+                                          GetShadowIndexDirectory(
+                                              this->model->GetPluginUploadDirectory(),
+                                              path));
     }
 
-
-    
     virtual void get_response(
         const uri &request_uri,
         HttpRequest &req,
@@ -500,89 +496,98 @@ public:
                     throw PiPedalException("File not found.");
                 }
                 AudioDirectoryInfo::Ptr audioDirectory = CreateDirectoryInfo(path.parent_path());
-                auto files = audioDirectory->GetFiles(); 
-                for (const auto &file : files)
+                try
                 {
-                    std::string fileNameOnly = path.filename();
-                    if (file.fileName() == fileNameOnly)
+                    auto files = audioDirectory->GetFiles();
+                    for (const auto &file : files)
                     {
-                        std::stringstream ss;
-                        json_writer writer(ss);
-                        writer.write(file);
-                        res.setBody(ss.str());
-                        return;
+                        std::string fileNameOnly = path.filename();
+                        if (file.fileName() == fileNameOnly)
+                        {
+                            std::stringstream ss;
+                            json_writer writer(ss);
+                            writer.write(file);
+                            res.setBody(ss.str());
+                            return;
+                        }
                     }
+                }
+                catch (const std::exception &e)
+                {
+                    Lv2Log::error("Error getting audio directory info: %s - (%s)", path.c_str(), e.what());
+                    throw e;
                 }
                 // If we get here, the file was not found in the directory.
                 throw PiPedalException("File not found in directory.");
             }
             else if (segment == "Thumbnail")
             {
+                ThumbnailTemporaryFile thumbnailTemporaryFile;
                 try
                 {
-                    fs::path path = request_uri.query("path");
-                    if (path.empty() || 
-                        !fs::exists(path) || 
-                        !this->model->IsInUploadsDirectory(path) ||
-                        HasDotDot(path))
+                    std::shared_ptr<TemporaryFile> thumbnail;
+                    try
                     {
-                        // path for folder thumbnails.
-                        path = request_uri.query("ffile");
-
-                        std::shared_ptr<TemporaryFile> thumbnail; 
-
-                        if (!path.empty() && fs::exists(path) && 
-                            this->model->IsInUploadsDirectory(path) &&
-                            !HasDotDot(path))
+                        fs::path path = request_uri.query("path");
+                        if (path.empty() ||
+                            !fs::exists(path) ||
+                            !this->model->IsInUploadsDirectory(path) ||
+                            HasDotDot(path))
                         {
-                            // path is a folder.
-                            thumbnail = std::make_shared<TemporaryFile>();
-                            thumbnail->SetNonDeletedPath(path);
+                            std::shared_ptr<TemporaryFile> thumbnail;
+                            // path for folder thumbnails.
+                            path = request_uri.query("ffile");
+
+                            if (!path.empty() && fs::exists(path) &&
+                                this->model->IsInUploadsDirectory(path) &&
+                                !HasDotDot(path))
+                            {
+                                // path is a folder.
+                                thumbnail = std::make_shared<TemporaryFile>();
+                                thumbnail->SetNonDeletedPath(path);
+                            }
+                            else
+                            {
+                                auto t = AudioDirectoryInfo::DefaultThumbnailTemporaryFile();
+                                thumbnail = std::make_shared<TemporaryFile>();
+                                thumbnail->SetNonDeletedPath(t.Path());
+                            }
+
+                            res.set(HttpField::content_type, MimeTypes::instance().MimeTypeFromExtension(path.extension()));
+                            res.set(HttpField::cache_control, CACHE_CONTROL_INDEFINITELY); // URL is cache-busted, and will change if the file ismodified.
+                            setLastModifiedFromFile(res, thumbnail->Path());
+                            res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnail->Path())));
+                            res.setBodyFile(thumbnail);
+                            return;
                         }
-                        else
-                        {
-                            auto t = AudioDirectoryInfo::DefaultThumbnailTemporaryFile();
-                            thumbnail = std::make_shared<TemporaryFile>();
-                            thumbnail->SetNonDeletedPath(t.Path());
-                    
-                        }
 
-                        res.set(HttpField::content_type, MimeTypes::instance().MimeTypeFromExtension(path.extension()));
-                        res.set(HttpField::cache_control, CACHE_CONTROL_INDEFINITELY); // URL is cache-busted, and will change if the file ismodified.
-                        setLastModifiedFromFile(res,thumbnail->Path());
-                        res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnail->Path())));
-                        res.setBodyFile(thumbnail);
-                        return;
+                        int32_t width = ConvertThumbnailSize(request_uri.query("w"));
+                        int32_t height = ConvertThumbnailSize(request_uri.query("h"));
 
+                        AudioDirectoryInfo::Ptr audioDirectory = CreateDirectoryInfo(
+                            path.parent_path());
+                        audioDirectory->GetFiles(); // ensure that the .index file is up to date.
+
+                        thumbnailTemporaryFile = audioDirectory->GetThumbnail(path.filename(), width, height);
                     }
-                    
-
-                    int32_t width = ConvertThumbnailSize(request_uri.query("w"));
-                    int32_t height = ConvertThumbnailSize(request_uri.query("h"));
-
-                    AudioDirectoryInfo::Ptr audioDirectory = CreateDirectoryInfo(
-                        path.parent_path());
-                    audioDirectory->GetFiles(); // ensure that the .index file is up to date.
-
-                    ThumbnailTemporaryFile thumbnail;
-                    try {
-                        thumbnail = audioDirectory->GetThumbnail(path.filename(), width, height);
-                    } catch (const std::exception &e) {
-                        thumbnail = audioDirectory->DefaultThumbnailTemporaryFile();
+                    catch (const std::exception &e)
+                    {
+                        fs::path defaultThumbnail = model->GetWebRoot() / "img/missing_thumbnail.jpg";
+                        thumbnailTemporaryFile.SetNonDeletedPath(defaultThumbnail, "image/jpeg");
                     }
-                    res.set(HttpField::content_type, thumbnail.GetMimeType());
+                    res.set(HttpField::content_type, thumbnailTemporaryFile.GetMimeType());
 
                     res.set(HttpField::cache_control, CACHE_CONTROL_INDEFINITELY); // URL is cache-busted with time-stamp.
-                    setLastModifiedFromFile(res, path);
-                    res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnail.Path())));
+                    setLastModifiedFromFile(res, thumbnailTemporaryFile.Path());
+                    res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnailTemporaryFile.Path())));
 
-                    std::filesystem::path t = thumbnail.Path();
-                    res.setBodyFile(t,thumbnail.DeleteFile());
-                    thumbnail.Detach();
+                    std::filesystem::path t = thumbnailTemporaryFile.Path();
+                    res.setBodyFile(t, thumbnailTemporaryFile.DeleteFile());
+                    thumbnailTemporaryFile.Detach();
                 }
                 catch (const std::exception &e)
                 {
-                    Lv2Log::error("Error getting thumbnail: %s - (%s)", request_uri.str().c_str(), e.what()); 
+                    Lv2Log::error("Error getting thumbnail: %s - (%s)", request_uri.str().c_str(), e.what());
                     throw e;
                 }
             }
@@ -605,11 +610,11 @@ public:
                     {
                         result = (directoryPath / result).string();
                     }
-                    
+
                     // json-encode the result.
                     std::stringstream ss;
                     json_writer writer(ss);
-                    writer.write(result); 
+                    writer.write(result);
 
                     res.setBody(ss.str());
                 }
@@ -637,11 +642,11 @@ public:
                     {
                         result = (directoryPath / result).string();
                     }
-                    
+
                     // json-encode the result.
                     std::stringstream ss;
                     json_writer writer(ss);
-                    writer.write(result); 
+                    writer.write(result);
 
                     res.setBody(ss.str());
                 }

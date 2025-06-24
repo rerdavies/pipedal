@@ -713,24 +713,17 @@ export default function ToobPlayerControl(
                         bottom: 0
                     }}
                 >
-                    {/**
-                     * 
-                        sx={{
-                            '& .MuiTouchRipple-root': {
-                            },
-                            '& .MuiTouchRipple-ripple': {
-                                transform: 'scale(1.9) !important',
-                            }
-                        }}
-                     */}
                     <ButtonEx tooltip="Loop Settings" variant="dialogSecondary"
                         style={{
                             flex: "0 1 auto", maxWidth: 200,
                             textTransform: "none", padding: "4px 8px"
                         }}
+                        disabled={audioFile === ""}
                         startIcon={(<RepeatIcon />)}
                         onClick={() => {
-                            setShowLoopDialog(true);
+                            if (audioFile !== "") {
+                                setShowLoopDialog(true);
+                            }
                         }}
                     >
                         <Typography noWrap variant="caption">
