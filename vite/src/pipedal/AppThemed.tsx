@@ -26,7 +26,7 @@ import Modal from '@mui/material/Modal';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { withStyles } from "tss-react/mui";
-import WithStyles  from './WithStyles';
+import WithStyles from './WithStyles';
 import { css } from '@emotion/react';
 
 import IconButtonEx from './IconButtonEx';
@@ -196,14 +196,14 @@ const appStyles = ((theme: Theme) => (
 
 
         toolBarContent:
-        css({
-            position: "absolute", top: 0, width: "100%"
-        }),
+            css({
+                position: "absolute", top: 0, width: "100%"
+            }),
 
         toolBarSpacer:
-        css({
-            position: "relative", flex: "0 0 auto",
-        }),
+            css({
+                position: "relative", flex: "0 0 auto",
+            }),
 
 
         mainFrame: css({
@@ -259,11 +259,15 @@ function setFullScreen(value: boolean) {
     if (docEl.requestFullscreen) // the latest offical api.
     {
         if (value) {
-            window.document.documentElement.requestFullscreen({ navigationUI: "hide" });
-        } else {
-            window.document.exitFullscreen();
+            window.document.documentElement.requestFullscreen({ navigationUI: "hide" })
+                .then(() => { })
+                .catch((err) => {
+                    alert(
+                        `Unable to switch into fullscreen mode: ${err.message} (${err.name})`,
+                    );
+                });
+            return;
         }
-        return;
     }
 
     var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullScreen;
@@ -331,837 +335,837 @@ class MenuStackHandler implements IDialogStackable {
         this.app.menuStackHandler = null;
         this.app.hideDrawer();
     }
-    private  app: AppThemedBase;
+    private app: AppThemedBase;
 };
 
 
 
-export 
+export
     class AppThemedBase extends ResizeResponsiveComponent<AppProps, AppState> {
-        // Before the component mounts, we initialise our state
+    // Before the component mounts, we initialise our state
 
-        model_: PiPedalModel;
-        errorChangeHandler_: OnChangedHandler<string>;
-        stateChangeHandler_: OnChangedHandler<State>;
+    model_: PiPedalModel;
+    errorChangeHandler_: OnChangedHandler<string>;
+    stateChangeHandler_: OnChangedHandler<State>;
 
-        constructor(props: AppProps) {
-            super(props);
-            this.model_ = PiPedalModelFactory.getInstance();
+    constructor(props: AppProps) {
+        super(props);
+        this.model_ = PiPedalModelFactory.getInstance();
 
 
-            this.state = {
-                performanceView: false,
-                zoomedControlInfo: this.model_.zoomedUiControl.get(),
-                isDrawerOpen: false,
-                errorMessage: this.model_.errorMessage.get(),
-                displayState: this.model_.state.get(),
-                canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted(),
-                isFullScreen: !!document.fullscreenElement,
-                tinyToolBar: false,
-                alertDialogOpen: false,
-                alertDialogMessage: "",
-                presetName: this.model_.presets.get().getSelectedText(),
-                isSettingsDialogOpen: false,
-                updateDialogOpen: false,
-                onboarding: false,
-                isDebug: true,
-                presetChanged: this.model_.presets.get().presetChanged,
-                banks: this.model_.banks.get(),
-                renameBankDialogOpen: false,
-                saveBankAsDialogOpen: false,
-                aboutDialogOpen: false,
-                bankDialogOpen: false,
-                editBankDialogOpen: false,
-                zoomedControlOpen: false,
-                bankDisplayItems: 5,
-                showStatusMonitor: this.model_.showStatusMonitor.get()
+        this.state = {
+            performanceView: false,
+            zoomedControlInfo: this.model_.zoomedUiControl.get(),
+            isDrawerOpen: false,
+            errorMessage: this.model_.errorMessage.get(),
+            displayState: this.model_.state.get(),
+            canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted(),
+            isFullScreen: !!document.fullscreenElement,
+            tinyToolBar: false,
+            alertDialogOpen: false,
+            alertDialogMessage: "",
+            presetName: this.model_.presets.get().getSelectedText(),
+            isSettingsDialogOpen: false,
+            updateDialogOpen: false,
+            onboarding: false,
+            isDebug: true,
+            presetChanged: this.model_.presets.get().presetChanged,
+            banks: this.model_.banks.get(),
+            renameBankDialogOpen: false,
+            saveBankAsDialogOpen: false,
+            aboutDialogOpen: false,
+            bankDialogOpen: false,
+            editBankDialogOpen: false,
+            zoomedControlOpen: false,
+            bankDisplayItems: 5,
+            showStatusMonitor: this.model_.showStatusMonitor.get()
 
-            };
+        };
 
-            this.promptForUpdateHandler = this.promptForUpdateHandler.bind(this);
-            this.errorChangeHandler_ = this.setErrorMessage.bind(this);
-            this.beforeUnloadListener = this.beforeUnloadListener.bind(this);
-            this.unloadListener = this.unloadListener.bind(this);
-            this.stateChangeHandler_ = this.setDisplayState.bind(this);
-            this.presetChangedHandler = this.presetChangedHandler.bind(this);
-            this.alertMessageChangedHandler = this.alertMessageChangedHandler.bind(this);
-            this.handleCloseAlert = this.handleCloseAlert.bind(this);
-            this.banksChangedHandler = this.banksChangedHandler.bind(this);
-            this.showStatusMonitorHandler = this.showStatusMonitorHandler.bind(this);
-            this.handleZoomedUiControlChanged = this.handleZoomedUiControlChanged.bind(this);
+        this.promptForUpdateHandler = this.promptForUpdateHandler.bind(this);
+        this.errorChangeHandler_ = this.setErrorMessage.bind(this);
+        this.beforeUnloadListener = this.beforeUnloadListener.bind(this);
+        this.unloadListener = this.unloadListener.bind(this);
+        this.stateChangeHandler_ = this.setDisplayState.bind(this);
+        this.presetChangedHandler = this.presetChangedHandler.bind(this);
+        this.alertMessageChangedHandler = this.alertMessageChangedHandler.bind(this);
+        this.handleCloseAlert = this.handleCloseAlert.bind(this);
+        this.banksChangedHandler = this.banksChangedHandler.bind(this);
+        this.showStatusMonitorHandler = this.showStatusMonitorHandler.bind(this);
+        this.handleZoomedUiControlChanged = this.handleZoomedUiControlChanged.bind(this);
+    }
+
+    showDrawer() {
+        if (!this.state.isDrawerOpen) {
+            this.setState({ isDrawerOpen: true })
+            this.pushOpenMenuState();
+        }
+    }
+    hideDrawer(loadingDialog: boolean = false) {
+        window.setTimeout(() => {
+            this.popOpenMenuState();
+            this.setState({ isDrawerOpen: false })
+        });
+    }
+
+
+    menuStackHandler: MenuStackHandler | null = null;
+
+    popOpenMenuState() {
+        if (this.menuStackHandler) {
+            let t = this.menuStackHandler;
+            this.menuStackHandler = null;
+            popDialogStack(t);
         }
 
-        showDrawer() {
-            if (!this.state.isDrawerOpen) {
-                this.setState({ isDrawerOpen: true })
-                this.pushOpenMenuState();
-            }
-        }
-        hideDrawer(loadingDialog: boolean = false) {
-            window.setTimeout(() => {
-                this.popOpenMenuState();
-                this.setState({ isDrawerOpen: false })
-            });
-        }
+    }
+    pushOpenMenuState() {
+        this.menuStackHandler = new MenuStackHandler(this);
+        pushDialogStack(this.menuStackHandler);
+    }
 
+    handleSpecificBank(bankId: number) {
 
-        menuStackHandler: MenuStackHandler | null = null;
+        this.model_.openBank(bankId)
+            .catch((error) => this.model_.showAlert(error.toString()));
 
-        popOpenMenuState() {
-            if (this.menuStackHandler) {
-                let t = this.menuStackHandler;
-                this.menuStackHandler = null;
-                popDialogStack(t);
-            }
+    }
 
-        }
-        pushOpenMenuState() {
-            this.menuStackHandler = new MenuStackHandler(this);
-            pushDialogStack(this.menuStackHandler);
-        }
-
-        handleSpecificBank(bankId: number) {
-
-            this.model_.openBank(bankId)
-                .catch((error) => this.model_.showAlert(error.toString()));
-
-        }
-
-        handleSaveBankAsOk(newName: string) {
-            let currentName = this.model_.banks.get().getSelectedEntryName();
-            if (currentName === newName) {
-                this.setState({
-                    renameBankDialogOpen: false,
-                    saveBankAsDialogOpen: false
-                });
-                return;
-
-            }
-
-            if (this.model_.banks.get().nameExists(newName)) {
-                this.model_.showAlert("A bank by that name already exists.");
-                return;
-            }
+    handleSaveBankAsOk(newName: string) {
+        let currentName = this.model_.banks.get().getSelectedEntryName();
+        if (currentName === newName) {
             this.setState({
                 renameBankDialogOpen: false,
                 saveBankAsDialogOpen: false
             });
-            this.model_.saveBankAs(this.model_.banks.get().selectedBank, newName)
-                .catch((error) => {
-                    this.model_.showAlert(error.toString());
-                });
+            return;
 
         }
-        handleBankRenameOk(newName: string) {
-            let currentName = this.model_.banks.get().getSelectedEntryName();
-            if (currentName === newName) {
-                this.setState({
-                    renameBankDialogOpen: false,
-                    saveBankAsDialogOpen: false
-                });
-                return;
 
-            }
-
-            if (this.model_.banks.get().nameExists(newName)) {
-                this.model_.showAlert("A bank by that name already exists.");
-                return;
-            }
-            this.setState({
-                renameBankDialogOpen: false
-            });
-            this.model_.renameBank(this.model_.banks.get().selectedBank, newName)
-                .catch((error) => {
-                    this.model_.showAlert(error.toString());
-                });
-
+        if (this.model_.banks.get().nameExists(newName)) {
+            this.model_.showAlert("A bank by that name already exists.");
+            return;
         }
-        handleSettingsDialogClose() {
-            this.setState({
-                isSettingsDialogOpen: false,
-                onboarding: false
-            });
-        }
-        handleDrawerSettingsClick() {
-            this.setState({
-                isDrawerOpen: false,
-                isSettingsDialogOpen: true,
-                onboarding: false
+        this.setState({
+            renameBankDialogOpen: false,
+            saveBankAsDialogOpen: false
+        });
+        this.model_.saveBankAs(this.model_.banks.get().selectedBank, newName)
+            .catch((error) => {
+                this.model_.showAlert(error.toString());
             });
 
-        }
-
-        handleDisplayOnboarding() {
-            this.setState({
-                isDrawerOpen: false,
-                isSettingsDialogOpen: true,
-                onboarding: true
-            });
-
-        }
-
-        handleDrawerManageBanks() {
-            this.setState({
-                isDrawerOpen: false,
-                bankDialogOpen: true,
-                editBankDialogOpen: true
-            });
-
-        }
-        handleDrawerSelectBank() {
-
-            this.setState({
-                bankDialogOpen: true,
-                editBankDialogOpen: false
-            });
-
-        }
-        handleDrawerDonationClick() {
-            this.hideDrawer(false);
-            if (this.model_.isAndroidHosted()) {
-                this.model_.showAndroidDonationActivity();
-            } else {
-                if (window) {
-                    window.open("https://github.com/sponsors/rerdavies", '_blank');
-                }
-            }
-
-        }
-
-        handleDrawerAboutClick() {
-            this.setState({
-                aboutDialogOpen: true
-            });
-
-        }
-        handleDrawerRenameBank() {
-            this.setState({
-                renameBankDialogOpen: true,
-                saveBankAsDialogOpen: false
-            });
-
-        }
-        handleDrawerSaveBankAs() {
+    }
+    handleBankRenameOk(newName: string) {
+        let currentName = this.model_.banks.get().getSelectedEntryName();
+        if (currentName === newName) {
             this.setState({
                 renameBankDialogOpen: false,
-                saveBankAsDialogOpen: true
+                saveBankAsDialogOpen: false
             });
+            return;
+
         }
 
-
-        handleCloseAlert(e?: any, reason?: any) {
-            this.model_.alertMessage.set("");
+        if (this.model_.banks.get().nameExists(newName)) {
+            this.model_.showAlert("A bank by that name already exists.");
+            return;
         }
-        showStatusMonitorHandler() {
+        this.setState({
+            renameBankDialogOpen: false
+        });
+        this.model_.renameBank(this.model_.banks.get().selectedBank, newName)
+            .catch((error) => {
+                this.model_.showAlert(error.toString());
+            });
+
+    }
+    handleSettingsDialogClose() {
+        this.setState({
+            isSettingsDialogOpen: false,
+            onboarding: false
+        });
+    }
+    handleDrawerSettingsClick() {
+        this.setState({
+            isDrawerOpen: false,
+            isSettingsDialogOpen: true,
+            onboarding: false
+        });
+
+    }
+
+    handleDisplayOnboarding() {
+        this.setState({
+            isDrawerOpen: false,
+            isSettingsDialogOpen: true,
+            onboarding: true
+        });
+
+    }
+
+    handleDrawerManageBanks() {
+        this.setState({
+            isDrawerOpen: false,
+            bankDialogOpen: true,
+            editBankDialogOpen: true
+        });
+
+    }
+    handleDrawerSelectBank() {
+
+        this.setState({
+            bankDialogOpen: true,
+            editBankDialogOpen: false
+        });
+
+    }
+    handleDrawerDonationClick() {
+        this.hideDrawer(false);
+        if (this.model_.isAndroidHosted()) {
+            this.model_.showAndroidDonationActivity();
+        } else {
+            if (window) {
+                window.open("https://github.com/sponsors/rerdavies", '_blank');
+            }
+        }
+
+    }
+
+    handleDrawerAboutClick() {
+        this.setState({
+            aboutDialogOpen: true
+        });
+
+    }
+    handleDrawerRenameBank() {
+        this.setState({
+            renameBankDialogOpen: true,
+            saveBankAsDialogOpen: false
+        });
+
+    }
+    handleDrawerSaveBankAs() {
+        this.setState({
+            renameBankDialogOpen: false,
+            saveBankAsDialogOpen: true
+        });
+    }
+
+
+    handleCloseAlert(e?: any, reason?: any) {
+        this.model_.alertMessage.set("");
+    }
+    showStatusMonitorHandler() {
+        this.setState({
+            showStatusMonitor: this.model_.showStatusMonitor.get()
+        });
+    }
+    banksChangedHandler() {
+        this.setState({
+            banks: this.model_.banks.get()
+        });
+    }
+    presetChangedHandler() {
+        let presets = this.model_.presets.get();
+
+        this.setState({
+            presetName: presets.getSelectedText(),
+            presetChanged: presets.presetChanged
+        });
+    }
+    toggleFullScreen(): void {
+        setFullScreen(!this.state.isFullScreen);
+        this.setState({ isFullScreen: !this.state.isFullScreen });
+    }
+
+    private unloadListener(e: Event) {
+        this.model_.close();
+        return undefined;
+    }
+
+    private beforeUnloadListener(e: Event) {
+        this.model_.close();
+        return undefined;
+    }
+    promptForUpdateHandler(newValue: boolean) {
+        if (this.model_.enableAutoUpdate) {
+            if (this.state.updateDialogOpen !== newValue) {
+                this.setState({ updateDialogOpen: newValue });
+            }
+        }
+    }
+    componentDidMount() {
+
+        super.componentDidMount();
+        window.addEventListener("beforeunload", this.beforeUnloadListener);
+        window.addEventListener("unload", this.unloadListener);
+
+        this.model_.errorMessage.addOnChangedHandler(this.errorChangeHandler_);
+        this.model_.state.addOnChangedHandler(this.stateChangeHandler_);
+        this.model_.pedalboard.addOnChangedHandler(this.presetChangedHandler);
+        this.model_.alertMessage.addOnChangedHandler(this.alertMessageChangedHandler);
+        this.model_.banks.addOnChangedHandler(this.banksChangedHandler);
+        this.model_.showStatusMonitor.addOnChangedHandler(this.showStatusMonitorHandler);
+        this.model_.promptForUpdate.addOnChangedHandler(this.promptForUpdateHandler);
+        this.alertMessageChangedHandler();
+
+        this.model_.zoomedUiControl.addOnChangedHandler(
+            this.handleZoomedUiControlChanged
+        );
+    }
+    handleZoomedUiControlChanged() {
+        this.setState({
+            zoomedControlOpen: this.model_.zoomedUiControl.get() !== undefined,
+            zoomedControlInfo: this.model_.zoomedUiControl.get()
+        });
+
+    }
+
+    updateOverscroll(): void {
+        if (this.model_.serverVersion) {
+            // no pull-down refresh on android devices once we're ready (unless we're debug)
+            let preventOverscroll =
+                this.model_.state.get() === State.Ready
+                && !this.model_.debug;
+
+            let overscrollBehavior = preventOverscroll ? "none" : "auto";
+            document.body.style.overscrollBehavior = overscrollBehavior;
+        }
+    }
+
+    componentDidUpdate() {
+    }
+
+    componentWillUnmount() {
+        super.componentWillUnmount();
+
+        this.model_.zoomedUiControl.removeOnChangedHandler(
+            this.handleZoomedUiControlChanged
+        );
+
+        window.removeEventListener("beforeunload", this.beforeUnloadListener);
+
+        this.model_.promptForUpdate.removeOnChangedHandler(this.promptForUpdateHandler);
+        this.model_.errorMessage.removeOnChangedHandler(this.errorChangeHandler_);
+        this.model_.state.removeOnChangedHandler(this.stateChangeHandler_);
+        this.model_.pedalboard.removeOnChangedHandler(this.presetChangedHandler);
+        this.model_.banks.removeOnChangedHandler(this.banksChangedHandler);
+        this.model_.banks.removeOnChangedHandler(this.showStatusMonitorHandler);
+
+        this.model_.close();
+
+    }
+
+    alertMessageChangedHandler() {
+        let message = this.model_.alertMessage.get();
+        if (message === "") {
+            this.setState({ alertDialogOpen: false });
+            // leave the message intact so the dialog can fade.
+        } else {
             this.setState({
-                showStatusMonitor: this.model_.showStatusMonitor.get()
+                alertDialogOpen: true,
+                alertDialogMessage: message
             });
         }
-        banksChangedHandler() {
-            this.setState({
-                banks: this.model_.banks.get()
-            });
-        }
-        presetChangedHandler() {
-            let presets = this.model_.presets.get();
 
-            this.setState({
-                presetName: presets.getSelectedText(),
-                presetChanged: presets.presetChanged
-            });
-        }
-        toggleFullScreen(): void {
-            setFullScreen(!this.state.isFullScreen);
-            this.setState({ isFullScreen: !this.state.isFullScreen });
-        }
+    }
+    updateResponsive() {
+        // functional, but disabled.
+        // let tinyToolBar_ = this.windowSize.height < 600;
+        // this.setState({ tinyToolBar: tinyToolBar_ });
 
-        private unloadListener(e: Event) {
-            this.model_.close();
-            return undefined;
-        }
+        let height = this.windowSize.height;
 
-        private beforeUnloadListener(e: Event) {
-            this.model_.close();
-            return undefined;
+        const ENTRY_HEIGHT = 48;
+        //   ENTRY_HEIGHT*6 +K = 727 from observation.
+        const K = 450;
+
+        let bankEntries = Math.floor((height - K) / ENTRY_HEIGHT);
+        if (bankEntries < 1) bankEntries = 1;
+        if (bankEntries > 7) bankEntries = 7;
+        if (bankEntries === 2) bankEntries = 1;
+
+        this.setState({ bankDisplayItems: bankEntries });
+
+    }
+    onWindowSizeChanged(width: number, height: number): void {
+        super.onWindowSizeChanged(width, height);
+        this.updateResponsive();
+    }
+
+
+    setErrorMessage(message: string): void {
+        this.setState({ errorMessage: message });
+    }
+
+
+    setDisplayState(newState: State): void {
+        this.updateOverscroll();
+
+        this.setState({
+            displayState: newState,
+            canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted()
+        });
+        if (newState === State.Ready) {
+            if (this.model_.isOnboarding()) {
+                this.handleDisplayOnboarding();
+            }
         }
-        promptForUpdateHandler(newValue: boolean) {
-            if (this.model_.enableAutoUpdate) {
-                if (this.state.updateDialogOpen !== newValue) {
-                    this.setState({ updateDialogOpen: newValue });
+    }
+
+    shortBankList(banks: BankIndex): BankIndexEntry[] {
+        let nDisplayEntries = this.state.bankDisplayItems;
+        let entries = banks.entries;
+        let nListEntries = entries.length;
+
+        let result: BankIndexEntry[] = [];
+
+        if (nListEntries <= nDisplayEntries) {
+            for (let i = 0; i < nListEntries; ++i) {
+                result.push(entries[i]);
+            }
+        } else {
+            // a subset of the list CENTERED on the currently selected entry.
+            let selectedIndex = 0;
+            for (let i = 0; i < nListEntries; ++i) {
+                if (entries[i].instanceId === banks.selectedBank) {
+                    selectedIndex = i;
+                    break;
                 }
             }
-        }
-        componentDidMount() {
 
-            super.componentDidMount();
-            window.addEventListener("beforeunload", this.beforeUnloadListener);
-            window.addEventListener("unload", this.unloadListener);
-
-            this.model_.errorMessage.addOnChangedHandler(this.errorChangeHandler_);
-            this.model_.state.addOnChangedHandler(this.stateChangeHandler_);
-            this.model_.pedalboard.addOnChangedHandler(this.presetChangedHandler);
-            this.model_.alertMessage.addOnChangedHandler(this.alertMessageChangedHandler);
-            this.model_.banks.addOnChangedHandler(this.banksChangedHandler);
-            this.model_.showStatusMonitor.addOnChangedHandler(this.showStatusMonitorHandler);
-            this.model_.promptForUpdate.addOnChangedHandler(this.promptForUpdateHandler);
-            this.alertMessageChangedHandler();
-
-            this.model_.zoomedUiControl.addOnChangedHandler(
-                this.handleZoomedUiControlChanged
-            );
-        }
-        handleZoomedUiControlChanged() {
-            this.setState({
-                zoomedControlOpen: this.model_.zoomedUiControl.get() !== undefined,
-                zoomedControlInfo: this.model_.zoomedUiControl.get()
-            });
-
-        }
-
-        updateOverscroll(): void {
-            if (this.model_.serverVersion) {
-                // no pull-down refresh on android devices once we're ready (unless we're debug)
-                let preventOverscroll =
-                    this.model_.state.get() === State.Ready
-                    && !this.model_.debug;
-
-                let overscrollBehavior = preventOverscroll ? "none" : "auto";
-                document.body.style.overscrollBehavior = overscrollBehavior;
+            let minN = selectedIndex - Math.floor(nDisplayEntries / 2);
+            if (minN < 0) minN = 0;
+            let maxN = minN + nDisplayEntries;
+            if (maxN > entries.length) {
+                maxN = entries.length;
+            }
+            for (let i = minN; i < maxN; ++i) {
+                result.push(entries[i]);
             }
         }
-
-        componentDidUpdate() {
+        return result;
+    }
+    handleReload() {
+        if (this.model_.isAndroidHosted()) {
+            this.model_.chooseNewDevice();
+        } else {
+            window.location.reload();
         }
-
-        componentWillUnmount() {
-            super.componentWillUnmount();
-
-            this.model_.zoomedUiControl.removeOnChangedHandler(
-                this.handleZoomedUiControlChanged
-            );
-
-            window.removeEventListener("beforeunload", this.beforeUnloadListener);
-
-            this.model_.promptForUpdate.removeOnChangedHandler(this.promptForUpdateHandler);
-            this.model_.errorMessage.removeOnChangedHandler(this.errorChangeHandler_);
-            this.model_.state.removeOnChangedHandler(this.stateChangeHandler_);
-            this.model_.pedalboard.removeOnChangedHandler(this.presetChangedHandler);
-            this.model_.banks.removeOnChangedHandler(this.banksChangedHandler);
-            this.model_.banks.removeOnChangedHandler(this.showStatusMonitorHandler);
-
-            this.model_.close();
-
+    }
+    getReloadingMessage(): string {
+        switch (this.state.displayState) {
+            case State.ApplyingChanges:
+                return "Applying\u00A0changes...";
+            case State.ReloadingPlugins:
+                return "Reloading\u00A0plugins...";
+            case State.DownloadingUpdate:
+                return "Downloading update...";
+            case State.InstallingUpdate:
+                return "Installing update....";
+            case State.HotspotChanging:
+                return "Network connection changing..."
+            default:
+                return "Reconnecting...";
         }
+    }
+    render() {
 
-        alertMessageChangedHandler() {
-            let message = this.model_.alertMessage.get();
-            if (message === "") {
-                this.setState({ alertDialogOpen: false });
-                // leave the message intact so the dialog can fade.
-            } else {
-                this.setState({
-                    alertDialogOpen: true,
-                    alertDialogMessage: message
-                });
-            }
+        const classes = withStyles.getClasses(this.props);
 
-        }
-        updateResponsive() {
-            // functional, but disabled.
-            // let tinyToolBar_ = this.windowSize.height < 600;
-            // this.setState({ tinyToolBar: tinyToolBar_ });
-
-            let height = this.windowSize.height;
-
-            const ENTRY_HEIGHT = 48;
-            //   ENTRY_HEIGHT*6 +K = 727 from observation.
-            const K = 450;
-
-            let bankEntries = Math.floor((height - K) / ENTRY_HEIGHT);
-            if (bankEntries < 1) bankEntries = 1;
-            if (bankEntries > 7) bankEntries = 7;
-            if (bankEntries === 2) bankEntries = 1;
-
-            this.setState({ bankDisplayItems: bankEntries });
-
-        }
-        onWindowSizeChanged(width: number, height: number): void {
-            super.onWindowSizeChanged(width, height);
-            this.updateResponsive();
-        }
+        let shortBankList = this.shortBankList(this.state.banks);
+        let showBankSelectDialog = shortBankList.length !== this.state.banks.entries.length;
 
 
-        setErrorMessage(message: string): void {
-            this.setState({ errorMessage: message });
-        }
-
-
-        setDisplayState(newState: State): void {
-            this.updateOverscroll();
-
-            this.setState({
-                displayState: newState,
-                canFullScreen: supportsFullScreen() && !this.model_.isAndroidHosted()
-            });
-            if (newState === State.Ready) {
-                if (this.model_.isOnboarding()) {
-                    this.handleDisplayOnboarding();
-                }
-            }
-        }
-
-        shortBankList(banks: BankIndex): BankIndexEntry[] {
-            let nDisplayEntries = this.state.bankDisplayItems;
-            let entries = banks.entries;
-            let nListEntries = entries.length;
-
-            let result: BankIndexEntry[] = [];
-
-            if (nListEntries <= nDisplayEntries) {
-                for (let i = 0; i < nListEntries; ++i) {
-                    result.push(entries[i]);
-                }
-            } else {
-                // a subset of the list CENTERED on the currently selected entry.
-                let selectedIndex = 0;
-                for (let i = 0; i < nListEntries; ++i) {
-                    if (entries[i].instanceId === banks.selectedBank) {
-                        selectedIndex = i;
-                        break;
-                    }
-                }
-
-                let minN = selectedIndex - Math.floor(nDisplayEntries / 2);
-                if (minN < 0) minN = 0;
-                let maxN = minN + nDisplayEntries;
-                if (maxN > entries.length) {
-                    maxN = entries.length;
-                }
-                for (let i = minN; i < maxN; ++i) {
-                    result.push(entries[i]);
-                }
-            }
-            return result;
-        }
-        handleReload() {
-            if (this.model_.isAndroidHosted()) {
-                this.model_.chooseNewDevice();
-            } else {
-                window.location.reload();
-            }
-        }
-        getReloadingMessage(): string {
-            switch (this.state.displayState) {
-                case State.ApplyingChanges:
-                    return "Applying\u00A0changes...";
-                case State.ReloadingPlugins:
-                    return "Reloading\u00A0plugins...";
-                case State.DownloadingUpdate:
-                    return "Downloading update...";
-                case State.InstallingUpdate:
-                    return "Installing update....";
-                case State.HotspotChanging:
-                    return "Network connection changing..."
-                default:
-                    return "Reconnecting...";
-            }
-        }
-        render() {
-
-            const classes = withStyles.getClasses(this.props);
-
-            let shortBankList = this.shortBankList(this.state.banks);
-            let showBankSelectDialog = shortBankList.length !== this.state.banks.entries.length;
-
-
-            return (
-                <div style={{
-                    colorScheme: isDarkMode() ? "dark" : "light", // affects scrollbar color
-                    minHeight: 300, minWidth: 300,
-                    position: "absolute", left: 0, top: 0, right: 0, bottom: 0,
-                    overscrollBehavior: this.state.isDebug ? "auto" : "none"
-                }}
-                    onContextMenu={(e) => {
-                        if (!this.model_.debug) {
-                            e.preventDefault(); e.stopPropagation();
-                        } else {
-                            if ((e.target as any).tagName === "IMG") {
-                                e.preventDefault();
-                                e.stopPropagation();
-                            }
+        return (
+            <div style={{
+                colorScheme: isDarkMode() ? "dark" : "light", // affects scrollbar color
+                minHeight: 300, minWidth: 300,
+                position: "absolute", left: 0, top: 0, right: 0, bottom: 0,
+                overscrollBehavior: this.state.isDebug ? "auto" : "none"
+            }}
+                onContextMenu={(e) => {
+                    if (!this.model_.debug) {
+                        e.preventDefault(); e.stopPropagation();
+                    } else {
+                        if ((e.target as any).tagName === "IMG") {
+                            e.preventDefault();
+                            e.stopPropagation();
                         }
+                    }
+                }}
+            >
+                {this.state.performanceView ? (
+                    <PerformanceView open={this.state.performanceView}
+                        onClose={() => { this.setState({ performanceView: false }); }}
+                    />
+                ) : (
+                    <div style={{
+                        position: "absolute", width: "100%", height: "100%", userSelect: "none",
+                        display: "flex", flexDirection: "column", flexWrap: "nowrap"
                     }}
-                >
-                    {this.state.performanceView ? (
-                        <PerformanceView open={this.state.performanceView}
-                            onClose={() => { this.setState({ performanceView: false }); }}
-                        />
-                    ) : (
-                        <div style={{
-                            position: "absolute", width: "100%", height: "100%", userSelect: "none",
-                            display: "flex", flexDirection: "column", flexWrap: "nowrap"
-                        }}
-                        >
+                    >
 
 
-                            {(!this.state.tinyToolBar) && !this.state.performanceView ?
-                                (
-                                    <AppBar position="absolute"  >
-                                        <Toolbar variant="dense" className={classes.toolBar}  >
-                                            <IconButtonEx tooltip="Menu"
-                                                edge="start"
-                                                aria-label="menu"
-                                                color="inherit"
-                                                onClick={() => { this.showDrawer() }}
-                                                size="large">
-                                                <MenuButton style={{ opacity: 0.75 }} />
-                                            </IconButtonEx>
-                                            <div style={{ flex: "0 1 400px", minWidth: 100 }}>
-                                                <PresetSelector />
-                                            </div>
-                                            <div style={{ flex: "2 2 30px" }} />
-                                            {this.state.canFullScreen &&
-                                                <IconButtonEx
-                                                    aria-label="maximise/minimise"
-                                                    tooltip={this.state.isFullScreen ? "Exit full screen" : "Full screen"}
-                                                    style={{ marginRight: 8, marginLeft: 8 }}
-                                                    onClick={() => { this.toggleFullScreen(); }}
-                                                    color="inherit"
-                                                    size="large">
-                                                    {this.state.isFullScreen ? (
-                                                        <FullscreenExitIcon style={{ opacity: 0.75 }} />
-                                                    ) : (
-                                                        <FullscreenIcon style={{ opacity: 0.75 }} />
-
-                                                    )}
-
-                                                </IconButtonEx>
-                                            }
-                                        </Toolbar>
-                                    </AppBar>
-                                ) : (
-                                    <div className={classes.toolBarContent} >
-                                        <IconButtonEx
-                                            tooltip="Menu"
-                                            style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
+                        {(!this.state.tinyToolBar) && !this.state.performanceView ?
+                            (
+                                <AppBar position="absolute"  >
+                                    <Toolbar variant="dense" className={classes.toolBar}  >
+                                        <IconButtonEx tooltip="Menu"
+                                            edge="start"
                                             aria-label="menu"
-                                            onClick={() => { this.showDrawer() }}
                                             color="inherit"
+                                            onClick={() => { this.showDrawer() }}
                                             size="large">
-                                            <MenuButton />
+                                            <MenuButton style={{ opacity: 0.75 }} />
                                         </IconButtonEx>
-                                        {this.state.canFullScreen && (
+                                        <div style={{ flex: "0 1 400px", minWidth: 100 }}>
+                                            <PresetSelector />
+                                        </div>
+                                        <div style={{ flex: "2 2 30px" }} />
+                                        {this.state.canFullScreen &&
                                             <IconButtonEx
+                                                aria-label="maximise/minimise"
                                                 tooltip={this.state.isFullScreen ? "Exit full screen" : "Full screen"}
-                                                style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
-                                                aria-label="menu"
-                                                color="inherit"
+                                                style={{ marginRight: 8, marginLeft: 8 }}
                                                 onClick={() => { this.toggleFullScreen(); }}
+                                                color="inherit"
                                                 size="large">
                                                 {this.state.isFullScreen ? (
-                                                    <FullscreenExitIcon />
+                                                    <FullscreenExitIcon style={{ opacity: 0.75 }} />
                                                 ) : (
-                                                    <FullscreenIcon />
+                                                    <FullscreenIcon style={{ opacity: 0.75 }} />
 
                                                 )}
 
                                             </IconButtonEx>
-                                        )}
-                                    </div>
-                                )}
-                            <TemporaryDrawer position='left' title="PiPedal"
-                                is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(false); }} >
+                                        }
+                                    </Toolbar>
+                                </AppBar>
+                            ) : (
+                                <div className={classes.toolBarContent} >
+                                    <IconButtonEx
+                                        tooltip="Menu"
+                                        style={{ position: "absolute", left: 12, top: 8, zIndex: 2 }}
+                                        aria-label="menu"
+                                        onClick={() => { this.showDrawer() }}
+                                        color="inherit"
+                                        size="large">
+                                        <MenuButton />
+                                    </IconButtonEx>
+                                    {this.state.canFullScreen && (
+                                        <IconButtonEx
+                                            tooltip={this.state.isFullScreen ? "Exit full screen" : "Full screen"}
+                                            style={{ position: "absolute", right: 8, top: 8, zIndex: 2 }}
+                                            aria-label="menu"
+                                            color="inherit"
+                                            onClick={() => { this.toggleFullScreen(); }}
+                                            size="large">
+                                            {this.state.isFullScreen ? (
+                                                <FullscreenExitIcon />
+                                            ) : (
+                                                <FullscreenIcon />
 
-                                <List>
-                                    <ListItemButton key='PerformanceView'
-                                        onClick={(ev: any) => {
-                                            ev.stopPropagation();
-                                            this.hideDrawer(true);
-                                            this.setState({ performanceView: true });
-                                        }}>
-                                        <ListItemIcon >
-                                            <FxAmplifierIcon color='inherit' className={classes.menuIcon} style={{ width: 24, height: 24 }} />
-                                        </ListItemIcon>
-                                        <ListItemText primary='Performance View' />
-                                    </ListItemButton>
-                                </List>
-                                <Divider />
-                                <ListSubheader className="listSubheader" component="div" id="xnested-list-subheader" style={{ lineHeight: "24px", height: 24, background: "rgba(12,12,12,0.0)" }}
-                                    disableSticky={true}
-                                >
-                                    <Typography variant="caption" style={{}}>Banks</Typography></ListSubheader>
+                                            )}
 
-                                <List >
-                                    {
-                                        shortBankList.map((bank) => {
-                                            return (
-                                                <ListItemButton key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
-                                                    onClick={(ev: any) => {
-                                                        ev.stopPropagation();
-                                                        this.hideDrawer(false);
-                                                        this.handleSpecificBank(bank.instanceId);
-                                                    }}
-                                                >
+                                        </IconButtonEx>
+                                    )}
+                                </div>
+                            )}
+                        <TemporaryDrawer position='left' title="PiPedal"
+                            is_open={this.state.isDrawerOpen} onClose={() => { this.hideDrawer(false); }} >
 
-                                                    <ListItemText primary={bank.name} />
-                                                </ListItemButton>
+                            <List>
+                                <ListItemButton key='PerformanceView'
+                                    onClick={(ev: any) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.setState({ performanceView: true });
+                                    }}>
+                                    <ListItemIcon >
+                                        <FxAmplifierIcon color='inherit' className={classes.menuIcon} style={{ width: 24, height: 24 }} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Performance View' />
+                                </ListItemButton>
+                            </List>
+                            <Divider />
+                            <ListSubheader className="listSubheader" component="div" id="xnested-list-subheader" style={{ lineHeight: "24px", height: 24, background: "rgba(12,12,12,0.0)" }}
+                                disableSticky={true}
+                            >
+                                <Typography variant="caption" style={{}}>Banks</Typography></ListSubheader>
 
-                                            );
-                                        })
-                                    }
-                                    {
-                                        showBankSelectDialog && (
-                                            <ListItemButton key={'bankDOTDOTDOT'} selected={false}
+                            <List >
+                                {
+                                    shortBankList.map((bank) => {
+                                        return (
+                                            <ListItemButton key={'bank' + bank.instanceId} selected={bank.instanceId === this.state.banks.selectedBank}
                                                 onClick={(ev: any) => {
                                                     ev.stopPropagation();
-                                                    this.hideDrawer(true);
-                                                    this.handleDrawerSelectBank();
+                                                    this.hideDrawer(false);
+                                                    this.handleSpecificBank(bank.instanceId);
                                                 }}
                                             >
 
-                                                <ListItemText primary={"..."} />
+                                                <ListItemText primary={bank.name} />
                                             </ListItemButton>
 
+                                        );
+                                    })
+                                }
+                                {
+                                    showBankSelectDialog && (
+                                        <ListItemButton key={'bankDOTDOTDOT'} selected={false}
+                                            onClick={(ev: any) => {
+                                                ev.stopPropagation();
+                                                this.hideDrawer(true);
+                                                this.handleDrawerSelectBank();
+                                            }}
+                                        >
 
+                                            <ListItemText primary={"..."} />
+                                        </ListItemButton>
+
+
+                                    )
+                                }
+                            </List>
+                            <Divider />
+                            <List>
+                                <ListItemButton key='RenameBank'
+                                    onClick={(ev: any) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerRenameBank()
+                                    }}>
+                                    <ListItemIcon >
+                                        <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Rename bank' />
+                                </ListItemButton>
+                                <ListItemButton key='SaveBank'
+                                    onClick={(ev: any) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerSaveBankAs();
+                                    }} >
+                                    <ListItemIcon>
+                                        <SaveBankAsIcon color="inherit" className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Save as new bank' />
+                                </ListItemButton>
+                                <ListItemButton key='EditBanks'
+                                    onClick={(ev: any) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerManageBanks();
+                                    }}>
+                                    <ListItemIcon>
+                                        <EditBanksIcon color="inherit" className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Manage banks...' />
+                                </ListItemButton>
+                            </List>
+                            <Divider />
+                            <List>
+                                <ListItemButton key='Settings'
+                                    onClick={(ev: any) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerSettingsClick()
+                                    }}>
+                                    <ListItemIcon>
+                                        <SettingsIcon color="inherit" className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Settings' />
+                                </ListItemButton>
+                                <ListItemButton key='About'
+                                    onClick={(ev: any) => {
+                                        ev.stopPropagation();
+                                        this.hideDrawer(true);
+                                        this.handleDrawerAboutClick();
+                                    }}>
+                                    <ListItemIcon>
+                                        <HelpOutlineIcon color="inherit" className={classes.menuIcon} />
+                                    </ListItemIcon>
+                                    <ListItemText primary='About' />
+                                </ListItemButton>
+                                <ListItemButton key='Donations'
+                                    onClick={(ev: any) => {
+                                        ev.stopPropagation();
+                                        this.handleDrawerDonationClick();
+                                    }}>
+                                    <ListItemIcon >
+                                        <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
+                                    </ListItemIcon>
+                                    <ListItemText primary='Donations' />
+                                </ListItemButton>
+                            </List>
+
+                        </TemporaryDrawer>
+                        {!this.state.tinyToolBar && (
+                            <Toolbar className={classes.toolBarSpacer} variant="dense"
+                            />
+                        )}
+                        <main className={classes.mainFrame} >
+                            <div className={classes.mainSizingPosition}>
+                                <div className={classes.heroContent}>
+                                    {(this.state.displayState !== State.Loading) &&
+                                        (
+                                            <MainPage hasTinyToolBar={this.state.tinyToolBar} enableStructureEditing={true} />
                                         )
                                     }
-                                </List>
-                                <Divider />
-                                <List>
-                                    <ListItemButton key='RenameBank'
-                                        onClick={(ev: any) => {
-                                            ev.stopPropagation();
-                                            this.hideDrawer(true);
-                                            this.handleDrawerRenameBank()
-                                        }}>
-                                        <ListItemIcon >
-                                            <RenameOutlineIcon color='inherit' className={classes.menuIcon} />
-                                        </ListItemIcon>
-                                        <ListItemText primary='Rename bank' />
-                                    </ListItemButton>
-                                    <ListItemButton key='SaveBank'
-                                        onClick={(ev: any) => {
-                                            ev.stopPropagation();
-                                            this.hideDrawer(true);
-                                            this.handleDrawerSaveBankAs();
-                                        }} >
-                                        <ListItemIcon>
-                                            <SaveBankAsIcon color="inherit" className={classes.menuIcon} />
-                                        </ListItemIcon>
-                                        <ListItemText primary='Save as new bank' />
-                                    </ListItemButton>
-                                    <ListItemButton key='EditBanks'
-                                        onClick={(ev: any) => {
-                                            ev.stopPropagation();
-                                            this.hideDrawer(true);
-                                            this.handleDrawerManageBanks();
-                                        }}>
-                                        <ListItemIcon>
-                                            <EditBanksIcon color="inherit" className={classes.menuIcon} />
-                                        </ListItemIcon>
-                                        <ListItemText primary='Manage banks...' />
-                                    </ListItemButton>
-                                </List>
-                                <Divider />
-                                <List>
-                                    <ListItemButton key='Settings'
-                                        onClick={(ev: any) => {
-                                            ev.stopPropagation();
-                                            this.hideDrawer(true);
-                                            this.handleDrawerSettingsClick()
-                                        }}>
-                                        <ListItemIcon>
-                                            <SettingsIcon color="inherit" className={classes.menuIcon} />
-                                        </ListItemIcon>
-                                        <ListItemText primary='Settings' />
-                                    </ListItemButton>
-                                    <ListItemButton key='About'
-                                        onClick={(ev: any) => {
-                                            ev.stopPropagation();
-                                            this.hideDrawer(true);
-                                            this.handleDrawerAboutClick();
-                                        }}>
-                                        <ListItemIcon>
-                                            <HelpOutlineIcon color="inherit" className={classes.menuIcon} />
-                                        </ListItemIcon>
-                                        <ListItemText primary='About' />
-                                    </ListItemButton>
-                                    <ListItemButton key='Donations'
-                                        onClick={(ev: any) => {
-                                            ev.stopPropagation();
-                                            this.handleDrawerDonationClick();
-                                        }}>
-                                        <ListItemIcon >
-                                            <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
-                                        </ListItemIcon>
-                                        <ListItemText primary='Donations' />
-                                    </ListItemButton>
-                                </List>
-
-                            </TemporaryDrawer>
-                            {!this.state.tinyToolBar && (
-                                <Toolbar className={classes.toolBarSpacer} variant="dense"
-                                />
-                            )}
-                            <main className={classes.mainFrame} >
-                                <div className={classes.mainSizingPosition}>
-                                    <div className={classes.heroContent}>
-                                        {(this.state.displayState !== State.Loading) &&
-                                            (
-                                                <MainPage hasTinyToolBar={this.state.tinyToolBar} enableStructureEditing={true} />
-                                            )
-                                        }
-                                    </div>
-
                                 </div>
-                            </main>
-                            <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
-                            {(this.state.aboutDialogOpen) &&
-                                (
-                                    <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
-                                )}
-                            <SettingsDialog
-                                open={this.state.isSettingsDialogOpen}
-                                onboarding={this.state.onboarding}
-                                onClose={() => this.handleSettingsDialogClose()} />
-                            <RenameDialog
-                                open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
-                                defaultName={this.model_.banks.get().getSelectedEntryName()}
-                                acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
-                                onClose={() => {
-                                    this.setState({
-                                        renameBankDialogOpen: false,
-                                        saveBankAsDialogOpen: false
-                                    })
-                                }}
-                                onOk={(text: string) => {
-                                    if (this.state.renameBankDialogOpen) {
-                                        this.handleBankRenameOk(text);
-                                    } else if (this.state.saveBankAsDialogOpen) {
-                                        this.handleSaveBankAsOk(text);
-                                    }
+
+                            </div>
+                        </main>
+                        <BankDialog show={this.state.bankDialogOpen} isEditDialog={this.state.editBankDialogOpen} onDialogClose={() => this.setState({ bankDialogOpen: false })} />
+                        {(this.state.aboutDialogOpen) &&
+                            (
+                                <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
+                            )}
+                        <SettingsDialog
+                            open={this.state.isSettingsDialogOpen}
+                            onboarding={this.state.onboarding}
+                            onClose={() => this.handleSettingsDialogClose()} />
+                        <RenameDialog
+                            open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
+                            defaultName={this.model_.banks.get().getSelectedEntryName()}
+                            acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
+                            onClose={() => {
+                                this.setState({
+                                    renameBankDialogOpen: false,
+                                    saveBankAsDialogOpen: false
+                                })
+                            }}
+                            onOk={(text: string) => {
+                                if (this.state.renameBankDialogOpen) {
+                                    this.handleBankRenameOk(text);
+                                } else if (this.state.saveBankAsDialogOpen) {
+                                    this.handleSaveBankAsOk(text);
                                 }
+                            }
+                            }
+                        />
+
+                        <ZoomedUiControl
+                            dialogOpen={this.state.zoomedControlOpen}
+                            controlInfo={this.state.zoomedControlInfo}
+                            onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
+                            onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
+                            }
+                        />
+                        <UpdateDialog open={this.state.updateDialogOpen} />
+                        {this.state.showStatusMonitor && (<JackStatusView />)}
+                    </div>
+                )
+                }
+
+
+
+                <DialogEx tag="Alert"
+                    open={this.state.alertDialogOpen}
+                    onClose={this.handleCloseAlert}
+                    onEnterKey={this.handleCloseAlert}
+                    aria-describedby="alert-dialog-description"
+                >
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            <Typography variant="body2">
+                                {
+                                    this.state.alertDialogMessage
                                 }
-                            />
-
-                            <ZoomedUiControl
-                                dialogOpen={this.state.zoomedControlOpen}
-                                controlInfo={this.state.zoomedControlInfo}
-                                onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
-                                onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
-                                }
-                            />
-                            <UpdateDialog open={this.state.updateDialogOpen} />
-                            {this.state.showStatusMonitor && (<JackStatusView />)}
-                        </div>
-                    )
-                    }
+                            </Typography>
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button variant="dialogPrimary" onClick={this.handleCloseAlert} color="primary" autoFocus>
+                            OK
+                        </Button>
+                    </DialogActions>
+                </DialogEx>
 
 
-
-                    <DialogEx tag="Alert"
-                        open={this.state.alertDialogOpen}
-                        onClose={this.handleCloseAlert}
-                        onEnterKey={this.handleCloseAlert}
-                        aria-describedby="alert-dialog-description"
-                    >
-                        <DialogContent>
-                            <DialogContentText id="alert-dialog-description">
-                                <Typography variant="body2">
-                                    {
-                                        this.state.alertDialogMessage
-                                    }
-                                </Typography>
-                            </DialogContentText>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button variant="dialogPrimary" onClick={this.handleCloseAlert} color="primary" autoFocus>
-                                OK
-                            </Button>
-                        </DialogActions>
-                    </DialogEx>
-
-
-                    <Modal open={this.state.displayState === State.Error}
-                        aria-label="fatal-error"
-                        aria-describedby="aria-error-text"
+                <Modal open={this.state.displayState === State.Error}
+                    aria-label="fatal-error"
+                    aria-describedby="aria-error-text"
+                >
+                    <div style={{
+                        display: "flex", flexFlow: "column nowrap",
+                        position: "absolute", top: 0, left: 0, right: 0, bottom: 0
+                    }}
                     >
                         <div style={{
-                            display: "flex", flexFlow: "column nowrap",
-                            position: "absolute", top: 0, left: 0, right: 0, bottom: 0
-                        }}
-                        >
-                            <div style={{
-                                position: "absolute",
-                                minHeight: "10em",
-                                left: "0px",
-                                top: "0px",
-                                right: "0px",
-                                bottom: "0px",
-                                opacity: 0.8,
-                                background:
-                                    isDarkMode() ? "#222" : "#EEE",
-                            }} />
-                            <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
-                            <div className={classes.errorMessageBox} style={{ position: "relative" }} >
-                                <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 3, color: "#A00" }}>
-                                    <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
-                                </div>
-                                <div style={{ marginLeft: 40, marginTop: 3 }}>
-                                    <p className={classes.errorText} id="aria-error-text">
-                                        Error: {this.state.errorMessage}
-                                    </p>
-                                </div>
-                                <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "start" }}>
-                                    <Button variant='contained' color="primary"
-                                        onClick={() => this.handleReload()} >
-                                        Reload
-                                    </Button>
-
-                                </div>
+                            position: "absolute",
+                            minHeight: "10em",
+                            left: "0px",
+                            top: "0px",
+                            right: "0px",
+                            bottom: "0px",
+                            opacity: 0.8,
+                            background:
+                                isDarkMode() ? "#222" : "#EEE",
+                        }} />
+                        <div style={{ flex: "2 2 3px", height: 20 }} >&nbsp;</div>
+                        <div className={classes.errorMessageBox} style={{ position: "relative" }} >
+                            <div style={{ fontSize: "30px", position: "absolute", left: 0, top: 3, color: "#A00" }}>
+                                <ErrorOutlineIcon color="inherit" fontSize="inherit" style={{ float: "left", marginRight: "12px" }} />
                             </div>
-                            <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
-                        </div>
+                            <div style={{ marginLeft: 40, marginTop: 3 }}>
+                                <p className={classes.errorText} id="aria-error-text">
+                                    Error: {this.state.errorMessage}
+                                </p>
+                            </div>
+                            <div style={{ paddingTop: 50, paddingLeft: 36, textAlign: "start" }}>
+                                <Button variant='contained' color="primary"
+                                    onClick={() => this.handleReload()} >
+                                    Reload
+                                </Button>
 
-                    </Modal >
-                    {/* Reloading mask */}
-                    < Modal
-                        open={wantsReloadingScreen(this.state.displayState) || this.state.displayState === State.Loading}
-                        aria-label="loading"
-                        aria-describedby="reloading-modal-description"
-                    >
-                        <div style={{ display: "flex", flexFlow: "column nowrap", alignItems: "center" }}>
-                            <div style={{
-                                position: "absolute",
-                                minHeight: "10em",
-                                left: "0px",
-                                top: "0px",
-                                right: "0px",
-                                bottom: "0px",
-                                opacity: 0.8,
-                                background:
-                                    isDarkMode() ? "#222" : "#EEE",
-
-                            }} />
-                            <div className={classes.loadingBox}>
-                                <div className={classes.loadingBoxItem}>
-                                    <CircularProgress color="inherit" className={classes.loadingBoxItem} />
-                                </div>
-                                <Typography id="reloading-modal-description" display="block" noWrap variant="body2" className={classes.progressText}>
-                                    {
-                                        this.state.displayState === State.Loading ?
-                                            "Loading..."
-                                            : this.getReloadingMessage()
-                                    }
-                                </Typography>
                             </div>
                         </div>
-                    </Modal >
-                </div >
+                        <div style={{ flex: "5 5 auto", height: 20 }} >&nbsp;</div>
+                    </div>
 
-            );
-        }
-    };
+                </Modal >
+                {/* Reloading mask */}
+                < Modal
+                    open={wantsReloadingScreen(this.state.displayState) || this.state.displayState === State.Loading}
+                    aria-label="loading"
+                    aria-describedby="reloading-modal-description"
+                >
+                    <div style={{ display: "flex", flexFlow: "column nowrap", alignItems: "center" }}>
+                        <div style={{
+                            position: "absolute",
+                            minHeight: "10em",
+                            left: "0px",
+                            top: "0px",
+                            right: "0px",
+                            bottom: "0px",
+                            opacity: 0.8,
+                            background:
+                                isDarkMode() ? "#222" : "#EEE",
+
+                        }} />
+                        <div className={classes.loadingBox}>
+                            <div className={classes.loadingBoxItem}>
+                                <CircularProgress color="inherit" className={classes.loadingBoxItem} />
+                            </div>
+                            <Typography id="reloading-modal-description" display="block" noWrap variant="body2" className={classes.progressText}>
+                                {
+                                    this.state.displayState === State.Loading ?
+                                        "Loading..."
+                                        : this.getReloadingMessage()
+                                }
+                            </Typography>
+                        </div>
+                    </div>
+                </Modal >
+            </div >
+
+        );
+    }
+};
 
 
 const AppThemed = withStyles(AppThemedBase, appStyles);
