@@ -256,13 +256,14 @@ function setFullScreen(value: boolean) {
     let doc: any = window.document;
     let docEl: any = doc.documentElement;
 
-    if (docEl.requestFullscren) // the latest offical api.
+    if (docEl.requestFullscreen) // the latest offical api.
     {
         if (value) {
-            window.document.documentElement.requestFullscreen({ navigationUI: "show" });
+            window.document.documentElement.requestFullscreen({ navigationUI: "hide" });
         } else {
             window.document.exitFullscreen();
         }
+        return;
     }
 
     var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullScreen;
