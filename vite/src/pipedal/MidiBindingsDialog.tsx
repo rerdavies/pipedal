@@ -20,7 +20,7 @@
 import React, { SyntheticEvent } from 'react';
 import DialogEx from './DialogEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import { PiPedalModel, PiPedalModelFactory, ListenHandle } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import Typography from '@mui/material/Typography';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
@@ -32,8 +32,7 @@ import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButtonEx from './IconButtonEx';
 import MidiBinding from './MidiBinding';
-import MidiBindingView from './MidiBindingView';
-import Snackbar from '@mui/material/Snackbar';
+import MidiBindingView, { getMidiControlType } from './MidiBindingView';
 import { PortGroup, UiPlugin, makeSplitUiPlugin } from './Lv2Plugin';
 import { css } from '@emotion/react';
 
@@ -81,9 +80,6 @@ export interface MidiBindingDialogProps extends WithStyles<typeof styles> {
 }
 
 export interface MidiBindingDialogState {
-    listenInstanceId: number;
-    listenSymbol: string;
-    listenSnackbarOpen: boolean;
 
 }
 
@@ -98,7 +94,10 @@ export const MidiBindingDialog =
                 this.state = {
                     listenInstanceId: -2,
                     listenSymbol: "",
-                    listenSnackbarOpen: false
+                    listenForRangeSymbol: "",
+                    listenSnackbarOpen: false,
+                    listenForRangeMin: 127,
+                    listenForRangeMax: 0
                 };
                 this.model = PiPedalModelFactory.getInstance();
                 this.handleClose = this.handleClose.bind(this);
@@ -108,64 +107,9 @@ export const MidiBindingDialog =
             hasHooks: boolean = false;
 
             handleClose() {
-                this.cancelListenForControl();
                 this.props.onClose();
             }
 
-            listenTimeoutHandle?: number;
-
-            listenHandle?: ListenHandle;
-
-            cancelListenForControl() {
-                if (this.listenTimeoutHandle) {
-                    clearTimeout(this.listenTimeoutHandle);
-                    this.listenTimeoutHandle = undefined;
-                }
-                if (this.listenHandle) {
-                    this.model.cancelListenForMidiEvent(this.listenHandle)
-                    this.listenHandle = undefined;
-                }
-
-                this.setState({ listenInstanceId: -2, listenSymbol: "" });
-
-            }
-
-            handleListenSucceeded(instanceId: number, symbol: string, isNote: boolean, noteOrControl: number) {
-                this.cancelListenForControl();
-
-                let pedalboard = this.model.pedalboard.get();
-                let item = pedalboard.getItem(instanceId);
-                if (!item) return;
-
-                let binding = item.getMidiBinding(symbol);
-                let newBinding = binding.clone();
-                if (isNote) {
-                    newBinding.bindingType = MidiBinding.BINDING_TYPE_NOTE;
-                    newBinding.note = noteOrControl;
-                } else {
-                    newBinding.bindingType = MidiBinding.BINDING_TYPE_CONTROL;
-                    newBinding.control = noteOrControl;
-                }
-
-                this.model.setMidiBinding(instanceId, newBinding);
-            }
-
-
-            handleListenForControl(instanceId: number, symbol: string, listenForControl: boolean): void {
-                this.cancelListenForControl();
-                this.setState({ listenInstanceId: instanceId, listenSymbol: symbol, listenSnackbarOpen: true });
-                this.listenTimeoutHandle = setTimeout(() => {
-                    this.cancelListenForControl();
-                }, 8000);
-
-                this.listenHandle = this.model.listenForMidiEvent(listenForControl,
-                    (isNote: boolean, noteOrControl: number) => {
-                        this.handleListenSucceeded(instanceId, symbol, isNote, noteOrControl);
-                    });
-
-
-
-            }
 
             onWindowSizeChanged(width: number, height: number): void {
             }
@@ -176,9 +120,10 @@ export const MidiBindingDialog =
                 this.mounted = true;
             }
             componentWillUnmount() {
-                super.componentWillUnmount();
 
                 this.mounted = false;
+
+                super.componentWillUnmount();
 
             }
 
@@ -255,15 +200,7 @@ export const MidiBindingDialog =
                                     </td>
                                     <td className={classes.bindingTd}>
                                         <MidiBindingView instanceId={item.instanceId} midiBinding={item.getMidiBinding("__bypass")}
-                                            uiPlugin={plugin}
-                                            onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {
-                                                if (instanceId === -2) {
-                                                    this.cancelListenForControl();
-                                                } else {
-                                                    this.handleListenForControl(instanceId, symbol, listenForControl);
-                                                }
-                                            }}
-                                            listen={item.instanceId === this.state.listenInstanceId && this.state.listenSymbol === "__bypass"}
+                                            midiControlType={ getMidiControlType(plugin, "__bypass") }
                                             onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
                                         />
                                     </td>
@@ -305,13 +242,8 @@ export const MidiBindingDialog =
                                     </td>
                                     <td className={classes.bindingTd}>
                                         <MidiBindingView instanceId={item.instanceId}
-                                            uiPlugin={plugin}
+                                            midiControlType={getMidiControlType(plugin, symbol)}
                                             midiBinding={item.getMidiBinding(symbol)}
-                                            listen={item.instanceId === this.state.listenInstanceId && this.state.listenSymbol === symbol}
-                                            onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {
-                                                this.handleListenForControl(instanceId, symbol, listenForControl);
-                                            }}
-
                                             onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
                                         />
                                     </td>
@@ -379,16 +311,6 @@ export const MidiBindingDialog =
                                 </table>
                             </div>
                         </div>
-                        <Snackbar
-                            anchorOrigin={{
-                                vertical: 'bottom',
-                                horizontal: 'left',
-                            }}
-                            open={this.state.listenSnackbarOpen}
-                            autoHideDuration={1500}
-                            onClose={() => this.setState({ listenSnackbarOpen: false })}
-                            message="Listening for MIDI input"
-                        />
                     </DialogEx >
                 );
             }

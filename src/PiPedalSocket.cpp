@@ -174,18 +174,36 @@ JSON_MAP_REFERENCE(SetPatchPropertyBody, propertyUri)
 JSON_MAP_REFERENCE(SetPatchPropertyBody, value)
 JSON_MAP_END()
 
+class SetPedalboardItemTitleBody
+{
+public:
+    uint64_t instanceId_;
+    std::string title_;
+    DECLARE_JSON_MAP(SetPedalboardItemTitleBody);
+};
+
+JSON_MAP_BEGIN(SetPedalboardItemTitleBody)
+JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, instanceId)
+JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, title)
+JSON_MAP_END()
+
+
+
+
 class NotifyMidiListenerBody
 {
 public:
     int64_t clientHandle_;
-    bool isNote_;
-    int32_t noteOrControl_;
+    uint16_t cc0_;
+    uint16_t cc1_;
+    uint16_t cc2_;
     DECLARE_JSON_MAP(NotifyMidiListenerBody);
 };
 JSON_MAP_BEGIN(NotifyMidiListenerBody)
 JSON_MAP_REFERENCE(NotifyMidiListenerBody, clientHandle)
-JSON_MAP_REFERENCE(NotifyMidiListenerBody, isNote)
-JSON_MAP_REFERENCE(NotifyMidiListenerBody, noteOrControl)
+JSON_MAP_REFERENCE(NotifyMidiListenerBody, cc0)
+JSON_MAP_REFERENCE(NotifyMidiListenerBody, cc1)
+JSON_MAP_REFERENCE(NotifyMidiListenerBody, cc2)
 JSON_MAP_END()
 
 class NotifyAtomOutputBody
@@ -208,13 +226,11 @@ JSON_MAP_END()
 class ListenForMidiEventBody
 {
 public:
-    bool listenForControls_;
     int64_t handle_;
     DECLARE_JSON_MAP(ListenForMidiEventBody);
 };
 
 JSON_MAP_BEGIN(ListenForMidiEventBody)
-JSON_MAP_REFERENCE(ListenForMidiEventBody, listenForControls)
 JSON_MAP_REFERENCE(ListenForMidiEventBody, handle)
 JSON_MAP_END()
 
@@ -1099,7 +1115,7 @@ public:
         {
             ListenForMidiEventBody body;
             pReader->read(&body);
-            this->model.ListenForMidiEvent(this->clientId, body.handle_, body.listenForControls_);
+            this->model.ListenForMidiEvent(this->clientId, body.handle_);
         }
         else if (message == "cancelListenForMidiEvent")
         {
@@ -1503,7 +1519,12 @@ public:
                                        { this->JsonReply(replyTo, "setPatchProperty", "true"); }, [this, replyTo](const std::string &error)
                                        { this->SendError(replyTo, error.c_str()); });
         }
-
+        else if (message == "setPedalboardItemTitle")
+        {
+            SetPedalboardItemTitleBody body;
+            pReader->read(&body);
+            model.SetPedalboardItemTitle(body.instanceId_, body.title_);
+        }
         else if (message == "getPatchProperty")
         {
             GetPatchPropertyBody body;
@@ -2121,12 +2142,13 @@ private:
         Send("onNotifyPathPatchPropertyChanged", body);
     }
 
-    virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl)
+    virtual void OnNotifyMidiListener(int64_t clientHandle, uint8_t cc0, uint8_t cc1, uint8_t cc2) override
     {
         NotifyMidiListenerBody body;
         body.clientHandle_ = clientHandle;
-        body.isNote_ = isNote;
-        body.noteOrControl_ = noteOrControl;
+        body.cc0_ = cc0;
+        body.cc1_ = cc1;
+        body.cc2_ = cc2;
 
         Send("onNotifyMidiListener", body);
     }

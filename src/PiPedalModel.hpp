@@ -78,7 +78,7 @@ namespace pipedal
         virtual void OnJackConfigurationChanged(const JackConfiguration &jackServerConfiguration) = 0;
         virtual void OnLoadPluginPreset(int64_t instanceId, const std::vector<ControlValue> &controlValues) = 0;
         virtual void OnMidiValueChanged(int64_t instanceId, const std::string &symbol, float value) = 0;
-        virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) = 0;
+        virtual void OnNotifyMidiListener(int64_t clientHandle, uint8_t cc0, uint8_t cc1, uint8_t cc2) = 0;
         virtual void OnNotifyPatchProperty(int64_t clientModel, uint64_t instanceId, const std::string &propertyUri, const std::string &atomJson) = 0;
         virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings &wifiConfigSettings) = 0;
         virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings &wifiDirectConfigSettings) = 0;
@@ -146,7 +146,6 @@ namespace pipedal
         public:
             int64_t clientId;
             int64_t clientHandle;
-            bool listenForControls;
         };
         class AtomOutputListener
         {
@@ -234,7 +233,7 @@ namespace pipedal
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) override;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) override;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
-        virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) override;
+        virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) override;
         virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) override;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) override;
@@ -437,7 +436,7 @@ namespace pipedal
         JackServerSettings GetJackServerSettings();
         void SetJackServerSettings(const JackServerSettings &jackServerSettings);
 
-        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControls);
+        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
 
         void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri);
@@ -469,6 +468,8 @@ namespace pipedal
             const std::string & path, 
             int32_t from, 
             int32_t to);
+
+        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title);
     };
 
 } // namespace pipedal.

@@ -27,7 +27,7 @@ import React, { SyntheticEvent } from 'react';
 import { css } from '@emotion/react';
 import DialogEx from './DialogEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import { PiPedalModel, PiPedalModelFactory, ListenHandle } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import Typography from '@mui/material/Typography';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
@@ -182,64 +182,7 @@ export const SystemMidiBindingDialog =
             hasHooks: boolean = false;
 
             handleClose() {
-                this.cancelListenForControl();
                 this.props.onClose();
-            }
-
-            listenTimeoutHandle?: number;
-
-            listenHandle?: ListenHandle;
-
-            cancelListenForControl() {
-                if (this.listenTimeoutHandle) {
-                    clearTimeout(this.listenTimeoutHandle);
-                    this.listenTimeoutHandle = undefined;
-                }
-                if (this.listenHandle) {
-                    this.model.cancelListenForMidiEvent(this.listenHandle)
-                    this.listenHandle = undefined;
-                }
-
-                this.setState({ listenInstanceId: -2, listenSymbol: "" });
-
-            }
-
-            handleListenSucceeded(instanceId: number, symbol: string, isNote: boolean, noteOrControl: number) {
-                this.cancelListenForControl();
-
-                for (var binding of this.state.systemMidiBindings) {
-                    if (binding.instanceId === instanceId) {
-                        let newBinding = binding.midiBinding.clone();
-
-                        if (isNote) {
-                            newBinding.bindingType = MidiBinding.BINDING_TYPE_NOTE;
-                            newBinding.note = noteOrControl;
-                        } else {
-                            newBinding.bindingType = MidiBinding.BINDING_TYPE_CONTROL;
-                            newBinding.control = noteOrControl;
-                        }
-
-                        this.model.setSystemMidiBinding(instanceId, newBinding);
-                        return;
-                    }
-                }
-            }
-
-
-            handleListenForControl(instanceId: number, symbol: string, listenForControl: boolean): void {
-                this.cancelListenForControl();
-                this.setState({ listenInstanceId: instanceId, listenSymbol: symbol, listenSnackbarOpen: true });
-                this.listenTimeoutHandle = setTimeout(() => {
-                    this.cancelListenForControl();
-                }, 8000);
-
-                this.listenHandle = this.model.listenForMidiEvent(listenForControl,
-                    (isNote: boolean, noteOrControl: number) => {
-                        this.handleListenSucceeded(instanceId, symbol, isNote, noteOrControl);
-                    });
-
-
-
             }
 
             onWindowSizeChanged(width: number, height: number): void {
@@ -293,14 +236,6 @@ export const SystemMidiBindingDialog =
                             </td>
                             <td className={classes.bindingTd}>
                                 <SystemMidiBindingView instanceId={item.instanceId} midiBinding={item.midiBinding}
-                                    onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {
-                                        if (instanceId === -2) {
-                                            this.cancelListenForControl();
-                                        } else {
-                                            this.handleListenForControl(instanceId, symbol, listenForControl);
-                                        }
-                                    }}
-                                    listen={item.instanceId === this.state.listenInstanceId && this.state.listenSymbol === item.midiBinding.symbol}
                                     onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
                                 />
                             </td>

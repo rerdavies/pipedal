@@ -1,19 +1,9 @@
-window.addEventListener .... done wrong everywhere!
-
-touch scroll in file propertty dialog.
-
-channel bindings help dialog. <ChannelBindingHelpDialog
 
 
-draggable UI: scrolloffset!?
 
 - pipewire aux in?
 
 
-Check that OnNotifyPatchProperty still worsk for 
-- FilePropertyControl
-- PowerStage2.
-- ToobSpectrumAnaylyzer.
 
 pcm.pipedal_aux_in {
     type file

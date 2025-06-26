@@ -824,7 +824,7 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
                 case MidiControlType::Dial:
                 {
                     IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
-                    range = mapping.midiBinding.adjustRange(range);
+                    float range = mapping.midiBinding.calculateRange(value);
                     float currentValue = mapping.pPortInfo->rangeToValue(range);
                     if (pEffect->GetControlValue(mapping.controlIndex) != currentValue)
                     {

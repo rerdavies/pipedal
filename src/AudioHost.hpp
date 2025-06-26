@@ -158,7 +158,7 @@ namespace pipedal
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) = 0;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;
-        virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) = 0;
+        virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) = 0;
 
         virtual void OnNotifyPathPatchPropertyReceived(
             int64_t instanceId,

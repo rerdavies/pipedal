@@ -31,6 +31,20 @@ namespace pipedal
 {
     class IndexedSnapshot;
 
+    class MidiNotifyBody
+    {
+    public:
+        MidiNotifyBody() = default;
+        MidiNotifyBody(uint8_t cc0, uint8_t cc1, uint8_t cc2)
+            : cc0_(cc0), cc1_(cc1), cc2_(cc2)
+        {
+        }       
+
+        uint8_t cc0_;
+        uint8_t cc1_; 
+        uint8_t cc2_; 
+    };
+
     enum class RingBufferCommand : int64_t
     {
         Invalid = 0,
@@ -38,7 +52,7 @@ namespace pipedal
         EffectReplaced,
         SetValue,
         SetBypass,
-        //AudioStopped,
+        // AudioStopped,
         AudioTerminatedAbnormally, // specifically for an ALSA loss of connection.
         SetVuSubscriptions,
         FreeVuSubscriptions,
@@ -327,7 +341,7 @@ namespace pipedal
                 return;
             }
         }
-        
+
         template <typename T>
         void write(RingBufferCommand command, const T &value, size_t dataLength, uint8_t *variableData)
         {
@@ -374,12 +388,9 @@ namespace pipedal
             write(RingBufferCommand::MidiValueChanged, body);
         }
 
-        void OnMidiListen(bool isNote, uint8_t noteOrControl)
+        void OnMidiListen(const MidiNotifyBody &body)
         {
-            uint16_t msg = noteOrControl;
-            if (isNote)
-                msg |= 0x100;
-            write(RingBufferCommand::OnMidiListen, msg);
+            write(RingBufferCommand::OnMidiListen, body);
         }
 
         /**
@@ -485,7 +496,8 @@ namespace pipedal
         {
             write(RingBufferCommand::AckMidiProgramChange, requestId);
         }
-        void AckMidiSnapshotRequest(uint64_t snapshotRequestId) {
+        void AckMidiSnapshotRequest(uint64_t snapshotRequestId)
+        {
             write(RingBufferCommand::AckMidiSnapshotRequest, snapshotRequestId);
         }
 

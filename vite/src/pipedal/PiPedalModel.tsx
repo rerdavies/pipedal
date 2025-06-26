@@ -158,14 +158,31 @@ interface ControlValueChangeItem {
 
 };
 
+export class MidiMessage {
+    constructor(cc0: number, cc1: number, cc2: number) {
+        this.cc0 = cc0;
+        this.cc1 = cc1;
+        this.cc2 = cc2;
+    }
+    cc0: number;
+    cc1: number;
+    cc2: number;
+
+    isNote() {
+        return (this.cc0 & 0xF0) == 0x90 && this.cc2 !== 0;
+    }
+    isControl() {
+        return (this.cc0 & 0xF0) == 0xB0;
+    }
+};
 
 class MidiEventListener {
-    constructor(handle: number, callback: (isNote: boolean, noteOrControl: number) => void) {
+    constructor(handle: number, callback: (message: MidiMessage) => void) {
         this.handle = handle;
         this.callback = callback;
     }
     handle: number;
-    callback: (isNote: boolean, noteOrControl: number) => void;
+    callback: (midiMessage: MidiMessage) => void;
 };
 
 export type PatchPropertyListener = (instanceId: number, propertyUri: string, atomObject: any) => void;
@@ -679,10 +696,13 @@ export class PiPedalModel //implements PiPedalModel
             }
 
         } else if (message === "onNotifyMidiListener") {
-            let clientHandle = body.clientHandle as number;
-            let isNote = body.isNote as boolean;
-            let noteOrControl = body.noteOrControl as number;
-            this.handleNotifyMidiListener(clientHandle, isNote, noteOrControl);
+            let notifyBody = body as { clientHandle: number, cc0: number, cc1: number, cc2: number };
+            let clientHandle = notifyBody.clientHandle as number;
+            this.handleNotifyMidiListener(
+                clientHandle,
+                notifyBody.cc0,
+                notifyBody.cc1,
+                notifyBody.cc2);
         } else if (message === "onNotifyPathPatchPropertyChanged") {
             let instanceId = body.instanceId as number;
             let propertyUri = body.propertyUri as string;
@@ -2355,12 +2375,12 @@ export class PiPedalModel //implements PiPedalModel
     private monitorPatchPropertyListeners: PatchPropertyListenerItem[] = [];
 
     nextListenHandle = 1;
-    listenForMidiEvent(listenForControl: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle {
+    listenForMidiEvent(onComplete: (midiMessage: MidiMessage) => void): ListenHandle {
         let handle = this.nextListenHandle++;
 
         this.midiListeners.push(new MidiEventListener(handle, onComplete));
 
-        this.webSocket?.send("listenForMidiEvent", { listenForControls: listenForControl, handle: handle });
+        this.webSocket?.send("listenForMidiEvent", { handle: handle });
         return {
             _handle: handle
         };
@@ -2418,12 +2438,16 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    handleNotifyMidiListener(clientHandle: number, isNote: boolean, noteOrControl: number) {
+    handleNotifyMidiListener(clientHandle: number, cc0: number, cc1: number, cc2: number): void {
+        let midiMessage = new MidiMessage(cc0, cc1, cc2);
+
+        if (!midiMessage.isNote() && !midiMessage.isControl()) {
+            return;
+        }
         for (let i = 0; i < this.midiListeners.length; ++i) {
             let listener = this.midiListeners[i];
             if (listener.handle === clientHandle) {
-                listener.callback(isNote, noteOrControl);
-
+                listener.callback(midiMessage);
             }
         }
     }
@@ -2464,7 +2488,7 @@ export class PiPedalModel //implements PiPedalModel
         let link = window.document.createElement("A") as HTMLAnchorElement;
         link.href = url;
         link.target = "_blank";
-        link.download = "download.piPreset";    
+        link.download = "download.piPreset";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -2705,8 +2729,8 @@ export class PiPedalModel //implements PiPedalModel
         });
     }
     copyFilePropertyFile(
-        oldRelativePath: string, 
-        newRelativePath: string, 
+        oldRelativePath: string,
+        newRelativePath: string,
         uiFileProperty: UiFileProperty,
         overwrite: boolean
     ): Promise<string> {
@@ -3167,7 +3191,7 @@ export class PiPedalModel //implements PiPedalModel
         item.title = title;
         this.pedalboard.set(newPedalboard);
         // notify the server.
-        // xxx;
+        this.webSocket?.send("setPedalboardItemTitle", { instanceId: instanceId, title: title });
     }
 };
 

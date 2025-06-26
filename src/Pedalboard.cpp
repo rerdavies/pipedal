@@ -136,6 +136,15 @@ bool Pedalboard::SetControlValue(int64_t pedalItemId, const std::string &symbol,
     return item->SetControlValue(symbol,value);
 }
 
+bool Pedalboard::SetItemTitle(int64_t pedalItemId, const std::string &title)
+{
+    PedalboardItem*item = GetItem(pedalItemId);
+    if (!item) return false;
+    if (item->title() == title) return false; // no change.
+    item->title(title);
+    return true;
+}
+
 
 PedalboardItem Pedalboard::MakeEmptyItem()
 {
@@ -503,6 +512,7 @@ JSON_MAP_BEGIN(PedalboardItem)
     JSON_MAP_REFERENCE(PedalboardItem,lv2State)
     JSON_MAP_REFERENCE(PedalboardItem,lilvPresetUri)
     JSON_MAP_REFERENCE(PedalboardItem,pathProperties)
+    JSON_MAP_REFERENCE(PedalboardItem,title)
 JSON_MAP_END()
 
 

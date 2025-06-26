@@ -25,6 +25,9 @@ export default class MidiBinding {
         this.bindingType = input.bindingType;
         this.note = input.note;
         this.control = input.control;
+        this.minControlValue = input.minControlValue?? 0;
+        this.maxControlValue = input.maxControlValue?? 127;
+        this.rotaryScale = input.rotaryScale?? 1;
         this.minValue = input.minValue;
         this.maxValue = input.maxValue;
         this.linearControlType = input.linearControlType;
@@ -53,6 +56,9 @@ export default class MidiBinding {
             && (this.note === other.note)
             && (this.control === other.control)
             && (this.minValue === other.minValue)
+            && (this.minControlValue === other.minControlValue)
+            && (this.maxControlValue === other.maxControlValue)
+            && (this.rotaryScale === other.rotaryScale)
             && (this.maxValue === other.maxValue)
             && (this.linearControlType === other.linearControlType)
             && (this.switchControlType === other.switchControlType)
@@ -73,6 +79,8 @@ export default class MidiBinding {
     bindingType: number = MidiBinding.BINDING_TYPE_NONE;
     note: number = 12*4+24; // C4.
     control: number = 1;
+    minControlValue: number = 0;
+    maxControlValue: number = 127;
     minValue: number = 0;
     maxValue: number = 1;
     rotaryScale: number = 1;

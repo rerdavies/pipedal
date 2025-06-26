@@ -80,6 +80,8 @@ private:
     int bindingType_ = BINDING_TYPE_NONE;
     int note_ = 12*4+24;
     int control_ = 1;
+    int minControlValue_ = 0;
+    int maxControlValue_ = 127;
     float minValue_ = 0;
     float maxValue_ = 1;
     float rotaryScale_ = 1;
@@ -99,6 +101,8 @@ public:
         && this->bindingType_ == other.bindingType_
         && this->note_ == other.note_ 
         && this->control_ == other.control_
+        && this->minControlValue_ == other.minControlValue_
+        && this->maxControlValue_ == other.maxControlValue_
         && this->minValue_ == other.minValue_
         && this->maxValue_ == other.maxValue_
         && this->rotaryScale_ == other.rotaryScale_
@@ -111,6 +115,8 @@ public:
     GETTER_SETTER(bindingType);
     GETTER_SETTER(note);
     GETTER_SETTER(control);
+    GETTER_SETTER(minControlValue);
+    GETTER_SETTER(maxControlValue);
     GETTER_SETTER(minValue);
     GETTER_SETTER(maxValue);
     GETTER_SETTER(rotaryScale);
@@ -120,9 +126,20 @@ public:
     void switchControlType(SwitchControlTypeT  value) { switchControlType_ = (int)value; }
 
 
-    float adjustRange(float range)
+    float calculateRange(uint8_t value)
     {
-        return maxValue_*range+minValue_*(1.0f-range);
+        float controlRange;
+        if (maxControlValue_ == minControlValue_)
+        {
+            controlRange = minControlValue_;
+        } else {
+            controlRange = 
+                (float)((int8_t)value - (int8_t)minControlValue_) / 
+                (float)((int8_t)maxControlValue_ - (int8_t)minControlValue_);
+        }
+        if (controlRange < 0) controlRange = 0;
+        else if (controlRange > 1) controlRange = 1;
+        return maxValue_*controlRange+minValue_*(1.0f-controlRange);
     }
     DECLARE_JSON_MAP(MidiBinding);
 

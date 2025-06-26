@@ -294,12 +294,14 @@ class SystemMidiBinding
 private:
     MidiBinding currentBinding;
     bool controlState = false;
+    uint8_t lastControlValue = 0;
 
 public:
     void SetBinding(const MidiBinding &binding)
     {
         currentBinding = binding;
         controlState = false;
+        lastControlValue = 0;
     }
 
     bool IsMatch(const MidiEvent &event);
@@ -335,13 +337,18 @@ bool SystemMidiBinding::IsTriggered(const MidiEvent &event)
             return false;
         if (event.buffer[1] != currentBinding.control())
             return false;
-        bool state = event.buffer[2] >= 0x64;
-        if (state != this->controlState)
+
+        uint8_t value = event.buffer[2];
+        bool result = false;
+        if (currentBinding.switchControlType() == SwitchControlTypeT::TRIGGER_ON_RISING_EDGE)
         {
-            this->controlState = state;
-            return state;
+            result = value >= 0x64 && lastControlValue < 0x64;
+        } else if (currentBinding.switchControlType() == SwitchControlTypeT::TRIGGER_ON_ANY)
+        {
+            result = true;
         }
-        return false;
+        lastControlValue = value;
+        return result;
     }
     break;
     default:
@@ -918,11 +925,12 @@ private:
             if (event.size >= 3)
             {
                 uint8_t cmd = (uint8_t)(event.buffer[0] & 0xF0);
-                bool isNote = cmd == 0x90;
+                bool isNote = cmd == 0x90 && event.buffer[2] != 0; // note on with velocity > 0.
                 bool isControl = cmd == 0xB0;
                 if (isNote || isControl)
                 {
-                    realtimeWriter.OnMidiListen(isNote, event.buffer[1]);
+                    MidiNotifyBody notifyBody (event.buffer[0],event.buffer[1], event.buffer[2]);
+                    realtimeWriter.OnMidiListen(notifyBody);
                 }
             }
         }
@@ -1333,11 +1341,11 @@ public:
                         {
                             if (command == RingBufferCommand::OnMidiListen)
                             {
-                                uint16_t msg;
-                                hostReader.read(&msg);
+                                MidiNotifyBody body;
+                                hostReader.read(&body);
                                 if (this->pNotifyCallbacks)
                                 {
-                                    pNotifyCallbacks->OnNotifyMidiListen((msg & 0xFF00) != 0, (uint8_t)msg);
+                                    pNotifyCallbacks->OnNotifyMidiListen(body.cc0_, body.cc1_, body.cc2_);
                                 }
                             }
                             else if (command == RingBufferCommand::MidiValueChanged)
@@ -2080,8 +2088,8 @@ public:
 
         return result;
     }
-    volatile bool listenForMidiEvent = false;
-    volatile bool listenForAtomOutput = false;
+    std::atomic<bool> listenForMidiEvent = false;
+    std::atomic<bool> listenForAtomOutput = false;
 
     virtual void SetListenForMidiEvent(bool listen)
     {

@@ -2192,34 +2192,40 @@ void PiPedalModel::OnNotifyPathPatchPropertyReceived(
     }
 }
 
-void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
+void PiPedalModel::OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
+    bool isNote = (cc0 & 0xF0) == 0x90; // Note On
+    if (isNote && cc2 == 0) {
+        return; // Note off. Oopsie.
+    }
+    bool isControl = (cc0 & 0xF0) == 0xB0; // Control Change   
+    if (!isNote && !isControl) {
+        return; // Not a note on or control change.
+    }
+
 
     for (int i = 0; i < midiEventListeners.size(); ++i) 
     {
         auto &listener = midiEventListeners[i];
-        if ((!isNote) == (listener.listenForControls))
+        auto subscriber = this->GetNotificationSubscriber(listener.clientId);
+        if (subscriber)
         {
-            auto subscriber = this->GetNotificationSubscriber(listener.clientId);
-            if (subscriber)
-            {
-                subscriber->OnNotifyMidiListener(listener.clientHandle, isNote, noteOrControl);
-            }
-            else
-            {
-                midiEventListeners.erase(midiEventListeners.begin() + i);
-                --i;
-            }
+            subscriber->OnNotifyMidiListener(listener.clientHandle, cc0,cc1,cc2);
+        }
+        else
+        {
+            midiEventListeners.erase(midiEventListeners.begin() + i);
+            --i;
         }
     }
     audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
 }
 
-void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControls)
+void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    MidiListener listener{clientId, clientHandle, listenForControls};
+    MidiListener listener{clientId, clientHandle};
     midiEventListeners.push_back(listener);
     audioHost->SetListenForMidiEvent(true);
 }
@@ -2947,3 +2953,16 @@ void PiPedalModel::MoveAudioFile(
     AudioDirectoryInfo::Ptr dir = AudioDirectoryInfo::Create(directory);
     dir->MoveAudioFile(directory, fromPosition, toPosition);    
 }
+void PiPedalModel::SetPedalboardItemTitle(int64_t instanceId, const std::string &title)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    if (!this->pedalboard.SetItemTitle(instanceId,title))
+    {
+        return;
+    }
+    // no need to reload the pedalboard, but we do need to notify subscribers.
+        this->SetPresetChanged(-1, true);
+        this->FirePedalboardChanged(-1,false);
+    
+}
+
