@@ -30,6 +30,7 @@
 #include <string>
 #include <stdexcept>
 #include <utility>
+#include <memory>
 #include "json.hpp"
 
 namespace pipedal

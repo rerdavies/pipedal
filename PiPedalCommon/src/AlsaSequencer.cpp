@@ -81,8 +81,11 @@ namespace pipedal
                 port.canReadSubscribe = capability & SND_SEQ_PORT_CAP_SUBS_READ;
                 port.canWriteSubscribe = capability & SND_SEQ_PORT_CAP_SUBS_WRITE;
                 auto typeBits = snd_seq_port_info_get_type(port_info);
-
+#ifdef SND_SEQ_PORT_TYPE_MIDI_UMP
                 port.isUmp = (typeBits & SND_SEQ_PORT_TYPE_MIDI_UMP) != 0;
+#else 
+                port.isUmp = false; // UMP support is not available in all versions of ALSA
+#endif
                 port.isSystemAnnounce = (typeBits & SND_SEQ_PORT_SYSTEM_ANNOUNCE) != 0;
                 port.isMidiSynth = (typeBits & SND_SEQ_PORT_TYPE_MIDI_GENERIC) != 0 ||
                                    (typeBits & SND_SEQ_PORT_TYPE_MIDI_GM) != 0 ||
