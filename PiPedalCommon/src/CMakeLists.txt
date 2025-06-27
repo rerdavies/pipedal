@@ -57,6 +57,7 @@ add_library(PiPedalCommon STATIC
   include/dbus/org.freedesktop.NetworkManager.Device.Wireless.hpp
   include/dbus/org.freedesktop.NetworkManager.DHCP4Config.hpp
 
+  AlsaSequencer.cpp include/AlsaSequencer.hpp
   Utf8Utils.cpp include/Utf8Utils.hpp
   NetworkManagerInterfaces.cpp
   include/NetworkManagerInterfaces.hpp

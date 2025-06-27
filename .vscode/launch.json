@@ -142,7 +142,7 @@
                 //"[pipedal_alsa_test]"
                 // "[wifi_channels_test]"
                 // "[locale]"
-                "[modFileTypes]"
+                "[pipedal_alsa_seq_test]"
             ],
 
             "stopAtEntry": false,
