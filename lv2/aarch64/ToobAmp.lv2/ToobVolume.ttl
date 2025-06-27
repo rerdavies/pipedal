@@ -31,7 +31,7 @@
 
 <http://two-play.com/plugins/toob-volume>
         a lv2:Plugin ,
-                lv2:UtilityPlugin ;
+                lv2:MixerPlugin ;
                 doap:name "TooB Volume" ,
                 "TooB Volume"@en-gb 
                 ;

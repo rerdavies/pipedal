@@ -323,6 +323,7 @@ set(PIPEDAL_LIBS libpipedald zip
     pthread atomic stdc++fs asound avahi-common avahi-client systemd
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 
+    asound
      # ${JACK_LIBRARIES} - pending delete for JACK support.
      )
 
@@ -360,6 +361,7 @@ target_link_libraries(pipedal_kconfig
   PRIVATE ftxui::dom
   PRIVATE ftxui::component  # Not needed for this example.
   PRIVATE PiPedalCommon
+  asound
   systemd
 ) 
 
@@ -385,7 +387,7 @@ add_executable(hotspotManagerTest
 
 target_link_libraries(hotspotManagerTest PRIVATE ${PIPEDAL_LIBS})
 
-set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL true)
+set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 
 add_executable(AuxInTest
@@ -426,7 +428,7 @@ target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} ${ICU_LIBRARIES})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
 
-set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL true)
+set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
 
@@ -462,7 +464,7 @@ target_link_libraries(jsonTest PRIVATE PiPedalCommon)
 target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES}
     ) 
 
-set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL true)
+set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 
 target_link_libraries(jsonTest PRIVATE pthread)

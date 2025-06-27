@@ -24,6 +24,7 @@
 #include "AlsaSequencer.hpp"
 #include <vector>
 #include <string>
+#include <regex>
 #include "ss.hpp"
 
 // enumerate alsa sequencer ports
@@ -35,7 +36,7 @@ namespace pipedal
         std::vector<AlsaSequencerPort> ports;
 
         snd_seq_t *seq;
-        if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_INPUT, 0) < 0)
+        if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX,  0) < 0)
         {
             return ports;
         }
@@ -83,7 +84,7 @@ namespace pipedal
                 auto typeBits = snd_seq_port_info_get_type(port_info);
 #ifdef SND_SEQ_PORT_TYPE_MIDI_UMP
                 port.isUmp = (typeBits & SND_SEQ_PORT_TYPE_MIDI_UMP) != 0;
-#else 
+#else
                 port.isUmp = false; // UMP support is not available in all versions of ALSA
 #endif
                 port.isSystemAnnounce = (typeBits & SND_SEQ_PORT_SYSTEM_ANNOUNCE) != 0;
@@ -95,19 +96,52 @@ namespace pipedal
                 port.isSpecific = (typeBits & SND_SEQ_PORT_TYPE_SPECIFIC) != 0;
                 port.isSynth = (typeBits & SND_SEQ_PORT_TYPE_SYNTH) != 0;
                 port.isHardware = (typeBits & SND_SEQ_PORT_TYPE_HARDWARE) != 0;
+                port.isPort = (typeBits & SND_SEQ_PORT_TYPE_PORT) != 0;
                 port.isSoftware = (typeBits & SND_SEQ_PORT_TYPE_SOFTWARE) != 0;
-
+                port.isVirtual = port.name.starts_with("VirMIDI");
                 port.cardNumber = snd_seq_client_info_get_card(client_info);
                 port.port = snd_seq_port_info_get_port(port_info);
 
-                if (port.isKernelDevice & port.cardNumber >= 0 && port.port >= 0)
+                if (port.isKernelDevice && port.isPort && port.cardNumber >= 0 && port.port >= 0)
                 {
                     // For kernel devices, we can construct a raw MIDI device string
-                    port.rawMidiDevice = SS("hw:" << port.cardNumber << ",0," << port.port);
+                    std::string rawMidiDevice;
+                    if (port.isVirtual)
+                    {
+                        // "VirMidI 2-1"
+                        std::regex virtualDeviceRegex{"^(VirMIDI) (\\d+)-(\\d+)$"};
+                        {
+                            // Extract the card and device numbers from the match
+                            std::smatch match;
+                            std::regex_search(port.name, match, virtualDeviceRegex);
+                            if (match.size() == 4)
+                            {
+                                try
+                                {
+                                    std::string devName = match[1];
+                                    int card = std::stoi(match[2]);
+                                    int device = std::stoi(match[3]);
+                                    rawMidiDevice = SS("hw:CARD=" << devName << ",DEV=" << device);
+                                }
+                                catch (const std::exception &ignored)
+                                {
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        rawMidiDevice = SS("hw:CARD=" << port.clientName << ",DEV=" << 0);
+                        if (port.port > 0)
+                        {
+                            rawMidiDevice += SS("," << port.port);
+                        }   
+                    }
+                    port.rawMidiDevice = std::move(rawMidiDevice);
                 }
                 port.id = SS("seq:" << port.clientName << "/" << port.name);
 
-                ports.push_back(port);
+                ports.push_back(std::move(port));
             }
         }
 
@@ -122,7 +156,7 @@ namespace pipedal
         // Open sequencer in input mode
         int rc;
 
-        rc = snd_seq_open(&seqHandle, "default", SND_SEQ_OPEN_DUPLEX, 0);
+        rc = snd_seq_open(&seqHandle, "default", SND_SEQ_OPEN_DUPLEX,  0);
         if (rc < 0)
         {
             // convert rc to message
@@ -131,14 +165,15 @@ namespace pipedal
         snd_seq_set_client_name(seqHandle, "PiPedal");
 
         inPort = snd_seq_create_simple_port(seqHandle, "PiPedal:in",
-                                        SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE,
-                                        SND_SEQ_PORT_TYPE_MIDI_GENERIC |
-                                            SND_SEQ_PORT_TYPE_MIDI_GM | SND_SEQ_PORT_TYPE_APPLICATION);
+                                            SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE,
+                                            SND_SEQ_PORT_TYPE_MIDI_GENERIC |
+                                                SND_SEQ_PORT_TYPE_MIDI_GM | SND_SEQ_PORT_TYPE_APPLICATION);
         if (inPort < 0)
         {
             // convert rc to message
             throw std::runtime_error(SS("Failed to open ALSA sequencer:" << snd_strerror(inPort)));
         }
+        snd_seq_nonblock(seqHandle, 1); // Set sequencer to non-blocking mode
     }
     AlsaSequencer::~AlsaSequencer()
     {
@@ -190,69 +225,93 @@ namespace pipedal
         throw std::runtime_error("ALSA port not found");
     }
 
-    bool AlsaSequencer::ReadMessage(AlsaMidiMessage &message)
+    void AlsaSequencer::WaitForMessage() {
+        auto fdCount = snd_seq_poll_descriptors_count(seqHandle, POLLIN);
+        if (fdCount == 0) return;
+        this->pollFds.resize(fdCount);
+
+        snd_seq_poll_descriptors(seqHandle, pollFds.data(), fdCount, POLLIN);
+
+        poll(pollFds.data(), fdCount, -1);  // Wait indefinitely for input
+    }
+    bool AlsaSequencer::ReadMessage(AlsaMidiMessage &message, bool block)
     {
         // Event loop
         snd_seq_event_t *event = nullptr;
-        bool success = false;
-        if (snd_seq_event_input(seqHandle, &event) >= 0 && event)
-        {
-            success = true;
-            // Extract timestamp information
-            message.timestamp = event->time.tick;
-            message.realtime_sec = event->time.time.tv_sec;
-            message.realtime_nsec = event->time.time.tv_nsec;
-
-            // Process MIDI event here, e.g. NOTEON, NOTEOFF, etc.
-            switch (event->type)
+        while (true) {
+            bool success = false;
+            int rc = snd_seq_event_input(seqHandle, &event);
+            if (rc < 0) {
+                if (rc == -EAGAIN) {
+                    if (!block) {
+                        return false;
+                    }
+                    WaitForMessage(); 
+                } else {
+                    // Handle other errors
+                    throw std::runtime_error(SS("ALSA sequencer input error: " << snd_strerror(rc)));
+                }
+            } else if (event)
             {
-            case SND_SEQ_EVENT_NOTEON:
-                message.cc0 = 0x90 | event->data.note.channel; // channel
-                message.cc1 = event->data.note.note;           // note
-                message.cc2 = event->data.note.velocity;       // velocity
-                break;
-            case SND_SEQ_EVENT_NOTEOFF:
-                // handle note-off
-                message.cc0 = 0x80 | event->data.note.channel; // channel
-                message.cc1 = event->data.note.note;           // note
-                message.cc2 = event->data.note.off_velocity;   // off velocity
-                break;
-            case SND_SEQ_EVENT_KEYPRESS:
-                message.cc0 = 0xA0 | event->data.note.channel; // polyphonic key pressure
-                message.cc1 = event->data.note.note;           // note
-                message.cc2 = event->data.note.velocity;       // pressure
-                break;
-            case SND_SEQ_EVENT_CONTROLLER:
-                message.cc0 = 0xB0 | event->data.control.channel; // control change
-                message.cc1 = event->data.control.param;          // controller number
-                message.cc2 = event->data.control.value;          // controller value
-                break;
-            case SND_SEQ_EVENT_PGMCHANGE:
-                message.cc0 = 0xC0 | event->data.control.channel; // program change
-                message.cc1 = event->data.control.value;          // program number
-                message.cc2 = 0;                                  // unused
-                break;
-            case SND_SEQ_EVENT_CHANPRESS:
-                message.cc0 = 0xD0 | event->data.control.channel; // channel pressure
-                message.cc1 = event->data.control.value;          // pressure value
-                message.cc2 = 0;                                  // unused
-                break;
-            case SND_SEQ_EVENT_PITCHBEND:
-                message.cc0 = 0xE0 | event->data.control.channel;      // pitch bend
-                message.cc1 = (event->data.control.value >> 7) & 0x7F; // MSB
-                message.cc2 = event->data.control.value & 0x7F;        // LSB
-                break;
-            case SND_SEQ_EVENT_CONTROL14:
-            case SND_SEQ_EVENT_NONREGPARAM:
-            case SND_SEQ_EVENT_REGPARAM:
-            case SND_SEQ_EVENT_SONGPOS:
-            default:
-                success = false;
-                break;
+                success = true;
+                // Extract timestamp information
+                message.timestamp = event->time.tick;
+                message.realtime_sec = event->time.time.tv_sec;
+                message.realtime_nsec = event->time.time.tv_nsec;
+
+                // Process MIDI event here, e.g. NOTEON, NOTEOFF, etc.
+                switch (event->type)
+                {
+                case SND_SEQ_EVENT_NOTEON:
+                    message.cc0 = 0x90 | event->data.note.channel; // channel
+                    message.cc1 = event->data.note.note;           // note
+                    message.cc2 = event->data.note.velocity;       // velocity
+                    break;
+                case SND_SEQ_EVENT_NOTEOFF:
+                    // handle note-off
+                    message.cc0 = 0x80 | event->data.note.channel; // channel
+                    message.cc1 = event->data.note.note;           // note
+                    message.cc2 = event->data.note.off_velocity;   // off velocity
+                    break;
+                case SND_SEQ_EVENT_KEYPRESS:
+                    message.cc0 = 0xA0 | event->data.note.channel; // polyphonic key pressure
+                    message.cc1 = event->data.note.note;           // note
+                    message.cc2 = event->data.note.velocity;       // pressure
+                    break;
+                case SND_SEQ_EVENT_CONTROLLER:
+                    message.cc0 = 0xB0 | event->data.control.channel; // control change
+                    message.cc1 = event->data.control.param;          // controller number
+                    message.cc2 = event->data.control.value;          // controller value
+                    break;
+                case SND_SEQ_EVENT_PGMCHANGE:
+                    message.cc0 = 0xC0 | event->data.control.channel; // program change
+                    message.cc1 = event->data.control.value;          // program number
+                    message.cc2 = 0;                                  // unused
+                    break;
+                case SND_SEQ_EVENT_CHANPRESS:
+                    message.cc0 = 0xD0 | event->data.control.channel; // channel pressure
+                    message.cc1 = event->data.control.value;          // pressure value
+                    message.cc2 = 0;                                  // unused
+                    break;
+                case SND_SEQ_EVENT_PITCHBEND:
+                    message.cc0 = 0xE0 | event->data.control.channel;      // pitch bend
+                    message.cc1 = (event->data.control.value >> 7) & 0x7F; // MSB
+                    message.cc2 = event->data.control.value & 0x7F;        // LSB
+                    break;
+                case SND_SEQ_EVENT_CONTROL14:
+                case SND_SEQ_EVENT_NONREGPARAM:
+                case SND_SEQ_EVENT_REGPARAM:
+                case SND_SEQ_EVENT_SONGPOS:
+                default:
+                    success = false;
+                    break;
+                }
+                snd_seq_free_event(event);
             }
-            snd_seq_free_event(event);
+            if (success) {
+                return true;
+            }
         }
-        return success;
     }
 
     int AlsaSequencer::CreateRealtimeInputQueue()
@@ -293,8 +352,6 @@ namespace pipedal
                 queueId = -1;
                 throw std::runtime_error(SS("Failed to start queue: " << snd_strerror(rc)));
             }
-
- 
 
             // Set the queue for input timestamping
             snd_seq_port_info_t *port_info;
@@ -348,4 +405,17 @@ namespace pipedal
 
         return true;
     }
-}
+
+    std::string RawMidiIdToSequencerId(const std::vector<AlsaSequencerPort> &seqDevices, const std::string &rawMidiId)
+    {
+        for (const auto &device : seqDevices)
+        {
+            if (device.rawMidiDevice == rawMidiId)
+            {
+                return device.id;
+            }
+        }
+        return {};
+    }
+
+} // namespace pipedal

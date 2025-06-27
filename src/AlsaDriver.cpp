@@ -2286,7 +2286,7 @@ namespace pipedal
     }
 
 #ifdef JUNK
-    static void ExpectEvent(AlsaDriverImpl::AlsaMidiDeviceImpl &m, int event, const std::vector<uint8_t> message)
+static void ExpectEvent(AlsaDriverImpl::AlsaMidiDeviceImpl &m, int event, const std::vector<uint8_t> message)
     {
         MidiEvent e;
         m.GetMidiInputEvent(&e, event);

@@ -57,7 +57,7 @@ Remix a stereo input signal.
 
                 lv2:index 0 ;
                 lv2:symbol "trimL" ;
-                lv2:name "Trim L";
+                lv2:name "Vol L";
 
                 lv2:default 0.0 ;
                 lv2:minimum -60.0 ;
@@ -89,7 +89,7 @@ Remix a stereo input signal.
 
                 lv2:index 2 ;
                 lv2:symbol "trimR" ;
-                lv2:name "Trim R";
+                lv2:name "Vol R";
 
                 lv2:default 0.0 ;
                 lv2:minimum -60.0 ;

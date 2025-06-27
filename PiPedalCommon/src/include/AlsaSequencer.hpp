@@ -53,6 +53,8 @@ namespace pipedal
         bool isSpecific;
         bool isHardware = false;
         bool isSoftware = false;
+        bool isPort = false;
+        bool isVirtual = false;
         int cardNumber = -1;
         std::string rawMidiDevice; // e.g. "hw:0,0,0" for kernel devices
     };
@@ -94,7 +96,7 @@ namespace pipedal
         void ConnectPort(const std::string&name);
 
         // Read a single MIDI message from the sequencer input port
-        bool ReadMessage(AlsaMidiMessage &message);
+        bool ReadMessage(AlsaMidiMessage &message, bool block = true);
 
 
         // Get current real-time from the queue (useful for calculating precise timing)
@@ -104,6 +106,7 @@ namespace pipedal
         int GetQueueId() const { return queueId; }
 
     private:
+        void WaitForMessage();
         // Create an ALSA input queue with real-time timestamps for the given client/port
         int CreateRealtimeInputQueue();
 
@@ -114,7 +117,7 @@ namespace pipedal
         };
 
         std::vector<Connection> connections;
-
+        std::vector<struct pollfd> pollFds; // For polling input events
         snd_seq_t *seqHandle = nullptr;
         int inPort = -1;
         int queueId = -1;  // Queue for real-time timestamps
@@ -122,5 +125,7 @@ namespace pipedal
         // Example: open an ALSA sequencer input port and read MIDI events continuously
         void ReadMidiFromPort(int clientId, int portId);
     };
+
+    std::string RawMidiIdToSequencerId(const std::vector<AlsaSequencerPort> &seqDevices,const std::string &rawMidiId);
 
 }

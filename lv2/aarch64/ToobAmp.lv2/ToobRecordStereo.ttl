@@ -97,7 +97,7 @@ myprefix:loop3_group
         patch:writable 
                 recordPrefix:audioFile;
 
-        lv2:extensionData state:interface ;
+        lv2:extensionData state:interface, work:interface ;
 
 
         rdfs:comment """
@@ -154,7 +154,7 @@ Record the plugin's audio input signal to a stereophonic file. See also: TooB Re
                 lv2:index  3;
                 lv2:symbol "play" ;
                 lv2:name "⏵";
-                rdfs:comment "Preview the recorded file. Click again to stop.";
+                rdfs:comment "Preview the recorded file.";
                 lv2:default 0.0 ;
                 lv2:minimum 0.0;
                 lv2:maximum 1.0;
@@ -223,8 +223,8 @@ Record the plugin's audio input signal to a stereophonic file. See also: TooB Re
 
                 lv2:index  7;
                 lv2:symbol "level" ;
-                lv2:name "Level";
-                lv2:name "Input trim level for recording";
+                lv2:name "Rec Lvl";
+                rdfs:comment "Input trim level for recording";
                 lv2:default 0.0 ;
                 lv2:minimum -60.0;
                 lv2:maximum 30.0;

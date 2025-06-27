@@ -92,7 +92,7 @@ void ReadFromsequencerTest()
     AlsaMidiMessage message;
     while (true)
     {
-        if (sequencer.ReadMessage(message))
+        if (sequencer.ReadMessage(message,true))
         {
             cout << "Received MIDI message: "
                  << " " << hex << setfill('0') << setw(2) << static_cast<int>(message.cc0) 
@@ -104,9 +104,39 @@ void ReadFromsequencerTest()
     }
 }
 
+void TestConfigMigration()
+{
+    cout << "--- Testing ALSA Config Migration" << endl;
+    // older versions of PiPedal uses ALSA rawmidi. 
+    // this code test coversion of rawmidi device IDs to ALSA Sequencer IDs.
+    auto rawDevices = GetAlsaMidiInputDevices();
+    auto seqDevices = AlsaSequencer::EnumeratePorts();
+
+    for (const auto&seqDevice: seqDevices) {
+        cout << seqDevice.id << " -> " << seqDevice.rawMidiDevice << endl;
+    }
+    for (const auto&rawDevice: rawDevices) {
+        std::string sequencerId = RawMidiIdToSequencerId(seqDevices,rawDevice.name_);
+        REQUIRE(!sequencerId.empty());
+        cout << rawDevice.name_ << "->" << sequencerId << std::endl;
+    }
+    cout << endl;
+
+
+}
+
 TEST_CASE("ALSA Seq Test", "[pipedal_alsa_seq_test][Build][Dev]")
 {
+
+    // hw:CARD=VirMIDI,DEV=0 VirMIDI
+    // hw:CARD=VirMIDI,DEV=1 VirMIDI
+    // hw:CARD=VirMIDI,DEV=2 VirMIDI
+    // hw:CARD=VirMIDI,DEV=3 VirMIDI
+    // hw:CARD=M2,DEV=0 M2
+    // hw:CARD=V25,DEV=0 V25
     EnumerateSequencers();
+    TestConfigMigration();
+
 
     ReadFromsequencerTest();
 }
