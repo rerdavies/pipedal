@@ -217,7 +217,6 @@ set (PIPEDAL_SOURCES
     Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp
-    Finally.hpp
     ZipFile.cpp ZipFile.hpp
     TemporaryFile.cpp TemporaryFile.hpp     
     FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp 

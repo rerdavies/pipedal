@@ -22,6 +22,7 @@
 #include "Storage.hpp"
 #include "AudioConfig.hpp"
 #include "PiPedalException.hpp"
+#include "AlsaSequencer.hpp"
 #include <stdexcept>
 #include <sstream>
 #include "json.hpp"
@@ -734,6 +735,48 @@ JackChannelSelection Storage::GetJackChannelSelection(const JackConfiguration &j
     return jackChannelSelection.RemoveInvalidChannels(jackConfiguration);
 }
 
+
+static void MigrateRawMidiToAlsaSequencer(JackChannelSelection &channelSelection)
+{
+    try {
+        auto  sequencerPorts = AlsaSequencer::EnumeratePorts();
+
+        // Migrate raw MIDI devices to ALSA sequencer ports.
+        std::vector<AlsaMidiDeviceInfo>& selectedDevices = channelSelection.GetInputMidiDevices();
+
+        for (auto i = selectedDevices.begin(); i != selectedDevices.end(); ++i)
+        {
+            if (i->name_.starts_with("hw:")) {
+                bool migrated = false;
+                for (const auto &port: sequencerPorts)
+                {
+                    if (i->name_ == port.rawMidiDevice)
+                    {
+                        // Found a matching sequencer port.
+                        i->name_ = port.rawMidiDevice;
+                        i->description_ = port.name;
+                        migrated = true;
+                        break;
+                    }
+                }
+                if (!migrated) {
+                    i = selectedDevices.erase(i);
+                    if (i == selectedDevices.end()) 
+                    {
+                        break;
+                    }
+                    --i;
+                }
+            }
+        }
+    } catch (const std::exception&e) {
+        Lv2Log::error(SS("Failed to migrate MIDI settings. " << e.what()));
+        // ick. 
+        channelSelection.GetInputMidiDevices().clear();
+
+    }
+}
+
 void Storage::LoadChannelSelection()
 {
     auto fileName = this->GetChannelSelectionFileName();
@@ -745,11 +788,11 @@ void Storage::LoadChannelSelection()
             json_reader reader(s);
             reader.read(&this->jackChannelSelection);
             this->isJackChannelSelectionValid = true;
+            MigrateRawMidiToAlsaSequencer(this->jackChannelSelection);
         }
         catch (const std::exception &e)
         {
             Lv2Log::error("I/O error reading %s: %s", fileName.c_str(), e.what());
-            throw PiPedalStateException("Unexpected error reading Jack settings file.");
         }
     }
 }

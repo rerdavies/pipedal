@@ -26,17 +26,89 @@
 #include <string>
 #include <regex>
 #include "ss.hpp"
+#include <alsa/asoundlib.h>
+#include <alsa/seq.h>
+#include <stdexcept>
+#include <poll.h>
+#include <cstring>
+#include "Finally.hpp"
+#include "Lv2Log.hpp"
+#include <mutex>
 
 // enumerate alsa sequencer ports
 
 namespace pipedal
 {
+
+    namespace impl
+    {
+
+        enum class ConnectAction
+        {
+            Subscribe,
+            Unsubscribe
+        };
+
+        class AlsaSequencerImpl : public AlsaSequencer
+        {
+        public:
+            AlsaSequencerImpl();
+
+        public:
+            ~AlsaSequencerImpl();
+
+            virtual void ConnectPort(int clientId, int portId) override;
+            virtual void ConnectPort(const std::string &name) override;
+
+            // Read a single MIDI message from the sequencer input port. A timeout of -1 blocks indefinitely.
+            // A timeout of 0 returns immediately.
+            virtual bool ReadMessage(AlsaMidiMessage &message, int timeoutMs = -1) override;
+
+            // Get current real-time from the queue (useful for calculating precise timing)
+            virtual bool GetQueueRealtime(uint64_t *sec, uint32_t *nsec) override;
+
+            virtual void RemoveAllConnections() override;
+
+        private:
+            void ModifyConnection(int clientId, int portId, ConnectAction action);
+
+            // Get the current queue ID (returns -1 if no queue is active)
+            int GetQueueId() const { return queueId; }
+
+            bool WaitForMessage(int timeoutMs);
+            // Create an ALSA input queue with real-time timestamps for the given client/port
+            int CreateRealtimeInputQueue();
+
+            struct Connection
+            {
+                int clientId;
+                int portId;
+            };
+
+            int myClientId = -1;
+
+            std::mutex connectionsMutex;
+            std::vector<Connection> connections;
+            std::vector<struct pollfd> pollFds; // For polling input events
+            snd_seq_t *seqHandle = nullptr;
+            int inPort = -1;
+            int queueId = -1; // Queue for real-time timestamps
+        };
+
+    };
+    using namespace impl;
+
+    AlsaSequencer::ptr AlsaSequencer::Create()
+    {
+        return std::make_shared<AlsaSequencerImpl>();
+    }
+
     std::vector<AlsaSequencerPort> AlsaSequencer::EnumeratePorts()
     {
         std::vector<AlsaSequencerPort> ports;
 
         snd_seq_t *seq;
-        if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX,  0) < 0)
+        if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0)
         {
             return ports;
         }
@@ -135,7 +207,7 @@ namespace pipedal
                         if (port.port > 0)
                         {
                             rawMidiDevice += SS("," << port.port);
-                        }   
+                        }
                     }
                     port.rawMidiDevice = std::move(rawMidiDevice);
                 }
@@ -149,14 +221,14 @@ namespace pipedal
         return ports;
     }
 
-    AlsaSequencer::AlsaSequencer()
+    AlsaSequencerImpl::AlsaSequencerImpl()
     {
         seqHandle = nullptr;
         queueId = -1;
         // Open sequencer in input mode
         int rc;
 
-        rc = snd_seq_open(&seqHandle, "default", SND_SEQ_OPEN_DUPLEX,  0);
+        rc = snd_seq_open(&seqHandle, "default", SND_SEQ_OPEN_DUPLEX, 0);
         if (rc < 0)
         {
             // convert rc to message
@@ -173,14 +245,29 @@ namespace pipedal
             // convert rc to message
             throw std::runtime_error(SS("Failed to open ALSA sequencer:" << snd_strerror(inPort)));
         }
+        CreateRealtimeInputQueue();
+
         snd_seq_nonblock(seqHandle, 1); // Set sequencer to non-blocking mode
+
+        // Get our client and port numbers for reference
+        myClientId = snd_seq_client_id(seqHandle);
+        if (myClientId < 0)
+        {
+            throw std::runtime_error(SS("Failed to get client ID: " << snd_strerror(myClientId)));
+        }
     }
-    AlsaSequencer::~AlsaSequencer()
+    void AlsaSequencerImpl::RemoveAllConnections()
     {
         for (const auto &connection : connections)
         {
             snd_seq_disconnect_from(seqHandle, inPort, connection.clientId, connection.portId);
         }
+        connections.clear();
+    }
+    AlsaSequencerImpl::~AlsaSequencerImpl()
+    {
+        RemoveAllConnections();
+
         if (queueId >= 0)
         {
             snd_seq_free_queue(seqHandle, queueId);
@@ -198,25 +285,17 @@ namespace pipedal
         }
     }
 
-    void AlsaSequencer::ConnectPort(int clientId, int portId)
+    void AlsaSequencerImpl::ConnectPort(int clientId, int portId)
     {
-
-        CreateRealtimeInputQueue();
-        // Connect this input port to the target client:port
-        int rc = snd_seq_connect_from(seqHandle, inPort, clientId, portId);
-        if (rc < 0)
-        {
-            throw std::runtime_error(SS("Failed to connect to ALSA port: " << snd_strerror(rc)));
-        }
-        this->connections.push_back({clientId, portId});
+        ModifyConnection(clientId, portId, ConnectAction::Subscribe);
     }
 
-    void AlsaSequencer::ConnectPort(const std::string &name)
+    void AlsaSequencerImpl::ConnectPort(const std::string &id)
     {
         auto ports = EnumeratePorts();
         for (const auto &port : ports)
         {
-            if (port.name == name)
+            if (port.id == id)
             {
                 ConnectPort(port.client, port.port);
                 return;
@@ -225,33 +304,63 @@ namespace pipedal
         throw std::runtime_error("ALSA port not found");
     }
 
-    void AlsaSequencer::WaitForMessage() {
-        auto fdCount = snd_seq_poll_descriptors_count(seqHandle, POLLIN);
-        if (fdCount == 0) return;
-        this->pollFds.resize(fdCount);
+    bool AlsaSequencerImpl::WaitForMessage(int timeoutMs)
+    {
+        while (true)
+        {
+            auto fdCount = snd_seq_poll_descriptors_count(seqHandle, POLLIN);
+            if (fdCount == 0)
+                return true;
+            this->pollFds.resize(fdCount);
 
-        snd_seq_poll_descriptors(seqHandle, pollFds.data(), fdCount, POLLIN);
+            snd_seq_poll_descriptors(seqHandle, pollFds.data(), fdCount, POLLIN);
 
-        poll(pollFds.data(), fdCount, -1);  // Wait indefinitely for input
+            int rc = poll(pollFds.data(), fdCount, timeoutMs);
+            if (rc == 0)
+            {
+                return false; // timed out.
+            }
+            else if (rc < 0)
+            {
+                if (errno == EINTR)
+                {
+                    continue;
+                }
+                else
+                {
+                    throw std::runtime_error(SS("ALSA sequencer poll error: " << strerror(errno)));
+                }
+            }
+            else
+            {
+                return true;
+            }
+        }
     }
-    bool AlsaSequencer::ReadMessage(AlsaMidiMessage &message, bool block)
+    bool AlsaSequencerImpl::ReadMessage(AlsaMidiMessage &message, int timeoutMs)
     {
         // Event loop
         snd_seq_event_t *event = nullptr;
-        while (true) {
+        while (true)
+        {
             bool success = false;
             int rc = snd_seq_event_input(seqHandle, &event);
-            if (rc < 0) {
-                if (rc == -EAGAIN) {
-                    if (!block) {
+            if (rc < 0)
+            {
+                if (rc == -EAGAIN)
+                {
+                    if (!WaitForMessage(timeoutMs))
+                    {
                         return false;
                     }
-                    WaitForMessage(); 
-                } else {
+                }
+                else
+                {
                     // Handle other errors
                     throw std::runtime_error(SS("ALSA sequencer input error: " << snd_strerror(rc)));
                 }
-            } else if (event)
+            }
+            else if (event)
             {
                 success = true;
                 // Extract timestamp information
@@ -263,58 +372,198 @@ namespace pipedal
                 switch (event->type)
                 {
                 case SND_SEQ_EVENT_NOTEON:
-                    message.cc0 = 0x90 | event->data.note.channel; // channel
-                    message.cc1 = event->data.note.note;           // note
-                    message.cc2 = event->data.note.velocity;       // velocity
+                    message.Set(
+                        (uint8_t)(0x90 | event->data.note.channel),
+                        (uint8_t)(event->data.note.note),      // note
+                        (uint8_t)(event->data.note.velocity)); // velocity
                     break;
                 case SND_SEQ_EVENT_NOTEOFF:
                     // handle note-off
-                    message.cc0 = 0x80 | event->data.note.channel; // channel
-                    message.cc1 = event->data.note.note;           // note
-                    message.cc2 = event->data.note.off_velocity;   // off velocity
+                    message.Set(
+                        uint8_t(0x80 | event->data.note.channel),
+                        uint8_t(event->data.note.note),
+                        uint8_t(event->data.note.off_velocity)); // off velocity
                     break;
                 case SND_SEQ_EVENT_KEYPRESS:
-                    message.cc0 = 0xA0 | event->data.note.channel; // polyphonic key pressure
-                    message.cc1 = event->data.note.note;           // note
-                    message.cc2 = event->data.note.velocity;       // pressure
+                    message.Set(
+                        (uint8_t)(0xA0 | event->data.note.channel), // polyphonic key pressure
+                        (uint8_t)(event->data.note.note),           // note
+                        (uint8_t)(event->data.note.velocity));      // pressure
                     break;
                 case SND_SEQ_EVENT_CONTROLLER:
-                    message.cc0 = 0xB0 | event->data.control.channel; // control change
-                    message.cc1 = event->data.control.param;          // controller number
-                    message.cc2 = event->data.control.value;          // controller value
+                    message.Set(
+                        (uint8_t)(0xB0 | event->data.control.channel), // control change
+                        (uint8_t)(event->data.control.param),          // controller number
+                        (uint8_t)(event->data.control.value));         // controller value
                     break;
                 case SND_SEQ_EVENT_PGMCHANGE:
-                    message.cc0 = 0xC0 | event->data.control.channel; // program change
-                    message.cc1 = event->data.control.value;          // program number
-                    message.cc2 = 0;                                  // unused
+                    message.Set(
+                        (uint8_t)(0xC0 | event->data.control.channel), // program change
+                        (uint8_t)(event->data.control.value));
                     break;
+
                 case SND_SEQ_EVENT_CHANPRESS:
-                    message.cc0 = 0xD0 | event->data.control.channel; // channel pressure
-                    message.cc1 = event->data.control.value;          // pressure value
-                    message.cc2 = 0;                                  // unused
+                    message.Set(
+                        uint8_t(0xD0 | event->data.control.channel),
+                        uint8_t(event->data.control.value));
                     break;
                 case SND_SEQ_EVENT_PITCHBEND:
-                    message.cc0 = 0xE0 | event->data.control.channel;      // pitch bend
-                    message.cc1 = (event->data.control.value >> 7) & 0x7F; // MSB
-                    message.cc2 = event->data.control.value & 0x7F;        // LSB
+                    message.Set(uint8_t(0xE0 | event->data.control.channel),
+                                uint8_t((event->data.control.value >> 7) & 0x7F),
+                                uint8_t(event->data.control.value & 0x7F));
                     break;
                 case SND_SEQ_EVENT_CONTROL14:
+                    message.size = 6;
+                    message.data = message.fixedBuffer;
+                    message.fixedBuffer[0] = uint8_t(0xB0 | event->data.control.channel);    // Control Change 14-bit
+                    message.fixedBuffer[1] = uint8_t(event->data.control.param);             // MSB
+                    message.fixedBuffer[2] = uint8_t(event->data.control.param >> 7) & 0x7F; // MSB
+                    message.fixedBuffer[3] = uint8_t(0xB0 | event->data.control.channel);
+                    message.fixedBuffer[4] = uint8_t(event->data.control.value + 0x20);
+                    message.fixedBuffer[5] = uint8_t(event->data.control.value) & 0x7F; // MSB value
+                    break;
+
                 case SND_SEQ_EVENT_NONREGPARAM:
+                    message.size = 12;
+                    message.data = message.fixedBuffer;
+                    message.fixedBuffer[0] = uint8_t(0xB0 | event->data.control.channel);    // Non-registered parameter
+                    message.fixedBuffer[1] = 0x63;                                           // MSB
+                    message.fixedBuffer[2] = uint8_t(event->data.control.param >> 7) & 0x7F; // MSB
+                    message.fixedBuffer[3] = uint8_t(0xB0 | event->data.control.channel);
+                    message.fixedBuffer[4] = 0x62;                                      // LSB
+                    message.fixedBuffer[5] = uint8_t(event->data.control.param) & 0x7F; // LSB
+                    message.fixedBuffer[6] = uint8_t(0xB0 | event->data.control.channel);
+                    message.fixedBuffer[7] = uint8_t(0x06);                                  // Non-registered parameter value MSB
+                    message.fixedBuffer[8] = uint8_t(event->data.control.value >> 7) & 0x7F; // MSB value
+                    message.fixedBuffer[9] = uint8_t(0xB0 | event->data.control.channel);
+                    message.fixedBuffer[10] = uint8_t(0x26);                             // Non-registered parameter value LSB
+                    message.fixedBuffer[11] = uint8_t(event->data.control.value) & 0x7F; // LSb
+                    break;
                 case SND_SEQ_EVENT_REGPARAM:
+                    message.size = 12;
+                    message.data = message.fixedBuffer;
+                    message.fixedBuffer[0] = uint8_t(0xB0 | event->data.control.channel);    // Registered parameter
+                    message.fixedBuffer[1] = uint8_t(0x65);                                  // MSB
+                    message.fixedBuffer[2] = uint8_t(event->data.control.param >> 7) & 0x7F; // MSB
+                    message.fixedBuffer[3] = uint8_t(0xB0 | event->data.control.channel);
+                    message.fixedBuffer[4] = uint8_t(0x64);                             // LSB
+                    message.fixedBuffer[5] = uint8_t(event->data.control.param) & 0x7F; // LSB
+                    message.fixedBuffer[6] = uint8_t(0xB0 | event->data.control.channel);
+                    message.fixedBuffer[7] = uint8_t(0x6);                                   // Registered parameter value MSB
+                    message.fixedBuffer[8] = uint8_t(event->data.control.value >> 7) & 0x7F; // MSB value
+                    message.fixedBuffer[9] = uint8_t(0xB0 | event->data.control.channel);
+                    message.fixedBuffer[10] = uint8_t(0x26);                             // Registered parameter value LSB
+                    message.fixedBuffer[11] = uint8_t(event->data.control.value) & 0x7F; // LSB value
+                    break;
                 case SND_SEQ_EVENT_SONGPOS:
+                    message.Set(
+                        0xF2,
+                        (uint8_t)((event->data.control.value >> 7) & 0x7F), // MSB
+                        (uint8_t)(event->data.control.value & 0x7F)         // LSB
+                    );
+                    break;
+                case SND_SEQ_EVENT_SONGSEL:
+                    message.Set(
+                        0xF3,
+                        (uint8_t)((event->data.control.value >> 7) & 0x7F), // MSB
+                        (uint8_t)(event->data.control.value & 0x7F)         // LSB
+                    );
+                    break;
+                case SND_SEQ_EVENT_QFRAME:
+                    message.Set(
+                        0xF1,
+                        (uint8_t)((event->data.control.value >> 7) & 0x7F), // MSB
+                        (uint8_t)(event->data.control.value & 0x7F)         // LSB
+                    );
+                    break;
+                case SND_SEQ_EVENT_START:
+                    message.Set(0xFA); // MIDI Real Time Start
+                    break;
+                case SND_SEQ_EVENT_CONTINUE:
+                    message.Set(0xFB); // MIDI Real Time Continue
+                    break;
+                case SND_SEQ_EVENT_STOP:
+                    message.Set(0xFC); // MIDI Real Time Stop
+                    break;
+                case SND_SEQ_EVENT_TICK:
+                    message.Set(0xF8); // MIDI Real Time Clock Tick
+                    break;
+                case SND_SEQ_EVENT_SENSING:
+                    message.Set(0xFE); // MIDI Real Time Active Sensing
+                    break;
+                case SND_SEQ_EVENT_RESET:
+                    message.Set(0xFF); // MIDI Real Time System Reset
+                    break;
+                case SND_SEQ_EVENT_SYSEX:
+                    // Handle SysEx messages
+                    if (event->data.ext.len > 0 && event->data.ext.len + 2 <= sizeof(message.fixedBuffer))
+                    {
+                        message.size = event->data.ext.len + 1; // +1 for SysEx
+                        message.data = message.fixedBuffer;
+                        message.fixedBuffer[0] = 0xF0; // Start of SysEx
+                        memcpy(message.fixedBuffer + 1, event->data.ext.ptr, event->data.ext.len);
+                        message.fixedBuffer[event->data.ext.len + 1] = 0xF7; // End of SysEx
+                    }
+                    else
+                    {
+                        message.size = event->data.ext.len;
+                        message.data = (uint8_t *)event->data.ext.ptr;
+                        if (message.data[0] != 0xF0)
+                        {
+                            throw std::logic_error("Invalid SysEx message: does not start with 0xF0");
+                        }
+                    }
+                    break;
+                case SND_SEQ_EVENT_SETPOS_TICK:
+                    message.size = 3 + sizeof(event->data.queue.param.value); // Tempo events are usually 3 bytes
+                    message.data = message.fixedBuffer;
+                    message.fixedBuffer[0] = 0xFF;                                    // Meta event type for tempo
+                    message.fixedBuffer[1] = (uint8_t)MetaEventType::SetPositionTick; // Meta event subtype for tempo
+                    message.fixedBuffer[2] = (uint8_t)(event->data.queue.queue);      // MSB
+                    memcpy(message.fixedBuffer + 3, &event->data.queue.param.value, sizeof(event->data.queue.param.value));
+                    break;
+                case SND_SEQ_EVENT_SETPOS_TIME:
+                    message.size = 3 + sizeof(event->data.queue.param.time); // Tempo events are usually 3 bytes
+                    message.data = message.fixedBuffer;
+                    message.fixedBuffer[0] = 0xFF;                                    // Meta event type for tempo
+                    message.fixedBuffer[1] = (uint8_t)MetaEventType::SetPositionTime; // Meta event subtype for tempo
+                    message.fixedBuffer[2] = (uint8_t)(event->data.queue.queue);
+                    memcpy(message.fixedBuffer + 3, &event->data.queue.param.time, sizeof(event->data.queue.param.time));
+                    break;
+                case SND_SEQ_EVENT_TEMPO:
+                    // Handle tempo events
+                    message.size = sizeof(event->data.queue.param.value) + 3; // Tempo events are usually 3 bytes
+                    if (message.size > sizeof(message.fixedBuffer))
+                    {
+                        throw std::logic_error("Tempo event size exceeds fixed buffer size");
+                    }
+                    message.data = message.fixedBuffer;
+                    message.fixedBuffer[0] = 0xFF;                          // Meta event type for tempo
+                    message.fixedBuffer[1] = (uint8_t)MetaEventType::Tempo; // Meta event subtype for tempo
+                    message.fixedBuffer[2] = (uint8_t)(event->data.queue.queue);
+                    memcpy(message.fixedBuffer + 3, &event->data.queue.param.value, sizeof(event->data.queue.param.value));
+                    break;
+
+                case SND_SEQ_EVENT_CLOCK:
+                    message.Set(0xF8); // MIDI Real Time Clock Tick
+                    break;
+                case SND_SEQ_EVENT_KEYSIGN:
+                case SND_SEQ_EVENT_TIMESIGN:
+                    // and a PASSEL of others!
                 default:
                     success = false;
                     break;
                 }
                 snd_seq_free_event(event);
             }
-            if (success) {
+            if (success)
+            {
                 return true;
             }
         }
     }
 
-    int AlsaSequencer::CreateRealtimeInputQueue()
+    int AlsaSequencerImpl::CreateRealtimeInputQueue()
     {
         if (!seqHandle)
         {
@@ -381,7 +630,7 @@ namespace pipedal
 
         return queueId;
     }
-    bool AlsaSequencer::GetQueueRealtime(uint64_t *sec, uint32_t *nsec)
+    bool AlsaSequencerImpl::GetQueueRealtime(uint64_t *sec, uint32_t *nsec)
     {
         if (!seqHandle || queueId < 0)
         {
@@ -416,6 +665,83 @@ namespace pipedal
             }
         }
         return {};
+    }
+
+    void AlsaSequencerImpl::ModifyConnection(int clientId, int portId, ConnectAction action)
+    {
+        std::lock_guard<std::mutex> lock(connectionsMutex);
+
+        // use our own seq handle so that we can do this free-threaded.
+        snd_seq_t *seq;
+        if (snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0)
+        {
+            throw std::runtime_error("Failed to open ALSA sequencer for connection");
+        }
+        Finally seq_finally([seq]() {
+            snd_seq_close(seq);
+        });
+
+        snd_seq_addr_t sender, dest;
+        dest.client = myClientId;
+        dest.port = 0;
+        sender.client = clientId;
+        sender.port = portId;
+
+        snd_seq_port_subscribe_t *subs;
+        int queue = this->queueId;
+
+        snd_seq_port_subscribe_alloca(&subs);
+        snd_seq_port_subscribe_set_sender(subs, &sender);
+        snd_seq_port_subscribe_set_dest(subs, &dest);
+        snd_seq_port_subscribe_set_queue(subs, queue);
+        snd_seq_port_subscribe_set_exclusive(subs, 0);
+
+        if (action == ConnectAction::Unsubscribe)
+        {
+            if (snd_seq_get_port_subscription(seq, subs) < 0)
+            {
+                Lv2Log::warning(
+                    "Failed to disconnect ALSA sequencer port %d:%d. Subscripton not found.",
+                    (int)clientId,
+                    (int)portId);
+            } else 
+            {
+                int rc = snd_seq_unsubscribe_port(seq, subs);
+                if (rc < 0) {
+                    Lv2Log::warning(
+                        "Failed to disconnect ALSA sequencer port %d:%d. (%s)",
+                        (int)clientId,
+                        (int)portId,
+                        snd_strerror(rc));
+                }
+
+            }
+            for (auto it = this->connections.begin(); it != this->connections.end();++it)
+            {
+                if (it->clientId == clientId && it->portId == portId)
+                {
+                    it = this->connections.erase(it);
+                    break;
+                }
+            }   
+        }
+        else
+        {
+            if (snd_seq_get_port_subscription(seq, subs) == 0)
+            {
+                Lv2Log::warning("ALSA sequencer port  %d:%d is already subscribed.",(int)clientId,(int)portId);
+                return;
+            }
+            int rc = snd_seq_subscribe_port(seq, subs);
+            if (rc < 0)
+            {
+                Lv2Log::error("Failed to connect ALSA sequencer port %d:%d. (%s)",
+                    (int)clientId,(int)portId,
+                    snd_strerror(rc));
+                return;
+            }
+            this->connections.push_back({clientId, portId});
+        }
     }
 
 } // namespace pipedal

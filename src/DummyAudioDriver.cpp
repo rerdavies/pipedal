@@ -122,6 +122,7 @@ namespace pipedal
         }
 
         JackServerSettings jackServerSettings;
+        AlsaSequencer::ptr alsaSequencer;
 
         unsigned int periods = 0;
 
@@ -190,7 +191,11 @@ namespace pipedal
                 throw;
             }
         }
-             virtual std::string GetConfigurationDescription()
+        virtual void SetAlsaSequencer(AlsaSequencer::ptr alsaSequencer) override
+        {
+            this->alsaSequencer = alsaSequencer;
+        }
+        virtual std::string GetConfigurationDescription()
         {
             std::string result = SS(
                 "DUMMY, " 

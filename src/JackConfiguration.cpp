@@ -23,6 +23,7 @@
 #include "AlsaDriver.hpp"
 #include "Lv2Log.hpp"
 #include "PiPedalException.hpp"
+#include "AlsaSequencer.hpp"
 
 
 #if JACK_HOST
@@ -106,6 +107,23 @@ namespace pipedal {
 #endif
 }
 
+static std::vector<AlsaMidiDeviceInfo> GetAlsaSequencers() {
+    std::vector<AlsaMidiDeviceInfo> result;
+    try {
+        auto sequencer = AlsaSequencer::Create();
+        if (sequencer)
+        {
+            std::vector<AlsaSequencerPort> ports = sequencer->EnumeratePorts();
+            for (const auto &port : ports)
+            {
+                result.push_back(AlsaMidiDeviceInfo(port.id.c_str(), port.name.c_str()));
+            }
+        }
+    } catch (const std::exception& e) {
+        Lv2Log::error("Failed to enumerate ALSA sequencers: %s", e.what());
+    }
+    return result;
+}
 void JackConfiguration::AlsaInitialize(
     const JackServerSettings &jackServerSettings)
 {
@@ -116,7 +134,7 @@ void JackConfiguration::AlsaInitialize(
     {
         this->inputMidiDevices_.clear();
     } else {
-        this->inputMidiDevices_ = GetAlsaMidiInputDevices();
+        this->inputMidiDevices_ = GetAlsaSequencers(); // NB: Sequencers, not rawmidi devices, anymore.
     }
     if (jackServerSettings.IsValid())
     {

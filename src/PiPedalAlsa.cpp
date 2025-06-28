@@ -433,11 +433,11 @@ static std::vector<AlsaMidiDeviceInfo> OldGetAlsaDevices(const char *devname, co
     return result;
 }
 
-std::vector<AlsaMidiDeviceInfo> pipedal::GetAlsaMidiInputDevices()
+std::vector<AlsaMidiDeviceInfo> pipedal::LegacyGetAlsaMidiInputDevices()
 {
     return GetAlsaDevices("rawmidi", "Input");
 }
-std::vector<AlsaMidiDeviceInfo> pipedal::GetAlsaMidiOutputDevices()
+std::vector<AlsaMidiDeviceInfo> pipedal::LegacyGetAlsaMidiOutputDevices()
 {
     return GetAlsaDevices("rawmidi", "Output");
 }

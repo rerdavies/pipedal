@@ -21,6 +21,7 @@
 #include "util.hpp"
 #include <lv2/atom/atom.h>
 #include "SchedulerPriority.hpp"
+#include "AlsaSequencer.hpp"
 
 #include "Lv2Log.hpp"
 
@@ -388,6 +389,8 @@ bool SystemMidiBinding::IsMatch(const MidiEvent &event)
 class AudioHostImpl : public AudioHost, private AudioDriverHost, private IPatchWriterCallback
 {
 private:
+    AlsaSequencer::ptr alsaSequencer;
+
     void OnWritePatchPropertyBuffer(
         PatchPropertyWriter::Buffer *);
 
@@ -599,6 +602,7 @@ private:
         this->outputRingBuffer.reset();
 
         audioDriver = nullptr;
+        alsaSequencer = nullptr;
     }
 
     void ZeroBuffer(float *buffer, size_t nframes)
@@ -1248,6 +1252,7 @@ public:
         lv2_atom_forge_init(&inputWriterForge, pHost->GetMapFeature().GetMap());
 
         cpuTemperatureMonitor = CpuTemperatureMonitor::Get();
+        this->alsaSequencer = AlsaSequencer::Create();
     }
     virtual ~AudioHostImpl()
     {
@@ -1637,6 +1642,7 @@ public:
         {
             this->isDummyAudioDriver = true;
             this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this, jackServerSettings.GetAlsaInputDevice()));
+            this->audioDriver->SetAlsaSequencer(this->alsaSequencer);
         }
         else
         {
@@ -1666,7 +1672,7 @@ public:
         try
         {
             audioDriver->Open(jackServerSettings, this->channelSelection);
-
+            audioDriver->SetAlsaSequencer(this->alsaSequencer);
             this->sampleRate = audioDriver->GetSampleRate();
 
             this->overrunGracePeriodSamples = (uint64_t)(((uint64_t)this->sampleRate) * OVERRUN_GRACE_PERIOD_S);

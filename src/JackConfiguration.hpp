@@ -111,6 +111,10 @@ namespace pipedal
         {
             return inputMidiDevices_;
         }
+        std::vector<AlsaMidiDeviceInfo>& GetInputMidiDevices() 
+        {
+            return inputMidiDevices_;
+        }
         JackChannelSelection RemoveInvalidChannels(const JackConfiguration&config) const;
 
         static JackChannelSelection MakeDefault(const JackConfiguration&config);
