@@ -31,6 +31,7 @@
 #include "FileEntry.hpp"
 #include <map>
 #include "FilePropertyDirectoryTree.hpp"
+#include "AlsaSequencer.hpp"
 
 
 namespace pipedal {
@@ -84,6 +85,7 @@ private:
     std::filesystem::path GetIndexFileName() const;
     std::filesystem::path GetBankFileName(const std::string & name) const;
     std::filesystem::path GetChannelSelectionFileName();
+    std::filesystem::path GetAlsaSequencerConfigurationFileName();
     std::filesystem::path GetCurrentPresetPath() const;
 
     void LoadBankIndex();
@@ -94,11 +96,19 @@ private:
 
     void LoadChannelSelection();
     void SaveChannelSelection();
+
+    void LoadAlsaSequencerConfiguration();
+    void SaveAlsaSequencerConfiguration();
+
+
     void SaveBankFile(const std::string& name,const BankFile&bankFile);
     void LoadBankFile(const std::string &name,BankFile *pBank);
     std::string GetPresetCopyName(const std::string &name);
     bool isJackChannelSelectionValid = false;
     JackChannelSelection jackChannelSelection;
+
+    AlsaSequencerConfiguration alsaSequencerConfiguration;;
+
     WifiConfigSettings wifiConfigSettings;
     WifiDirectConfigSettings wifiDirectConfigSettings;
 
@@ -126,6 +136,7 @@ public:
     void LoadWifiDirectConfigSettings();
     void LoadUserSettings();
     void SaveUserSettings();
+
     void LoadBank(int64_t instanceId);
     int64_t GetBankByMidiBankNumber(uint8_t bankNumber);
     const Pedalboard& GetCurrentPreset();
@@ -180,6 +191,10 @@ public:
 
     void SaveCurrentPreset(const CurrentPreset &currentPreset);
     bool RestoreCurrentPreset(CurrentPreset*pResult);
+
+    void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration);
+    AlsaSequencerConfiguration GetAlsaSequencerConfiguration() const;
+
 
     //std::string MapPropertyFileName(Lv2PluginInfo*pluginInfo, const std::string&path);
 

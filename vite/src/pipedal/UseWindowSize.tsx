@@ -21,38 +21,43 @@
  *   SOFTWARE.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 const getSize = () => {
-  return { 
-    width: window.innerWidth,
-    height: window.innerHeight,
-  };
+    return {
+        width: window.innerWidth,
+        height: window.innerHeight,
+    };
 };
- 
+
 export interface WindowSize {
     width: number;
     height: number;
 }
 export default function useWindowSize() {
- 
-  const [size, setSize] = useState<WindowSize>(getSize());
- 
-  const handleResize = useCallback(() => {
-    let ticking = false;
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        setSize(getSize());
-        ticking = false;
-      });
-      ticking = true;
-    } 
-  }, []);
 
-  useEffect(() => {
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
- 
-  return [size];
+    const [size, setSize] = useState<WindowSize>(getSize());
+
+    useEffect(() => {
+        let mounted = true;
+        let handleResizeT = () => {
+            let pendingCallback = false;
+            if (!pendingCallback) {
+                window.requestAnimationFrame(() => {
+                    if (mounted) {
+                        setSize(getSize());
+                        pendingCallback = false;
+                    }
+                });
+                pendingCallback = true;
+            }
+        }
+        window.addEventListener('resize', handleResizeT);
+        return () => {
+            mounted = false;
+            window.removeEventListener('resize', handleResizeT);
+        };
+    }, []);
+
+    return [size];
 }

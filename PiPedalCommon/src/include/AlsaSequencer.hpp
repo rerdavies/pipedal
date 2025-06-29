@@ -26,6 +26,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "json.hpp"
 
 namespace pipedal
 {
@@ -41,6 +42,58 @@ namespace pipedal
         SetPositionTick,
         SetPositionTime
     };
+
+    class AlsaSequencerPortSelection {
+    private:
+        std::string id_;
+        std::string name_;
+        int32_t sortOrder_ = 0;
+
+    public:
+        AlsaSequencerPortSelection() = default;
+        AlsaSequencerPortSelection(const std::string &id, const std::string &name, int32_t displaySortOrder)
+            : id_(id), name_(name), sortOrder_(displaySortOrder) {}
+        AlsaSequencerPortSelection(const AlsaSequencerPortSelection &other) = default;  
+        AlsaSequencerPortSelection(AlsaSequencerPortSelection &&other) = default;
+        AlsaSequencerPortSelection &operator=(const AlsaSequencerPortSelection &other) = default;
+        AlsaSequencerPortSelection &operator=(AlsaSequencerPortSelection &&other) = default;
+
+
+        const std::string& id() const { return id_; }
+        void id(const std::string &value) { id_ = value; }
+        const std::string &name() const { return name_; }
+        void name(const std::string &value) { name_ = value; }
+
+        DECLARE_JSON_MAP(AlsaSequencerPortSelection);
+    };
+    class AlsaSequencerConfiguration {
+    private:
+        std::vector<AlsaSequencerPortSelection> connections_;
+    public:
+        const std::vector<AlsaSequencerPortSelection>& connections() const { return connections_; }
+        std::vector<AlsaSequencerPortSelection>& connections() { return connections_; }
+        void connections(const std::vector<AlsaSequencerPortSelection>& value) { connections_ = value; }    
+
+
+        bool operator==(const AlsaSequencerConfiguration &other) const
+        {
+            if (connections_.size() != other.connections_.size())
+                return false;
+            for (size_t i = 0; i < connections_.size(); ++i)
+            {
+                if (connections_[i].id() != other.connections_[i].id() ||
+                    connections_[i].name() != other.connections_[i].name())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        DECLARE_JSON_MAP(AlsaSequencerConfiguration);
+
+    };
+
 
     struct AlsaSequencerPort
     {
@@ -67,6 +120,7 @@ namespace pipedal
         bool isPort = false;
         bool isVirtual = false;
         int cardNumber = -1;
+        int32_t  displaySortOrder = 0;
         std::string rawMidiDevice; // e.g. "hw:0,0,0" for kernel devices
     };
 
@@ -264,6 +318,8 @@ namespace pipedal
     public:
         virtual void ConnectPort(int clientId, int portId) = 0;
         virtual void ConnectPort(const std::string &id) = 0;
+
+        virtual void SetConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
 
         // Read a single MIDI message from the sequencer input port. A timeout of -1 blocks indefinitely.
         // A timeout of 0 returns immediately.

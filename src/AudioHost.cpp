@@ -532,7 +532,7 @@ private:
 
     std::string GetAtomObjectType(uint8_t *pData)
     {
-        LV2_Atom_Object *pAtom = (LV2_Atom_Object *)pData;
+    LV2_Atom_Object *pAtom = (LV2_Atom_Object *)pData;
         if (pAtom->atom.type != uris.atom_Object)
         {
             throw std::invalid_argument("Not an Lv2 Object");
@@ -602,7 +602,6 @@ private:
         this->outputRingBuffer.reset();
 
         audioDriver = nullptr;
-        alsaSequencer = nullptr;
     }
 
     void ZeroBuffer(float *buffer, size_t nframes)
@@ -1259,6 +1258,7 @@ public:
         Close();
         CleanRestartThreads(true);
         audioDriver = nullptr;
+        this->alsaSequencer = nullptr;
     }
 
     virtual JackConfiguration GetServerConfiguration()
@@ -1642,7 +1642,6 @@ public:
         {
             this->isDummyAudioDriver = true;
             this->audioDriver = std::unique_ptr<AudioDriver>(CreateDummyAudioDriver(this, jackServerSettings.GetAlsaInputDevice()));
-            this->audioDriver->SetAlsaSequencer(this->alsaSequencer);
         }
         else
         {
@@ -1819,6 +1818,9 @@ public:
             this->hostWriter.LoadSnapshot(indexedSnapshot);
         }
     }
+
+    virtual void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) override;
+
 
     void OnNotifyPathPatchPropertyReceived(
         int64_t instanceId,
@@ -2266,6 +2268,13 @@ void AudioHostImpl::OnWritePatchPropertyBuffer(
 {
     this->realtimeWriter.SendPathPropertyBuffer(buffer);
 }
+
+void AudioHostImpl::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
+{
+    this->alsaSequencer->SetConfiguration(alsaSequencerConfiguration);
+}
+
+
 
 JSON_MAP_BEGIN(JackHostStatus)
 JSON_MAP_REFERENCE(JackHostStatus, active)

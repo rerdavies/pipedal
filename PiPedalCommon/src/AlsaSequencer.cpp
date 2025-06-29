@@ -59,6 +59,7 @@ namespace pipedal
 
             virtual void ConnectPort(int clientId, int portId) override;
             virtual void ConnectPort(const std::string &name) override;
+            virtual void SetConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) override;
 
             // Read a single MIDI message from the sequencer input port. A timeout of -1 blocks indefinitely.
             // A timeout of 0 returns immediately.
@@ -213,6 +214,15 @@ namespace pipedal
                 }
                 port.id = SS("seq:" << port.clientName << "/" << port.name);
 
+                port.displaySortOrder = port.client * 256 + port.port;
+                if (port.isVirtual)
+                {
+                    port.displaySortOrder += 1 * 256 * 256; // MIDI virtual ports after real ports.
+                }
+                else if (port.clientName == "Midi Through")
+                {
+                    port.displaySortOrder += 2 * 256 * 256; // MIDI Through at the very end because it's weird.
+                }
                 ports.push_back(std::move(port));
             }
         }
@@ -258,11 +268,11 @@ namespace pipedal
     }
     void AlsaSequencerImpl::RemoveAllConnections()
     {
-        for (const auto &connection : connections)
+        while (connections.size() != 0)
         {
-            snd_seq_disconnect_from(seqHandle, inPort, connection.clientId, connection.portId);
+            auto connection = connections.back();
+            ModifyConnection(connection.clientId, connection.portId, ConnectAction::Unsubscribe);
         }
-        connections.clear();
     }
     AlsaSequencerImpl::~AlsaSequencerImpl()
     {
@@ -302,6 +312,25 @@ namespace pipedal
             }
         }
         throw std::runtime_error("ALSA port not found");
+    }
+    void AlsaSequencerImpl::SetConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
+    {
+        this->RemoveAllConnections(); // Currently no configuration options to set
+
+        auto ports = EnumeratePorts();
+        for (const auto &connection : alsaSequencerConfiguration.connections())
+        {
+            // Connect to each port specified in the configuration
+            std::string id = connection.id();
+            for (const auto &port : ports)
+            {
+                if (port.id == id)
+                {
+                    ConnectPort(port.client, port.port);
+                    break;
+                }
+            }
+        }
     }
 
     bool AlsaSequencerImpl::WaitForMessage(int timeoutMs)
@@ -547,6 +576,23 @@ namespace pipedal
                 case SND_SEQ_EVENT_CLOCK:
                     message.Set(0xF8); // MIDI Real Time Clock Tick
                     break;
+#ifndef NDEBUG
+#define MSG_DEBUG_LOG(x) \
+                    case x:\
+                    Lv2Log::debug("ALSA Sequencer Message" #x);\
+                    break;
+#else
+#define MSG_DEBUG_LOG(x) 
+#endif
+                    MSG_DEBUG_LOG(SND_SEQ_EVENT_CLIENT_START)
+                    MSG_DEBUG_LOG(SND_SEQ_EVENT_CLIENT_EXIT)
+                    MSG_DEBUG_LOG(SND_SEQ_EVENT_CLIENT_CHANGE)
+                    MSG_DEBUG_LOG(SND_SEQ_EVENT_PORT_START)
+                    MSG_DEBUG_LOG(SND_SEQ_EVENT_PORT_EXIT)
+                    MSG_DEBUG_LOG(SND_SEQ_EVENT_PORT_CHANGE)
+                    MSG_DEBUG_LOG(SND_SEQ_EVENT_PORT_SUBSCRIBED)
+                    MSG_DEBUG_LOG(SND_SEQ_EVENT_PORT_UNSUBSCRIBED)
+
                 case SND_SEQ_EVENT_KEYSIGN:
                 case SND_SEQ_EVENT_TIMESIGN:
                     // and a PASSEL of others!
@@ -677,9 +723,8 @@ namespace pipedal
         {
             throw std::runtime_error("Failed to open ALSA sequencer for connection");
         }
-        Finally seq_finally([seq]() {
-            snd_seq_close(seq);
-        });
+        Finally seq_finally([seq]()
+                            { snd_seq_close(seq); });
 
         snd_seq_addr_t sender, dest;
         dest.client = myClientId;
@@ -704,44 +749,55 @@ namespace pipedal
                     "Failed to disconnect ALSA sequencer port %d:%d. Subscripton not found.",
                     (int)clientId,
                     (int)portId);
-            } else 
+            }
+            else
             {
                 int rc = snd_seq_unsubscribe_port(seq, subs);
-                if (rc < 0) {
+                if (rc < 0)
+                {
                     Lv2Log::warning(
                         "Failed to disconnect ALSA sequencer port %d:%d. (%s)",
                         (int)clientId,
                         (int)portId,
                         snd_strerror(rc));
                 }
-
             }
-            for (auto it = this->connections.begin(); it != this->connections.end();++it)
+            for (auto it = this->connections.begin(); it != this->connections.end(); ++it)
             {
                 if (it->clientId == clientId && it->portId == portId)
                 {
                     it = this->connections.erase(it);
                     break;
                 }
-            }   
+            }
         }
         else
         {
             if (snd_seq_get_port_subscription(seq, subs) == 0)
             {
-                Lv2Log::warning("ALSA sequencer port  %d:%d is already subscribed.",(int)clientId,(int)portId);
+                Lv2Log::warning("ALSA sequencer port  %d:%d is already subscribed.", (int)clientId, (int)portId);
                 return;
             }
             int rc = snd_seq_subscribe_port(seq, subs);
             if (rc < 0)
             {
                 Lv2Log::error("Failed to connect ALSA sequencer port %d:%d. (%s)",
-                    (int)clientId,(int)portId,
-                    snd_strerror(rc));
+                              (int)clientId, (int)portId,
+                              snd_strerror(rc));
                 return;
             }
             this->connections.push_back({clientId, portId});
         }
     }
+
+    JSON_MAP_BEGIN(AlsaSequencerPortSelection)
+    JSON_MAP_REFERENCE(AlsaSequencerPortSelection, id)
+    JSON_MAP_REFERENCE(AlsaSequencerPortSelection, name)
+    JSON_MAP_REFERENCE(AlsaSequencerPortSelection, sortOrder)
+    JSON_MAP_END()
+
+    JSON_MAP_BEGIN(AlsaSequencerConfiguration)
+    JSON_MAP_REFERENCE(AlsaSequencerConfiguration, connections)
+    JSON_MAP_END()
 
 } // namespace pipedal

@@ -107,11 +107,13 @@ namespace pipedal
             return outputAudioPorts_;
         }
 
-        const std::vector<AlsaMidiDeviceInfo>& GetInputMidiDevices() const
+        // replaced with AlsaSequencerConfiguration
+        const std::vector<AlsaMidiDeviceInfo>& LegacyGetInputMidiDevices() const
         {
             return inputMidiDevices_;
         }
-        std::vector<AlsaMidiDeviceInfo>& GetInputMidiDevices() 
+        // replaced with AlsaSequencerConfiguration
+        std::vector<AlsaMidiDeviceInfo>& LegacyGetInputMidiDevices() 
         {
             return inputMidiDevices_;
         }

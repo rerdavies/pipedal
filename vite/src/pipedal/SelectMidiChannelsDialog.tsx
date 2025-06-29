@@ -17,105 +17,191 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import React from 'react';
 import { useState } from 'react';
 import Button from '@mui/material/Button';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Typography from '@mui/material/Typography';
 
 import Checkbox from '@mui/material/Checkbox';
-import {AlsaMidiDeviceInfo} from './AlsaMidiDeviceInfo';
+import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
 import DialogEx from './DialogEx';
 
-
+import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 
 export interface SelectMidiChannelsDialogProps {
     open: boolean;
-    selectedChannels: AlsaMidiDeviceInfo[];
-    availableChannels: AlsaMidiDeviceInfo[];
-    onClose: (selectedChannels: AlsaMidiDeviceInfo[] | null) => void;
+    onClose: () => void;
 }
 
-function isChecked(selectedChannels: AlsaMidiDeviceInfo[], channel: AlsaMidiDeviceInfo): boolean {
-    for (let i = 0; i < selectedChannels.length; ++i) {
-        if (selectedChannels[i].equals(channel)) return true;
-    }
-    return false;
-}
-function addPort(availableChannels: AlsaMidiDeviceInfo[], selectedChannels: AlsaMidiDeviceInfo[], newChannel: AlsaMidiDeviceInfo)
-:AlsaMidiDeviceInfo[]
- {
-    let result: AlsaMidiDeviceInfo[] = [];
-    for (let i = 0; i < availableChannels.length; ++i) {
-        let channel = availableChannels[i];
-        if (isChecked(selectedChannels, channel) || channel.equals(newChannel)) {
-            result.push(channel);
-        }
-    }
-    return result;
-}
-
-function removePort(selectedChannels: AlsaMidiDeviceInfo[], channel: AlsaMidiDeviceInfo) 
-:AlsaMidiDeviceInfo[]
-{
-    let result: AlsaMidiDeviceInfo[] = [];
-    for (let i = 0; i < selectedChannels.length; ++i) {
-        if (!selectedChannels[i].equals(channel)) {
-            result.push(selectedChannels[i]);
-        }
-    }
-    return result;
-}
+interface DialogItem {
+    id: string;
+    name: string;
+    sortOrder: number
+    offline: boolean;
+};
 
 function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
     //const classes = useStyles();
-    const { onClose, selectedChannels, availableChannels, open } = props;
-    const [currentSelection, setCurrentSelection] = useState(selectedChannels);
+    const { open, onClose } = props;
+    const [availablePorts, setAvailablePorts] = useState<AlsaSequencerPortSelection[] | null>(null);
+    const [configuration, setConfiguration] = useState<AlsaSequencerConfiguration | null>(null);
+    const [allPorts, setAllPorts] = useState<DialogItem[] | null>(null);
+    const [model] = useState<PiPedalModel>(PiPedalModelFactory.getInstance());
+    const [changed, setChanged] = useState<boolean>(false);
 
-
-
-    let toggleSelect = (value: AlsaMidiDeviceInfo) => {
-        if (!isChecked(currentSelection, value)) {
-            setCurrentSelection(addPort(availableChannels, currentSelection, value));
+    React.useEffect(() => {
+        if (open) {
+            model.getAlsaSequencerPorts().then((ports) => {
+                setAvailablePorts(ports);
+            }).catch((error) => {
+                model.showAlert(error);
+                setAvailablePorts(null);
+            });
+            model.getAlsaSequencerConfiguration().then((config) => {
+                setConfiguration(config);
+            }).catch((error) => {
+                model.showAlert(error);
+                setConfiguration(null);
+            });
+            return () => {
+            }
         } else {
-            setCurrentSelection(removePort(currentSelection, value));
+            return () => { };
         }
+    }, [open]);
+    React.useEffect(() => {
+        if (availablePorts !== null && configuration !== null) {
+            let result: DialogItem[] = [];
+
+            for (let port of availablePorts) {
+                result.push({
+                    id: port.id,
+                    name: port.name,
+                    sortOrder: port.sortOrder,
+                    offline: false
+                });
+            }
+
+            // include ports that have been previously selected but are not in the current list of available ports
+            for (let port of configuration.connections) {
+                if (!availablePorts.some((p) => p.id === port.id)) {
+                    result.push(
+                        {
+                            id: port.id,
+                            name: port.name,
+                            sortOrder: port.sortOrder,
+                            offline: true
+                        }
+                    );
+                }
+            }
+            result.sort((a, b) => {
+                return a.sortOrder - b.sortOrder;
+            });
+            setAllPorts(result);
+        } else {
+            setAllPorts(null);
+        }
+
+    }, [availablePorts, configuration]);
+
+    const isChecked = (value: DialogItem) => {
+        if (availablePorts === null || configuration === null) {
+            return false;
+        }
+        return configuration.connections.some((port) => port.id === value.id);
+    };
+    const setChecked = (value_: DialogItem, checked: boolean) => {
+        if (availablePorts === null || configuration === null) {
+            return;
+        }
+        let value = new AlsaSequencerPortSelection();
+        value.id = value_.id;
+        value.name = value_.name;
+        value.sortOrder = value_.sortOrder;
+        let newConnections = configuration.connections.slice();
+        if (checked) {
+            newConnections.push(value);
+        } else {
+            newConnections = newConnections.filter((port) => port.id !== value.id);
+        }
+        let newConfiguration = new AlsaSequencerConfiguration();
+        newConfiguration.connections = newConnections;
+        setConfiguration(newConfiguration);
+    };
+    let toggleSelect = (value: DialogItem) => {
+        if (availablePorts === null || configuration === null) {
+            return;
+        }
+        if (!isChecked(value)) {
+            setChecked(value, true);
+        } else {
+            setChecked(value, false);
+        }
+        setChanged(true);
     };
 
     const handleClose = (): void => {
-        onClose(null);
+        onClose();
     };
     const handleOk = (): void => {
-        onClose(currentSelection);
+        if (changed && configuration !== null) {
+            model.setAlsaSequencerConfiguration(configuration);
+        }
+        onClose();
     };
 
 
     return (
-        <DialogEx tag="midiChannels" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
-            onEnterKey={handleOk}
+        <DialogEx tag="midiChannels" onClose={handleClose} aria-labelledby="select-midi-inputs" open={open}
+            fullWidth maxWidth="xs"
+            onEnterKey={handleClose}
         >
-            <DialogTitle id="simple-dialog-title">Select MIDI Device</DialogTitle>
-            <List>
-                {availableChannels.map((channel) => (
-                    <ListItemButton>
-                        <FormControlLabel
-                            control={
-                                <Checkbox checked={isChecked(currentSelection, channel)} onClick={() => toggleSelect(channel)} key={channel.name} />
-                            }
-                            label={channel.description}
-                        />
-                    </ListItemButton>
-                )
+            <DialogTitle id="select-midi-inputs">Select MIDI Inputs</DialogTitle>
+            <DialogContent dividers>
+                <List>
+                    {allPorts !== null && allPorts.length === 0 && (
+                        <Typography variant="body2" style={{ marginLeft: 32, marginRight: 24, marginTop: 8, marginBottom: 16 }}>
+                            No MIDI devices found.
+                        </Typography>)}
+                    {allPorts != null && allPorts.map((port) => (
+                        <ListItemButton key={port.id}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isChecked(port)}
+                                        onClick={() => toggleSelect(port)} />
+                                }
+                                label={
+                                    (
+                                    <div style={{ display: "flex", flexFlow: "row nowrap", alignItems: "center" }}>
+                                        <Typography 
+                                            color={ port.offline ? "textSecondary" : "textPrimary" }
+                                            noWrap variant="body2"
+                                            style={{ flex: "1 1 auto" }}
+                                        >
+                                            {port.name}
+                                        </Typography>
+                                        {port.offline && (
+                                            <Typography color="textSecondary" variant="body2" >
+                                                (offline)
+                                            </Typography>
+                                        )}
+                                    </div>
+                                    )}                                        
+                            />
+                        </ListItemButton>
+                    )
 
-                )}
-                {availableChannels.length === 0 && (
-                    <Typography variant="body2" style={{ marginLeft: 32, marginRight: 24,marginTop:8, marginBottom: 16}}>
-                        No MIDI devices found.</Typography>
-                )}
-            </List>
+                    )}
+                </List>
+            </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose} variant="dialogSecondary" >
                     Cancel

@@ -292,10 +292,16 @@ void PiPedalModel::Load()
 
     this->audioHost->SetNotificationCallbacks(this);
 
+
+
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
     this->audioHost->SetSystemMidiBindings(this->systemMidiBindings);
 
+    audioHost->SetAlsaSequencerConfiguration(storage.GetAlsaSequencerConfiguration());
+
+
+    
     if (configuration.GetMLock())
     {
 #ifndef NO_MLOCK
@@ -1399,6 +1405,49 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
         }
     }
 }
+
+void PiPedalModel::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    // reset midi connections even if the configuration hasn't changed.
+    this->audioHost->SetAlsaSequencerConfiguration(alsaSequencerConfiguration);
+
+    auto current = storage.GetAlsaSequencerConfiguration();
+    if (alsaSequencerConfiguration != current)
+    {
+        this->storage.SetAlsaSequencerConfiguration(alsaSequencerConfiguration);
+        // notify subscribers.
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
+        {
+            subscriber->OnAlsaSequencerConfigurationChanged(alsaSequencerConfiguration);
+        }
+    }
+
+}
+AlsaSequencerConfiguration PiPedalModel::GetAlsaSequencerConfiguration()
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return this->storage.GetAlsaSequencerConfiguration();
+}
+
+std::vector<AlsaSequencerPortSelection> PiPedalModel::GetAlsaSequencerPorts()
+{
+    auto ports = AlsaSequencer::EnumeratePorts();
+    std::vector<AlsaSequencerPortSelection> result;
+    for (auto &port : ports)
+    {
+        result.push_back(AlsaSequencerPortSelection{
+            port.id,
+            port.name,
+            port.displaySortOrder
+        });
+    }
+    return result;
+}
+
+
 
 void PiPedalModel::SetJackChannelSelection(int64_t clientId, const JackChannelSelection &channelSelection)
 {

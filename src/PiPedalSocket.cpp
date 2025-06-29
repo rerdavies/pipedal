@@ -1730,6 +1730,22 @@ public:
         {
             auto regulatoryDomains = this->model.GetWifiRegulatoryDomains();
             this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
+        } else if (message == "setAlsaSequencerConfiguration")
+        {
+            AlsaSequencerConfiguration config;
+            pReader->read(&config);
+            this->model.SetAlsaSequencerConfiguration(config);
+            this->Reply(replyTo, "setAlsaSequencerConfiguration");
+        }
+        else if (message == "getAlsaSequencerConfiguration")
+        {
+            AlsaSequencerConfiguration config = this->model.GetAlsaSequencerConfiguration();
+            this->Reply(replyTo, "getAlsaSequencerConfiguration", config);
+        }
+        else if (message == "getAlsaSequencerPorts")
+        {
+            std::vector<AlsaSequencerPortSelection> result = model.GetAlsaSequencerPorts();
+            this->Reply(replyTo,"getAlsaSequencerPorts", result);
         }
         else
         {
@@ -1829,6 +1845,11 @@ private:
     {
         Send("onHasWifiChanged", hasWifi);
         Flush();
+    }
+
+    virtual void OnAlsaSequencerConfigurationChanged(const AlsaSequencerConfiguration &alsaSequencerConfiguration) override
+    {
+        Send("onAlsaSequencerConfigurationChanged", alsaSequencerConfiguration);
     }
 
     virtual void OnNetworkChanging(bool hotspotConnected) override

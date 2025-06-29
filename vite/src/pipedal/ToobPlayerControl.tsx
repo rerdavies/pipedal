@@ -38,7 +38,7 @@ import ButtonBase from '@mui/material/ButtonBase';
 import FilePropertyDialog from './FilePropertyDialog';
 import JsonAtom from './JsonAtom';
 import { UiFileProperty } from './Lv2Plugin';
-import { Divider } from '@mui/material';
+import Divider from '@mui/material/Divider';
 import useWindowSize from './UseWindowSize';
 import { getAlbumArtUri } from './AudioFileMetadata';
 import RepeatIcon from '@mui/icons-material/Repeat';

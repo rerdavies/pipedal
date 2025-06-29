@@ -19,7 +19,7 @@
 
 import React from 'react';
 import { ThemeProvider, createTheme, StyledEngineProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import CssBaseline  from '@mui/material/CssBaseline';
 
 import VirtualKeyboardHandler from './VirtualKeyboardHandler';
 import AppThemed from "./AppThemed";

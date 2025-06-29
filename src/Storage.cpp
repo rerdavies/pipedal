@@ -261,6 +261,8 @@ void Storage::Initialize()
     catch (const std::exception &)
     {
     }
+    LoadAlsaSequencerConfiguration();
+
     LoadWifiConfigSettings();
     LoadWifiDirectConfigSettings();
     LoadUserSettings();
@@ -312,6 +314,10 @@ std::filesystem::path Storage::GetCurrentPresetPath() const
 std::filesystem::path Storage::GetChannelSelectionFileName()
 {
     return this->dataRoot / "JackChannelSelection.json";
+}
+std::filesystem::path Storage::GetAlsaSequencerConfigurationFileName()
+{
+    return this->dataRoot / "MidiDevices.json";
 }
 std::filesystem::path Storage::GetIndexFileName() const
 {
@@ -736,46 +742,100 @@ JackChannelSelection Storage::GetJackChannelSelection(const JackConfiguration &j
 }
 
 
-static void MigrateRawMidiToAlsaSequencer(JackChannelSelection &channelSelection)
+static AlsaSequencerConfiguration MigrateRawMidiToAlsaSequencer(std::vector<AlsaMidiDeviceInfo> &selectedDevices)
 {
+    AlsaSequencerConfiguration result;
     try {
         auto  sequencerPorts = AlsaSequencer::EnumeratePorts();
 
-        // Migrate raw MIDI devices to ALSA sequencer ports.
-        std::vector<AlsaMidiDeviceInfo>& selectedDevices = channelSelection.GetInputMidiDevices();
+        // Prepare Migrate raw MIDI devices to ALSA sequencer ports.
 
         for (auto i = selectedDevices.begin(); i != selectedDevices.end(); ++i)
         {
             if (i->name_.starts_with("hw:")) {
-                bool migrated = false;
                 for (const auto &port: sequencerPorts)
                 {
                     if (i->name_ == port.rawMidiDevice)
                     {
-                        // Found a matching sequencer port.
-                        i->name_ = port.rawMidiDevice;
-                        i->description_ = port.name;
-                        migrated = true;
+                        result.connections().push_back(
+                            AlsaSequencerPortSelection(port.id, port.name,port.displaySortOrder)
+                        );
                         break;
                     }
-                }
-                if (!migrated) {
-                    i = selectedDevices.erase(i);
-                    if (i == selectedDevices.end()) 
-                    {
-                        break;
-                    }
-                    --i;
                 }
             }
         }
     } catch (const std::exception&e) {
         Lv2Log::error(SS("Failed to migrate MIDI settings. " << e.what()));
         // ick. 
-        channelSelection.GetInputMidiDevices().clear();
 
     }
+    return result;
 }
+void Storage::LoadAlsaSequencerConfiguration()
+{
+    auto fileName = this->GetAlsaSequencerConfigurationFileName();
+
+    if (std::filesystem::exists(fileName))
+    {
+        try
+        {
+            std::ifstream s(fileName);
+            json_reader reader(s);
+            AlsaSequencerConfiguration result;
+            reader.read(&result);
+            this->alsaSequencerConfiguration = result;
+        }
+        catch (const std::exception &e)
+        {
+            Lv2Log::error("I/O error reading %s: %s", fileName.c_str(), e.what());
+        }
+    } else {
+
+        // migrate legacy settings from JackConfiguration?
+        if (this->isJackChannelSelectionValid) 
+        {
+            this->alsaSequencerConfiguration =             
+                MigrateRawMidiToAlsaSequencer(
+                    this->jackChannelSelection.LegacyGetInputMidiDevices());
+            this->jackChannelSelection.LegacyGetInputMidiDevices().clear(); // let them be clear, the next it gets updated.
+            
+        } else {
+            // no legacy settings, so just create a default configuration.
+            this->alsaSequencerConfiguration = AlsaSequencerConfiguration();
+        }
+        SaveAlsaSequencerConfiguration();
+    }
+
+}
+void Storage::SaveAlsaSequencerConfiguration()
+{
+    auto fileName = this->GetAlsaSequencerConfigurationFileName();
+
+    try
+    {
+        pipedal::ofstream_synced  s(fileName);
+        json_writer writer(s);
+        writer.write(this->alsaSequencerConfiguration);
+    }
+    catch (const std::exception &e)
+    {
+        Lv2Log::error("I/O error writing %s: %s", fileName.c_str(), e.what());
+    }
+
+}
+
+void Storage::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
+{
+    this->alsaSequencerConfiguration = alsaSequencerConfiguration;
+    SaveAlsaSequencerConfiguration();
+}
+
+AlsaSequencerConfiguration Storage::GetAlsaSequencerConfiguration() const
+{
+    return this->alsaSequencerConfiguration;
+}
+
 
 void Storage::LoadChannelSelection()
 {
@@ -788,7 +848,6 @@ void Storage::LoadChannelSelection()
             json_reader reader(s);
             reader.read(&this->jackChannelSelection);
             this->isJackChannelSelectionValid = true;
-            MigrateRawMidiToAlsaSequencer(this->jackChannelSelection);
         }
         catch (const std::exception &e)
         {
@@ -801,6 +860,8 @@ void Storage::SaveChannelSelection()
     auto fileName = this->GetChannelSelectionFileName();
     try
     {
+        // replaced with AlsaSequencerConfiguration. Delete legacy data.
+        this->jackChannelSelection.LegacyGetInputMidiDevices().clear(); 
         pipedal::ofstream_synced s(fileName);
         json_writer writer(s, false);
         writer.write(this->jackChannelSelection);

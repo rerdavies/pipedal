@@ -94,6 +94,7 @@ namespace pipedal
 
         virtual void OnNetworkChanging(bool hotspotConnected) = 0;
         virtual void OnHasWifiChanged(bool hasWifi) = 0;
+        virtual void OnAlsaSequencerConfigurationChanged(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
         virtual void Close() = 0;
 
     };
@@ -168,6 +169,7 @@ namespace pipedal
         std::vector<AtomOutputListener> atomOutputListeners;
 
         JackServerSettings jackServerSettings;
+
         PluginHost pluginHost;
         AtomConverter atomConverter; // must be AFTER pluginHost!
 
@@ -386,6 +388,11 @@ namespace pipedal
 
         void SetJackChannelSelection(int64_t clientId, const JackChannelSelection &channelSelection);
         JackChannelSelection GetJackChannelSelection();
+
+        void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration);
+        AlsaSequencerConfiguration GetAlsaSequencerConfiguration();
+
+        std::vector<AlsaSequencerPortSelection> GetAlsaSequencerPorts();
 
         void SetShowStatusMonitor(bool show);
         bool GetShowStatusMonitor();
