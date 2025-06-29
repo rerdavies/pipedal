@@ -303,12 +303,8 @@ namespace pipedal
             : driverHost(driverHost)
         {
             midiEventMemoryIndex = 0;
-            midiEventMemory.resize(MAX_MIDI_EVENT * MAX_MIDI_EVENT_SIZE);
+            midiEventMemory.resize(MIDI_MEMORY_BUFFER_SIZE);
             midiEvents.resize(MAX_MIDI_EVENT);
-            for (size_t i = 0; i < midiEvents.size(); ++i)
-            {
-                midiEvents[i].buffer = midiEventMemory.data() + i * MAX_MIDI_EVENT_SIZE;
-            }
         }
         virtual ~AlsaDriverImpl()
         {
@@ -1522,7 +1518,7 @@ namespace pipedal
             } while (frames > 0);
             return framesRead;
         }
-
+    protected:
         void ReadMidiData(uint32_t audioFrame)
         {
             AlsaMidiMessage message;
@@ -1558,6 +1554,7 @@ namespace pipedal
                 
             }
         }
+    private:
 
         long WriteBuffer(snd_pcm_t *handle, uint8_t *buf, size_t frames)
         {
@@ -1782,8 +1779,7 @@ namespace pipedal
             Lv2Log::debug("Audio thread joined.");
         }
 
-        static constexpr size_t MAX_MIDI_EVENT_SIZE = 3;
-        static constexpr size_t MIDI_BUFFER_SIZE = 16 * 1024;
+        static constexpr size_t MIDI_MEMORY_BUFFER_SIZE = 32 * 1024;
         static constexpr size_t MAX_MIDI_EVENT = 4 * 1024;
 
         size_t midiEventCount = 0;

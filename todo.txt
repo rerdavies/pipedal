@@ -1,4 +1,4 @@
-Route the midi connections. 
+VU decay on a timer.
 
 Midi handling in the dummy audio connector.
 

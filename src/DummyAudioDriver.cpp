@@ -104,6 +104,11 @@ namespace pipedal
             captureChannels = channels;
             playbackChannels = channels;
 
+            midiEventMemoryIndex = 0;
+            midiEventMemory.resize(MIDI_MEMORY_BUFFER_SIZE);
+            midiEvents.resize(MAX_MIDI_EVENT);
+
+
         }
         virtual ~DummyDriverImpl()
         {
@@ -123,6 +128,15 @@ namespace pipedal
 
         JackServerSettings jackServerSettings;
         AlsaSequencer::ptr alsaSequencer;
+
+        static constexpr size_t MIDI_MEMORY_BUFFER_SIZE = 32 * 1024;
+        static constexpr size_t MAX_MIDI_EVENT = 4 * 1024;
+
+        size_t midiEventCount = 0;
+        std::vector<MidiEvent> midiEvents;
+        size_t midiEventMemoryIndex = 0;
+        std::vector<uint8_t> midiEventMemory;
+
 
         unsigned int periods = 0;
 
@@ -159,11 +173,13 @@ namespace pipedal
             }
         }
 
-        virtual size_t GetMidiInputEventCount() override {
-            return 0;
+        virtual size_t GetMidiInputEventCount() override
+        {
+            return midiEventCount;
         }
-        virtual MidiEvent*GetMidiEvents() {
-            return nullptr;
+        virtual MidiEvent *GetMidiEvents() override
+        {
+            return this->midiEvents.data();
         }
 
 
@@ -224,6 +240,43 @@ namespace pipedal
 
         bool block = false;
 
+        void ReadMidiData(uint32_t audioFrame)
+        {
+            AlsaMidiMessage message;
+
+            midiEventCount = 0;
+            while(alsaSequencer->ReadMessage(message,0))
+            {
+                size_t messageSize = message.size;
+                if (messageSize == 0) 
+                {
+                    continue;
+                }
+                if (midiEventMemoryIndex + messageSize  >= this->midiEventMemory.size()) {
+                    continue;
+                }
+                if (midiEventCount >= this->midiEvents.size()) {
+                    midiEvents.resize(midiEventCount*2);
+                }
+                // for now, prevent META event messages from propagating. 
+                if (message.data[0] == 0xFF && message.size > 1) {
+                    continue;
+                }
+                MidiEvent *pEvent = midiEvents.data() + midiEventCount++;
+                pEvent->time = audioFrame;
+                pEvent->size = messageSize; 
+                pEvent->buffer = midiEventMemory.data() + midiEventMemoryIndex;
+
+                memcpy(
+                    midiEventMemory.data() + midiEventMemoryIndex,
+                    message.data,
+                    message.size);
+                midiEventMemoryIndex += messageSize;
+                
+            }
+        }
+
+
         void AudioThread()
         {
             SetThreadName("dummyAudioDriver");
@@ -236,10 +289,13 @@ namespace pipedal
 
                 while (true)
                 {
+
                     if (terminateAudio())
                     {
                         break;
                     }
+
+                    ReadMidiData((uint32_t)0);
 
                     ssize_t framesRead = this->bufferSize;
                     this->driverHost->OnProcess(framesRead);
@@ -340,8 +396,6 @@ namespace pipedal
             Lv2Log::debug("Audio thread joined.");
         }
 
-        static constexpr size_t MIDI_BUFFER_SIZE = 16 * 1024;
-        static constexpr size_t MAX_MIDI_EVENT = 4 * 1024;
 
     public:
 

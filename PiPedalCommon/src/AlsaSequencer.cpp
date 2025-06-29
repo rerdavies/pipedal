@@ -244,6 +244,13 @@ namespace pipedal
             // convert rc to message
             throw std::runtime_error(SS("Failed to open ALSA sequencer:" << snd_strerror(rc)));
         }
+        size_t inputBufferSize = snd_seq_get_input_buffer_size(seqHandle);
+        (void)inputBufferSize;
+
+        rc = snd_seq_set_input_buffer_size(seqHandle, 128*1024);
+        if (rc < 0) {
+            Lv2Log::warning("Failed resize the ALSA sequencer input buffer: %s",snd_strerror(rc));
+        }
         snd_seq_set_client_name(seqHandle, "PiPedal");
 
         inPort = snd_seq_create_simple_port(seqHandle, "PiPedal:in",
