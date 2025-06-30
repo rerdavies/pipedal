@@ -26,6 +26,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <functional>
 #include "json.hpp"
 
 namespace pipedal
@@ -329,6 +330,26 @@ namespace pipedal
         virtual bool GetQueueRealtime(uint64_t *sec, uint32_t *nsec) = 0;
 
         virtual void RemoveAllConnections() = 0;
+    };
+
+
+    class AlsaSequencerDeviceMonitor {
+    protected:
+        AlsaSequencerDeviceMonitor() {}
+    public:
+        virtual ~AlsaSequencerDeviceMonitor() {}
+
+        using self = AlsaSequencerDeviceMonitor;
+        using ptr = std::shared_ptr<self>;
+        static ptr Create();
+        enum class MonitorAction {
+            DeviceAdded,
+            DeviceRemoved
+        };
+        using Callback = std::function<void(MonitorAction action, int client, const std::string& clientName)>;
+        virtual void StartMonitoring(Callback &&onChangeCallback) = 0;
+        virtual void StopMonitoring() = 0;
+
     };
 
     std::string RawMidiIdToSequencerId(const std::vector<AlsaSequencerPort> &seqDevices, const std::string &rawMidiId);

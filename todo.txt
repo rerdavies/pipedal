@@ -1,8 +1,6 @@
-VU decay on a timer.
+Test autohotspot detection.
 
-Midi handling in the dummy audio connector.
 
-PiPedal sequencer not visible. Is it missing duplex somewhere?
 
 check filetime conversion in gcc 12.2! (missing c++ 20 time conversion functions)
  AudioFiles.cpp   fileTimeToInt64

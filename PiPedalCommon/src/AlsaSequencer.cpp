@@ -34,6 +34,7 @@
 #include "Finally.hpp"
 #include "Lv2Log.hpp"
 #include <mutex>
+#include <thread>
 
 // enumerate alsa sequencer ports
 
@@ -94,6 +95,26 @@ namespace pipedal
             snd_seq_t *seqHandle = nullptr;
             int inPort = -1;
             int queueId = -1; // Queue for real-time timestamps
+        };
+
+        class AlsaSequencerDeviceMonitorImpl : public AlsaSequencerDeviceMonitor
+        {
+
+        public:
+            virtual ~AlsaSequencerDeviceMonitorImpl() override;
+
+            virtual void StartMonitoring(
+                Callback &&onChangeCallback) override;
+            virtual void StopMonitoring() override;
+
+        private:
+            int CreateInputQueue(snd_seq_t *seqHandle, int inPort);
+
+            bool started = false;
+            void ServiceProc();
+            std::unique_ptr<std::jthread> serviceThread;
+            std::atomic<bool> terminateThread{false};
+            Callback callback;
         };
 
     };
@@ -247,9 +268,10 @@ namespace pipedal
         size_t inputBufferSize = snd_seq_get_input_buffer_size(seqHandle);
         (void)inputBufferSize;
 
-        rc = snd_seq_set_input_buffer_size(seqHandle, 128*1024);
-        if (rc < 0) {
-            Lv2Log::warning("Failed resize the ALSA sequencer input buffer: %s",snd_strerror(rc));
+        rc = snd_seq_set_input_buffer_size(seqHandle, 128 * 1024);
+        if (rc < 0)
+        {
+            Lv2Log::warning("Failed resize the ALSA sequencer input buffer: %s", snd_strerror(rc));
         }
         snd_seq_set_client_name(seqHandle, "PiPedal");
 
@@ -584,12 +606,12 @@ namespace pipedal
                     message.Set(0xF8); // MIDI Real Time Clock Tick
                     break;
 #ifndef NDEBUG
-#define MSG_DEBUG_LOG(x) \
-                    case x:\
-                    Lv2Log::debug("ALSA Sequencer Message" #x);\
-                    break;
+#define MSG_DEBUG_LOG(x)                            \
+    case x:                                         \
+        Lv2Log::debug("ALSA Sequencer Message" #x); \
+        break;
 #else
-#define MSG_DEBUG_LOG(x) 
+#define MSG_DEBUG_LOG(x)
 #endif
                     MSG_DEBUG_LOG(SND_SEQ_EVENT_CLIENT_START)
                     MSG_DEBUG_LOG(SND_SEQ_EVENT_CLIENT_EXIT)
@@ -733,6 +755,7 @@ namespace pipedal
         Finally seq_finally([seq]()
                             { snd_seq_close(seq); });
 
+
         snd_seq_addr_t sender, dest;
         dest.client = myClientId;
         dest.port = 0;
@@ -795,6 +818,208 @@ namespace pipedal
             }
             this->connections.push_back({clientId, portId});
         }
+    }
+
+    AlsaSequencerDeviceMonitor::ptr AlsaSequencerDeviceMonitor::Create()
+    {
+        return std::make_shared<AlsaSequencerDeviceMonitorImpl>();
+    }
+
+    void AlsaSequencerDeviceMonitorImpl::StartMonitoring(
+        Callback &&onChangeCallback)
+    {
+        started = true;
+        this->callback = std::move(onChangeCallback);
+        this->serviceThread = std::make_unique<std::jthread>(
+            [this]()
+            {
+                ServiceProc();
+            });
+    }
+    void AlsaSequencerDeviceMonitorImpl::ServiceProc()
+    {
+        int err;
+        snd_seq_t *seqHandle;
+
+        err = snd_seq_open(&seqHandle, "default", SND_SEQ_OPEN_DUPLEX, 0);
+
+        Finally seq_finally(
+            [seqHandle]()
+            {
+                snd_seq_close(seqHandle);
+            });
+        if (err < 0)
+        {
+            Lv2Log::error("Error opening ALSA Device Monitor sequencer: %s", snd_strerror(err));
+            return;
+        }
+        snd_seq_set_client_name(seqHandle, "Device Monitor");
+
+        int inPort = snd_seq_create_simple_port(
+            seqHandle, "PiPedal:portMonitor",
+                        SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE,
+                        SND_SEQ_PORT_TYPE_APPLICATION);
+        if (inPort < 0)
+        {
+            Lv2Log::error("Error creating ALSA Device Monitor port: %s", snd_strerror(inPort));
+            return;
+        }
+        Finally inPort_finaly {
+            [seqHandle, inPort]()
+            {
+                snd_seq_delete_port(seqHandle, inPort);
+            }
+        };
+
+        // Set client name
+
+        int queueId = CreateInputQueue(seqHandle,inPort);
+        if (queueId < 0)
+        {
+            Lv2Log::error("Error creating ALSA Device Monitor queue: %s", snd_strerror(queueId));
+            return;
+        }
+        Finally queue_finally(
+            [seqHandle, queueId]()
+            {
+                snd_seq_free_queue(seqHandle, queueId);
+            }); 
+
+        // Subscribe to system announcements
+        snd_seq_port_subscribe_t *subscription;
+        snd_seq_port_subscribe_alloca(&subscription);
+        snd_seq_addr_t sender, dest;
+
+        sender.client = SND_SEQ_CLIENT_SYSTEM;
+        sender.port = SND_SEQ_PORT_SYSTEM_ANNOUNCE;
+        dest.client = snd_seq_client_id(seqHandle);
+        dest.port = inPort;
+
+        snd_seq_port_subscribe_set_sender(subscription, &sender);
+        snd_seq_port_subscribe_set_dest(subscription, &dest);
+        err = snd_seq_subscribe_port(seqHandle, subscription);
+        if (err < 0)
+        {
+            Lv2Log::error("Failed to subscribe to ALSA sequencer announcements: %s", snd_strerror(err));
+            return;
+        }
+
+        // Create poll descriptors
+        std::vector<struct pollfd> pollFds;
+
+        snd_seq_nonblock(seqHandle, 1); // Set sequencer to non-blocking mode
+        while (!terminateThread)
+        {
+            int nPollFds = snd_seq_poll_descriptors_count(seqHandle, POLLIN);
+            pollFds.resize(nPollFds);
+            snd_seq_poll_descriptors(seqHandle, pollFds.data(), nPollFds, POLLIN);
+
+            // Poll for events
+            if (poll(pollFds.data(), nPollFds, 100) > 0)
+            {
+                snd_seq_event_t *event;
+                while (snd_seq_event_input(seqHandle, &event) > 0)
+                {
+                    if (event->type == SND_SEQ_EVENT_CLIENT_START)
+                    {
+                        // Get the client name for logging/debugging
+                        snd_seq_client_info_t *client_info;
+                        snd_seq_client_info_alloca(&client_info);
+                        if (snd_seq_get_any_client_info(seqHandle, event->data.addr.client, client_info) >= 0) {
+                            std::string clientName = snd_seq_client_info_get_name(client_info);
+                            callback(MonitorAction::DeviceAdded, event->data.addr.client, clientName);
+                        }
+                    }
+                    else if (event->type == SND_SEQ_EVENT_CLIENT_EXIT)
+                    {
+                        callback(MonitorAction::DeviceRemoved, event->data.addr.client,"");
+                    }
+                    snd_seq_free_event(event);
+                }
+            }
+        }
+
+        return;
+    }
+
+    void AlsaSequencerDeviceMonitorImpl::StopMonitoring()
+    {
+        if (started)
+        {
+            started = false;
+            terminateThread = true;
+            serviceThread = nullptr; // (joins)
+        }
+    }
+
+    AlsaSequencerDeviceMonitorImpl::~AlsaSequencerDeviceMonitorImpl()
+    {
+        StopMonitoring();
+    }
+
+    int AlsaSequencerDeviceMonitorImpl::CreateInputQueue(snd_seq_t *seqHandle, int inPort)
+    {
+        if (!seqHandle)
+        {
+            throw std::runtime_error("ALSA sequencer not initialized");
+        }
+
+        // Create a new queue if we don't have one yet
+        int queueId = -1;
+        {
+            queueId = snd_seq_alloc_named_queue(seqHandle, "PiPedal Device Monitor Queue");
+            if (queueId < 0)
+            {
+                throw std::runtime_error(SS("Failed to create ALSA queue: " << snd_strerror(queueId)));
+            }
+
+            // Set queue timing to real-time mode
+            snd_seq_queue_tempo_t *tempo;
+            snd_seq_queue_tempo_alloca(&tempo);
+            snd_seq_queue_tempo_set_tempo(tempo, 120); // 120 BPM default
+            snd_seq_queue_tempo_set_ppq(tempo, 96);    // 96 ticks per quarter note
+
+            int rc = snd_seq_set_queue_tempo(seqHandle, queueId, tempo);
+            if (rc < 0)
+            {
+                snd_seq_free_queue(seqHandle, queueId);
+                throw std::runtime_error(SS("Failed to set queue tempo: " << snd_strerror(rc)));
+            }
+
+            // Start the queue
+            rc = snd_seq_start_queue(seqHandle, queueId, nullptr);
+            if (rc < 0)
+            {
+                snd_seq_free_queue(seqHandle, queueId);
+                throw std::runtime_error(SS("Failed to start queue: " << snd_strerror(rc)));
+            }
+
+            // Set the queue for input timestamping
+            snd_seq_port_info_t *port_info;
+            snd_seq_port_info_alloca(&port_info);
+
+            rc = snd_seq_get_port_info(seqHandle, inPort, port_info);
+            if (rc < 0)
+            {
+                snd_seq_free_queue(seqHandle, queueId);
+                throw std::runtime_error(SS("Failed to get port info: " << snd_strerror(rc)));
+            }
+
+            // Enable timestamping on the input port
+            snd_seq_port_info_set_timestamping(port_info, 1);
+            snd_seq_port_info_set_timestamp_real(port_info, 1);
+            snd_seq_port_info_set_timestamp_queue(port_info, queueId);
+
+            rc = snd_seq_set_port_info(seqHandle, inPort, port_info);
+            if (rc < 0)
+            {
+                snd_seq_free_queue(seqHandle, queueId);
+                throw std::runtime_error(SS("Failed to set port timestamping: " << snd_strerror(rc)));
+            }
+            return queueId;
+        }
+
+        return queueId;
     }
 
     JSON_MAP_BEGIN(AlsaSequencerPortSelection)

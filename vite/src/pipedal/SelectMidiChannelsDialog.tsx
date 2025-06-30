@@ -54,19 +54,23 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
     const [allPorts, setAllPorts] = useState<DialogItem[] | null>(null);
     const [model] = useState<PiPedalModel>(PiPedalModelFactory.getInstance());
     const [changed, setChanged] = useState<boolean>(false);
+    const [ readyToDisplay, setReadyToDisplay ] = useState<boolean>(false);
 
     React.useEffect(() => {
         if (open) {
+            setReadyToDisplay(false);
             model.getAlsaSequencerPorts().then((ports) => {
                 setAvailablePorts(ports);
             }).catch((error) => {
                 model.showAlert(error);
+                setReadyToDisplay(true);
                 setAvailablePorts(null);
             });
             model.getAlsaSequencerConfiguration().then((config) => {
                 setConfiguration(config);
             }).catch((error) => {
                 model.showAlert(error);
+                setReadyToDisplay(true);
                 setConfiguration(null);
             });
             return () => {
@@ -78,7 +82,7 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
     React.useEffect(() => {
         if (availablePorts !== null && configuration !== null) {
             let result: DialogItem[] = [];
-
+            setReadyToDisplay(true);
             for (let port of availablePorts) {
                 result.push({
                     id: port.id,
@@ -159,7 +163,8 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
 
 
     return (
-        <DialogEx tag="midiChannels" onClose={handleClose} aria-labelledby="select-midi-inputs" open={open}
+        <DialogEx tag="midiChannels" onClose={handleClose} aria-labelledby="select-midi-inputs" 
+            open={open && readyToDisplay}
             fullWidth maxWidth="xs"
             onEnterKey={handleClose}
         >

@@ -95,6 +95,10 @@ namespace pipedal {
 
         bool operator==(const WifiConfigSettings&other) const;
         bool ConfigurationChanged(const WifiConfigSettings&other) const;
+        bool WantsHotspot(bool ethernetConnected) 
+        {
+            return WantsHotspot(ethernetConnected, std::vector<std::string>{}, std::vector<std::string>{});
+        }
         bool WantsHotspot(
             bool ethernetConnected, 
             const std::vector<std::string> &availableRememberedNetworks, // remembered networks that are currently visible
@@ -105,7 +109,8 @@ namespace pipedal {
             const std::vector<std::vector<uint8_t>> &availableRememberedNetworks, // remembered networks that are currently visible
             const std::vector<std::vector<uint8_t>> &availableNetworks // all visible networks.
             );
-
+        bool NeedsScan() const;
+        bool NeedsWifi() const;
     public:
         DECLARE_JSON_MAP(WifiConfigSettings);
     };

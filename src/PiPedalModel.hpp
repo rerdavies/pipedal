@@ -240,6 +240,8 @@ namespace pipedal
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) override;
         virtual void OnAlsaDriverTerminatedAbnormally() override;
+        virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) override;
+        virtual void OnAlsaSequencerDeviceRemoved(int client) override;
 
         void OnNotifyPathPatchPropertyReceived(
             int64_t instanceId,

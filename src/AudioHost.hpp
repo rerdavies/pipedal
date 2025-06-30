@@ -179,6 +179,8 @@ namespace pipedal
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) = 0;
 
         virtual void OnAlsaDriverTerminatedAbnormally() = 0;
+        virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) = 0;
+        virtual void OnAlsaSequencerDeviceRemoved(int client) = 0;
     };
 
     class JackHostStatus

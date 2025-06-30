@@ -390,6 +390,7 @@ class AudioHostImpl : public AudioHost, private AudioDriverHost, private IPatchW
 {
 private:
     AlsaSequencer::ptr alsaSequencer;
+    AlsaSequencerDeviceMonitor::ptr alsaDeviceMonitor;
 
     void OnWritePatchPropertyBuffer(
         PatchPropertyWriter::Buffer *);
@@ -1252,9 +1253,21 @@ public:
 
         cpuTemperatureMonitor = CpuTemperatureMonitor::Get();
         this->alsaSequencer = AlsaSequencer::Create();
+        this->alsaDeviceMonitor = AlsaSequencerDeviceMonitor::Create();
+
+        this->alsaDeviceMonitor->StartMonitoring(
+            [this](
+                AlsaSequencerDeviceMonitor::MonitorAction action, 
+                int client,
+                const std::string &clientName)            
+                {
+                    HandleAlsaSequencerDevicesChanged(action, client, clientName);
+                }
+            );
     }
     virtual ~AudioHostImpl()
     {
+        alsaDeviceMonitor->StopMonitoring();
         Close();
         CleanRestartThreads(true);
         audioDriver = nullptr;
@@ -1273,7 +1286,21 @@ public:
     {
         return this->sampleRate;
     }
-
+    void HandleAlsaSequencerDevicesChanged(
+        AlsaSequencerDeviceMonitor::MonitorAction action, int client, const std::string &clientName)
+    {
+        if (pNotifyCallbacks)
+        {
+            if (action == AlsaSequencerDeviceMonitor::MonitorAction::DeviceRemoved)
+            {
+                pNotifyCallbacks->OnAlsaSequencerDeviceRemoved(client);
+            }
+            else if (action == AlsaSequencerDeviceMonitor::MonitorAction::DeviceAdded)
+            {
+                pNotifyCallbacks->OnAlsaSequencerDeviceAdded(client,clientName);
+            }
+        }
+    }   
     void HandleAudioTerminatedAbnormally()
     {
         Lv2Log::error("Audio processing terminated unexpectedly.");
