@@ -9,9 +9,19 @@ set (ENABLE_BACKTRACE 0)
 
 set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 
+
 set(CXX_STANDARD 20)
 
+find_package(PkgConfig REQUIRED)
 
+pkg_check_modules(PipeWire REQUIRED libpipewire-0.3)
+
+
+message(STATUS "PipeWire_INCLUDE_DIRS: ${PipeWire_INCLUDE_DIRS}"
+    "PipeWire_LIBRARIES: ${PipeWire_LIBRARIES}"
+    "PipeWire_CFLAGS: ${PipeWire_CFLAGS}"
+    "PipeWire_DEFINES: ${PipeWire_DEFINES}"
+    "PipeWire_VERSION: ${PipeWire_VERSION}")
 
 include(FetchContent)
 
@@ -196,6 +206,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    PipewireInputStream.cpp PipewireInputStream.hpp
     AudioFiles.cpp AudioFiles.hpp
     AudioFileMetadataReader.cpp AudioFileMetadataReader.hpp
     AudioFileMetadata.hpp AudioFileMetadata.cpp
@@ -313,6 +324,7 @@ set (PIPEDAL_INCLUDES
     ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  
     ${VST3_INCLUDES}
     ${WEBSOCKETPP_INCLUDE_DIRS}    
+    ${PipeWire_INCLUDE_DIRS}
     .
 )
 
@@ -332,13 +344,17 @@ set(PIPEDAL_LIBS libpipedald zip
  
 add_library(libpipedald STATIC ${PIPEDAL_SOURCES})
 
-target_include_directories(libpipedald PRIVATE ${PIPEDAL_INCLUDES}
+target_compile_definitions(libpipedald PUBLIC "_REENTRANT")
+
+target_include_directories(libpipedald PUBLIC ${PIPEDAL_INCLUDES} 
     ) 
 
 target_link_libraries(libpipedald 
     PUBLIC 
    PiPedalCommon
-   SQLiteCpp)
+   SQLiteCpp
+   ${PipeWire_LIBRARIES}
+   )
 
 if(${USE_PCH})
   target_precompile_headers(libpipedald PRIVATE pch.h)
@@ -379,6 +395,7 @@ target_link_libraries(pipedald PRIVATE PiPedalCommon
     ${PIPEDAL_LIBS}
     )
 
+
 #################################
 add_executable(hotspotManagerTest 
     hotspotManagerTestMain.cpp
@@ -397,6 +414,7 @@ add_executable(AuxInTest
 
 add_executable(pipedaltest 
     testMain.cpp
+    PipewireInputStreamTest.cpp
 
     AudioFilesTest.cpp
     LRUCacheTest.cpp
