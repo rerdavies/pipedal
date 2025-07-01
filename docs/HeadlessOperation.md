@@ -1,5 +1,5 @@
 ---
-page_icon: img/headless.jpg
+page_icon: img/headless.png
 icon_width: 120px
 icon_float: right
 ---
