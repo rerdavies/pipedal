@@ -7,9 +7,7 @@ icon_float: right
 
 {% include pageIcon.html %}
 
-## Running Headless
-
-To get the best possible audio latency, your PiPedal server should run headless. GPU activity interferes with low-latency audio. Drawing to the screen (or even moving the mouse) can cause audio underruns. This does not mean that you cannot use a desktop install; but it does mean that you should not be using the server's desktop when using PiPedal. Use a browser on a remote machine, or use a phone or tablet to control PiPedal. PiPedal is very much designed on the expectation that you will be using a remote device to control it. 
+To get the best possible audio latency, your PiPedal server should run headless. GPU activity interferes with low-latency audio. Drawing to the screen (or even moving the mouse) can cause audio underruns. This does not mean that you cannot use a desktop install; but it does mean that you should not be using the PiPedal server's desktop when using PiPedal. Use a browser on a remote machine, or use a phone or tablet to control PiPedal. PiPedal is very much designed on the expectation that you will be using a remote device to control it. 
 
 It is not entirely clear why GPUs don't play well with realtime low-latency audio. It's probably not caused by interrupts, but may be caused by contention for system memory and various system buses. Or perhaps by graphics drives that cheat a bit in order to get better benchmark scores. If you are running a very powerful PC with a GPU that doesn't share system memory for its framebuffer, you may be able to run a desktop while using PiPedal; but if you are not getting the latency you think you should, try going back to headless operation. The difference is dramatic. A system that may struggle to achieve 15ms latency with a desktop running (256x3 buffer configuration), should easily be able to achieve sub-5ms latency (32x3 buffer configuration) when running headless. As a point of reference, 10ms latency is generally considered the maximum threshold for usable realtime audio that doesn't feel spongy and unpleasant.
 
