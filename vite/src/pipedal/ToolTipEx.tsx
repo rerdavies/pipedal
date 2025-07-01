@@ -81,7 +81,7 @@ function ToolTipEx(props: ToolTipExProps) {
         if (valueTooltip === undefined)  // no timeout if there's a value tooltip
         {
             if (t > 0) {
-                console.log("ToolTipEx: starting timeout for ", t);
+                // console.log("ToolTipEx: starting timeout for ", t);
                 handle = window.setTimeout(() => {
                     setOpen(true);
                 },t);
@@ -89,7 +89,7 @@ function ToolTipEx(props: ToolTipExProps) {
         }
         return () => {
             if (handle !== null) {
-                console.log("ToolTipEx: clearing timeout for ", t);
+                // console.log("ToolTipEx: clearing timeout for ", t);
                 window.clearTimeout(handle);
             }
         };
@@ -161,6 +161,7 @@ function ToolTipEx(props: ToolTipExProps) {
             } 
         }
     }
+    
     let effectiveTitle: React.ReactNode | null = null;
     let placement: "top-start" | "right" = "top-start";
     if (valueTooltip !== undefined && !isLongPress) {
@@ -181,44 +182,40 @@ function ToolTipEx(props: ToolTipExProps) {
     return (
         <div style={{ display: 'inline-block' }}
             onClickCapture={(e) => {
-                console.log("ToolTipEx: onClickCapture");
+                // console.log("ToolTipEx: onClickCapture");
                 handleClickCapture(e);
-                setTimeout(0);
-                setOpen(false);
-                setIsLongPress(false);
-                setLongPressLeaving(true);
             }}
 
             onMouseEnter={(e)=> {
-                console.log("ToolTipEx: onMouseEnter");
+                // console.log("ToolTipEx: onMouseEnter");
                 if (!longPressLeaving) {// Don't handle mouse enter if we're in a long press leaving state
                     handleMouseEnter(e);
                 }
             }}
             onMouseLeave={(e)=> {
-                console.log("ToolTipEx: onMouseLeave");
+                // console.log("ToolTipEx: onMouseLeave");
                 handleMouseLeave(e);
             }}
 
             onPointerCancelCapture={(e) => {
-                console.log("ToolTipEx: onPointerCancelCapture");
+                // console.log("ToolTipEx: onPointerCancelCapture");
                 handlePointerCancel(e);
             }}
             onContextMenuCapture={(e) => {
-                console.log("ToolTipEx: onContextMenuCapture");
+                // console.log("ToolTipEx: onContextMenuCapture");
                 handleConextMenu(e);
                 return false;
             }}
             onPointerDownCapture={(e) => {
-                console.log("ToolTipEx: onPointerDownCapture");
+                // console.log("ToolTipEx: onPointerDownCapture");
                 handlePointerDownCapture(e);
             }}
             onPointerMoveCapture={(e) => {
-                console.log("ToolTipEx: onPointerMoveCapture");
+                // console.log("ToolTipEx: onPointerMoveCapture");
                 handlePointerMoveCapture(e);
             }}
             onPointerUpCapture={(e) => {
-                console.log("ToolTipEx: onPointerUpCapture");
+                // console.log("ToolTipEx: onPointerUpCapture");
                 handlePointerUpCapture(e);
             }}
         >

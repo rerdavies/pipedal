@@ -19,11 +19,13 @@
 
 import React from 'react';
 import { ThemeProvider, createTheme, StyledEngineProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import CssBaseline  from '@mui/material/CssBaseline';
 
 import VirtualKeyboardHandler from './VirtualKeyboardHandler';
 import AppThemed from "./AppThemed";
 import { isDarkMode } from './DarkMode';
+import Tone3000AuthComplete from './Tone3000AuthComplete';
+
 
 declare module '@mui/material/styles' {
     interface Theme {
@@ -221,6 +223,12 @@ type AppThemeProps = {
 };
 
 
+function isTone3000Auth() {
+    let url = new URL(window.location.href);
+    let param =  url.searchParams.get("api_key");
+    return (param !== null && param !== "") 
+}
+
 const App = (class extends React.Component {
     // Before the component mounts, we initialise our state
 
@@ -240,8 +248,11 @@ const App = (class extends React.Component {
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
-
-                    <AppThemed />
+                    {isTone3000Auth() ? (
+                        <Tone3000AuthComplete />
+                    ) : (
+                        <AppThemed />
+                    )}
                 </ThemeProvider>
             </StyledEngineProvider>
         );

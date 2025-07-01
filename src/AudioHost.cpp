@@ -21,6 +21,7 @@
 #include "util.hpp"
 #include <lv2/atom/atom.h>
 #include "SchedulerPriority.hpp"
+#include "AlsaSequencer.hpp"
 
 #include "Lv2Log.hpp"
 
@@ -388,6 +389,9 @@ bool SystemMidiBinding::IsMatch(const MidiEvent &event)
 class AudioHostImpl : public AudioHost, private AudioDriverHost, private IPatchWriterCallback
 {
 private:
+    AlsaSequencer::ptr alsaSequencer;
+    AlsaSequencerDeviceMonitor::ptr alsaDeviceMonitor;
+
     void OnWritePatchPropertyBuffer(
         PatchPropertyWriter::Buffer *);
 
@@ -529,7 +533,7 @@ private:
 
     std::string GetAtomObjectType(uint8_t *pData)
     {
-        LV2_Atom_Object *pAtom = (LV2_Atom_Object *)pData;
+    LV2_Atom_Object *pAtom = (LV2_Atom_Object *)pData;
         if (pAtom->atom.type != uris.atom_Object)
         {
             throw std::invalid_argument("Not an Lv2 Object");
@@ -1248,12 +1252,26 @@ public:
         lv2_atom_forge_init(&inputWriterForge, pHost->GetMapFeature().GetMap());
 
         cpuTemperatureMonitor = CpuTemperatureMonitor::Get();
+        this->alsaSequencer = AlsaSequencer::Create();
+        this->alsaDeviceMonitor = AlsaSequencerDeviceMonitor::Create();
+
+        this->alsaDeviceMonitor->StartMonitoring(
+            [this](
+                AlsaSequencerDeviceMonitor::MonitorAction action, 
+                int client,
+                const std::string &clientName)            
+                {
+                    HandleAlsaSequencerDevicesChanged(action, client, clientName);
+                }
+            );
     }
     virtual ~AudioHostImpl()
     {
+        alsaDeviceMonitor->StopMonitoring();
         Close();
         CleanRestartThreads(true);
         audioDriver = nullptr;
+        this->alsaSequencer = nullptr;
     }
 
     virtual JackConfiguration GetServerConfiguration()
@@ -1268,7 +1286,21 @@ public:
     {
         return this->sampleRate;
     }
-
+    void HandleAlsaSequencerDevicesChanged(
+        AlsaSequencerDeviceMonitor::MonitorAction action, int client, const std::string &clientName)
+    {
+        if (pNotifyCallbacks)
+        {
+            if (action == AlsaSequencerDeviceMonitor::MonitorAction::DeviceRemoved)
+            {
+                pNotifyCallbacks->OnAlsaSequencerDeviceRemoved(client);
+            }
+            else if (action == AlsaSequencerDeviceMonitor::MonitorAction::DeviceAdded)
+            {
+                pNotifyCallbacks->OnAlsaSequencerDeviceAdded(client,clientName);
+            }
+        }
+    }   
     void HandleAudioTerminatedAbnormally()
     {
         Lv2Log::error("Audio processing terminated unexpectedly.");
@@ -1666,7 +1698,7 @@ public:
         try
         {
             audioDriver->Open(jackServerSettings, this->channelSelection);
-
+            audioDriver->SetAlsaSequencer(this->alsaSequencer);
             this->sampleRate = audioDriver->GetSampleRate();
 
             this->overrunGracePeriodSamples = (uint64_t)(((uint64_t)this->sampleRate) * OVERRUN_GRACE_PERIOD_S);
@@ -1813,6 +1845,9 @@ public:
             this->hostWriter.LoadSnapshot(indexedSnapshot);
         }
     }
+
+    virtual void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) override;
+
 
     void OnNotifyPathPatchPropertyReceived(
         int64_t instanceId,
@@ -2260,6 +2295,13 @@ void AudioHostImpl::OnWritePatchPropertyBuffer(
 {
     this->realtimeWriter.SendPathPropertyBuffer(buffer);
 }
+
+void AudioHostImpl::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
+{
+    this->alsaSequencer->SetConfiguration(alsaSequencerConfiguration);
+}
+
+
 
 JSON_MAP_BEGIN(JackHostStatus)
 JSON_MAP_REFERENCE(JackHostStatus, active)

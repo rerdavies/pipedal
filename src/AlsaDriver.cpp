@@ -144,8 +144,6 @@ namespace pipedal
         return false;
     }
 
-
-
     struct AudioFormat
     {
         char name[40];
@@ -304,12 +302,9 @@ namespace pipedal
         AlsaDriverImpl(AudioDriverHost *driverHost)
             : driverHost(driverHost)
         {
-            midiEventMemory.resize(MAX_MIDI_EVENT * MAX_MIDI_EVENT_SIZE);
+            midiEventMemoryIndex = 0;
+            midiEventMemory.resize(MIDI_MEMORY_BUFFER_SIZE);
             midiEvents.resize(MAX_MIDI_EVENT);
-            for (size_t i = 0; i < midiEvents.size(); ++i)
-            {
-                midiEvents[i].buffer = midiEventMemory.data() + i * MAX_MIDI_EVENT_SIZE;
-            }
         }
         virtual ~AlsaDriverImpl()
         {
@@ -415,14 +410,7 @@ namespace pipedal
                 snd_pcm_sw_params_free(playbackSwParams);
                 playbackSwParams = nullptr;
             }
-            for (auto &midiState : this->midiDevices)
-            {
-                if (midiState)
-                {
-                    midiState->Close();
-                }
-            }
-            midiDevices.resize(0);
+            this->alsaSequencer = nullptr;
         }
 
         std::string discover_alsa_using_apps()
@@ -913,7 +901,7 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->playbackBuffers;
             int channels = this->playbackChannels;
-            constexpr double  scale = 0x00FFFFFF;
+            constexpr double scale = 0x00FFFFFF;
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -1084,7 +1072,6 @@ namespace pipedal
             open = true;
             try
             {
-                OpenMidi(jackServerSettings, channelSelection);
                 OpenAudio(jackServerSettings, channelSelection);
                 std::atomic_thread_fence(std::memory_order::release);
             }
@@ -1531,18 +1518,43 @@ namespace pipedal
             } while (frames > 0);
             return framesRead;
         }
-
+    protected:
         void ReadMidiData(uint32_t audioFrame)
         {
-            for (size_t i = 0; i < midiDevices.size(); ++i)
+            AlsaMidiMessage message;
+
+            midiEventCount = 0;
+            while(alsaSequencer->ReadMessage(message,0))
             {
-                size_t nRead = midiDevices[i]->ReadMidiEvents(
-                    this->midiEvents,
-                    midiEventCount,
-                    audioFrame);
-                midiEventCount += nRead;
+                size_t messageSize = message.size;
+                if (messageSize == 0) 
+                {
+                    continue;
+                }
+                if (midiEventMemoryIndex + messageSize  >= this->midiEventMemory.size()) {
+                    continue;
+                }
+                if (midiEventCount >= this->midiEvents.size()) {
+                    midiEvents.resize(midiEventCount*2);
+                }
+                // for now, prevent META event messages from propagating. 
+                if (message.data[0] == 0xFF && message.size > 1) {
+                    continue;
+                }
+                MidiEvent *pEvent = midiEvents.data() + midiEventCount++;
+                pEvent->time = audioFrame;
+                pEvent->size = messageSize; 
+                pEvent->buffer = midiEventMemory.data() + midiEventMemoryIndex;
+
+                memcpy(
+                    midiEventMemory.data() + midiEventMemoryIndex,
+                    message.data,
+                    message.size);
+                midiEventMemoryIndex += messageSize;
+                
             }
         }
+    private:
 
         long WriteBuffer(snd_pcm_t *handle, uint8_t *buf, size_t frames)
         {
@@ -1671,16 +1683,17 @@ namespace pipedal
                         pBuffer[j] = 0;
                     }
                 }
-                try {
+                try
+                {
                     while (!terminateAudio())
                     {
                         std::this_thread::sleep_for(std::chrono::milliseconds(10));
                         // zero out input buffers.
                         this->driverHost->OnProcess(this->bufferSize);
                     }
-                } catch (const std::exception &e)
+                }
+                catch (const std::exception &e)
                 {
-
                 }
             }
             this->driverHost->OnAudioTerminated();
@@ -1766,288 +1779,22 @@ namespace pipedal
             Lv2Log::debug("Audio thread joined.");
         }
 
-        static constexpr size_t MAX_MIDI_EVENT_SIZE = 3;
-        static constexpr size_t MIDI_BUFFER_SIZE = 16 * 1024;
+        static constexpr size_t MIDI_MEMORY_BUFFER_SIZE = 32 * 1024;
         static constexpr size_t MAX_MIDI_EVENT = 4 * 1024;
 
         size_t midiEventCount = 0;
         std::vector<MidiEvent> midiEvents;
+        size_t midiEventMemoryIndex = 0;
         std::vector<uint8_t> midiEventMemory;
+        AlsaSequencer::ptr alsaSequencer;
 
     public:
-        class AlsaMidiDeviceImpl
+
+
+
+        virtual void SetAlsaSequencer(AlsaSequencer::ptr alsaSequencer) override
         {
-        private:
-            snd_rawmidi_t *hIn = nullptr;
-            snd_rawmidi_params_t *hInParams = nullptr;
-            std::string deviceName;
-
-            // running status state.
-            uint8_t runningStatus = 0;
-            int dataLength = 0;
-            int dataIndex = 0;
-            size_t statusBytesRemaining = 0;
-            size_t data0 = 0;
-            size_t data1 = 0;
-
-            bool inputProcessingSysex = false;
-            size_t inputSysexBufferCount = 0;
-            std::vector<uint8_t> inputSysexBuffer;
-
-            uint8_t readBuffer[1024];
-
-            void checkError(int result, const char *message)
-            {
-                if (result < 0)
-                {
-                    throw PiPedalStateException(SS("Unexpected error: " << message << " (" << this->deviceName));
-                }
-            }
-
-        public:
-            AlsaMidiDeviceImpl()
-            {
-                inputSysexBuffer.resize(1024);
-            }
-            ~AlsaMidiDeviceImpl() {
-                Close();
-            }
-            void Open(const AlsaMidiDeviceInfo &device)
-            {
-                runningStatus = 0;
-                inputProcessingSysex = false;
-                inputSysexBufferCount = 0;
-
-                dataIndex = 0;
-                dataLength = 0;
-
-                this->deviceName = device.description_;
-
-                int err = snd_rawmidi_open(&hIn, nullptr, device.name_.c_str(), SND_RAWMIDI_NONBLOCK);
-                if (err < 0)
-                {
-                    throw PiPedalStateException(SS("Can't open midi device " << deviceName << ". (" << snd_strerror(err)));
-                }
-
-                err = snd_rawmidi_params_malloc(&hInParams);
-                checkError(err, "snd_rawmidi_params_malloc failed.");
-
-                err = snd_rawmidi_params_set_buffer_size(hIn, hInParams, 2048);
-                checkError(err, "snd_rawmidi_params_set_buffer_size failed.");
-
-                err = snd_rawmidi_params_set_no_active_sensing(hIn, hInParams, 1);
-                checkError(err, "snd_rawmidi_params_set_no_active_sensing failed.");
-            }
-            void Close()
-            {
-                if (hIn)
-                {
-                    snd_rawmidi_close(hIn);
-                    hIn = nullptr;
-                }
-                if (hInParams)
-                {
-                    snd_rawmidi_params_free(hInParams);
-                    hInParams = 0;
-                }
-            }
-
-            int GetDataLength(uint8_t cc)
-            {
-                static int sDataLength[] = {0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 1, -1};
-                return sDataLength[cc >> 4];
-            }
-
-            void MidiPut(uint8_t cc, uint8_t d0, uint8_t d1)
-            {
-                if (cc == 0)
-                    return;
-
-                // check for overrun.
-                if (inputEventBufferIndex >= pInputEventBuffer->size())
-                {
-                    return;
-                }
-
-                auto &event = (*pInputEventBuffer)[inputEventBufferIndex];
-
-                event.time = inputSampleFrame;
-                event.size = dataLength + 1;
-                assert(dataLength + 1 <= MAX_MIDI_EVENT_SIZE);
-                event.buffer[0] = cc;
-                event.buffer[1] = d0;
-                event.buffer[2] = d1;
-                ++inputEventBufferIndex;
-            }
-
-            void FillInputBuffer()
-            {
-                while (true)
-                {
-                    ssize_t nRead = snd_rawmidi_read(hIn, readBuffer, sizeof(readBuffer));
-                    if (nRead == -EAGAIN)
-                        return;
-                    if (nRead < 0)
-                    {
-                        checkError(nRead, SS(this->deviceName << "MIDI event read failed. (" << snd_strerror(nRead)).c_str());
-                    }
-                    ProcessInputBuffer(readBuffer, nRead); // expose write to test code.
-                }
-            }
-
-            uint32_t inputSampleFrame = -1;
-            size_t inputEventBufferIndex;
-            std::vector<MidiEvent> *pInputEventBuffer = nullptr;
-
-            size_t ReadMidiEvents(
-                std::vector<MidiEvent> &outputBuffer,
-                size_t startIndex,
-                uint32_t sampleFrame)
-            {
-                inputSampleFrame = sampleFrame;
-                inputEventBufferIndex = startIndex;
-                pInputEventBuffer = &outputBuffer;
-                FillInputBuffer();
-                pInputEventBuffer = nullptr;
-                return inputEventBufferIndex - startIndex;
-            }
-
-            void FlushSysex()
-            {
-                if (inputProcessingSysex)
-                {
-                    // just discard it. :-/
-                    // if (this->eventCount != MAX_MIDI_EVENT)
-                    // {
-                    //     auto *event = &(events[eventCount++]);
-                    //     event->size = this->bufferCount - sysexStartIndex;
-                    //     event->buffer = &(this->buffer[this->sysexStartIndex]);
-                    //     event->time = 0;
-                    // }
-                    // sysexStartIndex = -1;
-                }
-                inputProcessingSysex = false;
-            }
-
-            int GetSystemCommonLength(uint8_t cc)
-            {
-                static int sizes[] = {-1, 1, 2, 1, -1, -1, 0, 0};
-                return sizes[(cc >> 4) & 0x07];
-            }
-            void ProcessInputBuffer(uint8_t *readBuffer, size_t nRead)
-            {
-                for (ssize_t i = 0; i < nRead; ++i)
-                {
-                    uint8_t v = readBuffer[i];
-
-                    if (v >= 0x80)
-                    {
-                        if (v >= 0xF0)
-                        {
-                            if (v == 0xF0)
-                            {
-                                inputProcessingSysex = true;
-                                inputSysexBufferCount = 0;
-
-                                inputSysexBuffer[inputSysexBufferCount++] = 0xF0;
-
-                                runningStatus = 0; // discard subsequent data.
-                                dataLength = -2;   // indefinitely.
-                                dataIndex = -1;
-                            }
-                            else if (v >= 0xF8)
-                            {
-                                // don't overwrite running status.
-                                // don't break sysexes on a running status message.
-                                // LV2 standard is ambiguous how realtime messages are handled,  so just discard them.
-                                continue;
-                            }
-                            else
-                            {
-                                FlushSysex();
-                                int length = GetSystemCommonLength(v);
-                                if (length == -1)
-                                    break; // ignore illegal messages.
-                                runningStatus = v;
-                                dataLength = length;
-                                dataIndex = 0;
-                            }
-                        }
-                        else
-                        {
-                            FlushSysex();
-                            int dataLength = GetDataLength(v);
-                            runningStatus = v;
-                            if (dataLength == -1)
-                            {
-                                this->dataLength = dataLength;
-                                dataIndex = -1;
-                            }
-                            else
-                            {
-                                this->dataLength = dataLength;
-                                dataIndex = 0;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (inputProcessingSysex)
-                        {
-                            if (inputSysexBufferCount != inputSysexBuffer.size())
-                            {
-                                inputSysexBuffer[inputSysexBufferCount++] = v;
-                            }
-                        }
-                        else
-                        {
-                            switch (dataIndex)
-                            {
-                            default:
-                                // discard.
-                                break;
-                            case 0:
-                                data0 = v;
-                                dataIndex = 1;
-                                break;
-                            case 1:
-                                data1 = v;
-                                dataIndex = 2;
-                                break;
-                            }
-                        }
-                    }
-                    if (dataIndex == dataLength && dataLength >= 0 && runningStatus != 0)
-                    {
-                        MidiPut(runningStatus, data0, data1);
-                        dataIndex = 0;
-                    }
-                }
-            }
-        };
-
-        std::vector<std::unique_ptr<AlsaMidiDeviceImpl>> midiDevices;
-
-        void OpenMidi(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
-        {
-            const auto &devices = channelSelection.GetInputMidiDevices();
-
-            midiDevices.reserve(devices.size());
-
-            for (size_t i = 0; i < devices.size(); ++i)
-            {
-                try
-                {
-                    const auto &device = devices[i];
-                    auto midiDevice = std::make_unique<AlsaMidiDeviceImpl>();
-                    midiDevice->Open(device);
-                    midiDevices.push_back(std::move(midiDevice));
-                }
-                catch (const std::exception &e)
-                {
-                    Lv2Log::error(e.what());
-                }
-            }
+            this->alsaSequencer = alsaSequencer;
         }
 
         virtual size_t InputBufferCount() const { return activeCaptureBuffers.size(); }

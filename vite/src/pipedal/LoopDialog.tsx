@@ -36,7 +36,7 @@ import Slider, { SliderProps } from "@mui/material/Slider";
 import Checkbox from "@mui/material/Checkbox";
 import TimebaseSelectorDialog from "./TimebaseselectorDialog";
 import Timebase, { TimebaseUnits } from "./Timebase";
-import { useWindowHeight } from "@react-hook/window-size";
+import useWindowSize from "./UseWindowSize";
 import Button from "@mui/material/Button";
 import PlayArrow from "@mui/icons-material/PlayArrow";
 import StopIcon from '@mui/icons-material/Stop';
@@ -405,8 +405,8 @@ export default function LoopDialog(props: LoopDialogProps) {
     const [loopEnd, setLoopEnd] = React.useState(props.value.loopEnd);
 
 
-    const height = useWindowHeight();
-    const fullScreen = height < 500;
+    const [windowSize] = useWindowSize(); 
+    const fullScreen = windowSize.height < 500;
 
     function cancelPlaying() {
         props.onCancelPlaying();
@@ -444,7 +444,7 @@ export default function LoopDialog(props: LoopDialogProps) {
             open={props.isOpen}
             onEnterKey={() => {
             }}
-            fullScreen={height < 500}
+            fullScreen={fullScreen}
             sx={{
                 "& .MuiDialog-container": {
                     "& .MuiPaper-root": {

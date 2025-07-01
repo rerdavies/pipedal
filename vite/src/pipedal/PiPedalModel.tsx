@@ -43,6 +43,7 @@ import { ColorTheme, getColorScheme, setColorScheme } from './DarkMode';
 import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
 import AudioFileMetadata from './AudioFileMetadata';
 import { pathFileName } from './FileUtils';
+import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
 
 
 export enum State {
@@ -419,6 +420,8 @@ export class PiPedalModel //implements PiPedalModel
     webSocket?: PiPedalSocket;
 
 
+    hasTone3000Auth: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
+
     hasWifiDevice: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
     onSnapshotModified: ObservableEvent<SnapshotModifiedEvent> = new ObservableEvent<SnapshotModifiedEvent>();
 
@@ -452,6 +455,7 @@ export class PiPedalModel //implements PiPedalModel
 
     favorites: ObservableProperty<FavoritesList> = new ObservableProperty<FavoritesList>({});
 
+    alsaSequencerConfiguration : ObservableProperty<AlsaSequencerConfiguration> = new ObservableProperty<AlsaSequencerConfiguration>(new AlsaSequencerConfiguration());
 
     presets: ObservableProperty<PresetIndex> = new ObservableProperty<PresetIndex>
         (
@@ -668,6 +672,9 @@ export class PiPedalModel //implements PiPedalModel
             this.handlePluginPresetsChanged(pluginUri);
         } else if (message === "onJackConfigurationChanged") {
             this.jackConfiguration.set(new JackConfiguration().deserialize(body));
+        } else if (message === "onAlsaSequencerConfigurationChanged") {
+            this.alsaSequencerConfiguration.set(new AlsaSequencerConfiguration().deserialize(body));
+
         } else if (message === "onLoadPluginPreset") {
             let instanceId = body.instanceId as number;
             let controlValues = ControlValue.deserializeArray(body.controlValues);
@@ -755,6 +762,8 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onErrorMessage") {
             this.showAlert(body as string);
 
+        } else if (message == "onTone3000AuthChanged") {
+            this.hasTone3000Auth.set(body as boolean);
         }
         else if (message === "onLv2PluginsChanging") {
             this.onLv2PluginsChanging();
@@ -1134,6 +1143,12 @@ export class PiPedalModel //implements PiPedalModel
             this.jackSettings.set(new JackChannelSelection().deserialize(
                 await this.getWebSocket().request<any>("getJackSettings")
             ));
+            this.alsaSequencerConfiguration.set(new AlsaSequencerConfiguration().deserialize(
+                await this.getWebSocket().request<any>("getAlsaSequencerConfiguration")
+            ));
+            this.hasTone3000Auth.set(
+                await this.getWebSocket().request<boolean>("getHasTone3000Auth")
+            );
             this.banks.set(new BankIndex().deserialize(await this.getWebSocket().request<any>("getBankIndex")));
 
             this.favorites.set(await this.getWebSocket().request<FavoritesList>("getFavorites"));
@@ -3193,6 +3208,25 @@ export class PiPedalModel //implements PiPedalModel
         // notify the server.
         this.webSocket?.send("setPedalboardItemTitle", { instanceId: instanceId, title: title });
     }
+    setAlsaSequencerConfiguration(alsaSequencerConfiguration: AlsaSequencerConfiguration): void {
+        this.webSocket?.send("setAlsaSequencerConfiguration", alsaSequencerConfiguration);
+    }
+    async getAlsaSequencerConfiguration(): Promise<AlsaSequencerConfiguration> {
+        if (this.webSocket)
+        {
+            let  result = await this.webSocket.request<any>("getAlsaSequencerConfiguration");
+            return new AlsaSequencerConfiguration().deserialize(result);
+        }
+        throw new Error("No connection.");
+    }
+    async getAlsaSequencerPorts(): Promise<AlsaSequencerPortSelection[]> {
+        if (this.webSocket) {
+            let result = await this.webSocket.request<AlsaSequencerPortSelection[]>("getAlsaSequencerPorts");
+            return AlsaSequencerPortSelection.deserialize_array(result);
+        }
+        throw new Error("No connection.");
+    }
+
 };
 
 let instance: PiPedalModel | undefined = undefined;

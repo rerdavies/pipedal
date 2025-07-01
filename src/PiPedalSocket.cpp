@@ -1416,6 +1416,10 @@ public:
             pReader->read(&instanceId);
             uint64_t result = model.DeleteBank(this->clientId, instanceId);
             this->Reply(replyTo, "deleteBankItem", result);
+        } else if (message == "getHasTone3000Auth") 
+        {
+            bool result = model.HasTone3000Auth();
+            this->Reply(replyTo, "getHasTone3000Auth", result);
         }
         else if (message == "renameBank")
         {
@@ -1730,6 +1734,22 @@ public:
         {
             auto regulatoryDomains = this->model.GetWifiRegulatoryDomains();
             this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
+        } else if (message == "setAlsaSequencerConfiguration")
+        {
+            AlsaSequencerConfiguration config;
+            pReader->read(&config);
+            this->model.SetAlsaSequencerConfiguration(config);
+            this->Reply(replyTo, "setAlsaSequencerConfiguration");
+        }
+        else if (message == "getAlsaSequencerConfiguration")
+        {
+            AlsaSequencerConfiguration config = this->model.GetAlsaSequencerConfiguration();
+            this->Reply(replyTo, "getAlsaSequencerConfiguration", config);
+        }
+        else if (message == "getAlsaSequencerPorts")
+        {
+            std::vector<AlsaSequencerPortSelection> result = model.GetAlsaSequencerPorts();
+            this->Reply(replyTo,"getAlsaSequencerPorts", result);
         }
         else
         {
@@ -1831,6 +1851,11 @@ private:
         Flush();
     }
 
+    virtual void OnAlsaSequencerConfigurationChanged(const AlsaSequencerConfiguration &alsaSequencerConfiguration) override
+    {
+        Send("onAlsaSequencerConfigurationChanged", alsaSequencerConfiguration);
+    }
+
     virtual void OnNetworkChanging(bool hotspotConnected) override
     {
         try
@@ -1841,6 +1866,10 @@ private:
         catch (const std::exception &ignored)
         {
         }
+    }
+    virtual void OnTone3000AuthChanged(bool value) 
+    {
+        Send("onTone3000AuthChanged", value);
     }
 
     virtual void OnErrorMessage(const std::string &message)

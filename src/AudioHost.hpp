@@ -39,6 +39,7 @@ namespace pipedal
     struct RealtimeNextMidiProgramRequest;
     class PluginHost;
     class Pedalboard;
+    class AlsaSequencerConfiguration;
 
     using PortMonitorCallback = std::function<void(int64_t handle, float value)>;
 
@@ -178,6 +179,8 @@ namespace pipedal
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) = 0;
 
         virtual void OnAlsaDriverTerminatedAbnormally() = 0;
+        virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) = 0;
+        virtual void OnAlsaSequencerDeviceRemoved(int client) = 0;
     };
 
     class JackHostStatus
@@ -225,6 +228,7 @@ namespace pipedal
         virtual void Open(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection) = 0;
         virtual void Close() = 0;
 
+        virtual void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
         virtual uint32_t GetSampleRate() = 0;
 
         virtual JackConfiguration GetServerConfiguration() = 0;

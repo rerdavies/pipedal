@@ -41,6 +41,7 @@ message(STATUS "NMPIPEDAL CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 # Use the sdbus-c++ target in SDBusCpp namespace
 add_library(PiPedalCommon STATIC
+  include/Finally.hpp
   include/dbus/org.freedesktop.NetworkManager.Device.Statistics.hpp
   include/dbus/org.freedesktop.NetworkManager.Settings.Connection.hpp
   include/dbus/org.freedesktop.NetworkManager.IP6Config.hpp

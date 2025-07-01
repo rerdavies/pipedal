@@ -142,7 +142,7 @@
                 //"[pipedal_alsa_test]"
                 // "[wifi_channels_test]"
                 // "[locale]"
-                "[pipedal_alsa_seq_test]"
+                "[pipewire_input_stream]"
             ],
 
             "stopAtEntry": false,

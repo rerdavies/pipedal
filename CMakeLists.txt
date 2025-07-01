@@ -11,6 +11,7 @@ set (DISPLAY_VERSION "PiPedal v1.4.76-Release")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
+set (PIPEDAL_EXCLUDE_TESTS false)
 include(CTest)
 enable_testing()
 

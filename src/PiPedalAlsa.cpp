@@ -47,6 +47,7 @@ void PiPedalAlsaDevices::cacheDevice(const std::string &name, const AlsaDeviceIn
 
 std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 {
+
     std::lock_guard guard{alsaMutex};
 
     std::vector<AlsaDeviceInfo> result;
@@ -118,7 +119,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                         if (err == 0)
                         {
                             unsigned int minRate = 0, maxRate = 0;
-                        snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
+                            snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
                             int dir;
                             err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                             if (err == 0)
@@ -143,7 +144,8 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                                         info.sampleRates_.push_back(rate);
                                     }
                                 }
-                                if (minBufferSize < 16) {
+                                if (minBufferSize < 16)
+                                {
                                     minBufferSize = 16;
                                 }
 
@@ -180,7 +182,207 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
     return result;
 }
 
-static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char *devname, const char *direction)
+static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaMidiDeviceInfo::Direction direction, std::vector<AlsaMidiDeviceInfo> *result)
+{
+    snd_rawmidi_info_t *info = nullptr;
+    const char *name = nullptr;
+    const char *sub_name = nullptr;
+    int subs = 0, subs_in = 0, subs_out = 0;
+    int sub = 0;
+    int err = 0;
+    ;
+
+    snd_rawmidi_info_alloca(&info);
+    snd_rawmidi_info_set_device(info, device);
+
+    snd_rawmidi_info_set_stream(info, SND_RAWMIDI_STREAM_INPUT);
+    err = snd_ctl_rawmidi_info(ctl, info);
+    if (err >= 0)
+        subs_in = snd_rawmidi_info_get_subdevices_count(info);
+    else
+        subs_in = 0;
+
+    snd_rawmidi_info_set_stream(info, SND_RAWMIDI_STREAM_OUTPUT);
+    err = snd_ctl_rawmidi_info(ctl, info);
+    if (err >= 0)
+        subs_out = snd_rawmidi_info_get_subdevices_count(info);
+    else
+        subs_out = 0;
+
+    subs = subs_in > subs_out ? subs_in : subs_out;
+    if (!subs)
+        return;
+
+    switch (direction)
+    {
+    case AlsaMidiDeviceInfo::In:
+        if (subs_out == 0) // out for the device, in for us.
+        {
+            return; // no input devices to add
+        }
+        break;
+    case AlsaMidiDeviceInfo::Out: // in for the device, out for us.
+        if (subs_in == 0)
+        {
+            return; // no output devices to add
+        }
+        break;
+    case AlsaMidiDeviceInfo::InOut:
+        if (subs_in == 0 || subs_out == 0)
+        {
+            return; // no input or output devices to add
+        }
+        break;
+    case AlsaMidiDeviceInfo::None:
+        return; // no devices to add
+    }
+
+    for (sub = 0; sub < subs; ++sub)
+    {
+        snd_rawmidi_info_set_stream(info, direction == AlsaMidiDeviceInfo::Direction::Out ? SND_RAWMIDI_STREAM_INPUT : SND_RAWMIDI_STREAM_OUTPUT);
+        snd_rawmidi_info_set_subdevice(info, sub);
+        err = snd_ctl_rawmidi_info(ctl, info);
+        if (err < 0)
+        {
+            throw std::runtime_error(
+                SS("snd_ctl_rawmidi_info failed  for card " << card << ", device " << device << ", subdevice " << sub << ": " << snd_strerror(err)));
+        }
+        name = snd_rawmidi_info_get_name(info);
+        sub_name = snd_rawmidi_info_get_subdevice_name(info);
+        // get card name.
+        
+        std::string cardName;
+        snd_ctl_card_info_t *card_info = nullptr;
+        snd_ctl_card_info_malloc(&card_info);
+        if (snd_ctl_card_info(ctl, card_info) == 0) {
+            cardName = snd_ctl_card_info_get_name(card_info);
+        }
+        snd_ctl_card_info_free(card_info);
+        if (cardName.length() == 0)
+        {
+            return;
+        }
+        
+        if (sub == 0 && sub_name[0] == '\0')
+        {
+            AlsaMidiDeviceInfo info;
+            info.name_ = SS("hw:CARD=" << cardName << ",DEV=" << device);
+            info.description_ = SS("Virtual MIDI " << card << "-" << device);
+            info.card_ = card;
+            info.device_ = device;
+            info.subdevice_ = 0;
+            info.isVirtual_ = true;
+            info.subDevices_ = subs;
+            if (subs_in > 0 && subs_out > 0)
+            {
+                info.direction_ = AlsaMidiDeviceInfo::InOut;
+            }
+            else if (subs_in > 0)
+            {
+                info.direction_ = AlsaMidiDeviceInfo::In;
+            }
+            else if (subs_out > 0)
+            {
+                info.direction_ = AlsaMidiDeviceInfo::Out;
+            }
+            else
+            {
+                info.direction_ = AlsaMidiDeviceInfo::None;
+            }
+            result->push_back(info);
+            break;
+        }
+        else
+        {
+            AlsaMidiDeviceInfo info;
+            info.name_ = SS("hw:CARD=" << cardName << ",DEV=" << device);
+            if (sub != 0) {
+                info.name_ = SS(info.name_ << "," << sub);
+            }
+            info.description_ = sub_name;
+            info.card_ = card;
+            info.device_ = device;
+            info.subdevice_ = sub;
+            info.isVirtual_ = false;
+            info.subDevices_ = 1;
+            result->push_back(info);
+        }
+    }
+}
+static void AddMidiCardToList(int card, std::vector<AlsaMidiDeviceInfo> *result, AlsaMidiDeviceInfo::Direction direction)
+{
+    snd_ctl_t *ctl = nullptr;
+    char name[32];
+    int device;
+    int err;
+
+    sprintf(name, "hw:%d", card);
+    if ((err = snd_ctl_open(&ctl, name, 0)) < 0)
+    {
+        throw std::runtime_error(SS("cannot open control for card " << card << ": " << snd_strerror(err)));
+    }
+    device = -1;
+    for (;;)
+    {
+        if ((err = snd_ctl_rawmidi_next_device(ctl, &device)) < 0)
+        {
+            snd_ctl_close(ctl);
+            throw std::runtime_error(SS("cannot get next rawmidi device for card " << card << ": " << snd_strerror(err)));
+        }
+        if (device < 0)
+            break;
+        AddMidiCardDevicesToList(ctl, card, device, direction, result);
+    }
+    snd_ctl_close(ctl);
+}
+
+static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char *devname, const char *direction_)
+{
+    std::vector<AlsaMidiDeviceInfo> result;
+
+    int card, err;
+
+    AlsaMidiDeviceInfo::Direction direction;
+    if (strcmp(direction_, "Input") == 0)
+    {
+        direction = AlsaMidiDeviceInfo::In;
+    }
+    else if (strcmp(direction_, "Output") == 0)
+    {
+        direction = AlsaMidiDeviceInfo::Out;
+    }
+    else if (strcmp(direction_, "InOut") == 0)
+    {
+        direction = AlsaMidiDeviceInfo::InOut;
+    }
+    else
+    {
+        direction = AlsaMidiDeviceInfo::None;
+        return result;
+    }
+
+    card = -1;
+    if ((err = snd_card_next(&card)) < 0)
+    {
+        throw std::runtime_error(SS("snd_card_next failed.: " << snd_strerror(err)));
+    }
+    if (card < 0)
+    {
+        // no devices!
+        return result;
+    }
+    do
+    {
+        AddMidiCardToList(card, &result, direction);
+        if ((err = snd_card_next(&card)) < 0)
+        {
+            throw std::runtime_error(SS("snd_card_next failed: " << snd_strerror(err)));
+        }
+    } while (card >= 0);
+
+    return result;
+}
+static std::vector<AlsaMidiDeviceInfo> OldGetAlsaDevices(const char *devname, const char *direction)
 {
     std::vector<AlsaMidiDeviceInfo> result;
     {
@@ -214,6 +416,8 @@ static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char *devname, const
                     result.push_back(AlsaMidiDeviceInfo(name, desc));
                 }
             }
+            // translate rawmidi device name to device number.
+
             if (name && strcmp("null", name) != 0)
                 free(name);
             if (desc && strcmp("null", desc) != 0)
@@ -229,11 +433,11 @@ static std::vector<AlsaMidiDeviceInfo> GetAlsaDevices(const char *devname, const
     return result;
 }
 
-std::vector<AlsaMidiDeviceInfo> pipedal::GetAlsaMidiInputDevices()
+std::vector<AlsaMidiDeviceInfo> pipedal::LegacyGetAlsaMidiInputDevices()
 {
     return GetAlsaDevices("rawmidi", "Input");
 }
-std::vector<AlsaMidiDeviceInfo> pipedal::GetAlsaMidiOutputDevices()
+std::vector<AlsaMidiDeviceInfo> pipedal::LegacyGetAlsaMidiOutputDevices()
 {
     return GetAlsaDevices("rawmidi", "Output");
 }
@@ -258,6 +462,14 @@ AlsaMidiDeviceInfo::AlsaMidiDeviceInfo(const char *name, const char *description
     {
         description = name;
     }
+}
+
+AlsaMidiDeviceInfo::AlsaMidiDeviceInfo(const char *name, const char *description, int card, int device, int subdevice)
+    : AlsaMidiDeviceInfo(name, description)
+{
+    this->card_ = card;
+    this->device_ = device;
+    this->subdevice_ = subdevice;
 }
 
 JSON_MAP_BEGIN(AlsaDeviceInfo)

@@ -44,9 +44,9 @@ std::string HtmlHelper::timeToHttpDate(std::filesystem::file_time_type time)
 {
 
     // Convert to time_t.
-    std::chrono::system_clock::time_point system_time = std::chrono::clock_cast<std::chrono::system_clock>(time);
+    auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(time - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
 
-    auto time_t_value = std::chrono::system_clock::to_time_t(system_time);
+    auto time_t_value = std::chrono::system_clock::to_time_t(sctp);
     return timeToHttpDate(time_t_value);
 }
 

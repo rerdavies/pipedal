@@ -94,7 +94,9 @@ namespace pipedal
 
         virtual void OnNetworkChanging(bool hotspotConnected) = 0;
         virtual void OnHasWifiChanged(bool hasWifi) = 0;
+        virtual void OnAlsaSequencerConfigurationChanged(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
         virtual void Close() = 0;
+        virtual void OnTone3000AuthChanged(bool value) = 0;
 
     };
 
@@ -168,6 +170,7 @@ namespace pipedal
         std::vector<AtomOutputListener> atomOutputListeners;
 
         JackServerSettings jackServerSettings;
+
         PluginHost pluginHost;
         AtomConverter atomConverter; // must be AFTER pluginHost!
 
@@ -238,6 +241,8 @@ namespace pipedal
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) override;
         virtual void OnAlsaDriverTerminatedAbnormally() override;
+        virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) override;
+        virtual void OnAlsaSequencerDeviceRemoved(int client) override;
 
         void OnNotifyPathPatchPropertyReceived(
             int64_t instanceId,
@@ -261,6 +266,7 @@ namespace pipedal
 
         void CheckForResourceInitialization(Pedalboard &pedalboard);
         UiFileProperty::ptr FindLoadedPatchProperty(int64_t instanceId,const std::string&patchPropertyUri);
+
 
     public:
         PiPedalModel();
@@ -387,6 +393,11 @@ namespace pipedal
         void SetJackChannelSelection(int64_t clientId, const JackChannelSelection &channelSelection);
         JackChannelSelection GetJackChannelSelection();
 
+        void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration);
+        AlsaSequencerConfiguration GetAlsaSequencerConfiguration();
+
+        std::vector<AlsaSequencerPortSelection> GetAlsaSequencerPorts();
+
         void SetShowStatusMonitor(bool show);
         bool GetShowStatusMonitor();
 
@@ -470,6 +481,10 @@ namespace pipedal
             int32_t to);
 
         void SetPedalboardItemTitle(int64_t instanceId, const std::string &title);
+
+        void SetTone3000Auth(const std::string &apiKey);
+        bool HasTone3000Auth() const;
+
     };
 
 } // namespace pipedal.

@@ -33,6 +33,7 @@
 #include "Lv2Log.hpp"
 #include "ss.hpp"
 #include "util.hpp"
+#include <algorithm>
 
 #undef _GLIBCXX_DEBUG // Ensure we are not in debug mode, as this file is not compatible with it.
 #include "SQLiteCpp/SQLiteCpp.h"
@@ -112,8 +113,9 @@ namespace
 
     static int64_t fileTimeToInt64(const fs::file_time_type &fileTime)
     {
-        std::chrono::system_clock::time_point system_time = std::chrono::clock_cast<std::chrono::system_clock>(fileTime);
-        auto result = std::chrono::duration_cast<std::chrono::milliseconds>(system_time.time_since_epoch()).count();
+        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            fileTime - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+        auto result = std::chrono::duration_cast<std::chrono::milliseconds>(sctp.time_since_epoch()).count();
         return result;
     }
     static int64_t GetLastWriteTime(const fs::path &file)

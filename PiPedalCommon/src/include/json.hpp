@@ -35,6 +35,8 @@
 #include <string_view>
 #include <string.h>
 #include <stdexcept>
+#include <vector>
+#include <memory>
 
 #define DECLARE_JSON_MAP(CLASSNAME) \
     static pipedal::json_map::storage_type<CLASSNAME> jmap

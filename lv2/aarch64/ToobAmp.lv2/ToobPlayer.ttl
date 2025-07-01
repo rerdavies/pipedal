@@ -1,0 +1,307 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix toobPlayer: <http://two-play.com/plugins/toob-player#> .
+
+toobPlayer:mixGroup
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Mix" ;
+    lv2:symbol "mixGroup" .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+
+toobPlayer:audioFile
+        a lv2:Parameter;
+        rdfs:label "File";
+	mod:fileTypes "audiotrack,wav,flac,mp3";
+        rdfs:range atom:Path;
+        lv2:index  4 
+        .
+toobPlayer:seek
+        a lv2:Parameter;
+        rdfs:label "Seek";
+        rdfs:range atom:Float;
+        .
+
+
+<http://two-play.com/plugins/toob-player>
+        a lv2:Plugin ,
+                lv2:GeneratorPlugin ;
+        doap:name "TooB File Player" ,
+                "TooB File Player"@en-gb 
+                ;
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 63 ;
+        rdfs:comment """
+Play audio files. Audio files can optionally be loooped by pressing the "Set loop" button.
+
+To skip the start of a file, press the "Set Loop" button, set the "Start" value in the seek dialog, and leave the "Loop Enabled" 
+checkbox unchecked.
+
+Note that loop information is stored as per-file metadata, and is not stored in the preset. If you need different loop settings for the 
+same file, create a copy of the file. Files are copied using hard links, so the copy will not take up significant disk space.
+
+
+TooB Player will display audio metadata for a file (track number, title, album, artist) if available. 
+If the file's metadata contains album art, that will be displayed as well. If not, the player will look for a folder artwork file in the same directory. The 
+folder artwork file can be called any of "Folder.jpg", "Cover.jpg", "AlbumArt.jpg" or a number of other common names used by media players and taggers. 
+You can upload album artwork files using the Upload button in the file browser. The Upload button  will allow you to upload audio files, or 
+folder artwork files that have a .jpg file extension. 
+
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "File Player";
+
+        # ONLY works in PiPedal
+        lv2:requiredFeature "http://github.com/rerdavies/pipedal#host" ;
+
+        lv2:optionalFeature lv2:hardRTCapable,state::freePath, state:makePath, state:mapPath, work:schedule ;
+        lv2:extensionData state:interface, work:interface;
+
+        patch:readable 
+                toobPlayer:audioFile,toobPlayer:seek;
+        patch:writable 
+                toobPlayer:audioFile;
+
+        lv2:port
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 0 ;
+                lv2:symbol "inl" ;
+                lv2:name "In L"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 1 ;
+                lv2:symbol "inr" ;
+                lv2:name "In R"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 2 ;
+                lv2:symbol "outl" ;
+                lv2:name "Out L"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 3 ;
+                lv2:symbol "outr" ;
+                lv2:name "OutR"
+        ],
+        ######################
+        [
+                a atom:AtomPort ,
+                        lv2:InputPort ;
+                lv2:index 4 ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:symbol "controlIn" ;
+                lv2:name "ControlIn"
+        ],
+        [
+                a atom:AtomPort ,
+                        lv2:OutputPort ;
+                lv2:index 5 ;
+                atom:bufferType atom:Sequence ;
+                atom:supports patch:Message;
+                lv2:designation lv2:control ;
+
+                lv2:symbol "controlOut" ;
+                lv2:name "ControlOut"
+        ],
+
+        ######################
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 6;
+                lv2:symbol "stop" ;
+                lv2:name "Stop";
+                rdf:comment "Stop playback.";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,epp:trigger;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 7;
+                lv2:symbol "pause" ;
+                lv2:name "Pause";
+                rdf:comment "Pause playback.";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,epp:trigger;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 8;
+                lv2:symbol "play" ;
+                lv2:name "Play";
+                rdf:comment "Play selected file.";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled,epp:trigger;
+        ],  
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 9 ;
+                lv2:symbol "volIn" ;
+                lv2:name "Input Vol";
+                rdfs:comment "Volume audio passed through from the input. ";
+
+
+                lv2:default 0.0 ;
+                lv2:minimum -40.0 ;
+                lv2:maximum 30.0 ;    
+                units:unit units:db ;
+                lv2:scalePoint    
+                [
+                        rdfs:label "-INF" ;
+                        rdf:value -40.0
+                ];
+                pg:group toobPlayer:mixGroup ;
+                
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 10;
+                lv2:symbol "panIn" ;
+                lv2:name "Input Pan";
+                rdfs:comment "Pan for passed-through audio.";
+
+                lv2:default 0.0 ;
+                lv2:minimum -1.0;
+                lv2:maximum 1.0;
+                pg:group toobPlayer:mixGroup ;
+                rdfs:comment "Input Pan";
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 11 ;
+                lv2:symbol "volFile" ;
+                lv2:name "File Vol";
+                rdfs:comment "Volume of the audio file being played.";
+
+                lv2:default 0.0 ;
+                lv2:minimum -40.0 ;
+                lv2:maximum 30.0 ;    
+                units:unit units:db ;
+                lv2:scalePoint    
+                [
+                        rdfs:label "-INF" ;
+                        rdf:value -40.0
+                ];
+                pg:group toobPlayer:mixGroup ;
+                
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 12;
+                lv2:symbol "panFile" ;
+                lv2:name "File Pan";
+                rdfs:comment "Pan position of the file being played.";
+                
+                lv2:default 0.0 ;
+                lv2:minimum -1.0;
+                lv2:maximum 1.0;
+                pg:group toobPlayer:mixGroup ;
+        ],
+
+
+
+        ###########################
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 13;
+                lv2:symbol "state" ;
+                lv2:name "Play State";
+                lv2:portProperty epp:notOnGUI;
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 10.0;
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+            lv2:index 14;
+                lv2:symbol "position" ;
+                lv2:name "Play Position";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0E+38;
+                units:unit units:s ;
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 15;
+                lv2:symbol "duration" ;
+                lv2:name "Duration";
+                rdfs:comment  "Length of the selected audio file.";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0E+38;
+                units:unit units:s ;
+        ]
+
+        .
+
+

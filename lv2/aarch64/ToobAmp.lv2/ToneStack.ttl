@@ -57,7 +57,7 @@ tonestack:eqGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 62 ;
+        lv2:microVersion 63 ;
 
         uiext:ui <http://two-play.com/plugins/toob-tone-stack-ui>;                
 
@@ -131,17 +131,28 @@ tone stack used in Polytone and HiWatt amps.
                         rdfs:label "Baxandall" ;
                         rdf:value 2.0
                 ];   
+        ],[
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 4 ;
+                lv2:symbol "gain" ;
+                lv2:name "Gain";
+                lv2:default 0.0 ;
+                lv2:minimum -40.0 ;
+                lv2:maximum 30.0; 
+                units:unit units:db;
         ],
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 4 ;
+                lv2:index 5 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ], [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 5 ;
+                lv2:index 6 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ],[
@@ -150,7 +161,7 @@ tone stack used in Polytone and HiWatt amps.
                 atom:bufferType atom:Sequence ;
                 # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 6 ;
+                lv2:index 7 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Plugin to GUI communication" ;
@@ -160,7 +171,7 @@ tone stack used in Polytone and HiWatt amps.
                 atom:bufferType atom:Sequence ;
                 # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 7 ;
+                lv2:index 8 ;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Plugin to GUI communication" ;
