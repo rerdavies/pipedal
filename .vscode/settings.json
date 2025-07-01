@@ -107,6 +107,9 @@
     },
     "cSpell.words": [
         "Alsa",
+        "alsactl",
+        "alsamixer",
+        "Avahi",
         "distros",
         "flac",
         "Guitarix",
@@ -120,6 +123,7 @@
         "midiclip",
         "midisong",
         "mlmodel",
+        "MOTU",
         "Netplan",
         "Pedalboard",
         "pipedal",

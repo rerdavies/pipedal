@@ -57,7 +57,7 @@ You can complete the initial configuration procedure using any of the following 
 
 3. _From your Android device._ Install PiPedal Remote on your Android device. Connect your Raspberry Pi to your home router using a Wi-Fi or Ethernet connection. Launch PiPedal Remote on your Android device.
 
-4. _From a LINUX command prompt._ As a last resort, you can configure the Wi-Fi hotspotusing the `pipedalconfig` program. Type `pipedalconfig --help` at a command prompt on your Raspberry Pi.
+4. _From a LINUX command prompt._ As a last resort, you can configure the Wi-Fi hotspot using the `pipedalconfig` program. Type `pipedalconfig --help` at a command prompt on your Raspberry Pi.
 
 If you already have another web server on port 80, see [*How to Change the Web Server Port*](ChangingTheWebServerPort.md).
 
@@ -68,7 +68,7 @@ When you connect to PiPedal for the first time, you will be presented with an On
 Once connected, select the Settings menu item on the Hamburger menu at the top left corner of the display. Click on Audio Device Settings to select and configure the audio device you want to use. 
 
 You may also need to choose which audio input and output channels you will use for guitar signals, once you have selected and configured 
-an audio device. Many external USB audio devices that have two inputs provide the guitar signal on the right channel only, so you will set the audio input chanels to  "Right Only". If your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from.
+an audio device. Many external USB audio devices that have two inputs provide the guitar signal on the right channel only, so you will set the audio input channels to  "Right Only". If your USB audio adapter has more than two input or output channels, you will be offered a list of channels to choose from.
 
 #### Selecting Audio Buffer Sizes
 
@@ -78,7 +78,7 @@ Please note that the Raspberry Pi OS is not completely robust with respect to re
 
 PiPedal provides the pipedal_latency_test utility to measure actual round-trip audio latency. You must temporarily disable pipedal (`sudo systemctl stop pipedal`), and connect the left audio output of your audio device to the left audio input of your audio device with a guitar cable to use this test. 
 
-The following table shows measured round-trip audio latencies for a MOTU M2 external USB adapter running on Raspbery Pi OS. You can use these figures as a rough guideline; but actual round-trip audio latency will depend on the audio device you are using.
+The following table shows measured round-trip audio latencies for a MOTU M2 external USB adapter running on Raspberry Pi OS. You can use these figures as a rough guideline; but actual round-trip audio latency will depend on the audio device you are using.
 
 <table align='center'>
     <tr><td></td><td colspan=3>Buffers</td></tr>
@@ -92,12 +92,12 @@ The following table shows measured round-trip audio latencies for a MOTU M2 exte
 </table>
 
 Selecting 2 buffers provides lower latency, but leaves very little CPU time for audio processing, so you may experience more underruns if 
-you select 2. Selecting 4 buffers provides much more time for proessing.  Using a buffer size of 16 increases CPU load slightly, since there a 
-certain amoung of CPU overhead associated with handling of each buffer. That being said, 16x4 audio buffer configuration is a highly recommended
+you select 2. Selecting 4 buffers provides much more time for processing.  Using a buffer size of 16 increases CPU load slightly, since there a 
+certain amount of CPU overhead associated with handling of each buffer. That being said, 16x4 audio buffer configuration is a highly recommended
 choice if your audio adapter can support it. It provides excellent latency with very little chance of overruns.
 
-All things being equal, you should perfer 48000hz sample rates to 44100Hz sample rates. The higher sample rate makes it easier for plugins to implement 
-audio effects without high-frequency artifacts; and Nueral Amp Models are usually designed to work best at 48000Hz sample rates.
+All things being equal, you should prefer 48000hz sample rates to 44100Hz sample rates. The higher sample rate makes it easier for plugins to implement 
+audio effects without high-frequency artifacts; and Neural Amp Models are usually designed to work best at 48000Hz sample rates.
 
 ### Configuring Input Trim Levels on Older USB Audio Devices
 
@@ -113,7 +113,7 @@ ideal. To configure the input gain on these devices, use the following procedure
 - Press TAB to scroll across pages/channels until you reach the CAPTURE slider(s). 
 - Connect and play your instrument, while watch the input VU meter in the PiPedal UI. Use the UP and DOWN arrow keys to adjust the input gain.
 - Press the ESC key to close alsa mixer. 
-- Run `sudo alsactl store` to save the settings permanantly.
+- Run `sudo alsactl store` to save the settings permanently.
 
 
 
@@ -128,7 +128,7 @@ PiPedal Android client, but you may find it useful for other purposes as well.
 Raspberry Pi devices are unable to run hotspots, and have another active Wi-Fi connection at the same time; so the auto-hotspot feature
 automatically turns the hotspot on, when your Raspberry Pi cannot otherwise be connected to, and can be configured to
 automatically turn the PiPedal hotspot off when you do want your Raspberry Pi to connect to another Wi-Fi access point.
-How you configure PiPedal's auto-hostpot depends on how you normally connect to your Raspberry Pi when you are at home.
+How you configure PiPedal's auto-hotspot depends on how you normally connect to your Raspberry Pi when you are at home.
 
 To configure Pipedal's Auto-Hotspot, open the Auto-Hotspot configuration dialog. You can access this dialog directly from the Onboarding page; or if 
 you have completed the onboarding procedure, you can open the dialog from the <b><i>Auto Hotspot</i></b> item in the <b><i>PiPedal Settings</i></b> dialog.
@@ -150,7 +150,7 @@ If there are multiple locations, and multiple Wi-Fi routers you use with PiPedal
 PiPedal Wi-Fi hotspot when <b><i>No remembered Wi-Fi connections</i></b> are visible, but this is a riskier option. The PiPedal hotspot will be automatically turned on if there are no
 Wi-Fi access points in range that you have previously connected to from your Raspberry Pi, and will be automatically turned on otherwise.
 The risk is that you could find yourself unable to connect to your Raspberry Pi when performing
-at a local bar, after you have used your Rasberry Pi to connect to the Wi-Fi access point at the coffee shop nextdoor. (Public Wi-Fi access
+at a local bar, after you have used your Raspberry Pi to connect to the Wi-Fi access point at the coffee shop nextdoor. (Public Wi-Fi access
 points usually won't work because devices that are connected to a public access point can't connect to each other).
 Will you ever do that? Probably not. But there is some risk that you might find yourself unable to connect at a live venue. Whether that's an
 acceptable risk is up to you.
@@ -178,13 +178,13 @@ automatically connect to your laptop hotspot whenever it sees it, after you have
 credentials on your Raspberry Pi. After the first time, all you need to do is turn on your laptop hotspot, and Raspberry Pi OS will 
 connect to it. 
 
-Usually, you can conect from your laptop using the same web address:  `http://raspberrypi` (`http://raspberrypi.local` on Ubuntu), or the hostname of your raspberry pi, if you have changed it. Unlike Android phones (where mDNS name resolution doesn't work on Android-hosted hotspots), mDNS/Bonjour name resolution usually 
+Usually, you can connect from your laptop using the same web address:  `http://raspberrypi` (`http://raspberrypi.local` on Ubuntu), or the hostname of your raspberry pi, if you have changed it. Unlike Android phones (where mDNS name resolution doesn't work on Android-hosted hotspots), mDNS/Bonjour name resolution usually 
 works on laptop-hosted hotspots when using Windows or Mac OS. If are running Linux on your laptop, you may need to install and configure the
 Avahi package to get mDNS/Bonjour name resolution to work.
 
 And if that doesn't work, you can configure PiPedal to launch an auto-hotspot, and then connect from your laptop to the PiPedal hotspot on your Raspberry Pi.
-When the Raspberry Pi hosts the hotspot, mDNS discovery is definitely enabled; so you should be able to connect using http://raspberrypi. But if that doesn't work, PiPedal's IP address will always be 10.40.0.1, when the PiPedal Wi-Fi hotspot is running, so you can always connect using  http://10.40.0.1.
+When the Raspberry Pi hosts the hotspot, mDNS discovery is definitely enabled; so you should be able to connect using http://raspberrypi. But if that doesn't work, PiPedal's IP address will always be 10.40.0.1, when the PiPedal Wi-Fi hotspot is running, so you can always connect using  http://172.23.0.2.
 
 
 --------
-[<< PiPedal on Ubuntu](Ubuntu.md)  | [Up](Documentation.md) | | [An Intro to Snapshots >>](Snapshots.md)
+[<< Headless Operation](HeadlessOperation.md)  | [Up](Documentation.md) | | [An Intro to Snapshots >>](Snapshots.md)

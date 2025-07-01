@@ -84,5 +84,5 @@ Headless, in this context means: nothing is using the GPU. On a Raspberry Pi, it
 
 
 --------
-[<< Installing PiPedal](Installing.md) | [Up](Documentation.md) | [Headless Operation >>](Headless.md)
+[<< Installing PiPedal](Installing.md) | [Up](Documentation.md) | [Headless Operation >>](HeadlessOperation.md)
 
