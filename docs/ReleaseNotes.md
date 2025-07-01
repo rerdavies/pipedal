@@ -26,7 +26,7 @@ The big features for this release
 
 - Multi-select support in file browser dialogs. Allows you to easily delete, copy or move multiple files at once.
 
-- Control values are displayed in a fly-out when changing control values, which makes it easier to determine the
+- Dial control values are displayed in a fly-out when editing, which makes it easier to determine the
      current value of a control when using touch user interfaces.
 
 -  Direct link to TONE3000 website from the TooB Neural Amp Modeler file browser.
