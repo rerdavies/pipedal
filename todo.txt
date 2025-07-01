@@ -1,3 +1,5 @@
+Exctly one underrun per seek in Toob Player
+
 Test autohotspot detection.
 
 

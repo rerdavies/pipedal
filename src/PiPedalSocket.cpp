@@ -1416,6 +1416,10 @@ public:
             pReader->read(&instanceId);
             uint64_t result = model.DeleteBank(this->clientId, instanceId);
             this->Reply(replyTo, "deleteBankItem", result);
+        } else if (message == "getHasTone3000Auth") 
+        {
+            bool result = model.HasTone3000Auth();
+            this->Reply(replyTo, "getHasTone3000Auth", result);
         }
         else if (message == "renameBank")
         {
@@ -1862,6 +1866,10 @@ private:
         catch (const std::exception &ignored)
         {
         }
+    }
+    virtual void OnTone3000AuthChanged(bool value) 
+    {
+        Send("onTone3000AuthChanged", value);
     }
 
     virtual void OnErrorMessage(const std::string &message)

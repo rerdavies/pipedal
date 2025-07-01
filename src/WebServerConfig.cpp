@@ -188,6 +188,10 @@ public:
         {
             return true;
         }
+        else if (segment == "Tone3000Auth")
+        {
+            return true;
+        }
         else if (segment == "PluginPresets")
         {
             return true;
@@ -734,7 +738,17 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "uploadPluginPresets")
+            if (segment == "Tone3000Auth") {
+                // https://www.tone3000.com/api/v1/auth?redirect_url=http://10.0.0.151:8080/var/Tone3000Auth&otp_only=true 
+                std::string apiKey = request_uri.query("api_key");
+
+                model->SetTone3000Auth(apiKey);
+
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+                
+                res.setBody("\"OK\"");
+            } else if (segment == "uploadPluginPresets")
             {
                 PluginPresets presets;
                 fs::path filePath = req.get_body_temporary_file();

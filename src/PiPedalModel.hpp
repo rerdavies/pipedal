@@ -96,6 +96,7 @@ namespace pipedal
         virtual void OnHasWifiChanged(bool hasWifi) = 0;
         virtual void OnAlsaSequencerConfigurationChanged(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
         virtual void Close() = 0;
+        virtual void OnTone3000AuthChanged(bool value) = 0;
 
     };
 
@@ -265,6 +266,7 @@ namespace pipedal
 
         void CheckForResourceInitialization(Pedalboard &pedalboard);
         UiFileProperty::ptr FindLoadedPatchProperty(int64_t instanceId,const std::string&patchPropertyUri);
+
 
     public:
         PiPedalModel();
@@ -479,6 +481,10 @@ namespace pipedal
             int32_t to);
 
         void SetPedalboardItemTitle(int64_t instanceId, const std::string &title);
+
+        void SetTone3000Auth(const std::string &apiKey);
+        bool HasTone3000Auth() const;
+
     };
 
 } // namespace pipedal.

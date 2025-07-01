@@ -254,6 +254,7 @@ void Storage::Initialize()
     LoadPluginPresetIndex();
     LoadBankIndex();
     LoadCurrentBank();
+    LoadTone3000Auth();
     try
     {
         LoadChannelSelection();
@@ -309,6 +310,11 @@ std::filesystem::path Storage::GetPluginUploadDirectory() const
 std::filesystem::path Storage::GetCurrentPresetPath() const
 {
     return this->dataRoot / "currentPreset.json";
+}
+
+std::filesystem::path Storage::GetTone3000AuthPath() const
+{
+    return this->dataRoot / "tone3000.json";
 }
 
 std::filesystem::path Storage::GetChannelSelectionFileName()
@@ -741,34 +747,35 @@ JackChannelSelection Storage::GetJackChannelSelection(const JackConfiguration &j
     return jackChannelSelection.RemoveInvalidChannels(jackConfiguration);
 }
 
-
 static AlsaSequencerConfiguration MigrateRawMidiToAlsaSequencer(std::vector<AlsaMidiDeviceInfo> &selectedDevices)
 {
     AlsaSequencerConfiguration result;
-    try {
-        auto  sequencerPorts = AlsaSequencer::EnumeratePorts();
+    try
+    {
+        auto sequencerPorts = AlsaSequencer::EnumeratePorts();
 
         // Prepare Migrate raw MIDI devices to ALSA sequencer ports.
 
         for (auto i = selectedDevices.begin(); i != selectedDevices.end(); ++i)
         {
-            if (i->name_.starts_with("hw:")) {
-                for (const auto &port: sequencerPorts)
+            if (i->name_.starts_with("hw:"))
+            {
+                for (const auto &port : sequencerPorts)
                 {
                     if (i->name_ == port.rawMidiDevice)
                     {
                         result.connections().push_back(
-                            AlsaSequencerPortSelection(port.id, port.name,port.displaySortOrder)
-                        );
+                            AlsaSequencerPortSelection(port.id, port.name, port.displaySortOrder));
                         break;
                     }
                 }
             }
         }
-    } catch (const std::exception&e) {
+    }
+    catch (const std::exception &e)
+    {
         Lv2Log::error(SS("Failed to migrate MIDI settings. " << e.what()));
-        // ick. 
-
+        // ick.
     }
     return result;
 }
@@ -790,23 +797,25 @@ void Storage::LoadAlsaSequencerConfiguration()
         {
             Lv2Log::error("I/O error reading %s: %s", fileName.c_str(), e.what());
         }
-    } else {
+    }
+    else
+    {
 
         // migrate legacy settings from JackConfiguration?
-        if (this->isJackChannelSelectionValid) 
+        if (this->isJackChannelSelectionValid)
         {
-            this->alsaSequencerConfiguration =             
+            this->alsaSequencerConfiguration =
                 MigrateRawMidiToAlsaSequencer(
                     this->jackChannelSelection.LegacyGetInputMidiDevices());
             this->jackChannelSelection.LegacyGetInputMidiDevices().clear(); // let them be clear, the next it gets updated.
-            
-        } else {
+        }
+        else
+        {
             // no legacy settings, so just create a default configuration.
             this->alsaSequencerConfiguration = AlsaSequencerConfiguration();
         }
         SaveAlsaSequencerConfiguration();
     }
-
 }
 void Storage::SaveAlsaSequencerConfiguration()
 {
@@ -814,7 +823,7 @@ void Storage::SaveAlsaSequencerConfiguration()
 
     try
     {
-        pipedal::ofstream_synced  s(fileName);
+        pipedal::ofstream_synced s(fileName);
         json_writer writer(s);
         writer.write(this->alsaSequencerConfiguration);
     }
@@ -822,7 +831,6 @@ void Storage::SaveAlsaSequencerConfiguration()
     {
         Lv2Log::error("I/O error writing %s: %s", fileName.c_str(), e.what());
     }
-
 }
 
 void Storage::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
@@ -835,7 +843,6 @@ AlsaSequencerConfiguration Storage::GetAlsaSequencerConfiguration() const
 {
     return this->alsaSequencerConfiguration;
 }
-
 
 void Storage::LoadChannelSelection()
 {
@@ -861,7 +868,7 @@ void Storage::SaveChannelSelection()
     try
     {
         // replaced with AlsaSequencerConfiguration. Delete legacy data.
-        this->jackChannelSelection.LegacyGetInputMidiDevices().clear(); 
+        this->jackChannelSelection.LegacyGetInputMidiDevices().clear();
         pipedal::ofstream_synced s(fileName);
         json_writer writer(s, false);
         writer.write(this->jackChannelSelection);
@@ -1849,12 +1856,14 @@ static void AddTracksToResult(
                 }
                 const auto &path = dir_entry.path();
                 auto name = path.filename().string();
-                try {
+                try
+                {
                     if (dir_entry.is_directory())
                     {
                         resultFiles.push_back(FileEntry{path, name, true, dir_entry.is_symlink()});
                     }
-                } catch (const std::exception &e)
+                }
+                catch (const std::exception &e)
                 {
                     Lv2Log::warning(SS("Failed to add directory entry: " << path.string() << " - " << e.what()));
                 }
@@ -1903,7 +1912,6 @@ static void AddTracksToResult(
             throw std::logic_error(
                 SS("AddTracksToResult failed to enumerate audio files. " << rootPath.string() << " - " << error.what()));
         }
-
     }
     catch (const std::exception &error)
     {
@@ -2600,6 +2608,47 @@ bool Storage::IsInUploadsDirectory(const std::filesystem::path &path) const
 const PluginPresetIndex &Storage::GetPluginPresetIndex()
 {
     return pluginPresetIndex;
+}
+
+void Storage::LoadTone3000Auth()
+{
+    fs::path path = GetTone3000AuthPath();
+    try
+    {
+        if (!fs::exists(path))
+        {
+            this->tone3000Auth = "";
+            return;
+        }
+        std::ifstream s(path);
+        json_reader reader(s);
+        reader.read(&(this->tone3000Auth));
+    }
+    catch (const std::exception &e)
+    {
+        Lv2Log::error("Failed to load tone3000Auth: %s", e.what());
+    }
+}
+
+void Storage::SetTone3000Auth(const std::string &apiKey)
+{
+    if (tone3000Auth != apiKey)
+    {
+        tone3000Auth = apiKey;
+
+        pipedal::ofstream_synced os(this->GetTone3000AuthPath());
+        if (!os.is_open())
+        {
+            Lv2Log::error("Failed to open Tone3000 auth file for writing.");
+            return;
+        }
+        json_writer writer(os);
+        writer.write(apiKey);
+    }
+}
+std::string Storage::GetTone3000Auth() const
+{
+    return tone3000Auth;
 }
 
 JSON_MAP_BEGIN(UserSettings)

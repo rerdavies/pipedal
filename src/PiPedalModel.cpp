@@ -3038,3 +3038,22 @@ void PiPedalModel::SetPedalboardItemTitle(int64_t instanceId, const std::string 
     this->SetPresetChanged(-1, true);
     this->FirePedalboardChanged(-1, false);
 }
+
+void PiPedalModel::SetTone3000Auth(const std::string &apiKey)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    storage.SetTone3000Auth(apiKey);
+    
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    bool hasAuth = apiKey != "";
+    for (auto &subscriber : t)
+    {
+        subscriber->OnTone3000AuthChanged(hasAuth);  
+    }
+
+}
+bool PiPedalModel::HasTone3000Auth() const
+{
+    return storage.GetTone3000Auth() != "";
+}
+
