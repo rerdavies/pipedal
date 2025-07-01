@@ -8,9 +8,9 @@ release.
 
 The big features for this release
 
--     a new TooB Player plugin that allows you to play (and loop) audio files.
+- a new TooB Player plugin that allows you to play (and loop) audio files.
 
--     Switch from ALSA rawmidi devices to ALSA sequencer devices for MIDI input. This provides 
+- Switch from ALSA rawmidi devices to ALSA sequencer devices for MIDI input. This provides
       a number of useful improvements. PiPedal now supports Bluetooth MIDI controllers.
       PiPedal provides better support for subdevices (multiple MIDI connections on the same device). 
       Connections to the PiPedal MIDI input port can now be made at runtime by other applications, or 
@@ -18,40 +18,40 @@ The big features for this release
       MIDI devices that have been selected will now be automatically reconnected when they are 
       plugged in again.
 
--     MIDI bindings allow users to specify minimum and maximum control values, in order to better support expression pedals.
+- MIDI bindings allow users to specify minimum and maximum control values, in order to better support expression pedals.
 
--     long-press and hover Tooltips are now displayed for all controls in the PiPedal UI.
+- long-press and hover Tooltips are now displayed for all controls in the PiPedal UI.
 
--   Editable plugin labels. You can now edit the labels of plugins in the PiPedal UI. Tap the plugin label to override 
+- Editable plugin labels. You can now edit the labels of plugins in the PiPedal UI. Tap the plugin label to override
     the default label with a custom label. Useful when you have multiple instances of the same plugin in a preset.
 
--    Multi-select support in file browser dialogs. Allows you to easily delete, copy or move multiple files at once.
+- Multi-select support in file browser dialogs. Allows you to easily delete, copy or move multiple files at once.
 
--   Control values are displayed in a fly-out when changing contrl values, which makes it easier to determine the 
+- Control values are displayed in a fly-out when changing control values, which makes it easier to determine the
      current value of a control when using touch user interfaces.
 
--     Direct link to TONE3000 website from the TooB Neural Amp Modeler file browser.
+-  Direct link to TONE3000 website from the TooB Neural Amp Modeler file browser.
 
--     Double-tap guestures now supported in touch user interfaces.  Double-tap a dial to reset it to its default value. Double-tap 
+- Double-tap gestures now supported in touch user interfaces.  Double-tap a dial to reset it to its default value. Double-tap
     a file in the File Browser to select it. Double-tap a plugin label to edit it.
 
--    Improvements to long-press handling in touch and mouse user interfaces. Long-press a control to display 
+- Improvements to long-press handling in touch and mouse user interfaces. Long-press a control to display
      a tooltip for the control, and triggers multi-select in the file browser dialog.
 
--     Audio files in the Tracks directory (only) are displayed using audio-file metadata and artwork if available.
+- Audio files in the Tracks directory (only) are displayed using audio-file metadata and artwork if available.
 
 Minor bug fixes:
 
--     WiFi scanning is only performed when required by the current Auto-Hotspot 
+- WiFi scanning is only performed when required by the current Auto-Hotspot
   configuration. WiFi is not turned on when PiPedal starts, unless the Auto-Hotspot configuration requires it.
 
 - MIDI controls continue to operate if the current audio stream has stopped.
 
--    Audio files with invalid UTF-8 sequences in their names are ignored (instead of causing crashes).
+- Audio files with invalid UTF-8 sequences in their names are ignored (instead of causing crashes).
 
--    Media files that are referenced in snapshots are now included in preset and bank file bundles.
+- Media files that are referenced in snapshots are now included in preset and bank file bundles.
 
--    Changed all references to tonehunt.org to tone3000.com (tonehunt's new name).
+- Changed all references to tonehunt.org to tone3000.com (tonehunt's new name).
 
 ## PiPedal 1.4.76 Release
 - **TooB Phaser**. A loose emulation of the MXR Phase 90 phaser.
