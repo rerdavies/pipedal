@@ -1,14 +1,16 @@
-<a href="Installing.html"><i>v1.4.76</i></a>
+<div style="position: relative">
+  <img src="img/pipedal.png" style="width: 100%; height: 160px;object-fit: cover"/>
+</div>
+
+<h2 style="font-weight: 300; font-size: 1.6em;line-height: 1em; padding-top: 32px; padding-bottom: 0px;margin-bottom: 4px">PiPedal Guitar Effects Processor</h2>
+<p style="padding-top: 0px; opacity: 0.6; padding-bottom: 16px">A Raspberry Pi-based stomp box designed to be controlled from a phone or tablet.</p>
+
+<a href="https://rerdavies.github.io/pipedal/ReleaseNotes"><img src="https://img.shields.io/github/v/release/rerdavies/pipedal?color=%23808080"/></a>
+<a href="https://rerdavies.github.io/pipedal/download"><img src="https://img.shields.io/badge/Download-008060" /></a>
+<a href="https://rerdavies.github.io/pipedal/Documentation"><img src="https://img.shields.io/badge/Docmentation-0060d0"/></a>
 
 _To download PiPedal, click [*here*](download.md). 
 To view PiPedal documentation, click [*here*](Documentation.md)._
-
-_Important notice_: [PatchStorage.com](https:///patchstorage.com) has added support for [PiPedal](https://patchstorage.com/platform/pipedal/). We urgently need your support! If you could please upload patches  [here](https://patchstorage.com/platform/pipedal/) I would be enormously grateful. Note that media and model files are included in patch files, so you can share patches that
-include model files or audio samples. If you make use of plugins that are not included in the PiPedal distribution, please include a link to the plugin in the patch description.
-
-#### NEW version 1.4.76 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. New Phaser and Graphic Equalizer plugins.
-
-&nbsp;
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
@@ -16,10 +18,11 @@ PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency au
 PiPedal will also run on Ubuntu 22.x (amd64/x64 and aarch64). Make sure you follow the [Ubuntu post-install 
 instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure your Ubuntu OS is using a  realtime-capable kernel.
 
+{% include gallery.html %}
+
+PiPedal includes state-of-the-art AI-based guitar amp emulation plugins based on the famous Neural Amp Modeler (NAM) and ML libraries which provide amp modelling that will blow your mind.
 
 {% include demo.html %}
-
-{% include gallery.html %}
 
 PiPedal can be remotely controlled via a web interface over Ethernet, or Wi-Fi. If you don't have access to a Wi-Fi router, PiPedal can be configured to 
 start a Wi-Fi hotspot automatically, whenever your Raspberry Pi can't connect to your home network.

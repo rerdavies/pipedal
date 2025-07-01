@@ -1,17 +1,17 @@
 
 <img src='docs/GithubBanner.png' width="100%" /><br/>
 
-<a href="https://rerdavies.github.io/pipedal/download.html"><img src="https://img.shields.io/github/v/release/rerdavies/pipedal?color=%23808080"/></a>
-<a href="#"><img src="https://img.shields.io/github/downloads/rerdavies/pipedal/total?color=%23808080&link=https%3A%2F%2Frerdavies.github.io%2Fpipedal%2Fdownload.html"/></a>
+<a href="https://rerdavies.github.io/pipedal/ReleaseNotes"><img src="https://img.shields.io/github/v/release/rerdavies/pipedal?color=%23808080"/></a>
+<a href="https://rerdavies.github.io/pipedal/download"><img src="https://img.shields.io/badge/Download-008060" /></a>
+<a href="https://rerdavies.github.io/pipedal/Documentation"><img src="https://img.shields.io/badge/Docmentation-0060d0"/></a>
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
 <a href="https://github.com/rerdavies/pipedal/actions"><img src="https://img.shields.io/github/actions/workflow/status/rerdavies/pipedal/cmake.yml?branch=main"/></a>
+<img src="https://img.shields.io/github/downloads/rerdavies/pipedal/total?color=%23808080&link=https%3A%2F%2Frerdavies.github.io%2Fpipedal%2Fdownload.html"/>
+
 
 Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.4.76</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
-
-_Important notice_: [PatchStorage.com](https:///patchstorage.com) has added support for [PiPedal](https://patchstorage.com/platform/pipedal/). We urgently need your support! If you could please upload patches  [here](https://patchstorage.com/platform/pipedal/) I would be enormously grateful. Note that media and model files are included in patch files, so you can share patches that
-include model files or audio samples. If you make use of plugins that are not included in the PiPedal distribution, please include a link to the plugin in the patch description.
 
 #### NEW version 1.4.76 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. New Phaser and Graphic Equalizer plugins.
 
@@ -47,6 +47,8 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 ### [What PiPedal Is](https://rerdavies.github.io/pipedal/AboutPiPedal.html)
 ### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.html)
 ### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.html)
+### [PiPedal on Ubuntu](https://rerdavies.github.io/pipedal/Ubuntu.html)
+
 ### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.html)
 ### [An Intro to Snapshots](https://rerdavies.github.io/pipedal/Snapshots.html)
 ### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.html)

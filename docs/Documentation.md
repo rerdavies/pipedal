@@ -8,7 +8,7 @@
 #### [System Requirements](SystemRequirements.md)
 
 #### [Installing PiPedal](Installing.md)
-
+#### [PiPedal on Ubuntu](Ubuntu.md)
 #### [Configuring PiPedal After Installation](Configuring.md)  
 #### [An intro to Snapshots](Snapshots.md)  
 #### [Choosing a USB Audio Adapter](ChoosingAUsbAudioAdapter.md)  
