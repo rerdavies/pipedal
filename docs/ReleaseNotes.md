@@ -1,6 +1,5 @@
 # Release Notes
 ## PiPedal 1.4.77 Beta
-- **TooB Player**. Play audio files.
 
 New TooB Player plugin; improvements to MIDI input handling; and a slew of fit-and finish 
 improvements to controls in the Pipedal user interface. All in all, a surprisingly large
