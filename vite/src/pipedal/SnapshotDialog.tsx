@@ -29,7 +29,7 @@ import DialogEx from './DialogEx';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import { TransitionProps } from '@mui/material/transitions';
 
@@ -114,10 +114,10 @@ export default class SnapshotDialog extends ResizeResponsiveComponent<SnapshotDi
             >
                 <DialogTitle>
                     <div>
-                        <IconButton edge="start" color="inherit" onClick={() => { this.props.onOk(); }} aria-label="back"
+                        <IconButtonEx tooltip="Back" edge="start" color="inherit" onClick={() => { this.props.onOk(); }} aria-label="back"
                         >
                             <ArrowBackIcon fontSize="small" style={{ opacity: "0.6" }} />
-                        </IconButton>
+                        </IconButtonEx>
                         <Typography display="inline" variant="body1" color="textSecondary" >Snapshots</Typography>
                     </div>
 

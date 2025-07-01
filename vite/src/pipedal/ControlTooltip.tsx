@@ -1,41 +1,51 @@
 
 import React, { ReactElement } from 'react';
-import Tooltip from "@mui/material/Tooltip"
 import { UiControl } from './Lv2Plugin';
 import Typography from "@mui/material/Typography";
 import Divider from '@mui/material/Divider';
+import ToolTipEx from './ToolTipEx'
 
 
 interface ControlTooltipProps {
     children: ReactElement,
     uiControl: UiControl
+    valueTooltip?: React.ReactNode;
 }
 
 
 export default function ControlTooltip(props: ControlTooltipProps) {
-    let { children, uiControl } = props;
+    let { children, uiControl, valueTooltip } = props;
     if (uiControl.comment && (uiControl.comment !== uiControl.name)) {
         return (
-            <Tooltip title={(
-                <React.Fragment>
-                    <Typography variant="caption">{uiControl.name}</Typography>
-                    <Divider />
-                    <Typography variant="caption">{uiControl.comment}</Typography>
+            <ToolTipEx
+                valueTooltip={valueTooltip}
+                title={
+                    (
+                        <React.Fragment>
+                            <Typography variant="caption">{uiControl.name}</Typography>
+                            <Divider />
+                            <Typography variant="caption">{uiControl.comment}</Typography>
 
-                </React.Fragment>
-            )}
-                placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
+                        </React.Fragment>
+                    )}
             >
-                {children}
-            </Tooltip>
+                <div>
+                    {children}
+                </div>
+            </ToolTipEx>
         );
     } else {
         return (
-            <Tooltip title={uiControl.name}
-                placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
+            <ToolTipEx valueTooltip={valueTooltip}
+                title={
+                    (
+                        <Typography variant="caption">{uiControl.name}</Typography>
+                    )}
             >
-                {children}
-            </Tooltip>
+                <div >
+                    {children}
+                </div>
+            </ToolTipEx>
         );
     }
 }

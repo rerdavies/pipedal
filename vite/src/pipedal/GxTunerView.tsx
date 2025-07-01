@@ -77,7 +77,11 @@ const GxTunerView =
                 }
                 throw new Error("GxTuner: Control '" + key + "' not found.");
             }
-            ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
+            fullScreen() {
+                return false;
+            }
+
+            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
                 let refFreqIndex = this.getControlIndex("REFFREQ");
                 let thresholdIndex = this.getControlIndex("THRESHOLD");

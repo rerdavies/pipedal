@@ -44,6 +44,7 @@
 #include "DBusLog.hpp"
 #include "AvahiService.hpp"
 #include "DummyAudioDriver.hpp"
+#include "AudioFiles.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -295,6 +296,8 @@ void PiPedalModel::Load()
 
     this->audioHost->SetSystemMidiBindings(this->systemMidiBindings);
 
+    audioHost->SetAlsaSequencerConfiguration(storage.GetAlsaSequencerConfiguration());
+
     if (configuration.GetMLock())
     {
 #ifndef NO_MLOCK
@@ -508,7 +511,6 @@ void PiPedalModel::FireBanksChanged(int64_t clientId)
     }
 }
 
-
 void PiPedalModel::FirePedalboardChanged(int64_t clientId, bool loadAudioThread)
 {
     if (loadAudioThread)
@@ -594,14 +596,11 @@ void PiPedalModel::UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalbo
 
         UpdateVst3Settings(pedalboard);
 
-
-
         Lv2PedalboardErrorList errorMessages;
         std::shared_ptr<Lv2Pedalboard> lv2Pedalboard{
-            this->pluginHost.UpdateLv2PedalboardStructure(pedalboard, this->lv2Pedalboard.get(), errorMessages)
-        };
+            this->pluginHost.UpdateLv2PedalboardStructure(pedalboard, this->lv2Pedalboard.get(), errorMessages)};
         this->lv2Pedalboard = lv2Pedalboard;
-    
+
         // apply the error messages to the lv2Pedalboard.
         // return true if the error messages have changed
         audioHost->SetPedalboard(lv2Pedalboard);
@@ -613,9 +612,7 @@ void PiPedalModel::UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalbo
         UpdateRealtimeVuSubscriptions();
         UpdateRealtimeMonitorPortSubscriptions();
 
-        
-
-        this->FirePedalboardChanged(clientId,false);
+        this->FirePedalboardChanged(clientId, false);
         this->SetPresetChanged(clientId, true);
     }
 }
@@ -1399,6 +1396,77 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
     }
 }
 
+void PiPedalModel::OnAlsaSequencerDeviceAdded(int client, const std::string &clientName)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    auto alsaSequencerConfiguration = this->storage.GetAlsaSequencerConfiguration();
+    std::string key = "seq:" + clientName;
+    bool interested = false;
+    for (const auto &port : alsaSequencerConfiguration.connections())
+    {
+        if (port.id().starts_with(key))
+        {
+            interested = true;
+            break;
+        }
+    }
+    if (interested)
+    {
+        Post(
+            [this]
+            {
+                // reconfigure connections.
+                std::lock_guard<std::recursive_mutex> lock(this->mutex);
+                if (this->audioHost) {
+                    this->audioHost->SetAlsaSequencerConfiguration(this->storage.GetAlsaSequencerConfiguration());
+                }
+            });
+    }
+}
+void PiPedalModel::OnAlsaSequencerDeviceRemoved(int client)
+{
+    // no action  required. 
+}
+
+void PiPedalModel::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    // reset midi connections even if the configuration hasn't changed.
+    this->audioHost->SetAlsaSequencerConfiguration(alsaSequencerConfiguration);
+
+    auto current = storage.GetAlsaSequencerConfiguration();
+    if (alsaSequencerConfiguration != current)
+    {
+        this->storage.SetAlsaSequencerConfiguration(alsaSequencerConfiguration);
+        // notify subscribers.
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
+        {
+            subscriber->OnAlsaSequencerConfigurationChanged(alsaSequencerConfiguration);
+        }
+    }
+}
+AlsaSequencerConfiguration PiPedalModel::GetAlsaSequencerConfiguration()
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return this->storage.GetAlsaSequencerConfiguration();
+}
+
+std::vector<AlsaSequencerPortSelection> PiPedalModel::GetAlsaSequencerPorts()
+{
+    auto ports = AlsaSequencer::EnumeratePorts();
+    std::vector<AlsaSequencerPortSelection> result;
+    for (auto &port : ports)
+    {
+        result.push_back(AlsaSequencerPortSelection{
+            port.id,
+            port.name,
+            port.displaySortOrder});
+    }
+    return result;
+}
+
 void PiPedalModel::SetJackChannelSelection(int64_t clientId, const JackChannelSelection &channelSelection)
 {
     {
@@ -1615,19 +1683,31 @@ void PiPedalModel::SendSetPatchProperty(
 {
 
     std::lock_guard<std::recursive_mutex> lock(mutex);
+    if (!audioHost)
+    {
+        onError("Audio not running.");
+        return;
+    }
 
     // save the property to the preset (currently used to reconstruct snapshots only)
     PedalboardItem *pedalboardItem = this->pedalboard.GetItem(instanceId);
-    if (pedalboardItem)
+    if (pedalboardItem && value.is_string())
     {
-        json_variant abstractPath = pluginHost.AbstractPath(value);
-        std::ostringstream ss;
-        json_writer writer(ss);
-        writer.write(abstractPath);
-        std::string atomString = ss.str();
-        pedalboardItem->pathProperties_[propertyUri] = atomString;
+        std::shared_ptr<Lv2PluginInfo> pluginInfo = GetPluginInfo(pedalboardItem->uri_);
+        auto pipedalUi = pluginInfo->piPedalUI();
+        auto fileProperty = pipedalUi->GetFileProperty(propertyUri);
+        if (fileProperty && value.is_string())
+        {
+
+            json_variant abstractPath = pluginHost.AbstractPath(value);
+            std::ostringstream ss;
+            json_writer writer(ss);
+            writer.write(abstractPath);
+            std::string atomString = ss.str();
+            pedalboardItem->pathProperties_[propertyUri] = atomString;
+        }
+        this->SetPresetChanged(clientId, true);
     }
-    this->SetPresetChanged(clientId, true);
     LV2_Atom *atomValue = atomConverter.ToAtom(value);
 
     std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
@@ -1657,7 +1737,7 @@ void PiPedalModel::SendSetPatchProperty(
                     }
                     else
                     {
-                        if (pParameter->onSuccess)
+                        if (onSuccess)
                         {
                             onSuccess();
                         }
@@ -1668,10 +1748,11 @@ void PiPedalModel::SendSetPatchProperty(
         }};
 
     LV2_URID urid = this->pluginHost.GetLv2Urid(propertyUri.c_str());
-
+    size_t sampleTimeout = 0.5 * audioHost->GetSampleRate();
     RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
         onRequestComplete,
-        clientId, instanceId, urid, atomValue, nullptr, onError);
+        clientId, instanceId, urid, atomValue, nullptr, onError,
+        sampleTimeout);
 
     outstandingParameterRequests.push_back(request);
     if (this->audioHost)
@@ -1684,7 +1765,7 @@ void PiPedalModel::SendGetPatchProperty(
     int64_t clientId,
     int64_t instanceId,
     const std::string uri,
-    std::function<void(const std::string &jsonResjult)> onSuccess,
+    std::function<void(const std::string &jsonResult)> onSuccess,
     std::function<void(const std::string &error)> onError)
 {
     std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
@@ -1732,16 +1813,20 @@ void PiPedalModel::SendGetPatchProperty(
         }};
 
     LV2_URID urid = this->pluginHost.GetLv2Urid(uri.c_str());
-    RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
-        onRequestComplete,
-        clientId, instanceId, urid, onSuccess, onError);
 
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    outstandingParameterRequests.push_back(request);
-    if (this->audioHost)
+
+    if (!this->audioHost)
     {
-        this->audioHost->sendRealtimeParameterRequest(request);
+        onError("Audio stopped.");
     }
+    size_t sampleTimeout = 0.3 * audioHost->GetSampleRate();
+    RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
+        onRequestComplete,
+        clientId, instanceId, urid, onSuccess, onError, sampleTimeout);
+
+    outstandingParameterRequests.push_back(request);
+    this->audioHost->sendRealtimeParameterRequest(request);
 }
 
 BankIndex PiPedalModel::GetBankIndex() const
@@ -1902,7 +1987,9 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
             {
                 pedalboardItem->midiChannelBinding(MidiChannelBinding::DefaultForMissingValue());
             }
-        } else {
+        }
+        else
+        {
             if (pedalboardItem->midiChannelBinding())
             {
                 pedalboardItem->midiChannelBinding(std::optional<MidiChannelBinding>()); // clear it.
@@ -2174,34 +2261,41 @@ void PiPedalModel::OnNotifyPathPatchPropertyReceived(
     }
 }
 
-void PiPedalModel::OnNotifyMidiListen(bool isNote, uint8_t noteOrControl)
+void PiPedalModel::OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
+    bool isNote = (cc0 & 0xF0) == 0x90; // Note On
+    if (isNote && cc2 == 0)
+    {
+        return; // Note off. Oopsie.
+    }
+    bool isControl = (cc0 & 0xF0) == 0xB0; // Control Change
+    if (!isNote && !isControl)
+    {
+        return; // Not a note on or control change.
+    }
 
-    for (int i = 0; i < midiEventListeners.size(); ++i) 
+    for (int i = 0; i < midiEventListeners.size(); ++i)
     {
         auto &listener = midiEventListeners[i];
-        if ((!isNote) == (listener.listenForControls))
+        auto subscriber = this->GetNotificationSubscriber(listener.clientId);
+        if (subscriber)
         {
-            auto subscriber = this->GetNotificationSubscriber(listener.clientId);
-            if (subscriber)
-            {
-                subscriber->OnNotifyMidiListener(listener.clientHandle, isNote, noteOrControl);
-            }
-            else
-            {
-                midiEventListeners.erase(midiEventListeners.begin() + i);
-                --i;
-            }
+            subscriber->OnNotifyMidiListener(listener.clientHandle, cc0, cc1, cc2);
+        }
+        else
+        {
+            midiEventListeners.erase(midiEventListeners.begin() + i);
+            --i;
         }
     }
     audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
 }
 
-void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControls)
+void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    MidiListener listener{clientId, clientHandle, listenForControls};
+    MidiListener listener{clientId, clientHandle};
     midiEventListeners.push_back(listener);
     audioHost->SetListenForMidiEvent(true);
 }
@@ -2272,6 +2366,7 @@ void PiPedalModel::CancelMonitorPatchProperty(int64_t clientId, int64_t clientHa
         audioHost->SetListenForMidiEvent(false);
     }
 }
+
 std::vector<AlsaDeviceInfo> PiPedalModel::GetAlsaDevices()
 {
     std::vector<AlsaDeviceInfo> result = this->alsaDevices.GetAlsaDevices();
@@ -2329,9 +2424,9 @@ void PiPedalModel::SetSystemMidiBindings(std::vector<MidiBinding> &bindings)
     }
 }
 
-PedalboardItem*PiPedalModel::GetPedalboardItemForFileProperty(const UiFileProperty& fileProperty) 
+PedalboardItem *PiPedalModel::GetPedalboardItemForFileProperty(const UiFileProperty &fileProperty)
 {
-    for (PedalboardItem*pedalboardItem: this->pedalboard.GetAllPlugins())
+    for (PedalboardItem *pedalboardItem : this->pedalboard.GetAllPlugins())
     {
         if (pedalboardItem->pathProperties_.contains(fileProperty.patchProperty()))
         {
@@ -2345,23 +2440,24 @@ FileRequestResult PiPedalModel::GetFileList2(const std::string &relativePath_, c
     std::string relativePath = relativePath_;
     try
     {
-        if (!storage.IsInUploadsDirectory(relativePath)) 
+        if (!storage.IsInUploadsDirectory(relativePath))
         {
+
             // if relativePath is in a resource directory of the plugin, then we have loaded a factory preset or are using a default property.
-            // map the resource path to the corresponding file in the uploads directory. 
+            // map the resource path to the corresponding file in the uploads directory.
             // :-(
             PedalboardItem *pedalboardItem = GetPedalboardItemForFileProperty(fileProperty);
             if (pedalboardItem)
             {
                 auto pluginInfo = GetPluginInfo(pedalboardItem->uri());
-                if (pluginInfo) {
-                    std::filesystem::path resourcePath = fs::path(pluginInfo->bundle_path())
-                        / fileProperty.resourceDirectory();
-                    if (IsSubdirectory(relativePath,resourcePath))
+                if (pluginInfo)
+                {
+                    std::filesystem::path resourcePath = fs::path(pluginInfo->bundle_path()) / fileProperty.resourceDirectory();
+                    if (IsSubdirectory(relativePath, resourcePath))
                     {
-                        fs::path t = MakeRelativePath(relativePath,resourcePath);
-                        t  = fileProperty.directory() / t;
-                        if (fs::exists(t)) 
+                        fs::path t = MakeRelativePath(relativePath, resourcePath);
+                        t = fileProperty.directory() / t;
+                        if (fs::exists(t))
                         {
                             relativePath = t;
                         }
@@ -2387,6 +2483,16 @@ std::string PiPedalModel::RenameFilePropertyFile(
     return storage.RenameFilePropertyFile(oldRelativePath, newRelativePath, uiFileProperty);
 }
 
+std::string PiPedalModel::CopyFilePropertyFile(
+    const std::string &oldRelativePath,
+    const std::string &newRelativePath,
+    const UiFileProperty &uiFileProperty,
+    bool overwrite)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return storage.CopyFilePropertyFile(oldRelativePath, newRelativePath, uiFileProperty, overwrite);
+}
+
 void PiPedalModel::DeleteSampleFile(const std::filesystem::path &fileName)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -2398,28 +2504,29 @@ std::string PiPedalModel::CreateNewSampleDirectory(const std::string &relativePa
     std::lock_guard<std::recursive_mutex> lock(mutex);
     return storage.CreateNewSampleDirectory(relativePath, uiFileProperty);
 }
-FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath)
+FilePropertyDirectoryTree::ptr PiPedalModel::GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty, const std::string &selectedPath)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    return storage.GetFilePropertydirectoryTree(uiFileProperty,selectedPath);
+    return storage.GetFilePropertydirectoryTree(uiFileProperty, selectedPath);
 }
 
-UiFileProperty::ptr PiPedalModel::FindLoadedPatchProperty(int64_t instanceId,const std::string&patchPropertyUri)
+UiFileProperty::ptr PiPedalModel::FindLoadedPatchProperty(int64_t instanceId, const std::string &patchPropertyUri)
 {
 
     auto pedalboardItems = pedalboard.GetAllPlugins();
 
-    for (const auto&pedalboardItem: pedalboardItems) {
+    for (const auto &pedalboardItem : pedalboardItems)
+    {
         if (pedalboardItem->instanceId() == instanceId)
         {
             Lv2PluginInfo::ptr pluginInfo = GetPluginInfo(pedalboardItem->uri());
             if (pluginInfo && pluginInfo->piPedalUI())
             {
-                for (const auto&fileProperty: pluginInfo->piPedalUI()->fileProperties())
-                if (fileProperty->patchProperty() == patchPropertyUri)
-                {
-                    return fileProperty;
-                }
+                for (const auto &fileProperty : pluginInfo->piPedalUI()->fileProperties())
+                    if (fileProperty->patchProperty() == patchPropertyUri)
+                    {
+                        return fileProperty;
+                    }
             }
         }
     }
@@ -2427,9 +2534,9 @@ UiFileProperty::ptr PiPedalModel::FindLoadedPatchProperty(int64_t instanceId,con
     throw std::runtime_error("Permission denied. Plugin not currently loaded.");
 }
 
-std::string PiPedalModel::UploadUserFile(const std::string &directory, int64_t instanceId,const std::string &patchProperty, const std::string &filename, std::istream &stream, size_t contentLength)
+std::string PiPedalModel::UploadUserFile(const std::string &directory, int64_t instanceId, const std::string &patchProperty, const std::string &filename, std::istream &stream, size_t contentLength)
 {
-    UiFileProperty::ptr fileProperty = FindLoadedPatchProperty(instanceId,patchProperty);
+    UiFileProperty::ptr fileProperty = FindLoadedPatchProperty(instanceId, patchProperty);
     if (!fileProperty)
     {
         Lv2Log::error(SS("Upload fle: Permission denied. No currently-loaded plugin provides that patch property: " << patchProperty));
@@ -2819,35 +2926,40 @@ bool PiPedalModel::GetHasWifi()
     return hasWifi;
 }
 
-std::map<std::string,std::string> PiPedalModel::GetWifiRegulatoryDomains()
+std::map<std::string, std::string> PiPedalModel::GetWifiRegulatoryDomains()
 {
-    std::map<std::string,std::string> result;
-    try {
-        auto& regDb = RegDb::GetInstance();
+    std::map<std::string, std::string> result;
+    try
+    {
+        auto &regDb = RegDb::GetInstance();
         result = regDb.getRegulatoryDomains(storage.GetConfigRoot() / "iso_codes.json");
-    } catch (const std::exception&e)
+    }
+    catch (const std::exception &e)
     {
         Lv2Log::warning(SS("Unable to query Wifi Regulatory domains. " << e.what()));
     }
     return result;
 }
 
-void PiPedalModel::CancelAudioRetry() {
+void PiPedalModel::CancelAudioRetry()
+{
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    if (audioRetryPostHandle) 
+    if (audioRetryPostHandle)
     {
         // don't think this can ever happen, but if it did, it would be bad.
         this->CancelPost(audioRetryPostHandle);
         audioRetryPostHandle = 0;
     }
-
 }
-void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
-    // notification from the realtime thread, via the audiohost that the 
+
+void PiPedalModel::OnAlsaDriverTerminatedAbnormally()
+{
+    // notification from the realtime thread, via the audiohost that the
     // ALSA stream has broken. We want to restart.
 
     // get off the service thread as promptly as possible
-    this->Post([&]() {
+    this->Post([&]()
+               {
         std::lock_guard<std::recursive_mutex> lock(mutex);
         if (closed) return;
 
@@ -2895,11 +3007,53 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally() {
         } else {
             Lv2Log::error(SS("Unable to reastart audio."));
 
-        }
-    });
+        } });
 }
 
 bool PiPedalModel::IsInUploadsDirectory(const std::string &path)
 {
     return storage.IsInUploadsDirectory(path);
 }
+
+void PiPedalModel::MoveAudioFile(
+    const std::string &directory,
+    int32_t fromPosition,
+    int32_t toPosition)
+{
+    if (directory.empty())
+    {
+        throw std::runtime_error("Directory is empty.");
+    }
+    AudioDirectoryInfo::Ptr dir = AudioDirectoryInfo::Create(directory);
+    dir->MoveAudioFile(directory, fromPosition, toPosition);
+}
+void PiPedalModel::SetPedalboardItemTitle(int64_t instanceId, const std::string &title)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    if (!this->pedalboard.SetItemTitle(instanceId, title))
+    {
+        return;
+    }
+    // no need to reload the pedalboard, but we do need to notify subscribers.
+    this->SetPresetChanged(-1, true);
+    this->FirePedalboardChanged(-1, false);
+}
+
+void PiPedalModel::SetTone3000Auth(const std::string &apiKey)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    storage.SetTone3000Auth(apiKey);
+    
+    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+    bool hasAuth = apiKey != "";
+    for (auto &subscriber : t)
+    {
+        subscriber->OnTone3000AuthChanged(hasAuth);  
+    }
+
+}
+bool PiPedalModel::HasTone3000Auth() const
+{
+    return storage.GetTone3000Auth() != "";
+}
+

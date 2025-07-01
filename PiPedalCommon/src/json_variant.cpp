@@ -50,6 +50,9 @@ void json_variant::free()
     case ContentType::Array:
         memArray().std::shared_ptr<json_array>::~shared_ptr();
         break;
+    default:
+        break;
+
     }
     content_type = ContentType::Null;
 }
@@ -467,6 +470,15 @@ json_variant &json_variant::operator=(json_variant &&value)
         case ContentType::Object:
             std::swap(this->memObject(), value.memObject());
             return *this;
+        case ContentType::Null:
+            return *this; // nothing to do.
+        case ContentType::Bool:
+            std::swap(this->content.bool_value, value.content.bool_value);
+            return *this;
+        case ContentType::Number:
+            std::swap(this->content.double_value, value.content.double_value);
+            return *this;
+        
         }
     }
     free();

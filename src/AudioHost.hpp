@@ -39,6 +39,7 @@ namespace pipedal
     struct RealtimeNextMidiProgramRequest;
     class PluginHost;
     class Pedalboard;
+    class AlsaSequencerConfiguration;
 
     using PortMonitorCallback = std::function<void(int64_t handle, float value)>;
 
@@ -69,6 +70,7 @@ namespace pipedal
 
         const char *errorMessage = nullptr;
         std::string jsonResponse;
+        int64_t sampleTimeout = 0;
 
         RealtimePatchPropertyRequest *pNext = nullptr;
 
@@ -102,13 +104,16 @@ namespace pipedal
             int64_t instanceId_,
             LV2_URID uridUri_,
             std::function<void(const std::string &jsonResjult)> onSuccess_,
-            std::function<void(const std::string &error)> onError_)
+            std::function<void(const std::string &error)> onError_,
+            size_t sampleTimeout)
             : onPatchRequestComplete(onPatchRequestcomplete_),
               clientId(clientId_),
               instanceId(instanceId_),
               uridUri(uridUri_),
               onSuccess(onSuccess_),
-              onError(onError_)
+              onError(onError_),
+              sampleTimeout((int64_t)sampleTimeout)
+
         {
             requestType = RequestType::PatchGet;
         }
@@ -119,13 +124,15 @@ namespace pipedal
             LV2_URID uridUri_,
             LV2_Atom *atomValue,
             std::function<void(const std::string &jsonResjult)> onSuccess_,
-            std::function<void(const std::string &error)> onError_)
+            std::function<void(const std::string &error)> onError_,
+            size_t sampleTimeout)
             : onPatchRequestComplete(onPatchRequestcomplete_),
               clientId(clientId_),
               instanceId(instanceId_),
               uridUri(uridUri_),
               onSuccess(onSuccess_),
-              onError(onError_)
+              onError(onError_),
+              sampleTimeout(sampleTimeout)
         {
             requestType = RequestType::PatchSet;
             size_t size = atomValue->size + sizeof(LV2_Atom);
@@ -152,7 +159,7 @@ namespace pipedal
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) = 0;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;
-        virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) = 0;
+        virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) = 0;
 
         virtual void OnNotifyPathPatchPropertyReceived(
             int64_t instanceId,
@@ -172,6 +179,8 @@ namespace pipedal
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) = 0;
 
         virtual void OnAlsaDriverTerminatedAbnormally() = 0;
+        virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) = 0;
+        virtual void OnAlsaSequencerDeviceRemoved(int client) = 0;
     };
 
     class JackHostStatus
@@ -219,6 +228,7 @@ namespace pipedal
         virtual void Open(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection) = 0;
         virtual void Close() = 0;
 
+        virtual void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
         virtual uint32_t GetSampleRate() = 0;
 
         virtual JackConfiguration GetServerConfiguration() = 0;

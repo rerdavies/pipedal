@@ -24,7 +24,7 @@ import { withStyles } from "tss-react/mui";
 import {createStyles} from './WithStyles';
 
 import Input from '@mui/material/Input';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -102,9 +102,9 @@ const SearchControl = withTheme(withStyles(
             return (
                 <div style={{ display: "flex", flexFlow: "row nowrap", justifyContent: "flex-end", alignItems: "center" }}>
                     {(this.props.showSearchIcon ?? true) && (
-                        <IconButton onClick={() => { this.props.onClick(); }} size="large">
+                        <IconButtonEx tooltip="Search" onClick={() => { this.props.onClick(); }} size="large">
                             <SearchIcon />
-                        </IconButton>
+                        </IconButtonEx>
                     )
 
                     }
@@ -118,7 +118,7 @@ const SearchControl = withTheme(withStyles(
                         placeholder="Search"
                         endAdornment={(
                             <InputAdornment position="end">
-                                <IconButton
+                                <IconButtonEx tooltip="Clear search filter"
                                     aria-label="clear search filter"
                                     onClick={() => {
                                         this.props.onClearFilterClick();
@@ -130,7 +130,7 @@ const SearchControl = withTheme(withStyles(
                                     edge="end"
                                     size="large">
                                     <ClearIcon fontSize='small' style={{ opacity: 0.6 }} />
-                                </IconButton>
+                                </IconButtonEx>
                             </InputAdornment>
 
                         )}

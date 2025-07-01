@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { SyntheticEvent, Component } from 'react';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import { PiPedalModel, PiPedalModelFactory, PresetIndex } from './PiPedalModel';
 import SaveIconOutline from '@mui/icons-material/Save';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -50,6 +50,7 @@ interface PresetSelectorState {
     presetsMenuAnchorRef: HTMLElement | null;
 
     renameDialogOpen: boolean;
+    renameDialogTitle: string;
     renameDialogDefaultName: string;
     renameDialogActionName: string;
     renameDialogOnOk?: (name: string) => void;
@@ -95,6 +96,7 @@ const PresetSelector =
                     showEditPresetsDialog: false,
                     presetsMenuAnchorRef: null,
                     renameDialogOpen: false,
+                    renameDialogTitle: "",
                     renameDialogDefaultName: "",
                     renameDialogActionName: "",
                     renameDialogOnOk: undefined,
@@ -144,7 +146,7 @@ const PresetSelector =
                 if (item == null) return;
                 let name = item.name;
 
-                this.renameDialogOpen(name, "Save As")
+                this.renameDialogOpen(name, "Save Preset As", "OK")
                     .then((newName) => {
                         return this.model.saveCurrentPresetAs(newName);
                     })
@@ -167,7 +169,7 @@ const PresetSelector =
                 if (item == null) return;
                 let name = item.name;
 
-                this.renameDialogOpen(name, "Rename")
+                this.renameDialogOpen(name, "Rename Preset", "OK")
                     .then((newName) => {
                         if (newName === name) return;
                         return this.model.renamePresetItem(this.model.presets.get().selectedInstanceId, newName);
@@ -196,12 +198,13 @@ const PresetSelector =
             showError(error: string) {
                 this.model.showAlert(error);
             }
-            renameDialogOpen(defaultText: string, acceptButtonText: string): Promise<string> {
+            renameDialogOpen(defaultText: string, title: string,acceptButtonText: string): Promise<string> {
                 let result = new Promise<string>(
                     (resolve, reject) => {
                         this.setState(
                             {
                                 renameDialogOpen: true,
+                                renameDialogTitle: title,
                                 renameDialogDefaultName: defaultText,
                                 renameDialogActionName: acceptButtonText,
                                 renameDialogOnOk: (name) => {
@@ -300,12 +303,12 @@ const PresetSelector =
                         justifyContent: "left", flexWrap: "nowrap", alignItems: "center", height: "100%", position: "relative"
                     }}>
                         <div style={{ flex: "0 0 auto" }}>
-                            <IconButton
+                            <IconButtonEx tooltip="Save current preset"
                                 style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0, color: "#FFFFFF" }}
                                 onClick={(e) => { this.handleSave(); }}
                                 size="large">
                                 <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />
-                            </IconButton>
+                            </IconButtonEx>
                         </div>
 
                         <div style={{ flex: "1 1 auto", minWidth: 60, maxWidth: 300, position: "relative", paddingRight: 12 }} >
@@ -337,13 +340,14 @@ const PresetSelector =
                             </Select>
                         </div>
                         <div style={{ flex: "0 0 auto"}}>
-                            <IconButton
+                            <IconButtonEx
+                                tooltip="More..."
                                 style={{ flex: "0 0 auto",  color: "#FFFFFF" }}
                                 onClick={(e) => this.handlePresetMenuClick(e)}
                                 size="large"
                                 >
                                 <MoreVertIcon style={{ opacity: 0.75 }} color="inherit" />
-                            </IconButton>
+                            </IconButtonEx>
                             <Menu
                                 id="edit-presets-menu"
                                 anchorEl={this.state.presetsMenuAnchorRef}
@@ -364,6 +368,7 @@ const PresetSelector =
                         </div>
                         <PresetDialog show={this.state.showPresetsDialog} isEditDialog={this.state.showEditPresetsDialog} onDialogClose={() => this.handleDialogClose()} />
                         <RenameDialog open={this.state.renameDialogOpen}
+                            title={this.state.renameDialogTitle}
                             defaultName={this.state.renameDialogDefaultName}
                             acceptActionName={this.state.renameDialogActionName}
                             onClose={() => this.handleRenameDialogClose()}

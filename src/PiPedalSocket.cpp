@@ -60,7 +60,6 @@ JSON_MAP_REFERENCE(PathPatchPropertyChangedBody, propertyUri)
 JSON_MAP_REFERENCE(PathPatchPropertyChangedBody, atomJson)
 JSON_MAP_END()
 
-
 class GetPatchPropertyBody
 {
 public:
@@ -72,6 +71,20 @@ public:
 JSON_MAP_BEGIN(GetPatchPropertyBody)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, propertyUri)
+JSON_MAP_END()
+
+class MoveAudioFileArgs
+{
+public:
+    std::string path_;
+    int32_t from_;
+    int32_t to_;
+    DECLARE_JSON_MAP(MoveAudioFileArgs);
+};
+JSON_MAP_BEGIN(MoveAudioFileArgs)
+JSON_MAP_REFERENCE(MoveAudioFileArgs, path)
+JSON_MAP_REFERENCE(MoveAudioFileArgs, from)
+JSON_MAP_REFERENCE(MoveAudioFileArgs, to)
 JSON_MAP_END()
 
 class CreateNewSampleDirectoryArgs
@@ -102,6 +115,23 @@ JSON_MAP_REFERENCE(RenameSampleFileArgs, newRelativePath)
 JSON_MAP_REFERENCE(RenameSampleFileArgs, uiFileProperty)
 JSON_MAP_END()
 
+class CopySampleFileArgs
+{
+public:
+    std::string oldRelativePath_;
+    std::string newRelativePath_;
+    UiFileProperty uiFileProperty_;
+    bool overwrite_ = false;
+    DECLARE_JSON_MAP(CopySampleFileArgs);
+};
+
+JSON_MAP_BEGIN(CopySampleFileArgs)
+JSON_MAP_REFERENCE(CopySampleFileArgs, oldRelativePath)
+JSON_MAP_REFERENCE(CopySampleFileArgs, newRelativePath)
+JSON_MAP_REFERENCE(CopySampleFileArgs, uiFileProperty)
+JSON_MAP_REFERENCE(CopySampleFileArgs, overwrite)
+JSON_MAP_END()
+
 class GetFilePropertyDirectoryTreeArgs
 {
 public:
@@ -111,13 +141,10 @@ public:
     DECLARE_JSON_MAP(GetFilePropertyDirectoryTreeArgs);
 };
 
-
 JSON_MAP_BEGIN(GetFilePropertyDirectoryTreeArgs)
 JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, fileProperty)
 JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, selectedPath)
 JSON_MAP_END()
-
-
 
 class Lv2StateChangedBody
 {
@@ -147,18 +174,36 @@ JSON_MAP_REFERENCE(SetPatchPropertyBody, propertyUri)
 JSON_MAP_REFERENCE(SetPatchPropertyBody, value)
 JSON_MAP_END()
 
+class SetPedalboardItemTitleBody
+{
+public:
+    uint64_t instanceId_;
+    std::string title_;
+    DECLARE_JSON_MAP(SetPedalboardItemTitleBody);
+};
+
+JSON_MAP_BEGIN(SetPedalboardItemTitleBody)
+JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, instanceId)
+JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, title)
+JSON_MAP_END()
+
+
+
+
 class NotifyMidiListenerBody
 {
 public:
     int64_t clientHandle_;
-    bool isNote_;
-    int32_t noteOrControl_;
+    uint16_t cc0_;
+    uint16_t cc1_;
+    uint16_t cc2_;
     DECLARE_JSON_MAP(NotifyMidiListenerBody);
 };
 JSON_MAP_BEGIN(NotifyMidiListenerBody)
 JSON_MAP_REFERENCE(NotifyMidiListenerBody, clientHandle)
-JSON_MAP_REFERENCE(NotifyMidiListenerBody, isNote)
-JSON_MAP_REFERENCE(NotifyMidiListenerBody, noteOrControl)
+JSON_MAP_REFERENCE(NotifyMidiListenerBody, cc0)
+JSON_MAP_REFERENCE(NotifyMidiListenerBody, cc1)
+JSON_MAP_REFERENCE(NotifyMidiListenerBody, cc2)
 JSON_MAP_END()
 
 class NotifyAtomOutputBody
@@ -181,13 +226,11 @@ JSON_MAP_END()
 class ListenForMidiEventBody
 {
 public:
-    bool listenForControls_;
     int64_t handle_;
     DECLARE_JSON_MAP(ListenForMidiEventBody);
 };
 
 JSON_MAP_BEGIN(ListenForMidiEventBody)
-JSON_MAP_REFERENCE(ListenForMidiEventBody, listenForControls)
 JSON_MAP_REFERENCE(ListenForMidiEventBody, handle)
 JSON_MAP_END()
 
@@ -413,7 +456,8 @@ JSON_MAP_REFERENCE(SetSnapshotsBody, snapshots)
 JSON_MAP_REFERENCE(SetSnapshotsBody, selectedSnapshot)
 JSON_MAP_END()
 
-class SnapshotModifiedBody {
+class SnapshotModifiedBody
+{
 public:
     int64_t snapshotIndex_;
     bool modified_;
@@ -582,7 +626,6 @@ public:
         {
             FinalCleanup();
         }
-
     }
 
     bool finalCleanup = false;
@@ -1072,7 +1115,7 @@ public:
         {
             ListenForMidiEventBody body;
             pReader->read(&body);
-            this->model.ListenForMidiEvent(this->clientId, body.handle_, body.listenForControls_);
+            this->model.ListenForMidiEvent(this->clientId, body.handle_);
         }
         else if (message == "cancelListenForMidiEvent")
         {
@@ -1100,7 +1143,7 @@ public:
         else if (message == "getHasWifi")
         {
             bool result = model.GetHasWifi();
-            this->Reply(replyTo, "getHasWifi",result);
+            this->Reply(replyTo, "getHasWifi", result);
         }
         else if (message == "updateNow")
         {
@@ -1373,6 +1416,10 @@ public:
             pReader->read(&instanceId);
             uint64_t result = model.DeleteBank(this->clientId, instanceId);
             this->Reply(replyTo, "deleteBankItem", result);
+        } else if (message == "getHasTone3000Auth") 
+        {
+            bool result = model.HasTone3000Auth();
+            this->Reply(replyTo, "getHasTone3000Auth", result);
         }
         else if (message == "renameBank")
         {
@@ -1473,15 +1520,15 @@ public:
             SetPatchPropertyBody body;
             pReader->read(&body);
             model.SendSetPatchProperty(clientId, body.instanceId_, body.propertyUri_, body.value_, [this, replyTo]()
-                                       {
-                                           this->JsonReply(replyTo, "setPatchProperty", "true");
-                                       },
-                                       [this, replyTo](const std::string &error)
-                                       {
-                                           this->SendError(replyTo, error.c_str());
-                                       });
+                                       { this->JsonReply(replyTo, "setPatchProperty", "true"); }, [this, replyTo](const std::string &error)
+                                       { this->SendError(replyTo, error.c_str()); });
         }
-
+        else if (message == "setPedalboardItemTitle")
+        {
+            SetPedalboardItemTitleBody body;
+            pReader->read(&body);
+            model.SetPedalboardItemTitle(body.instanceId_, body.title_);
+        }
         else if (message == "getPatchProperty")
         {
             GetPatchPropertyBody body;
@@ -1640,17 +1687,43 @@ public:
             std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_);
             this->Reply(replyTo, "renameFilePropertyFile", newFileName);
         }
+        else if (message == "copyFilePropertyFile")
+        {
+            CopySampleFileArgs args;
+            pReader->read(&args);
+
+            std::string newFileName = this->model.CopyFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_, args.overwrite_);
+            this->Reply(replyTo, "copyFilePropertyFile", newFileName);
+        }
         else if (message == "getFilePropertyDirectoryTree")
         {
             GetFilePropertyDirectoryTreeArgs args;
             pReader->read(&args);
-            FilePropertyDirectoryTree::ptr result = 
+            FilePropertyDirectoryTree::ptr result =
+                model.GetFilePropertydirectoryTree(
+                    args.fileProperty_,
+                    args.selectedPath_);
+            this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
+        }
+        else if (message == "getFilePropertyDirectoryTree")
+        {
+            GetFilePropertyDirectoryTreeArgs args;
+            pReader->read(&args);
+            FilePropertyDirectoryTree::ptr result =
                 model.GetFilePropertydirectoryTree(
                     args.fileProperty_,
                     args.selectedPath_);
             this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
         }
 
+        else if (message == "moveAudioFile")
+        {
+            MoveAudioFileArgs args;
+            pReader->read(&args);
+            this->model.MoveAudioFile(args.path_, args.from_, args.to_);
+            bool result = true;
+            this->Reply(replyTo,"moveAudioFile", result);   
+        }
         else if (message == "setOnboarding")
         {
             bool value;
@@ -1659,8 +1732,24 @@ public:
         }
         else if (message == "getWifiRegulatoryDomains")
         {
-            auto  regulatoryDomains = this->model.GetWifiRegulatoryDomains();
+            auto regulatoryDomains = this->model.GetWifiRegulatoryDomains();
             this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
+        } else if (message == "setAlsaSequencerConfiguration")
+        {
+            AlsaSequencerConfiguration config;
+            pReader->read(&config);
+            this->model.SetAlsaSequencerConfiguration(config);
+            this->Reply(replyTo, "setAlsaSequencerConfiguration");
+        }
+        else if (message == "getAlsaSequencerConfiguration")
+        {
+            AlsaSequencerConfiguration config = this->model.GetAlsaSequencerConfiguration();
+            this->Reply(replyTo, "getAlsaSequencerConfiguration", config);
+        }
+        else if (message == "getAlsaSequencerPorts")
+        {
+            std::vector<AlsaSequencerPortSelection> result = model.GetAlsaSequencerPorts();
+            this->Reply(replyTo,"getAlsaSequencerPorts", result);
         }
         else
         {
@@ -1670,7 +1759,9 @@ public:
     }
 
 protected:
-    virtual void onSocketClosed() override {
+    virtual void
+    onSocketClosed() override
+    {
         SocketHandler::OnSocketClosed();
         this->Close();
     }
@@ -1754,10 +1845,15 @@ private:
         Send("onLv2PluginsChanging", true);
         Flush();
     }
-    virtual void OnHasWifiChanged(bool hasWifi){
+    virtual void OnHasWifiChanged(bool hasWifi)
+    {
         Send("onHasWifiChanged", hasWifi);
         Flush();
+    }
 
+    virtual void OnAlsaSequencerConfigurationChanged(const AlsaSequencerConfiguration &alsaSequencerConfiguration) override
+    {
+        Send("onAlsaSequencerConfigurationChanged", alsaSequencerConfiguration);
     }
 
     virtual void OnNetworkChanging(bool hotspotConnected) override
@@ -1770,6 +1866,10 @@ private:
         catch (const std::exception &ignored)
         {
         }
+    }
+    virtual void OnTone3000AuthChanged(bool value) 
+    {
+        Send("onTone3000AuthChanged", value);
     }
 
     virtual void OnErrorMessage(const std::string &message)
@@ -1809,7 +1909,7 @@ private:
         Send("onChannelSelectionChanged", body);
     }
 
-    virtual void OnSnapshotModified(int64_t snapshotIndex, bool modified) 
+    virtual void OnSnapshotModified(int64_t snapshotIndex, bool modified)
     {
         SnapshotModifiedBody body;
         body.snapshotIndex_ = snapshotIndex;
@@ -2071,12 +2171,13 @@ private:
         Send("onNotifyPathPatchPropertyChanged", body);
     }
 
-    virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl)
+    virtual void OnNotifyMidiListener(int64_t clientHandle, uint8_t cc0, uint8_t cc1, uint8_t cc2) override
     {
         NotifyMidiListenerBody body;
         body.clientHandle_ = clientHandle;
-        body.isNote_ = isNote;
-        body.noteOrControl_ = noteOrControl;
+        body.cc0_ = cc0;
+        body.cc1_ = cc1;
+        body.cc2_ = cc2;
 
         Send("onNotifyMidiListener", body);
     }
@@ -2124,7 +2225,6 @@ private:
 
 std::atomic<uint64_t> PiPedalSocketHandler::nextClientId = 0;
 
-
 class PiPedalSocketFactory : public ISocketFactory
 {
 private:
@@ -2151,7 +2251,6 @@ public:
         return std::make_shared<PiPedalSocketHandler>(model);
     }
 };
-
 
 std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &model)
 {

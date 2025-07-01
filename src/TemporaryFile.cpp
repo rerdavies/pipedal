@@ -52,14 +52,36 @@ TemporaryFile::TemporaryFile(const std::filesystem::path&directory)
     this->path = filename;
 
 }
-void TemporaryFile::Detach() {
-    this->path.clear();
+std::filesystem::path TemporaryFile::Detach() {
+    std::filesystem::path result = std::move(this->path);
+    return result;
 }
 TemporaryFile::~TemporaryFile()
 {
-    if (!path.empty())
+    if (!path.empty() && deleteFile)
     {
         std::filesystem::remove(path);
     }
 }
 
+void TemporaryFile::SetNonDeletedPath(const std::filesystem::path&path)
+{
+    this->path = path;
+    this->deleteFile = false; // Do not delete the file on destruction
+}   
+
+
+
+TemporaryFile::TemporaryFile(TemporaryFile&&other) {
+    this->path = std::move(other.path);
+    this->deleteFile = other.deleteFile;
+}
+TemporaryFile&TemporaryFile::operator=(TemporaryFile&&other) {
+    if (!this->path.empty() && this->deleteFile) {
+        std::filesystem::remove(this->path);
+        this->path.clear();
+    }
+    this->path = std::move(other.path);
+    this->deleteFile = other.deleteFile;
+    return *this;
+}

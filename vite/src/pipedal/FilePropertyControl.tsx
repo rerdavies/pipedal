@@ -33,7 +33,7 @@ import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { PedalboardItem } from './Pedalboard';
 import { isDarkMode } from './DarkMode';
-import Tooltip from "@mui/material/Tooltip"
+
 
 export const StandardItemSize = { width: 80, height: 140 }
 
@@ -225,14 +225,10 @@ const FilePropertyControl =
                     {/* TITLE SECTION */}
                     <div className={classes.titleSection}
                     >
-                        <Tooltip title={fileProperty.label} placement="top-start" arrow
-                            enterDelay={1000} enterNextDelay={1000}
-                        >
-                            <Typography variant="caption" display="block" noWrap style={{
-                                width: "100%",
-                                textAlign: "start"
-                            }}> {fileProperty.label}</Typography>
-                        </Tooltip>
+                        <Typography variant="caption" display="block" noWrap style={{
+                            width: "100%",
+                            textAlign: "start"
+                        }}> {fileProperty.label}</Typography>
                     </div>
                     {/* CONTROL SECTION */}
 

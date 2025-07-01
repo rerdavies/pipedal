@@ -89,7 +89,6 @@ bool WifiConfigSettings::ValidateCountryCode(const std::string &text)
     return std::isalpha(text[0]) && std::isalpha(text[1]);
 }
 
-
 void WifiConfigSettings::Load()
 {
     try
@@ -115,9 +114,9 @@ void WifiConfigSettings::Load()
 }
 
 static void openWithPerms(
-    pipedal::ofstream_synced &f, 
-    const std::filesystem::path &path, 
-    std::filesystem::perms perms = 
+    pipedal::ofstream_synced &f,
+    const std::filesystem::path &path,
+    std::filesystem::perms perms =
         std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
         std::filesystem::perms::group_read | std::filesystem::perms::group_write)
 {
@@ -132,13 +131,16 @@ static void openWithPerms(
             f.open(path);
             f.close();
         }
-        try {
+        try
+        {
             // set the perms.
             std::filesystem::permissions(
                 path,
                 perms,
-                std::filesystem::perm_options::replace); 
-        } catch (const std::exception&) {
+                std::filesystem::perm_options::replace);
+        }
+        catch (const std::exception &)
+        {
             Lv2Log::warning(SS("Failed to set permissions on" << path << "."));
         }
     }
@@ -147,10 +149,10 @@ static void openWithPerms(
     f.open(path);
 }
 
-void WifiConfigSettings::Save() 
+void WifiConfigSettings::Save()
 {
-    WifiConfigSettings newSettings {*this};
-    
+    WifiConfigSettings newSettings{*this};
+
     // sync legacy settings, just in case i don't know what.
     newSettings.mdnsName_ = newSettings.hotspotName_;
     newSettings.enable_ = newSettings.IsEnabled();
@@ -163,12 +165,12 @@ void WifiConfigSettings::Save()
         newSettings.password_ = oldSettings.password_;
     }
     newSettings.hasSavedPassword_ = newSettings.hasPassword_;
-    
+
     try
     {
         ofstream_synced f;
-        openWithPerms(f,CONFIG_PATH);
-        json_writer writer(f,false);
+        openWithPerms(f, CONFIG_PATH);
+        json_writer writer(f, false);
         writer.write(&newSettings);
     }
     catch (const std::exception &e)
@@ -300,17 +302,14 @@ namespace pipedal::priv
             connection["ipv4"]["method"] = sdbus::Variant(std::string("shared"));
             connection["ipv6"]["method"] = sdbus::Variant(std::string("ignore"));
 
-
-            connection["ipv4"]["address-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{{
-                    {"address", sdbus::Variant("192.168.4.1")},
-                    {"prefix", sdbus::Variant(uint32_t(24))}
-            }});                    
+            connection["ipv4"]["address-data"] = sdbus::Variant(std::vector<std::map<std::string, sdbus::Variant>>{{{"address", sdbus::Variant("192.168.4.1")},
+                                                                                                                    {"prefix", sdbus::Variant(uint32_t(24))}}});
             connection["ipv4"]["dhcp-send-hostname"] = sdbus::Variant(true);
             connection["ipv4"]["dhcp-hostname"] = sdbus::Variant("raspberrypi");
             connection["ipv4"]["dhcp-options"] = sdbus::Variant(std::vector<std::string>{
                 "option:classless-static-route,192.168.4.0/24,0.0.0.0,0.0.0.0/0,192.168.4.1"
                 //"option:classless-static-route,192.168.4.0/24,192.168.4.1"
-    });
+            });
 
             auto connection_path = AddConnection(connection);
             return connection_path;
@@ -325,7 +324,6 @@ namespace pipedal::priv
 
             return active_connection_path;
         }
-
 
         void RemoveConnection(const std::string &connection)
         {
@@ -428,7 +426,6 @@ namespace pipedal::priv
         std::unique_ptr<sdbus::IProxy> m_settings_proxy;
     };
 }
-
 
 JSON_MAP_BEGIN(WifiConfigSettings)
 // v0
@@ -560,52 +557,51 @@ bool WifiConfigSettings::ValidateChannel(const std::string &countryCode, const s
     return true;
 }
 
-static const char* trueValues[] {
+static const char *trueValues[]{
     "true",
     "on",
     "yes"
     "1",
-    nullptr
-};
-static const char* falseValues[] {
+    nullptr};
+static const char *falseValues[]{
     "false",
     "off",
     "no",
     "0",
-    nullptr
-};
+    nullptr};
 
-static bool Matches(const std::string&value, const char**matches)
+static bool Matches(const std::string &value, const char **matches)
 {
-    while(*matches)
+    while (*matches)
     {
-        if (value == *matches) return true;
+        if (value == *matches)
+            return true;
         ++matches;
     }
     return false;
 }
 
-static bool TryStringToBool(const std::string &value, bool*outputValue)
+static bool TryStringToBool(const std::string &value, bool *outputValue)
 {
-    if (Matches(value,trueValues)) 
+    if (Matches(value, trueValues))
     {
         *outputValue = true;
         return true;
     }
-    if (Matches(value, falseValues)) {
+    if (Matches(value, falseValues))
+    {
         *outputValue = false;
         return true;
     }
     *outputValue = false;
     return false;
-
 }
 
-static WifiConfigSettings::ssid_t readSsid(std::istream&ss)
+static WifiConfigSettings::ssid_t readSsid(std::istream &ss)
 {
     using ssid_t = WifiConfigSettings::ssid_t;
     char c;
-    
+
     ssid_t result;
     while (ss.peek() == ' ')
     {
@@ -624,28 +620,33 @@ static WifiConfigSettings::ssid_t readSsid(std::istream&ss)
                     break;
                 }
                 ss >> c;
-                switch (c) {
-                    case 'n':
-                        result.push_back((uint8_t)'\n');
-                        break;
-                    case 'r':
-                        result.push_back((uint8_t)'\r');
-                        break;
-                    case 't':
-                        result.push_back((uint8_t)'\t');
-                        break;
-                    case 'b':
-                        result.push_back((uint8_t)'\b');
-                        break;
-                    default:
-                        result.push_back((uint8_t)c);
-                        break;
+                switch (c)
+                {
+                case 'n':
+                    result.push_back((uint8_t)'\n');
+                    break;
+                case 'r':
+                    result.push_back((uint8_t)'\r');
+                    break;
+                case 't':
+                    result.push_back((uint8_t)'\t');
+                    break;
+                case 'b':
+                    result.push_back((uint8_t)'\b');
+                    break;
+                default:
+                    result.push_back((uint8_t)c);
+                    break;
                 }
-            } else {
+            }
+            else
+            {
                 result.push_back((uint8_t)c);
             }
         }
-    } else {
+    }
+    else
+    {
         while (!ss.eof())
         {
             if (c == ':')
@@ -662,7 +663,7 @@ static WifiConfigSettings::ssid_t readSsid(std::istream&ss)
     }
     return result;
 }
-static std::vector<WifiConfigSettings::ssid_t> stringToSsidArray(const std::string&value)
+static std::vector<WifiConfigSettings::ssid_t> stringToSsidArray(const std::string &value)
 {
     using ssid_t = WifiConfigSettings::ssid_t;
     std::istringstream ss(value);
@@ -671,7 +672,7 @@ static std::vector<WifiConfigSettings::ssid_t> stringToSsidArray(const std::stri
     while (true)
     {
         ssid_t ssid = readSsid(ss);
-        if (ssid.size() == 0) 
+        if (ssid.size() == 0)
         {
             break;
         }
@@ -683,16 +684,15 @@ static std::vector<WifiConfigSettings::ssid_t> stringToSsidArray(const std::stri
         }
     }
     return result;
-
 }
 void WifiConfigSettings::ParseArguments(
     const std::vector<std::string> &argv,
     HotspotAutoStartMode startMode,
     const std::string homeNetworkSsid
 
-    )
+)
 {
-    this->valid_ = false ;
+    this->valid_ = false;
     if (argv.size() != 4)
     {
         throw invalid_argument("Invalid number of arguments.");
@@ -714,7 +714,6 @@ void WifiConfigSettings::ParseArguments(
     this->hasPassword_ = this->password_.length() != 0;
     this->hasSavedPassword_ = oldSettings.hasSavedPassword_;
 
-
     if (!ValidateCountryCode(this->countryCode_))
     {
         throw invalid_argument("Invalid country code.");
@@ -723,7 +722,7 @@ void WifiConfigSettings::ParseArguments(
         throw invalid_argument("Hotspot name is too long.");
     if (this->hotspotName_.length() < 1)
         throw invalid_argument("Hotspot name is too short.");
-    
+
     if (this->password_.size() != 0 && this->password_.size() < 8)
         throw invalid_argument("Passphrase must be at least 8 characters long.");
 
@@ -742,12 +741,12 @@ void WifiConfigSettings::ParseArguments(
     this->valid_ = true;
 }
 
-bool WifiConfigSettings::ConfigurationChanged(const WifiConfigSettings&other) const
+bool WifiConfigSettings::ConfigurationChanged(const WifiConfigSettings &other) const
 {
     return !(
         this->valid_ == other.valid_ &&
-        //this->rebootRequired_ == other.rebootRequired_ &&
-        //this->enable_ == other.enable_ &&
+        // this->rebootRequired_ == other.rebootRequired_ &&
+        // this->enable_ == other.enable_ &&
         this->countryCode_ == other.countryCode_ &&
         this->hotspotName_ == other.hotspotName_ &&
         this->hasPassword_ == other.hasPassword_ &&
@@ -756,20 +755,18 @@ bool WifiConfigSettings::ConfigurationChanged(const WifiConfigSettings&other) co
 
         this->homeNetwork_ == other.homeNetwork_ &&
         this->autoStartMode_ == other.autoStartMode_ &&
-        this->hasSavedPassword_ == other.hasSavedPassword_
-    );
-
+        this->hasSavedPassword_ == other.hasSavedPassword_);
 }
-bool WifiConfigSettings::operator==(const WifiConfigSettings&other) const
+bool WifiConfigSettings::operator==(const WifiConfigSettings &other) const
 {
     return !ConfigurationChanged(other) && this->wifiWarningGiven_ == other.wifiWarningGiven_;
 }
 
-static bool CanSeeHomeNetwork(const std::string&home, const std::vector<std::string>&availableNetworks)
+static bool CanSeeHomeNetwork(const std::string &home, const std::vector<std::string> &availableNetworks)
 {
-    for (const auto &availableNetwork: availableNetworks)
+    for (const auto &availableNetwork : availableNetworks)
     {
-        if (availableNetwork == home) 
+        if (availableNetwork == home)
         {
             return true;
         }
@@ -778,38 +775,39 @@ static bool CanSeeHomeNetwork(const std::string&home, const std::vector<std::str
 }
 
 bool WifiConfigSettings::WantsHotspot(
-    bool ethernetConnected, 
+    bool ethernetConnected,
     const std::vector<std::string> &availableRememberedNetworks,
     const std::vector<std::string> &availableNetworks)
 {
-    if ((!this->valid_)) 
+    if ((!this->valid_))
         return false;
-    
+
     HotspotAutoStartMode autoStartMode = (HotspotAutoStartMode)this->autoStartMode_;
 
     switch (autoStartMode)
     {
-        case HotspotAutoStartMode::Never:
-        default:
-            return false;
+    case HotspotAutoStartMode::Never:
+    default:
+        return false;
 
-        case HotspotAutoStartMode::NoEthernetConnection:
-            return !ethernetConnected;
-        case HotspotAutoStartMode::NotAtHome:
-            return !CanSeeHomeNetwork(this->homeNetwork_, availableNetworks);
-        case HotspotAutoStartMode::NoRememberedWifiConections:
-            return availableRememberedNetworks.size() == 0;
-        case HotspotAutoStartMode::Always:
-            return true;
+    case HotspotAutoStartMode::NoEthernetConnection:
+        return !ethernetConnected;
+    case HotspotAutoStartMode::NotAtHome:
+        return !CanSeeHomeNetwork(this->homeNetwork_, availableNetworks);
+    case HotspotAutoStartMode::NoRememberedWifiConections:
+        return availableRememberedNetworks.size() == 0;
+    case HotspotAutoStartMode::Always:
+        return true;
     }
 }
 
 std::string pipedal::ssidToString(const std::vector<uint8_t> &ssid)
 {
     std::stringstream s;
-    for (auto v: ssid)
+    for (auto v : ssid)
     {
-        if (v == 0) break; // breaks for some arguably legal ssids, but I can live with that.
+        if (v == 0)
+            break; // breaks for some arguably legal ssids, but I can live with that.
         s << (char)v;
     }
     return s.str();
@@ -819,21 +817,43 @@ std::vector<std::string> pipedal::ssidToStringVector(const std::vector<std::vect
 {
     std::vector<std::string> result;
     result.reserve(ssids.size());
-    for (const std::vector<uint8_t> &ssid: ssids)
+    for (const std::vector<uint8_t> &ssid : ssids)
     {
         result.push_back(ssidToString(ssid));
     }
     return result;
 }
 bool WifiConfigSettings::WantsHotspot(
-    bool ethernetConnected, 
+    bool ethernetConnected,
     const std::vector<std::vector<uint8_t>> &availableRememberedNetworks, // remembered networks that are currently visible
-    const std::vector<std::vector<uint8_t>> &availableNetworks // all visible networks.
-    )
+    const std::vector<std::vector<uint8_t>> &availableNetworks            // all visible networks.
+)
 {
     std::vector<std::string> sAvailableRememberedNetworks = ssidToStringVector(availableRememberedNetworks);
     std::vector<std::string> sAvailableNetworks = ssidToStringVector(availableNetworks);
-    return WantsHotspot(ethernetConnected,sAvailableRememberedNetworks,sAvailableNetworks);
+    return WantsHotspot(ethernetConnected, sAvailableRememberedNetworks, sAvailableNetworks);
+}
+
+bool WifiConfigSettings::NeedsWifi() const
+{
+    HotspotAutoStartMode autoStartMode = (HotspotAutoStartMode)this->autoStartMode_;
+    return autoStartMode != HotspotAutoStartMode::Never;
 }
 
 
+bool WifiConfigSettings::NeedsScan() const
+{
+    HotspotAutoStartMode autoStartMode = (HotspotAutoStartMode)this->autoStartMode_;
+    switch (autoStartMode)
+    {
+    case HotspotAutoStartMode::Never:
+    case HotspotAutoStartMode::NoEthernetConnection:
+    case HotspotAutoStartMode::Always:
+    default:
+        return false;
+
+    case HotspotAutoStartMode::NotAtHome:
+    case HotspotAutoStartMode::NoRememberedWifiConections:
+        return true;
+    }
+}

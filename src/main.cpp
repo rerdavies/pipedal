@@ -45,10 +45,12 @@
 #include <signal.h>
 #include <semaphore.h>
 #include "SchedulerPriority.hpp"
+#include "AudioFiles.hpp"
 
 #include <systemd/sd-daemon.h>
+#include "AlsaSequencer.hpp"
 
-using namespace  pipedal;
+using namespace pipedal;
 
 #ifdef __ARM_ARCH_ISA_A64
 #define AARCH64
@@ -80,9 +82,9 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
-
 #if ENABLE_BACKTRACE
-void segvHandler(int sig) {
+void segvHandler(int sig)
+{
     void *array[10];
 
     // Get void*'s for all entries on the stack
@@ -91,26 +93,40 @@ void segvHandler(int sig) {
 
     // Print out all the frames to stderr
     const char *message = "Error: SEGV signal received.\n";
-    auto _ = write(STDERR_FILENO,message,strlen(message));
+    auto _ = write(STDERR_FILENO, message, strlen(message));
 
-    backtrace_symbols_fd(array+2, size-2, STDERR_FILENO);
+    backtrace_symbols_fd(array + 2, size - 2, STDERR_FILENO);
     _exit(EXIT_FAILURE);
 }
 
-
 static void EnableBacktrace()
 {
-    signal(SIGSEGV, segvHandler); 
-
+    signal(SIGSEGV, segvHandler);
 }
 #endif
 
-static bool TryGetLogLevel(const std::string&strLogLevel,LogLevel*result)
+static bool TryGetLogLevel(const std::string &strLogLevel, LogLevel *result)
 {
-    if (strLogLevel == "debug") {*result= LogLevel::Debug; return true;}
-    if (strLogLevel == "info") {*result= LogLevel::Info; return true;}
-    if (strLogLevel == "warning") {*result= LogLevel::Warning; return true;}
-    if (strLogLevel == "error") { *result= LogLevel::Error; return true;}
+    if (strLogLevel == "debug")
+    {
+        *result = LogLevel::Debug;
+        return true;
+    }
+    if (strLogLevel == "info")
+    {
+        *result = LogLevel::Info;
+        return true;
+    }
+    if (strLogLevel == "warning")
+    {
+        *result = LogLevel::Warning;
+        return true;
+    }
+    if (strLogLevel == "error")
+    {
+        *result = LogLevel::Error;
+        return true;
+    }
     *result = LogLevel::Info;
     return false;
 }
@@ -120,7 +136,7 @@ int main(int argc, char *argv[])
 {
 
 #ifndef WIN32
-    umask(002); // newly created files in /var/pipedal get 7cd75-ish permissions, which improves debugging/live-service interaction.
+    umask(002); // newly created files in /var/pipedal get 775-ish permissions, which improves debugging/live-service interaction.
 #endif
 
 #if ENABLE_BACKTRACE
@@ -139,7 +155,7 @@ int main(int argc, char *argv[])
     parser.AddOption("-h", &help);
     parser.AddOption("--help", &help);
     parser.AddOption("-systemd", &systemd);
-    parser.AddOption("-log-level",&logLevel);
+    parser.AddOption("-log-level", &logLevel);
     parser.AddOption("-port", &portOption);
     parser.AddOption("-test-extra-device", &testExtraDevice); // advertise two different devices (for testing multi-device connect)
 
@@ -219,11 +235,12 @@ int main(int argc, char *argv[])
     if (logLevel.length() != 0)
     {
         LogLevel lv2LogLevel;
-        if (TryGetLogLevel(logLevel,&lv2LogLevel))
+        if (TryGetLogLevel(logLevel, &lv2LogLevel))
         {
             Lv2Log::log_level(lv2LogLevel);
-
-        } else {
+        }
+        else
+        {
             Lv2Log::error(SS("Invalid log level: " << logLevel));
             return EXIT_SUCCESS; // indicate to systemd that we don't want a restart.
         }
@@ -233,6 +250,18 @@ int main(int argc, char *argv[])
     {
         configuration.SetSocketServerEndpoint(portOption);
     }
+
+    // clean up orphaned temporary files.
+    const std::filesystem::path webTempDirectory = "/var/pipedal/web_temp";
+    if (!webTempDirectory.empty())
+    {
+        std::filesystem::remove_all(webTempDirectory); //// user must belong to the pipedald grop when debugging.
+        std::filesystem::create_directories(webTempDirectory);
+    }
+
+    // configure AudiDirectoryInfo to use the correct directories.
+    AudioDirectoryInfo::SetResourceDirectory(configuration.GetWebRoot());
+    AudioDirectoryInfo::SetTemporaryDirectory(webTempDirectory / "audiofiles");
 
     uint16_t port;
     std::shared_ptr<WebServer> server;
@@ -260,6 +289,7 @@ int main(int argc, char *argv[])
         Lv2Log::error(s.str());
         return EXIT_SUCCESS; // indiate to systemd that we don't want a restart.
     }
+
 
     try
     {

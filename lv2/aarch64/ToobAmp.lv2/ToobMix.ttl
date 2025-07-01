@@ -40,7 +40,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 62 ;
+        lv2:microVersion 63 ;
         rdfs:comment """
 Remix a stereo input signal.
 
@@ -57,7 +57,7 @@ Remix a stereo input signal.
 
                 lv2:index 0 ;
                 lv2:symbol "trimL" ;
-                lv2:name "Trim L";
+                lv2:name "Vol L";
 
                 lv2:default 0.0 ;
                 lv2:minimum -60.0 ;
@@ -89,7 +89,7 @@ Remix a stereo input signal.
 
                 lv2:index 2 ;
                 lv2:symbol "trimR" ;
-                lv2:name "Trim R";
+                lv2:name "Vol R";
 
                 lv2:default 0.0 ;
                 lv2:minimum -60.0 ;

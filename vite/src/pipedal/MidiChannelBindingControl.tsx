@@ -26,7 +26,7 @@ import { withStyles } from "tss-react/mui";
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { pluginControlStyles } from './PluginControl';
 import MidiChannelBinding from './MidiChannelBinding';
-import Tooltip from '@mui/material/Tooltip';
+import ToolTipEx from './ToolTipEx';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import ButtonBase from '@mui/material/ButtonBase';
@@ -78,7 +78,7 @@ const MidiChannelBindingControl =
                                     alignSelf: "stretch"
 
                                 }}>
-                            <Tooltip title={(
+                            <ToolTipEx title={(
                                 <React.Fragment>
                                     <Typography variant="caption">title</Typography>
                                     <Divider />
@@ -86,13 +86,13 @@ const MidiChannelBindingControl =
 
                                 </React.Fragment>
                             )}
-                                placement="top-start" arrow enterDelay={1500} enterNextDelay={1500}
+                                
                             >
                                 <Typography variant="caption" display="block" noWrap style={{
                                     width: "100%",
                                     textAlign: "center"
                                 }}> MIDI</Typography>
-                            </Tooltip>
+                            </ToolTipEx>
 
                         </div>
                         {/* CONTROL SECTION */}

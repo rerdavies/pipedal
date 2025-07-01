@@ -56,6 +56,7 @@ namespace pipedal
         virtual void OnLogDebug(const char*message);
 
     private:
+        
         std::unordered_map<std::string,int> controlIndex;
 
         FileBrowserFilesFeature fileBrowserFilesFeature;

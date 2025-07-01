@@ -86,8 +86,11 @@ const ToobToneStackView =
                     this.controlValueChangedHandle = undefined;
                 }
             }
+            fullScreen() {
+                return false;
+            }
 
-            ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
+            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
                 if (this.state.isBaxandall)
                 {

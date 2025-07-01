@@ -7,6 +7,7 @@
                 "${workspaceFolder}",
                 "${workspaceFolder}/build/src/**",
                 "${workspaceFolder}/src/**",
+                "${workspaceFolder}/modules/websocketpp/**",
                 "${workspaceFolder}/**",
                 "/usr/include/lilv-0",
                 "/usr/include/x86_64-linux-gnu",
@@ -16,7 +17,9 @@
             "cStandard": "c17",
             "cppStandard": "c++20",
             "intelliSenseMode": "linux-gcc-arm64",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "compileCommands": [
+                "${workspaceFolder}/build/compile_commands.json"
+            ],
             "configurationProvider": "ms-vscode.cmake-tools"
         },
         {
@@ -33,7 +36,9 @@
             "cStandard": "c17",
             "cppStandard": "c++20",
             "intelliSenseMode": "linux-gcc-x64",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "compileCommands": [
+                "${workspaceFolder}/build/compile_commands.json"
+            ],
             "configurationProvider": "ms-vscode.cmake-tools",
             "mergeConfigurations": true
         }

@@ -27,17 +27,17 @@ import React, { SyntheticEvent } from 'react';
 import { css } from '@emotion/react';
 import DialogEx from './DialogEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import { PiPedalModel, PiPedalModelFactory, ListenHandle } from './PiPedalModel';
+import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import Typography from '@mui/material/Typography';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import MidiBinding from './MidiBinding';
 import SystemMidiBindingView from './SystemMidiBindingView';
 import Snackbar from '@mui/material/Snackbar';
@@ -69,11 +69,11 @@ const styles = (theme: Theme) => createStyles({
         paddingTop: 12
     }),
     plainRow: css({
-         borderWidth: "1px 0px 0px 0px", borderStyle: "solid", borderColor: "transparent"
+        borderWidth: "1px 0px 0px 0px", borderStyle: "solid", borderColor: "transparent"
     }),
     dividerRow: css({
-        borderWidth: "1px 0px 0px 0px",  borderStyle: "solid", borderColor: theme.palette.divider
-   })
+        borderWidth: "1px 0px 0px 0px", borderStyle: "solid", borderColor: theme.palette.divider
+    })
 
 });
 
@@ -139,7 +139,7 @@ export const SystemMidiBindingDialog =
                     }
                     else if (item.symbol === "nextProgram") {
                         displayName = "Next Preset";
-                    }else if (item.symbol === "prevProgram") {
+                    } else if (item.symbol === "prevProgram") {
                         displayName = "Previous Preset";
                     }
                     else if (item.symbol === "snapshot1") {
@@ -170,8 +170,7 @@ export const SystemMidiBindingDialog =
                     } else {
                         found = false;
                     }
-                    if (found)
-                    {   
+                    if (found) {
                         result.push(new BindingEntry(displayName, listenInstanceId, item));
                         ++listenInstanceId;
                     }
@@ -183,64 +182,7 @@ export const SystemMidiBindingDialog =
             hasHooks: boolean = false;
 
             handleClose() {
-                this.cancelListenForControl();
                 this.props.onClose();
-            }
-
-            listenTimeoutHandle?: number;
-
-            listenHandle?: ListenHandle;
-
-            cancelListenForControl() {
-                if (this.listenTimeoutHandle) {
-                    clearTimeout(this.listenTimeoutHandle);
-                    this.listenTimeoutHandle = undefined;
-                }
-                if (this.listenHandle) {
-                    this.model.cancelListenForMidiEvent(this.listenHandle)
-                    this.listenHandle = undefined;
-                }
-
-                this.setState({ listenInstanceId: -2, listenSymbol: "" });
-
-            }
-
-            handleListenSucceeded(instanceId: number, symbol: string, isNote: boolean, noteOrControl: number) {
-                this.cancelListenForControl();
-
-                for (var binding of this.state.systemMidiBindings) {
-                    if (binding.instanceId === instanceId) {
-                        let newBinding = binding.midiBinding.clone();
-
-                        if (isNote) {
-                            newBinding.bindingType = MidiBinding.BINDING_TYPE_NOTE;
-                            newBinding.note = noteOrControl;
-                        } else {
-                            newBinding.bindingType = MidiBinding.BINDING_TYPE_CONTROL;
-                            newBinding.control = noteOrControl;
-                        }
-
-                        this.model.setSystemMidiBinding(instanceId, newBinding);
-                        return;
-                    }
-                }
-            }
-
-
-            handleListenForControl(instanceId: number, symbol: string, listenForControl: boolean): void {
-                this.cancelListenForControl();
-                this.setState({ listenInstanceId: instanceId, listenSymbol: symbol, listenSnackbarOpen: true });
-                this.listenTimeoutHandle = setTimeout(() => {
-                    this.cancelListenForControl();
-                }, 8000);
-
-                this.listenHandle = this.model.listenForMidiEvent(listenForControl,
-                    (isNote: boolean, noteOrControl: number) => {
-                        this.handleListenSucceeded(instanceId, symbol, isNote, noteOrControl);
-                    });
-
-
-
             }
 
             onWindowSizeChanged(width: number, height: number): void {
@@ -277,12 +219,11 @@ export const SystemMidiBindingDialog =
 
                 for (var item of items) {
                     let symbol = item.midiBinding.symbol;
-                    let hasDivider = symbol === "snapshot1" || symbol === "stopHotspot"  || symbol === "shotdown";
-                    if (hasDivider)
-                    {
+                    let hasDivider = symbol === "snapshot1" || symbol === "stopHotspot" || symbol === "shotdown";
+                    if (hasDivider) {
                         result.push(
                             <tr>
-                                <td colSpan={2} className={classes.dividerRow}><div style={{height: 1}} /></td>
+                                <td colSpan={2} className={classes.dividerRow}><div style={{ height: 1 }} /></td>
                             </tr>
                         );
                     }
@@ -295,14 +236,6 @@ export const SystemMidiBindingDialog =
                             </td>
                             <td className={classes.bindingTd}>
                                 <SystemMidiBindingView instanceId={item.instanceId} midiBinding={item.midiBinding}
-                                    onListen={(instanceId: number, symbol: string, listenForControl: boolean) => {
-                                        if (instanceId === -2) {
-                                            this.cancelListenForControl();
-                                        } else {
-                                            this.handleListenForControl(instanceId, symbol, listenForControl);
-                                        }
-                                    }}
-                                    listen={item.instanceId === this.state.listenInstanceId && this.state.listenSymbol === item.midiBinding.symbol}
                                     onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
                                 />
                             </td>
@@ -321,7 +254,7 @@ export const SystemMidiBindingDialog =
 
             render() {
                 let props = this.props;
-                let { open} = props;
+                let { open } = props;
 
                 const classes = withStyles.getClasses(this.props);
                 if (!open) {
@@ -332,20 +265,21 @@ export const SystemMidiBindingDialog =
                     <DialogEx tag="systemMidiBindings" open={open} fullWidth onClose={this.handleClose} aria-labelledby="Rename-dialog-title"
                         fullScreen={true}
                         style={{ userSelect: "none" }}
-                        onEnterKey={()=>{}}
+                        onEnterKey={() => { }}
                     >
                         <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                             <div style={{ flex: "0 0 auto" }}>
                                 <AppBar className={classes.dialogAppBar} >
                                     <Toolbar>
-                                        <IconButton
+                                        <IconButtonEx
+                                            tooltip="Back"
                                             edge="start"
                                             color="inherit"
                                             onClick={this.handleClose}
                                             aria-label="back"
                                             size="large">
                                             <ArrowBackIcon />
-                                        </IconButton>
+                                        </IconButtonEx>
                                         <Typography variant="h6" className={classes.dialogTitle}>
                                             System MIDI Bindings
                                         </Typography>

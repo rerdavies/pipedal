@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, { SyntheticEvent,Component } from 'react';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory  } from './PiPedalModel';
 import Button from "@mui/material/Button";
@@ -371,17 +371,17 @@ const PluginPresetsDialog = withStyles(
                         <div style={{ flex: "0 0 auto" }}>
                             <AppBar className={classes.dialogAppBar} style={{ display: this.isEditMode() ? "none" : "block" }} >
                                 <Toolbar>
-                                    <IconButton edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
+                                    <IconButtonEx tooltip="Back" edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
                                         disabled={this.isEditMode()}
                                     >
                                         <ArrowBackIcon />
-                                    </IconButton>
+                                    </IconButtonEx>
                                     <Typography noWrap variant="h6" className={classes.dialogTitle}>
                                         {title}
                                     </Typography>
-                                    <IconButton color="inherit" onClick={(e) => this.showActionBar(true)} >
+                                    <IconButtonEx tooltip="Edit" color="inherit" onClick={(e) => this.showActionBar(true)} >
                                         <EditIcon />
-                                    </IconButton>
+                                    </IconButtonEx>
                                 </Toolbar>
                             </AppBar>
                             <AppBar className={actionBarClass} style={{ display: this.isEditMode() ? "block" : "none" }}
@@ -389,14 +389,14 @@ const PluginPresetsDialog = withStyles(
                             >
                                 <Toolbar>
                                     {(!this.props.isEditDialog) ? (
-                                        <IconButton edge="start" color="inherit" onClick={(e) => this.showActionBar(false)} aria-label="close">
+                                        <IconButtonEx tooltip="Close" edge="start" color="inherit" onClick={(e) => this.showActionBar(false)} aria-label="close">
                                             <CloseIcon />
-                                        </IconButton>
+                                        </IconButtonEx>
                                     ) : (
-                                        <IconButton edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
+                                        <IconButtonEx tooltip="Back" edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
                                         >
                                             <ArrowBackIcon />
-                                        </IconButton>
+                                        </IconButtonEx>
 
                                     )}
                                     <Typography noWrap variant="h6" className={classes.dialogTitle}>
@@ -413,6 +413,7 @@ const PluginPresetsDialog = withStyles(
                                                     Rename
                                                 </Button>
                                                 <RenameDialog
+                                                    title="Rename"
                                                     open={this.state.renameOpen}
                                                     defaultName={this.getSelectedName()}
                                                     acceptActionName={"Rename"}
@@ -422,12 +423,12 @@ const PluginPresetsDialog = withStyles(
                                                     }
                                                     }
                                                 />
-                                                <IconButton color="inherit" onClick={(e) => this.handleDeleteClick()} >
+                                                <IconButtonEx tooltip="Delete"   color="inherit" onClick={(e) => this.handleDeleteClick()} >
                                                     <img src="/img/old_delete_outline_white_24dp.svg" alt="Delete" style={{ width: 24, height: 24, opacity: 0.6 }} />
-                                                </IconButton>
-                                                <IconButton color="inherit" onClick={(e) => { this.onMoreClick(e) }} >
+                                                </IconButtonEx>
+                                                <IconButtonEx tooltip="More..." color="inherit" onClick={(e) => { this.onMoreClick(e) }} >
                                                     <MoreVertIcon />
-                                                </IconButton>
+                                                </IconButtonEx>
                                                 <Menu
                                                     id="more-menu"
                                                     anchorEl={this.state.moreMenuAnchorEl}

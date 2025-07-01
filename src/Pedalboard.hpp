@@ -98,6 +98,7 @@ public:
     Lv2PluginState lv2State_;
     std::string lilvPresetUri_;
     std::map<std::string,std::string> pathProperties_;
+    std::string title_;
 
     // non persistent state.
     PropertyMap patchProperties;
@@ -126,6 +127,8 @@ public:
     GETTER_SETTER_REF(midiChannelBinding)
     GETTER_SETTER(stateUpdateCount)
     GETTER_SETTER_REF(lv2State)
+    GETTER_SETTER_REF(title)
+    
     Lv2PluginState&lv2State() { return lv2State_; } // non-const version.
     GETTER_SETTER_REF(lilvPresetUri)
 
@@ -198,6 +201,7 @@ public:
     static constexpr int64_t INPUT_VOLUME_ID = -2; // synthetic PedalboardItem for input volume.
     static constexpr int64_t OUTPUT_VOLUME_ID = -3; // synthetic PedalboardItem for output volume.
     bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
+    bool SetItemTitle(int64_t pedalItemId, const std::string &title);
     bool SetItemEnabled(int64_t pedalItemId, bool enabled);
     void  SetCurrentSnapshotModified(bool modified);
 

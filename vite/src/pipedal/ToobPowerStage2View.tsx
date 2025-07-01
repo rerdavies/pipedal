@@ -126,8 +126,11 @@ const ToobPowerstage2View =
                 this.isControlMounted = false;
                 this.maybeListenForAtomOutput();
             }
+            fullScreen() {
+                return false;
+            }
 
-            ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
+            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
                 let time = Date.now()*0.001;
 

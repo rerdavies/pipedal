@@ -66,7 +66,7 @@ inputStage:filterGroup
         doap:license <https://two-play.com/TooB/licenses/isc> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 62 ;
+        lv2:microVersion 63 ;
 
         mod:brand "TooB";
         mod:label "TooB Input";

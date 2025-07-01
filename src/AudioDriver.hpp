@@ -25,7 +25,7 @@
 
 #include "JackConfiguration.hpp"
 #include <functional>
-
+#include "AlsaSequencer.hpp"
 
 
 
@@ -74,7 +74,7 @@ namespace pipedal {
         virtual float*GetOutputBuffer(size_t channe) = 0;
 
         virtual void Open(const JackServerSettings & jackServerSettings,const JackChannelSelection &channelSelection) = 0;
-
+        virtual void SetAlsaSequencer(AlsaSequencer::ptr alsaSequencer) = 0;
         virtual void Activate() = 0;
         virtual void Deactivate() = 0;
         virtual void Close() = 0;

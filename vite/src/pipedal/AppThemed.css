@@ -4,16 +4,49 @@
     margin-top: 0px;
     margin-bottom: 0px;
 }
+
 .fossCopyrights {
     padding-top: 16px;
     padding-bottom: 16px;
 }
+
 .fossLicense {
     padding-left: 36px;
     border-bottom: 1px #CCC solid
 }
+
 div {
     min-width: 0;
-  }
+}
 
 
+@media not all  /* seems to be ok in current chrome (prefers-color-scheme: light) */{
+    input[type="number"].scrollMod::-webkit-outer-spin-button,
+    input[type="number"].scrollMod::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        color: #FFF;
+        background: #0001 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAKUlEQVQYlWNgwAT/sYhhKPiPT+F/LJgEsHv37v+EMGkmkuImoh2NoQAANlcun/q4OoYAAAAASUVORK5CYII=) no-repeat center center;
+        filter: invert(100%);
+        width: 1em;
+        padding: 2px;
+        opacity: .6;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    input[type="number"].scrollMod::-webkit-inner-spin-button:hover,
+    input[type="number"].scrollMod::-webkit-inner-spin-button:active {
+        background: #0003 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAKUlEQVQYlWNgwAT/sYhhKPiPT+F/LJgEsHv37v+EMGkmkuImoh2NoQAANlcun/q4OoYAAAAASUVORK5CYII=) no-repeat center center;
+        opacity: .8;
+    }
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+
+img {
+    user-select: none;
+}

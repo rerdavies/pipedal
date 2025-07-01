@@ -21,6 +21,7 @@
 #include "util.hpp"
 #include <lv2/atom/atom.h>
 #include "SchedulerPriority.hpp"
+#include "AlsaSequencer.hpp"
 
 #include "Lv2Log.hpp"
 
@@ -294,12 +295,14 @@ class SystemMidiBinding
 private:
     MidiBinding currentBinding;
     bool controlState = false;
+    uint8_t lastControlValue = 0;
 
 public:
     void SetBinding(const MidiBinding &binding)
     {
         currentBinding = binding;
         controlState = false;
+        lastControlValue = 0;
     }
 
     bool IsMatch(const MidiEvent &event);
@@ -335,13 +338,18 @@ bool SystemMidiBinding::IsTriggered(const MidiEvent &event)
             return false;
         if (event.buffer[1] != currentBinding.control())
             return false;
-        bool state = event.buffer[2] >= 0x64;
-        if (state != this->controlState)
+
+        uint8_t value = event.buffer[2];
+        bool result = false;
+        if (currentBinding.switchControlType() == SwitchControlTypeT::TRIGGER_ON_RISING_EDGE)
         {
-            this->controlState = state;
-            return state;
+            result = value >= 0x64 && lastControlValue < 0x64;
+        } else if (currentBinding.switchControlType() == SwitchControlTypeT::TRIGGER_ON_ANY)
+        {
+            result = true;
         }
-        return false;
+        lastControlValue = value;
+        return result;
     }
     break;
     default:
@@ -381,6 +389,9 @@ bool SystemMidiBinding::IsMatch(const MidiEvent &event)
 class AudioHostImpl : public AudioHost, private AudioDriverHost, private IPatchWriterCallback
 {
 private:
+    AlsaSequencer::ptr alsaSequencer;
+    AlsaSequencerDeviceMonitor::ptr alsaDeviceMonitor;
+
     void OnWritePatchPropertyBuffer(
         PatchPropertyWriter::Buffer *);
 
@@ -522,7 +533,7 @@ private:
 
     std::string GetAtomObjectType(uint8_t *pData)
     {
-        LV2_Atom_Object *pAtom = (LV2_Atom_Object *)pData;
+    LV2_Atom_Object *pAtom = (LV2_Atom_Object *)pData;
         if (pAtom->atom.type != uris.atom_Object)
         {
             throw std::invalid_argument("Not an Lv2 Object");
@@ -918,11 +929,12 @@ private:
             if (event.size >= 3)
             {
                 uint8_t cmd = (uint8_t)(event.buffer[0] & 0xF0);
-                bool isNote = cmd == 0x90;
+                bool isNote = cmd == 0x90 && event.buffer[2] != 0; // note on with velocity > 0.
                 bool isControl = cmd == 0xB0;
                 if (isNote || isControl)
                 {
-                    realtimeWriter.OnMidiListen(isNote, event.buffer[1]);
+                    MidiNotifyBody notifyBody (event.buffer[0],event.buffer[1], event.buffer[2]);
+                    realtimeWriter.OnMidiListen(notifyBody);
                 }
             }
         }
@@ -1173,7 +1185,7 @@ private:
 
                 if (buffersValid)
                 {
-                    pedalboard->ProcessParameterRequests(pParameterRequests);
+                    pedalboard->ProcessParameterRequests(pParameterRequests,nframes);
 
                     processed = pedalboard->Run(inputBuffers, outputBuffers, (uint32_t)nframes, &realtimeWriter);
                     if (processed)
@@ -1240,12 +1252,26 @@ public:
         lv2_atom_forge_init(&inputWriterForge, pHost->GetMapFeature().GetMap());
 
         cpuTemperatureMonitor = CpuTemperatureMonitor::Get();
+        this->alsaSequencer = AlsaSequencer::Create();
+        this->alsaDeviceMonitor = AlsaSequencerDeviceMonitor::Create();
+
+        this->alsaDeviceMonitor->StartMonitoring(
+            [this](
+                AlsaSequencerDeviceMonitor::MonitorAction action, 
+                int client,
+                const std::string &clientName)            
+                {
+                    HandleAlsaSequencerDevicesChanged(action, client, clientName);
+                }
+            );
     }
     virtual ~AudioHostImpl()
     {
+        alsaDeviceMonitor->StopMonitoring();
         Close();
         CleanRestartThreads(true);
         audioDriver = nullptr;
+        this->alsaSequencer = nullptr;
     }
 
     virtual JackConfiguration GetServerConfiguration()
@@ -1260,7 +1286,21 @@ public:
     {
         return this->sampleRate;
     }
-
+    void HandleAlsaSequencerDevicesChanged(
+        AlsaSequencerDeviceMonitor::MonitorAction action, int client, const std::string &clientName)
+    {
+        if (pNotifyCallbacks)
+        {
+            if (action == AlsaSequencerDeviceMonitor::MonitorAction::DeviceRemoved)
+            {
+                pNotifyCallbacks->OnAlsaSequencerDeviceRemoved(client);
+            }
+            else if (action == AlsaSequencerDeviceMonitor::MonitorAction::DeviceAdded)
+            {
+                pNotifyCallbacks->OnAlsaSequencerDeviceAdded(client,clientName);
+            }
+        }
+    }   
     void HandleAudioTerminatedAbnormally()
     {
         Lv2Log::error("Audio processing terminated unexpectedly.");
@@ -1333,11 +1373,11 @@ public:
                         {
                             if (command == RingBufferCommand::OnMidiListen)
                             {
-                                uint16_t msg;
-                                hostReader.read(&msg);
+                                MidiNotifyBody body;
+                                hostReader.read(&body);
                                 if (this->pNotifyCallbacks)
                                 {
-                                    pNotifyCallbacks->OnNotifyMidiListen((msg & 0xFF00) != 0, (uint8_t)msg);
+                                    pNotifyCallbacks->OnNotifyMidiListen(body.cc0_, body.cc1_, body.cc2_);
                                 }
                             }
                             else if (command == RingBufferCommand::MidiValueChanged)
@@ -1658,7 +1698,7 @@ public:
         try
         {
             audioDriver->Open(jackServerSettings, this->channelSelection);
-
+            audioDriver->SetAlsaSequencer(this->alsaSequencer);
             this->sampleRate = audioDriver->GetSampleRate();
 
             this->overrunGracePeriodSamples = (uint64_t)(((uint64_t)this->sampleRate) * OVERRUN_GRACE_PERIOD_S);
@@ -1805,6 +1845,9 @@ public:
             this->hostWriter.LoadSnapshot(indexedSnapshot);
         }
     }
+
+    virtual void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) override;
+
 
     void OnNotifyPathPatchPropertyReceived(
         int64_t instanceId,
@@ -2080,8 +2123,8 @@ public:
 
         return result;
     }
-    volatile bool listenForMidiEvent = false;
-    volatile bool listenForAtomOutput = false;
+    std::atomic<bool> listenForMidiEvent = false;
+    std::atomic<bool> listenForAtomOutput = false;
 
     virtual void SetListenForMidiEvent(bool listen)
     {
@@ -2252,6 +2295,13 @@ void AudioHostImpl::OnWritePatchPropertyBuffer(
 {
     this->realtimeWriter.SendPathPropertyBuffer(buffer);
 }
+
+void AudioHostImpl::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
+{
+    this->alsaSequencer->SetConfiguration(alsaSequencerConfiguration);
+}
+
+
 
 JSON_MAP_BEGIN(JackHostStatus)
 JSON_MAP_REFERENCE(JackHostStatus, active)

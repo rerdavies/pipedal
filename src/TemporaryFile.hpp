@@ -25,18 +25,25 @@ namespace pipedal {
         TemporaryFile() {}
         TemporaryFile(const TemporaryFile&) = delete;
         TemporaryFile&operator=(const TemporaryFile&) = delete;
+        TemporaryFile(TemporaryFile&&other);
+        TemporaryFile&operator=(TemporaryFile&&other);
+    public:
+        explicit TemporaryFile(const std::filesystem::path&parentDirectory);
 
-        TemporaryFile(TemporaryFile&&other) {
-            this->path = std::move(other.path);
+        void Attach(const std::filesystem::path&path) {
+            this->path = path;
+            deleteFile = true; // default to deleting the file on destruction.
         }
-        TemporaryFile(const std::filesystem::path&parentDirectory);
+        void SetNonDeletedPath(const std::filesystem::path&path);
 
-        void Detach();
+        bool DeleteFile() const { return deleteFile; }
+        std::filesystem::path Detach();
         ~TemporaryFile();
         const std::filesystem::path&Path()const { return path;}
         std::string str() const { return path.c_str(); }
         const char*c_str() const { return path.c_str(); }
     private:
+        bool deleteFile = true;
         std::filesystem::path path;
     };
 }

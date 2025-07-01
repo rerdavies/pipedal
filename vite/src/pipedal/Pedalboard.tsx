@@ -61,6 +61,7 @@ export class ControlValue implements Deserializable<ControlValue> {
 export class PedalboardItem implements Deserializable<PedalboardItem> {
     deserializePedalboardItem(input: any): PedalboardItem {
         this.instanceId = input.instanceId ?? -1;
+        this.title = input.title ?? "";
         this.uri = input.uri;
         this.pluginName = input.pluginName;
         this.isEnabled = input.isEnabled;
@@ -199,6 +200,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     static EmptyArray: PedalboardItem[] = [];
 
     instanceId: number = -1;
+    title: string = "";
     isEnabled: boolean = false;
     uri: string = "";
     pluginName?: string;

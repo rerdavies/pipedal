@@ -71,6 +71,7 @@ namespace pipedal
         return contains(vector, std::string(value));
     }
 
+    bool HasWritePermissions(const std::filesystem::path &path);
     class NoCopy
     {
     public:
@@ -114,11 +115,14 @@ namespace pipedal
         return true;
     }
 
-    // C locale to lower. Only does 'A'-'Z'.
-    std::string ToLower(const std::string&value);
 
     std::filesystem::path MakeRelativePath(const std::filesystem::path &path, const std::filesystem::path&parentPath);
 
     bool IsSubdirectory(const std::filesystem::path &path, const std::filesystem::path &basePath);
+    bool HasDotDot(const std::filesystem::path &path);
+
+
+    std::string ToLower(const std::string&value);
+
 
 }

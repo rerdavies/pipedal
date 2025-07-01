@@ -23,6 +23,7 @@ import Button from '@mui/material/Button';
 import { Theme } from '@mui/material/styles';
 import WithStyles, { withTheme } from './WithStyles';
 import { createStyles } from './WithStyles';
+import ControlTooltip from './ControlTooltip';
 
 import { withStyles } from "tss-react/mui";
 import { UiControl, ScalePoint } from './Lv2Plugin';
@@ -30,12 +31,12 @@ import Typography from '@mui/material/Typography';
 import Input from '@mui/material/Input';
 import Select from '@mui/material/Select';
 import Switch from '@mui/material/Switch';
-import Utility, { nullCast } from './Utility';
+import Utility from './Utility';
 import MenuItem from '@mui/material/MenuItem';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import DialIcon from './svg/fx_dial.svg?react';
 import { isDarkMode } from './DarkMode';
-import ControlTooltip from './ControlTooltip';
+
 
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
@@ -65,14 +66,14 @@ function preventNextClickAfterDrag() {
     // on ANY element under the mouse. Prevent this click event 
     // (and any other click event) from happening for 100ms
     // after the drag stops.
-    let clickHandler = (e: MouseEvent) => { 
+    let clickHandler = (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
     };
-    document.addEventListener('click',clickHandler,true);
+    document.addEventListener('click', clickHandler, true);
     window.setTimeout(() => {
-        document.removeEventListener('click',clickHandler,true);
-    },100);
+        document.removeEventListener('click', clickHandler, true);
+    }, 100);
 }
 
 function androidEmoji(text: string) {
@@ -119,7 +120,7 @@ export const pluginControlStyles = (theme: Theme) => createStyles({
         right: 0,
         bottom: 4,
         textAlign: "center",
-        background: theme.mainBackground,
+        background: "transparent",
         color: theme.palette.text.secondary,
         // zIndex: -1,
     }),
@@ -145,6 +146,7 @@ export interface PluginControlProps extends WithStyles<typeof pluginControlStyle
 type PluginControlState = {
     error: boolean;
     editFocused: boolean;
+    previewValue?: string;
 };
 
 const PluginControl =
@@ -166,7 +168,9 @@ const PluginControl =
 
                 this.state = {
                     error: false,
-                    editFocused: false
+                    editFocused: false,
+                    previewValue: undefined
+
                 };
                 this.model = PiPedalModelFactory.getInstance();
                 this.imgRef = React.createRef();
@@ -214,25 +218,25 @@ const PluginControl =
             inputChanged: boolean = false;
 
             onInputLostFocus(event: any): void {
-                this.setState({editFocused: false});
+                this.setState({ editFocused: false });
                 if (this.inputChanged) // validation requried?
                 {
                     this.inputChanged = false;
                     this.validateInput(event, true);
 
                 }
-                
+
                 //this.displayValueRef.current!.style.display = "block";
             }
             onInputFocus(event: SyntheticEvent): void {
                 //this.displayValueRef.current!.style.display = "none";
-                this.setState({editFocused: true});
-                if (Utility.hasIMEKeyboard()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    this.inputRef.current?.blur();
-                    this.props.requestIMEEdit(nullCast(this.props.uiControl), this.props.value)
-                }
+                this.setState({ editFocused: true });
+                // if (Utility.hasIMEKeyboard()) {
+                //     event.preventDefault();
+                //     event.stopPropagation();
+                //     this.inputRef.current?.blur();
+                //     this.props.requestIMEEdit(nullCast(this.props.uiControl), this.props.value)
+                // }
             }
             onInputKeyPress(e: any): void {
                 if (e.charCode === 13 && this.inputChanged) {
@@ -356,11 +360,9 @@ const PluginControl =
                 if (!this.mouseDown && this.isValidPointer(e)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (document.activeElement)
-                    {
+                    if (document.activeElement) {
                         let e = document.activeElement as any;
-                        if (e.blur)
-                        {
+                        if (e.blur) {
                             e.blur();
                         }
                     }
@@ -407,6 +409,7 @@ const PluginControl =
                             img.style.opacity = "" + SELECTED_OPACITY;
                         }
                     }
+                    this.setState({ previewValue: undefined });
 
                 } else {
                     if (this.isExtraTouch(e)) {
@@ -492,11 +495,12 @@ const PluginControl =
             onPointerUp(e: PointerEvent<SVGSVGElement>) {
 
                 if (this.isCapturedPointer(e)) {
-                    if (this.pointersDown !== 0)
-                    {
+                    if (this.pointersDown !== 0) {
                         --this.pointersDown;
                     }
-
+                    if (this.pointersDown === 0) {
+                        this.setState({ previewValue: undefined });
+                    }
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -515,8 +519,7 @@ const PluginControl =
                     preventNextClickAfterDrag();
 
                 } else {
-                    if (this.pointersDown !==  0) 
-                    {
+                    if (this.pointersDown !== 0) {
                         --this.pointersDown;
                     }
 
@@ -546,7 +549,7 @@ const PluginControl =
             }
 
             clickSlop() {
-                return 3.5;  // maybe larger on touch devices.
+                return 5;  // maybe larger on touch devices.
             }
             onPointerMove(e: PointerEvent<SVGSVGElement>): void {
                 if (this.isCapturedPointer(e)) {
@@ -607,6 +610,7 @@ const PluginControl =
                             break;
                     }
                 }
+                this.setState({ previewValue: undefined});
             }
             previewInputValue(value: number, commitValue: boolean) {
                 let range = this.valueToRange(value);
@@ -620,7 +624,7 @@ const PluginControl =
                             UpdateGraphicEqPath(imgElement, range);
                         }
                     } else {
-                        
+
                         let transform = this.rangeToRotationTransform(range);
                         if (this.mouseDown && !commitValue) {
                             transform += " scale(1.5, 1.5)";
@@ -670,6 +674,12 @@ const PluginControl =
                 if (displayValue) {
                     let v = this.formatDisplayValue(this.props.uiControl, value);
                     displayValue.childNodes[0].textContent = v;
+
+                    if (commitValue) {
+                        this.setState({ previewValue: undefined });
+                    } else {
+                        this.setState({ previewValue: v });
+                    }   
                 }
                 let selectElement = this.selectRef.current;
                 if (selectElement) {
@@ -703,45 +713,51 @@ const PluginControl =
                 if (control.isOnOffSwitch()) {
                     // normal gray unchecked state.
                     return (
-                        <Switch checked={value !== 0} color="primary"
-                            onChange={(event) => {
-                                this.onCheckChanged(event.target.checked);
-                            }}
-                        />
+                        <ControlTooltip uiControl={control}>
+                            <Switch checked={value !== 0} color="primary"
+                                onChange={(event) => {
+                                    this.onCheckChanged(event.target.checked);
+                                }}
+                            />
+                        </ControlTooltip>
                     );
                 }
                 if (control.isAbToggle()) {
                     let classes = withStyles.getClasses(this.props);
                     // unchecked color is not gray.
                     return (
-                        <Switch checked={value !== 0} color="primary"
-                            onChange={(event) => {
-                                this.onCheckChanged(event.target.checked);
-                            }}
-                            classes={{
-                                track: classes.switchTrack
-                            }}
-                            style={{ color: this.props.theme.palette.primary.main }}
-                        />
+                        <ControlTooltip uiControl={control}>
+                            <Switch checked={value !== 0} color="primary"
+                                onChange={(event) => {
+                                    this.onCheckChanged(event.target.checked);
+                                }}
+                                classes={{
+                                    track: classes.switchTrack
+                                }}
+                                style={{ color: this.props.theme.palette.primary.main }}
+                            />
+                        </ControlTooltip>
                     );
                 } else {
                     return (
-                        <Select variant="standard"
-                            ref={this.selectRef}
-                            value={control.clampSelectValue(value)}
-                            onChange={this.onSelectChanged}
-                            inputProps={{
-                                name: control.name,
-                                id: 'id' + control.symbol,
-                                style: { fontSize: FONT_SIZE }
-                            }}
-                            style={{ marginLeft: 4, marginRight: 4, width: 140, fontSize: 14 }}
-                        >
-                            {control.scale_points.map((scale_point: ScalePoint) => (
-                                <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>
+                        <ControlTooltip uiControl={control}>
+                            <Select variant="standard"
+                                ref={this.selectRef}
+                                value={control.clampSelectValue(value)}
+                                onChange={this.onSelectChanged}
+                                inputProps={{
+                                    name: control.name,
+                                    id: 'id' + control.symbol,
+                                    style: { fontSize: FONT_SIZE }
+                                }}
+                                style={{ marginLeft: 4, marginRight: 4, width: 140, fontSize: 14 }}
+                            >
+                                {control.scale_points.map((scale_point: ScalePoint) => (
+                                    <MenuItem key={scale_point.value} value={scale_point.value}>{scale_point.label}</MenuItem>
 
-                            ))}
-                        </Select>
+                                ))}
+                            </Select>
+                        </ControlTooltip>
                     );
                 }
             }
@@ -923,12 +939,10 @@ const PluginControl =
                                     alignSelf: "stretch", marginBottom: 8, marginLeft: isSelect ? 8 : 0, marginRight: 0
 
                                 }}>
-                            <ControlTooltip uiControl={control} >
-                                <Typography variant="caption" display="block" noWrap style={{
-                                    width: "100%",
-                                    textAlign: isSelect ? "left" : "center"
-                                }}> {isButton ? "\u00A0" : control.name}</Typography>
-                            </ControlTooltip>
+                            <Typography variant="caption" display="block" noWrap style={{
+                                width: "100%",
+                                textAlign: isSelect ? "left" : "center"
+                            }}> {isButton ? "\u00A0" : control.name}</Typography>
                         </div>
                         {/* CONTROL SECTION */}
 
@@ -937,81 +951,86 @@ const PluginControl =
                             {isButton ?
                                 (
                                     control.name.length !== 1 ? (
-                                        <Button variant="contained" color="primary" size="small"
-                                            onMouseDown={
-                                                (evt) => { this.handleButtonMouseDown(buttonStyle); }
-                                            }
-                                            onMouseUp={
-                                                (evt) => { this.handleButtonMouseUp(buttonStyle); }
-                                            }
-                                            onTouchStart={
-                                                (evt) => {
-                                                    evt.preventDefault();
-                                                    this.handleButtonMouseDown(buttonStyle);
+                                        <ControlTooltip uiControl={control}>
+
+                                            <Button variant="contained" color="primary" size="small"
+                                                onMouseDown={
+                                                    (evt) => { this.handleButtonMouseDown(buttonStyle); }
                                                 }
-                                            }
-                                            onTouchEnd={
-                                                (evt) => {
-                                                    evt.preventDefault();
-                                                    this.handleButtonMouseUp(buttonStyle);
+                                                onMouseUp={
+                                                    (evt) => { this.handleButtonMouseUp(buttonStyle); }
                                                 }
-                                            }
-                                            onMouseLeave={(
-                                                (evet) => { this.handleButtonMouseLeave(buttonStyle); }
-                                            )}
+                                                onTouchStart={
+                                                    (evt) => {
+                                                        evt.preventDefault();
+                                                        this.handleButtonMouseDown(buttonStyle);
+                                                    }
+                                                }
+                                                onTouchEnd={
+                                                    (evt) => {
+                                                        evt.preventDefault();
+                                                        this.handleButtonMouseUp(buttonStyle);
+                                                    }
+                                                }
+                                                onMouseLeave={(
+                                                    (evet) => { this.handleButtonMouseLeave(buttonStyle); }
+                                                )}
 
-                                            style={{
-                                                textTransform: "none",
-                                                background: (isDarkMode() ? "#6750A4" : undefined),
-                                                marginLeft: 8, marginRight: 8, minWidth: 60,
-                                                marginTop: 0
+                                                style={{
+                                                    textTransform: "none",
+                                                    background: (isDarkMode() ? "#6750A4" : undefined),
+                                                    marginLeft: 8, marginRight: 8, minWidth: 60,
+                                                    marginTop: 0
 
-                                            }}
+                                                }}
 
-                                        >
-                                            {control.name}
-                                        </Button>
+                                            >
+                                                {control.name}
+                                            </Button>
+                                        </ControlTooltip>
 
                                     ) : (
-                                        <Button variant="contained" color="primary" size="small"
-                                            onMouseDown={
-                                                (evt) => { this.handleButtonMouseDown(buttonStyle); }
-                                            }
-                                            onMouseUp={
-                                                (evt) => { this.handleButtonMouseUp(buttonStyle); }
-                                            }
-                                            onTouchStart={
-                                                (evt) => {
-                                                    evt.preventDefault();
-                                                    this.handleButtonMouseDown(buttonStyle);
+                                        <ControlTooltip uiControl={control}>
+                                            <Button variant="contained" color="primary" size="small"
+                                                onMouseDown={
+                                                    (evt) => { this.handleButtonMouseDown(buttonStyle); }
                                                 }
-                                            }
-                                            onTouchEnd={
-                                                (evt) => {
-                                                    evt.preventDefault();
-                                                    this.handleButtonMouseUp(buttonStyle);
+                                                onMouseUp={
+                                                    (evt) => { this.handleButtonMouseUp(buttonStyle); }
                                                 }
-                                            }
-                                            onMouseLeave={(
-                                                (evet) => { this.handleButtonMouseLeave(buttonStyle); }
-                                            )}
+                                                onTouchStart={
+                                                    (evt) => {
+                                                        evt.preventDefault();
+                                                        this.handleButtonMouseDown(buttonStyle);
+                                                    }
+                                                }
+                                                onTouchEnd={
+                                                    (evt) => {
+                                                        evt.preventDefault();
+                                                        this.handleButtonMouseUp(buttonStyle);
+                                                    }
+                                                }
+                                                onMouseLeave={(
+                                                    (evet) => { this.handleButtonMouseLeave(buttonStyle); }
+                                                )}
 
-                                            style={{
-                                                textTransform: "none",
-                                                background: (isDarkMode() ? "#6750A4" : undefined),
-                                                marginLeft: 8, marginRight: 8,
-                                                paddingLeft: 0, paddingRight: 0,
-                                                width: 36, height: 36,
-                                                marginTop: 0,
-                                                borderRadius: 8,
-                                                minWidth: 0,
-                                                fontSize: "1.2em"
+                                                style={{
+                                                    textTransform: "none",
+                                                    background: (isDarkMode() ? "#6750A4" : undefined),
+                                                    marginLeft: 8, marginRight: 8,
+                                                    paddingLeft: 0, paddingRight: 0,
+                                                    width: 36, height: 36,
+                                                    marginTop: 0,
+                                                    borderRadius: 8,
+                                                    minWidth: 0,
+                                                    fontSize: "1.2em"
 
-                                            }}
+                                                }}
 
-                                        >
-                                            {androidEmoji(control.name)}
-                                        </Button>
+                                            >
+                                                {androidEmoji(control.name)}
+                                            </Button>
+                                        </ControlTooltip>
                                     )
                                 )
 
@@ -1020,34 +1039,40 @@ const PluginControl =
                                 )
                                     : (isGraphicEq) ? (
                                         <div style={{ flex: "0 1 auto" }}>
-                                            <GraphicEqCtl
-                                                imgRef={this.imgRef}
-                                                position={this.getEqPosition()}
-                                                dialColor={dialColor}
-                                                opacity={DEFAULT_OPACITY}
+                                            
+                                            <ControlTooltip uiControl={control} valueTooltip={this.state.previewValue}>
+                                                <GraphicEqCtl
+                                                    imgRef={this.imgRef}
+                                                    position={this.getEqPosition()}
+                                                    dialColor={dialColor}
+                                                    opacity={DEFAULT_OPACITY}
 
-                                                onTouchStart={this.onTouchStart}
-                                                onTouchMove={this.onTouchMove}
-                                                onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
-                                                onPointerMoveCapture={this.onPointerMove}
-                                                onDrag={this.onDrag}
+                                                    onTouchStart={this.onTouchStart}
+                                                    onTouchMove={this.onTouchMove}
+                                                    onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
+                                                    onPointerMoveCapture={this.onPointerMove}
+                                                    onDrag={this.onDrag}
 
 
-                                            />
+                                                />
+                                            </ControlTooltip>
                                         </div>
                                     ) : (
                                         <div style={{ flex: "0 1 auto" }}>
-                                            <DialIcon ref={this.imgRef}
-                                                style={{
-                                                    overscrollBehavior: "none", touchAction: "none", fill: dialColor,
-                                                    width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform()
-                                                }}
-                                                onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
-                                                onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
-                                                onPointerMoveCapture={this.onPointerMove}
-                                                onDrag={this.onDrag}
+                                            <ControlTooltip uiControl={control} 
+                                                valueTooltip={this.state.previewValue}>
+                                                <DialIcon ref={this.imgRef}
+                                                    style={{
+                                                        overscrollBehavior: "none", touchAction: "none", fill: dialColor,
+                                                        width: 36, height: 36, opacity: DEFAULT_OPACITY, transform: this.getRotationTransform()
+                                                    }}
+                                                    onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
+                                                    onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
+                                                    onPointerMove={this.onPointerMove}
+                                                    onDrag={this.onDrag}
 
-                                            />
+                                                />
+                                            </ControlTooltip>
                                         </div>
                                     )
                             }
@@ -1068,21 +1093,30 @@ const PluginControl =
                                                 defaultValue={control.formatShortValue(value)}
                                                 error={this.state.error}
                                                 inputProps={{
+                                                    className: "scrollMod",
                                                     min: this.props.uiControl?.min_value,
                                                     max: this.props.uiControl?.max_value,
-                                                    'aria-label':
-                                                        control.symbol + " value",
-                                                    style: { textAlign: "center", fontSize: FONT_SIZE },
                                                 }}
+
+                                                sx={{
+                                                    // Style the input element
+                                                    '& input[type=number]': {
+                                                        width: 60,
+                                                        opacity: this.state.editFocused ? 1 : 0,
+                                                        textAlign: "center", fontSize: FONT_SIZE,
+                                                        borderBottom: "0px",
+                                                    },
+                                                }}
+
                                                 inputRef={this.inputRef} onChange={this.onInputChange}
                                                 onBlur={this.onInputLostFocus}
                                                 onFocus={this.onInputFocus}
 
                                                 onKeyPress={this.onInputKeyPress} />
-                                            <div className={classes.displayValue} 
-                                                ref={this.displayValueRef} onClick={(e) => { this.inputRef.current!.focus(); }} 
-                                                style={{display: this.state.editFocused? "none": "block"}}
-                                                >
+                                            <div className={classes.displayValue}
+                                                ref={this.displayValueRef} onClick={(e) => { this.inputRef.current!.focus(); }}
+                                                style={{ display: this.state.editFocused ? "none" : "block" }}
+                                            >
                                                 <Typography noWrap color="inherit" style={{ fontSize: "12.8px", paddingTop: 4, paddingBottom: 6 }}
 
                                                 >

@@ -26,7 +26,8 @@ Run the following commands to install dependent libraries required by the PiPeda
         libsystemd-dev catch libasound2-dev uuid-dev \
         authbind libavahi-client-dev  libnm-dev libicu-dev \
         libsdbus-c++-dev libzip-dev google-perftools \
-        libgoogle-perftools-dev
+        libgoogle-perftools-dev \
+        libpipewire-0.3-dev 
     
 
 ### Installing Sources

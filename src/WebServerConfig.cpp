@@ -35,6 +35,10 @@
 #include "json.hpp"
 #include "HotspotManager.hpp"
 #include "MimeTypes.hpp"
+#include "AudioFileMetadataReader.hpp"
+#include "AudioFiles.hpp"
+#include "util.hpp"
+#include "HtmlHelper.hpp"
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
@@ -48,25 +52,12 @@ static const std::string PLUGIN_PRESETS_MIME_TYPE = "application/vnd.pipedal.plu
 static const std::string PRESET_MIME_TYPE = "application/vnd.pipedal.preset";
 static const std::string BANK_MIME_TYPE = "application/vnd.pipedal.bank";
 
+static const std::string CACHE_CONTROL_INDEFINITELY = "max-age=31536000,public,immutable"; // 1 year
+static const std::string CACHE_CONTROL_SHORT = "max-age=300,public";                       // 5 minutes
+
 using namespace pipedal;
 using namespace boost::system;
 namespace fs = std::filesystem;
-
-
-
-static bool HasDotDot(const std::filesystem::path &path) {
-    for (auto &part : path)
-    {
-        if (part == "..") {
-            return true;
-        }
-        if (part == ".") 
-        {
-            return true;
-        }
-    }
-    return false;   
-}
 
 class UserUploadResponse
 {
@@ -80,13 +71,23 @@ JSON_MAP_REFERENCE(UserUploadResponse, errorMessage)
 JSON_MAP_REFERENCE(UserUploadResponse, path)
 JSON_MAP_END()
 
-static std::string GetMimeType(const std::filesystem::path&path) {
+static std::string GetMimeType(const std::filesystem::path &path)
+{
     std::string extension = path.extension();
-    const MimeTypes&mimeTypes = MimeTypes::instance();
+    const MimeTypes &mimeTypes = MimeTypes::instance();
     auto result = mimeTypes.MimeTypeFromExtension(extension);
     return result;
-
 }
+
+int32_t ConvertThumbnailSize(const std::string &param)
+{
+    if (param.empty())
+    {
+        return 0;
+    }
+    return static_cast<int32_t>(std::stoi(param));
+}
+
 static bool IsZipFile(const std::filesystem::path &path)
 {
     std::ifstream f(path);
@@ -179,6 +180,59 @@ public:
         {
             return true;
         }
+        else if (segment == "AudioMetadata")
+        {
+            return true;
+        }
+        else if (segment == "Thumbnail")
+        {
+            return true;
+        }
+        else if (segment == "Tone3000Auth")
+        {
+            return true;
+        }
+        else if (segment == "PluginPresets")
+        {
+            return true;
+        }
+        else if (segment == "PluginPreset")
+        {
+            return true;
+        }
+        else if (segment == "PluginBanks")
+        {
+            return true;
+        }
+        else if (segment == "PluginBank")
+        {
+            return true;
+        }
+        else if (segment == "GetPluginInfo")
+        {
+            return true;
+        }
+        else if (segment == "GetPluginPresets")
+        {
+            return true;
+        }
+        else if (segment == "GetPreset")
+        {
+            return true;
+        }
+        else if (segment == "GetBank")
+        {
+            return true;
+        }
+        else if (segment == "NextAudioFile")
+        {
+            return true;
+        }
+        else if (segment == "PreviousAudioFile")
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -246,15 +300,17 @@ public:
         try
         {
             std::string segment = request_uri.segment(1);
-            if (segment == "downloadMediaFile") {
+            if (segment == "downloadMediaFile")
+            {
                 fs::path path = request_uri.query("path");
-                
+
                 if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                 {
                     throw PiPedalException("File not found.");
                 }
                 auto mimeType = GetMimeType(path);
-                if (mimeType.empty()) {
+                if (mimeType.empty())
+                {
                     throw PiPedalException("Can't download files of this type.");
                 }
                 res.set(HttpField::content_type, mimeType);
@@ -333,6 +389,19 @@ public:
         }
     }
 
+    static void setLastModifiedFromFile(HttpResponse &res, const std::filesystem::path &path)
+    {
+        auto lastModified = std::filesystem::last_write_time(path);
+        res.set(HttpField::LastModified, HtmlHelper::timeToHttpDate(lastModified));
+    }
+    AudioDirectoryInfo::Ptr CreateDirectoryInfo(const fs::path &path)
+    {
+        return AudioDirectoryInfo::Create(path,
+                                          GetShadowIndexDirectory(
+                                              this->model->GetPluginUploadDirectory(),
+                                              path));
+    }
+
     virtual void get_response(
         const uri &request_uri,
         HttpRequest &req,
@@ -343,18 +412,20 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "downloadMediaFile") {
+            if (segment == "downloadMediaFile")
+            {
                 fs::path path = request_uri.query("path");
-                
+
                 bool t = this->model->IsInUploadsDirectory(path);
-                std::cout << (t? "true": "false") << std::endl;
+                std::cout << (t ? "true" : "false") << std::endl;
                 (void)t;
                 if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                 {
                     throw PiPedalException("File not found.");
                 }
                 auto mimeType = GetMimeType(path);
-                if (mimeType.empty()) {
+                if (mimeType.empty())
+                {
                     throw PiPedalException("Can't download files of this type.");
                 }
                 res.set(HttpField::content_type, mimeType);
@@ -363,9 +434,10 @@ public:
                 res.set(HttpField::content_disposition, disposition);
                 size_t contentLength = std::filesystem::file_size(path);
                 res.setContentLength(contentLength);
-                res.setBodyFile(path,false);
+                res.setBodyFile(path, false);
                 return;
-            } else if (segment == "downloadPluginPresets")
+            }
+            else if (segment == "downloadPluginPresets")
             {
                 std::string name;
                 std::string content;
@@ -416,6 +488,178 @@ public:
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, BANK_EXTENSION));
                 res.setBodyFile(tmpFile);
             }
+            else if (segment == "AudioMetadata")
+            {
+
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+                fs::path path = request_uri.query("path");
+
+                if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                {
+                    throw PiPedalException("File not found.");
+                }
+                AudioDirectoryInfo::Ptr audioDirectory = CreateDirectoryInfo(path.parent_path());
+                try
+                {
+                    auto files = audioDirectory->GetFiles();
+                    for (const auto &file : files)
+                    {
+                        std::string fileNameOnly = path.filename();
+                        if (file.fileName() == fileNameOnly)
+                        {
+                            std::stringstream ss;
+                            json_writer writer(ss);
+                            writer.write(file);
+                            res.setBody(ss.str());
+                            return;
+                        }
+                    }
+                }
+                catch (const std::exception &e)
+                {
+                    Lv2Log::error("Error getting audio directory info: %s - (%s)", path.c_str(), e.what());
+                    throw e;
+                }
+                // If we get here, the file was not found in the directory.
+                throw PiPedalException("File not found in directory.");
+            }
+            else if (segment == "Thumbnail")
+            {
+                ThumbnailTemporaryFile thumbnailTemporaryFile;
+                try
+                {
+                    std::shared_ptr<TemporaryFile> thumbnail;
+                    try
+                    {
+                        fs::path path = request_uri.query("path");
+                        if (path.empty() ||
+                            !fs::exists(path) ||
+                            !this->model->IsInUploadsDirectory(path) ||
+                            HasDotDot(path))
+                        {
+                            std::shared_ptr<TemporaryFile> thumbnail;
+                            // path for folder thumbnails.
+                            path = request_uri.query("ffile");
+
+                            if (!path.empty() && fs::exists(path) &&
+                                this->model->IsInUploadsDirectory(path) &&
+                                !HasDotDot(path))
+                            {
+                                // path is a folder.
+                                thumbnail = std::make_shared<TemporaryFile>();
+                                thumbnail->SetNonDeletedPath(path);
+                            }
+                            else
+                            {
+                                auto t = AudioDirectoryInfo::DefaultThumbnailTemporaryFile();
+                                thumbnail = std::make_shared<TemporaryFile>();
+                                thumbnail->SetNonDeletedPath(t.Path());
+                            }
+
+                            res.set(HttpField::content_type, MimeTypes::instance().MimeTypeFromExtension(path.extension()));
+                            res.set(HttpField::cache_control, CACHE_CONTROL_INDEFINITELY); // URL is cache-busted, and will change if the file ismodified.
+                            setLastModifiedFromFile(res, thumbnail->Path());
+                            res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnail->Path())));
+                            res.setBodyFile(thumbnail);
+                            return;
+                        }
+
+                        int32_t width = ConvertThumbnailSize(request_uri.query("w"));
+                        int32_t height = ConvertThumbnailSize(request_uri.query("h"));
+
+                        AudioDirectoryInfo::Ptr audioDirectory = CreateDirectoryInfo(
+                            path.parent_path());
+                        audioDirectory->GetFiles(); // ensure that the .index file is up to date.
+
+                        thumbnailTemporaryFile = audioDirectory->GetThumbnail(path.filename(), width, height);
+                    }
+                    catch (const std::exception &e)
+                    {
+                        fs::path defaultThumbnail = model->GetWebRoot() / "img/missing_thumbnail.jpg";
+                        thumbnailTemporaryFile.SetNonDeletedPath(defaultThumbnail, "image/jpeg");
+                    }
+                    res.set(HttpField::content_type, thumbnailTemporaryFile.GetMimeType());
+
+                    res.set(HttpField::cache_control, CACHE_CONTROL_INDEFINITELY); // URL is cache-busted with time-stamp.
+                    setLastModifiedFromFile(res, thumbnailTemporaryFile.Path());
+                    res.set(HttpField::content_length, std::to_string(fs::file_size(thumbnailTemporaryFile.Path())));
+
+                    std::filesystem::path t = thumbnailTemporaryFile.Path();
+                    res.setBodyFile(t, thumbnailTemporaryFile.DeleteFile());
+                    thumbnailTemporaryFile.Detach();
+                }
+                catch (const std::exception &e)
+                {
+                    Lv2Log::error("Error getting thumbnail: %s - (%s)", request_uri.str().c_str(), e.what());
+                    throw e;
+                }
+            }
+            else if (segment == "NextAudioFile")
+            {
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+                fs::path path = request_uri.query("path");
+
+                try
+                {
+                    if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
+                    auto directoryPath = path.parent_path();
+                    auto directoryInfo = CreateDirectoryInfo(directoryPath);
+                    std::string result = directoryInfo->GetNextAudioFile(path.filename());
+                    if (!result.empty())
+                    {
+                        result = (directoryPath / result).string();
+                    }
+
+                    // json-encode the result.
+                    std::stringstream ss;
+                    json_writer writer(ss);
+                    writer.write(result);
+
+                    res.setBody(ss.str());
+                }
+                catch (const std::exception &e)
+                {
+                    res.setBody("\"\"");
+                }
+            }
+            else if (segment == "PreviousAudioFile")
+            {
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+                fs::path path = request_uri.query("path");
+
+                try
+                {
+                    if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
+                    auto directoryPath = path.parent_path();
+                    auto directoryInfo = CreateDirectoryInfo(directoryPath);
+                    std::string result = directoryInfo->GetPreviousAudioFile(path.filename());
+                    if (!result.empty())
+                    {
+                        result = (directoryPath / result).string();
+                    }
+
+                    // json-encode the result.
+                    std::stringstream ss;
+                    json_writer writer(ss);
+                    writer.write(result);
+
+                    res.setBody(ss.str());
+                }
+                catch (const std::exception &e)
+                {
+                    res.setBody("\"\"");
+                }
+            }
+
             else
             {
                 throw PiPedalException("Not found");
@@ -494,7 +738,17 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "uploadPluginPresets")
+            if (segment == "Tone3000Auth") {
+                // https://www.tone3000.com/api/v1/auth?redirect_url=http://10.0.0.151:8080/var/Tone3000Auth&otp_only=true 
+                std::string apiKey = request_uri.query("api_key");
+
+                model->SetTone3000Auth(apiKey);
+
+                res.set(HttpField::content_type, "application/json");
+                res.set(HttpField::cache_control, "no-cache");
+                
+                res.setBody("\"OK\"");
+            } else if (segment == "uploadPluginPresets")
             {
                 PluginPresets presets;
                 fs::path filePath = req.get_body_temporary_file();
@@ -628,7 +882,7 @@ public:
 
                     int64_t instanceId;
                     {
-                        std::istringstream ss { instanceIdString};
+                        std::istringstream ss{instanceIdString};
                         ss >> instanceId;
                         if (!ss)
                         {
@@ -669,7 +923,7 @@ public:
                                     if (extensionChecker.IsValidExtension(extension))
                                     {
                                         auto si = zipFile->GetFileInputStream(inputFile);
-                                        std::string path = this->model->UploadUserFile(directory, instanceId,patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
+                                        std::string path = this->model->UploadUserFile(directory, instanceId, patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
                                     }
                                 }
                             }
@@ -687,7 +941,7 @@ public:
                     }
                     else
                     {
-                        outputFileName = this->model->UploadUserFile(directory, instanceId,patchProperty, filename, req.get_body_input_stream(), req.content_length());
+                        outputFileName = this->model->UploadUserFile(directory, instanceId, patchProperty, filename, req.get_body_input_stream(), req.content_length());
                     }
 
                     if (outputFileName.is_relative())
@@ -783,7 +1037,7 @@ public:
           << ", \"socket_server_address\": \"" << webSocketAddress
           << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
           << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true" : "false")
-          << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true": "false")
+          << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true" : "false")
           << " }";
 
         return s.str();

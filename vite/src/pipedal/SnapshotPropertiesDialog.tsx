@@ -29,7 +29,7 @@ import Typography from '@mui/material/Typography';
 import DialogEx from './DialogEx';
 import DialogTitle from '@mui/material/DialogTitle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import { colorKeys } from "./MaterialColors";
@@ -117,10 +117,10 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
             >
                 <DialogTitle>
                     <div>
-                        <IconButton edge="start" color="inherit" onClick={() => { this.props.onClose(); }} aria-label="back"
+                        <IconButtonEx tooltip="Back" edge="start" color="inherit" onClick={() => { this.props.onClose(); }} aria-label="back"
                         >
                             <ArrowBackIcon fontSize="small" style={{ opacity: "0.6" }} />
-                        </IconButton>
+                        </IconButtonEx>
                         <Typography display="inline" variant="body1" color="textSecondary" >
                             {this.props.editing ? "Edit snapshot" : "Save snapshot"}
                         </Typography>

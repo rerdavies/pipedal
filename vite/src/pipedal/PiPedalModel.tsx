@@ -41,6 +41,9 @@ import AlsaDeviceInfo from './AlsaDeviceInfo';
 import { AndroidHostInterface, FakeAndroidHost } from './AndroidHost';
 import { ColorTheme, getColorScheme, setColorScheme } from './DarkMode';
 import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
+import AudioFileMetadata from './AudioFileMetadata';
+import { pathFileName } from './FileUtils';
+import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
 
 
 export enum State {
@@ -56,14 +59,11 @@ export enum State {
     HotspotChanging,
 };
 
-function getErrorMessage(error: any)
-{
-    if (error instanceof Error)
-    {
+function getErrorMessage(error: any) {
+    if (error instanceof Error) {
         return (error as Error).message;
     }
-    if (!error)
-    {
+    if (!error) {
         return "";
     }
     return error.toString();
@@ -89,6 +89,8 @@ export interface FileEntry {
     displayName: string;
     isDirectory: boolean;
     isProtected: boolean;
+    // optional metadata for audio
+    metadata?: AudioFileMetadata;
 };
 
 export interface BreadcrumbEntry {
@@ -157,14 +159,31 @@ interface ControlValueChangeItem {
 
 };
 
+export class MidiMessage {
+    constructor(cc0: number, cc1: number, cc2: number) {
+        this.cc0 = cc0;
+        this.cc1 = cc1;
+        this.cc2 = cc2;
+    }
+    cc0: number;
+    cc1: number;
+    cc2: number;
+
+    isNote() {
+        return (this.cc0 & 0xF0) == 0x90 && this.cc2 !== 0;
+    }
+    isControl() {
+        return (this.cc0 & 0xF0) == 0xB0;
+    }
+};
 
 class MidiEventListener {
-    constructor(handle: number, callback: (isNote: boolean, noteOrControl: number) => void) {
+    constructor(handle: number, callback: (message: MidiMessage) => void) {
         this.handle = handle;
         this.callback = callback;
     }
     handle: number;
-    callback: (isNote: boolean, noteOrControl: number) => void;
+    callback: (midiMessage: MidiMessage) => void;
 };
 
 export type PatchPropertyListener = (instanceId: number, propertyUri: string, atomObject: any) => void;
@@ -401,6 +420,8 @@ export class PiPedalModel //implements PiPedalModel
     webSocket?: PiPedalSocket;
 
 
+    hasTone3000Auth: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
+
     hasWifiDevice: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
     onSnapshotModified: ObservableEvent<SnapshotModifiedEvent> = new ObservableEvent<SnapshotModifiedEvent>();
 
@@ -434,6 +455,7 @@ export class PiPedalModel //implements PiPedalModel
 
     favorites: ObservableProperty<FavoritesList> = new ObservableProperty<FavoritesList>({});
 
+    alsaSequencerConfiguration : ObservableProperty<AlsaSequencerConfiguration> = new ObservableProperty<AlsaSequencerConfiguration>(new AlsaSequencerConfiguration());
 
     presets: ObservableProperty<PresetIndex> = new ObservableProperty<PresetIndex>
         (
@@ -479,14 +501,12 @@ export class PiPedalModel //implements PiPedalModel
 
     private expectDisconnectTimer?: number = undefined;
 
-    cancelExpectDisconnectTimer()
-    {
+    cancelExpectDisconnectTimer() {
         if (this.expectDisconnectTimer) {
             clearTimeout(this.expectDisconnectTimer);
         }
     }
-    startExpectDisconnectTimer()
-    {
+    startExpectDisconnectTimer() {
         this.cancelExpectDisconnectTimer();
         // poll for access to a running pipedal server
         this.expectDisconnectTimer = setTimeout(
@@ -500,8 +520,7 @@ export class PiPedalModel //implements PiPedalModel
     expectDisconnect(reason: ReconnectReason) {
         this.cancelExpectDisconnectTimer();
         this.reconnectReason = reason;
-        if (this.reconnectReason !== ReconnectReason.Disconnected)
-        {
+        if (this.reconnectReason !== ReconnectReason.Disconnected) {
             this.startExpectDisconnectTimer();
         }
     }
@@ -619,17 +638,14 @@ export class PiPedalModel //implements PiPedalModel
             let channelSelection = new JackChannelSelection().deserialize(channelSelectionBody.jackChannelSelection);
             this.jackSettings.set(channelSelection);
         } else if (message === "onSnapshotModified") {
-            let {snapshotIndex,modified} = (body as {snapshotIndex: number, modified: boolean});
+            let { snapshotIndex, modified } = (body as { snapshotIndex: number, modified: boolean });
             let snapshots = this.pedalboard.get().snapshots;
-            if (snapshotIndex >= 0 && snapshotIndex < snapshots.length)
-            {
+            if (snapshotIndex >= 0 && snapshotIndex < snapshots.length) {
                 let snapshot = snapshots[snapshotIndex]
-                if (snapshot)
-                {
-                    if (snapshot.isModified !== modified)
-                    {
+                if (snapshot) {
+                    if (snapshot.isModified !== modified) {
                         snapshot.isModified = modified;
-                        this.onSnapshotModified.fire({snapshotIndex: snapshotIndex,modified: modified});
+                        this.onSnapshotModified.fire({ snapshotIndex: snapshotIndex, modified: modified });
                     }
                 }
             }
@@ -656,6 +672,9 @@ export class PiPedalModel //implements PiPedalModel
             this.handlePluginPresetsChanged(pluginUri);
         } else if (message === "onJackConfigurationChanged") {
             this.jackConfiguration.set(new JackConfiguration().deserialize(body));
+        } else if (message === "onAlsaSequencerConfigurationChanged") {
+            this.alsaSequencerConfiguration.set(new AlsaSequencerConfiguration().deserialize(body));
+
         } else if (message === "onLoadPluginPreset") {
             let instanceId = body.instanceId as number;
             let controlValues = ControlValue.deserializeArray(body.controlValues);
@@ -684,15 +703,18 @@ export class PiPedalModel //implements PiPedalModel
             }
 
         } else if (message === "onNotifyMidiListener") {
-            let clientHandle = body.clientHandle as number;
-            let isNote = body.isNote as boolean;
-            let noteOrControl = body.noteOrControl as number;
-            this.handleNotifyMidiListener(clientHandle, isNote, noteOrControl);
+            let notifyBody = body as { clientHandle: number, cc0: number, cc1: number, cc2: number };
+            let clientHandle = notifyBody.clientHandle as number;
+            this.handleNotifyMidiListener(
+                clientHandle,
+                notifyBody.cc0,
+                notifyBody.cc1,
+                notifyBody.cc2);
         } else if (message === "onNotifyPathPatchPropertyChanged") {
             let instanceId = body.instanceId as number;
             let propertyUri = body.propertyUri as string;
-            let atomJson = body.atomJson as any;
-            this.handleNotifyPathPatchPropertyChanged(instanceId, propertyUri, atomJson);
+            let atomJsonString = body.atomJson as string;
+            this.handleNotifyPathPatchPropertyChanged(instanceId, propertyUri, atomJsonString);
             if (header.replyTo) {
                 this.webSocket?.reply(header.replyTo, "onNotifyPathPatchPropertyChanged", true);
             }
@@ -740,6 +762,8 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onErrorMessage") {
             this.showAlert(body as string);
 
+        } else if (message == "onTone3000AuthChanged") {
+            this.hasTone3000Auth.set(body as boolean);
         }
         else if (message === "onLv2PluginsChanging") {
             this.onLv2PluginsChanging();
@@ -752,7 +776,7 @@ export class PiPedalModel //implements PiPedalModel
         else if (message === "onHasWifiChanged") {
             let hasWifi = body as boolean;
             this.hasWifiDevice.set(hasWifi);
-        }        
+        }
     }
 
 
@@ -923,6 +947,9 @@ export class PiPedalModel //implements PiPedalModel
             }
         }
     }
+
+
+
     async onSocketReconnected(): Promise<void> {
         this.cancelOnNetworkChanging();
         this.cancelAndroidReconnectTimer();
@@ -932,13 +959,12 @@ export class PiPedalModel //implements PiPedalModel
         }
 
         if (this.visibilityState.get() === VisibilityState.Hidden) return;
-        
+
         // reload state, but not configuration.
         this.clientId = await this.getWebSocket().request<number>("hello");
 
-        let newServerVersion =  this.serverVersion = await this.getWebSocket().request<PiPedalVersion>("version");
-        if (newServerVersion.serverVersion !== this.serverVersion.serverVersion)
-        {
+        let newServerVersion = this.serverVersion = await this.getWebSocket().request<PiPedalVersion>("version");
+        if (newServerVersion.serverVersion !== this.serverVersion.serverVersion) {
             this.reloadPage();
             return;
         }
@@ -955,6 +981,49 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
+    async getNextAudioFile(filePath: string): Promise<string> {
+        try {
+            let url =
+                this.varServerUrl
+                + "NextAudioFile?path=" + encodeURIComponent(filePath);
+
+            let response = await fetch(url);
+            let json = await response.json();
+            return json as string;
+        } catch (e) {
+            return "";
+        }
+    }
+    async getPreviousAudioFile(filePath: string): Promise<string> {
+        try {
+            let url =
+                this.varServerUrl
+                + "PreviousAudioFile?path=" + encodeURIComponent(filePath);
+
+            let response = await fetch(url);
+            let json = await response.json();
+            return json as string;
+        } catch (e) {
+            return "";
+        }
+    }
+
+
+    async getAudioFileMetadata(filePath: string): Promise<AudioFileMetadata> {
+        try {
+            let url =
+                this.varServerUrl
+                + "AudioMetadata?path=" + encodeURIComponent(filePath);
+
+            let response = await fetch(url);
+            let json = await response.json();
+            return new AudioFileMetadata().deserialize(json);
+        } catch (e) {
+            return new AudioFileMetadata();
+        }
+    }
+
+
     maxFileUploadSize: number = 512 * 1024 * 1024;
     maxPresetUploadSize: number = 1024 * 1024;
     debug: boolean = false;
@@ -964,7 +1033,7 @@ export class PiPedalModel //implements PiPedalModel
     async requestConfig(): Promise<boolean> {
 
         try {
-            const  myRequest = new Request(this.varRequest('config.json'));
+            const myRequest = new Request(this.varRequest('config.json'));
             let response: Response = await fetch(myRequest);
             let data = await response.json();
 
@@ -984,12 +1053,11 @@ export class PiPedalModel //implements PiPedalModel
             if (!socket_server_port) socket_server_port = 8080;
             let socket_server = this.makeSocketServerUrl(socket_server_address, socket_server_port);
             let var_server_url = this.makeVarServerUrl("http", socket_server_address, socket_server_port);
-    
+
             this.socketServerUrl = socket_server;
             this.varServerUrl = var_server_url;
             this.maxFileUploadSize = parseInt(max_upload_size);
-        } catch (error: any)
-        {
+        } catch (error: any) {
             this.setError("Can't connect to server. " + getErrorMessage(error));
             return false;
         }
@@ -1005,10 +1073,10 @@ export class PiPedalModel //implements PiPedalModel
             }
         );
 
-        try { 
+        try {
             await this.webSocket.connect();
         } catch (error) {
-            this.setError("Failed to connect to server. " + getErrorMessage(error) );
+            this.setError("Failed to connect to server. " + getErrorMessage(error));
             return false;
 
         }
@@ -1017,23 +1085,21 @@ export class PiPedalModel //implements PiPedalModel
 
             this.clientId = (await this.getWebSocket().request<number>("hello")) as number;
 
-            this.preloadImages( (await this.getWebSocket().request<string>("imageList")));
+            this.preloadImages((await this.getWebSocket().request<string>("imageList")));
         } catch (error) {
             this.setError("Failed to establish connection. " + getErrorMessage(error));
             return false;
         }
         return await this.loadServerState();
     }
-    async loadServerState() : Promise<boolean>
-    {
-        try 
-        { 
+    async loadServerState(): Promise<boolean> {
+        try {
             this.serverVersion = await this.getWebSocket().request<PiPedalVersion>("version");
 
             this.updateStatus.set(new UpdateStatus().deserialize(await this.getUpdateStatus()));
 
             this.hasWifiDevice.set(await this.getWebSocket().request<boolean>("getHasWifi"));
-                        
+
             this.ui_plugins.set(
                 UiPlugin.deserialize_array(await this.getWebSocket().request<any>("plugins"))
             );
@@ -1059,7 +1125,7 @@ export class PiPedalModel //implements PiPedalModel
             this.wifiDirectConfigSettings.set(
                 new WifiDirectConfigSettings().deserialize(
                     await this.getWebSocket().request<any>("getWifiDirectConfigSettings")
-                ));                    
+                ));
             this.governorSettings.set(new GovernorSettings().deserialize(
                 await this.getWebSocket().request<any>("getGovernorSettings")
             ));
@@ -1077,7 +1143,13 @@ export class PiPedalModel //implements PiPedalModel
             this.jackSettings.set(new JackChannelSelection().deserialize(
                 await this.getWebSocket().request<any>("getJackSettings")
             ));
-            this.banks.set(new BankIndex().deserialize(await this.getWebSocket().request<any>("getBankIndex")));                
+            this.alsaSequencerConfiguration.set(new AlsaSequencerConfiguration().deserialize(
+                await this.getWebSocket().request<any>("getAlsaSequencerConfiguration")
+            ));
+            this.hasTone3000Auth.set(
+                await this.getWebSocket().request<boolean>("getHasTone3000Auth")
+            );
+            this.banks.set(new BankIndex().deserialize(await this.getWebSocket().request<any>("getBankIndex")));
 
             this.favorites.set(await this.getWebSocket().request<FavoritesList>("getFavorites"));
 
@@ -1089,7 +1161,7 @@ export class PiPedalModel //implements PiPedalModel
             this.setState(State.Ready);
             return true;
         }
-         catch(error) {
+        catch (error) {
             this.setError("Failed to fetch server state.\n\n" + getErrorMessage(error));
             return false;
         }
@@ -1473,7 +1545,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    sendPedalboardControlTrigger(instanceId: number, key: string, value: number) : void {
+    sendPedalboardControlTrigger(instanceId: number, key: string, value: number): void {
         // no state change, no saving the value, just send it to the realtime thread/
         this._setServerControl("previewControl", instanceId, key, value);
     }
@@ -1788,6 +1860,27 @@ export class PiPedalModel //implements PiPedalModel
             .request("setOnboarding", value);
     }
 
+    moveAudioFile(
+        path: string,
+        from: number,
+        to: number
+    ): Promise<boolean> {
+        return new Promise<boolean>(
+            (accept, reject) => {
+                this.webSocket?.request<boolean>("moveAudioFile", {
+                    path: path,
+                    from: from,
+                    to: to
+                }).then(() => {
+                    accept(true);
+                }).catch((e) => {
+                    this.setError(getErrorMessage(e));
+                    accept(false);
+                });
+            }
+        );
+    }
+
 
     saveCurrentPresetAs(newName: string, saveAfterInstanceId = -1): Promise<number> {
         // default behaviour is to save after the currently selected preset.
@@ -1961,8 +2054,8 @@ export class PiPedalModel //implements PiPedalModel
         return this.copyPreset(instanceId, -1);
     }
 
-    showAlert(message: string | Error): void {
-        let m = message;
+    showAlert(message: any): void {
+        let m: string;
         if (message instanceof Error) {
             let e = message as Error;
             if (e.message) {
@@ -2297,12 +2390,12 @@ export class PiPedalModel //implements PiPedalModel
     private monitorPatchPropertyListeners: PatchPropertyListenerItem[] = [];
 
     nextListenHandle = 1;
-    listenForMidiEvent(listenForControl: boolean, onComplete: (isNote: boolean, noteOrControl: number) => void): ListenHandle {
+    listenForMidiEvent(onComplete: (midiMessage: MidiMessage) => void): ListenHandle {
         let handle = this.nextListenHandle++;
 
         this.midiListeners.push(new MidiEventListener(handle, onComplete));
 
-        this.webSocket?.send("listenForMidiEvent", { listenForControls: listenForControl, handle: handle });
+        this.webSocket?.send("listenForMidiEvent", { handle: handle });
         return {
             _handle: handle
         };
@@ -2334,19 +2427,15 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     private handleNotifyPathPatchPropertyChanged(
-        instanceId: number, propertyUri: string, jsonObject: any
+        instanceId: number, propertyUri: string, jsonObjectString: string
     ) {
         let pedalboard = this.pedalboard.get();
         let pedalboardItem = pedalboard.getItem(instanceId);
         if (pedalboardItem) {
-            pedalboardItem.pathProperties[propertyUri] = jsonObject;
+            pedalboardItem.pathProperties[propertyUri] = jsonObjectString;
         }
-        for (let i = 0; i < this.monitorPatchPropertyListeners.length; ++i) {
-            let listener = this.monitorPatchPropertyListeners[i];
-            if (listener.instanceId === instanceId) {
-                listener.callback(instanceId, propertyUri, jsonObject);
-            }
-        }
+        // No NOT notify monitorPatchProperty listeners, because they extpect objects not strings, 
+        // AND they will a NotifyPatchPropertychanged message anyway.
 
     }
     private handleNotifyPatchProperty(clientHandle: number, instanceId: number, propertyUri: string, jsonObject: any) {
@@ -2364,12 +2453,16 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    handleNotifyMidiListener(clientHandle: number, isNote: boolean, noteOrControl: number) {
+    handleNotifyMidiListener(clientHandle: number, cc0: number, cc1: number, cc2: number): void {
+        let midiMessage = new MidiMessage(cc0, cc1, cc2);
+
+        if (!midiMessage.isNote() && !midiMessage.isControl()) {
+            return;
+        }
         for (let i = 0; i < this.midiListeners.length; ++i) {
             let listener = this.midiListeners[i];
             if (listener.handle === clientHandle) {
-                listener.callback(isNote, noteOrControl);
-
+                listener.callback(midiMessage);
             }
         }
     }
@@ -2392,10 +2485,13 @@ export class PiPedalModel //implements PiPedalModel
         let downloadUrl = this.varServerUrl + "downloadMediaFile?path=" + encodeURIComponent(filePath);
 
         // download with no flashing temporary tab.
-        let link = window.document.createElement("A") as HTMLLinkElement;
+        let link = window.document.createElement("A") as HTMLAnchorElement;
         link.href = downloadUrl;
-        link.setAttribute("download", "");
+        link.target = "_blank";
+        link.setAttribute("download", pathFileName(filePath));
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     }
 
     download(targetType: string, instanceId: number | string): void {
@@ -2404,10 +2500,13 @@ export class PiPedalModel //implements PiPedalModel
 
         // window.open(url, "_blank");
         // download with no flashing temporary tab.
-        let link = window.document.createElement("A") as HTMLLinkElement;
+        let link = window.document.createElement("A") as HTMLAnchorElement;
         link.href = url;
-        link.setAttribute("download", "");
+        link.target = "_blank";
+        link.download = "download.piPreset";
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     }
 
     uploadUserFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {
@@ -2451,16 +2550,14 @@ export class PiPedalModel //implements PiPedalModel
                         }
                     })
                     .then((json) => {
-                        let response = json as {errorMessage: string, path: string};
-                        if (response.errorMessage !== "")
-                        {
+                        let response = json as { errorMessage: string, path: string };
+                        if (response.errorMessage !== "") {
                             throw new Error(response.errorMessage);
                         }
                         resolve(response.path);
                     })
                     .catch((error) => {
-                        if (error instanceof Error)
-                        {
+                        if (error instanceof Error) {
                             reject("Upload failed. " + (error as Error).message);
                         } else {
                             reject("Upload failed. " + error);
@@ -2605,7 +2702,7 @@ export class PiPedalModel //implements PiPedalModel
         });
     }
 
-    getFilePropertyDirectoryTree(uiFileProperty: UiFileProperty,selectedPath: string): Promise<FilePropertyDirectoryTree> {
+    getFilePropertyDirectoryTree(uiFileProperty: UiFileProperty, selectedPath: string): Promise<FilePropertyDirectoryTree> {
         return new Promise<FilePropertyDirectoryTree>((resolve, reject) => {
             let ws = this.webSocket;
             if (!ws) {
@@ -2614,7 +2711,7 @@ export class PiPedalModel //implements PiPedalModel
             }
             ws.request<FilePropertyDirectoryTree>(
                 "getFilePropertyDirectoryTree",
-                {fileProperty: uiFileProperty, selectedPath: selectedPath}
+                { fileProperty: uiFileProperty, selectedPath: selectedPath }
             ).then((result) => {
                 resolve(new FilePropertyDirectoryTree().deserialize(result));
             }).catch((e) => {
@@ -2636,6 +2733,36 @@ export class PiPedalModel //implements PiPedalModel
                     oldRelativePath: oldRelativePath,
                     newRelativePath: newRelativePath,
                     uiFileProperty: uiFileProperty
+                }
+            )
+                .then((newPath) => {
+                    resolve(newPath);
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
+    }
+    copyFilePropertyFile(
+        oldRelativePath: string,
+        newRelativePath: string,
+        uiFileProperty: UiFileProperty,
+        overwrite: boolean
+    ): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+
+            let ws = this.webSocket;
+            if (!ws) {
+                resolve("");
+                return;
+            }
+            ws.request<string>(
+                "copyFilePropertyFile",
+                {
+                    oldRelativePath: oldRelativePath,
+                    newRelativePath: newRelativePath,
+                    uiFileProperty: uiFileProperty,
+                    overwrite: overwrite
                 }
             )
                 .then((newPath) => {
@@ -3065,6 +3192,41 @@ export class PiPedalModel //implements PiPedalModel
             30 * 1000);
 
     }
+    setPedalboardItemTitle(instanceId: number, title: string): void {
+        let pedalboard = this.pedalboard.get();
+        if (!pedalboard) {
+            throw new PiPedalStateError("Pedalboard not loaded.");
+        }
+        let newPedalboard = pedalboard.clone();
+        this.updateVst3State(newPedalboard);
+        let item = newPedalboard.getItem(instanceId);
+        if (item.title === title) {
+            return;
+        }
+        item.title = title;
+        this.pedalboard.set(newPedalboard);
+        // notify the server.
+        this.webSocket?.send("setPedalboardItemTitle", { instanceId: instanceId, title: title });
+    }
+    setAlsaSequencerConfiguration(alsaSequencerConfiguration: AlsaSequencerConfiguration): void {
+        this.webSocket?.send("setAlsaSequencerConfiguration", alsaSequencerConfiguration);
+    }
+    async getAlsaSequencerConfiguration(): Promise<AlsaSequencerConfiguration> {
+        if (this.webSocket)
+        {
+            let  result = await this.webSocket.request<any>("getAlsaSequencerConfiguration");
+            return new AlsaSequencerConfiguration().deserialize(result);
+        }
+        throw new Error("No connection.");
+    }
+    async getAlsaSequencerPorts(): Promise<AlsaSequencerPortSelection[]> {
+        if (this.webSocket) {
+            let result = await this.webSocket.request<AlsaSequencerPortSelection[]>("getAlsaSequencerPorts");
+            return AlsaSequencerPortSelection.deserialize_array(result);
+        }
+        throw new Error("No connection.");
+    }
+
 };
 
 let instance: PiPedalModel | undefined = undefined;

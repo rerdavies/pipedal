@@ -18,11 +18,12 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import { Component } from 'react';
-import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
+import { ListenHandle, MidiMessage, PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
 import { withStyles } from "tss-react/mui";
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
+import Snackbar from '@mui/material/Snackbar';
 
 import { UiPlugin } from './Lv2Plugin';
 
@@ -33,7 +34,8 @@ import Utility from './Utility';
 import Typography from '@mui/material/Typography';
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
+
 import NumericInput from './NumericInput';
 
 
@@ -46,7 +48,7 @@ const styles = (theme: Theme) => createStyles({
     }
 });
 
-enum MidiControlType {
+export enum MidiControlType {
     None,
     Select,
     Dial,
@@ -55,18 +57,57 @@ enum MidiControlType {
     MomentarySwitch
 }
 
+export function getMidiControlType(uiPlugin: UiPlugin | undefined, symbol: string): MidiControlType {
+    if (!uiPlugin) return MidiControlType.None;
+    let port = uiPlugin.getControl(symbol);
+    if (!port) return MidiControlType.None;
+
+    if (symbol === "__bypass") {
+        return MidiControlType.Toggle;
+    }
+
+
+    if (!port) return MidiControlType.None;
+
+    if (port.mod_momentaryOffByDefault || port.mod_momentaryOnByDefault) {
+        return MidiControlType.MomentarySwitch;
+    }
+    if (port.trigger_property) {
+        return MidiControlType.Trigger;
+    }
+    if (port.trigger_property) {
+        return MidiControlType.Trigger;
+    }
+    if (port.isAbToggle() || port.isOnOffSwitch()) {
+        return MidiControlType.Toggle;
+    }
+    if (port.isSelect()) {
+        return MidiControlType.Select;
+    }
+    return MidiControlType.Dial;
+}
+
+export function canBindToNote(controlType: MidiControlType): boolean {
+    return controlType === MidiControlType.Toggle
+        || controlType === MidiControlType.Trigger
+        || controlType === MidiControlType.MomentarySwitch
+}
+
 interface MidiBindingViewProps extends WithStyles<typeof styles> {
     instanceId: number;
-    listen: boolean;
     midiBinding: MidiBinding;
-    uiPlugin: UiPlugin;
+    midiControlType: MidiControlType;
     onChange: (instanceId: number, newBinding: MidiBinding) => void;
-    onListen: (instanceId: number, key: string, listenForControl: boolean) => void;
 }
 
 
 interface MidiBindingViewState {
-    midiControlType: MidiControlType;
+    listenSymbol: string;
+    listenForRangeSymbol: string;
+    listenForRangeMax: number;
+    listenForRangeMin: number;
+    listenSnackbarOpen: boolean;
+
 }
 
 
@@ -82,7 +123,11 @@ const MidiBindingView =
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
-                    midiControlType: this.getControlType()
+                    listenSymbol: "",
+                    listenForRangeSymbol: "",
+                    listenForRangeMax: 127,
+                    listenForRangeMin: 0,
+                    listenSnackbarOpen: false
                 };
             }
 
@@ -138,6 +183,16 @@ const MidiBindingView =
                 newBinding.maxValue = value;
                 this.props.onChange(this.props.instanceId, newBinding);
             }
+            handleCtlMinChange(value: number): void {
+                let newBinding = this.props.midiBinding.clone();
+                newBinding.minControlValue = Math.round(value);
+                this.props.onChange(this.props.instanceId, newBinding);
+            }
+            handleCtlMaxChange(value: number): void {
+                let newBinding = this.props.midiBinding.clone();
+                newBinding.maxControlValue = Math.round(value);
+                this.props.onChange(this.props.instanceId, newBinding);
+            }
             handleScaleChange(value: number): void {
                 let newBinding = this.props.midiBinding.clone();
                 newBinding.rotaryScale = value;
@@ -157,10 +212,23 @@ const MidiBindingView =
                 return result;
             }
 
+            mounted: boolean = false;
+
+            componentDidMount() {
+                super.componentDidMount?.();
+                this.mounted = true;
+            }
+
+
+            componentWillUnmount() {
+                this.mounted = false;
+                this.cancelListenForControl();
+                super.componentWillUnmount?.();
+            }
             validateSwitchControlType(midiBinding: MidiBinding) {
                 // :-(
 
-                let controlType = this.state.midiControlType;
+                let controlType = this.props.midiControlType;
                 if (controlType === MidiControlType.Toggle
                     && midiBinding.bindingType === MidiBinding.BINDING_TYPE_NOTE) {
                     if (midiBinding.switchControlType !== MidiBinding.TRIGGER_ON_RISING_EDGE // Toggle on Note On.
@@ -180,41 +248,154 @@ const MidiBindingView =
             }
 
             getControlType(): MidiControlType {
-
-                if (this.props.midiBinding.symbol === "__bypass") {
-                    return MidiControlType.Toggle;
-                }
-                if (!this.props.uiPlugin) return MidiControlType.None;
-
-                let port = this.props.uiPlugin.getControl(this.props.midiBinding.symbol);
-
-                if (!port) return MidiControlType.None;
-                if (port.mod_momentaryOffByDefault || port.mod_momentaryOnByDefault) {
-                    return MidiControlType.MomentarySwitch;
-                }
-                if (port.trigger_property) {
-                    return MidiControlType.Trigger;
-                }
-                if (port.trigger_property) {
-                    return MidiControlType.Trigger;
-                }
-                if (port.isAbToggle() || port.isOnOffSwitch()) {
-                    return MidiControlType.Toggle;
-                }
-                if (port.isSelect()) {
-                    return MidiControlType.Select;
-                }
-                return MidiControlType.Dial;
+                return this.props.midiControlType;
             }
+            ///////////////////////////////////////
+            listenTimeoutHandle?: number;
+
+            listenHandle?: ListenHandle;
+
+            cancelListenForControl() {
+                this.stopListenTimeout();
+                if (this.listenHandle) {
+                    this.model.cancelListenForMidiEvent(this.listenHandle)
+                    this.listenHandle = undefined;
+                }
+
+                this.setState({ listenSymbol: "", listenForRangeSymbol: "" });
+
+            }
+
+            handleListenForRangeSucceeded(instanceId: number, symbol: string, midiMessage: MidiMessage) {
+                if (!midiMessage.isControl()) return;
+
+                let binding = this.props.midiBinding;
+                if (binding.control != midiMessage.cc1) {
+                    return;
+                }
+
+
+                let value = midiMessage.cc2;
+                let min = this.state.listenForRangeMin;
+                let max = this.state.listenForRangeMax;
+
+                let update = false;
+                if (value < min) {
+                    min = value;
+                    update = true;
+                }
+                if (value > max) {
+                    max = value;
+                    update = true;
+                }
+                if (!update) {
+                    return; // No change, so ignore.
+                }
+
+                let newBinding = binding.clone();
+                newBinding.minControlValue = min;
+                newBinding.maxControlValue = max;
+
+                this.props.onChange(this.props.instanceId, newBinding);
+                this.setState({ listenForRangeMin: min, listenForRangeMax: max });
+                this.startListenTimeout(20000);
+
+            }
+
+            handleListenSucceeded(instanceId: number, symbol: string, midiMessage: MidiMessage) {
+                if (instanceId !== this.props.instanceId) {
+                    return;
+                }
+                if (symbol !== this.props.midiBinding.symbol) {
+                    return;
+                }
+
+
+                let binding = this.props.midiBinding;
+                let newBinding = binding.clone();
+                if (midiMessage.isNote()) {
+                    if (!canBindToNote(this.props.midiControlType)) {
+                        return;
+                    }
+                    newBinding.bindingType = MidiBinding.BINDING_TYPE_NOTE
+                    newBinding.note = midiMessage.cc1;
+                } else if (midiMessage.isControl()) {
+                    newBinding.bindingType = MidiBinding.BINDING_TYPE_CONTROL
+                    newBinding.control = midiMessage.cc1;
+                } else {
+                    return;
+                }
+                this.props.onChange(this.props.instanceId, newBinding);
+                this.cancelListenForControl();
+            }
+            handleListenForControlRange(instanceId: number, symbol: string): void {
+                if (this.state.listenForRangeSymbol !== "") {
+                    this.cancelListenForControl();
+                    return;
+                }
+                this.cancelListenForControl();
+
+                this.setState({
+                    listenSymbol: "",
+                    listenForRangeSymbol: symbol,
+                    listenForRangeMin: 127,
+                    listenForRangeMax: 0,
+                    listenSnackbarOpen: true
+                });
+                this.startListenTimeout(20000);
+
+                this.listenHandle = this.model.listenForMidiEvent(
+                    (midiMessage) => {
+                        this.handleListenForRangeSucceeded(instanceId, symbol, midiMessage);
+                    });
+            }
+
+            stopListenTimeout(): void {
+                if (this.listenTimeoutHandle) {
+                    clearTimeout(this.listenTimeoutHandle);
+                }
+            }
+
+            startListenTimeout(timeout: number): void {
+                this.stopListenTimeout();
+                this.listenTimeoutHandle = setTimeout(() => {
+                    this.cancelListenForControl();
+                    this.listenTimeoutHandle = undefined;
+                }, timeout);
+            }
+
+            handleListen(): void {
+                if (this.state.listenSymbol !== "") {
+                    this.cancelListenForControl();
+                    return;
+                }
+                this.cancelListenForControl();
+
+                this.setState({
+                    listenSymbol: this.props.midiBinding.symbol,
+                    listenForRangeSymbol: "",
+                    listenSnackbarOpen: true
+                });
+                let instanceId = this.props.instanceId;
+                let symbol = this.props.midiBinding.symbol;
+
+                this.startListenTimeout(8000);
+
+                this.listenHandle = this.model.listenForMidiEvent(
+                    (midiMessage) => {
+                        this.handleListenSucceeded(instanceId, symbol, midiMessage);
+                    });
+            }
+
+            ///////////////////////////////////////
 
             render() {
                 const classes = withStyles.getClasses(this.props);
                 let midiBinding = this.props.midiBinding;
-                let uiPlugin = this.props.uiPlugin;
-                if (!uiPlugin) {
+                if (this.props.midiControlType === MidiControlType.None) {
                     return (<div />);
                 }
-                let controlType = this.state.midiControlType;
+                let controlType = this.props.midiControlType;
 
                 let showLinearRange =
                     controlType === MidiControlType.Dial &&
@@ -237,9 +418,7 @@ const MidiBindingView =
                                 value={midiBinding.bindingType}
                             >
                                 <MenuItem value={0}>None</MenuItem>
-                                {(controlType === MidiControlType.Toggle 
-                                    || controlType === MidiControlType.Trigger 
-                                    || controlType === MidiControlType.MomentarySwitch) && (
+                                {(canBindToNote(this.props.midiControlType)) && (
                                     <MenuItem value={1}>Note</MenuItem>
                                 )}
                                 <MenuItem value={2}>Control</MenuItem>
@@ -259,21 +438,22 @@ const MidiBindingView =
                                             this.generateMidiNoteSelects()
                                         }
                                     </Select>
-                                    <IconButton
+                                    <IconButtonEx
+                                        tooltip="Listen for MIDI input"
+                                        onBlur={() => {
+                                            this.cancelListenForControl();
+                                        }}
+
                                         onClick={() => {
-                                            if (this.props.listen) {
-                                                this.props.onListen(-2, "", false)
-                                            } else {
-                                                this.props.onListen(this.props.instanceId, this.props.midiBinding.symbol, false)
-                                            }
+                                            this.handleListen()
                                         }}
                                         size="large">
-                                        {this.props.listen ? (
+                                        {this.state.listenSymbol !== "" ? (
                                             <MicOutlinedIcon />
                                         ) : (
                                             <MicNoneOutlinedIcon />
                                         )}
-                                    </IconButton>
+                                    </IconButtonEx>
                                 </div>
                             )
                         }
@@ -292,23 +472,45 @@ const MidiBindingView =
                                             this.generateControlSelects()
                                         }
                                     </Select>
-                                    <IconButton
+                                    <IconButtonEx
+                                        tooltip="Listen for MIDI input"
+                                        onBlur={() => {
+                                            this.cancelListenForControl();
+                                        }}
+
                                         onClick={() => {
-                                            if (this.props.listen) {
-                                                this.props.onListen(-2, "", false)
-                                            } else {
-                                                this.props.onListen(this.props.instanceId, this.props.midiBinding.symbol, true)
-                                            }
+                                            this.handleListen()
                                         }}
                                         size="large">
-                                        {this.props.listen ? (
+                                        {this.state.listenSymbol !== "" ? (
                                             <MicOutlinedIcon />
                                         ) : (
                                             <MicNoneOutlinedIcon />
                                         )}
-                                    </IconButton>
+                                    </IconButtonEx>
 
                                 </div>
+                            )
+                        }
+                        {midiBinding.bindingType === MidiBinding.BINDING_TYPE_NONE &&
+                            (
+                                <IconButtonEx
+                                    tooltip="Listen for MIDI input"
+                                    onBlur={() => {
+                                        this.cancelListenForControl();
+                                    }}
+
+                                    onClick={() => {
+                                        this.handleListen()
+                                    }}
+                                    size="large">
+                                    {this.state.listenSymbol !== "" ? (
+                                        <MicOutlinedIcon />
+                                    ) : (
+                                        <MicNoneOutlinedIcon />
+                                    )}
+                                </IconButtonEx>
+
                             )
                         }
                         {
@@ -375,25 +577,58 @@ const MidiBindingView =
                                         <MenuItem value={MidiBinding.CIRCULAR_CONTROL_TYPE}>Rotary</MenuItem>
                                     </Select>
                                 </div>
-
-                            )
-                        }
-                        {
-                            showLinearRange && (
+                            )}
+                        {showLinearRange && (
+                            <div style={{ display: "flex", flexFlow: "row wrap", alignItems: "center" }}>
                                 <div className={classes.controlDiv}>
-                                    <Typography display="inline">Min:&nbsp;</Typography>
-                                    <NumericInput defaultValue={midiBinding.minValue} ariaLabel='min'
-                                        min={0} max={1} onChange={(value) => { this.handleMinChange(value); }}
+                                    <Typography display="inline" noWrap>Min Ctl:&nbsp;</Typography>
+                                    <NumericInput integer value={midiBinding.minControlValue} ariaLabel='min ctl val'
+                                        min={0} max={127} step={1} onChange={(value) => { this.handleCtlMinChange(value); }}
                                     />
                                 </div>
-                            )
+                                <div style={{ display: "flex", flexFlow: "row nowrap", alignItems: "center" }}>
+                                    <div className={classes.controlDiv}>
+                                        <Typography display="inline" noWrap>Max Ctl:&nbsp;</Typography>
+                                        <NumericInput value={midiBinding.maxControlValue} ariaLabel='max ctl val'
+                                            integer={true}
+                                            min={0} max={127} step={1} onChange={(value) => { this.handleCtlMaxChange(value); }}
+                                        />
+                                    </div>
+
+                                    <IconButtonEx
+                                        tooltip="Listen for control range"
+                                        onBlur={() => {
+                                            this.cancelListenForControl();
+                                        }}
+                                        onClick={() => {
+                                            this.handleListenForControlRange(this.props.instanceId, this.props.midiBinding.symbol);
+                                        }}
+                                        size="large">
+                                        {this.state.listenForRangeSymbol !== "" ? (
+                                            <MicOutlinedIcon />
+                                        ) : (
+                                            <MicNoneOutlinedIcon />
+                                        )}
+                                    </IconButtonEx>
+                                </div>
+
+                            </div>
+                        )
                         }
                         {
                             showLinearRange && (
-                                <div className={classes.controlDiv}>
-                                    <Typography display="inline">Max:&nbsp;</Typography>
-                                    <NumericInput defaultValue={midiBinding.maxValue} ariaLabel='max'
-                                        min={0} max={1} onChange={(value) => { this.handleMaxChange(value); }} />
+                                <div style={{ display: "flex", flexFlow: "row wrap", alignItems: "center" }}>
+                                    <div className={classes.controlDiv}>
+                                        <Typography noWrap display="inline">Min Val:&nbsp;</Typography>
+                                        <NumericInput value={midiBinding.minValue} ariaLabel='min'
+                                            min={0} max={1} onChange={(value) => { this.handleMinChange(value); }}
+                                        />
+                                    </div>
+                                    <div className={classes.controlDiv}>
+                                        <Typography noWrap display="inline">Max Val:&nbsp;</Typography>
+                                        <NumericInput value={midiBinding.maxValue} ariaLabel='max'
+                                            min={0} max={1} onChange={(value) => { this.handleMaxChange(value); }} />
+                                    </div>
                                 </div>
                             )
                         }
@@ -401,11 +636,24 @@ const MidiBindingView =
                             canRotaryScale && (
                                 <div className={classes.controlDiv}>
                                     <Typography display="inline">Scale:&nbsp;</Typography>
-                                    <NumericInput defaultValue={midiBinding.maxValue} ariaLabel='scale'
+                                    <NumericInput value={midiBinding.maxValue} ariaLabel='scale'
                                         min={-100} max={100} onChange={(value) => { this.handleScaleChange(value); }} />
                                 </div>
                             )
                         }
+
+                        <Snackbar
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'left',
+                            }}
+                            open={this.state.listenSnackbarOpen}
+                            autoHideDuration={1500}
+                            onClose={() => this.setState({ listenSnackbarOpen: false })}
+                            message="Listening for MIDI input"
+                        />
+
+
                     </div>
                 );
 

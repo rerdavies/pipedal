@@ -23,7 +23,7 @@ import { withStyles } from "tss-react/mui";
 import {createStyles} from './WithStyles';
 
 
-import IconButton from '@mui/material/Toolbar';
+import IconButtonEx from './IconButtonEx';
 import Drawer from '@mui/material/Drawer';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Theme } from '@mui/material/styles';
@@ -100,9 +100,10 @@ export const TemporaryDrawer = withStyles(
                             >
                                 <div style={{ display: "flex", flexFlow: "row nowrap", justifyContent: "flex-start", alignItems: "center", width: "100%"}}>
 
-                                    <IconButton style={{ flex: "0 0 auto" }} >
+                                    <IconButtonEx tooltip="Back"
+                                         style={{ flex: "0 0 auto" }} >
                                         <ArrowBackIcon style={{ fill: '#666' }} />
-                                    </IconButton>
+                                    </IconButtonEx>
                                     <img src="img/Pi-Logo-3.png" alt="" style={{height: 36}} />
                                 </div>
                                 {this.props.children}

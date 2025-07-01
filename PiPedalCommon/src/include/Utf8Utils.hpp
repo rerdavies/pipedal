@@ -44,6 +44,8 @@ namespace pipedal {
 
     std::u16string Utf8ToUtf16(const std::string_view&s);
     std::string Utf16ToUtf8(const std::u16string_view&s);
+    
+    bool IsValidUtf8(const std::string &text);
 
 
 }

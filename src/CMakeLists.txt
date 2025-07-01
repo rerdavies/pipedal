@@ -9,8 +9,19 @@ set (ENABLE_BACKTRACE 0)
 
 set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 
+
 set(CXX_STANDARD 20)
 
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(PipeWire REQUIRED libpipewire-0.3)
+
+
+message(STATUS "PipeWire_INCLUDE_DIRS: ${PipeWire_INCLUDE_DIRS}"
+    "PipeWire_LIBRARIES: ${PipeWire_LIBRARIES}"
+    "PipeWire_CFLAGS: ${PipeWire_CFLAGS}"
+    "PipeWire_DEFINES: ${PipeWire_DEFINES}"
+    "PipeWire_VERSION: ${PipeWire_VERSION}")
 
 include(FetchContent)
 
@@ -44,6 +55,8 @@ message(STATUS "*** ${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR}")
 include(FindPkgConfig)
 
 find_package(sdbus-c++ REQUIRED)
+
+
 
 
 find_package(ICU REQUIRED COMPONENTS uc i18n  )
@@ -149,7 +162,8 @@ add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG -D_GLIBCXX_DEBUG" )
+    # Must not -D_GLIBCXX_DEBUG, since it conflict with SQLiteCpp.lol
+    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG " )
     if (USE_SANITIZE) 
         set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -static-libasan  " )
     endif()
@@ -192,6 +206,12 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    PipewireInputStream.cpp PipewireInputStream.hpp
+    AudioFiles.cpp AudioFiles.hpp
+    AudioFileMetadataReader.cpp AudioFileMetadataReader.hpp
+    AudioFileMetadata.hpp AudioFileMetadata.cpp
+    AudioFilesDb.hpp AudioFilesDb.cpp
+    LRUCache.hpp
     CpuTemperatureMonitor.cpp CpuTemperatureMonitor.hpp
     SchedulerPriority.hpp SchedulerPriority.cpp
     ModFileTypes.cpp ModFileTypes.hpp
@@ -208,7 +228,6 @@ set (PIPEDAL_SOURCES
     Lv2PluginChangeMonitor.cpp Lv2PluginChangeMonitor.hpp
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp
-    Finally.hpp
     ZipFile.cpp ZipFile.hpp
     TemporaryFile.cpp TemporaryFile.hpp     
     FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp 
@@ -266,6 +285,7 @@ set (PIPEDAL_SOURCES
     LogFeature.hpp LogFeature.cpp
     Worker.hpp Worker.cpp
     OptionsFeature.hpp OptionsFeature.cpp
+    FileMetadataFeature.hpp FileMetadataFeature.cpp
     VuUpdate.hpp VuUpdate.cpp
     Units.hpp Units.cpp
     RingBuffer.hpp
@@ -304,6 +324,7 @@ set (PIPEDAL_INCLUDES
     ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  
     ${VST3_INCLUDES}
     ${WEBSOCKETPP_INCLUDE_DIRS}    
+    ${PipeWire_INCLUDE_DIRS}
     .
 )
 
@@ -313,8 +334,8 @@ set(PIPEDAL_LIBS libpipedald zip
     pthread atomic stdc++fs asound avahi-common avahi-client systemd
     ${VST3_LIBRARIES}
     ${LILV_0_LIBRARIES} 
+    asound
      # ${JACK_LIBRARIES} - pending delete for JACK support.
-
      )
 
 
@@ -323,10 +344,17 @@ set(PIPEDAL_LIBS libpipedald zip
  
 add_library(libpipedald STATIC ${PIPEDAL_SOURCES})
 
-target_include_directories(libpipedald PRIVATE ${PIPEDAL_INCLUDES}
+target_compile_definitions(libpipedald PUBLIC "_REENTRANT")
+
+target_include_directories(libpipedald PUBLIC ${PIPEDAL_INCLUDES} 
     ) 
 
-target_link_libraries(libpipedald PUBLIC PiPedalCommon)
+target_link_libraries(libpipedald 
+    PUBLIC 
+   PiPedalCommon
+   SQLiteCpp
+   ${PipeWire_LIBRARIES}
+   )
 
 if(${USE_PCH})
   target_precompile_headers(libpipedald PRIVATE pch.h)
@@ -348,8 +376,9 @@ target_link_libraries(pipedal_kconfig
   PRIVATE ftxui::dom
   PRIVATE ftxui::component  # Not needed for this example.
   PRIVATE PiPedalCommon
+  asound
   systemd
-)
+) 
 
 #################################
 add_executable(pipedald 
@@ -366,6 +395,7 @@ target_link_libraries(pipedald PRIVATE PiPedalCommon
     ${PIPEDAL_LIBS}
     )
 
+
 #################################
 add_executable(hotspotManagerTest 
     hotspotManagerTestMain.cpp
@@ -373,7 +403,7 @@ add_executable(hotspotManagerTest
 
 target_link_libraries(hotspotManagerTest PRIVATE ${PIPEDAL_LIBS})
 
-set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL true)
+set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 
 add_executable(AuxInTest
@@ -383,8 +413,11 @@ add_executable(AuxInTest
 )
 
 add_executable(pipedaltest 
-testMain.cpp
+    testMain.cpp
+    PipewireInputStreamTest.cpp
 
+    AudioFilesTest.cpp
+    LRUCacheTest.cpp
     ModFileTypesTest.cpp
     jsonTest.cpp
     UpdaterTest.cpp
@@ -412,7 +445,7 @@ target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} ${ICU_LIBRARIES})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
 ) 
 
-set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL true)
+set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
 
@@ -448,7 +481,7 @@ target_link_libraries(jsonTest PRIVATE PiPedalCommon)
 target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES}
     ) 
 
-set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL true)
+set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 
 target_link_libraries(jsonTest PRIVATE pthread)
@@ -822,7 +855,7 @@ add_custom_command(OUTPUT ${REACT_NOTICES_FILE}
         --output ${REACT_NOTICES_FILE} 
         --projectCopyright ${DEBIAN_COPYRIGHT_FILE} 
         liblilv-0-0 ${BOOST_COPYRIGHT_DIR} lv2-dev libsdbus-c++-dev librsvg2-2 libpango-1.0-0 libx11-6 libxrandr2
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${DEBIAN_COPYRIGHT_FILE} "$<TARGET_FILE:processcopyrights>"
     COMMENT "Updating copyright notices."
 )

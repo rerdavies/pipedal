@@ -305,8 +305,6 @@ const DraggableGrid =
             handlePointerDownCapture(e: any) {
                 // a new pointer down of any type cancels capture
                 this.cancelDrag();
-                e.preventDefault();
-                e.stopPropagation();
             }
 
             
@@ -500,6 +498,7 @@ const DraggableGrid =
                 element.style.zIndex = this.savedIndex;
                 element.style.background = this.savedBackground;
                 element.style.opacity = "1";
+                element.style.touchAction = "";
 
             }
 
@@ -575,8 +574,8 @@ const DraggableGrid =
                 let originalBounds = this.animationData[this.startIndex].originalPosition;
 
                 let newLocation = new DOMRect(
-                    originalBounds.x + clientX - this.startX,
-                    originalBounds.y + clientY - this.startY,
+                    originalBounds.x + clientX - this.startX+3,
+                    originalBounds.y + clientY - this.startY+3,
                     originalBounds.width,
                     originalBounds.height);
 
@@ -704,6 +703,7 @@ const DraggableGrid =
 
                     this.savedIndex = gridElement.style.zIndex;
                     gridElement.style.zIndex = "3";
+                    gridElement.style.touchAction = "none";
                     this.savedBackground = gridElement.style.background;
                     gridElement.style.background = isDarkMode()? "333": "#EEE";
                     gridElement.style.opacity = "0.8";
@@ -719,8 +719,8 @@ const DraggableGrid =
                 let grid = this.refGrid.current!;
                 this.gridBounds = grid.getBoundingClientRect();
 
-                window.addEventListener("touchmove",this.handleTouchMove, {passive: false});
-                window.addEventListener("touchend",this.handleTouchEnd, {passive: false});
+                window.addEventListener("touchmove",this.handleTouchMove, {capture: true, passive: false});
+                window.addEventListener("touchend",this.handleTouchEnd, {capture: true, passive: false});
 
                 this.prepareChildren();
                 
@@ -754,7 +754,7 @@ const DraggableGrid =
                 }
             }
 
-            handlePointerMove(e: PointerEvent<HTMLDivElement>): void {
+            handlePointerMove(e: PointerEvent<HTMLDivElement>): boolean {
                 if (this.isCapturedPointer(e)) {
                     if (!this.dragStarted && this.dragThresholdExceeded(e)) {
                         this.startDrag();
@@ -779,8 +779,10 @@ const DraggableGrid =
                         }
 
                         this.checkForAutoScroll(e.currentTarget);
+                        return false;
                     }
                 }
+                return true;
             }
             autoScrollTimer?: number;
 

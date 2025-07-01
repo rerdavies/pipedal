@@ -41,10 +41,25 @@ namespace pipedal {
     };
     class AlsaMidiDeviceInfo {
     public:
+        enum Direction {
+            None = 0,
+            In = 1,
+            Out = 2,
+            InOut = 3
+        };
         AlsaMidiDeviceInfo() { }
         AlsaMidiDeviceInfo(const char*name, const char*description);
+        AlsaMidiDeviceInfo(const char*name, const char*description, int card, int device, int subdevice);
         std::string name_;
         std::string description_;
+
+        // non-serialized.
+        int card_ = -1;
+        int device_ = -1;
+        int subdevice_ = -1;
+        bool isVirtual_ = false;
+        int subDevices_ = -1;
+        Direction direction_ = Direction::None;
 
         DECLARE_JSON_MAP(AlsaMidiDeviceInfo);
 
@@ -60,6 +75,9 @@ namespace pipedal {
         
         std::vector<AlsaDeviceInfo> GetAlsaDevices();
     };
-    std::vector<AlsaMidiDeviceInfo> GetAlsaMidiInputDevices();
-    std::vector<AlsaMidiDeviceInfo> GetAlsaMidiOutputDevices();
+    // we use ALSA sequencers now instead of ALSA rawmidi devices.
+    // Used by test suite to verify migration behaviour.
+    std::vector<AlsaMidiDeviceInfo> LegacyGetAlsaMidiInputDevices();
+    std::vector<AlsaMidiDeviceInfo> LegacyGetAlsaMidiOutputDevices();
+
 }

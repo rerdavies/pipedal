@@ -78,7 +78,7 @@ namespace pipedal
         virtual void OnJackConfigurationChanged(const JackConfiguration &jackServerConfiguration) = 0;
         virtual void OnLoadPluginPreset(int64_t instanceId, const std::vector<ControlValue> &controlValues) = 0;
         virtual void OnMidiValueChanged(int64_t instanceId, const std::string &symbol, float value) = 0;
-        virtual void OnNotifyMidiListener(int64_t clientHandle, bool isNote, uint8_t noteOrControl) = 0;
+        virtual void OnNotifyMidiListener(int64_t clientHandle, uint8_t cc0, uint8_t cc1, uint8_t cc2) = 0;
         virtual void OnNotifyPatchProperty(int64_t clientModel, uint64_t instanceId, const std::string &propertyUri, const std::string &atomJson) = 0;
         virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings &wifiConfigSettings) = 0;
         virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings &wifiDirectConfigSettings) = 0;
@@ -94,7 +94,10 @@ namespace pipedal
 
         virtual void OnNetworkChanging(bool hotspotConnected) = 0;
         virtual void OnHasWifiChanged(bool hasWifi) = 0;
+        virtual void OnAlsaSequencerConfigurationChanged(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
         virtual void Close() = 0;
+        virtual void OnTone3000AuthChanged(bool value) = 0;
+
     };
 
     class HotspotManager;
@@ -145,7 +148,6 @@ namespace pipedal
         public:
             int64_t clientId;
             int64_t clientHandle;
-            bool listenForControls;
         };
         class AtomOutputListener
         {
@@ -168,6 +170,7 @@ namespace pipedal
         std::vector<AtomOutputListener> atomOutputListeners;
 
         JackServerSettings jackServerSettings;
+
         PluginHost pluginHost;
         AtomConverter atomConverter; // must be AFTER pluginHost!
 
@@ -233,11 +236,13 @@ namespace pipedal
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) override;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) override;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
-        virtual void OnNotifyMidiListen(bool isNote, uint8_t noteOrControl) override;
+        virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) override;
         virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) override;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) override;
         virtual void OnAlsaDriverTerminatedAbnormally() override;
+        virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) override;
+        virtual void OnAlsaSequencerDeviceRemoved(int client) override;
 
         void OnNotifyPathPatchPropertyReceived(
             int64_t instanceId,
@@ -261,6 +266,7 @@ namespace pipedal
 
         void CheckForResourceInitialization(Pedalboard &pedalboard);
         UiFileProperty::ptr FindLoadedPatchProperty(int64_t instanceId,const std::string&patchPropertyUri);
+
 
     public:
         PiPedalModel();
@@ -387,6 +393,11 @@ namespace pipedal
         void SetJackChannelSelection(int64_t clientId, const JackChannelSelection &channelSelection);
         JackChannelSelection GetJackChannelSelection();
 
+        void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration);
+        AlsaSequencerConfiguration GetAlsaSequencerConfiguration();
+
+        std::vector<AlsaSequencerPortSelection> GetAlsaSequencerPorts();
+
         void SetShowStatusMonitor(bool show);
         bool GetShowStatusMonitor();
 
@@ -436,7 +447,7 @@ namespace pipedal
         JackServerSettings GetJackServerSettings();
         void SetJackServerSettings(const JackServerSettings &jackServerSettings);
 
-        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForControls);
+        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
 
         void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri);
@@ -454,6 +465,7 @@ namespace pipedal
         void DeleteSampleFile(const std::filesystem::path &fileName);
         std::string CreateNewSampleDirectory(const std::string &relativePath, const UiFileProperty &uiFileProperty);
         std::string RenameFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty);
+        std::string CopyFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty,bool overwrite);
         FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath);
 
         bool IsInUploadsDirectory(const std::string &path);
@@ -462,6 +474,17 @@ namespace pipedal
         uint64_t CreateNewPreset();
 
         bool LoadCurrentPedalboard();
+
+        void MoveAudioFile(
+            const std::string & path, 
+            int32_t from, 
+            int32_t to);
+
+        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title);
+
+        void SetTone3000Auth(const std::string &apiKey);
+        bool HasTone3000Auth() const;
+
     };
 
 } // namespace pipedal.

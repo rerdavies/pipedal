@@ -35,14 +35,18 @@ const styles = ({ palette }: Theme) => createStyles({
 
 interface NumericInputProps extends WithStyles<typeof styles> {
     ariaLabel: string;
-    defaultValue: number;
+    value: number;
     min: number;
     max: number;
+    step?: number;
+    integer?: boolean;
     onChange: (value: number) => void;
 }
 
 interface NumericInputState {
+    stateValue: string;
     error: boolean;
+    focused: boolean;
 }
 
 export const NumericInput =
@@ -54,22 +58,28 @@ export const NumericInput =
             constructor(props: NumericInputProps) {
                 super(props);
                 this.state = {
-                    error: false
+                    stateValue: this.toDisplayValue(props.value),
+                    error: false,
+                    focused: false
                 };
             }
 
             changed: boolean = false;
 
-            handleChange(event: any): void {
+            handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void {
                 this.changed = true;
                 let strValue = event.target.value;
+                this.setState({ stateValue: strValue });
                 try {
                     let value = Number(strValue);
                     if (isNaN(value))
                     {
                         this.setState({ error: true });
+                    } else if (this.props.integer === true && !Number.isInteger(value)) {
+                        this.setState({ error: true });
                     } else if (value >= this.props.min && value <= this.props.max) {
                         this.setState({ error: false });
+                        this.props.onChange(value);
                     } else {
                         this.setState({ error: true });
                     }
@@ -80,6 +90,10 @@ export const NumericInput =
             }
 
             toDisplayValue(value: number): string {
+                if (this.props.integer === true)
+                {
+                    return Math.round(value).toFixed(0);
+                }
                 if (value <= -1000 || value >= 1000)
                 {
                     return value.toFixed(0);
@@ -96,7 +110,7 @@ export const NumericInput =
                 }
             }
 
-            apply(input: HTMLInputElement) {
+            apply(input: HTMLInputElement| HTMLTextAreaElement) {
                 if (this.changed) {
                     let strValue = input.value;
                     let value = Number(strValue);
@@ -104,28 +118,34 @@ export const NumericInput =
                     {
                         if (value < this.props.min) value = this.props.min;
                         if (value > this.props.max) value = this.props.max;
+                        if (this.props.integer === true) value = Math.round(value);
                         input.value = this.toDisplayValue(value);
                         this.props.onChange(value);
                     } else {
-                        input.value = this.toDisplayValue(this.props.defaultValue);
+                        input.value = this.toDisplayValue(this.props.value);
+                        this.props.onChange(this.props.value);
                     }
                     this.changed = false;
                     this.setState({ error: false });
                 }
             }
 
-            handleLostFocus(e: any) {
-                this.apply(e.currentTarget as HTMLInputElement);
+            handleFocus(e: React.FocusEvent<HTMLInputElement| HTMLTextAreaElement>) {
+                this.changed = false;
+                this.setState({ focused: true });
+                e.currentTarget.select();
+                this.setState({ stateValue: this.toDisplayValue(this.props.value) });
             }
-            handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+            handleBlur(e: any) {
+                this.apply(e.currentTarget as HTMLInputElement);
+                this.setState({ focused: false });
+            }
+            handleKeyDown(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
                 if (e.key === "Enter")
                 {
-                    this.apply(e.currentTarget as HTMLInputElement);
-                } else if (e.key === "Escape")
-                {
-                    e.currentTarget.value = this.toDisplayValue(this.props.defaultValue);
-                    this.changed = false;
-                }
+                     this.setState({ stateValue: this.toDisplayValue(this.props.value) });
+                     this.changed = false;
+                } 
             }
 
 
@@ -135,11 +155,15 @@ export const NumericInput =
                     inputProps={{
                         'aria-label': this.props.ariaLabel,
                         style: { textAlign: 'right' },
-                        "onBlur": (e: any) => this.handleLostFocus(e),
-                        "onKeyDown": (e: any) => this.handleKeyDown(e)
+                        "min": this.props.min,
+                        "max": this.props.max,
+                        "step:": this.props.step
                     }}
-                    onChange={(event) => this.handleChange(event)}
-                    defaultValue={this.toDisplayValue(this.props.defaultValue)}
+                    onFocus={(e) => {this.handleFocus(e);}}
+                    onBlur= {(e) => { this.handleBlur(e); }}
+                    onKeyDown={(e) => {this.handleKeyDown(e);}}
+                    onChange={(e) => this.handleChange(e)}
+                    value={this.state.focused ? this.state.stateValue: this.toDisplayValue(this.props.value)}
                     error={this.state.error}
                 />
 

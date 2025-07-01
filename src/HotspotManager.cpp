@@ -80,7 +80,7 @@ namespace pipedal::impl
         bool hasWifi = false;
         HasWifiListener hasWifiListener;
         void SetHasWifi(bool hasWifi);
-        virtual bool GetHasWifi() override ;
+        virtual bool GetHasWifi() override;
 
         void onClose();
         void onError(const std::string &message);
@@ -347,7 +347,7 @@ void HotspotManagerImpl::onStartMonitoring()
 
         this->networkManager = NetworkManager::Create(dbusDispatcher);
 
-        if (!networkManager->WirelessEnabled())
+        if (!networkManager->WirelessEnabled() && wifiConfigSettings.NeedsWifi())
         {
             networkManager->WirelessEnabled(true);
         }
@@ -483,6 +483,7 @@ void HotspotManagerImpl::onReload()
         // force a reload.
         StopHotspot();
         SetState(State::Monitoring);
+        StartScanTimer(); // or stop it as the case may be.
         MaybeStartHotspot();
         return;
     }
@@ -758,16 +759,26 @@ void HotspotManagerImpl::MaybeStartHotspot()
         // devices are transitioning. Do nothing.
         return;
     }
-    std::vector<AccessPoint::ptr> allAccessPoints = GetAllAccessPoints();
-    std::vector<std::vector<uint8_t>> allAccessPointSsids = GetAccessPointSsids(allAccessPoints);
-    std::vector<std::vector<uint8_t>> connectableSsids = GetKnownVisibleAccessPoints(allAccessPointSsids); // all the ssids currently visible for which we have credentials.
 
-    this->UpdateKnownNetworks(connectableSsids, allAccessPoints);
+    bool wantsHotspot;
 
-    bool wantsHotspot = this->wifiConfigSettings.WantsHotspot(
+    if (wifiConfigSettings.NeedsScan()) {
 
-        this->ethernetConnected, connectableSsids, allAccessPointSsids);
+        std::vector<AccessPoint::ptr> allAccessPoints = GetAllAccessPoints();
+        std::vector<std::vector<uint8_t>> allAccessPointSsids = GetAccessPointSsids(allAccessPoints);
+        std::vector<std::vector<uint8_t>> connectableSsids = GetKnownVisibleAccessPoints(allAccessPointSsids); // all the ssids currently visible for which we have credentials.
 
+        this->UpdateKnownNetworks(connectableSsids, allAccessPoints);
+
+        wantsHotspot = this->wifiConfigSettings.WantsHotspot(
+            this->ethernetConnected, connectableSsids, allAccessPointSsids);
+
+
+    } else {
+        wantsHotspot = this->wifiConfigSettings.WantsHotspot(
+            this->ethernetConnected);
+    }
+    
     if (this->state == State::Monitoring && wantsHotspot)
     {
         StartHotspot();
@@ -996,8 +1007,14 @@ void HotspotManagerImpl::ScanNow()
 
         try
         {
-            Lv2Log::debug("Scanning");
-            wlanWirelessDevice->RequestScan(options);
+            if (this->wifiConfigSettings.NeedsScan())
+            {
+
+                Lv2Log::debug("Scanning");
+                wlanWirelessDevice->RequestScan(options);
+            } else {
+                return;
+            }
         }
         catch (const std::exception &e)
         {
@@ -1036,7 +1053,8 @@ void HotspotManagerImpl::SetHasWifiListener(HasWifiListener &&listener)
         this->hasWifiListener(this->hasWifi);
     }
 }
-bool HotspotManagerImpl::GetHasWifi() {
+bool HotspotManagerImpl::GetHasWifi()
+{
     std::lock_guard<std::recursive_mutex> lock{this->networkChangingListenerMutex};
     return hasWifi;
 }
@@ -1112,17 +1130,20 @@ static bool IsNetworkManagerRunning()
         return gUsingNetworkManager;
     }
     bool bResult = false;
-    auto result = sysExecForOutput("systemctl","is-active NetworkManager");
+    auto result = sysExecForOutput("systemctl", "is-active NetworkManager");
     if (result.exitCode == EXIT_SUCCESS)
     {
-        std::string text = result.output.erase(result.output.find_last_not_of(" \n\r\t")+1);
+        std::string text = result.output.erase(result.output.find_last_not_of(" \n\r\t") + 1);
         if (text == "active")
         {
             bResult = true;
-        } else if (text == "inactive")
+        }
+        else if (text == "inactive")
         {
             bResult = false;
-        } else {
+        }
+        else
+        {
             throw std::runtime_error(SS("UsingNetworkManager: unexpected result (" << text << ")"));
         }
         gNetworkManagerTestExecuted = true;
@@ -1134,19 +1155,17 @@ static bool IsNetworkManagerRunning()
     return false;
 }
 
-
 bool HotspotManager::HasWifiDevice()
 {
     // use procfs to decide this, as NetworkManager may not be available yet.
-    if ( !(get_wireless_interfaces_sysfs().empty()) )
+    if (!(get_wireless_interfaces_sysfs().empty()))
     {
         return false;
     }
 
-    if (!IsNetworkManagerRunning()) 
+    if (!IsNetworkManagerRunning())
     {
         return false;
     }
     return true;
-
 }

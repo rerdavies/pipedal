@@ -1,6 +1,6 @@
 
 import React, { SyntheticEvent, Component } from 'react';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import AppBar from '@mui/material/AppBar';
@@ -147,10 +147,10 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                             top: 0, left: 0
                         }}  >
                             <Toolbar>
-                                <IconButton edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
+                                <IconButtonEx tooltip="Back" edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
                                 >
                                     <ArrowBackIcon />
-                                </IconButton>
+                                </IconButtonEx>
                                 <Typography noWrap variant="h6"
                                     sx={{ maringLeft: 2, flex: 1 }}
                                 >

@@ -23,7 +23,7 @@
 */
 
 import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import ButtonBase from '@mui/material/ButtonBase';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import SaveIconOutline from '@mui/icons-material/Save';
@@ -217,19 +217,19 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
                     ) : (
                         <div style={{ marginLeft: "auto", marginRight: 8, display: "flex", flexFlow: "row nowrap" }}>
                             <div style={{ flexGrow: 1, flexBasis: 1 }} ></div>
-                            <IconButton color="inherit" style={{ opacity: 0.66 }} disabled={false}
+                            <IconButtonEx tooltip="Save snapshot" color="inherit" style={{ opacity: 0.66 }} disabled={false}
                                 onMouseDown={(ev) => { ev.stopPropagation(); /*don't prop to card*/ }}
                                 onClick={() => { this.props.onSaveSnapshot(snapshotIndex); }}
                             >
                                 <SaveIconOutline />
-                            </IconButton>
-                            <IconButton color="inherit" disabled={disabled} style={{ opacity: 0.66 }}
+                            </IconButtonEx>
+                            <IconButtonEx tooltip="Edit snapshot" color="inherit" disabled={disabled} style={{ opacity: 0.66 }}
                                 onMouseDown={(ev) => { ev.stopPropagation();  /*don't prop to card*/ }}
                                 onClick={() => { this.props.onEditSnapshot(snapshotIndex); }}
 
                             >
                                 <EditIconOutline />
-                            </IconButton>
+                            </IconButtonEx>
                         </div>
                     )}
                 </div>

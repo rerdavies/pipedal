@@ -58,19 +58,38 @@ static std::string toLower(const std::string&value)
     return result;
 }
 
+const std::set<std::string> playListExtensions = { 
+    ".m3u", 
+    ".m3u8",
+    ".pls",
+    ".wpl"
+};
+
+const std::set<std::string> midiMimeTypes = { 
+    "audio/midi",
+    "audio/sp-midi",
+    "audio/imelody",
+    "audio/xmf",
+    "audio/x-midi",
+    "audio/x-musicxml+xml"
+};
+
 void MimeTypes::AddMimeType(const std::string&extension_, const std::string&mimeType) 
 {
     std::string extension = SS("." << toLower(extension_));
     mimeTypeToExtensions[mimeType].insert(extension);
     mimeTypeToExtension[mimeType] = extension;
     extensionToMimeType[extension] = mimeType;
-    if (mimeType.starts_with("audio/midi"))
+    if (midiMimeTypes.contains(mimeType))
     {
         midiExtensions.insert(extension);
     } else if (mimeType.starts_with("audio/"))
     {
-        mimeTypeToExtensions["audio/*"].insert(extension);
-        audioExtensions.insert(extension);
+        if (!playListExtensions.contains(extension))
+        {
+            mimeTypeToExtensions["audio/*"].insert(extension);
+            audioExtensions.insert(extension);
+        }
     }
     if (mimeType.starts_with("video/"))
     {

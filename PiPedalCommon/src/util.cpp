@@ -190,6 +190,22 @@ std::filesystem::path pipedal::MakeRelativePath(const std::filesystem::path &pat
 
 }
 
+bool pipedal::HasDotDot(const std::filesystem::path &path)
+{
+    for (auto &part : path)
+    {
+        if (part == "..")
+        {
+            return true;
+        }
+        if (part == ".")
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool pipedal::IsSubdirectory(const std::filesystem::path &path, const std::filesystem::path &basePath)
 {
     auto iPath = path.begin();
@@ -216,3 +232,13 @@ bool pipedal::IsSubdirectory(const std::filesystem::path &path, const std::files
     }
     return true;
 }
+
+
+bool pipedal::HasWritePermissions(const std::filesystem::path &path)
+{
+    // posix, but may not work on windows. 
+    // allegedly windows provies an _access function, which is probably a superset of
+    // access.
+    return access(path.c_str(), W_OK) == 0;
+}
+

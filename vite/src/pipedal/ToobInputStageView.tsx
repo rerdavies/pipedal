@@ -60,8 +60,11 @@ const ToobInputStageView =
                 this.state = {
                 }
             }
+            fullScreen() {
+                return false;
+            }
 
-            ModifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
+            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
                 return controls;
                 // let group = controls[1] as ControlGroup;

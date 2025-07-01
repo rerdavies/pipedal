@@ -23,6 +23,8 @@
 #include <cstdint>
 #include <string>
 #include <iostream>
+#include "AlsaSequencer.hpp"
+#include <iomanip>
 
 #include "PiPedalAlsa.hpp"
 
@@ -36,20 +38,110 @@ static void DiscoveryTest()
     auto result = devices.GetAlsaDevices();
     std::cout << result.size() << " ALSA devices found." << std::endl;
 
-    auto midiInputDevices = GetAlsaMidiInputDevices();
-    std::cout << midiInputDevices.size() << " ALSA MIDI input devices found." << std::endl;
-    auto midiOutputDevices = GetAlsaMidiOutputDevices();
-    std::cout << midiOutputDevices.size() << " ALSA MIDI output devices found." << std::endl;
+    auto midiInputDevices = AlsaSequencer::EnumeratePorts();
+    std::cout << midiInputDevices.size() << " ALSA MIDI input sequencers found." << std::endl;
+}
+
+void EnumerateSequencers()
+{
+    cout << "--- Enumerating ALSA Sequencers" << endl;
+    auto sequencers = AlsaSequencer::EnumeratePorts();
+    for (const auto &sequencer : sequencers)
+    {
+        cout << sequencer.client << ": "<< sequencer.port << " - " << sequencer.clientName << "/" << sequencer.name;
+
+        cout << " [" << (sequencer.isKernelDevice ? "Kernel" : "User");
+        if (!sequencer.rawMidiDevice.empty())
+        {
+            cout << " " << sequencer.rawMidiDevice;
+        }
+        cout << "]" << endl;
+
+        cout << "        Read: " << (sequencer.canRead ? "Yes" : "No")
+             << ", Write: " << (sequencer.canWrite ? "Yes" : "No")
+             << ", Read Subscribe: " << (sequencer.canReadSubscribe ? "Yes" : "No")
+             << ", Write Subscribe: " << (sequencer.canWriteSubscribe ? "Yes" : "No") << std::endl;
+
+        cout
+            << "        System Announce : " << (sequencer.isSystemAnnounce ? " Yes " : " No ")
+            << "UMP: "
+            << (sequencer.isUmp ? "Yes" : "No")
+            << "MIDI: "
+            << (sequencer.isMidi ? "Yes" : "No")
+            << "Application: "
+            << (sequencer.isApplication ? "Yes" : "No")
+            << " MIDI Synth: "
+            << (sequencer.isMidiSynth ? "Yes" : "No")
+            << "Synth: "
+            << (sequencer.isSynth ? "Yes" : "No")
+            << std::endl;
+        cout << "       Specific: " << (sequencer.isSpecific ? "Yes" : "No")
+             << "Hardware: " << (sequencer.isHardware ? "Yes" : "No")
+             << "Software: " << (sequencer.isSoftware ? "Yes" : "No") << std::endl;
+    }
+}
+
+void ReadFromsequencerTest()
+{
+    cout << "--- Reading from ALSA Sequencer" << endl;
+    AlsaSequencer::ptr sequencer = AlsaSequencer::Create();
+
+    sequencer->ConnectPort("V25 V25 In"); 
+    
+    AlsaMidiMessage message;
+    while (true)
+    {
+        if (sequencer->ReadMessage(message,true))
+        {
+            cout << "Received MIDI message: "
+                 << " " << hex << setfill('0') << setw(2) << static_cast<int>(message.cc0()) 
+                 << " " << hex << setfill('0') << setw(2) << static_cast<int>(message.cc1()) 
+                 << " " << hex << setfill('0') << setw(2) << static_cast<int>(message.cc2()) 
+                 << " Timestamp: " << setw(8) << dec << message.timestamp
+                 << std::endl;
+        }
+    }
+}
+
+void TestConfigMigration()
+{
+    cout << "--- Testing ALSA Config Migration" << endl;
+    // older versions of PiPedal uses ALSA rawmidi. 
+    // this code test coversion of rawmidi device IDs to ALSA Sequencer IDs.
+    auto rawDevices = LegacyGetAlsaMidiInputDevices();
+    auto seqDevices = AlsaSequencer::EnumeratePorts();
+
+    for (const auto&seqDevice: seqDevices) {
+        cout << seqDevice.id << " -> " << seqDevice.rawMidiDevice << endl;
+    }
+    for (const auto&rawDevice: rawDevices) {
+        std::string sequencerId = RawMidiIdToSequencerId(seqDevices,rawDevice.name_);
+        REQUIRE(!sequencerId.empty());
+        cout << rawDevice.name_ << "->" << sequencerId << std::endl;
+    }
+    cout << endl;
 
 
 }
 
+TEST_CASE("ALSA Seq Test", "[pipedal_alsa_seq_test][Build][Dev]")
+{
 
-TEST_CASE( "ALSA Test", "[pipedal_alsa_test][Build][Dev]" ) {
+    // hw:CARD=VirMIDI,DEV=0 VirMIDI
+    // hw:CARD=VirMIDI,DEV=1 VirMIDI
+    // hw:CARD=VirMIDI,DEV=2 VirMIDI
+    // hw:CARD=VirMIDI,DEV=3 VirMIDI
+    // hw:CARD=M2,DEV=0 M2
+    // hw:CARD=V25,DEV=0 V25
+    EnumerateSequencers();
+    TestConfigMigration();
+
+
+    ReadFromsequencerTest();
+}
+
+TEST_CASE("ALSA Test", "[pipedal_alsa_test][Build][Dev]")
+{
+
     DiscoveryTest();
-
-
 }
-
-
-

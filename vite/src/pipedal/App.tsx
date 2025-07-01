@@ -19,11 +19,13 @@
 
 import React from 'react';
 import { ThemeProvider, createTheme, StyledEngineProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import CssBaseline  from '@mui/material/CssBaseline';
 
 import VirtualKeyboardHandler from './VirtualKeyboardHandler';
 import AppThemed from "./AppThemed";
 import { isDarkMode } from './DarkMode';
+import Tone3000AuthComplete from './Tone3000AuthComplete';
+
 
 declare module '@mui/material/styles' {
     interface Theme {
@@ -58,8 +60,50 @@ const theme = createTheme(
         {
             cssVariables: true,
             components: {
+                // MuiTouchRipple: {
+                //     styleOverrides: {
+                //         root: {
+                //             borderRadius: 'inherit',
+                //             overflow: 'hidden',
+                //         },
+                //         ripple: {
+                //             color: '#F88 !important',
+                //             borderRadius: 'inherit',
+
+                //             '&.MuiTouchRipple-ripplePulsate': {
+                //                 //animation: 'none !important',
+
+                //                 // Make focus ripple fill the entire button
+                //                 '&.MuiTouchRipple-child': {
+                //                     width: '100%',
+                //                     height: '100%',
+                //                     borderRadius: 'inherit',
+                //                     transform: 'scale(1.4)', // Override the default scaling
+                //                 }
+                //             },
+                //             '&.MuiTouchRipple-ripple': {
+                //                 '&:focus': {
+                //                     // Make focus ripple fill the entire button
+                //                     transform: 'scale(1.4)',
+                //                     width: '100%',
+                //                     height: '100%',
+                //                     color: '#F88',
+                //                     borderRadius: 'inherit',
+                //                 },
+                //             },
+                //         },
+                //         child: {
+                //             borderRadius: 'inherit',
+                //         }
+                //     }
+                // },
                 MuiButton: {
                     styleOverrides: {
+                        root: {
+                            '& .MuiTouchRipple-ripple': {
+                                transform: 'scale(1.9)',
+                            }
+                        },
                         containedPrimary: {
                             borderRadius: '9999px',
                             paddingLeft: "16px", paddingRight: "16px",
@@ -80,7 +124,7 @@ const theme = createTheme(
                             }
                         },
                         {
-                            props: { variant: 'dialogSecondary',  },
+                            props: { variant: 'dialogSecondary', },
                             style: {
                                 color: "rgb(255,255,255,0.7)"
                             },
@@ -108,18 +152,26 @@ const theme = createTheme(
                 /* make the selection state for MuiListItemButtons a smidgen darker (light theme only) */
                 MuiListItemButton: {
                     styleOverrides: {
-                    root: ({ theme }) => ({
-                        '&.Mui-selected': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.2)', // Adjust for desired darkness
-                        '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.25)', // Slightly darker on hover
-                        },
-                        },
-                    }),
+                        root: ({ theme }) => ({
+                            '&.Mui-selected': {
+                                backgroundColor: 'rgba(0, 0, 0, 0.2)', // Adjust for desired darkness
+                                '&:hover': {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.25)', // Slightly darker on hover
+                                },
+                            },
+                        }),
                     },
                 },
                 MuiButton: {
                     styleOverrides: {
+                        root: {
+                            '& .MuiTouchRipple-root': {
+                                borderRadius: 'inherit',
+                            },
+                            '& .MuiTouchRipple-ripple': {
+                                transform: 'scale(1.9)!important',
+                            }
+                        },
                         containedPrimary: {
                             borderRadius: '9999px',
                             paddingLeft: "16px", paddingRight: "16px",
@@ -140,7 +192,7 @@ const theme = createTheme(
                             }
                         },
                         {
-                            props: { variant: 'dialogSecondary',  },
+                            props: { variant: 'dialogSecondary', },
                             style: {
                                 color: "rgb(0,0,0,0.6)"
                             },
@@ -171,6 +223,12 @@ type AppThemeProps = {
 };
 
 
+function isTone3000Auth() {
+    let url = new URL(window.location.href);
+    let param =  url.searchParams.get("api_key");
+    return (param !== null && param !== "") 
+}
+
 const App = (class extends React.Component {
     // Before the component mounts, we initialise our state
 
@@ -178,8 +236,7 @@ const App = (class extends React.Component {
         super(props);
         this.state = {
         };
-        if (!App.virtualKeyboardHandler)
-        {   
+        if (!App.virtualKeyboardHandler) {
             App.virtualKeyboardHandler = new VirtualKeyboardHandler();
         }
     }
@@ -191,8 +248,11 @@ const App = (class extends React.Component {
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
-
+                    {isTone3000Auth() ? (
+                        <Tone3000AuthComplete />
+                    ) : (
                         <AppThemed />
+                    )}
                 </ThemeProvider>
             </StyledEngineProvider>
         );

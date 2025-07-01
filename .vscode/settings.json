@@ -102,7 +102,8 @@
         "format": "cpp",
         "locale": "cpp",
         "stdfloat": "cpp",
-        "text_encoding": "cpp"
+        "text_encoding": "cpp",
+        "forward_list": "cpp"
     },
     "cSpell.words": [
         "Alsa",
@@ -134,5 +135,25 @@
     "cSpell.ignoreWords": [
         "nammodel"
     ],
-    "cSpell.enabled": false
+    "cSpell.enabled": false,
+    
+    // Disable all automatic completion suggestions - only show when Ctrl+Space is pressed
+    "editor.quickSuggestions": {
+        "other": false,
+        "comments": false, 
+        "strings": false
+    },
+    
+    // Disable suggestions on trigger characters (like . or :)
+    "editor.suggestOnTriggerCharacters": false,
+    
+    // Disable word-based suggestions from open files
+    "editor.wordBasedSuggestions": "off",
+    
+    // Don't accept suggestions on Enter (optional)
+    "editor.acceptSuggestionOnEnter": "off",
+    
+    // Disable parameter hints popup (optional)
+    "editor.parameterHints.enabled": false,
+    
 }

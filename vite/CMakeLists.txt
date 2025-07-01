@@ -45,7 +45,6 @@ add_custom_command(
     public/img/ic_logo.svg
     public/img/ic_navigate_next.svg
     public/img/fx_simulator.svg
-    public/img/VST_Logo_Steinberg.png
     public/img/fx_lr.svg
     public/img/fx_pitch.svg
     public/img/vst.svg
@@ -93,7 +92,6 @@ add_custom_command(
     public/img/fx_gate.svg
     public/img/vst.png
     public/img/fx_function.svg
-    public/img/VST_Logo_Steinberg.ico
     public/img/fx_terminal.svg
     public/img/fx_plugin.svg
     public/img/fx_distortion.svg
@@ -107,7 +105,6 @@ add_custom_command(
     public/var/current_pedalboard.json
     public/var/config.json
     public/favicon.ico
-    public/index.html
     public/iso_codes.json
     public/logo512.png
     public/sample_lv2_plugins.json

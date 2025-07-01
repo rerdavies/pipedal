@@ -30,6 +30,7 @@
 #include <string>
 #include <stdexcept>
 #include <utility>
+#include <memory>
 #include "json.hpp"
 
 namespace pipedal
@@ -308,7 +309,11 @@ namespace pipedal
         iterator end() { return values.end(); }
         const_iterator begin() const { return values.begin(); }
         const_iterator end() const { return values.end(); }
-
+        
+        iterator erase(iterator it)
+        {
+            return values.erase(it);
+        }
         iterator find(const std::string &key);
         const_iterator find(const std::string &key) const;
 

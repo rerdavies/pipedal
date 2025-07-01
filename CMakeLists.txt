@@ -1,22 +1,23 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.4.76
+    VERSION 1.4.77
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
 EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 
-set (DISPLAY_VERSION "PiPedal v1.4.76-Release")
+set (DISPLAY_VERSION "PiPedal v1.4.77-Beta")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
+set (PIPEDAL_EXCLUDE_TESTS false)
 include(CTest)
 enable_testing()
 
 
 #add_subdirectory("submodules/pipedal_p2pd")
-
+add_subdirectory("modules/SQLiteCpp")
 add_subdirectory("PiPedalCommon")
 
 add_subdirectory("vite")

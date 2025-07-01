@@ -21,7 +21,7 @@ import React, { SyntheticEvent, Component } from 'react';
 import Switch from "@mui/material/Switch";
 import OkCancelDialog from './OkCancelDialog';
 import RadioSelectDialog from './RadioSelectDialog';
-import IconButton from '@mui/material/IconButton';
+import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import { ColorTheme } from './DarkMode';
@@ -44,9 +44,9 @@ import WifiConfigDialog from './WifiConfigDialog';
 import WifiDirectConfigDialog from './WifiDirectConfigDialog';
 import DialogEx from './DialogEx'
 import GovernorSettings from './GovernorSettings';
-import { AlsaMidiDeviceInfo } from './AlsaMidiDeviceInfo';
 import SystemMidiBindingsDialog from './SystemMidiBindingsDialog';
 import SelectThemeDialog from './SelectThemeDialog';
+import {AlsaSequencerConfiguration} from './AlsaSequencer';
 
 import Slide, { SlideProps } from '@mui/material/Slide';
 import {createStyles} from './WithStyles';
@@ -73,6 +73,8 @@ interface SettingsDialogState {
     jackConfiguration: JackConfiguration;
     jackSettings: JackChannelSelection;
     jackServerSettings: JackServerSettings;
+    alsaSequencerConfiguration: AlsaSequencerConfiguration;
+
     jackStatus?: JackHostStatus;
     governorSettings: GovernorSettings;
     continueDisabled: boolean;
@@ -184,6 +186,7 @@ const SettingsDialog = withStyles(
                 jackConfiguration: this.model.jackConfiguration.get(),
                 jackStatus: undefined,
                 jackSettings: this.model.jackSettings.get(),
+                alsaSequencerConfiguration: this.model.alsaSequencerConfiguration.get(),
                 wifiConfigSettings: this.model.wifiConfigSettings.get(),
                 wifiDirectConfigSettings: this.model.wifiDirectConfigSettings.get(),
                 governorSettings: this.model.governorSettings.get(),
@@ -207,6 +210,7 @@ const SettingsDialog = withStyles(
                 hasWifiDevice: this.model.hasWifiDevice.get()
             };
             this.handleJackConfigurationChanged = this.handleJackConfigurationChanged.bind(this);
+            this.handleAlsaSequencerConfigurationChanged = this.handleAlsaSequencerConfigurationChanged.bind(this);
             this.handleJackSettingsChanged = this.handleJackSettingsChanged.bind(this);
             this.handleJackServerSettingsChanged = this.handleJackServerSettingsChanged.bind(this);
             this.handleWifiConfigSettingsChanged = this.handleWifiConfigSettingsChanged.bind(this);
@@ -306,6 +310,11 @@ const SettingsDialog = withStyles(
                 jackConfiguration: this.model.jackConfiguration.get()
             });
         }
+        handleAlsaSequencerConfigurationChanged(): void {
+            this.setState({
+                alsaSequencerConfiguration: this.model.alsaSequencerConfiguration.get()
+            });
+        }
 
         mounted: boolean = false;
         active: boolean = false;
@@ -333,6 +342,7 @@ const SettingsDialog = withStyles(
                     this.model.showStatusMonitor.addOnChangedHandler(this.handleShowStatusMonitorChanged);
                     this.model.jackSettings.addOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackConfiguration.addOnChangedHandler(this.handleJackConfigurationChanged);
+                    this.model.alsaSequencerConfiguration.addOnChangedHandler(this.handleAlsaSequencerConfigurationChanged);
                     this.model.jackServerSettings.addOnChangedHandler(this.handleJackServerSettingsChanged);
                     this.model.wifiConfigSettings.addOnChangedHandler(this.handleWifiConfigSettingsChanged);
                     this.model.wifiDirectConfigSettings.addOnChangedHandler(this.handleWifiDirectConfigSettingsChanged);
@@ -352,6 +362,7 @@ const SettingsDialog = withStyles(
                         });
                     this.handleConnectionStateChanged();
                     this.handleJackConfigurationChanged();
+                    this.handleAlsaSequencerConfigurationChanged();
                     this.handleJackSettingsChanged();
                     this.handleShowStatusMonitorChanged();
                     this.handleJackServerSettingsChanged();
@@ -368,6 +379,7 @@ const SettingsDialog = withStyles(
                     this.model.showStatusMonitor.removeOnChangedHandler(this.handleShowStatusMonitorChanged);
 
                     this.model.jackConfiguration.removeOnChangedHandler(this.handleJackConfigurationChanged);
+                    this.model.alsaSequencerConfiguration.removeOnChangedHandler(this.handleAlsaSequencerConfigurationChanged);
                     this.model.jackSettings.removeOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackServerSettings.removeOnChangedHandler(this.handleJackServerSettingsChanged);
                     this.model.wifiConfigSettings.removeOnChangedHandler(this.handleWifiConfigSettingsChanged);
@@ -437,13 +449,7 @@ const SettingsDialog = withStyles(
             });
 
         }
-        handleSelectMidiDialogResult(channels: AlsaMidiDeviceInfo[] | null): void {
-            if (channels) {
-                let newSelection: JackChannelSelection = this.state.jackSettings.clone();
-                newSelection.inputMidiDevices = channels;
-                this.model.setJackSettings(newSelection);
-
-            }
+        handleSelectMidiDialogResult(): void {
             this.setState({
                 showMidiSelectDialog: false,
 
@@ -477,7 +483,7 @@ const SettingsDialog = withStyles(
         }
 
         midiSummary(): string {
-            let ports = this.state.jackSettings.inputMidiDevices;
+            let ports = this.state.alsaSequencerConfiguration.connections;
             if (ports.length === 0) return "Disabled";
 
             let result = "";
@@ -485,7 +491,7 @@ const SettingsDialog = withStyles(
                 if (result.length !== 0) {
                     result += ", ";
                 }
-                result += port.description;
+                result += port.name;
             }
             return result;
         }
@@ -570,10 +576,10 @@ const SettingsDialog = withStyles(
                                         :
                                         (
                                             <Toolbar>
-                                                <IconButton edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
+                                                <IconButtonEx tooltip="Back" edge="start" color="inherit" onClick={this.handleDialogClose} aria-label="back"
                                                 >
                                                     <ArrowBackIcon />
-                                                </IconButton>
+                                                </IconButtonEx>
                                                 <Typography variant="h6" className={classes.dialogTitle}>
                                                     Settings
                                                 </Typography>
@@ -689,7 +695,9 @@ const SettingsDialog = withStyles(
                                         <div style={{ width: "100%" }}>
                                             <Typography className={classes.primaryItem} display="block" variant="body2" noWrap>Select MIDI input</Typography>
 
-                                            <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>{this.midiSummary()}</Typography>
+                                            <Typography className={classes.secondaryItem} display="block" variant="caption" color="textSecondary" noWrap>{
+                                                this.midiSummary()
+                                            }</Typography>
                                         </div>
                                     </ButtonBase>
                                     <ButtonBase className={classes.setting} disabled={!isConfigValid} onClick={() => this.handleMidiMessageSettings()}  >
@@ -929,9 +937,7 @@ const SettingsDialog = withStyles(
                         (this.state.showMidiSelectDialog) &&
                         (
                             <SelectMidiChannelsDialog open={this.state.showMidiSelectDialog}
-                                onClose={(selectedChannels: AlsaMidiDeviceInfo[] | null) => this.handleSelectMidiDialogResult(selectedChannels)}
-                                selectedChannels={this.state.jackSettings.inputMidiDevices}
-                                availableChannels={this.state.jackConfiguration.inputMidiDevices}
+                                onClose={() => this.handleSelectMidiDialogResult()}
                             />
 
                         )

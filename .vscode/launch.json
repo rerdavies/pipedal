@@ -22,7 +22,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
-                "--no-sudo"
+                "[ProfileThumbnails]"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -142,7 +142,7 @@
                 //"[pipedal_alsa_test]"
                 // "[wifi_channels_test]"
                 // "[locale]"
-                "[modFileTypes]"
+                "[pipewire_input_stream]"
             ],
 
             "stopAtEntry": false,
@@ -177,7 +177,7 @@
             "args": [
                 //"[Dev]"  -- all dev-machine tests.
                 //"[promise]"  // subtest of your choice, or none to run all of the tests.
-                "[atom_converter]"
+                "[json_variants]"
             ],
 
             "stopAtEntry": false,

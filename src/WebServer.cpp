@@ -738,7 +738,7 @@ namespace pipedal
             virtual void setBodyFile(std::shared_ptr<TemporaryFile>&bodyFile) override { 
                 // cast away const to do what ther request would do if it had that method.
 
-                request.set_body_file(bodyFile->Path(),true);
+                request.set_body_file(bodyFile->Path(),bodyFile->DeleteFile());
                 bodyFile->Detach();
             }
             virtual void setBodyFile(std::filesystem::path&path, bool deleteWhenDone) override { 

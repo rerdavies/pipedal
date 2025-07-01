@@ -329,6 +329,9 @@ class PedalLayout {
                 this.pluginType = uiPlugin.plugin_type;
                 this.iconUrl = SelectIconUri(uiPlugin.plugin_type);
                 this.name = uiPlugin.label;
+                if (pedalItem.title !== "") {
+                    this.name = pedalItem.title;
+                }
                 this.numberOfInputs = Math.min(uiPlugin.audio_inputs, 2);
                 this.numberOfOutputs = Math.min(uiPlugin.audio_outputs, 2);
             } else {

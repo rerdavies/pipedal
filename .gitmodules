@@ -6,3 +6,6 @@
 	url = https://github.com/rerdavies/websocketpp.git
 	branch = develop
 	update = merge
+[submodule "modules/SQLiteCpp"]
+	path = modules/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git

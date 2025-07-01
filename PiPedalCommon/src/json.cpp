@@ -22,6 +22,8 @@
 #include <cctype>
 #include "json_variant.hpp"
 #include "util.hpp"
+#include <string_view>
+
 using namespace pipedal;
 
 
@@ -68,63 +70,69 @@ void json_writer::write(string_view v,bool enforceValidUtf8Encoding)
     {
         uint32_t uc;
         uint8_t c = (uint8_t)*p++;
-        if ((c & UTF8_ONE_BYTE_MASK) == UTF8_ONE_BYTE_BITS)
-        {
-            uc = c;
-        }
-        else
-        {
-            uint32_t c2 = continuation_byte(p, v.end());
-
-            if ((c & UTF8_TWO_BYTES_MASK) == UTF8_TWO_BYTES_BITS)
+        try {
+            if ((c & UTF8_ONE_BYTE_MASK) == UTF8_ONE_BYTE_BITS)
             {
-                uint32_t c1 = c & (uint32_t)(~UTF8_TWO_BYTES_MASK);
-                if (c1 <= 1 && enforceValidUtf8Encoding)
-                {
-                    // overlong encoding.
-                    throw_encoding_error();
-                }
-                uc = (c1 << 6) | c2;
+                uc = c;
             }
             else
             {
-                uint32_t c3 = continuation_byte(p, v.end());
+                uint32_t c2 = continuation_byte(p, v.end());
 
-                if ((c & UTF8_THREE_BYTES_MASK) == UTF8_THREE_BYTES_BITS)
+                if ((c & UTF8_TWO_BYTES_MASK) == UTF8_TWO_BYTES_BITS)
                 {
-                    uint32_t c1 = c & (uint32_t)~UTF8_THREE_BYTES_MASK;
-                    if (c1 == 0 && c2 < 0x20 && enforceValidUtf8Encoding)
+                    uint32_t c1 = c & (uint32_t)(~UTF8_TWO_BYTES_MASK);
+                    if (c1 <= 1 && enforceValidUtf8Encoding)
                     {
                         // overlong encoding.
                         throw_encoding_error();
                     }
-
-                    uc = (c1) << 12 | (c2 << 6) | c3;
+                    uc = (c1 << 6) | c2;
                 }
                 else
                 {
-                    uint32_t c4 = continuation_byte(p, v.end());
-                    if ((c & UTF8_FOUR_BYTES_MASK) == UTF8_FOUR_BYTES_BITS)
+                    uint32_t c3 = continuation_byte(p, v.end());
+
+                    if ((c & UTF8_THREE_BYTES_MASK) == UTF8_THREE_BYTES_BITS)
                     {
-                        uint32_t c1 = c & (uint32_t)~UTF8_FOUR_BYTES_MASK;
-                        if (c1 == 0 && c2 < 0x10 && enforceValidUtf8Encoding)
+                        uint32_t c1 = c & (uint32_t)~UTF8_THREE_BYTES_MASK;
+                        if (c1 == 0 && c2 < 0x20 && enforceValidUtf8Encoding)
                         {
                             // overlong encoding.
                             throw_encoding_error();
                         }
-                        uc  = (c1 << 18) | (c2 << 12) | (c3 << 6) | c4;
-                    } else {
-                        // outside legal UCS range. 
-                        throw_encoding_error();
+
+                        uc = (c1) << 12 | (c2 << 6) | c3;
+                    }
+                    else
+                    {
+                        uint32_t c4 = continuation_byte(p, v.end());
+                        if ((c & UTF8_FOUR_BYTES_MASK) == UTF8_FOUR_BYTES_BITS)
+                        {
+                            uint32_t c1 = c & (uint32_t)~UTF8_FOUR_BYTES_MASK;
+                            if (c1 == 0 && c2 < 0x10 && enforceValidUtf8Encoding)
+                            {
+                                // overlong encoding.
+                                throw_encoding_error();
+                            }
+                            uc  = (c1 << 18) | (c2 << 12) | (c3 << 6) | c4;
+                        } else {
+                            // outside legal UCS range. 
+                            throw_encoding_error();
+                        }
                     }
                 }
             }
+        } catch (const std::exception &e) {
+            // invalid UTF-8 sequence.
+            os << "\\uFFFD"; // replacement character for invalid sequences.
+            continue;
         }
-        if ((uc >= UTF16_SURROGATE_1_BASE && uc <= UTF16_SURROGATE_1_BASE + UTF16_SURROGATE_MASK) || (uc >= UTF16_SURROGATE_2_BASE && uc <= UTF16_SURROGATE_2_BASE + UTF16_SURROGATE_MASK))
-        {
-            // MUST not encode UTF16 surrogates in UTF8.
-            throw_encoding_error();
-        }
+        // if ((uc >= UTF16_SURROGATE_1_BASE && uc <= UTF16_SURROGATE_1_BASE + UTF16_SURROGATE_MASK) || (uc >= UTF16_SURROGATE_2_BASE && uc <= UTF16_SURROGATE_2_BASE + UTF16_SURROGATE_MASK))
+        // {
+        //     // MUST not encode UTF16 surrogates in UTF8.
+        //     throw_encoding_error();
+        // }
 
         if (uc == '"' || uc == '\\')
         {
@@ -268,6 +276,29 @@ void json_reader::skip_whitespace()
     }
 }
 
+static void utf32_to_utf8_stream(std::ostream &s, uint32_t uc)
+{
+    if (uc < 0x80u)
+    {
+        s << (char)uc;
+    } else if (uc < 0x800u) {
+        s << (char)(0xC0 + (uc >> 6));
+        s << (char)(0x80 + (uc & 0x3F));
+
+    } else if (uc < 0x10000u) {
+        s << (char)(0xE0 + (uc >> 12));
+        s << (char)(0x80 + ((uc >> 6) & 0x3F));
+        s << (char)(0x80 + (uc & 0x3F));
+    } else if (uc < 0x0110000) {
+        s << (char)(0xF0 + (uc >> 18));
+        s << (char)(0x80 + ((uc >> 12) & 0x3F));
+        s << (char)(0x80 + ((uc >> 6) & 0x3F));
+        s << (char)(0x80 + (uc & 0x3F));
+    } else {
+        throw std::range_error("Illegal UTF-32 character.");
+    }
+}
+
 std::string json_reader::read_string()
 {
     // To completely normalize UTF-32 values we must covert to UTF-16, resolve surrogate pairs, and then convert UTF-32 to UTF-8.
@@ -344,7 +375,7 @@ std::string json_reader::read_string()
                     }
                     uc = ((uc & UTF16_SURROGATE_MASK) << 10) + (uc2 & UTF16_SURROGATE_MASK) + 0x10000U;
                 }
-                HtmlHelper::utf32_to_utf8_stream(s, uc);
+                utf32_to_utf8_stream(s, uc);
             }
             break;
             }

@@ -37,6 +37,7 @@ import { isDarkMode } from './DarkMode';
 import IconButton from '@mui/material/IconButton';
 
 
+
 class DirectoryTree {
     name: string = "";
     path: string = "";
@@ -279,7 +280,8 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
                             )
                         }
                     </IconButton>
-                    <ButtonBase ref={ref} style={{ flexGrow: 1, flexShrink: 1, position: "relative" }} onClick={() => { this.onTreeClick(directoryTree); }}>
+                    <ButtonBase ref={ref} style={{ flexGrow: 1, flexShrink: 1, position: "relative" }} onClick={() => { this.onTreeClick(directoryTree); }}
+                        >
                         <div style={{ position: "absolute", background: selectBg, width: "100%", height: "100%", borderRadius: 4 }} />
                         <div style={{ width: "100%", display: "flex", flexFlow: "row", flexWrap: "nowrap", justifyContent: "flex-start", alignItems: "center", paddingLeft: 8 }}>
                             {
@@ -329,8 +331,11 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
                     <Typography variant="body1">{this.props.dialogTitle}</Typography>
                 </DialogTitle>
                 <Divider />
-                <DialogContent style={{marginLeft: 0, paddingLeft: 0}} >
-                    <div style={{ display: "flex", flexGrow: 1, flexShrink: 1, overflowY: "auto" }} >
+                <DialogContent style={{marginLeft: 0, paddingLeft: 0, 
+                    display: "flex",flexFlow: "column nowrap",
+                    alignItems: "stretch", justifyContent: "stretch"}} >
+                    <div style={{ flex: "1 1 auto", display: "flex", height: "100%", 
+                        overflowY: "auto", overflowX: "auto" }} >
                         {
                             this.renderTree()
                         }

@@ -31,6 +31,7 @@
 #include "FileEntry.hpp"
 #include <map>
 #include "FilePropertyDirectoryTree.hpp"
+#include "AlsaSequencer.hpp"
 
 
 namespace pipedal {
@@ -72,6 +73,7 @@ private:
     BankIndex bankIndex;
     BankFile currentBank;
     PluginPresetIndex pluginPresetIndex;
+    std::string tone3000Auth;
     
 private:
     void FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const;
@@ -84,7 +86,9 @@ private:
     std::filesystem::path GetIndexFileName() const;
     std::filesystem::path GetBankFileName(const std::string & name) const;
     std::filesystem::path GetChannelSelectionFileName();
+    std::filesystem::path GetAlsaSequencerConfigurationFileName();
     std::filesystem::path GetCurrentPresetPath() const;
+    std::filesystem::path GetTone3000AuthPath() const;
 
     void LoadBankIndex();
     void SaveBankIndex();
@@ -94,11 +98,19 @@ private:
 
     void LoadChannelSelection();
     void SaveChannelSelection();
+
+    void LoadAlsaSequencerConfiguration();
+    void SaveAlsaSequencerConfiguration();
+
+
     void SaveBankFile(const std::string& name,const BankFile&bankFile);
     void LoadBankFile(const std::string &name,BankFile *pBank);
     std::string GetPresetCopyName(const std::string &name);
     bool isJackChannelSelectionValid = false;
     JackChannelSelection jackChannelSelection;
+
+    AlsaSequencerConfiguration alsaSequencerConfiguration;;
+
     WifiConfigSettings wifiConfigSettings;
     WifiDirectConfigSettings wifiDirectConfigSettings;
 
@@ -126,6 +138,7 @@ public:
     void LoadWifiDirectConfigSettings();
     void LoadUserSettings();
     void SaveUserSettings();
+
     void LoadBank(int64_t instanceId);
     int64_t GetBankByMidiBankNumber(uint8_t bankNumber);
     const Pedalboard& GetCurrentPreset();
@@ -155,6 +168,8 @@ public:
     int64_t DeleteBank(int64_t bankId);
 
     bool IsInUploadsDirectory(const std::filesystem::path&path) const;
+    bool IsInAudioTracksDirectory(const std::filesystem::path&path) const;
+    bool IsValidArtworkFile(const std::filesystem::path& fullPath);
     
     FileRequestResult GetFileList2(const std::string&relativePath,const UiFileProperty&fileProperty);
 
@@ -178,6 +193,10 @@ public:
 
     void SaveCurrentPreset(const CurrentPreset &currentPreset);
     bool RestoreCurrentPreset(CurrentPreset*pResult);
+
+    void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration);
+    AlsaSequencerConfiguration GetAlsaSequencerConfiguration() const;
+
 
     //std::string MapPropertyFileName(Lv2PluginInfo*pluginInfo, const std::string&path);
 
@@ -231,7 +250,16 @@ public:
         const std::string&oldRelativePath,
         const std::string&newRelativePath,
         const UiFileProperty&uiFileProperty);
+    std::string CopyFilePropertyFile(
+        const std::string&oldRelativePath,
+        const std::string&newRelativePath,
+        const UiFileProperty&uiFileProperty,
+        bool overwrite = false);
     FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty,const std::filesystem::path&selectedPath);
+
+    void LoadTone3000Auth();
+    void SetTone3000Auth(const std::string&apiKey);
+    std::string GetTone3000Auth() const;
 };
 
 
