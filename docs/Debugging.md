@@ -31,21 +31,21 @@ or
 
     pipedalconfig -stop  #Stops the Jack service as well.
 
-Although not strictly neccesary, you should probably add your login account to the pipedal_d group.
+Although not strictly necessary, you should probably add your login account to the pipedal_d group.
      
      sudo usermod -a -G pipedal_d *youruserid*
 
 This will allow you to run `pipedald` under the debugger of your choice using the 
 same /etc/pipedal and /var/pipedal directories as an instance of  `pipedal` running
 under systemd. Note that when running under systemd, `pipedald` runs under an unprivileged 
-`piedal_d` service account, and relies it's group (also 'pipedal_d`) in order to access its 
+`pipedal_d` service account, and relies it's group (also 'pipedal_d`) in order to access its 
 data files, and to communicate with the `pipedaladmin` service, which does run with root 
 privileges when `pipedald` needs to perform operations that do required root privileges (e.g. shutdown/reboot and starting  and stopping WiFi services). 
 
-For what it's worth, `pipedaldmin` is virtually undebuggable, becuase it does require root privileges to run.
-If you really _must_ debug pipedaladmin, you can fire up a sudo isntance of Visual Studio Code 
-and attach to the running daemon process. But running  program as large as VS Code with root privileges
-is a dangerous process, that VS Code firmly (and righfully) complains about. And configuring 
+For what it's worth, `pipedaladmin` is virtually un-debuggable, because it does require root privileges to run.
+If you really _must_ debug pipedaladmin, you can fire up a sudo instance of Visual Studio Code
+and attach to the running daemon process. But running program as large as VS Code with root privileges
+is a dangerous process, that VS Code firmly (and rightfully) complains about. And configuring
 VSCode to run with root privileges as a painful process. Avoid if you can.
 
 The pipedald service will run with or without the pipedaladmind service, but some operations (shutdown, reboot,
@@ -58,13 +58,18 @@ vite/React components. But while debugging, it is much more convenient to use th
 React sources, and configure pipedald to serve only the websocket. 
 
 Note that a debug instance of `pipedald` cannot bind to port 80, since that requires either root privileges or 
-access to port 80 via `authd`. So you will have to configure the debug isntance of `pipedald`'s web server to 
-bind to port 8080 instead. The react server will serve the web applicaton on port 3000, so you will point your web 
-browser to `raspberrpi:3000`. And you will then need to configure the react application to make web socket 
-connection on port 8080 (where pipedald provides all dynamic content in the web app).
+access to port 80 via `authd`. So you will have to configure the debug instance of `pipedald`'s web server to 
+bind to port 8080 instead. The react server will serve the web application on port 8080, so you will point your web 
+browser to `localhost:8080`. And you will then need to configure the react application to make web socket 
+connection on port 8080 (where pipedald provides all dynamic content in the web app). Note that the pipedald service 
+serves the vite/react web app as compiled into /etc/pipedal/react directory, and the debug build of pipedal does not 
+(by default) build the vite/react web app sources. Normally, you will use the vite/react debug server when 
+you are debugging. However, when using the vite/react debug server, the PiPedal client application will 
+use the pipedald web server on port 8080 to provide dynamic content (e.g. the web socket connect, and various
+pieces of dynamic content served out of the `http://localhost:8080/var` URL and children thereof.
 
-You may find it convenient to reconfigure the systemd intances of `pipedald` to bind to port 8080 as well. 
-That will allow the react server to point clients to either a debug instance or the systemd instance of `pipedald`
+You may find it convenient to reconfigure the systemd instance of `pipedald` to bind to port 8080 as well. 
+That will allow the vite/react debug server to point clients to either a debug instance or the systemd instance of `pipedald`
 depending, depending on which instance of pipedald is currently running. Run the following command to 
 make the systemd instance of `pipedald` bind to port 8080 instead of port 80:
 
@@ -96,16 +101,6 @@ The React app will display the message "Error: Failed to connect to the server",
         ...
     }
 
-Setting socket_server_address to "*" configures Browers clients to make web socket connections on the same 
-IP address they used to load the web app in the first place. If you set it to a specific address, the web app 
-will attempt to establish a websocket connection son that specific address instead. (Not sure what that's useful
- for, but it's there if you ever need it). When running under systemd, Pipedal usually redirects browser clients 
- to an IPv4 address if the initial connection was made via IPv6, since long-lasting IPv6 websocket connections 
- are problematic, and IPv6 link-local adresses (which you sometimes get from mDNS servers) are completely toxic. 
- The React debug server does not do that (since the app configuration that clients get from the 
- React server is static). If you're connecting using mDNS (via 'raspberrypi:3000', for example), you could 
- end up connectiong to the React web app on an IPv6 address. So it might be useful for that. The easier solution 
- is probably just to use an explicit IPv4 address when you connect to the React debug server.
 
 The original development for this app was done with Visual Studio Code. And it's probably easiest to go with the flow when building 
 or debugging PiPedal. Open the root project directory in Visual Studio Code, and VSCode will automatically detect the CMake build 
@@ -115,12 +110,11 @@ and to settle down a bit.
 Once VSCode has configured itself, build and debug commands are available on the CMake toolbar at the 
 bottom of the Visual Studio Code window. (Or in the CMake tab on the left-hand side of VSCOde if you have 
 chosen not to configure the CMake add-on to make CMake controls visible on the bottom toolbar). 
-Choose your compiler toolset. PipPedald sort of builds on a Clang toolset; although Clang may give warnings. But it's usually 
-not significantly worse than building on a newly released version fo GCC.  It's probably best to do your first build with the build
+Choose your compiler toolset. PiPedal will also build on a Clang toolsets, although that is a feature that gets tested infrequently, to be honest. It's probably best to do your first build with the build
 variant set to RelWithDebugInfo. If you can get to the point that you can install Pipedal using ./install.sh, then that will 
 ensure that all the various configuration files that Pipedal requires are deployed in all the right places, whether the services 
 run properly or not. Check system logs using `journalctl -b0 | less` to see how well your newly built version of 
-Pipedal is doing, and stop systemd services as neccesary and appropriate.
+Pipedal is doing, and stop systemd services as necessary and appropriate.
 
 
 Set the build variant to debug. Set the debug target to "pipedald".  Click on the Build button to build the app. Click on the Debug button to launch a debugger.

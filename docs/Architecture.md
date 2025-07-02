@@ -16,7 +16,7 @@ Fig 1. PiPedal Architecture.
 
 HTML connections to the server are made over port 80 in production, or port 8080 when debugging.
 
-When debugging React code, an instance of the React development servier must be started. The development server serves static content on port 3000. To 
+When debugging React code, an instance of the React development server must be started. The development server serves static content on port 3000. To 
 start the development server `cd` to the react directory, and run `./start`.
 Figure 2 shows the architecture of PiPedal when running with the React debug server.
 
@@ -24,7 +24,7 @@ Figure 2 shows the architecture of PiPedal when running with the React debug ser
 
 Fig 2. PiPedal architecture when using the React development server.
 
-To debug React code, connect to the development server, on port 3000, with Chrome. To access the Chrome debugger, press F12. You should be able to browse the React source files from within the Chrome debugger. Load the typescript source file in the Chrome debugger. Once you have done that, you should be able to debug the Typescript code directly. Chrome will automaticallyt detect that it is connected to a React debug server, and will automatically download symbol and map files from the React development server.
+To debug React code, connect to the development server, on port 3000, with Chrome. To access the Chrome debugger, press F12. You should be able to browse the React source files from within the Chrome debugger. Load the typescript source file in the Chrome debugger. Once you have done that, you should be able to debug the Typescript code directly. Chrome will automatically detect that it is connected to a React debug server, and will automatically download symbol and map files from the React development server.
 
 When using the React development server, the web client can be configured to make web socket connections to either a debug version of the server, with a web server at port 8080, or a production server, with a web server at port 80. When running with the React development server, edit 
 
@@ -40,9 +40,9 @@ When using the React development server, the web client can be configured to mak
 }
 ```
 
-The `debug` value determines whether the web application will disable background context menus. Enabling context menus allows you to select the 'Inspect' menu item, which is useful when debuging HTML content.
+The `debug` value determines whether the web application will disable background context menus. Enabling context menus allows you to select the 'Inspect' menu item, which is useful when debugging HTML content.
 
-The `fakeAndroid` setting determines whether the web application will use touch-interface interactions instead of mouse-interface interactions. There are a number of subtle adaptations the web app makes to accomodate touch interfaces.
+The `fakeAndroid` setting determines whether the web application will use touch-interface interactions instead of mouse-interface interactions. There are a number of subtle adaptations the web app makes to accommodate touch interfaces.
 
 Note that, when connecting directly to the pipedald web server on port 80, or port 8080, the web server intercepts all requests to documents in the `var` directory, including the `var/config.json` file, and instead returns data that reflects the configuration of the pipedald service. The contents of the `public/var` directory will be completely ignored. The `debug` setting will be true if the pipedald service is a Debug build, and will be false if the pipedald service is a Release build. The `fakeAndroid` setting will always be false.
 

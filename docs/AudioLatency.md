@@ -16,7 +16,7 @@ does not require 3 audio buffers to work efficiently.
 
 PiPedal provides the pipedal_latency_test utility to measure actual round-trip audio latency. You must temporarily disable pipedal (`sudo systemctl stop pipedal`), and connect the left audio output of your audio device to the left audio input of your audio device with a guitar cable to use this test. 
 
-The following table shows measured round-trip audio latencies for a MOTU M2 external USB adapter running on Raspbery Pi OS with a 48 KHz sample rate. You can use these figures as a rough guideline; but actual round-trip audio latency will depend on the audio device you are using.
+The following table shows measured round-trip audio latencies for a MOTU M2 external USB adapter running on Raspberry Pi OS with a 48 KHz sample rate. You can use these figures as a rough guideline; but actual round-trip audio latency will depend on the audio device you are using.
 
 <table align='center'>
     <tr><td></td><td colspan=3>Buffers</td></tr>
@@ -30,7 +30,7 @@ The following table shows measured round-trip audio latencies for a MOTU M2 exte
 </table>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Table 1: Delay in samples/delay in ms on MOTU M2 @ 48KHz.
 
-Make sure your system is fully updated. A kernel version greater than 5.15 is recommened, as Linux 5.15 is known to contain patches that 
+Make sure your system is fully updated. A kernel version greater than 5.15 is recommend, as Linux 5.15 is known to contain patches that 
 provide significant performance improvements for USB audio devices. Version 5.10 provides patches that provide broad support for 
 USB audio adapters. Kernel versions prior to 5.10 provide limited support for a limited number of mostly obsolete USB adapters.
 PiPedal will run on kernel versions less than 5.10, but may not provide robust, stable audio.
@@ -41,7 +41,7 @@ RT_PREEMPT realtime kernels (when available) are preferred but not required. How
 
 The Ubuntu Studio installer will install a realtime kernel if there is one available. But -- at least for Ubuntu 21.04 -- there is no stock RT_PREEMPT kernel for ARM aarch64.
 
-On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SD Card access are performed over separate buses (which is not true for previous versions of Raspberry Pi). It's therefore a good idea to ensure that your USB audio device is either the only device connected to the USB 2.0 ports, or the only device connected to the UBS 3.0 ports. There are theoretical advantages to USB 3.0 over USB 2.0 for USB audio; but I don't beleive there are currently any USB audio devices that take advanage of USB 3.0 features. If in doubt, use a UBS 3.0 ports; if there are problems, of if you have a high-speed drive attached to a USB 3.0 port, use a UBS 2.0 port. 
+On a Raspberry Pi 4 device, Wi-Fi, USB 2.0, USB 3.0 and SD Card access are performed over separate buses (which is not true for previous versions of Raspberry Pi). It's therefore a good idea to ensure that your USB audio device is either the only device connected to the USB 2.0 ports, or the only device connected to the UBS 3.0 ports. There are theoretical advantages to USB 3.0 over USB 2.0 for USB audio; but I don't believe there are currently any USB audio devices that take advantage of USB 3.0 features. If in doubt, use a UBS 3.0 ports; if there are problems, of if you have a high-speed drive attached to a USB 3.0 port, use a UBS 2.0 port. 
 
 Network traffic does not seem to adversely affect USB audio operations on Raspberry Pi 4 (which isn't true on previous versions of Raspberry Pi, which use a common bus for network and USB devices). Filesystem activity does affect USB audio operation on Raspberry Pi OS, even with an RT_PREEMPT kernel; but interestingly, filesystem activity has much less effect on USB audio on Ubuntu 21.04, even on a plain PREEMPT kernel. 
 

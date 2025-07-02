@@ -31,9 +31,9 @@ You MUST use `apt-get`. `apt` will not install downloaded packages; and `dpkg -i
 On Raspberry Pi OS, if you have a graphical desktop installed, you can also install the package by double-clicking on the downloaded package in the File Manager.
 
 If you are using Ubuntu, there are additional post-installation steps you must take to reconfigure the Ubuntu kernel to 
-provide support for low-latency real-time audio. Proced to [PiPedal support for Ubuntu](Ubuntu.md).
+provide support for low-latency real-time audio. Proceed to [PiPedal support for Ubuntu](Ubuntu.md).
 
-If you are using Raspberry Pi OS, procede directly to [Configuring PiPedal after Installation](Configuring.md). If 
+If you are using Raspberry Pi OS, proceed directly to [Configuring PiPedal after Installation](Configuring.md). If 
 you are using Ubuntu, there are additional post-installation steps you must take to reconfigure the Ubuntu kernel 
 to provide support for low-latency real-time audio. 
 
