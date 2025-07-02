@@ -66,6 +66,9 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 ### [The Build System](https://rerdavies.github.io/pipedal/TheBuildSystem.html)
 ### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.html)
 
+ &nbsp;
 
+#### [PiPedal Architecture](https://rerdavies.github.io/pipedal/Architecture.html)
+ 
 
 
