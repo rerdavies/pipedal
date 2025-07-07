@@ -1,4 +1,11 @@
-Exctly one underrun per seek in Toob Player
+
+check reload after change of LV2 plugins.
+
+Vu Meters, move rendering to background images, in order to reduce layout overhead.
+
+Remove FullScreenIME in PluginControlView.tsx
+
+Exactly one underrun per seek in Toob Player
 
 Test autohotspot detection.
 

@@ -331,7 +331,9 @@ namespace pipedal
         void LoadLv2PluginInfo();
         void Load();
 
-        const PluginHost &GetLv2Host() const { return pluginHost; }
+        const PluginHost &GetPluginHost() const { return pluginHost; }
+        PluginHost &GetPluginHost() { return pluginHost; }
+        
         Pedalboard GetCurrentPedalboardCopy()
         {
             std::lock_guard<std::recursive_mutex> guard(mutex);

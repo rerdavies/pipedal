@@ -32,6 +32,7 @@
 #include <string>
 #include "IHost.hpp"
 #include <set>
+#include "ModGui.hpp"
 
 //#include "lv2.h"
 #include "Units.hpp"
@@ -42,6 +43,7 @@
 #include "AutoLilvNode.hpp"
 #include "PiPedalUI.hpp"
 #include "MapPathFeature.hpp"
+#include "ModGui.hpp"
 
 namespace pipedal
 {
@@ -325,6 +327,38 @@ namespace pipedal
         static json_map::storage_type<Lv2PortInfo> jmap;
     };
 
+    class Lv2PatchPropertyInfo {
+
+    private:
+        std::string uri_;
+        bool writable_ = false;
+        bool readable_ = false;
+        std::string label_;
+        uint32_t index_ = -1;
+        std::string type_;
+        std::string comment_;
+        std::string shortName_;
+        std::vector<std::string> fileTypes_;
+        std::vector<std::string> supportedExtensions_;
+    public:
+        Lv2PatchPropertyInfo() {}
+        Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNode *propertyUri); 
+
+        LV2_PROPERTY_GETSET(uri);
+        LV2_PROPERTY_GETSET(writable);
+        LV2_PROPERTY_GETSET(readable);
+        LV2_PROPERTY_GETSET(label);
+        LV2_PROPERTY_GETSET_SCALAR(index);
+        LV2_PROPERTY_GETSET(type);
+        LV2_PROPERTY_GETSET(comment);
+        LV2_PROPERTY_GETSET(shortName);
+        LV2_PROPERTY_GETSET(fileTypes);
+        LV2_PROPERTY_GETSET(supportedExtensions);
+
+        DECLARE_JSON_MAP(Lv2PatchPropertyInfo);
+
+    };
+
     class Lv2PortGroup
     {
     private:
@@ -364,6 +398,8 @@ namespace pipedal
         bool HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin);
         std::string bundle_path_;
         std::string uri_;
+        uint32_t minorVersion_ = 0;
+        uint32_t microVersion_ = 0;
         std::string name_;
         std::string plugin_class_;
         std::string brand_;
@@ -380,8 +416,12 @@ namespace pipedal
         std::string comment_;
         std::vector<std::shared_ptr<Lv2PortInfo>> ports_;
         std::vector<std::shared_ptr<Lv2PortGroup>> port_groups_;
+        std::vector<Lv2PatchPropertyInfo> patchProperties_;
+        
         bool is_valid_ = false;
         PiPedalUI::ptr piPedalUI_;
+        ModGui::ptr modGui_;
+
         bool hasUnsupportedPatchProperties_ = false;
 
         bool IsSupportedFeature(const std::string &feature) const;
@@ -390,6 +430,8 @@ namespace pipedal
         LV2_PROPERTY_GETSET(bundle_path)
         LV2_PROPERTY_GETSET(uri)
         LV2_PROPERTY_GETSET(name)
+        LV2_PROPERTY_GETSET(minorVersion)
+        LV2_PROPERTY_GETSET(microVersion)
         LV2_PROPERTY_GETSET(brand)
         LV2_PROPERTY_GETSET(label)
         LV2_PROPERTY_GETSET(plugin_class)
@@ -406,6 +448,8 @@ namespace pipedal
         LV2_PROPERTY_GETSET(has_factory_presets)
         LV2_PROPERTY_GETSET(piPedalUI)
         LV2_PROPERTY_GETSET(hasUnsupportedPatchProperties)
+        LV2_PROPERTY_GETSET(modGui)
+        LV2_PROPERTY_GETSET(patchProperties)
 
         const Lv2PortInfo &getPort(const std::string &symbol)
         {
@@ -618,6 +662,8 @@ namespace pipedal
     private:
         std::string uri_;
         std::string name_;
+        uint32_t minorVersion_ = 0;
+        uint32_t microVersion_ = 0;;
         std::string brand_;
         std::string label_;
         std::string author_name_;
@@ -636,10 +682,15 @@ namespace pipedal
         std::vector<UiFileProperty::ptr> fileProperties_;
         std::vector<UiFrequencyPlot::ptr> frequencyPlots_;
         std::vector<UiPortNotification::ptr> uiPortNotifications_;
+        ModGui::ptr modGui_;
+        std::vector<Lv2PatchPropertyInfo> patchProperties_;
+
 
     public:
         LV2_PROPERTY_GETSET(uri)
         LV2_PROPERTY_GETSET(name)
+        LV2_PROPERTY_GETSET(minorVersion)
+        LV2_PROPERTY_GETSET(microVersion)
         LV2_PROPERTY_GETSET(brand)
         LV2_PROPERTY_GETSET(label)
         LV2_PROPERTY_GETSET(author_name)
@@ -657,6 +708,8 @@ namespace pipedal
         LV2_PROPERTY_GETSET(fileProperties)
         LV2_PROPERTY_GETSET(frequencyPlots)
         LV2_PROPERTY_GETSET(uiPortNotifications)
+        LV2_PROPERTY_GETSET(modGui)
+        LV2_PROPERTY_GETSET(patchProperties)
 
         static json_map::storage_type<Lv2PluginUiInfo> jmap;
     };
@@ -679,6 +732,8 @@ namespace pipedal
 #endif
         friend class pipedal::AutoLilvNode;
         friend class pipedal::PiPedalUI;
+        friend class PluginHostTest;
+
         static const char *RDFS__comment;
         static const char *RDFS__range;
 
@@ -707,6 +762,7 @@ namespace pipedal
             AutoLilvNode invada_units__unit;            // typo in invada plugins.
             AutoLilvNode invada_portprops__logarithmic; // typo in invada plugins.
 
+            
             AutoLilvNode atom__bufferType;
             AutoLilvNode atom__Path;
             AutoLilvNode presets__preset;
@@ -714,8 +770,11 @@ namespace pipedal
             AutoLilvNode rdfs__label;
             AutoLilvNode lv2core__symbol;
             AutoLilvNode lv2core__name;
+            AutoLilvNode lv2core__shortName;
             AutoLilvNode lv2core__index;
             AutoLilvNode lv2core__Parameter;
+            AutoLilvNode lv2core__minorVersion;
+            AutoLilvNode lv2core__microVersion;
             AutoLilvNode pipedalUI__ui;
             AutoLilvNode pipedalUI__fileProperties;
             AutoLilvNode pipedalUI__directory;
@@ -766,6 +825,7 @@ namespace pipedal
             AutoLilvNode patch__readable;
             AutoLilvNode pipedal_patch__readable;
 
+            
             AutoLilvNode mod__brand;
             AutoLilvNode mod__label;
             AutoLilvNode mod__preferMomentaryOffByDefault;
@@ -773,6 +833,7 @@ namespace pipedal
             AutoLilvNode dc__format;
 
             AutoLilvNode mod__fileTypes;
+            AutoLilvNode mod__supportedExtensions;
             AutoLilvNode pipedalui__fileTypes;
 
             
@@ -817,6 +878,7 @@ namespace pipedal
         friend class Lv2PluginInfo;
         friend class Lv2PortInfo;
         friend class Lv2PortGroup;
+        friend class ModGui;
 
         std::shared_ptr<Lv2PluginClass> GetPluginClass(const LilvPluginClass *pClass);
         std::shared_ptr<Lv2PluginClass> MakePluginClass(const LilvPluginClass *pClass);
@@ -924,7 +986,9 @@ namespace pipedal
 
         class Urids;
 
-        Urids *urids;
+        Urids *urids = nullptr; 
+        ModGuiUris* mod_gui_uris = nullptr;
+
 
         void OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings);
 
@@ -933,7 +997,7 @@ namespace pipedal
 
         std::shared_ptr<Lv2PluginClass> GetLv2PluginClass() const;
 
-        std::vector<std::shared_ptr<Lv2PluginInfo>> GetPlugins() const { return plugins_; }
+        const std::vector<std::shared_ptr<Lv2PluginInfo>>& GetPlugins() const { return plugins_; }
         const std::vector<Lv2PluginUiInfo> &GetUiPlugins() const { return ui_plugins_; }
 
         virtual std::shared_ptr<Lv2PluginInfo> GetPluginInfo(const std::string &uri) const;
@@ -941,7 +1005,7 @@ namespace pipedal
         static constexpr const char *DEFAULT_LV2_PATH = "/usr/lib/lv2";
 
         void LoadPluginClassesFromJson(std::filesystem::path jsonFile);
-        void Load(const char *lv2Path = PluginHost::DEFAULT_LV2_PATH);
+        void LoadLilv(const char *lv2Path = PluginHost::DEFAULT_LV2_PATH);
 
         virtual LV2_URID GetLv2Urid(const char *uri)
         {

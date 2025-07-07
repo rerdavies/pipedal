@@ -19,6 +19,7 @@
 
 
 import './AppThemed.css';
+
 //import {alpha} from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
 
@@ -73,6 +74,7 @@ import SettingsIcon from './svg/ic_settings.svg?react';
 import HelpOutlineIcon from './svg/ic_help_outline.svg?react';
 import FxAmplifierIcon from './svg/fx_amplifier.svg?react';
 import { PerformanceView } from './PerformanceView';
+
 
 import DialogEx from './DialogEx';
 

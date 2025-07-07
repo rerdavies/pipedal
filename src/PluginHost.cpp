@@ -136,8 +136,11 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     lv2core__symbol = lilv_new_uri(pWorld, LV2_CORE__symbol);
     lv2core__name = lilv_new_uri(pWorld, LV2_CORE__name);
+    lv2core__shortName = lilv_new_uri(pWorld, LV2_CORE_PREFIX "shortName"); // ?? from mod sources
     lv2core__index = lilv_new_uri(pWorld, LV2_CORE__index);
     lv2core__Parameter = lilv_new_uri(pWorld, LV2_CORE_PREFIX "Parameter");
+    lv2core__minorVersion = lilv_new_uri(pWorld, LV2_CORE__minorVersion);
+    lv2core__microVersion = lilv_new_uri(pWorld, LV2_CORE__microVersion);
 
     pipedalUI__ui = lilv_new_uri(pWorld, PIPEDAL_UI__ui);
     pipedalUI__fileProperties = lilv_new_uri(pWorld, PIPEDAL_UI__fileProperties);
@@ -150,7 +153,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     pipedalUI__mimeType = lilv_new_uri(pWorld, PIPEDAL_UI__mimeType);
     pipedalUI__outputPorts = lilv_new_uri(pWorld, PIPEDAL_UI__outputPorts);
     pipedalUI__text = lilv_new_uri(pWorld, PIPEDAL_UI__text);
-    pipedalUI__ledColor = lilv_new_uri(pWorld,PIPEDAL_UI__ledColor);
+    pipedalUI__ledColor = lilv_new_uri(pWorld, PIPEDAL_UI__ledColor);
 
     pipedalUI__frequencyPlot = lilv_new_uri(pWorld, PIPEDAL_UI__frequencyPlot);
     pipedalUI__xLeft = lilv_new_uri(pWorld, PIPEDAL_UI__xLeft);
@@ -159,7 +162,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     pipedalUI__yBottom = lilv_new_uri(pWorld, PIPEDAL_UI__yBottom);
     pipedalUI__xLog = lilv_new_uri(pWorld, PIPEDAL_UI__xLog);
     pipedalUI__width = lilv_new_uri(pWorld, PIPEDAL_UI__width);
-    pipedalUI__graphicEq = lilv_new_uri(pWorld,PIPEDAL_UI__graphicEq);
+    pipedalUI__graphicEq = lilv_new_uri(pWorld, PIPEDAL_UI__graphicEq);
 
     ui__portNotification = lilv_new_uri(pWorld, LV2_UI__portNotification);
     ui__plugin = lilv_new_uri(pWorld, LV2_UI__plugin);
@@ -171,6 +174,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     lv2__port = lilv_new_uri(pWorld, LV2_CORE__port);
 
 #define MOD_PREFIX "http://moddevices.com/ns/mod#"
+
     mod__label = lilv_new_uri(pWorld, MOD_PREFIX "label");
     mod__brand = lilv_new_uri(pWorld, MOD_PREFIX "brand");
     mod__preferMomentaryOffByDefault = lilv_new_uri(pWorld, MOD_PREFIX "preferMomentaryOffByDefault");
@@ -194,15 +198,38 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     patch__writable = lilv_new_uri(pWorld, LV2_PATCH__writable);
     patch__readable = lilv_new_uri(pWorld, LV2_PATCH__readable);
-    pipedal_patch__readable = lilv_new_uri(pWorld,  PIPEDAL_PATCH__readable);
+    pipedal_patch__readable = lilv_new_uri(pWorld, PIPEDAL_PATCH__readable);
 
     dc__format = lilv_new_uri(pWorld, "http://purl.org/dc/terms/format");
 
     mod__fileTypes = lilv_new_uri(pWorld, "http://moddevices.com/ns/mod#fileTypes");
+    mod__supportedExtensions = lilv_new_uri(pWorld, "http://moddevices.com/ns/mod#supportedExtensions");
 }
 
 void PluginHost::LilvUris::Free()
 {
+}
+static int32_t nodesAsInt(const LilvNodes *nodes)
+{
+    if (!nodes)
+        return 0;
+
+    LILV_FOREACH(nodes, iNode, nodes)
+    {
+        const LilvNode *node = lilv_nodes_get(nodes, iNode);
+        if (!node)
+            return 0;
+        if (lilv_node_is_int(node))
+        {
+            return lilv_node_as_int(node);
+        }
+        if (lilv_node_is_float(node))
+        {
+            return static_cast<int32_t>(lilv_node_as_float(node));
+        }
+        break;
+    }
+    return 0;
 }
 
 static std::string nodeAsString(const LilvNode *node)
@@ -270,7 +297,6 @@ PluginHost::PluginHost()
     fileMetadataFeature.Prepare(mapFeature);
     lv2Features.push_back(fileMetadataFeature.GetFeature());
 
-
     lv2Features.push_back(nullptr);
 
     this->urids = new Urids(mapFeature);
@@ -294,8 +320,11 @@ PluginHost::~PluginHost()
 {
     delete lilvUris;
     lilvUris = nullptr;
+
     delete urids;
     urids = nullptr;
+    delete mod_gui_uris;
+    mod_gui_uris = nullptr;
     free_world();
 }
 
@@ -397,7 +426,7 @@ void PluginHost::LoadPluginClassesFromLilv()
     }
 }
 
-void PluginHost::Load(const char *lv2Path)
+void PluginHost::LoadLilv(const char *lv2Path)
 {
 
     this->plugins_.clear();
@@ -418,6 +447,9 @@ void PluginHost::Load(const char *lv2Path)
 
         lilv_world_load_all(pWorld);
     }
+    // Not a safe pointer,because auto-deleting after freeWorld() would be death.
+    this->mod_gui_uris = new ModGuiUris(pWorld, mapFeature);
+
     // LilvNode*lv2_path = lilv_new_file_uri(pWorld,NULL,lv2Path);
     // lilv_world_set_option(world,LILV_OPTION_LV2_PATH,lv)
 
@@ -439,7 +471,8 @@ void PluginHost::Load(const char *lv2Path)
         if (pluginInfo->hasCvPorts())
         {
             Lv2Log::debug("Plugin %s (%s) skipped. (Has CV ports).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
-        } else if (pluginInfo->hasUnsupportedPatchProperties())
+        }
+        else if (pluginInfo->hasUnsupportedPatchProperties())
         {
             Lv2Log::debug("Plugin %s (%s) skipped. (Has unsupported patch parameters).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
         }
@@ -497,20 +530,20 @@ void PluginHost::Load(const char *lv2Path)
         if (plugin->is_valid())
         {
 #if 1
-        // no plugins with more than 2 inputs or outputs.
-        // no zero-input or zero-output plugins (temporarily disables midi plugins)
-        // no zero output devices (permanent, I think)
-            if (info.audio_inputs() > 2 || info.audio_outputs() > 2) {
+            // no plugins with more than 2 inputs or outputs.
+            // no zero-input or zero-output plugins (temporarily disables midi plugins)
+            // no zero output devices (permanent, I think)
+            if (info.audio_inputs() > 2 || info.audio_outputs() > 2)
+            {
                 Lv2Log::debug(
                     "Plugin %s (%s) skipped. %d inputs, %d outputs.", plugin->name().c_str(), plugin->uri().c_str(),
-                    (int)info.audio_inputs(),(int)info.audio_outputs());
-
+                    (int)info.audio_inputs(), (int)info.audio_outputs());
             }
-            else if (info.audio_inputs() == 0  && info.audio_outputs() == 0 )
+            else if (info.audio_inputs() == 0 && info.audio_outputs() == 0)
             {
                 Lv2Log::debug("Plugin %s (%s) skipped. No audio i/o.", plugin->name().c_str(), plugin->uri().c_str());
-                
-            } else if (info.audio_inputs() == 0) 
+            }
+            else if (info.audio_inputs() == 0)
             {
                 // temporarily disable this feature.
                 Lv2Log::debug("Plugin %s (%s) skipped. No inputs.", plugin->name().c_str(), plugin->uri().c_str());
@@ -536,7 +569,8 @@ void PluginHost::Load(const char *lv2Path)
 #endif
             else
             {
-                if (info.audio_inputs() == 0) {
+                if (info.audio_inputs() == 0)
+                {
                     Lv2Log::debug("************* ZERO INPUTS: %s (%s) skipped. No audio outputs.", plugin->name().c_str(), plugin->uri().c_str());
                 }
                 ui_plugins_.push_back(std::move(info));
@@ -619,7 +653,7 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
     // example:
 
     // <http://github.com/mikeoliphant/neural-amp-modeler-lv2#model>
-//     a lv2:Parameter;
+    //     a lv2:Parameter;
     //     rdfs:label "Model";
     //     rdfs:range atom:Path.
     // ...
@@ -644,7 +678,6 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                 if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->rdfs__range, lv2Host->lilvUris->atom__Path))
                 {
 
-
                     AutoLilvNode label = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->rdfs__label, nullptr);
                     std::string strLabel = label.AsString();
 
@@ -662,27 +695,22 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                         std::make_shared<UiFileProperty>(
                             strLabel, propertyUri.AsUri(), lv2DirectoryName);
 
-
                     AutoLilvNode indexNode = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->lv2core__index, nullptr);
                     int32_t index = indexNode.AsInt(-1);
                     fileProperty->index(index);
 
-
                     // if there's a pipedalui_fileTypes node, use that instead.
-
 
                     AutoLilvNode mod__fileTypes = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->mod__fileTypes, nullptr);
 
                     // default: everything.
-                    std::string fileTypes = ModFileTypes::DEFAULT_FILE_TYPES; 
+                    std::string fileTypes = ModFileTypes::DEFAULT_FILE_TYPES;
                     if (mod__fileTypes)
                     {
                         // "nam,nammodel"
                         fileTypes = mod__fileTypes.AsString();
                     }
                     ModFileTypes modFileTypes(fileTypes);
-
-
 
                     // Legacy case: audio_uploads/<plugin_directory> exists.
 
@@ -693,13 +721,14 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
 
                     fileProperty->directory(bundleDirectoryName);
 
-                    if (std::filesystem::exists(legacyUploadPath) 
-                        && !std::filesystem::exists(legacyUploadPath / ".migrated"))
+                    if (std::filesystem::exists(legacyUploadPath) && !std::filesystem::exists(legacyUploadPath / ".migrated"))
                     {
                         fileProperty->useLegacyModDirectory(true);
                         fileProperty->directory(bundleDirectoryName);
                         modFileTypes.rootDirectories().push_back(bundleDirectoryName.filename()); // push the private directory!
-                    } else {
+                    }
+                    else
+                    {
                         if (modFileTypes.rootDirectories().size() == 1)
                         {
                             std::string modName = modFileTypes.rootDirectories()[0];
@@ -708,9 +737,10 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                         }
                     }
 
-
                     fileProperties.push_back(fileProperty);
-                } else {
+                }
+                else
+                {
                     unsupportedPatchProperty = true;
                 }
             }
@@ -718,24 +748,25 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
     }
     FindWritablePathPropertiesResult result;
 
-
-
     if (fileProperties.size() != 0)
     {
-        std::sort(fileProperties.begin(),fileProperties.end(),[](const UiFileProperty::ptr& left,const UiFileProperty::ptr&right) {
-            // properies with indexes first.
-            int32_t indexL = left->index();
-            if (indexL < 0) indexL = std::numeric_limits<int32_t>::max();
-            int32_t indexR = right->index();
-            if (indexR < 0) indexR = std::numeric_limits<int32_t>::max();
-            if (indexL < indexR) return true;
-            if (indexL > indexR) return false;
+        std::sort(fileProperties.begin(), fileProperties.end(), [](const UiFileProperty::ptr &left, const UiFileProperty::ptr &right)
+                  {
+                      // properies with indexes first.
+                      int32_t indexL = left->index();
+                      if (indexL < 0)
+                          indexL = std::numeric_limits<int32_t>::max();
+                      int32_t indexR = right->index();
+                      if (indexR < 0)
+                          indexR = std::numeric_limits<int32_t>::max();
+                      if (indexL < indexR)
+                          return true;
+                      if (indexL > indexR)
+                          return false;
 
-            // there is no natural order. TTL indexing means that the order we see them in is random.
-            // We can't order them sensibly. Let's at least order them consistently.
-            return left->label() < right->label();
-
-        });
+                      // there is no natural order. TTL indexing means that the order we see them in is random.
+                      // We can't order them sensibly. Let's at least order them consistently.
+                      return left->label() < right->label(); });
         result.pipedalUi = std::make_shared<PiPedalUI>(std::move(fileProperties));
     }
     result.hasUnsupportedPatchProperties = unsupportedPatchProperty;
@@ -763,6 +794,12 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
 
     AutoLilvNode name = (lilv_plugin_get_name(pPlugin));
     this->name_ = nodeAsString(name);
+
+    AutoLilvNodes minorVersion = lilv_plugin_get_value(pPlugin, lv2Host->lilvUris->lv2core__minorVersion);
+    this->minorVersion_ = nodesAsInt(minorVersion);
+
+    AutoLilvNodes microVersion = lilv_plugin_get_value(pPlugin, lv2Host->lilvUris->lv2core__microVersion);
+    this->microVersion_ = nodesAsInt(microVersion);
 
     AutoLilvNode brand = lilv_world_get(pWorld, plugUri, lv2Host->lilvUris->mod__brand, nullptr);
     this->brand_ = nodeAsString(brand);
@@ -838,6 +875,59 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     }
 
     std::sort(ports_.begin(), ports_.end(), ports_sort_compare);
+    // Fetch patch properties.
+    {
+        AutoLilvNodes patchWritables = lilv_world_find_nodes(pWorld, plugUri, lv2Host->lilvUris->patch__writable, nullptr);
+
+        bool unsupportedPatchProperty = false;
+        LILV_FOREACH(nodes, iNode, patchWritables)
+        {
+            AutoLilvNode propertyUri = lilv_nodes_get(patchWritables, iNode);
+            if (propertyUri)
+            {
+                // a lv2:Parameter?
+                if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->isA, lv2Host->lilvUris->lv2core__Parameter))
+                {
+                    Lv2PatchPropertyInfo  propertyInfo{lv2Host, propertyUri};
+                    propertyInfo.writable(true);
+                    patchProperties_.push_back(std::move(propertyInfo));
+                }
+            }
+        }
+    }
+    {
+        AutoLilvNodes patchReadables = lilv_world_find_nodes(pWorld, plugUri, lv2Host->lilvUris->patch__readable, nullptr);
+
+        bool unsupportedPatchProperty = false;
+        LILV_FOREACH(nodes, iNode, patchReadables)
+        {
+            AutoLilvNode propertyUri = lilv_nodes_get(patchReadables, iNode);
+            if (propertyUri)
+            {
+                std::string uri = propertyUri.AsUri();
+                bool found = false;
+                for (auto &property : patchProperties_)
+                {
+                    if (property.uri() == uri)
+                    {
+                        property.readable(true);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) 
+                {
+                    if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->isA, lv2Host->lilvUris->lv2core__Parameter))
+                    {
+                        Lv2PatchPropertyInfo  propertyInfo{lv2Host, propertyUri};
+                        propertyInfo.readable(true);
+                        patchProperties_.push_back(std::move(propertyInfo));
+                    }
+                }
+            }
+        }
+
+    }
 
     // Fetch pipedal plugin UI
 
@@ -886,7 +976,7 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
             ++nOutputs;
         }
     }
-
+    this->modGui_ = ModGui::Create(lv2Host, pPlugin);
     this->is_valid_ = isValid;
 }
 
@@ -1012,22 +1102,21 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     this->integer_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->integer_property_uri);
     this->mod_momentaryOffByDefault_ = lilv_port_has_property(plugin, pPort, host->lilvUris->mod__preferMomentaryOffByDefault);
     this->mod_momentaryOnByDefault_ = lilv_port_has_property(plugin, pPort, host->lilvUris->mod__preferMomentaryOnByDefault);
-    this->pipedal_graphicEq_  = lilv_port_has_property(plugin, pPort, host->lilvUris->pipedalUI__graphicEq);
-
+    this->pipedal_graphicEq_ = lilv_port_has_property(plugin, pPort, host->lilvUris->pipedalUI__graphicEq);
 
     this->enumeration_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->enumeration_property_uri);
-
 
     this->toggled_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__toggled);
     this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__not_on_gui_property_uri);
     this->connection_optional_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__connectionOptional);
     this->trigger_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__trigger);
 
-    AutoLilvNode port_ledColor = lilv_port_get(plugin,pPort,host->lilvUris->pipedalUI__ledColor);
+    AutoLilvNode port_ledColor = lilv_port_get(plugin, pPort, host->lilvUris->pipedalUI__ledColor);
     if (port_ledColor)
     {
         auto value = lilv_node_as_string(port_ledColor);
-        if (value) {
+        if (value)
+        {
             this->pipedal_ledColor_ = value;
         }
     }
@@ -1164,6 +1253,8 @@ bool PluginHost::is_a(const std::string &class_, const std::string &target_class
 Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
     : uri_(plugin->uri()),
       name_(plugin->name()),
+      minorVersion_(plugin->minorVersion()),
+      microVersion_(plugin->microVersion()),
       brand_(plugin->brand()),
       label_(plugin->label()),
       author_name_(plugin->author_name()),
@@ -1173,7 +1264,9 @@ Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
       audio_outputs_(0),
       description_(plugin->comment()),
       has_midi_input_(false),
-      has_midi_output_(false)
+      has_midi_output_(false),
+      modGui_(plugin->modGui()),
+      patchProperties_(plugin->patchProperties())
 {
     PLUGIN_MAP_CHECK();
     auto pluginClass = pHost->GetPluginClass(plugin->plugin_class());
@@ -1253,7 +1346,7 @@ std::shared_ptr<Lv2PluginInfo> PluginHost::GetPluginInfo(const std::string &uri)
     return ff->second;
 }
 
-Lv2Pedalboard *PluginHost::UpdateLv2PedalboardStructure(Pedalboard &pedalboard,Lv2Pedalboard *existingPedalboard,Lv2PedalboardErrorList &errorList)
+Lv2Pedalboard *PluginHost::UpdateLv2PedalboardStructure(Pedalboard &pedalboard, Lv2Pedalboard *existingPedalboard, Lv2PedalboardErrorList &errorList)
 {
     ExistingEffectMap existingEffects;
 
@@ -1261,7 +1354,8 @@ Lv2Pedalboard *PluginHost::UpdateLv2PedalboardStructure(Pedalboard &pedalboard,L
     {
         for (auto &effect : existingPedalboard->GetSharedEffectList())
         {
-            if (effect->IsLv2Effect()) {
+            if (effect->IsLv2Effect())
+            {
                 existingEffects[effect->GetInstanceId()] = effect;
             }
         }
@@ -1269,7 +1363,7 @@ Lv2Pedalboard *PluginHost::UpdateLv2PedalboardStructure(Pedalboard &pedalboard,L
     Lv2Pedalboard *pPedalboard = new Lv2Pedalboard();
     try
     {
-        pPedalboard->Prepare(this, pedalboard, errorList,&existingEffects);
+        pPedalboard->Prepare(this, pedalboard, errorList, &existingEffects);
         return pPedalboard;
     }
     catch (const std::exception &e)
@@ -1589,17 +1683,16 @@ static void createTargetLinks(const std::filesystem::path &sourceDirectory, cons
     }
 }
 
-std::string PluginHost::MapResourcePath(const std::string&pluginUri, const std::string&filePath)
+std::string PluginHost::MapResourcePath(const std::string &pluginUri, const std::string &filePath)
 {
     auto plugin = GetPluginInfo(pluginUri);
-    if (plugin) {
-        
+    if (plugin)
+    {
+
         return filePath;
     }
 
-
     return filePath;
-
 }
 
 void PluginHost::CheckForResourceInitialization(const std::string &pluginUri, const std::filesystem::path &pluginUploadDirectory)
@@ -1679,6 +1772,43 @@ std::string PluginHost::AbstractPath(const std::string &path)
     }
     return path;
 }
+Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNode *propertyUri)
+{
+    LilvWorld *pWorld = pluginHost->getWorld();
+    this->uri_ = nodeAsString(propertyUri);
+    
+    AutoLilvNode range = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->rdfs__range, nullptr);
+    if (range)
+    {
+        this->type_ = range.AsUri();
+    }
+    AutoLilvNode comment = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->rdfs__Comment, nullptr);
+    if (comment)
+    {
+        this->comment_ = comment.AsString();
+    }
+    AutoLilvNode shortName = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->lv2core__shortName, nullptr);
+    if (shortName)
+    {
+        this->shortName_ = shortName.AsString();
+    } else {
+        this->shortName_ = this->label_;
+    }
+
+    AutoLilvNode indexNode = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->lv2core__index, nullptr);
+    this->index_ = indexNode.AsInt(-1);
+
+    AutoLilvNode modFileTypesNode = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->mod__fileTypes, nullptr);
+    if (modFileTypesNode) {
+        std::string strFileTypes = modFileTypesNode.AsString();
+        this->fileTypes_ = split(strFileTypes,',');
+    }
+    AutoLilvNode modSupportedExtensionsNode = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->mod__supportedExtensions, nullptr);
+    if (modSupportedExtensionsNode) {
+        std::string strSupportedExtensions = modSupportedExtensionsNode.AsString();
+        this->supportedExtensions_ = split(strSupportedExtensions,',');
+    }
+}
 
 // void PiPedalHostLogError(const std::string &error)
 // {
@@ -1757,6 +1887,8 @@ json_map::storage_type<Lv2PortGroup> Lv2PortGroup::jmap{{
 json_map::storage_type<Lv2PluginInfo> Lv2PluginInfo::jmap{{
     json_map::reference("bundle_path", &Lv2PluginInfo::bundle_path_),
     json_map::reference("uri", &Lv2PluginInfo::uri_),
+    json_map::reference("minorVersion", &Lv2PluginInfo::minorVersion_),
+    json_map::reference("microVersion", &Lv2PluginInfo::microVersion_),
     json_map::reference("name", &Lv2PluginInfo::name_),
     json_map::reference("brand", &Lv2PluginInfo::brand_),
     json_map::reference("label", &Lv2PluginInfo::label_),
@@ -1774,6 +1906,8 @@ json_map::storage_type<Lv2PluginInfo> Lv2PluginInfo::jmap{{
     json_map::reference("port_groups", &Lv2PluginInfo::port_groups_),
     json_map::reference("is_valid", &Lv2PluginInfo::is_valid_),
     json_map::reference("has_factory_presets", &Lv2PluginInfo::has_factory_presets_),
+    json_map::reference("modGui", &Lv2PluginInfo::modGui_),
+    json_map::reference("patchProperties", &Lv2PluginInfo::patchProperties_),
 }};
 
 json_map::storage_type<Lv2PluginClass> Lv2PluginClass::jmap{{
@@ -1831,6 +1965,8 @@ json_map::storage_type<Lv2PluginUiInfo>
         {
             json_map::reference("uri", &Lv2PluginUiInfo::uri_),
             json_map::reference("name", &Lv2PluginUiInfo::name_),
+            json_map::reference("minorVersion", &Lv2PluginUiInfo::minorVersion_),
+            json_map::reference("microVersion", &Lv2PluginUiInfo::microVersion_),
             json_map::reference("brand", &Lv2PluginUiInfo::brand_),
             json_map::reference("label", &Lv2PluginUiInfo::label_),
             json_map::enum_reference("plugin_type", &Lv2PluginUiInfo::plugin_type_, get_plugin_type_enum_converter()),
@@ -1848,4 +1984,16 @@ json_map::storage_type<Lv2PluginUiInfo>
             json_map::reference("fileProperties", &Lv2PluginUiInfo::fileProperties_),
             json_map::reference("frequencyPlots", &Lv2PluginUiInfo::frequencyPlots_),
             json_map::reference("uiPortNotifications", &Lv2PluginUiInfo::uiPortNotifications_),
+            json_map::reference("modGui", &Lv2PluginUiInfo::modGui_),
+            json_map::reference("patchProperties", &Lv2PluginUiInfo::patchProperties_),
         }};
+JSON_MAP_BEGIN(Lv2PatchPropertyInfo)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, uri)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, label)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, type)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, comment)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, shortName)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, fileTypes)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, supportedExtensions)
+
+JSON_MAP_END()

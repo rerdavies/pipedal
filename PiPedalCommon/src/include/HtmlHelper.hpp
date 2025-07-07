@@ -35,6 +35,9 @@ public:
 
 
     static std::string encode_url_segment(const char*pStart, const char*pEnd, bool isQuerySegment = false);
+    static std::string encode_url_segment(const std::string &segment, bool isQuerySegment = false) {
+        return encode_url_segment(segment.c_str(), segment.c_str() + segment.length(), isQuerySegment);
+    }
     static void encode_url_segment(std::ostream&os, const char*pStart, const char *pEnd, bool isQuerySegment = false);
     static void encode_url_segment(std::ostream&os, const std::string&segment, bool isQuerySegment = false)
     {

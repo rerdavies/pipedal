@@ -21,12 +21,13 @@
  *   SOFTWARE.
  */
 
+import React from 'react';
 import IconButton, {IconButtonProps} from '@mui/material/IconButton';
 import ToolTipEx from './ToolTipEx';
 import Typography from "@mui/material/Typography";
 
 interface IconButtonExProps extends IconButtonProps {
-    tooltip: string;
+    tooltip: React.ReactElement | string;
     style?: React.CSSProperties;
 };
 
@@ -35,9 +36,10 @@ function IconButtonEx(props: IconButtonExProps) {
     
     return (
         <ToolTipEx title={
+            (typeof props.tooltip === 'string') ?
             (
                 <Typography variant="caption">{tooltip || extra['aria-label'] }</Typography>
-            )
+            ): (props.tooltip as React.ReactElement)
         }
         >   
             <IconButton {...extra} style={style}  />

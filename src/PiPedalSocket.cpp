@@ -1331,12 +1331,12 @@ public:
         }
         else if (message == "plugins")
         {
-            auto ui_plugins = model.GetLv2Host().GetUiPlugins();
+            auto ui_plugins = model.GetPluginHost().GetUiPlugins();
             Reply(replyTo, "plugins", ui_plugins);
         }
         else if (message == "pluginClasses")
         {
-            auto classes = model.GetLv2Host().GetLv2PluginClass();
+            auto classes = model.GetPluginHost().GetLv2PluginClass();
             Reply(replyTo, "pluginClasses", classes);
         }
         else if (message == "hello")

@@ -242,7 +242,7 @@ void PiPedalModel::LoadLv2PluginInfo()
     }
 
     pluginChangeMonitor = std::make_unique<Lv2PluginChangeMonitor>(*this);
-    pluginHost.Load(configuration.GetLv2Path().c_str());
+    pluginHost.LoadLilv(configuration.GetLv2Path().c_str());
 
     // Copy all presets out of Lilv data to json files
     // so that we can close lilv while we're actually

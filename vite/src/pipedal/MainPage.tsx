@@ -58,6 +58,8 @@ import Snapshot3Icon from "./svg/snapshot_3.svg?react";
 import Snapshot4Icon from "./svg/snapshot_4.svg?react";
 import Snapshot5Icon from "./svg/snapshot_5.svg?react";
 import Snapshot6Icon from "./svg/snapshot_6.svg?react";
+import ModUiIcon from './svg/mod_ui.svg?react';
+import PipedalUiIcon from './svg/pp_ui.svg?react';
 
 import SnapshotDialog from './SnapshotDialog';
 import { css } from '@emotion/react';
@@ -128,6 +130,8 @@ interface MainState {
     showMidiBindingsDialog: boolean;
     screenHeight: number;
     displayNameDialogOpen: boolean;
+    showModUi: boolean;
+
 
 
 }
@@ -167,7 +171,8 @@ export const MainPage =
                         displayAuthor: this.getDisplayAuthor(),
                         horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
                         showMidiBindingsDialog: false,
-                        screenHeight: this.windowSize.height
+                        screenHeight: this.windowSize.height,
+                        showModUi: false
 
 
                     };
@@ -375,7 +380,7 @@ export const MainPage =
                     if (pedalboardItem === null) return "";
                     return pedalboardItem.uri;
                 }
-                titleBar(pedalboardItem: PedalboardItem | null): React.ReactNode {
+                titleBar(pedalboardItem: PedalboardItem | null,canShowModUi: boolean): React.ReactNode {
                     let title = "";
                     let author = "";
                     let infoPluginUri = "";
@@ -441,7 +446,7 @@ export const MainPage =
                                     {canEditTitle ? (
                                         <ButtonBase
                                             style={{ borderRadius: "6px", width: "100%", paddingLeft: 8, paddingRight: 8, height: 48, textTransform: "none" }}
-                                            onClick={()=> {
+                                            onClick={() => {
                                                 this.handleEditPluginDisplayName();
                                             }}
                                         >
@@ -453,7 +458,7 @@ export const MainPage =
                                             </span>
                                         </ButtonBase>)
                                         : (
-                                            <div style={{ flex: "0 1 auto", paddingLeft: 8, paddingRight: 8,minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                                            <div style={{ flex: "0 1 auto", paddingLeft: 8, paddingRight: 8, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
                                                 <span className={classes.title}>{title}</span>
                                                 {this.state.displayAuthor && (
                                                     <span className={classes.author}>{author}</span>
@@ -469,6 +474,32 @@ export const MainPage =
                                     <PluginPresetSelector pluginUri={presetsUri} instanceId={pedalboardItem?.instanceId ?? 0}
                                     />
                                 </div>
+                                {canShowModUi && (
+                                    <div style={{ flex: "0 0 auot" }}>
+                                        <IconButtonEx tooltip={(
+                                            <div>
+                                                <Typography variant="body2" >
+                                                    {this.state.showModUi ? "PiPedal UI" : "MOD UI"}</Typography>
+                                                <Divider />
+                                                <Typography variant="caption">Use MOD UI or PiPedal UI for plugin</Typography>
+                                            </div>
+
+                                        )}
+                                            onClick={() => {
+                                                this.setState({ showModUi: !this.state.showModUi });
+                                            }}
+                                            size="large">
+                                            {!this.state.showModUi ?
+                                                (
+                                                    <ModUiIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
+                                                ) : (
+                                                    <PipedalUiIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
+                                                )
+                                            }
+                                        </IconButtonEx>
+                                    </div>
+                                )}
+
                             </div>
                         );
                     }
@@ -494,6 +525,15 @@ export const MainPage =
                     }
                 }
 
+                canShowModUi(pedalboardItem: PedalboardItem): boolean {
+                    let pluginInfo = this.model.getUiPlugin(pedalboardItem.uri);
+                    if (pluginInfo === null) {
+                        return false;
+                    }
+                    return pluginInfo.modGui !== null;
+
+                }
+
                 render() {
                     const classes = withStyles.getClasses(this.props);
                     let pedalboard = this.model.pedalboard.get();
@@ -508,8 +548,9 @@ export const MainPage =
                     let instanceId = -1;
                     let missing = false;
                     let pluginUri = "#error";
-
+                    let canShowModUi = false;
                     if (pedalboardItem) {
+                        canShowModUi = this.canShowModUi(pedalboardItem);
                         canDelete = pedalboard.canDeleteItem(pedalboardItem.instanceId);
                         instanceId = pedalboardItem.instanceId;
                         if (pedalboardItem.isEmpty()) {
@@ -570,7 +611,7 @@ export const MainPage =
                                     </div>
                                     {
                                         (!this.state.splitControlBar || !this.props.enableStructureEditing)
-                                        && this.titleBar(pedalboardItem)
+                                        && this.titleBar(pedalboardItem, canShowModUi)
                                     }
                                     <div style={{ flex: "1 1 1px" }}>
 
@@ -642,7 +683,7 @@ export const MainPage =
                                 this.state.splitControlBar && this.props.enableStructureEditing && (
                                     <div className={classes.splitControlBar}>
                                         {
-                                            this.titleBar(pedalboardItem)
+                                            this.titleBar(pedalboardItem, canShowModUi)
                                         }
                                     </div>
                                 )
@@ -657,7 +698,11 @@ export const MainPage =
 
                                     ) :
                                         (
-                                            GetControlView(pedalboardItem)
+                                            GetControlView(pedalboardItem,this.state.showModUi && canShowModUi,
+                                                (instanceId: number, showModGui: boolean) => {
+                                                    this.setState({ showModUi: showModGui });
+                                                }
+                                            )
                                         )
                                 }
                             </div>
@@ -689,7 +734,7 @@ export const MainPage =
                                         this.setState({ displayNameDialogOpen: false });
                                     }}
                                 />
-                            )}  
+                            )}
                         </div>
                     );
                 }

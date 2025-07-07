@@ -23,6 +23,8 @@ import WithStyles, { withTheme } from './WithStyles';
 import { createStyles } from './WithStyles';
 import { css } from '@emotion/react';
 
+import ModGuiHost, { IModGuiHostSite } from './ModGuiHost';
+
 import { withStyles } from "tss-react/mui";
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { UiPlugin, UiControl, UiFileProperty, UiFrequencyPlot, ScalePoint } from './Lv2Plugin';
@@ -340,6 +342,8 @@ export interface PluginControlViewProps extends WithStyles<typeof styles> {
     item: PedalboardItem;
     customization?: ControlViewCustomization;
     customizationId?: number;
+    showModGui: boolean;
+    onSetShowModGui: (instanceId: number, showModGui: boolean) => void;
 }
 type PluginControlViewState = {
     landscapeGrid: boolean;
@@ -360,7 +364,6 @@ const PluginControlView =
             constructor(props: PluginControlViewProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
-
                 this.state = {
                     landscapeGrid: false,
                     imeUiControl: undefined,
@@ -376,6 +379,19 @@ const PluginControlView =
                 this.onControlValueChanged = this.onControlValueChanged.bind(this);
                 this.onPreviewChange = this.onPreviewChange.bind(this);
             }
+            // unmonitorPort: (handle: MonitorPortHandle) => void;
+            // onValueChanged: (instanceId: number, symbol: string, value: number) => void;
+
+            // monitorPatchProperty(
+            //     instanceId: number,
+            //     propertyUri: string,
+            //     onReceived: PatchPropertyListener
+            // ): ListenHandle;    
+
+            // cancelMonitorPatchProperty(listenHandle: ListenHandle): void;
+
+            // getPatchProperty(instanceId: number, uri: string): Promise<any>;
+            // setPatchProperty(instanceId: number, uri: string, value: any): Promise<boolean>
 
 
             onPreviewChange(key: string, value: number): void {
@@ -758,19 +774,45 @@ const PluginControlView =
                 }
                 return false;
             }
+            makeHostSite(): IModGuiHostSite {
+                // Yuck. :-( This worked out badly.
+                let model = this.model;
+                return {
+                    monitorPort: this.model.monitorPort.bind(model),
+                    unmonitorPort: this.model.unmonitorPort.bind(model),
+                    setPedalboardControl: this.model.setPedalboardControl.bind(model),
+                    monitorPatchProperty: this.model.monitorPatchProperty.bind(model),
+                    cancelMonitorPatchProperty: this.model.cancelMonitorPatchProperty.bind(model),
+                    getPatchProperty: this.model.getPatchProperty.bind(model),
+                    setPatchProperty: this.model.setPatchProperty.bind(model),
+                };
+            }
 
-            render(): ReactNode {
-                this.controlKeyIndex = 0;
-                const classes = withStyles.getClasses(this.props);
-                let pedalboardItem: PedalboardItem;
-                let pedalboard = this.model.pedalboard.get();
-                if (this.props.instanceId === Pedalboard.START_CONTROL) {
-                    pedalboardItem = pedalboard.makeStartItem();
-                } else if (this.props.instanceId === Pedalboard.END_CONTROL) {
-                    pedalboardItem = pedalboard.makeEndItem();
-                } else {
-                    pedalboardItem = pedalboard.getItem(this.props.instanceId);
+            renderModGui(): ReactNode {
+                let uiPlugin = this.model.getUiPlugin(this.props.item.uri);
+                if (!uiPlugin) {
+                    return (<div />);
                 }
+                return (
+                    <ModGuiHost
+                        instanceId={this.props.instanceId}
+                        plugin={uiPlugin}
+                        onClose={() => {
+                            if (this.props.onSetShowModGui) {
+                                this.props.onSetShowModGui(this.props.instanceId, false);
+                            }
+                        }}
+                        hostSite={this.makeHostSite()}
+                    />
+                )
+            }
+
+            renderPiPedalControl(pedalboardItem?: PedalboardItem): ReactNode {
+                this.controlKeyIndex = 0;
+
+
+                const classes = withStyles.getClasses(this.props);
+                let pedalboard = this.model.pedalboard.get();
 
                 if (!pedalboardItem)
                     return (<div className={classes.frame} ></div>);
@@ -792,19 +834,13 @@ const PluginControlView =
 
                 controlValues = this.filterNotOnGui(controlValues, plugin);
 
-
-
                 let gridClass = this.state.landscapeGrid ? classes.landscapeGrid : classes.normalGrid;
                 let scrollClass = this.state.landscapeGrid ? classes.frameScrollLandscape : classes.frameScrollPortrait;
-                let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
-                let controlNodes: ControlNodes;
-                let frameClass = classes.frame;
-
                 if (this.fullScreen()) {
                     gridClass = classes.noScrollGrid;
                     scrollClass = classes.frameScrollNone;
-                    frameClass = classes.noScrollFrame;
                 }
+                let controlNodes: ControlNodes;
 
                 controlNodes = this.getStandardControlNodes(plugin, controlValues);
 
@@ -822,16 +858,7 @@ const PluginControlView =
                 if (pedalboardItem.midiChannelBinding) {
                     nodes.push(this.midiBindingControl(pedalboardItem));
                 }
-
-
                 return (
-                    <div className={frameClass}>
-                        <div className={classes.vuMeterL}>
-                            <VuMeter displayText={true} display="input" instanceId={pedalboardItem.instanceId} />
-                        </div>
-                        <div className={vuMeterRClass}>
-                            <VuMeter displayText={true} display="output" instanceId={pedalboardItem.instanceId} />
-                        </div>
                         <div className={scrollClass}>
                             <div className={gridClass}  >
                                 {
@@ -848,6 +875,44 @@ const PluginControlView =
                                 }
                             </div>
                         </div>
+                );
+
+
+            }
+            render(): ReactNode {
+                const classes = withStyles.getClasses(this.props);
+                let pedalboard = this.model.pedalboard.get();
+
+                let pedalboardItem: PedalboardItem;
+                if (this.props.instanceId === Pedalboard.START_CONTROL) {
+                    pedalboardItem = pedalboard.makeStartItem();
+                } else if (this.props.instanceId === Pedalboard.END_CONTROL) {
+                    pedalboardItem = pedalboard.makeEndItem();
+                } else {
+                    pedalboardItem = pedalboard.getItem(this.props.instanceId);
+                }
+
+                let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
+                let frameClass = classes.frame;
+
+                if (this.fullScreen()) {
+                    frameClass = classes.noScrollFrame;
+                }
+
+
+                return (
+                    <div className={frameClass}>
+                        <div className={classes.vuMeterL}>
+                            <VuMeter displayText={true} display="input" instanceId={pedalboardItem.instanceId} />
+                        </div>
+                        <div className={vuMeterRClass}>
+                            <VuMeter displayText={true} display="output" instanceId={pedalboardItem.instanceId} />
+                        </div>
+                        {
+                            this.props.showModGui && this.renderModGui()
+                            || this.renderPiPedalControl(pedalboardItem)
+                        }
+
                         {this.state.showFileDialog && (
 
                             <FilePropertyDialog open={this.state.showFileDialog}
@@ -889,7 +954,7 @@ const PluginControlView =
                                 }
                             />
                         )}
-
+                        {/* xxx: I don't think we need this anyore. */}
                         <FullScreenIME uiControl={this.state.imeUiControl} value={this.state.imeValue}
 
                             onChange={(key, value) => this.onImeValueChange(key, value)}

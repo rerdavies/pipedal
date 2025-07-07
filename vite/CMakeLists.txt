@@ -108,7 +108,6 @@ add_custom_command(
     public/iso_codes.json
     public/logo512.png
     public/sample_lv2_plugins.json
-    public/vite.svg
     src/pipedal/SplitUiControls.tsx
     src/pipedal/JackHostStatus.tsx
     src/pipedal/VirtualKeyboardHandler.tsx
@@ -291,8 +290,6 @@ add_custom_command(
     src/pipedal/MidiChannelBinding.tsx
     src/pipedal/ModFileTypes.tsx
     src/assets/react.svg
-    src/App.css
-    src/App.tsx
     src/vite-env.d.ts
     src/index.css
     src/main.tsx

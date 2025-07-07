@@ -206,6 +206,9 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    ModTemplateGenerator.cpp ModTemplateGenerator.hpp
+    WebServerMod.cpp WebServerMod.hpp
+    ModGui.cpp ModGui.hpp
     PipewireInputStream.cpp PipewireInputStream.hpp
     AudioFiles.cpp AudioFiles.hpp
     AudioFileMetadataReader.cpp AudioFileMetadataReader.hpp
@@ -414,6 +417,8 @@ add_executable(AuxInTest
 
 add_executable(pipedaltest 
     testMain.cpp
+
+    ModGuiTest.cpp
     PipewireInputStreamTest.cpp
 
     AudioFilesTest.cpp

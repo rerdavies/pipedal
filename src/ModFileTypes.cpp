@@ -95,6 +95,7 @@ ModFileTypes::ModFileTypes(const std::string &fileTypes)
         if (wellKnownType)
         {
             rootDirectories_.push_back(type);
+            modFileTypes_.push_back(type);
         }
         else
         {

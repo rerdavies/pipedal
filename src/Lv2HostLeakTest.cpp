@@ -36,7 +36,7 @@ TEST_CASE( "PluginHost memory leak", "[lv2host_leak][Build][Dev]" ) {
     {
         PluginHost host;
 
-        host.Load("/usr/lib/lv2:/usr/local/lib/lv2:/usr/modep/lv2");
+        host.LoadLilv("/usr/lib/lv2:/usr/local/lib/lv2:/usr/modep/lv2");
     }
     MemStats finalMemory = GetMemStats();
 

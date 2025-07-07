@@ -37,6 +37,7 @@
 #include "Ipv6Helpers.hpp"
 #include "util.hpp"
 #include "ofstream_synced.hpp"
+#include "ModTemplateGenerator.hpp"
 
 #include <mutex>
 #include "WebServer.hpp"
@@ -740,6 +741,14 @@ namespace pipedal
 
                 request.set_body_file(bodyFile->Path(),bodyFile->DeleteFile());
                 bodyFile->Detach();
+            }
+
+            
+            virtual void clearBody() override {
+                // clear the body, but leave the file size intact (e.g for a HEAD request).
+                request.set_body("");
+
+                // STUB: Don't know how to clear the body file!!
             }
             virtual void setBodyFile(std::filesystem::path&path, bool deleteWhenDone) override { 
                 // cast away const to do what ther request would do if it had that method.

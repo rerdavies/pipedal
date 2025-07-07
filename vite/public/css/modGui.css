@@ -1,0 +1,64 @@
+.mod-pedal {
+}
+
+.mod-pedal .mod-light {
+}
+.mod-pedal .mod-light.off { background-image:url(../img/red-light-off.png);  }
+.mod-pedal .mod-light.on  { background-image:url(../img/red-light-on.png); }
+
+.mod-pedal .mod-pedal-input {
+    position: absolute;
+    top: 70px;
+    left: -24px;
+    width: 24px;
+
+}
+
+.mod-pedal .mod-pedal-output {
+    position: absolute;
+    top: 70px;
+    right: -25px;
+    width: 25px;
+}
+
+.mod-pedal .mod-pedal-input .mod-audio-input,
+.mod-pedal .mod-pedal-input .mod-midi-input,
+.mod-pedal .mod-pedal-input .mod-cv-input {
+    position: relative;
+    margin-bottom: 20px;
+}
+.mod-audio-input .mod-pedal-input-image {
+    background-image:url(../img/audio-input.png) ;
+    width: 24px;
+    height: 56px;
+    margin-bottom: 20px;
+}
+.mod-audio-output .mod-pedal-output-image {
+    background-image:url(../img/audio-output.png);
+    width: 24px;
+    height: 56px;
+    margin-bottom: 20px;
+}
+
+.ppmod-dial-control-image {
+    width: 48px;
+    height: 48px;
+    object-fit: fill;
+
+}
+.ppmod-dial-control-frame 
+{
+    position: relative;
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+}
+.mod-knob-title {
+    white-space: nowrap;
+    overflow: hidden;
+}
+.mod-slider-title {
+    white-space: nowrap;
+    overflow: hidden;
+}
+ 

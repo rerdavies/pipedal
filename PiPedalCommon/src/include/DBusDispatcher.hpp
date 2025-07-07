@@ -24,7 +24,7 @@ public:
     void Run();
     // Stop everything, shutting down gracefully.
     void Stop();
-    void Wait();
+    void WaitForClose();
     bool IsFinished();
 
     // Stop, but don't wait. Suitable for use in a signal handler.
@@ -78,7 +78,7 @@ private:
     std::atomic<bool> stopping;
 
     std::vector<CallbackEntry> postedEvents;
-    bool threadJoined;
+    bool threadStarted;
     std::thread serviceThread;
     std::mutex postMutex;
 };

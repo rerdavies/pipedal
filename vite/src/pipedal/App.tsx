@@ -18,13 +18,15 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
+
 import { ThemeProvider, createTheme, StyledEngineProvider } from '@mui/material/styles';
-import CssBaseline  from '@mui/material/CssBaseline';
+import CssBaseline from '@mui/material/CssBaseline';
 
 import VirtualKeyboardHandler from './VirtualKeyboardHandler';
 import AppThemed from "./AppThemed";
 import { isDarkMode } from './DarkMode';
 import Tone3000AuthComplete from './Tone3000AuthComplete';
+import FontTest from './FontTest';
 
 
 declare module '@mui/material/styles' {
@@ -225,8 +227,13 @@ type AppThemeProps = {
 
 function isTone3000Auth() {
     let url = new URL(window.location.href);
-    let param =  url.searchParams.get("api_key");
-    return (param !== null && param !== "") 
+    let param = url.searchParams.get("api_key");
+    return (param !== null && param !== "")
+}
+function isFontTest() {
+    let url = new URL(window.location.href);
+    let param = url.searchParams.get("fontTest");
+    return (param !== null)
 }
 
 const App = (class extends React.Component {
@@ -248,11 +255,11 @@ const App = (class extends React.Component {
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
-                    {isTone3000Auth() ? (
-                        <Tone3000AuthComplete />
-                    ) : (
-                        <AppThemed />
-                    )}
+                    {
+                        isTone3000Auth() && (<Tone3000AuthComplete />)
+                        || isFontTest() && (<FontTest />)
+                        || (<AppThemed />)
+                    }
                 </ThemeProvider>
             </StyledEngineProvider>
         );

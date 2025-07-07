@@ -8,4 +8,12 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000
   },
   plugins: [react(),svgr()],
+  server: {
+    proxy: {
+      '/resources': {
+        target: 'http://localhost:8080',
+        changeOrigin: false,
+      },
+    }
+}
 })

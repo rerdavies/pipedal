@@ -43,6 +43,7 @@ public:
     virtual void setBody(const std::string&body) = 0;
     virtual void setBodyFile(std::shared_ptr<TemporaryFile>&temporaryFile) = 0;
     virtual void setBodyFile(std::filesystem::path&path, bool deleteWhenDone) = 0;
+    virtual void clearBody() = 0; // but leave the file size intact (e.g for a HEAD request).
 
     virtual void  keepAlive(bool value)  = 0;
 };

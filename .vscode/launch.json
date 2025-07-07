@@ -103,7 +103,7 @@
             "request": "launch",
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
-            "args": [   "/etc/pipedal/config",  "/etc/pipedal/react",  "-port", "0.0.0.0:8080", "-log-level","debug"  ],
+            "args": [   "/etc/pipedal/config",  "${workspaceFolder}/vite/dist",  "-port", "0.0.0.0:8080", "-log-level","debug"  ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [
@@ -142,7 +142,8 @@
                 //"[pipedal_alsa_test]"
                 // "[wifi_channels_test]"
                 // "[locale]"
-                "[pipewire_input_stream]"
+                //"[mod_gui_init]"
+                "[mod_gui_templates]"
             ],
 
             "stopAtEntry": false,

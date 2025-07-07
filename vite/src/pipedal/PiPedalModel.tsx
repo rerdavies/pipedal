@@ -416,6 +416,7 @@ export class PiPedalModel //implements PiPedalModel
 
     socketServerUrl: string = "";
     varServerUrl: string = "";
+    modResourcesUrl: string = "";
     lv2Path: string = "";
     webSocket?: PiPedalSocket;
 
@@ -972,12 +973,16 @@ export class PiPedalModel //implements PiPedalModel
         // anything could have changed while we were disconnected.
         await this.loadServerState();
     }
-    makeSocketServerUrl(hostName: string, port: number): string {
+    private makeSocketServerUrl(hostName: string, port: number): string {
         return "ws://" + hostName + ":" + port + "/pipedal";
 
     }
-    makeVarServerUrl(protocol: string, hostName: string, port: number): string {
+    private makeVarServerUrl(protocol: string, hostName: string, port: number): string {
         return protocol + "://" + hostName + ":" + port + "/var/";
+
+    }
+    private makeModResourceUrl(protocol: string, hostName: string, port: number): string {
+        return protocol + "://" + hostName + ":" + port + "/resources/";
 
     }
 
@@ -1053,6 +1058,7 @@ export class PiPedalModel //implements PiPedalModel
             if (!socket_server_port) socket_server_port = 8080;
             let socket_server = this.makeSocketServerUrl(socket_server_address, socket_server_port);
             let var_server_url = this.makeVarServerUrl("http", socket_server_address, socket_server_port);
+            this.modResourcesUrl = this.makeModResourceUrl("http", socket_server_address, socket_server_port);
 
             this.socketServerUrl = socket_server;
             this.varServerUrl = var_server_url;
