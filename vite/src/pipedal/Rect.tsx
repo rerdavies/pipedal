@@ -31,7 +31,7 @@ class Rect {
         this.x = x; this.y = y; this.width = width; this.height = height;
     }
 
-    toString() { return '{' + this.x + "," + this.y + " " + this.width + "," + this.height +"}"; }
+    toString() { return '{' + this.x + "," + this.y + " - " + this.width + "," + this.height +"}"; }
     copy(): Rect {
         let result = new Rect();
         result.x = this.x;
@@ -83,6 +83,12 @@ class Rect {
     offset(xOffset: number, yOffset: number) {
         this.x += xOffset;
         this.y += yOffset;
+    }
+    equals(other: Rect): boolean {
+        return this.x === other.x && 
+               this.y === other.y && 
+               this.width === other.width && 
+               this.height === other.height;
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2025 Robin E. R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -417,6 +417,8 @@ namespace pipedal
         std::vector<std::shared_ptr<Lv2PortInfo>> ports_;
         std::vector<std::shared_ptr<Lv2PortGroup>> port_groups_;
         std::vector<Lv2PatchPropertyInfo> patchProperties_;
+
+        bool hasDefaultState_;
         
         bool is_valid_ = false;
         PiPedalUI::ptr piPedalUI_;
@@ -450,6 +452,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(hasUnsupportedPatchProperties)
         LV2_PROPERTY_GETSET(modGui)
         LV2_PROPERTY_GETSET(patchProperties)
+        LV2_PROPERTY_GETSET(hasDefaultState)
 
         const Lv2PortInfo &getPort(const std::string &symbol)
         {

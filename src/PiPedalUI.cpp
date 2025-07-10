@@ -140,6 +140,7 @@ UiFileType::UiFileType(PluginHost *pHost, const LilvNode *node)
 
 
 
+
 UiFileProperty::UiFileProperty(PluginHost *pHost, const LilvNode *node, const std::filesystem::path &resourcePath)
 {
     auto pWorld = pHost->getWorld();
@@ -453,6 +454,13 @@ bool UiFileType::IsValidExtension(const std::string&extension) const {
         return MimeTypes::instance().IsValidExtension(mimeType_,extension);
     }
     return false;
+}
+
+UiFileType::UiFileType(const std::string&label, const std::string &mimeType,const std::string &fileType) 
+: label_(label)
+, mimeType_(mimeType)
+, fileExtension_(fileType)
+{
 }
 
 UiFileType::UiFileType(const std::string&label, const std::string &fileType) 

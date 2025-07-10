@@ -100,7 +100,7 @@ Lv2Effect::Lv2Effect(
     lilv_node_free(uriNode);
     {
         AutoLilvNode bundleUri = lilv_plugin_get_bundle_uri(pPlugin);
-        char *bundleUriString = lilv_file_uri_parse(bundleUri.AsUri().c_str(), nullptr);
+        char* bundleUriString = lilv_file_uri_parse(bundleUri.AsUri().c_str(), nullptr);
 
         std::string storagePath = pHost_->GetPluginStoragePath();
 
@@ -108,7 +108,7 @@ Lv2Effect::Lv2Effect(
             pHost_->GetMapFeature().GetMap(),
             logFeature.GetLog(),
             bundleUriString,
-            storagePath);
+            storagePath);   
 
         mapPathFeature.Prepare(&(pHost_->GetMapFeature()));
         mapPathFeature.SetPluginStoragePath(pHost_->GetPluginStoragePath());
@@ -117,11 +117,12 @@ Lv2Effect::Lv2Effect(
             const auto &fileProperties = info_->piPedalUI()->fileProperties();
             for (const auto &fileProperty : fileProperties)
             {
-                if (!fileProperty->resourceDirectory().empty())
-                {
-                    mapPathFeature.AddResourceFileMapping({makeAbsolutePath(fileProperty->resourceDirectory(), bundleUriString),
-                                                           makeAbsolutePath(fileProperty->directory(), pHost_->GetPluginStoragePath())});
-                }
+                fs::path targetPath = fileProperty->directory()  / std::filesystem::path(bundleUriString).parent_path().filename();
+                mapPathFeature.AddResourceFileMapping({
+                    bundleUriString,
+                    storagePath / targetPath,
+                    fileProperty->fileTypes()
+                });
             }
         }
 
@@ -243,14 +244,41 @@ Lv2Effect::Lv2Effect(
         // now that we've loaded the preset, clear the uri, and save new state
         // Why? because lilv doesn't provide facilities for reading state.
         pedalboardItem.lv2State(this->stateInterface->Save());
+        RestoreState(pedalboardItem); // reload it with OUR map/unmap handling.
         pedalboardItem.lilvPresetUri("");
     }
     else
     {
-        RestoreState(pedalboardItem);
+        if (!RestoreState(pedalboardItem))
+        {
+            if (info->hasDefaultState())
+            {
+                // restore the default state.
+                try
+                {
+                    // REsTORE from LV2_STATE__state default state.
+                    AutoLilvNode pluginNode = lilv_new_uri(pWorld, info->uri().c_str());
+                    LilvState *pState = lilv_state_new_from_world(pWorld, pHost->GetMapFeature().GetMap(), pluginNode);
+                    if (pState)
+                    {
+                        if (this->stateInterface)
+                        {
+                            this->stateInterface->RestoreState(pState);
+                        }
+                        lilv_state_free(pState);
+                    }
+                    pedalboardItem.lv2State(this->stateInterface->Save());
+                    RestoreState(pedalboardItem); // do it with OUR map/unmap file handling.
+                }
+                catch (const std::exception &e)
+                {
+                    Lv2Log::warning(SS("Failed to restore default state for " << info->name() << ": " << e.what()));
+                }
+            }
+        }
     }
 }
-void Lv2Effect::RestoreState(PedalboardItem &pedalboardItem)
+bool Lv2Effect::RestoreState(PedalboardItem &pedalboardItem)
 {
     // Restore state if present.
     if (this->stateInterface)
@@ -260,20 +288,18 @@ void Lv2Effect::RestoreState(PedalboardItem &pedalboardItem)
             if (pedalboardItem.lv2State().isValid_)
             {
                 this->stateInterface->Restore(pedalboardItem.lv2State());
+                return true;
             }
-            else
-            {
-                // set the state to default state.
-                auto savedState = this->stateInterface->Save();
-                pedalboardItem.lv2State(savedState);
-            }
+            return false;
         }
         catch (const std::exception &e)
         {
             std::string name = pedalboardItem.pluginName();
             Lv2Log::warning(SS(name << ": " << e.what()));
+            return false;
         }
     }
+    return true;
 }
 
 void Lv2Effect::ConnectControlPorts()
@@ -1116,4 +1142,3 @@ void Lv2Effect::SetPathPatchProperty(const std::string &propertyUri, const std::
 {
     mainThreadPathProperties[propertyUri] = jsonAtom;
 }
-

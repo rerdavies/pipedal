@@ -103,6 +103,8 @@ static void setCacheControl(HttpResponse &res, const fs::path &path)
         res.set("Cache-Control", "public, max-age=31536000"); // 1 month
         auto lastModified = std::filesystem::last_write_time(path);
         res.set(HttpField::LastModified, HtmlHelper::timeToHttpDate(lastModified));
+        // Set ETag for cache validation
+        res.set("ETag", pipedal::HtmlHelper::generateEtag(path));
     }
     else
     {

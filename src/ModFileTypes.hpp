@@ -57,6 +57,7 @@ namespace pipedal
             const std::vector<std::string> fileTypesX; // mixture of .ext and mime types. Use fileExtensions instead.
             const std::set<std::string> fileExtensions;
 
+
         };
 
         static const std::vector<ModDirectory> &ModDirectories();

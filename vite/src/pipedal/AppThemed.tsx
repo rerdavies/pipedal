@@ -813,7 +813,7 @@ export
                         {(!this.state.tinyToolBar) && !this.state.performanceView ?
                             (
                                 <AppBar position="absolute"  >
-                                    <Toolbar variant="dense" className={classes.toolBar}  >
+                                    <Toolbar variant="dense" className={classes.toolBar} style={{overflow: "clip" }}  >
                                         <IconButtonEx tooltip="Menu"
                                             edge="start"
                                             aria-label="menu"

@@ -29,6 +29,7 @@ namespace pipedal {
 class HtmlHelper {
 
 public:
+
     static std::string timeToHttpDate();
     static std::string timeToHttpDate(time_t time);
     static std::string timeToHttpDate(std::filesystem::file_time_type time);
@@ -56,6 +57,11 @@ public:
 
     static std::string SafeFileName(const std::string &name);
     static std::string HtmlEncode(const std::string& text);
+
+    static uint64_t crc64(uint8_t *data, size_t length,uint64_t crc = 0);
+    static uint64_t crc64(const std::string&value, uint64_t crc = 0);
+
+    static std::string generateEtag(const std::filesystem::path &path);
 
 };
 

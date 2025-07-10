@@ -218,6 +218,10 @@ bool pipedal::IsSubdirectory(const std::filesystem::path &path, const std::files
 
         if ((*i) != (*iPath))
         {
+            if (*i == "" && ++i == basePath.end())   // match xyz/ (trailing /)
+            {
+                break;
+            }
             return false;
         }
         ++iPath;

@@ -79,6 +79,8 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
         this.lv2State = input.lv2State;
         this.lilvPresetUri = input.lilvPresetUri;
         this.pathProperties = input.pathProperties;
+        this.useModUi = input.useModUi ?? false;
+
         return this;
     }
     deserialize(input: any): PedalboardItem {
@@ -212,6 +214,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     lv2State: [boolean,any] = [false,{}];
     lilvPresetUri: string = "";
     pathProperties: {[Name: string]: string} = {};
+    useModUi: boolean = false; // true if this item should use the mod-ui.
 };
 
 export class SnapshotValue {

@@ -63,10 +63,6 @@ function FontTest() {
             {TypeSample({ fontFamily: "Pirulen", cssRef: "/fonts/pirulen/stylesheet.css", fontWeights: [400] })}
             {TypeSample({ fontFamily: "Questrial", cssRef: "/fonts/questrial/stylesheet.css", fontWeights: [400] })}
             
-            {TypeSample({ fontFamily: "Pirulen", cssRef: "/fonts/pirulen/stylesheet.css", fontWeights: [400] })}
-            {TypeSample({ fontFamily: "Pirulen", cssRef: "/fonts/pirulen/stylesheet.css", fontWeights: [400] })}
-            {TypeSample({ fontFamily: "Pirulen", cssRef: "/fonts/pirulen/stylesheet.css", fontWeights: [400] })}
-
 
     </div>
     );

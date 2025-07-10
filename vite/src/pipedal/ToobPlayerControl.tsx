@@ -525,7 +525,7 @@ export default function ToobPlayerControl(
     function onNextTrack() {
         model.getNextAudioFile(audioFile)
             .then((file) => {
-                let json = JsonAtom.Path(file);
+                let json = JsonAtom._Path(file).asAny();
                 model.setPatchProperty(
                     props.instanceId,
                     AUDIO_FILE_PROPERTY_URI,
@@ -538,7 +538,7 @@ export default function ToobPlayerControl(
     function onPreviousTrack() {
         model.getPreviousAudioFile(audioFile)
             .then((file) => {
-                let json = JsonAtom.Path(file);
+                let json = JsonAtom._Path(file).asAny();
                 model.setPatchProperty(
                     props.instanceId,
                     AUDIO_FILE_PROPERTY_URI,
@@ -873,7 +873,7 @@ export default function ToobPlayerControl(
                         model.setPatchProperty(
                             props.instanceId,
                             AUDIO_FILE_PROPERTY_URI,
-                            JsonAtom.Path(selectedFile)
+                            JsonAtom._Path(selectedFile).asAny()
                         )
                             .then(() => {
 
@@ -888,7 +888,7 @@ export default function ToobPlayerControl(
                         model.setPatchProperty(
                             props.instanceId,
                             fileProperty.patchProperty,
-                            JsonAtom.Path(selectedFile)
+                            JsonAtom._Path(selectedFile).asAny()
                         )
                             .then(() => {
 

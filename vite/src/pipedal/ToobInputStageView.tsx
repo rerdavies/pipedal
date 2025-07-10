@@ -21,14 +21,14 @@ import React from 'react';
 import { Theme } from '@mui/material/styles';
 
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
 //import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
 
@@ -47,12 +47,11 @@ interface ToobInputStageState {
 
 const ToobInputStageView =
     withStyles(
-        class extends React.Component<ToobInputStageProps, ToobInputStageState> 
-        implements ControlViewCustomization
-        {
+        class extends React.Component<ToobInputStageProps, ToobInputStageState>
+            implements ControlViewCustomization {
             model: PiPedalModel;
 
-            customizationId: number = 1; 
+            customizationId: number = 1;
 
             constructor(props: ToobInputStageProps) {
                 super(props);
@@ -64,8 +63,7 @@ const ToobInputStageView =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
-            {
+            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
                 return controls;
                 // let group = controls[1] as ControlGroup;
                 // group.controls.splice(0,0,
@@ -79,6 +77,9 @@ const ToobInputStageView =
                     item={this.props.item}
                     customization={this}
                     customizationId={this.customizationId}
+                    showModGui={false}
+                    onSetShowModGui={(instanceId: number, showModGui: boolean) => { }}
+
                 />);
             }
         },

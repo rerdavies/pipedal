@@ -428,6 +428,22 @@ JSON_MAP_REFERENCE(PedalboardItemEnabledBody, instanceId)
 JSON_MAP_REFERENCE(PedalboardItemEnabledBody, enabled)
 JSON_MAP_END()
 
+class PedalboardItemUseModGuiBody
+{
+public:
+    int64_t clientId_ = -1;
+    int64_t instanceId_ = -1;
+    bool useModUi_ = true;
+
+    DECLARE_JSON_MAP(PedalboardItemUseModGuiBody);
+};
+JSON_MAP_BEGIN(PedalboardItemUseModGuiBody)
+JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, clientId)
+JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, instanceId)
+JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, useModUi)
+JSON_MAP_END()
+
+
 class UpdateCurrentPedalboardBody
 {
 public:
@@ -1302,6 +1318,11 @@ public:
             PedalboardItemEnabledBody body;
             pReader->read(&body);
             model.SetPedalboardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
+        }
+        else if (message == "setPedalboardItemUseModUi") {
+            PedalboardItemUseModGuiBody body;
+            pReader->read(&body);
+            model.SetPedalboardItemUseModUi(body.clientId_, body.instanceId_, body.useModUi_);
         }
         else if (message == "updateCurrentPedalboard")
         {
@@ -2221,6 +2242,15 @@ private:
         body.enabled_ = enabled;
         Send("onItemEnabledChanged", body);
     }
+    virtual void OnItemUseModUiChanged(int64_t clientId, int64_t pedalItemId, bool enabled)
+    {
+        PedalboardItemEnabledBody body;
+        body.clientId_ = clientId;
+        body.instanceId_ = pedalItemId;
+        body.enabled_ = enabled;
+        Send("onUseItemModUiChanged", body);
+    }
+
 };
 
 std::atomic<uint64_t> PiPedalSocketHandler::nextClientId = 0;

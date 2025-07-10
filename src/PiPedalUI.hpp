@@ -75,6 +75,7 @@ namespace pipedal
 {
 
     class PluginHost;
+    class ModFileTypes;
 
     class UiFileType
     {
@@ -87,12 +88,16 @@ namespace pipedal
         UiFileType() {}
         UiFileType(PluginHost *pHost, const LilvNode *node);
         UiFileType(const std::string &label, const std::string &fileType);
+        UiFileType(const std::string &label, const std::string&mimeType, const std::string &fileType);
 
         static std::vector<UiFileType> GetArray(PluginHost *pHost, const LilvNode *node, const LilvNode *uri);
 
         const std::string &label() const { return label_; }
+        void label(const std::string &value) { label_ = value; }
         const std::string &fileExtension() const { return fileExtension_; }
+        void fileExtension(const std::string &value) { fileExtension_ = value; }
         const std::string &mimeType() const { return mimeType_; }
+        void mimeType(const std::string &value) { mimeType_ = value; }
         bool IsValidExtension(const std::string &extension) const;
 
     public:
@@ -160,6 +165,8 @@ namespace pipedal
 
         const std::vector<UiFileType> &fileTypes() const { return fileTypes_; }
         std::vector<UiFileType> &fileTypes() { return fileTypes_; }
+        void fileTypes(const std::vector<UiFileType> &value) { fileTypes_ = value; }
+        void fileTypes(std::vector<UiFileType> &&value) { fileTypes_ = std::move(value); }
 
         const std::string &patchProperty() const { return patchProperty_; }
 

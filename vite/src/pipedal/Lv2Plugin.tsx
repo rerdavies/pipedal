@@ -1021,6 +1021,17 @@ export class UiPlugin implements Deserializable<UiPlugin> {
         return null;
     }
 
+    getFilePropertyByUri(patchPropertyUri: string): UiFileProperty | null {
+        for (let i = 0; i < this.fileProperties.length; ++i)
+        {
+            let fileProperty = this.fileProperties[i];
+            if (fileProperty.patchProperty === patchPropertyUri) {
+                return fileProperty;
+            }
+        }
+        return null;
+    }
+
     uri: string = "";
     name: string = "";
     minorVersion: number = 0;

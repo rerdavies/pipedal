@@ -439,7 +439,7 @@ json_variant pipedal::MakeModGuiTemplateData(
                 // Feed them no files; they will be added later.
                 json_variant filesObj = json_variant::make_array();
                 json_variant fileObj = json_variant::make_object();
-                fileObj["fileType"] = "{{filetype}}"; // magic tags that we will use to generate files at runtime.
+                fileObj["filetype"] = "{{filetype}}"; // magic tags that we will use to generate files at runtime.
                 fileObj["fullname"] = "{{fullname}}";
                 fileObj["basename"] = "{{basename}}";
                 filesObj.as_array()->push_back(fileObj);

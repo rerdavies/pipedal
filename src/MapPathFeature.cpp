@@ -22,9 +22,12 @@
 #include <algorithm>
 #include "json.hpp"
 #include <sstream>
+#include "PluginHost.hpp"
+#include "util.hpp"
 
 
 using namespace pipedal;
+namespace fs = std::filesystem;
 
 MapPathFeature::MapPathFeature()
 {
@@ -69,6 +72,27 @@ void MapPathFeature::FnFreePath(LV2_State_Free_Path_Handle handle, char* path)
     return ((MapPathFeature *)handle)->AbsolutePath(abstract_path);
 }
 
+static std::string CreateMappathLink(const fs::path&sourceFile, const fs::path &resourceDirectory, const fs::path &targetDirectory)
+{
+    try {
+        fs::path targetFile = targetDirectory / sourceFile.filename();
+        if (fs::exists(targetFile)) {
+            return targetFile;
+        }
+        fs::create_directories(targetDirectory);
+        fs::create_symlink(sourceFile,targetFile);
+        return targetFile;
+    }catch (const std::exception &e) {
+        Lv2Log::error(SS("Failed to convert resource file to media file.  " 
+            << sourceFile 
+            << " -> " 
+            << targetDirectory
+            << " (" << e.what() << ")"
+        ));
+        return sourceFile;
+    }
+}
+
 char *MapPathFeature::AbsolutePath(const char *abstract_path)
 {
     if (strlen(abstract_path) == 0)
@@ -76,7 +100,27 @@ char *MapPathFeature::AbsolutePath(const char *abstract_path)
         return strdup("");
     }
     std::filesystem::path t (abstract_path);
+    std::string extension = t.extension();
     if (t.is_absolute()) {
+
+        // Handle bundle files, mapping them to the storage path for this plugin.
+        for (const auto&mapping: this->resourceFileMappings)
+        {
+            if (IsSubdirectory(t,mapping.resourcePath)) 
+            {
+                bool allowed = false;
+                for (const auto&fileType: mapping.fileTypes) {
+                    if (fileType.IsValidExtension(extension)) {
+                        allowed = true;
+                        break;
+                    }
+                }
+                if (allowed) {
+                    std::string result = CreateMappathLink(t,mapping.resourcePath, mapping.storagePath);
+                    return strdup(result.c_str());
+                }
+            }
+        }
         return strdup(abstract_path);
     }
     std::filesystem::path result = storagePath / t;

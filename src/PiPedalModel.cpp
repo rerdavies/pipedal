@@ -617,6 +617,24 @@ void PiPedalModel::UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalbo
     }
 }
 
+void PiPedalModel::SetPedalboardItemUseModUi(int64_t clientId, int64_t instanceId, bool enabled)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    {
+        this->pedalboard.SetItemUseModUi(instanceId, enabled);
+
+        // Notify clients.
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
+        {
+            subscriber->OnItemUseModUiChanged(clientId, instanceId, enabled);
+        }
+        this->SetPresetChanged(clientId, true);
+
+    }
+}
+
+
 void PiPedalModel::SetPedalboardItemEnable(int64_t clientId, int64_t pedalItemId, bool enabled)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};

@@ -115,6 +115,18 @@ const ControlValue* PedalboardItem::GetControlValue(const std::string&symbol) co
     return nullptr;
 }
 
+bool Pedalboard::SetItemUseModUi(int64_t pedalItemId, bool enabled)
+{
+    PedalboardItem*item = GetItem(pedalItemId);
+    if (!item) return false;
+    if (item->useModUi() != enabled)
+    {
+        item->useModUi(enabled);
+        return true;
+    }
+    return false;
+
+}
 bool Pedalboard::SetItemEnabled(int64_t pedalItemId, bool enabled)
 {
     PedalboardItem*item = GetItem(pedalItemId);
@@ -513,6 +525,7 @@ JSON_MAP_BEGIN(PedalboardItem)
     JSON_MAP_REFERENCE(PedalboardItem,lilvPresetUri)
     JSON_MAP_REFERENCE(PedalboardItem,pathProperties)
     JSON_MAP_REFERENCE(PedalboardItem,title)
+    JSON_MAP_REFERENCE(PedalboardItem,useModUi)
 JSON_MAP_END()
 
 

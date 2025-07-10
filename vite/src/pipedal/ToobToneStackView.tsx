@@ -21,14 +21,14 @@ import React from 'react';
 import { Theme } from '@mui/material/styles';
 
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 
 import IControlViewFactory from './IControlViewFactory';
-import { PiPedalModelFactory, PiPedalModel,ControlValueChangedHandle } from "./PiPedalModel";
+import { PiPedalModelFactory, PiPedalModel, ControlValueChangedHandle } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
 
@@ -47,12 +47,11 @@ interface ToobToneStackState {
 
 const ToobToneStackView =
     withStyles(
-        class extends React.Component<ToobToneStackProps, ToobToneStackState> 
-        implements ControlViewCustomization
-        {
+        class extends React.Component<ToobToneStackProps, ToobToneStackState>
+            implements ControlViewCustomization {
             model: PiPedalModel;
 
-            customizationId: number = 1; 
+            customizationId: number = 1;
 
             constructor(props: ToobToneStackProps) {
                 super(props);
@@ -61,27 +60,24 @@ const ToobToneStackView =
                     isBaxandall: this.IsBaxandall()
                 }
             }
-            IsBaxandall() : boolean {
+            IsBaxandall(): boolean {
                 return this.props.item.getControl("ampmodel").value === 2.0;
             }
 
 
             controlValueChangedHandle?: ControlValueChangedHandle;
-            componentDidMount()
-            {
+            componentDidMount() {
                 this.controlValueChangedHandle = this.model.addControlValueChangeListener(
                     this.props.instanceId,
-                    (key,value) => {
-                        if (key === "ampmodel")
-                        {
-                            this.setState({isBaxandall: value === 2.0});
+                    (key, value) => {
+                        if (key === "ampmodel") {
+                            this.setState({ isBaxandall: value === 2.0 });
                         }
                     }
                 );
             }
             componentWillUnmount() {
-                if (this.controlValueChangedHandle)
-                {
+                if (this.controlValueChangedHandle) {
                     this.model.removeControlValueChangeListener(this.controlValueChangedHandle);
                     this.controlValueChangedHandle = undefined;
                 }
@@ -90,18 +86,16 @@ const ToobToneStackView =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
-            {
-                if (this.state.isBaxandall)
-                {
-                    controls.splice(0,0,
-                        ( <ToobFrequencyResponseView instanceId={this.props.instanceId} 
-                            />)
-                        );
+            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+                if (this.state.isBaxandall) {
+                    controls.splice(0, 0,
+                        (<ToobFrequencyResponseView instanceId={this.props.instanceId}
+                        />)
+                    );
                 } else {
-                    controls.splice(0,0,
-                        ( <ToobFrequencyResponseView instanceId={this.props.instanceId}  />)
-                        );
+                    controls.splice(0, 0,
+                        (<ToobFrequencyResponseView instanceId={this.props.instanceId} />)
+                    );
                 }
                 return controls;
             }
@@ -111,6 +105,9 @@ const ToobToneStackView =
                     item={this.props.item}
                     customization={this}
                     customizationId={this.customizationId}
+                    showModGui={false}
+                    onSetShowModGui={(instanceId: number, showModGui: boolean) => { }}
+
                 />);
             }
         },

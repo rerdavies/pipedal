@@ -20,118 +20,214 @@
 
 // Utility class for constructing Json atoms.
 class JsonAtom {
-    static Property(value: string): any
+
+    static _Bool(value: boolean): any
     {
-        return {
-            "otype_": "Property",
-            "value": value
-        };
-    }
-    static Bool(value: boolean): any
-    {
-        return {
+        return new JsonAtom({
             "otype_": "Bool",
             "value": value
-        };
+        });
     }
-    static Int(value: number): any
+    isBool(): boolean
     {
-        return {
+        return this.isObject() && this.json.otype_ === "Bool";
+    }
+    asBool(): boolean {
+        if (this.isBool()) {
+            return this.json.value as boolean;
+        }
+        throw new Error("JsonAtom is not a Bool");
+    }
+    static _Int(value: number): JsonAtom
+    {
+        return new JsonAtom({
             "otype_": "Int",
             "value": value
-        };
+        });
     }
-    static Long(value: number): any
+    isInt(): boolean
     {
-        return {
+        return this.isObject() && this.json.otype_ === "Int";
+    }
+    asInt(): number {
+        if (this.isInt()) {
+            return this.json.value as number;;
+        }
+        throw new Error("JsonAtom is not an Int");
+    }
+    static _Long(value: number): JsonAtom
+    {
+        return new JsonAtom({
             "otype_": "Long",
             "value": value
-        };
+        });
     }
-    static Float(value: number): any
+
+    isLong(): boolean
     {
-        return value;
+        return this.isObject() && this.json.otype_ === "Long";
     }
-    static Double(value: number): any
+    asLong(): number {
+        if (this.isLong()) {
+            return this.json.value as number;
+        }
+        throw new Error("JsonAtom is not a Long");
+    }
+    static _Float(value: number): JsonAtom
     {
-        return {
+        return new JsonAtom(value);
+    }
+    static _Double(value: number): JsonAtom
+    {
+        return new JsonAtom({
             "otype_": "Double",
             "value": value
-        };
+        });
     }
-    static String(value: string): any
+    static _String(value: string): JsonAtom
     {
-        return value;
+        return new JsonAtom(value);
     }
-    static Path(value: string): any
+    isString() : boolean
     {
-        return {
+        return this.json && typeof this.json === 'string';
+    }
+    asString(): string {
+        if (this.isString()) {
+            return this.json as string;
+        }
+        throw new Error("JsonAtom is not a String");
+    }
+
+    static _Path(value: string): JsonAtom
+    {
+        return new JsonAtom({
             "otype_": "Path",
             "value": value
-        };
+        });
     }
-    static Uri(value: string): any
+    isPath(): boolean
     {
-        return {
+        return this.isObject() && this.json.otype_ === "Path";
+    }
+    asPath(): string {
+        if (this.isPath()) {
+            return this.json.value as string;
+        }
+        throw new Error("JsonAtom is not a Path");
+    }
+    static _Uri(value: string): JsonAtom
+    {
+        return new JsonAtom({
             "otype_": "URI",
             "value": value
-        };
+        });
     }
-    static Urid(value: string): any
+    isUri(): boolean
     {
-        return {
+        return this.isObject() && this.json.otype_ === "URI";
+    }
+    asUri(): string {
+        if (this.isUri()) {
+            return this.json.value as string;
+        }
+        throw new Error("JsonAtom is not a URI");
+    }   
+    static _Urid(value: string): JsonAtom
+    {
+        return new JsonAtom({
             "otype_": "URID",
             "value": value
-        };
+        });
     }
-    static Object(type: string): any
+    isUrid(): boolean
     {
-        return {
+        return this.isObject() && this.json.otype_ === "URID";
+    }
+    asUrid(): string {
+        if (this.isUrid()) {
+            return this.json.value as string;
+        }
+        throw new Error("JsonAtom is not a URID");
+    }
+    static _Object(type: string): JsonAtom
+    {
+        return new JsonAtom({
             "otype_": type
-        };
+        });
     }
-    static Tuple(values: any[]): any
+    isObject(type?: string): boolean
     {
-        return {
+        if (this.json && typeof this.json === 'object' && !Array.isArray(this.json)) {
+            if (!type) return true;
+            return type === this.json.otype_;
+        }
+        return false;
+    }
+    asObject(type?: string): Object {
+        if (this.isObject(type)) {
+            return this.json as Object;
+        }
+        throw new Error(`JsonAtom is not an Object of type ${type}`);
+    }   
+    static _Tuple(values: any[]): JsonAtom
+    {
+        return new JsonAtom({
             "otype_": "Tuple",
             "value": values
-        };
+        });
     }
-    static IntVector(values: []): any
+    static _IntVector(values: []): JsonAtom
     {
-        return {
+        return new JsonAtom({
             "otype_": "Vector",
             "vtype_": "Int",
             "value": values
-        };
+        });
     }
-    static LongVector(values: []): any
+    static _LongVector(values: []): JsonAtom
     {
-        return {
+        return new JsonAtom({
             "otype_": "Vector",
             "vtype_": "Long",
             "value": values
-        };
+        });
     }
 
-    static FloatVector(values: []): any
+    static _FloatVector(values: []): JsonAtom
     {
-        return {
+        return new JsonAtom({
             "otype_": "Vector",
             "vtype_": "Float",
             "value": values
-        };
+        });
     }
-    static DoubleVector(values: []): any
+    static _DoubleVector(values: []): JsonAtom
     {
-        return {
+        return new JsonAtom({
             "otype_": "Vector",
             "vtype_": "Float",
             "value": values
-        };
+        });
     }
 
+    constructor(json: any) {
+        this.json = json;
+    }
+    isArray(): boolean {
+        return this.json && Array.isArray(this.json);
+    }
+    isFloat(): boolean {
+        return this.json && typeof this.json === 'number';
+    }
+    isNull(): boolean {
+        return this.json === null;
+    }
+    asAny(): any {
+        return this.json;
+    }
 
+    private json: any;
 };
 
 export default JsonAtom;

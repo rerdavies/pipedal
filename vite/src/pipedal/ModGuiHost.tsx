@@ -21,17 +21,21 @@
  *   SOFTWARE.
  */
 
-import { UiPlugin, UiControl, ControlType } from './Lv2Plugin';
+import { UiPlugin, UiControl, ControlType, UiFileProperty } from './Lv2Plugin';
 import React from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography/Typography';
 import ModGuiErrorBoundary from './ModGuiErrorBoundary';
 import OkDialog from './OkDialog';
-import {pathParentDirectory} from './FileUtils';
+import { pathFileName, pathParentDirectory } from './FileUtils';
+import JsonAtom from './JsonAtom';
 
-import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle, State,
-    ListenHandle, PatchPropertyListener } from './PiPedalModel';
+import {
+    PiPedalModel, PiPedalModelFactory, MonitorPortHandle, State,
+    ListenHandle, FileRequestResult
+} from './PiPedalModel';
+
 
 const RANGE_SCALE = 120; // 120 pixels to move from 0 to 1.
 const FINE_RANGE_SCALE = RANGE_SCALE * 10; // 1200 pixels to move from 0 to 1.
@@ -41,26 +45,50 @@ const WHEEL_RANGE_SCALE = 120 * 20;
 const FINE_WHEEL_RANGE_SCALE = WHEEL_RANGE_SCALE * 10;
 const ULTRA_FINE_WHEEL_RANGE_SCALE = WHEEL_RANGE_SCALE * 50;
 
-export interface IModGuiHostSite {
-    monitorPort: (
-        instanceId: number,
-        symbol: string,
-        interval: number,
-        callback: (value: number) => void) => MonitorPortHandle;
-    unmonitorPort: (handle: MonitorPortHandle) => void;
-    setPedalboardControl: (instanceId: number, symbol: string, value: number) => void;
 
-    monitorPatchProperty(
-        instanceId: number,
-        propertyUri: string,
-        onReceived: PatchPropertyListener
-    ): ListenHandle;    
+export type BypassChangedCallback = (value: boolean) => void;
+ 
+function HtmlEncode(value: string): string {
+    value = value.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    return value;
 
-    cancelMonitorPatchProperty(listenHandle: ListenHandle): void;
+}
 
-    getPatchProperty(instanceId: number, uri: string): Promise<any>;
-    setPatchProperty(instanceId: number, uri: string, value: any): Promise<boolean>
-};
+function htmlEncodeTest() {
+    let testString = "&<>'\"\\";
+
+    let encoded = HtmlEncode(testString);
+    let div = document.createElement("div");
+    div.innerHTML = `<div data-text='${encoded}'>${encoded}</div>`;
+    let innerDiv = div.children[0] as HTMLDivElement;
+    if (innerDiv.getAttribute("data-text") !== testString) {
+        throw new Error("HtmlEncode failed to encode properly: " + encoded);
+    }
+
+}
+
+htmlEncodeTest();
+
+function PathToString(json: any): string {
+    let t = new JsonAtom(json);
+    if (t.isPath()) {
+        return t.asPath();
+    }
+    if (t.isString()) {
+        return t.asString();
+    }
+    return "";
+}
+
+
+function StringToPath(path: string): any {
+    return JsonAtom._Path(path).asAny();
+}
+
 
 export interface ModGuiHostProps {
     instanceId: number,
@@ -69,7 +97,10 @@ export interface ModGuiHostProps {
     width?: number;
     height?: number;
     test?: boolean;
-    hostSite: IModGuiHostSite;
+    handleFileSelect: (instanceId: number, propertyUri: string, filePath: string) => void;
+    onContentReady: (ready: boolean) => void;
+
+
 }
 export interface ModGuiJs {
     set_port_value: (symbol: string, value: number) => void;
@@ -92,7 +123,10 @@ interface CustomSelectPathControlProps {
     instanceId: number;
     plugin: UiPlugin;
     propertyUri: string,
-    hostSite: IModGuiHostSite;
+    hostSite: PiPedalModel;
+
+    handleFileSelect: (instanceId: number, propertyUri: string, filePath: string) => void;
+
 };
 
 
@@ -107,6 +141,7 @@ class CustomSelectPathControl implements ModGuiControl {
         this.props = props;
     }
 
+    private isInlineList: boolean = false;
 
     requestUpdate() {
         if (!this.mounted) return;
@@ -130,22 +165,148 @@ class CustomSelectPathControl implements ModGuiControl {
         }
     }
 
-    requestFileUpdate() {
+    private getFileProperty(): UiFileProperty | null {
+        for (let property of this.props.plugin.fileProperties) {
+            if (property.patchProperty === this.props.propertyUri) {
+                return property;
+            }
+        }
+        return null;
+    }
+
+    navBreadcrumbText(breadcrumbs: { pathname: string, displayName: string }[]): string {
+        let breadcrumbText = "";
+        for (let i = 0; i < breadcrumbs.length - 1; ++i) {
+            let breadcrumb = breadcrumbs[i];
+            breadcrumbText += "<div mod-role='enumeration-option' mod-filetype='directory'"
+                + " mod-parameter-value='" + HtmlEncode(breadcrumb.pathname) + "'"
+                + " class='ppmod-dotdot-breadcrumb_link'>"
+                + HtmlEncode(breadcrumb.displayName)
+                + "</div> / ";
+        }
+        let breadcrumb = breadcrumbs[breadcrumbs.length - 1];
+        breadcrumbText += "<div class='ppmod-dotdot-breadcrumb_current'>"
+            + HtmlEncode(breadcrumb.displayName)
+            + "</div>";
+        return breadcrumbText;
+    }
+
+    makeEnumeratedListItem(
+        type: string,
+        basename: string,
+        fullname: string,
+        encodebaseName?: boolean
+    ): HTMLElement {
+        type = HtmlEncode(type);
+        fullname = HtmlEncode(fullname);
+        if (encodebaseName !== false) {
+            basename = HtmlEncode(basename);
+        }
+        let itemHtml = this.enumeratedListItemTemplate
+            .replace(/{{basename}}/g, basename)
+            .replace(/{{filetype}}/g, type)
+            .replace(/{{fullname}}/g, fullname);
+        let t = document.createElement("div");
+        t.innerHTML = itemHtml;
+        let itemElement = t.firstElementChild as HTMLElement;
+        return itemElement;
 
     }
+
+    fileRequestResult: FileRequestResult | null = null;
+
+    async requestDirectoryUpdate() {
+        let model = PiPedalModelFactory.getInstance();
+        let fileProperty = this.getFileProperty();
+        if (!fileProperty) {
+            return;
+        }
+
+        let files = await model.requestFileList2(this.navDirectory || "", fileProperty);
+        this.fileRequestResult = files;
+        if (!this.mounted) {
+            return;
+        }
+        if (this.enumeratedListContainerElement) {
+            this.enumeratedListContainerElement.innerHTML = ""; // remove all children.
+
+            if (files.breadcrumbs.length >= 2) {
+                let parentDirectory = files.breadcrumbs[files.breadcrumbs.length - 2].pathname;
+
+                let dotdotHtml = "<div class='ppmod-dotdot-flex'>"
+                    + "<div mod-role='enumeration-option' mod-filetype='directory'"
+                    + " mod-parameter-value='" + HtmlEncode(parentDirectory) + "'"
+                    + " class='ppmod-dotdot-text'>[ ../ ]</div>"
+                    + "<div class='ppmod-dotdot-path'>"
+                    + this.navBreadcrumbText(files.breadcrumbs)
+                    + "</div>";
+
+                let dotdotElement = this.makeEnumeratedListItem(
+                    "directory",
+                    dotdotHtml,
+                    parentDirectory,
+                    false
+                );
+                dotdotElement.style.setProperty("border-bottom", "1px solid #888");
+                this.enumeratedListContainerElement.appendChild(dotdotElement);
+            } else {
+
+                // mod-role="enumeration-option" mod-filetype="{{filetype}}" mod-parameter-value="{{fullname}}"
+                let dotdotHtml = "<div class='ppmod-dotdot-flex'>"
+                    + "<div class='ppmod-dotdot-text'>&nbsp;</div>"
+                    + "<div class='ppmod-dotdot-path'>"
+                    + this.navBreadcrumbText(files.breadcrumbs)
+                    + "</div>";
+
+                let dotdotElement = this.makeEnumeratedListItem(
+                    "directory",
+                    dotdotHtml,
+                    "",
+                    false
+                );
+                dotdotElement.style.setProperty("border-bottom", "1px solid #888");
+                this.enumeratedListContainerElement.appendChild(dotdotElement);
+
+            }
+
+            for (let file of files.files) {
+                let displayName = file.displayName;
+                if (file.isDirectory) {
+                    displayName = '[ ' + displayName + '/ ]';
+                }
+                let fileType = file.isDirectory ? "directory" : "file";
+                let itemElement = this.makeEnumeratedListItem(
+                    fileType,
+                    displayName,
+                    file.pathname
+                );
+                this.enumeratedListContainerElement.appendChild(itemElement);
+            }
+            this.updateSelection();
+        }
+
+    }
+
+    private navDirectory: string | null = null;
+
+    setNavDirectory(navDirectory: string | null) {
+        if (this.navDirectory !== navDirectory) {
+            this.navDirectory = navDirectory;
+            this.requestDirectoryUpdate();
+        }
+    }
     private pathValue: string | null = null;
-    private browsePath: string | null = null;
     setPathValue(value: string) {
         if (this.pathValue !== value) {
             this.pathValue = value;
-            if (this.pathValue !== "") {
+            if (this.pathValue !== "" || this.navDirectory === null) {
                 let browsePath = pathParentDirectory(value);
-                if (this.browsePath !== browsePath) {
-                    this.browsePath = browsePath;
-                    this.requestFileUpdate();
-                }
+                this.setNavDirectory(browsePath);
             }
             this.requestUpdate();
+        }
+        if (this.enumeratedValueElement) {
+            this.enumeratedValueElement.textContent = pathFileName(this.pathValue);
         }
     }
 
@@ -175,7 +336,8 @@ class CustomSelectPathControl implements ModGuiControl {
     }
 
     handlePropertyValueChange(value: any) {
-
+        let path: string = PathToString(value);
+        this.setPathValue(path);
     }
     private mounted: boolean = false;
 
@@ -183,29 +345,29 @@ class CustomSelectPathControl implements ModGuiControl {
     onMounted() {
         this.mounted = true;
         this.props.hostSite.monitorPatchProperty(this.props.instanceId, this.props.propertyUri,
-            (value: any) => {
+            (instanceId, propertyUri, value) => {
                 this.handlePropertyValueChange(value);
             }
         );
         this.props.hostSite.getPatchProperty(this.props.instanceId, this.props.propertyUri)
-        .then((value: any) => {
-            this.handlePropertyValueChange(value);
-        }).
-        catch((error: any) => {
-            if (error instanceof Error) {
-                console.error((error as Error).message);
-            } else {
-                console.error(error.toString());
-            }
-            console.error(error);
-        });
+            .then((value: any) => {
+                this.handlePropertyValueChange(value);
+            }).
+            catch((error: any) => {
+                if (error instanceof Error) {
+                    console.error((error as Error).message);
+                } else {
+                    console.error(error.toString());
+                }
+                this.handlePropertyValueChange("");
+            });
         this.requestUpdate();
     }
 
     onUnmount() {
         if (this.listenHandle) {
             this.props.hostSite.cancelMonitorPatchProperty(this.listenHandle);
-            this.listenHandle = null;   
+            this.listenHandle = null;
         }
         this.mounted = false;
         this.cancelRequestUpdate();
@@ -226,40 +388,92 @@ class CustomSelectPathControl implements ModGuiControl {
         }
     }
 
-    handleSelected(value: string,strFileType: string)
-    {
-        this.setPathValue(value);
-        this.props.hostSite.setPatchProperty(this.props.instanceId, this.props.propertyUri, value);
+
+    getValueElement(): HTMLElement | null {
+        return null;
     }
 
+    updateSelection() {
+        if (!this.frameElement) {
+            return;
+        }
+        let valueElement = this.getValueElement();
+        if (valueElement) {
+            /// xxx: update the display value.
+            if (this.pathValue === null || this.pathValue === "") {
+                valueElement.textContent = "No file selected";
+                return;
+            }
+            valueElement.textContent = this.pathValue;
+        }
+        if (this.isInlineList && this.enumeratedListContainerElement) {
+            for (let i = 0; i < this.enumeratedListContainerElement.children.length; i++) {
+                let child = this.enumeratedListContainerElement.children[i];
+                let strValue = child.getAttribute("mod-parameter-value");
+                let strType = child.getAttribute("mod-filetype");
+                if (strValue === null) return;
+                if (strValue === this.pathValue && strType !== "directory") {
+                    child.classList.add("selected");
+                } else {
+                    child.classList.remove("selected");
+                }
+            };
+        }
+    }
     handleClick(event: MouseEvent) {
         if (!this.frameElement) {
             return;
         }
         event.preventDefault();
         event.stopPropagation();
-        let enumeratedList = this.frameElement.querySelector(".mod-enumerated-list");
-        if (enumeratedList) {
-            let element = enumeratedList as HTMLElement;
-            this.toggleVisibility(element)
-        }
-        if (event.target) {
-            let target = event.target as HTMLElement;
-            let role = target.getAttribute("mod-role");
-            if (role === "enumeration-option")  // a click in the drop-down list?
-            {
-                let strValue = target.getAttribute("mod-parameter-value");
-                let strFileType = target.getAttribute("mod-filetype");
-                if (strValue && strFileType) {
-                    this.handleSelected(strValue,strFileType);
-                }
 
+        let valueElement = this.getValueElement();
+
+        if (event.target === valueElement) {
+            // A click on the value element, so launch the file browser. hooboy!
+            return;
+        }
+        if (!event.target) {
+            return;
+        }
+        let target = event.target as HTMLElement;
+        if (target.getAttribute("mod-role") === "enumeration-option") {
+            let strValue = target.getAttribute("mod-parameter-value");
+            if (strValue === null) return; let strType = target.getAttribute("mod-filetype");
+            if (strType === "directory") {
+                this.setNavDirectory(strValue);
+                return;
             }
+
+            this.setPathValue(strValue);
+            this.updateSelection();
+            this.props.hostSite.setPatchProperty(this.props.instanceId, this.props.propertyUri, StringToPath(strValue));
+            return;
         }
     }
 
     private enumeratedListContainerElement: HTMLElement | null = null;
     private enumeratedListItemTemplate: string = "";
+    private enumeratedValueElement: HTMLElement | null = null;
+
+    getValueControlElement(): HTMLElement | null {
+        if (!this.frameElement) {
+            return null;
+        }
+        return this.frameElement.querySelector('[mod-role=input-parameter-value]') as HTMLElement | null;
+    }
+
+    async handleValueClick(event: MouseEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+
+
+        this.props.handleFileSelect(
+            this.props.instanceId,
+            this.props.propertyUri,
+            this.pathValue || ""
+        );
+    }
 
     attach(frameElement: HTMLElement) {
 
@@ -280,7 +494,15 @@ class CustomSelectPathControl implements ModGuiControl {
                 }
             }
         }
-        void this.enumeratedListItemTemplate; // suppress unused variable warning
+        this.enumeratedValueElement = this.getValueControlElement();
+
+        this.isInlineList = this.enumeratedValueElement === null;
+        if (this.enumeratedValueElement) {
+            this.enumeratedValueElement.onclick = (event: MouseEvent) => {
+                this.handleValueClick(event);
+            }
+        }
+
 
 
     }
@@ -362,7 +584,7 @@ class CustomSelectControl implements ModGuiControl {
         this.frameElement.querySelectorAll('[mod-role=enumeration-option]')
             .forEach((inputControl: Element) => {
                 let strValue = inputControl.getAttribute("mod-port-value");
-                let value = parseFloat(strValue || ""); 
+                let value = parseFloat(strValue || "");
                 inputControl.classList.remove("selected");
                 if (value === this.value) {
                     inputControl.classList.add("selected");
@@ -431,8 +653,7 @@ class CustomSelectControl implements ModGuiControl {
             if (role === "enumeration-option")  // a click in the drop-down list?
             {
                 let strValue = target.getAttribute("mod-port-value");
-                if (strValue && strValue !== "")
-                {
+                if (strValue && strValue !== "") {
                     let value = parseFloat(strValue);
                     if (!isNaN(value)) {
                         this.setControlValue(value);
@@ -455,14 +676,7 @@ class CustomSelectControl implements ModGuiControl {
 
 interface BypassLightControlProps {
     instanceId: number;
-    pluginControl: UiControl;
-    onValueChanged: (instanceId: number, symbol: string, value: number) => void;
-    monitorPort: (
-        instanceId: number,
-        symbol: string,
-        interval: number,
-        callback: (value: number) => void) => MonitorPortHandle;
-    unmonitorPort: (handle: MonitorPortHandle) => void;
+    model: PiPedalModel;
 };
 
 function ModMessage(message: string) {
@@ -517,23 +731,22 @@ class BypassLightControl implements ModGuiControl {
 
         this.frameElement.classList.remove('on', 'off');
         this.frameElement.classList.add(
-            this.value === this.props.pluginControl.min_value ?
+            this.value ?
                 'on' : 'off'
         );
 
     }
     private mounted: boolean = false;
 
-    private monitorHandle: MonitorPortHandle | null = null;
+    private listenHandle: ListenHandle | null = null;
     onMounted() {
         this.mounted = true;
-        this.monitorHandle = this.props.monitorPort(
+        this.listenHandle = this.props.model.addPedalboardItemEnabledChangeListener(
             this.props.instanceId,
-            this.props.pluginControl.symbol,
-            1.0 / 15,
-            (value: number) => {
-                if (value != this.value) {
-                    this.setControlValue(value);
+            (instanceId: number, isEnabled: boolean) => {
+                let bypass = isEnabled ? 1.0: 0.0;
+                if (bypass !== this.value) {
+                    this.setControlValue(bypass);
                 }
             }
         );
@@ -541,9 +754,9 @@ class BypassLightControl implements ModGuiControl {
     }
 
     onUnmount() {
-        if (this.monitorHandle) {
-            this.props.unmonitorPort(this.monitorHandle);
-            this.monitorHandle = null;
+        if (this.listenHandle) {
+            this.props.model.removePedalboardItemEnabledChangeListener(this.listenHandle);
+            this.listenHandle = null;
         }
         this.mounted = false;
         this.cancelRequestUpdate();
@@ -647,7 +860,7 @@ class FilmstripControl implements ModGuiControl {
                 return;
             }
             let range = this.valueToRange(this.value);
-            this.frameElement.style.transform = `rotate(${rotation * range-rotation/2}deg)`;
+            this.frameElement.style.transform = `rotate(${rotation * range - rotation / 2}deg)`;
             return;
 
         }
@@ -712,9 +925,9 @@ class FilmstripControl implements ModGuiControl {
         let value = this.isPointerDown ? this.pointerDownValue : this.value;
         value = this.clampValue(value);
 
-        let isHorizontalStrip = 
-            this.filmstripInfo.frameWidth/this.filmstripInfo.frameHeight 
-            < this.filmstripInfo.width/this.filmstripInfo.height;
+        let isHorizontalStrip =
+            this.filmstripInfo.frameWidth / this.filmstripInfo.frameHeight
+            < this.filmstripInfo.width / this.filmstripInfo.height;
         if (isHorizontalStrip) {
             let range = this.valueToRange(value);
 
@@ -1059,14 +1272,24 @@ class FilmstripControl implements ModGuiControl {
     }
 };
 
+
 function ModGuiHost(props: ModGuiHostProps) {
-    let xmodel: PiPedalModel = PiPedalModelFactory.getInstance();
+    let model: PiPedalModel = PiPedalModelFactory.getInstance();
     const { plugin, onClose } = props;
     const [hostDivRef, setHostDivRef] = React.useState<HTMLDivElement | null>(null);
     const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+    const [contentReady, setContentReady] = React.useState<boolean|null>(null);
     const [modGuiControls] = React.useState<ModGuiControl[]>([]);
-    const [ready, setReady] = React.useState<boolean>(xmodel.state.get() === State.Ready);
+    const [ready, setReady] = React.useState<boolean>(model.state.get() === State.Ready);
+    const [maximizedUi] = React.useState<boolean>(false);
 
+
+    function updateContentReady(value: boolean) {
+        if (value !== contentReady) {
+            setContentReady(value);
+            props.onContentReady(value);
+        }
+    }
 
     if (!plugin.modGui) {
         return (
@@ -1076,6 +1299,7 @@ function ModGuiHost(props: ModGuiHostProps) {
         );
     }
 
+    
     function addPortClass(element: Element, selector: string, className: string) {
         let children = element.querySelectorAll(selector);
         // call addClass to each element that matches the selector
@@ -1091,13 +1315,13 @@ function ModGuiHost(props: ModGuiHostProps) {
                 pluginControl: pluginControl,
                 onValueChanged: (instanceId: number, symbol: string, value: number) => {
                     try {
-                        props.hostSite.setPedalboardControl(instanceId, symbol, value);
+                        model.setPedalboardControl(instanceId, symbol, value);
                     } catch (error) {
 
                     }
                 },
-                monitorPort: props.hostSite.monitorPort,
-                unmonitorPort: props.hostSite.unmonitorPort
+                monitorPort: model.monitorPort.bind(model),
+                unmonitorPort: model.unmonitorPort.bind(model)
             }
         );
         customSelectControl.attach(control as HTMLElement);
@@ -1107,6 +1331,20 @@ function ModGuiHost(props: ModGuiHostProps) {
             control.appendChild(modGuiElement);
         }
         customSelectControl.onMounted();
+    }
+    function monitorBypassPort(
+        instanceId: number,
+        symbol: string,
+        interval: number,
+        callback: (value: number) => void): MonitorPortHandle {
+        return model.addPedalboardItemEnabledChangeListener(
+            instanceId, (instanceId,value) => {
+                callback(value ? 1 : 0);
+            }
+        );  
+    }
+    function unmonitorBypassPort(handle: MonitorPortHandle) {
+        model.removePedalboardItemEnabledChangeListener(handle as ListenHandle);
     }
     function createFootswitchControl(control: Element, symbol: string, controlType: ControlType) {
         let uiControl = new UiControl();
@@ -1124,14 +1362,24 @@ function ModGuiHost(props: ModGuiHostProps) {
                 filmStrip: "/img/footswitch_strip.png",
                 verticalStrip: true,
                 onValueChanged: (instanceId: number, symbol: string, value: number) => {
-                    try {
-                        props.hostSite.setPedalboardControl(instanceId, symbol, value);
-                    } catch (error) {
+                    if (symbol === "_bypass") {
+                        model.setPedalboardItemEnabled(instanceId, value !== 0);
+                    } else {
+                        try {
+                            model.setPedalboardControl(instanceId, symbol, value);
+                        } catch (error) {
 
+                        }
                     }
                 },
-                monitorPort: props.hostSite.monitorPort,
-                unmonitorPort: props.hostSite.unmonitorPort
+                monitorPort: 
+                    symbol === "_bypass" ?
+                        monitorBypassPort :
+                        model.monitorPort.bind(model),
+                unmonitorPort: 
+                    symbol == "_bypass" ?
+                        unmonitorBypassPort : 
+                        model.unmonitorPort.bind(model)
             }
         );
         filmstripControl.attach(control as HTMLElement);
@@ -1150,9 +1398,10 @@ function ModGuiHost(props: ModGuiHostProps) {
         }
         let selectPathControl = new CustomSelectPathControl({
             instanceId: props.instanceId,
-            propertyUri: pathUri, 
+            propertyUri: pathUri,
             plugin: props.plugin,
-            hostSite: props.hostSite
+            hostSite: model,
+            handleFileSelect: props.handleFileSelect
         });
 
         selectPathControl.attach(control as HTMLElement);
@@ -1160,29 +1409,13 @@ function ModGuiHost(props: ModGuiHostProps) {
         selectPathControl.onMounted();
     }
 
-    
-    function createBypassLightControl(control: Element, symbol: string) {
-        let uiControl = new UiControl();
-        uiControl.symbol = symbol;
-        uiControl.controlType = ControlType.BypassLight;
-        uiControl.min_value = 0;
-        uiControl.max_value = 1;
-        uiControl.is_logarithmic = false;
-        uiControl.integer_property = true;
+
+    function createBypassLightControl(control: Element) {
 
         let bypassLightControl = new BypassLightControl(
             {
                 instanceId: props.instanceId,
-                pluginControl: uiControl,
-                onValueChanged: (instanceId: number, symbol: string, value: number) => {
-                    try {
-                        props.hostSite.setPedalboardControl(instanceId, symbol, value);
-                    } catch (error) {
-
-                    }
-                },
-                monitorPort: props.hostSite.monitorPort,
-                unmonitorPort: props.hostSite.unmonitorPort
+                model: model
             }
         );
         bypassLightControl.attach(control as HTMLElement);
@@ -1211,13 +1444,13 @@ function ModGuiHost(props: ModGuiHostProps) {
                 verticalStrip: false,
                 onValueChanged: (instanceId: number, symbol: string, value: number) => {
                     try {
-                        props.hostSite.setPedalboardControl(instanceId, symbol, value);
+                        model.setPedalboardControl(instanceId, symbol, value);
                     } catch (error) {
 
                     }
                 },
-                monitorPort: props.hostSite.monitorPort,
-                unmonitorPort: props.hostSite.unmonitorPort
+                monitorPort: model.monitorPort.bind(model),
+                unmonitorPort: model.unmonitorPort.bind(model)
 
             }
         );
@@ -1284,14 +1517,11 @@ function ModGuiHost(props: ModGuiHostProps) {
             .forEach((control) => {
                 let symbol = "_bypass";
                 let controlType = ControlType.OnOffSwitch;
-
                 createFootswitchControl(control, symbol, controlType);
             });
         element.querySelectorAll('[mod-role=bypass-light]')
             .forEach((control) => {
-                let symbol = "_bypass";
-
-                createBypassLightControl(control, symbol);
+                createBypassLightControl(control);
             });
         element.querySelectorAll('[mod-role=input-parameter]')
             .forEach((control) => {
@@ -1303,6 +1533,7 @@ function ModGuiHost(props: ModGuiHostProps) {
         setErrorMessage(ModMessage(message));
     }
     async function requestContent() {
+        updateContentReady(false);
         try {
             let modGui = plugin.modGui;
             if (!modGui) {
@@ -1321,7 +1552,7 @@ function ModGuiHost(props: ModGuiHostProps) {
             let encodedUri = encodeURIComponent(props.plugin.uri);
             let version = props.plugin.minorVersion * 1000 + props.plugin.microVersion;
 
-            let resourceUrl = xmodel.modResourcesUrl;
+            let resourceUrl = model.modResourcesUrl;
             let queryParams = "?ns=" + encodedUri + "&v=" + version.toString();
             let templateUri = resourceUrl + "_/iconTemplate" + queryParams;
             let cssUri = resourceUrl + "_/stylesheet" + queryParams;
@@ -1367,6 +1598,7 @@ function ModGuiHost(props: ModGuiHostProps) {
             let height = element.clientHeight;
             hostDivRef.style.width = width + "px";
             hostDivRef.style.height = height + "px";
+            updateContentReady(true);
         } catch (error) {
             setModError("Error loading UI: " + (error instanceof Error ? error.message : String(error)));
         }
@@ -1383,9 +1615,12 @@ function ModGuiHost(props: ModGuiHostProps) {
         let stateHandler = (state: State) => {
             setReady(state === State.Ready);
         }
-        xmodel.state.addOnChangedHandler(stateHandler)
+        model.state.addOnChangedHandler(stateHandler)
+
+
         return () => {
-            xmodel.state.removeOnChangedHandler(stateHandler);
+            model.state.removeOnChangedHandler(stateHandler);
+            
             if (tHostDivRef !== null) {
                 // unmount the custom content.
                 let children = tHostDivRef.children;
@@ -1396,6 +1631,7 @@ function ModGuiHost(props: ModGuiHostProps) {
                     }
                 }
             }
+            updateContentReady(false);
             let mc = modGuiControls;
             for (let i = 0; i < mc.length; i++) {
                 let modGuiControl = mc[i];
@@ -1405,12 +1641,12 @@ function ModGuiHost(props: ModGuiHostProps) {
         };
     }, [hostDivRef, plugin, ready]);
 
+
     return (
         <ModGuiErrorBoundary plugin={props.plugin} onClose={() => { props.onClose(); setErrorMessage(null); }}>
             <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                backgroundColor: "rgba(0.8,0.8,0.8, 0.8)",
-                display: "flex", flexFlow: "column nowrap", alignItems: "center", justifyContent: "stretch",
+                display: "inline-block",
+                paddingLeft: 20, paddingRight: 20,
                 overflow: "hidden",
             }}
                 onClick={(event) => {
@@ -1418,14 +1654,14 @@ function ModGuiHost(props: ModGuiHostProps) {
                     event.stopPropagation();
                 }}
             >
-                <IconButtonEx tooltip="Close" onClick={() => onClose()} style={{
-                    position: "absolute", top: 16, right: 16,
-                    background: "#FFF5", zIndex: 600
-                }}>
-                    <CloseIcon />
-                </IconButtonEx>
-
-                <div style={{ flex: "1 1 1px" }} />
+                {maximizedUi && (
+                    <IconButtonEx tooltip="Close" onClick={() => onClose()} style={{
+                        position: "absolute", top: 16, right: 16,
+                        background: "#FFF5", zIndex: 600
+                    }}>
+                        <CloseIcon />
+                    </IconButtonEx>
+                )}
 
                 <div style={{ display: "block", position: "relative" }}>
                     <div ref={setHostDivRef} style={{ display: "block", position: "relative" }}
@@ -1437,17 +1673,78 @@ function ModGuiHost(props: ModGuiHostProps) {
                     />
                 </div>
 
-                <div style={{ flex: "2 2 1px" }} />
-
             </div>
-            <OkDialog title="Error" open={errorMessage !== null}
-                onClose={() => {
-                    setErrorMessage(null);
-                    onClose();
-                }}
-                text={errorMessage ?? ""}
-            />
+            {errorMessage !== null && (
+                <OkDialog title="Error" open={errorMessage !== null}
+                    onClose={() => {
+                        setErrorMessage(null);
+                        onClose();
+                    }}
+                    text={errorMessage ?? ""}
+                />
+            )}
+
         </ModGuiErrorBoundary>
     );
 }
+
+interface ModGuiPluginPreference {
+    pluginUri: string;
+    useModGui: boolean;
+}
+
+let modGuiPluginPreferences: ModGuiPluginPreference[] | null = null;
+
+
+function loadModGuiPreferences() {
+    if (modGuiPluginPreferences === null) {
+        let prefs = window.localStorage.getItem("modGuiPluginPreferences");
+        try {
+            if (prefs) {
+                modGuiPluginPreferences = JSON.parse(prefs);
+            } else {
+                modGuiPluginPreferences = [];
+            }       
+        } catch (error) {
+            console.error("pipedal: Error parsing modGuiPluginPreferences from localStorage: " + String(error));
+            modGuiPluginPreferences = [];
+        }
+    }
+}
+
+export function getDefaultModGuiPreference(pluginUri: string) {
+    loadModGuiPreferences();
+    if (modGuiPluginPreferences === null) {
+        modGuiPluginPreferences = [];
+    }
+    if (modGuiPluginPreferences) {
+        let preference = modGuiPluginPreferences.find(p => p.pluginUri === pluginUri);
+        if (preference) {
+            return preference.useModGui;
+        }
+    }
+    return false;
+}
+
+
+export function setDefaultModGuiPreference(pluginUri: string, useModGui: boolean) {
+    loadModGuiPreferences();
+    if (modGuiPluginPreferences === null) {
+        modGuiPluginPreferences = [];
+    }
+
+    let preference = modGuiPluginPreferences.find(p => p.pluginUri === pluginUri);
+    if (preference) {
+        preference.useModGui = useModGui;
+    } else {
+        modGuiPluginPreferences.push({ pluginUri: pluginUri, useModGui });
+    }
+    try {
+        window.localStorage.setItem("modGuiPluginPreferences", JSON.stringify(modGuiPluginPreferences));
+    } catch(error) {
+        console.error("pipedal: Error saving modGuiPluginPreferences to localStorage: " + String(error));
+    }
+}   
+
+
 export default ModGuiHost;

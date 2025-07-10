@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2025 Robin E. R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -23,7 +23,9 @@ import WithStyles, { withTheme } from './WithStyles';
 import { createStyles } from './WithStyles';
 import { css } from '@emotion/react';
 
-import ModGuiHost, { IModGuiHostSite } from './ModGuiHost';
+import AutoZoom from './AutoZoom';
+
+import ModGuiHost from './ModGuiHost';
 
 import { withStyles } from "tss-react/mui";
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
@@ -353,7 +355,9 @@ type PluginControlViewState = {
     imeInitialHeight: number;
     showFileDialog: boolean,
     dialogFileProperty: UiFileProperty,
-    dialogFileValue: string
+    dialogFileValue: string,
+    modGuiContentReady: boolean,
+    showModGuiZoomed: boolean,
 };
 
 const PluginControlView =
@@ -372,7 +376,9 @@ const PluginControlView =
                     imeInitialHeight: 0,
                     showFileDialog: false,
                     dialogFileProperty: new UiFileProperty(),
-                    dialogFileValue: ""
+                    dialogFileValue: "",
+                    modGuiContentReady: false,
+                    showModGuiZoomed: false
 
                 }
                 this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
@@ -774,36 +780,64 @@ const PluginControlView =
                 }
                 return false;
             }
-            makeHostSite(): IModGuiHostSite {
-                // Yuck. :-( This worked out badly.
-                let model = this.model;
-                return {
-                    monitorPort: this.model.monitorPort.bind(model),
-                    unmonitorPort: this.model.unmonitorPort.bind(model),
-                    setPedalboardControl: this.model.setPedalboardControl.bind(model),
-                    monitorPatchProperty: this.model.monitorPatchProperty.bind(model),
-                    cancelMonitorPatchProperty: this.model.cancelMonitorPatchProperty.bind(model),
-                    getPatchProperty: this.model.getPatchProperty.bind(model),
-                    setPatchProperty: this.model.setPatchProperty.bind(model),
-                };
-            }
 
+
+            handleModGuiFileProperty(instanceId: number, filePropertyUri: string, selectedFile: string) {
+                let plugin = this.model.getUiPlugin(this.props.item.uri);
+                if (!plugin) {
+                    throw (new Error("Plugin not found."));
+                }
+                let fileProperty = plugin.getFilePropertyByUri(filePropertyUri);
+                if (!fileProperty) {
+                    throw (new Error("File property not found."));
+                }
+                this.setState({
+                    showFileDialog: true,
+                    dialogFileProperty: fileProperty,
+                    dialogFileValue: selectedFile
+                });
+            }
             renderModGui(): ReactNode {
+                const classes = withStyles.getClasses(this.props);
+                void classes;
+
                 let uiPlugin = this.model.getUiPlugin(this.props.item.uri);
                 if (!uiPlugin) {
                     return (<div />);
                 }
                 return (
-                    <ModGuiHost
-                        instanceId={this.props.instanceId}
-                        plugin={uiPlugin}
-                        onClose={() => {
-                            if (this.props.onSetShowModGui) {
-                                this.props.onSetShowModGui(this.props.instanceId, false);
+                    <div style={{ width: "100%", height: "100%", }}>
+                        <AutoZoom leftPad={36} rightPad={52} contentReady={this.state.modGuiContentReady}
+                            showZoomed={this.state.showModGuiZoomed}
+                            setShowZoomed={
+                                (value) => { this.setState({ showModGuiZoomed: value }); }
                             }
-                        }}
-                        hostSite={this.makeHostSite()}
-                    />
+                        >
+                            <ModGuiHost
+
+                                key={this.props.instanceId.toString()}
+                                instanceId={this.props.instanceId}
+                                plugin={uiPlugin}
+                                onClose={() => {
+                                    if (this.props.onSetShowModGui) {
+                                        this.props.onSetShowModGui(this.props.instanceId, false);
+                                    }
+                                    this.setState({showModGuiZoomed: false})
+                                }}
+                                handleFileSelect={(instanceId, fileProperty, selectedFile) => {
+                                    this.handleModGuiFileProperty(
+                                        instanceId,
+                                        fileProperty,
+                                        selectedFile);
+
+                                }}
+                                onContentReady={(value) => {
+                                    this.setState({ modGuiContentReady: value });
+                                }}
+                            />
+                        </AutoZoom>
+                    </div>
+
                 )
             }
 
@@ -859,22 +893,22 @@ const PluginControlView =
                     nodes.push(this.midiBindingControl(pedalboardItem));
                 }
                 return (
-                        <div className={scrollClass}>
-                            <div className={gridClass}  >
-                                {
-                                    nodes
-                                }
-                                {/* Extra space to allow scrolling right to the end in lascape especially */}
-                                {!this.fullScreen() && (
-                                    <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
-                                )}
-                                {
-                                    (!this.state.landscapeGrid) && (!this.fullScreen()) && (
-                                        <div style={{ flex: "0 1 100%", width: "0px", height: 40 }} />
-                                    )
-                                }
-                            </div>
+                    <div className={scrollClass}>
+                        <div className={gridClass}  >
+                            {
+                                nodes
+                            }
+                            {/* Extra space to allow scrolling right to the end in lascape especially */}
+                            {!this.fullScreen() && (
+                                <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
+                            )}
+                            {
+                                (!this.state.landscapeGrid) && (!this.fullScreen()) && (
+                                    <div style={{ flex: "0 1 100%", width: "0px", height: 40 }} />
+                                )
+                            }
                         </div>
+                    </div>
                 );
 
 
@@ -895,7 +929,7 @@ const PluginControlView =
                 let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
                 let frameClass = classes.frame;
 
-                if (this.fullScreen()) {
+                if (this.fullScreen() || this.props.showModGui) {
                     frameClass = classes.noScrollFrame;
                 }
 
@@ -920,13 +954,15 @@ const PluginControlView =
                                 instanceId={this.props.instanceId}
                                 selectedFile={this.state.dialogFileValue}
                                 onCancel={() => {
-                                    this.setState({ showFileDialog: false });
+                                    this.setState({
+                                        showFileDialog: false
+                                    });
                                 }}
                                 onApply={(fileProperty, selectedFile) => {
                                     this.model.setPatchProperty(
                                         this.props.instanceId,
                                         fileProperty.patchProperty,
-                                        JsonAtom.Path(selectedFile)
+                                        JsonAtom._Path(selectedFile).asAny()
                                     )
                                         .then(() => {
 
@@ -941,7 +977,7 @@ const PluginControlView =
                                     this.model.setPatchProperty(
                                         this.props.instanceId,
                                         fileProperty.patchProperty,
-                                        JsonAtom.Path(selectedFile)
+                                        JsonAtom._Path(selectedFile).asAny()
                                     )
                                         .then(() => {
 

@@ -59,6 +59,7 @@ namespace pipedal
         
         virtual int64_t GetClientId() = 0;
         virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
+        virtual void OnItemUseModUiChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
         virtual void OnControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value) = 0;
         virtual void OnInputVolumeChanged(float value) = 0;
         virtual void OnOutputVolumeChanged(float value) = 0;
@@ -348,6 +349,7 @@ namespace pipedal
         void RemoveNotificationSubsription(std::shared_ptr<IPiPedalModelSubscriber> pSubscriber);
 
         void SetPedalboardItemEnable(int64_t clientId, int64_t instanceId, bool enabled);
+        void SetPedalboardItemUseModUi(int64_t clientId, int64_t instanceId, bool enabled);
         void SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
         void PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
 

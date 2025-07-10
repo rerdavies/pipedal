@@ -44,7 +44,7 @@ import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
 import AudioFileMetadata from './AudioFileMetadata';
 import { pathFileName } from './FileUtils';
 import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
-
+import {getDefaultModGuiPreference} from './ModGuiHost';
 
 export enum State {
     Loading,
@@ -81,6 +81,24 @@ export enum ReconnectReason {
     Updating,
     HotspotChanging
 };
+
+export type PedalboardItemEnabledChangeCallback = (instanceId: number, isEnabled: boolean) => void;
+interface PedalboardItemEnabledChangeItem {
+    handle: number;
+    instanceId: number;
+    currentValue: boolean;
+    onEnabledChanged: PedalboardItemEnabledChangeCallback;
+};
+
+export type PedalboardItemUseModUiChangeCallback = (instanceId: number, useModUi: boolean) => void;
+
+interface PedalboardItemUseModUiChangeItem {
+    handle: number;
+    instanceId: number;
+    currentValue: boolean;
+    onUseModUiChanged: PedalboardItemUseModUiChangeCallback;
+};
+
 
 export type ControlValueChangedHandler = (key: string, value: number) => void;
 
@@ -146,7 +164,6 @@ export interface VuUpdateInfo {
 };
 
 export interface MonitorPortHandle {
-
 };
 export interface ControlValueChangedHandle {
     _ControlValueChangedHandle: number;
@@ -574,10 +591,18 @@ export class PiPedalModel //implements PiPedalModel
         return true;
 
     }
+    private updateEnabledItems(pedalboard: Pedalboard)
+    {
+        for (let item of pedalboard.itemsGenerator()) {
+            this.updatePedalboardItemEnabled(item.instanceId, item.isEnabled);
+            this.updatePedalboardItemUseModUi(item.instanceId, item.useModUi);  
+        }
+    }
+
     private setModelPedalboard(pedalboard: Pedalboard) {
         this.pedalboard.set(pedalboard);
         this.selectedSnapshot.set(pedalboard.selectedSnapshot);
-
+        this.updateEnabledItems(pedalboard);
     }
     onSocketMessage(header: PiPedalMessageHeader, body?: any) {
 
@@ -683,6 +708,13 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onItemEnabledChanged") {
             let itemEnabledBody = body as PedalboardItemEnableBody;
             this._setPedalboardItemEnabled(
+                itemEnabledBody.instanceId,
+                itemEnabledBody.enabled,
+                false  // No server notification.
+            );
+        } else if (message == "onItemUseModUiChanged") {
+            let itemEnabledBody = body as PedalboardItemEnableBody;
+            this._setPedalboardItemUseModUi(
                 itemEnabledBody.instanceId,
                 itemEnabledBody.enabled,
                 false  // No server notification.
@@ -1563,6 +1595,42 @@ export class PiPedalModel //implements PiPedalModel
     setPedalboardItemEnabled(instanceId: number, value: boolean): void {
         this._setPedalboardItemEnabled(instanceId, value, true);
     }
+
+    setPedalboardItemUseModUi(instanceId: number, useModUi: boolean): void {
+        this._setPedalboardItemUseModUi(instanceId, useModUi, true);
+    }
+
+    getPedalboardItemUseModUi(instanceId: number): boolean {
+        if (!this.pedalboard.get().hasItem(instanceId)) return false;
+        let item = this.pedalboard.get().getItem(instanceId);
+        return item.useModUi;
+    }
+    _setPedalboardItemUseModUi(instanceId: number, useModUi: boolean, notifyServer: boolean): void {
+        let pedalboard = this.pedalboard.get();
+        if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
+        let newPedalboard = pedalboard.clone();
+        let item = newPedalboard.getItem(instanceId);
+        let changed = useModUi !== item.useModUi;
+        if (changed) {
+            item.useModUi = useModUi;
+            this.setModelPedalboard(newPedalboard);
+            if (notifyServer) {
+                let body = {
+                    clientId: this.clientId,
+                    instanceId: instanceId,
+                    useModUi: useModUi
+                };
+                this.webSocket?.send("setPedalboardItemUseModUi", body);
+            }
+        }
+    }
+
+
+    getPedalboardItemEnabled(instanceId: number): boolean {
+        if (!this.pedalboard.get().hasItem(instanceId)) return false;
+        let item = this.pedalboard.get().getItem(instanceId);
+        return item.isEnabled;
+    }
     private _setPedalboardItemEnabled(instanceId: number, value: boolean, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
@@ -1625,6 +1693,7 @@ export class PiPedalModel //implements PiPedalModel
                 item.lv2State = [false, {}];
                 item.vstState = "";
                 item.pathProperties = {};
+                item.useModUi = getDefaultModGuiPreference(selectedUri);
                 for (let fileProperty of plugin.fileProperties) {
                     // stringized json for an atom. see AtomConverter.hpp.
                     //  null -> we've never seen a value.
@@ -1844,6 +1913,7 @@ export class PiPedalModel //implements PiPedalModel
             throw new PiPedalArgumentError("instanceId not found.");
         }
         newPedalboard.setItemEmpty(item);
+
 
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
@@ -2210,6 +2280,18 @@ export class PiPedalModel //implements PiPedalModel
     }
     getPatchProperty<Type = any>(instanceId: number, uri: string): Promise<Type> {
         let result = new Promise<Type>((resolve, reject) => {
+            let pedalboard = this.pedalboard.get();
+            if (pedalboard) {
+                let item = pedalboard.getItem(instanceId);
+                if (item) {
+                    if (item.pathProperties.hasOwnProperty(uri)) {
+                        let value = item.pathProperties[uri];
+                        let jsonValue = JSON.parse(value);
+                        resolve(jsonValue as Type);
+                    }
+
+                }
+            }
             if (!this.webSocket) {
                 reject("Socket closed.");
             } else {
@@ -3231,6 +3313,94 @@ export class PiPedalModel //implements PiPedalModel
             return AlsaSequencerPortSelection.deserialize_array(result);
         }
         throw new Error("No connection.");
+    }
+
+
+    private pedalboardItemEnabledChangeListeners: PedalboardItemEnabledChangeItem[] = [];
+    private pedalboardItemUseModUiChangeListeners: PedalboardItemUseModUiChangeItem[] = [];
+
+    private updatePedalboardItemEnabled(instanceId: number, enabled: boolean) {
+        for (let listener of this.pedalboardItemEnabledChangeListeners) {
+            if (listener.instanceId === instanceId) {
+                if (listener.currentValue !== enabled) {
+                    listener.currentValue = enabled;
+                    listener.onEnabledChanged(instanceId, enabled);
+                }
+            }
+        }   
+    }
+
+    private updatePedalboardItemUseModUi(instanceId: number, useModUi: boolean) {
+        for (let listener of this.pedalboardItemUseModUiChangeListeners) {
+            if (listener.instanceId === instanceId) {
+                if (listener.currentValue !== useModUi) {
+                    listener.currentValue = useModUi;
+                    listener.onUseModUiChanged(instanceId, useModUi);
+                }
+            }
+        }
+    }
+
+    addPedalboardItemEnabledChangeListener(
+        instanceId: number,
+        onEnabledChanged: PedalboardItemEnabledChangeCallback
+    ) : ListenHandle{
+        let handle = ++this.nextListenHandle;
+        let currentValue = this.getPedalboardItemEnabled(instanceId);
+
+        let entry: PedalboardItemEnabledChangeItem = { 
+            instanceId: instanceId, 
+            handle: handle, 
+            currentValue: currentValue, 
+            onEnabledChanged: onEnabledChanged
+        };
+
+        this.pedalboardItemEnabledChangeListeners.push( entry);
+
+        onEnabledChanged(instanceId, currentValue);
+
+        return { _handle: handle };
+    }
+    addPedalboardItemUseModUiChangeListener(
+        instanceId: number,
+        onUseModUiChanged : PedalboardItemUseModUiChangeCallback
+    ) : ListenHandle{
+
+        let handle = ++this.nextListenHandle;
+        let currentValue = this.getPedalboardItemUseModUi(instanceId);
+
+        let entry: PedalboardItemUseModUiChangeItem = { 
+            instanceId: instanceId, 
+            handle: handle, 
+            currentValue: currentValue, 
+            onUseModUiChanged: onUseModUiChanged
+        };
+
+        this.pedalboardItemUseModUiChangeListeners.push( entry);
+
+        onUseModUiChanged(instanceId, currentValue);
+
+        return { _handle: handle };
+    }
+
+    removePedalboardItemEnabledChangeListener(listenHandle: ListenHandle): boolean {
+        for (let i = 0; i < this.pedalboardItemEnabledChangeListeners.length; ++i) {
+            if (this.pedalboardItemEnabledChangeListeners[i].handle === listenHandle._handle) {
+                this.pedalboardItemEnabledChangeListeners.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    removePedalboardItemUseModUiChangeListener(listenHandle: ListenHandle): boolean {
+        for (let i = 0; i < this.pedalboardItemUseModUiChangeListeners.length; ++i) {
+            if (this.pedalboardItemUseModUiChangeListeners[i].handle === listenHandle._handle) {
+                this.pedalboardItemUseModUiChangeListeners.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
     }
 
 };

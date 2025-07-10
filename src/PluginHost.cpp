@@ -647,6 +647,37 @@ bool Lv2PluginInfo::HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plu
     return result;
 }
 
+static std::vector<UiFileType> ToPiPedalFileTypes(
+    const std::set<std::string> &modFileTypes)
+{
+    std::vector<UiFileType> result;
+    for (const auto &fileType : modFileTypes)
+    {
+        UiFileType uiFileType;
+        std::string type = fileType;
+        if (type.find("/") != std::string::npos) // mime type?
+        {
+            UiFileType t = UiFileType(type,type,"");
+            result.push_back(t);
+        }
+        else 
+        {   
+            // add a leading dot.
+            if (!type.starts_with(".")) {
+                type = "." + type;
+            }
+            auto t = UiFileType(SS(type << " file"), type);
+            result.push_back(t);
+        }
+    }
+    std::sort(result.begin(), result.end(),
+              [](const UiFileType &left, const UiFileType &right)
+              {
+                  return left.label() < right.label();
+              });
+    return result;
+}
+
 Lv2PluginInfo::FindWritablePathPropertiesResult
 Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin *pPlugin)
 {
@@ -710,6 +741,13 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                         // "nam,nammodel"
                         fileTypes = mod__fileTypes.AsString();
                     }
+                    std::string modFileExtensions;
+                    AutoLilvNode mod__extensionsNode = lilv_world_get(pWorld, propertyUri, lv2Host->lilvUris->mod__supportedExtensions, nullptr);
+                    {
+                        // "wav,flac,mp3"
+                        modFileExtensions = mod__extensionsNode.AsString();
+                    }
+                    std::string fileExtensions = modFileExtensions;
                     ModFileTypes modFileTypes(fileTypes);
 
                     // Legacy case: audio_uploads/<plugin_directory> exists.
@@ -734,6 +772,12 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                             std::string modName = modFileTypes.rootDirectories()[0];
                             auto modDirectory = modFileTypes.GetModDirectory(modName);
                             fileProperty->directory(modDirectory->pipedalPath);
+                            std::set<std::string> fileExtensions = modDirectory->fileExtensions;
+                            if (!modFileExtensions.empty()) {
+                                auto extensions = split(modFileExtensions, ',');
+                                fileExtensions = std::set<std::string>(extensions.begin(), extensions.end());
+                            }
+                            fileProperty->fileTypes(ToPiPedalFileTypes(fileExtensions));
                         }
                     }
 
@@ -750,8 +794,11 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
 
     if (fileProperties.size() != 0)
     {
-        std::sort(fileProperties.begin(), fileProperties.end(), [](const UiFileProperty::ptr &left, const UiFileProperty::ptr &right)
-                  {
+        std::sort(
+            fileProperties.begin(),
+            fileProperties.end(),
+            [](const UiFileProperty::ptr &left, const UiFileProperty::ptr &right)
+            {
                       // properies with indexes first.
                       int32_t indexL = left->index();
                       if (indexL < 0)
@@ -888,7 +935,7 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
                 // a lv2:Parameter?
                 if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->isA, lv2Host->lilvUris->lv2core__Parameter))
                 {
-                    Lv2PatchPropertyInfo  propertyInfo{lv2Host, propertyUri};
+                    Lv2PatchPropertyInfo propertyInfo{lv2Host, propertyUri};
                     propertyInfo.writable(true);
                     patchProperties_.push_back(std::move(propertyInfo));
                 }
@@ -915,18 +962,33 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
                         break;
                     }
                 }
-                if (!found) 
+                if (!found)
                 {
                     if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->isA, lv2Host->lilvUris->lv2core__Parameter))
                     {
-                        Lv2PatchPropertyInfo  propertyInfo{lv2Host, propertyUri};
+                        Lv2PatchPropertyInfo propertyInfo{lv2Host, propertyUri};
                         propertyInfo.readable(true);
                         patchProperties_.push_back(std::move(propertyInfo));
                     }
                 }
             }
         }
+        // default state.
+        {
+            AutoLilvNodes stateNodes = lilv_plugin_get_value(pPlugin, lv2Host->lilvUris->state__state);
+            if (stateNodes)
+            {
+                auto stateNode = lilv_nodes_get_first(stateNodes);
+                LilvState *defaultState = lilv_state_new_from_world(pWorld, lv2Host->GetMapFeature().GetMap(), stateNode);
+                if (defaultState)
+                {
+                    Lv2Log::debug("Plugin %s (%s) has default state.", this->name_.c_str(), this->uri_.c_str());
+                    this->hasDefaultState_ = true;
 
+                    lilv_state_free(defaultState);
+                }
+            }
+        }
     }
 
     // Fetch pipedal plugin UI
@@ -975,6 +1037,10 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
             }
             ++nOutputs;
         }
+    }
+    if (nOutputs == 0 || nInputs == 0)
+    {
+        isValid = false;
     }
     this->modGui_ = ModGui::Create(lv2Host, pPlugin);
     this->is_valid_ = isValid;
@@ -1776,7 +1842,7 @@ Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNod
 {
     LilvWorld *pWorld = pluginHost->getWorld();
     this->uri_ = nodeAsString(propertyUri);
-    
+
     AutoLilvNode range = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->rdfs__range, nullptr);
     if (range)
     {
@@ -1791,7 +1857,9 @@ Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNod
     if (shortName)
     {
         this->shortName_ = shortName.AsString();
-    } else {
+    }
+    else
+    {
         this->shortName_ = this->label_;
     }
 
@@ -1799,14 +1867,16 @@ Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNod
     this->index_ = indexNode.AsInt(-1);
 
     AutoLilvNode modFileTypesNode = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->mod__fileTypes, nullptr);
-    if (modFileTypesNode) {
+    if (modFileTypesNode)
+    {
         std::string strFileTypes = modFileTypesNode.AsString();
-        this->fileTypes_ = split(strFileTypes,',');
+        this->fileTypes_ = split(strFileTypes, ',');
     }
     AutoLilvNode modSupportedExtensionsNode = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->mod__supportedExtensions, nullptr);
-    if (modSupportedExtensionsNode) {
+    if (modSupportedExtensionsNode)
+    {
         std::string strSupportedExtensions = modSupportedExtensionsNode.AsString();
-        this->supportedExtensions_ = split(strSupportedExtensions,',');
+        this->supportedExtensions_ = split(strSupportedExtensions, ',');
     }
 }
 
@@ -1908,6 +1978,8 @@ json_map::storage_type<Lv2PluginInfo> Lv2PluginInfo::jmap{{
     json_map::reference("has_factory_presets", &Lv2PluginInfo::has_factory_presets_),
     json_map::reference("modGui", &Lv2PluginInfo::modGui_),
     json_map::reference("patchProperties", &Lv2PluginInfo::patchProperties_),
+    json_map::reference("hasDefaultState", &Lv2PluginInfo::hasDefaultState_),
+
 }};
 
 json_map::storage_type<Lv2PluginClass> Lv2PluginClass::jmap{{

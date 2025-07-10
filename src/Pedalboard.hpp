@@ -99,6 +99,7 @@ public:
     std::string lilvPresetUri_;
     std::map<std::string,std::string> pathProperties_;
     std::string title_;
+    bool useModUi_ = false;
 
     // non persistent state.
     PropertyMap patchProperties;
@@ -128,6 +129,7 @@ public:
     GETTER_SETTER(stateUpdateCount)
     GETTER_SETTER_REF(lv2State)
     GETTER_SETTER_REF(title)
+    GETTER_SETTER(useModUi)
     
     Lv2PluginState&lv2State() { return lv2State_; } // non-const version.
     GETTER_SETTER_REF(lilvPresetUri)
@@ -203,6 +205,7 @@ public:
     bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
     bool SetItemTitle(int64_t pedalItemId, const std::string &title);
     bool SetItemEnabled(int64_t pedalItemId, bool enabled);
+    bool SetItemUseModUi(int64_t pedalItemId, bool enabled);
     void  SetCurrentSnapshotModified(bool modified);
 
     bool IsStructureIdentical(const Pedalboard &other) const; // caan we just send a snapshot-style uddate instead of reloading plugins? All settings are ignored.
