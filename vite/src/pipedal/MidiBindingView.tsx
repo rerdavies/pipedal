@@ -58,13 +58,13 @@ export enum MidiControlType {
 }
 
 export function getMidiControlType(uiPlugin: UiPlugin | undefined, symbol: string): MidiControlType {
+    if (symbol === "__bypass") {
+        return MidiControlType.Toggle;
+    }
     if (!uiPlugin) return MidiControlType.None;
     let port = uiPlugin.getControl(symbol);
     if (!port) return MidiControlType.None;
 
-    if (symbol === "__bypass") {
-        return MidiControlType.Toggle;
-    }
 
 
     if (!port) return MidiControlType.None;

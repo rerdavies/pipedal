@@ -82,27 +82,27 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
-#if ENABLE_BACKTRACE
-void segvHandler(int sig)
-{
-    void *array[10];
+#if 0 &&  ENABLE_BACKTRACE
+// void segvHandler(int sig)
+// {
+//     void *array[10];
 
-    // Get void*'s for all entries on the stack
-    size_t size;
-    size = backtrace(array, 10);
+//     // Get void*'s for all entries on the stack
+//     size_t size;
+//     size = backtrace(array, 10);
 
-    // Print out all the frames to stderr
-    const char *message = "Error: SEGV signal received.\n";
-    auto _ = write(STDERR_FILENO, message, strlen(message));
+//     // Print out all the frames to stderr
+//     const char *message = "Error: SEGV signal received.\n";
+//     auto _ = write(STDERR_FILENO, message, strlen(message));
 
-    backtrace_symbols_fd(array + 2, size - 2, STDERR_FILENO);
-    _exit(EXIT_FAILURE);
-}
+//     backtrace_symbols_fd(array + 2, size - 2, STDERR_FILENO);
+//     _exit(EXIT_FAILURE);
+// }
 
-static void EnableBacktrace()
-{
-    signal(SIGSEGV, segvHandler);
-}
+// static void EnableBacktrace()
+// {
+//     signal(SIGSEGV, segvHandler);
+// }
 #endif
 
 static bool TryGetLogLevel(const std::string &strLogLevel, LogLevel *result)

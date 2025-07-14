@@ -609,6 +609,13 @@ export class PiPedalModel //implements PiPedalModel
         let message = header.message;
         if (message === "onControlChanged") {
             let controlChangedBody = body as ControlChangedBody;
+            if (body.clientId !== this.clientId) {
+                this.lastControlMessageWasSentbyMe = false;
+            }
+            if (this.lastControlMessageWasSentbyMe) {
+                return; // shortcut!
+            }
+
             this._setPedalboardControlValue(
                 controlChangedBody.instanceId,
                 controlChangedBody.symbol,
@@ -1529,6 +1536,7 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
 
+    private lastControlMessageWasSentbyMe = false;
 
     private _setPedalboardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
@@ -1547,6 +1555,7 @@ export class PiPedalModel //implements PiPedalModel
 
         if (changed) {
             if (notifyServer) {
+                this.lastControlMessageWasSentbyMe = true;
                 this._setServerControl("setControl", instanceId, key, value);
             }
             this.setModelPedalboard(newPedalboard);

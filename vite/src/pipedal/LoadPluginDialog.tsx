@@ -209,10 +209,10 @@ export const LoadPluginDialog =
                     search_string: "",
                     search_collapsed: true,
                     filterType: filterType_,
-                    client_width: window.innerWidth,
-                    client_height: window.innerHeight,
-                    grid_cell_width: this.getCellWidth(window.innerWidth),
-                    grid_cell_columns: this.getCellColumns(window.innerWidth),
+                    client_width: document.documentElement.clientWidth,
+                    client_height: document.documentElement.clientHeight,
+                    grid_cell_width: this.getCellWidth(document.documentElement.clientWidth),
+                    grid_cell_columns: this.getCellColumns(document.documentElement.clientWidth),
                     minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220,
                     favoritesList: this.model.favorites.get(),
                     uiPlugins: this.model.ui_plugins.get()
@@ -276,9 +276,9 @@ export const LoadPluginDialog =
 
             updateWindowSize() {
                 this.setState({
-                    client_width: window.innerWidth,
-                    client_height: window.innerHeight,
-                    grid_cell_width: this.getCellWidth(window.innerWidth),
+                    client_width: document.documentElement.clientWidth,
+                    client_height: document.documentElement.clientHeight,
+                    grid_cell_width: this.getCellWidth(document.documentElement.clientWidth),
                     grid_cell_columns: this.getCellColumns(window.innerWidth)
                 });
             }

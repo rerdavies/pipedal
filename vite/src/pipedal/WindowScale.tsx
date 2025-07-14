@@ -15,7 +15,7 @@ export function getValidWindowScales(): number[]
         return [1.0];
     }
     let result: number[] = [];
-    let minDimension = Math.min(window.innerHeight,window.innerWidth);
+    let minDimension = Math.min(document.documentElement.clientHeight,document.documentElement.clientWidth);
 
     for (let validScale of validScales)
     {

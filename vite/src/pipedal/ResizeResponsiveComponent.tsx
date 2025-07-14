@@ -24,8 +24,8 @@ class ResizeResponsiveComponent<PROPS={},STATE={},S=any> extends React.Component
     constructor(props: PROPS) {
         super(props);
         this.handleWindowResize = this.handleWindowResize.bind(this);
-        this.windowSize.width = window.innerWidth;
-        this.windowSize.height = window.innerHeight;
+        this.windowSize.width = document.documentElement.clientWidth;
+        this.windowSize.height = document.documentElement.clientHeight;
     }
 
     windowSize: {width: number,height:number} = {width: 1280, height: 1024};
@@ -34,8 +34,8 @@ class ResizeResponsiveComponent<PROPS={},STATE={},S=any> extends React.Component
 
     }
     handleWindowResize() {
-        let width_ = window.innerWidth;
-        let height_ = window.innerHeight;
+        let width_ = document.documentElement.clientWidth;
+        let height_ = document.documentElement.clientHeight;
         if (width_ !== this.windowSize.width || height_ !== this.windowSize.height)
         {
             this.windowSize = {width: width_, height: height_};
@@ -49,8 +49,8 @@ class ResizeResponsiveComponent<PROPS={},STATE={},S=any> extends React.Component
     componentDidMount() {
         window.addEventListener('resize', this.handleWindowResize);
 
-        let width_ = window.innerWidth;
-        let height_ = window.innerHeight;
+        let width_ = document.documentElement.clientWidth;
+        let height_ = document.documentElement.clientHeight;
         this.windowSize = {width: width_, height: height_};
         this.onWindowSizeChanged(this.windowSize.width,this.windowSize.height);
     }

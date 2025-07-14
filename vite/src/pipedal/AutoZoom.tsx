@@ -113,6 +113,7 @@ const AutoZoom = withStyles(
             buttonPadding: number
         ): Rect {
 
+            console.log("Zoom: " + clientRect.toString() + " content: " + contentWidth + "x" + contentHeight + " buttonPadding: " + buttonPadding);
             let rightButtonZoom = Math.min((clientRect.width - buttonPadding) / contentWidth, clientRect.height / contentHeight);
             let topButtonZoom = Math.min((clientRect.width - buttonPadding) / contentWidth, (clientRect.height - buttonPadding) / contentHeight);
 
@@ -302,12 +303,13 @@ const AutoZoom = withStyles(
         render() {
             const classes = withStyles.getClasses(this.props);
             void classes; // suppress unused variable warning
+            const landscape = this.state.screenWidth > this.state.screenHeight;
             return (<div style={{ overflow: "hidden", height: "100%", width: "100%" }} ref={(ref) => { this.setNormalRef(ref); }}>
                 <div style={{
                     display: "inline-block",
+                    position: "absolute",
                     visibility: this.props.contentReady ? "visible" : "hidden",
 
-                    position: "relative",
                 }}>
                     {!this.props.showZoomed && this.props.children}
                 </div>
@@ -349,7 +351,9 @@ const AutoZoom = withStyles(
 
                             <IconButtonEx tooltip="Exit fullscreen"
                                 style={{
-                                    position: "absolute", right: 16, top: 16, zIndex: 1104,
+                                    position: "absolute", 
+                                        right: landscape? 80: 16, // avoid potential cutout in landscape mode
+                                    top: 16, zIndex: 1104,
 
                                 }}
                                 onClick={(e) => {

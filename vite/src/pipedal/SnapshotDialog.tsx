@@ -89,7 +89,7 @@ export default class SnapshotDialog extends ResizeResponsiveComponent<SnapshotDi
     }
 
     getFullScreen() {
-        return window.innerHeight < 450 || window.innerWidth < 450;
+        return document.documentElement.clientHeight < 450 || document.documentElement.clientWidth < 450;
     }
     onWindowSizeChanged(width: number, height: number): void {
         this.setState(

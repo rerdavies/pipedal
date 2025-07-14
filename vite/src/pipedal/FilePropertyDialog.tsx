@@ -246,7 +246,7 @@ export default withStyles(
             this.requestScroll = true;
         }
         getFullScreen() {
-            return window.innerWidth < 450 || window.innerHeight < 450;
+            return document.documentElement.clientWidth < 450 || document.documentElement.clientHeight < 450;
         }
 
         hProgressTimeout: number | null = null;

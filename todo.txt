@@ -1,22 +1,10 @@
+Persist and reconnect IP addresses in client.
+Zeroconv crash assert. /var/pipedal/audio_uploads/ReverbImpulseFiles/
 
-Magic zoom.
-
-request cacheing not working.
+Investigate   if ((keyCode == KeyEvent.KEYCODE_BACK))
 
 MOD ir uses some scheme to limit the minimum buffer size, which is not implemented in Pipedal.
 
-MOD ir layout issues. 
-
-MOD gui control should disable, not disappear.
-
-MOD ir font (cooper-hewitt)
-
-detect self-set control values to prevent weird jitter in mod ui levels.
-
-ZAMEq2 Low control not working.
-
-
-Modgui view should be persistent/per-plugin
 
 Vu Meters, move rendering to background images, in order to reduce layout overhead.
 
@@ -26,9 +14,6 @@ Remove FullScreenIME in PluginControlView.tsx
 
 Exactly one underrun per seek in Toob Player
 
-Test autohotspot detection.
-
-Ellipsis on plugin Title
 
 check filetime conversion in gcc 12.2! (missing c++ 20 time conversion functions)
  AudioFiles.cpp   fileTimeToInt64

@@ -82,7 +82,7 @@ const styles = ({ palette }: Theme) => {
         }),
         pedalboardScroll: css({
             position: "relative", width: "100%",
-            flex: "0 0 auto", overflow: "auto", maxHeight: 220
+            flex: "0 0 auto", overflow: "auto", maxHeight: 220, 
         }),
         pedalboardScrollSmall: css({
             position: "relative", width: "100%",
@@ -100,7 +100,7 @@ const styles = ({ palette }: Theme) => {
             flex: "0 0 64px", width: "100%", paddingLeft: 24, paddingRight: 16, paddingBottom: 16
         }),
         controlContent: css({
-            flex: "1 1 auto", width: "100%", overflowY: "hidden", minHeight: 300
+            flex: "1 1 auto", width: "100%", overflowY: "hidden", minHeight: 185
         }),
         controlContentSmall: css({
             flex: "0 0 162px", width: "100%", height: 162, overflowY: "hidden",
@@ -145,7 +145,7 @@ export const MainPage =
                 model: PiPedalModel;
 
                 getSplitToolbar() {
-                    return this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD;
+                    return this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD && this.windowSize.height >= HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK;
                 }
                 getDisplayAuthor() {
                     if (this.getSplitToolbar()) {
@@ -621,12 +621,12 @@ export const MainPage =
                         <div className={classes.frame}>
                             <div id="pedalboardScroll" className={horizontalScrollLayout ? classes.pedalboardScrollSmall : classes.pedalboardScroll}
                                 style={{ maxHeight: horizontalScrollLayout ? undefined : this.state.screenHeight / 2 }}>
-                                <PedalboardView key={pluginUri} selectedId={this.state.selectedPedal}
-                                    enableStructureEditing={this.props.enableStructureEditing}
-                                    onSelectionChanged={this.onSelectionChanged}
-                                    onDoubleClick={this.onPedalDoubleClick}
-                                    hasTinyToolBar={this.props.hasTinyToolBar}
-                                />
+                                    <PedalboardView key={pluginUri} selectedId={this.state.selectedPedal}
+                                        enableStructureEditing={this.props.enableStructureEditing}
+                                        onSelectionChanged={this.onSelectionChanged}
+                                        onDoubleClick={this.onPedalDoubleClick}
+                                        hasTinyToolBar={this.props.hasTinyToolBar}
+                                    />
                             </div>
                             <div className={classes.separator} />
                             <div className={classes.controlToolBar}>

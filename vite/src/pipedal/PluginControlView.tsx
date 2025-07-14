@@ -146,9 +146,9 @@ const styles = (theme: Theme) => createStyles({
         flexDirection: "row",
         flexWrap: "nowrap",
         paddingTop: "0px",
-        paddingBottom: "0px",
+        paddingBottom: "96px",
         overflowX: "hidden",
-        overflowY: "auto"
+        overflowY: "auto",
     }),
     vuMeterL: css({
         position: "absolute",
@@ -175,7 +175,7 @@ const styles = (theme: Theme) => createStyles({
         right: 0, top: 0,
         paddingRight: 6,
         paddingLeft: 12,
-        paddingBottom: 12, // cover bottom line of a portgroup in landscape.
+        paddingBottom: 13, // cover bottom line of a portgroup in landscape.
         background: theme.mainBackground,
         zIndex: 3
 
@@ -448,7 +448,7 @@ const PluginControlView =
                     imeUiControl: uiControl,
                     imeValue: value,
                     imeCaption: uiControl.name,
-                    imeInitialHeight: window.innerHeight
+                    imeInitialHeight: document.documentElement.clientHeight
 
                 });
             }
