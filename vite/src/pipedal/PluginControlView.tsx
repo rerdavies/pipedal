@@ -81,10 +81,11 @@ function makeIoPluginInfo(name: string, uri: string): UiPlugin {
     return result;
 }
 
-let startPluginInfo: UiPlugin =
+export const startPluginInfo: UiPlugin =
     makeIoPluginInfo("Input", Pedalboard.START_PEDALBOARD_ITEM_URI);
 
-let endPluginInfo: UiPlugin =
+
+export const endPluginInfo: UiPlugin =
     makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
 
 

@@ -197,6 +197,8 @@ class Pedalboard {
     std::vector<std::shared_ptr<Snapshot>> snapshots_;
     int64_t selectedSnapshot_ = -1;
 
+    int64_t selectedPlugin_ = -1;
+
 public:
     // deep copy, breaking shared pointers.
     Pedalboard DeepCopy(); 
@@ -224,6 +226,7 @@ public:
     GETTER_SETTER(output_volume_db)
     GETTER_SETTER_VEC(snapshots)
     GETTER_SETTER(selectedSnapshot)
+    GETTER_SETTER(selectedPlugin)
 
 
     DECLARE_JSON_MAP(Pedalboard);

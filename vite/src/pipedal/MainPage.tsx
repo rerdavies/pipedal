@@ -82,7 +82,7 @@ const styles = ({ palette }: Theme) => {
         }),
         pedalboardScroll: css({
             position: "relative", width: "100%",
-            flex: "0 0 auto", overflow: "auto", maxHeight: 220, 
+            flex: "0 0 auto", overflow: "auto", maxHeight: 220,
         }),
         pedalboardScrollSmall: css({
             position: "relative", width: "100%",
@@ -158,7 +158,10 @@ export const MainPage =
                     super(props);
                     this.model = PiPedalModelFactory.getInstance();
                     let pedalboard = this.model.pedalboard.get();
-                    let selectedPedal = pedalboard.getFirstSelectableItem();
+                    let selectedPedal = pedalboard.selectedPlugin;
+                    if (selectedPedal === -1) {
+                        selectedPedal = pedalboard.getFirstSelectableItem();
+                    }
 
                     this.state = {
                         selectedPedal: selectedPedal,
@@ -243,12 +246,16 @@ export const MainPage =
                     this.model.loadPluginPreset(instanceId, presetInstanceId);
                 }
                 onPedalboardChanged(value: Pedalboard) {
-                    let selectedItem = -1;
-                    if (this.state.selectedPedal === Pedalboard.START_CONTROL || this.state.selectedPedal === Pedalboard.END_CONTROL) {
-                        selectedItem = this.state.selectedPedal;
-                    } else if (value.hasItem(this.state.selectedPedal)) {
-                        selectedItem = this.state.selectedPedal;
-                    } else {
+                    // let selectedItem = -1;
+                    // if (this.state.selectedPedal === Pedalboard.START_CONTROL || this.state.selectedPedal === Pedalboard.END_CONTROL) {
+                    //     selectedItem = this.state.selectedPedal;
+                    // } else if (value.hasItem(this.state.selectedPedal)) {
+                    //     selectedItem = this.state.selectedPedal;
+                    // } else {
+                    //     selectedItem = value.getFirstSelectableItem();
+                    // }
+                    let selectedItem = value.selectedPlugin;
+                    if (selectedItem === -1 || !value.hasItem(selectedItem)) {
                         selectedItem = value.getFirstSelectableItem();
                     }
                     this.setState({
@@ -265,9 +272,10 @@ export const MainPage =
 
                 }
                 onDeletePedal(instanceId: number): void {
+                    // ok.
                     let result = this.model.deletePedalboardPedal(instanceId);
-                    if (result != null) {
-                        this.setState({ selectedPedal: result });
+                    if (result != null)
+                        this.setSelection(result); {
                     }
                 }
 
@@ -284,9 +292,9 @@ export const MainPage =
 
                 componentDidUpdate(prevProps: MainProps, prevState: MainState) {
                     if (prevState.selectedPedal !== this.state.selectedPedal
-                    || prevState.pedalboard !== this.state.pedalboard
+                        || prevState.pedalboard !== this.state.pedalboard
                     ) {
-                        this.setState({showModUi: this.state.pedalboard.maybeGetItem(this.state.selectedPedal)?.useModUi??false});
+                        this.setState({ showModUi: this.state.pedalboard.maybeGetItem(this.state.selectedPedal)?.useModUi ?? false });
                     }
                 }
                 updateResponsive() {
@@ -305,6 +313,10 @@ export const MainPage =
 
                 setSelection(selectedId_: number): void {
                     this.setState({ selectedPedal: selectedId_ });
+                    if (this.state.pedalboard.selectedPlugin !== selectedId_) {
+                        this.model.setPedalboardSelectedPlugin(selectedId_);
+                        this.state.pedalboard.selectedPlugin = selectedId_;
+                    }
                 }
 
                 onSelectionChanged(selectedId: number): void {
@@ -335,7 +347,7 @@ export const MainPage =
                     this.setState({ loadDialogOpen: false });
                     let itemId = this.state.selectedPedal;
                     let newSelectedItem = this.model.loadPedalboardPlugin(itemId, selectedUri);
-                    this.setState({ selectedPedal: newSelectedItem });
+                    this.setSelection(newSelectedItem);
                 }
                 onSnapshotDialogOk(): void {
                     this.setState({ snapshotDialogOpen: false });
@@ -621,12 +633,12 @@ export const MainPage =
                         <div className={classes.frame}>
                             <div id="pedalboardScroll" className={horizontalScrollLayout ? classes.pedalboardScrollSmall : classes.pedalboardScroll}
                                 style={{ maxHeight: horizontalScrollLayout ? undefined : this.state.screenHeight / 2 }}>
-                                    <PedalboardView key={pluginUri} selectedId={this.state.selectedPedal}
-                                        enableStructureEditing={this.props.enableStructureEditing}
-                                        onSelectionChanged={this.onSelectionChanged}
-                                        onDoubleClick={this.onPedalDoubleClick}
-                                        hasTinyToolBar={this.props.hasTinyToolBar}
-                                    />
+                                <PedalboardView key={pluginUri} selectedId={this.state.selectedPedal}
+                                    enableStructureEditing={this.props.enableStructureEditing}
+                                    onSelectionChanged={this.onSelectionChanged}
+                                    onDoubleClick={this.onPedalDoubleClick}
+                                    hasTinyToolBar={this.props.hasTinyToolBar}
+                                />
                             </div>
                             <div className={classes.separator} />
                             <div className={classes.controlToolBar}>

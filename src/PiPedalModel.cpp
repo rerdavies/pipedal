@@ -2595,6 +2595,16 @@ std::shared_ptr<Lv2Pedalboard> PiPedalModel::GetLv2Pedalboard()
     }
     return lv2Pedalboard;
 }
+
+void PiPedalModel::SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedalboardId)
+{
+    // Thinking on this:
+    // 1) do NOT mark the pedalboard as changed. This shouldn't set a change flag.
+    // 2) do NOT broadcast the change. Whoever set it last controls what happens when the plugin is reloaded. Meh.
+    // 3) Clients must be able to save a non-changed pedalboard.
+    pedalboard.selectedPlugin(pedalboardId);
+}
+
 bool PiPedalModel::LoadCurrentPedalboard()
 {
     if (previousPedalboardLoaded && pedalboard.IsStructureIdentical(previousPedalboard))
@@ -3074,4 +3084,6 @@ bool PiPedalModel::HasTone3000Auth() const
 {
     return storage.GetTone3000Auth() != "";
 }
+
+
 

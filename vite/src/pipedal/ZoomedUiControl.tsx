@@ -96,7 +96,10 @@ const ZoomedUiControl = withTheme(withStyles(
             } else {
                 let uiControl = this.props.controlInfo.uiControl;
                 let instanceId = this.props.controlInfo.instanceId;
-                if (instanceId === -1) return 0;
+                if (instanceId === -2 && uiControl.symbol === "volume_db") {
+                    return this.model.pedalboard.get()?.input_volume_db??0;
+                }
+
                 let pedalboardItem = this.model.pedalboard.get()?.getItem(instanceId);
                 let value: number = pedalboardItem?.getControlValue(uiControl.symbol) ?? 0;
                 return value;

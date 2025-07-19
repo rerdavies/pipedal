@@ -1820,6 +1820,7 @@ export class PiPedalModel //implements PiPedalModel
 
         let result = newPedalboard.deleteItem(instanceId);
         if (result !== null) {
+            newPedalboard.selectedPlugin = result;
             this.setModelPedalboard(newPedalboard);
             this.updateServerPedalboard();
         }
@@ -3504,6 +3505,20 @@ export class PiPedalModel //implements PiPedalModel
             this.screenOrientation.set(value);
             this.androidHost?.setScreenOrientation(value as number);
         }
+    }
+
+    setPedalboardSelectedPlugin(pluginId: number): void {
+        let pedalboard = this.pedalboard.get();
+        if (!pedalboard) {
+            throw new PiPedalStateError("Pedalboard not loaded.");
+        }
+        if (pedalboard.selectedPlugin === pluginId) {
+            return; // no change.
+        }
+        pedalboard.selectedPlugin = pluginId; // naughty, because it doesn't broadcast.
+        // notify the server.
+        this.webSocket?.send("setSelectedPedalboardPlugin", { clientId: this.clientId, pluginInstanceId: pluginId });
+
     }
 };
 

@@ -489,6 +489,8 @@ namespace pipedal
         void SetTone3000Auth(const std::string &apiKey);
         bool HasTone3000Auth() const;
 
+        void SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedalboardId);
+
     };
 
 } // namespace pipedal.

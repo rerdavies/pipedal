@@ -372,6 +372,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         this.snapshots = input.snapshots ? Snapshot.deserializeArray(input.snapshots): [];
         this.selectedSnapshot = input.selectedSnapshot;
         this.pathProperties = input.pathProperties;
+        this.selectedPlugin = input.selectedPlugin??-1;
         return this;
     }
 
@@ -387,6 +388,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     snapshots: (Snapshot | null)[] = [];
     selectedSnapshot: number = -1;
     pathProperties: {[Name: string]: string} = {};
+    selectedPlugin: number = -1;
 
     *itemsGenerator(): Generator<PedalboardItem, void, undefined> {
         let it = itemGenerator_(this.items);

@@ -472,6 +472,21 @@ JSON_MAP_REFERENCE(SetSnapshotsBody, snapshots)
 JSON_MAP_REFERENCE(SetSnapshotsBody, selectedSnapshot)
 JSON_MAP_END()
 
+class SetSelectedPedalboardPluginBody
+{
+public:
+    uint64_t clientId_;
+    uint64_t pluginInstanceId_;
+
+    DECLARE_JSON_MAP(SetSelectedPedalboardPluginBody);
+};
+
+JSON_MAP_BEGIN(SetSelectedPedalboardPluginBody)
+JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, clientId)
+JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, pluginInstanceId)
+JSON_MAP_END()
+
+
 class SnapshotModifiedBody
 {
 public:
@@ -1299,6 +1314,12 @@ public:
             pReader->read(&body);
             int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.name_, body.saveAfterInstanceId_);
             Reply(replyTo, "saveCurrentPresetsAs", result);
+        }
+        else if (message == "setSelectedPedalboardPlugin")
+        {
+            SetSelectedPedalboardPluginBody body;
+            pReader->read(&body);
+            this->model.SetSelectedPedalboardPlugin(body.clientId_,body.pluginInstanceId_);
         }
         else if (message == "savePluginPresetAs")
         {

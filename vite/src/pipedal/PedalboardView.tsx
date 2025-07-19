@@ -540,7 +540,9 @@ withStyles(
         }
 
         onPedalboardChanged(value?: Pedalboard) {
-            this.setState({ pedalboard: value });
+            this.setState({ 
+                pedalboard: value,
+             });
         }
 
         componentDidMount() {

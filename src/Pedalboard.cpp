@@ -537,6 +537,7 @@ JSON_MAP_BEGIN(Pedalboard)
     JSON_MAP_REFERENCE(Pedalboard,nextInstanceId)
     JSON_MAP_REFERENCE(Pedalboard,snapshots)
     JSON_MAP_REFERENCE(Pedalboard,selectedSnapshot)
+    JSON_MAP_REFERENCE(Pedalboard,selectedPlugin)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(SnapshotValue)

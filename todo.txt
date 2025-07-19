@@ -1,3 +1,5 @@
+Crash-proofing: do not reload pedalboard if the previous run crashed before normal shutdown.
+
 Persist and reconnect IP addresses in client.
 Zeroconv crash assert. /var/pipedal/audio_uploads/ReverbImpulseFiles/
 
