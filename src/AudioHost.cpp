@@ -931,6 +931,15 @@ private:
                 uint8_t cmd = (uint8_t)(event.buffer[0] & 0xF0);
                 bool isNote = cmd == 0x90 && event.buffer[2] != 0; // note on with velocity > 0.
                 bool isControl = cmd == 0xB0;
+                if (isControl)
+                {
+                    // ignore bank select, and CC LSB values.
+                    uint8_t cc1 = (uint8_t)(event.buffer[1]);
+                    if (cc1 == 0 || (cc1 >= 32 && cc1 < 64))
+                    {
+                        isControl = false;
+                    }
+                }
                 if (isNote || isControl)
                 {
                     MidiNotifyBody notifyBody (event.buffer[0],event.buffer[1], event.buffer[2]);
