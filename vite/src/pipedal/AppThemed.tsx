@@ -1000,7 +1000,7 @@ export
                                     <ListItemIcon >
                                         <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
                                     </ListItemIcon>
-                                    <ListItemText primary='Donations' />
+                                    <ListItemText primary='Sponsorship' />
                                 </ListItemButton>
                             </List>
 

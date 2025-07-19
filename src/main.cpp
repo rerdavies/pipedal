@@ -313,6 +313,7 @@ int main(int argc, char *argv[])
             sigset_t sigSet;
             int s;
             sigemptyset(&sigSet);
+            
             sigaddset(&sigSet, SIGINT);
             sigaddset(&sigSet, SIGTERM);
             sigaddset(&sigSet, SIGUSR1);

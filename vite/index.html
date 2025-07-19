@@ -100,23 +100,23 @@
 
         // Run the function when the window loads
         window.addEventListener('load', removeHashOnLoad);
-
         
-        function getFocusedElementBounds() {
-            let  focusedElement = document.activeElement;
-            if (focusedElement && focusedElement !== document.body) {
-                let  rect = focusedElement.getBoundingClientRect();
-                return {
-                    top: rect.top,
-                    left: rect.left,
-                    right: rect.right,
-                    bottom: rect.bottom,
-                    windowWidth: window.innerWidth,
-                    windowHeight: window.innerHeight,
-                };
-            }
-            return null;
-        }
+        // used by Android client to perform focus scrolling on keyboard open.
+        // function getFocusedElementBounds() {
+        //     let  focusedElement = document.activeElement;
+        //     if (focusedElement && focusedElement !== document.body) {
+        //         let  rect = focusedElement.getBoundingClientRect();
+        //         return {
+        //             top: rect.top,
+        //             left: rect.left,
+        //             right: rect.right,
+        //             bottom: rect.bottom,
+        //             windowWidth: window.innerWidth,
+        //             windowHeight: window.innerHeight,
+        //         };
+        //     }
+        //     return null;
+        // }
     </script>
 
 

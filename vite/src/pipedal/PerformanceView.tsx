@@ -79,6 +79,7 @@ interface PerformanceViewState {
     presets: PresetIndex;
     banks: BankIndex;
     showSnapshotEditor: boolean;
+    showStatusMonitor: boolean;
     snapshotEditorIndex: number;
     presetModified: boolean;
 }
@@ -100,13 +101,22 @@ export const PerformanceView =
                     banks: this.model.banks.get(),
                     wrapSelects: false,
                     showSnapshotEditor: false,
+                    showStatusMonitor: this.model.showStatusMonitor.get(),
                     snapshotEditorIndex: 0,
                     presetModified: this.model.presetChanged.get()
                 };
                 this.onPresetsChanged = this.onPresetsChanged.bind(this);
                 this.onBanksChanged = this.onBanksChanged.bind(this);
                 this.onPresetChangedChanged = this.onPresetChangedChanged.bind(this);
+                this.showStatusMonitorHandler = this.showStatusMonitorHandler.bind(this);
 
+            }
+
+
+            showStatusMonitorHandler() {
+                this.setState({
+                    showStatusMonitor: this.model.showStatusMonitor.get()
+                });
             }
 
             getTag() { return "performView"}
@@ -156,6 +166,8 @@ export const PerformanceView =
                 this.model.presets.addOnChangedHandler(this.onPresetsChanged);
                 this.model.banks.addOnChangedHandler(this.onBanksChanged);
                 this.model.presetChanged.addOnChangedHandler(this.onPresetChangedChanged)
+                this.model.showStatusMonitor.addOnChangedHandler(this.showStatusMonitorHandler);
+
                 this.setState({
                     presets: this.model.presets.get(),
                     banks: this.model.banks.get(),
@@ -173,6 +185,8 @@ export const PerformanceView =
                 this.model.presetChanged.removeOnChangedHandler(this.onPresetChangedChanged)
                 this.model.presets.removeOnChangedHandler(this.onPresetsChanged);
                 this.model.banks.removeOnChangedHandler(this.onBanksChanged);
+                this.model.banks.removeOnChangedHandler(this.showStatusMonitorHandler);
+
 
                 this.mounted = false;
                 this.updateHooks();
@@ -393,10 +407,10 @@ export const PerformanceView =
                                 <SnapshotPanel onEdit={(index) => { return this.handleOnEdit(index); }} />
                             </div>
 
-                                                
-                            {!this.state.showSnapshotEditor && (
-                                <JackStatusView />)
-                            }
+
+                            {!this.state.showSnapshotEditor && this.state.showStatusMonitor && (
+                                <JackStatusView />
+                            )}
                         </div>
                         {this.state.showSnapshotEditor && (
                             <SnapshotEditor snapshotIndex={this.state.snapshotEditorIndex} 

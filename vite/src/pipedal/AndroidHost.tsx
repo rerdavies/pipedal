@@ -32,6 +32,11 @@ export interface  AndroidHostInterface {
     setThemePreference(theme: number): void;
     getThemePreference(): number;
     isDarkTheme?: ()=> boolean;
+    setServerVersion(serverVersion: string) : void;
+    setKeepScreenOn(keepScreenOn: boolean): void;
+    getKeepScreenOn(): boolean;
+    setScreenOrientation(orientation: number): void;
+    getScreenOrientation(): number;
 };
 
 export class FakeAndroidHost implements AndroidHostInterface
@@ -40,7 +45,7 @@ export class FakeAndroidHost implements AndroidHostInterface
         return true;
     }
     getHostVersion(): string {
-        return "Fake Android 1.0";
+        return "Fake Host: v1.1.26";
     }
     chooseNewDevice(): void {
         
@@ -63,6 +68,21 @@ export class FakeAndroidHost implements AndroidHostInterface
     }
     getThemePreference(): number {
         return this.theme;
+    }
+    setServerVersion(_serverVersion: string): void {
+        // No-op for fake host
+    }
+
+    private keepScreenOn = false;
+    setKeepScreenOn(keepScreenOn: boolean): void {this.keepScreenOn = keepScreenOn; };
+    getKeepScreenOn(): boolean { return this.keepScreenOn; };
+
+    private screenOrientation = 0;
+    setScreenOrientation(_orientation: number): void {
+        this.screenOrientation = _orientation;
+    }
+    getScreenOrientation(): number {
+        return this.screenOrientation;
     }
 }
 export function isAndroidHosted(): boolean {

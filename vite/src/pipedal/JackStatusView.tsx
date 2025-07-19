@@ -70,9 +70,9 @@ export default class JackStatusView extends React.Component<JackStatusViewProps,
     render() {
         return (
             <div style={{
-                position: "absolute", right: 30, bottom: 0, height: 30, width: 200,
+                position: "absolute", right: 30, bottom: 2,left: 30, height: 30, 
                 paddingRight: 20, paddingBottom: 6,
-                textAlign: "right", opacity: 0.7, whiteSpace: "nowrap", fontSize: 12, zIndex: 10, fontWeight: 900
+                textAlign: "center", opacity: 0.7, whiteSpace: "nowrap", fontSize: 12, zIndex: 10, fontWeight: 900
             }}>
                 {JackHostStatus.getDisplayView("",this.state.jackStatus) }
             </div>

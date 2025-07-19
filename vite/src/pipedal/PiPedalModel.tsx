@@ -25,6 +25,7 @@ import ObservableEvent from './ObservableEvent';
 import { ObservableProperty } from './ObservableProperty';
 import { Pedalboard, PedalboardItem, ControlValue, Snapshot } from './Pedalboard'
 import PluginClass from './PluginClass';
+import ScreenOrientation from './ScreenOrientation';
 import PiPedalSocket, { PiPedalMessageHeader } from './PiPedalSocket';
 import { nullCast } from './Utility'
 import { JackConfiguration, JackChannelSelection } from './Jack';
@@ -82,6 +83,59 @@ export enum ReconnectReason {
     HotspotChanging
 };
 
+export class HostVersion {
+    constructor(hostVersion: string) {
+        this.versionString = hostVersion;
+
+        let pos = hostVersion.indexOf(":");
+
+        let remainder: string;
+        if (pos >= 0) {
+            this.hostName = hostVersion.substring(0, pos).trim();
+            remainder = hostVersion.substring(pos + 1).trim();
+        } else {
+            this.hostName = "Unknown Host";
+            remainder = "v0.0.0";
+        }   
+
+        const args = remainder.split(","); // make make provisions for more.
+        if (args.length >= 1) 
+        {
+            let versionString = args[0].trim();
+            if (versionString.startsWith('v')) {
+                versionString = versionString.substring(1).trim();
+            }
+            let releaseTypePos = versionString.indexOf("-");
+            if (releaseTypePos >= 0) {
+                this.releaseType = versionString.substring(releaseTypePos + 1).trim();
+                versionString = versionString.substring(0, releaseTypePos).trim();
+            }
+            else {
+                this.releaseType = "Release";
+            }
+
+            const parts = args[0].split(".");
+            if (parts.length >= 3) {
+                this.majorVersion = parseInt(parts[0]);
+                this.minorVersion = parseInt(parts[1]);
+                this.buildNumber = parseInt(parts[2]);
+            }   
+        }
+    }
+    lessThan(major: number, minor: number, build: number): boolean {
+        if (this.majorVersion < major) return true;
+        if (this.majorVersion > major) return false;
+        if (this.minorVersion < minor) return true;
+        if (this.minorVersion > minor) return false;
+        return this.buildNumber < build;
+    }
+    versionString: string = "";
+    hostName: string = "";
+    releaseType: string = "";
+    majorVersion: number = 0;
+    minorVersion: number = 0; 
+    buildNumber: number = 0;
+}
 export type PedalboardItemEnabledChangeCallback = (instanceId: number, isEnabled: boolean) => void;
 interface PedalboardItemEnabledChangeItem {
     handle: number;
@@ -440,6 +494,12 @@ export class PiPedalModel //implements PiPedalModel
 
     hasTone3000Auth: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
 
+    canKeepScreenOn: boolean = false;
+    keepScreenOn: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
+
+    canSetScreenOrientation: boolean = false;
+    screenOrientation: ObservableProperty<ScreenOrientation> = new ObservableProperty<ScreenOrientation>(ScreenOrientation.SystemDefault);
+
     hasWifiDevice: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
     onSnapshotModified: ObservableEvent<SnapshotModifiedEvent> = new ObservableEvent<SnapshotModifiedEvent>();
 
@@ -504,6 +564,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     androidHost?: AndroidHostInterface;
+    hostVersion?: HostVersion;
 
     constructor() {
         this.androidHost = (window as any).AndroidHost as AndroidHostInterface;
@@ -1295,6 +1356,17 @@ export class PiPedalModel //implements PiPedalModel
             .then((succeeded) => {
                 if (succeeded) {
                     this.state.set(State.Ready);
+                    if (this.androidHost) {
+                        this.hostVersion = new HostVersion(this.androidHost.getHostVersion());
+                        if (!this.hostVersion.lessThan(1,1,16))
+                        {
+                            this.androidHost.setServerVersion(this.serverVersion?.serverVersion??"");
+                            this.canKeepScreenOn = true;
+                            this.keepScreenOn.set(this.androidHost.getKeepScreenOn())
+                            this.canSetScreenOrientation = true;
+                            this.screenOrientation.set(this.androidHost.getScreenOrientation())
+                        }
+                    }
                 }
             })
             .catch((error) => {
@@ -3412,6 +3484,27 @@ export class PiPedalModel //implements PiPedalModel
         return false;
     }
 
+      setKeepScreenOn(keepScreenOn: boolean): void {
+        if (this.canKeepScreenOn) {
+            this.keepScreenOn.set(keepScreenOn);
+            if (this.androidHost) {
+                this.androidHost.setKeepScreenOn(keepScreenOn);
+            }
+        }
+    }
+    getKeepScreenOn(): boolean {
+        return this.keepScreenOn.get();
+    }
+
+    getScreenOrientation(): ScreenOrientation {
+        return this.screenOrientation.get();
+    }
+    setScreenOrientation(value: ScreenOrientation) {
+        if (this.canSetScreenOrientation) {
+            this.screenOrientation.set(value);
+            this.androidHost?.setScreenOrientation(value as number);
+        }
+    }
 };
 
 let instance: PiPedalModel | undefined = undefined;
