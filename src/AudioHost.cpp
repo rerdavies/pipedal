@@ -1511,8 +1511,10 @@ public:
                                             if (property != nullptr && value != nullptr && property->type == uris.atom_URID)
                                             {
                                                 LV2_URID propertyUrid = ((LV2_Atom_URID *)property)->body;
-                                                this->pNotifyCallbacks->OnPatchSetReply(instanceId, propertyUrid, value);
-                                                // this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
+                                                if (this->pNotifyCallbacks) 
+                                                {
+                                                    this->pNotifyCallbacks->OnPatchSetReply(instanceId, propertyUrid, value);
+                                                }
                                             }
                                         }
                                     }

@@ -319,6 +319,7 @@ namespace pipedal
         }
         if (seqHandle)
         {
+            Lv2Log::debug("Closing ALSA Sequencer");
             snd_seq_close(seqHandle);
             seqHandle = nullptr;
         }
@@ -608,7 +609,7 @@ namespace pipedal
 #ifndef NDEBUG
 #define MSG_DEBUG_LOG(x)                            \
     case x:                                         \
-        Lv2Log::debug("ALSA Sequencer Message" #x); \
+        Lv2Log::debug("ALSA Sequencer Message " #x); \
         break;
 #else
 #define MSG_DEBUG_LOG(x)

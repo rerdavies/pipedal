@@ -39,6 +39,7 @@
 #include "ofstream_synced.hpp"
 #include "ModTemplateGenerator.hpp"
 
+
 #include <mutex>
 #include "WebServer.hpp"
 
@@ -685,7 +686,7 @@ namespace pipedal
         int threads = 1;
         size_t maxUploadSize = 512 * 1024 * 1024;
 
-        std::thread *pBgThread = nullptr;
+        std::unique_ptr<std::thread> pBgThread;
         std::recursive_mutex io_mutex;
 
         boost::asio::io_context *pIoContext = nullptr;
@@ -1417,7 +1418,7 @@ namespace pipedal
                 throw std::runtime_error("Bad state.");
             }
             this->signalOnDone = signalOnDone;
-            this->pBgThread = new std::thread(ThreadProc, this);
+            this->pBgThread = std::make_unique<std::thread>(ThreadProc, this);
         }
 
         virtual void DisplayIpAddresses() override;

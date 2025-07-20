@@ -828,7 +828,10 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
 
     std::string bundleUri = bundleUriNode.AsUri();
 
-    std::string bundlePath = lilv_file_uri_parse(bundleUri.c_str(), nullptr);
+    char *lilvBundlePath = lilv_file_uri_parse(bundleUri.c_str(), nullptr);
+    std::string bundlePath = lilvBundlePath;
+    lilv_free(lilvBundlePath);
+
     if (bundlePath.length() == 0)
         throw std::logic_error("Bundle uri is not a file uri.");
 
@@ -1655,9 +1658,9 @@ Lv2PortGroup::Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri)
 
     this->uri_ = groupUri;
     AutoLilvNode uri = lilv_new_uri(pWorld, groupUri.c_str());
-    LilvNode *symbolNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->lv2core__symbol, nullptr);
+    AutoLilvNode symbolNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->lv2core__symbol, nullptr);
     symbol_ = nodeAsString(symbolNode);
-    LilvNode *nameNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->lv2core__name, nullptr);
+    AutoLilvNode nameNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->lv2core__name, nullptr);
     name_ = nodeAsString(nameNode);
 }
 
