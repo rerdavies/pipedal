@@ -43,6 +43,7 @@ import {
 } from './Pedalboard';
 
 import MidiIcon from './svg/ic_midi.svg?react';
+import { midiChannelBindingControlFeatureEnabled } from './MidiChannelBinding';
 
 
 const START_CONTROL = Pedalboard.START_CONTROL;
@@ -995,7 +996,7 @@ withStyles(
             const classes = withStyles.getClasses(this.props);
             return (
                 <div className={hasBorder ? classes.iconFrame : classes.borderlessIconFrame} onContextMenu={(e) => { e.preventDefault(); }}>
-                    {hasMidiConnector && (
+                    {hasMidiConnector && midiChannelBindingControlFeatureEnabled && (
                         <div className={classes.midiConnectorDecoration} >
                             <MidiIcon style={{ width: 16, height: 16, fill: this.props.theme.palette.text.secondary }} />
                         </div>

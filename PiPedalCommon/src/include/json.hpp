@@ -607,7 +607,7 @@ namespace pipedal
             if (!obj) {
                 write_raw("null");
             } else {
-                write(obj.get());
+                write(obj.value());
             }
         }
 
