@@ -3,7 +3,7 @@
 
 The Big Feature:
 
-- Support for custom MOD User Interfaces for plugins that prove a MOD UI. See the [MOD UI documentation page](https://rerdavies.github.io/pipedal/ModUiSupport.html) for details on how to use MOD User Interfaces with PiPedal. This feature is experimental. If you experience problems with plugins that have MOD user interfaces, please report them on the [PiPedal GitHub Issues page](https://github.com/rerdavies/pipedal/issues).
+- Support for custom MOD User Interfaces for plugins that provide a MOD UI. See the [MOD UI documentation page](https://rerdavies.github.io/pipedal/ModUiSupport.html) for details on how to use MOD User Interfaces with PiPedal. This feature is experimental. If you experience problems with plugins that have MOD user interfaces, please report them on the [PiPedal GitHub Issues page](https://github.com/rerdavies/pipedal/issues).
 
 New in this release:
 
