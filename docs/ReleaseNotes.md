@@ -9,6 +9,7 @@ New in this relase:
 - PiPedal remembers which plugin you were viewing when you reload a preset.
 - Keep Screen On setting in the PiPedal Remote Client (requires updated Android client).
 - Lock Screen Orientation setting in the PiPedal Remote Client (requires updated Android client).
+- Disable the default startup preset if it has previously caused a crash of the PiPedal process.
 
 If you are using the Android PiPedal remote app, you should make sure it has upgraded to the latest version. The new Remote app has been fully rolled out and is now available in the Google Play Store. It should update automatically, but you can check by opening the App Info for PiPedal Remote. If an "Update" button is displayed, click it to upgrade to the current version right away. If you have received the update already, you should notice differences in the App startup procedure (notably an animated splash screen). 
 
