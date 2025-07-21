@@ -1,10 +1,11 @@
 # Release Notes
 ## Pipedal 1.4.79 Beta
+
 The Big Feature:
 
 - Support for custom MOD User Interfaces for plugins that prove a MOD UI. See the [MOD UI documentation page](https://rerdavies.github.io/pipedal/ModUiSupport.html) for details on how to use MOD User Interfaces with PiPedal. This feature is experimental. If you experience problems with plugins that have MOD user interfaces, please report them on the [PiPedal GitHub Issues page](https://github.com/rerdavies/pipedal/issues).
 
-New in this relase:
+New in this release:
 
 - PiPedal remembers which plugin you were viewing when you reload a preset.
 - Keep Screen On setting in the PiPedal Remote Client (requires updated Android client).
