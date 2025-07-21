@@ -35,6 +35,7 @@
 #include "PiPedalException.hpp"
 #include "DummyAudioDriver.hpp"
 #include "SchedulerPriority.hpp"
+#include "CrashGuard.hpp"
 
 #include "CpuUse.hpp"
 
@@ -1595,6 +1596,8 @@ namespace pipedal
                     throw PiPedalStateException("Unable to start ALSA capture.");
                 }
 
+                CrashGuardLock crashGuardLock;
+                
                 cpuUse.SetStartTime(cpuUse.Now());
                 while (true)
                 {

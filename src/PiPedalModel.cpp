@@ -45,6 +45,7 @@
 #include "AvahiService.hpp"
 #include "DummyAudioDriver.hpp"
 #include "AudioFiles.hpp"
+#include "CrashGuard.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -271,20 +272,33 @@ void PiPedalModel::Load()
 
     this->pedalboard = storage.GetCurrentPreset(); // the current *saved* preset.
 
+
+
     // the current edited preset, saved only across orderly shutdowns.
-    CurrentPreset currentPreset;
-    try
-    {
-        if (storage.RestoreCurrentPreset(&currentPreset))
+
+    CrashGuard::SetCrashGuardFileName(storage.GetDataRoot() / "crash_guard.data");
+
+    if (CrashGuard::HasCrashed()) {
+        // ignore the current preset, and load a blank pedalboard in order to avoid a potential plugin crash.
+        this->pedalboard = Pedalboard::MakeDefault();
+    } else {
+        CurrentPreset currentPreset;
+        try
         {
-            this->pedalboard = currentPreset.preset_;
-            this->hasPresetChanged = currentPreset.modified_;
+            if (storage.RestoreCurrentPreset(&currentPreset))
+            {
+                this->pedalboard = currentPreset.preset_;
+                this->hasPresetChanged = currentPreset.modified_;
+            } 
+        }
+        catch (const std::exception &e)
+        {
+            Lv2Log::warning(SS("Failed to load current preset. " << e.what()));
         }
     }
-    catch (const std::exception &e)
-    {
-        Lv2Log::warning(SS("Failed to load current preset. " << e.what()));
-    }
+
+
+
     UpdateDefaults(&this->pedalboard);
 
     std::unique_ptr<AudioHost> p{AudioHost::CreateInstance(pluginHost.asIHost())};
@@ -2610,6 +2624,7 @@ void PiPedalModel::SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedal
 
 bool PiPedalModel::LoadCurrentPedalboard()
 {
+    CrashGuardLock crashGuardLock;
     if (previousPedalboardLoaded && pedalboard.IsStructureIdentical(previousPedalboard))
     {
         // then we can send a snapshot update instead!

@@ -206,6 +206,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    CrashGuard.cpp CrashGuard.hpp
     ModTemplateGenerator.cpp ModTemplateGenerator.hpp
     WebServerMod.cpp WebServerMod.hpp
     ModGui.cpp ModGui.hpp
@@ -767,6 +768,7 @@ add_executable(pipedal_latency_test
     DummyAudioDriver.cpp DummyAudioDriver.hpp
     JackConfiguration.hpp JackConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
+    CrashGuard.cpp CrashGuard.hpp
     CpuUse.hpp
     CpuUse.cpp
     )

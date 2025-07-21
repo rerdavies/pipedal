@@ -27,6 +27,7 @@
 #include "AudioHost.hpp"
 #include "Lv2EventBufferWriter.hpp"
 #include "Lv2Log.hpp"
+#include "CrashGuard.hpp"
 
 using namespace pipedal;
 
@@ -401,6 +402,8 @@ void Lv2Pedalboard::UpdateAudioPorts()
 
 void Lv2Pedalboard::Activate()
 {
+    CrashGuardLock crashGuardLock;
+    
     for (int i = 0; i < this->effects.size(); ++i)
     {
         this->realtimeEffects[i]->Activate();
