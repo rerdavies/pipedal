@@ -27,6 +27,8 @@ import AutoZoom from './AutoZoom';
 
 import ModGuiHost from './ModGuiHost';
 
+import {midiChannelBindingControlFeatureEnabled} from './MidiChannelBinding';
+
 import { withStyles } from "tss-react/mui";
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { UiPlugin, UiControl, UiFileProperty, UiFrequencyPlot, ScalePoint } from './Lv2Plugin';
@@ -762,7 +764,7 @@ const PluginControlView =
                 makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
 
             midiBindingControl(pedalboardItem: PedalboardItem): ReactNode {
-                if (!pedalboardItem.midiChannelBinding) {
+                if ((!pedalboardItem.midiChannelBinding) || (midiChannelBindingControlFeatureEnabled === false)) {
                     return false;
                 }
                 return (
@@ -890,7 +892,7 @@ const PluginControlView =
                     pedalboardItem.midiChannelBinding = MidiChannelBinding.CreateMissingValue();
 
                 }
-                if (pedalboardItem.midiChannelBinding) {
+                if (pedalboardItem.midiChannelBinding && midiChannelBindingControlFeatureEnabled) {
                     nodes.push(this.midiBindingControl(pedalboardItem));
                 }
                 return (

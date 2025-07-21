@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.4.77
+    VERSION 1.4.79
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
 EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 
-set (DISPLAY_VERSION "PiPedal v1.4.77-Beta")
+set (DISPLAY_VERSION "PiPedal v1.4.79-Beta")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
@@ -102,7 +102,11 @@ set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
-set (CPACK_STRIP_FILES true)
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    set (CPACK_STRIP_FILES false)
+else()
+    set (CPACK_STRIP_FILES true)
+endif()
 
 set(CPACK_DEBIAN_PACKAGE_SIGN_ALGORITHM "detached")
 set(CPACK_DEBIAN_PACKAGE_SIGN_TYPE "origin")

@@ -81,7 +81,7 @@ public:
 
 };
 
-class PedalboardItem: public JsonMemberWritable {
+class PedalboardItem {
 public:
     using PropertyMap = std::map<std::string,atom_object>;
     int64_t instanceId_ = 0;
@@ -148,17 +148,17 @@ public:
     void AddResetsForMissingProperties(Snapshot&snapshot, size_t*index) const;
 
 
-    virtual void write_members(json_writer&writer) const {
-        writer.write_member("instanceId",instanceId_);
-        writer.write_member("uri",uri_);
-        writer.write_member("pluginName",pluginName_);
-        writer.write_member("isEnabled",isEnabled_);
-        if (isSplit())
-        {
-            writer.write_member("topChain",topChain_);
-            writer.write_member("bottomChain",bottomChain_);
-        }
-    }
+    // virtual void write_members(json_writer&writer) const {
+    //     writer.write_member("instanceId",instanceId_);
+    //     writer.write_member("uri",uri_);
+    //     writer.write_member("pluginName",pluginName_);
+    //     writer.write_member("isEnabled",isEnabled_);
+    //     if (isSplit())
+    //     {
+    //         writer.write_member("topChain",topChain_);
+    //         writer.write_member("bottomChain",bottomChain_);
+    //     }
+    // }
 
     DECLARE_JSON_MAP(PedalboardItem);
 };

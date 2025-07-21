@@ -78,7 +78,7 @@ myprefix:output_group
         doap:license <https://opensource.org/license/mit/> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 1 ;
-        lv2:microVersion 63 ;
+        lv2:microVersion 64 ;
 
         ui:ui <http://two-play.com/plugins/toob-looper-one-ui>;
 

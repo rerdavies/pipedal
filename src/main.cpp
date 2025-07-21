@@ -41,6 +41,7 @@
 #include "HtmlHelper.hpp"
 #include <thread>
 #include <atomic>
+#include "AlsaDriver.hpp"
 
 #include <signal.h>
 #include <semaphore.h>
@@ -421,6 +422,8 @@ int main(int argc, char *argv[])
             server->Join();
         }
         Lv2Log::info("Shutdown complete.");
+
+        FreeAlsaGlobals();
 
         if (systemd)
         {

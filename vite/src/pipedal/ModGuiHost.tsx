@@ -399,7 +399,6 @@ class CustomSelectPathControl implements ModGuiControl {
         }
         let valueElement = this.getValueElement();
         if (valueElement) {
-            /// xxx: update the display value.
             if (this.pathValue === null || this.pathValue === "") {
                 valueElement.textContent = "No file selected";
                 return;

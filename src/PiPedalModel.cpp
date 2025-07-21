@@ -2239,7 +2239,10 @@ void PiPedalModel::OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetPropert
             }
         }
     }
-    audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    if (audioHost)
+    {
+        audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    }
 }
 
 void PiPedalModel::OnNotifyPathPatchPropertyReceived(

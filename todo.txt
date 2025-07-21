@@ -1,18 +1,11 @@
 Crash-proofing: do not reload pedalboard if the previous run crashed before normal shutdown.
 
-Persist and reconnect IP addresses in client.
-Zeroconv crash assert. /var/pipedal/audio_uploads/ReverbImpulseFiles/
-
-Investigate   if ((keyCode == KeyEvent.KEYCODE_BACK))
-
 MOD ir uses some scheme to limit the minimum buffer size, which is not implemented in Pipedal.
 
-
+wa
 Vu Meters, move rendering to background images, in order to reduce layout overhead.
 
 check reload after change of LV2 plugins.
-
-Remove FullScreenIME in PluginControlView.tsx
 
 Exactly one underrun per seek in Toob Player
 
@@ -21,6 +14,7 @@ check filetime conversion in gcc 12.2! (missing c++ 20 time conversion functions
  AudioFiles.cpp   fileTimeToInt64
 
 
+json "skip" code doesn't work with complex objects (MidiChannelBinding specifically).
 
 - pipewire aux in?
 
@@ -38,4 +32,5 @@ pcm.pipedal_aux_in {
         channels 2
     }
 }
+
 

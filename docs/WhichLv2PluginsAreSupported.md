@@ -14,4 +14,4 @@ If you install a new LV2 plugin, PiPedal will detect the change and make it avai
 PiPedal does not currently allow plugins to provide custom user interfaces; it displays controls that are declared by the LV2 plugin without customization. In practice, this means that LV2 plugins with simple sets of controls work well, but those with complex sets of controls can be difficult to use. However, we would be pleased to collaborate with developers who need more than the basic set of controls. This is a feature set that Pipedal needs to address, so we would be happy to collaborate with other developers on this. Please contact rerdavies at gmail.com for further details.
 
 --------
-[<< Using LV2 Audio Plugins](UsingLv2Plugins.md)  | [Up](Documentation.md) | [BuildingPiPedal from Source >>](BuildingPiPedalFromSource.md)
+[<< Using LV2 Audio Plugins](UsingLv2Plugins.md)  | [Up](Documentation.md) | [MOD UI Support >>](ModUiSupport.md)
