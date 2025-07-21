@@ -255,8 +255,11 @@ export const MainPage =
                     //     selectedItem = value.getFirstSelectableItem();
                     // }
                     let selectedItem = value.selectedPlugin;
-                    if (selectedItem === -1 || !value.hasItem(selectedItem)) {
-                        selectedItem = value.getFirstSelectableItem();
+                    if (selectedItem !== -2 && selectedItem !== -3) // start and end nodes.
+                    {
+                        if (selectedItem === -1 || !value.hasItem(selectedItem)) {
+                            selectedItem = value.getFirstSelectableItem();
+                        }
                     }
                     this.setState({
                         pedalboard: value,

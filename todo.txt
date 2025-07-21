@@ -1,18 +1,11 @@
 Crash-proofing: do not reload pedalboard if the previous run crashed before normal shutdown.
 
-Persist and reconnect IP addresses in client.
-Zeroconv crash assert. /var/pipedal/audio_uploads/ReverbImpulseFiles/
-
-Investigate   if ((keyCode == KeyEvent.KEYCODE_BACK))
-
 MOD ir uses some scheme to limit the minimum buffer size, which is not implemented in Pipedal.
 
-
+wa
 Vu Meters, move rendering to background images, in order to reduce layout overhead.
 
 check reload after change of LV2 plugins.
-
-Remove FullScreenIME in PluginControlView.tsx
 
 Exactly one underrun per seek in Toob Player
 
@@ -21,6 +14,7 @@ check filetime conversion in gcc 12.2! (missing c++ 20 time conversion functions
  AudioFiles.cpp   fileTimeToInt64
 
 
+json "skip" code doesn't work with complex objects (MidiChannelBinding specifically).
 
 - pipewire aux in?
 
@@ -40,5 +34,3 @@ pcm.pipedal_aux_in {
 }
 
 
-
-[{\"message\":\"updateCurrentPedalboard\"},{\"clientId\":6,\"pedalboard\":{\"name\":\"Test\",\"input_volume_db\":0,\"output_volume_db\":0,\"items\":[{\"instanceId\":51,\"title\":\"\",\"isEnabled\":true,\"uri\":\"uri://two-play/pipedal/pedalboard#Empty\",\"pluginName\":\"\",\"controlValues\":[],\"midiBindings\":[],\"midiChannelBinding\":null,\"vstState\":\"\",\"stateUpdateCount\":0,\"lv2State\":[false,{}],\"lilvPresetUri\":\"\",\"pathProperties\":{}},{\"instanceId\":50,\"title\":\"\",\"isEnabled\":true,\"uri\":\"http://calf.sourceforge.net/plugins/Gate\",\"pluginName\":\"Calf Gate\",\"controlValues\":[{\"key\":\"bypass\",\"value\":0},{\"key\":\"level_in\",\"value\":1},{\"key\":\"meter_in\",\"value\":0},{\"key\":\"meter_out\",\"value\":0},{\"key\":\"clip_in\",\"value\":0},{\"key\":\"clip_out\",\"value\":0},{\"key\":\"range\",\"value\":0.0612500012},{\"key\":\"threshold\",\"value\":0.125},{\"key\":\"ratio\",\"value\":2},{\"key\":\"attack\",\"value\":20},{\"key\":\"release\",\"value\":250},{\"key\":\"makeup\",\"value\":1},{\"key\":\"knee\",\"value\":2.82842994},{\"key\":\"detection\",\"value\":0},{\"key\":\"stereo_link\",\"value\":0},{\"key\":\"gating\",\"value\":0.03125}],\"midiBindings\":[],\"midiChannelBinding\":{\"deviceSelection\":0,\"midiDevices\":[],\"channel\":-1,\"acceptProgramChanges\":true,\"acceptCommonMessages\":true},\"vstState\":\"\",\"stateUpdateCount\":0,\"lv2State\":[false,{}],\"lilvPresetUri\":\"\",\"pathProperties\":{}},{\"instanceId\":46,\"title\":\"\",\"isEnabled\":true,\"uri\":\"uri://two-play/pipedal/pedalboard#Empty\",\"pluginName\":\"\",\"controlValues\":[],\"midiBindings\":[],\"midiChannelBinding\":null,\"vstState\":\"\",\"stateUpdateCount\":0,\"lv2State\":[false,{}],\"lilvPresetUri\":\"\",\"pathProperties\":{}},{\"instanceId\":48,\"title\":\"\",\"isEnabled\":true,\"uri\":\"uri://two-play/pipedal/pedalboard#Empty\",\"pluginName\":\"\",\"controlValues\":[],\"midiBindings\":[],\"midiChannelBinding\":null,\"vstState\":\"\",\"stateUpdateCount\":0,\"lv2State\":[false,{}],\"lilvPresetUri\":\"\",\"pathProperties\":{}},{\"instanceId\":47,\"title\":\"\",\"isEnabled\":true,\"uri\":\"uri://two-play/pipedal/pedalboard#Empty\",\"pluginName\":\"\",\"controlValues\":[],\"midiBindings\":[],\"midiChannelBinding\":null,\"vstState\":\"\",\"stateUpdateCount\":1,\"lv2State\":[false,{}],\"lilvPresetUri\":\"\",\"pathProperties\":{\"http://two-play.com/plugins/toob-ml#modelFile\":\"{\\\"otype_\\\": \\\"Path\\\",\\\"value\\\": \\\"/usr/lib/lv2/ToobAmp.lv2/models/tones/MesaBoogieMk2b_Crunch.json\\\"}\"}},{\"instanceId\":31,\"title\":\"\",\"isEnabled\":true,\"uri\":\"http://two-play.com/plugins/toob-freeverb\",\"pluginName\":\"TooB Freeverb\",\"controlValues\":[{\"key\":\"dryWet\",\"value\":0.653543293},{\"key\":\"roomSize\",\"value\":0.625},{\"key\":\"damping\",\"value\":0.574999988}],\"midiBindings\":[{\"symbol\":\"dryWet\",\"bindingType\":2,\"note\":72,\"control\":23,\"minControlValue\":0,\"maxControlValue\":127,\"minValue\":0,\"maxValue\":1,\"rotaryScale\":1,\"linearControlType\":0,\"switchControlType\":0}],\"midiChannelBinding\":null,\"vstState\":\"\",\"stateUpdateCount\":0,\"lv2State\":[false,{}],\"lilvPresetUri\":\"\",\"pathProperties\":{}}],\"nextInstanceId\":51,\"snapshots\":[],\"selectedSnapshot\":-1}}]
