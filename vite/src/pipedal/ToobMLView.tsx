@@ -21,7 +21,7 @@ import React from 'react';
 import { Theme } from '@mui/material/styles';
 
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 
@@ -48,7 +48,7 @@ const ToobMLView =
         class extends React.Component<ToobMLProps, ToobMLState>
             implements ControlViewCustomization {
             model: PiPedalModel;
-            gainRef: React.RefObject<HTMLDivElement|null>;
+            gainRef: React.RefObject<HTMLDivElement | null>;
 
             customizationId: number = 1;
 
@@ -119,19 +119,17 @@ const ToobMLView =
                 // }
                 let controlIndex: number = -1;
                 let controlValues = this.props.item.controlValues
-                for (let i:number = 0; i < controlValues.length; ++i)
-                {
+                for (let i: number = 0; i < controlValues.length; ++i) {
                     let ctl: any = controls[i];
-                    let key: any = ctl?.props?.uiControl?.symbol??"";
-                    
-                    if (key === "gain")
-                    {
+                    let key: any = ctl?.props?.uiControl?.symbol ?? "";
+
+                    if (key === "gain") {
                         controlIndex = i;
                         break;
                     }
                 }
 
-                if (controlIndex !== -1 ) {
+                if (controlIndex !== -1) {
 
                     let gainControl: React.ReactElement = controls[controlIndex] as React.ReactElement;
                     controls[controlIndex] = (<div ref={this.gainRef}> {gainControl} </div>);
@@ -144,6 +142,9 @@ const ToobMLView =
                     item={this.props.item}
                     customization={this}
                     customizationId={this.customizationId}
+                    showModGui={false}
+                    onSetShowModGui={(instanceId: number, showModGui: boolean) => { }}
+
                 />);
             }
         },

@@ -52,7 +52,7 @@ const TextFieldEx = withStyles(styles, { withTheme: true })(
         }
 
         private getUseImeMask() {
-            return this.state.androidHosted && window.innerHeight < 4500;
+            return this.state.androidHosted && document.documentElement.clientHeight < 4500;
         }
 
         private originalInputHref: HTMLInputElement | undefined = undefined;

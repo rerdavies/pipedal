@@ -24,6 +24,11 @@ export enum MidiDeviceSelection {
     DeviceList = 2
 }
 
+// This feature is not yet completely implemented.
+export const midiChannelBindingControlFeatureEnabled: boolean  = false; // set to true to enable the midi channel binding control in the plugin control view.
+
+
+
 export default class MidiChannelBinding {
     deserialize(input: any) : MidiChannelBinding {
         this.deviceSelection = input.deviceSelection;

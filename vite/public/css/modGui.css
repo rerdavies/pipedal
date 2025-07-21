@@ -1,0 +1,178 @@
+
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-light-webfont.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap
+}
+
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-lightitalic-webfont.woff2') format('woff2');
+    font-weight: 300;
+    font-style: italic;
+    font-display: swap
+}
+
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-bookitalic-webfont.woff2') format('woff2');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap
+}
+
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-book-webfont.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap
+}
+
+@font-face {
+    font-family: 'cooper hewitt';
+    src: url('../fonts/cooper/cooperhewitt-semibold-webfont.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap
+}
+
+.mod-pedal {
+    touch-action: none;
+}
+
+.mod-pedal .mod-light {
+}
+.mod-pedal .mod-light.off { background-image:url(../img/red-light-off.png);  }
+.mod-pedal .mod-light.on  { background-image:url(../img/red-light-on.png); }
+
+.mod-pedal .mod-pedal-input {
+    position: absolute;
+    top: 70px;
+    left: -24px;
+    width: 24px;
+
+}
+
+.mod-pedal .mod-pedal-output {
+    position: absolute;
+    top: 70px;
+    right: -25px;
+    width: 25px;
+}
+
+.mod-pedal .mod-pedal-input .mod-audio-input,
+.mod-pedal .mod-pedal-input .mod-midi-input,
+.mod-pedal .mod-pedal-input .mod-cv-input {
+    position: relative;
+    margin-bottom: 20px;
+}
+.mod-audio-input .mod-pedal-input-image {
+    background-image:url(../img/audio-input.png) ;
+    width: 24px;
+    height: 56px;
+    margin-bottom: 20px;
+}
+.mod-audio-output .mod-pedal-output-image {
+    background-image:url(../img/audio-output.png);
+    width: 24px;
+    height: 56px;
+    margin-bottom: 20px;
+}
+
+.mod-pedal-settings .mod-control-group {
+    margin:0;
+    padding:0 18px;
+}
+
+.ppmod-dial-control-image {
+    width: 48px;
+    height: 48px;
+    object-fit: fill;
+
+}
+.ppmod-dial-control-frame 
+{
+    position: relative;
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+}
+.mod-knob-title {
+    white-space: nowrap;
+    overflow: hidden;
+}
+.mod-slider-title {
+    white-space: nowrap;
+    overflow: hidden;
+}
+ 
+
+.mod-pedal .mod-drag-handle {
+    bottom:0;
+    left:0;
+    right:0;
+    top:0;
+    cursor:default; /* we dont do drag */
+
+    position:absolute;
+    z-index: 0;
+}
+
+.mod-pedal .mod-control-group {
+    z-index: 20;
+}
+
+.mod-pedal .mod-pedal-input,
+.mod-pedal .mod-pedal-output {
+    z-index:30;
+}
+
+
+
+
+/* mod clearfix hack */
+.mod-pedal .clearfix:before,
+.mod-pedal .clearfix:after {
+  content: ".";    
+  display: block;    
+  height: 0;    
+  overflow: hidden;        
+}
+.mod-pedal.clearfix:after { clear: both; }
+
+/* enumeration list entries for embedded property browsers. */
+
+.ppmod-dotdot-flex {
+    display: flex;
+    align-items: center;
+    flex-flow: row nowrap;
+}
+
+.ppmod-dotdot-text {
+    white-space: nowrap;
+    flex: 1 0 auto;
+    font-size: 0.8em;
+    padding-right: 8px;
+}
+
+.ppmod-dotdot-path {
+    white-space: nowrap;
+    font-size: 0.8em;
+    flex: 0 1 auto;
+    overflow: hidden;
+}
+
+.ppmod-dotdot-breadcrumb_link {
+    display: inline;
+    white-space: nowrap;
+    text-decoration: underline
+}
+
+.ppmod-dotdot-breadcrumb_current {
+    display: inline;
+    white-space: nowrap;
+}
+

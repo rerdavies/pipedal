@@ -22,6 +22,7 @@
 #include "ss.hpp"
 #include <mutex>
 #include <memory>
+#include "util.hpp"
 
 using namespace pipedal;
 
@@ -30,7 +31,16 @@ static std::string empty;
 const std::string& MimeTypes::MimeTypeFromExtension(const std::string &extension) const
 {
     auto iter = extensionToMimeType.find(extension);
-    if (iter == extensionToMimeType.end()) return empty;
+    if (iter == extensionToMimeType.end()) 
+    {
+        std::string lowerExt = ToLower(extension);
+        auto iter2 = extensionToMimeType.find(lowerExt);
+        if (iter2 != extensionToMimeType.end())
+        {
+            return iter2->second;
+        }
+        return empty;
+    }
     return iter->second;
 }
 

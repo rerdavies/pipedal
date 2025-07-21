@@ -1,4 +1,38 @@
 # Release Notes
+## Pipedal 1.4.79 Beta
+The Big Feature:
+
+- Support for custom MOD User Interfaces for plugins that prove a MOD UI. See the [MOD UI documentation page](https://rerdavies.github.io/pipedal/ModUiSupport.html) for details on how to use MOD User Interfaces with PiPedal. This feature is experimental. If you experience problems with plugins that have MOD user interfaces, please report them on the [PiPedal GitHub Issues page](https://github.com/rerdavies/pipedal/issues).
+
+New in this relase:
+
+- PiPedal remembers which plugin you were viewing when you reload a preset.
+- Keep Screen On setting in the PiPedal Remote Client (requires updated Android client).
+- Lock Screen Orientation setting in the PiPedal Remote Client (requires updated Android client).
+- Disable the default startup preset if it has previously caused a crash of the PiPedal process.
+
+If you are using the Android PiPedal remote app, you should make sure it has upgraded to the latest version. The new Remote app has been fully rolled out and is now available in the Google Play Store. It should update automatically, but you can check by opening the App Info for PiPedal Remote. If an "Update" button is displayed, click it to upgrade to the current version right away. If you have received the update already, you should notice differences in the App startup procedure (notably an animated splash screen). 
+
+The PiPedal Remote Android app has been updated to provide the following new features:
+
+- new Keep Screen On settings.
+- new Lock Screen Orientation setting.
+- Edit controls are automatically repositioned above the Keyboard IME when it opens.
+- The Zoomed Control feature (large controls in landscape mode on phones) has been removed. Improved scrolling provides a better solution to the problem of controls being obscured by the keyboard IME.
+- Support for Android 16 Edge-to-Edge display.
+- Reduced display flickering while connecting. 
+- Complete support for Night Mode (the Android UI now follows the PiPedal Theme setting).
+- Shiny new graphics on the opening screen in support of Android 16's Edge-to-Edge display feature (but you can see it in other versions of Android as well).
+
+
+Bug Fixes:
+
+- The "Listen for Message" buttons in the MIDI Bindings dialog now ignore CC0 (Bank Select), and CC32-63 (CC LSB) MIDI message, since CC0 is used to control preset selection.
+- Fixed errors loading plugins with MIDI Event ports.
+- Changing volume control on low-resolution displays breaks web page.
+- MIDI binding for bypass controls have been restored after having been accidentally disabled in v1.4.77.
+
+
 ## PiPedal 1.4.77 Beta
 
 New TooB Player plugin; improvements to MIDI input handling; and a slew of fit-and finish 

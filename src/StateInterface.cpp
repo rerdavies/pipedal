@@ -23,6 +23,7 @@
 #include "json.hpp"
 #include <sstream>
 #include <string.h>
+#include "Lv2Log.hpp"
 
 using namespace pipedal;
 
@@ -83,6 +84,7 @@ static void CheckState(LV2_State_Status status)
     case LV2_State_Status::LV2_STATE_SUCCESS:
         return;
     default:
+    case LV2_State_Status::LV2_STATE_ERR_UNKNOWN:
         lv2Error = "Unknown error.";
         break;
     case LV2_State_Status::LV2_STATE_ERR_BAD_TYPE:
@@ -126,7 +128,8 @@ Lv2PluginState StateInterface::Save()
     }
     catch (const std::exception &e)
     {
-        throw std::logic_error(SS("State save failed. " << e.what()));
+        Lv2Log::debug(SS("State save failed. " << e.what()));
+        return Lv2PluginState(); // an invalid state.
     }
 
     return std::move(callState.state);

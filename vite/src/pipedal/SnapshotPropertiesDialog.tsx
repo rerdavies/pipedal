@@ -64,7 +64,7 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
         this.state = this.stateFromProps();
     }
     getCompactVertical() {
-        return window.innerHeight < 450;
+        return document.documentElement.clientHeight < 450;
     }
     stateFromProps() {
         let color = this.props.color;

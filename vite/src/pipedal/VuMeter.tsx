@@ -95,7 +95,9 @@ class TelltaleState {
 }
 
 const LEFT_X = BORDER_THICKNESS;
-const RIGHT_X = BORDER_THICKNESS + + CHANNEL_WIDTH + BORDER_THICKNESS;
+const RIGHT_X = BORDER_THICKNESS + CHANNEL_WIDTH + BORDER_THICKNESS;
+const TOP_Y = BORDER_THICKNESS;
+const VU_BAR_HEIGHT = DISPLAY_HEIGHT-2*BORDER_THICKNESS;
 
 const styles = (theme: Theme) => ({
     frame: css({
@@ -119,15 +121,16 @@ const styles = (theme: Theme) => ({
         overflow: "hidden",
     }),
     monoTextFrame: css({
-        display: "flex",flexFlow: "column nowrap", alignItems: "center", textAlign: "center"
+        display: "flex",flexFlow: "column nowrap", alignItems: "center", textAlign: "center", overflow: "clip",
     }),
     stereoTextFrame: css({
-        display: "flex",flexFlow: "column nowrap", alignItems: "center", textAlign: "center"
+        display: "flex",flexFlow: "column nowrap", alignItems: "center", textAlign: "center",overflow: "clip",
     }),
     vuTextFrame: css({
         color: theme.palette.text.secondary,
-        display: "table-cell",
+        display: "div",
         position: "relative",
+        overflow: "clip",
         marginTop: 4,
         textAlign: "center",
         width: 20, height: 16,
@@ -135,73 +138,60 @@ const styles = (theme: Theme) => ({
         justifyContent: "center",
         alignItems: "center"
     }),
-    redFrameL: css({
+    frameL: css({
         position: "absolute",
-        top: "100%",
+        top:  TOP_Y ,
         left: LEFT_X,
         width: CHANNEL_WIDTH,
-        height: DISPLAY_HEIGHT - 2,
-        background: "#F00"
+        height: VU_BAR_HEIGHT,
+        overflow: "clip"
     }),
-    yellowFrameL: css({
-        top: "100%",
-        left: LEFT_X,
+    frameR: css({
+        position: "absolute",
+        overflow: "clip",
+        top:  TOP_Y,
+        left: RIGHT_X,
         width: CHANNEL_WIDTH,
-        position: "absolute",
-        height: DISPLAY_HEIGHT - 2,
-        background: "#CC0"
+        height: VU_BAR_HEIGHT,
     }),
-    greenFrameL: css({
-        top: "100%",
-        left: LEFT_X,
+    yellowBar: css({
+        top: 0,
+        left: 0,
         width: CHANNEL_WIDTH,
+        height: VU_BAR_HEIGHT,
         position: "absolute",
-        height: DISPLAY_HEIGHT - 2,
-        background: "#0C2"
+        background: "#CC0",
+        transform: "translateY(" + VU_BAR_HEIGHT + "px)"
     }),
-    indicatorL: css({
+    greenBar: css({
+        top: 0,
+        left: 0,
+        width: CHANNEL_WIDTH,
+        height: VU_BAR_HEIGHT,
         position: "absolute",
-        left: LEFT_X,
+        background: "#0C2",
+        transform: "translateY(" + VU_BAR_HEIGHT + "px)"
+    }),
+    redBar: css({
+        top: 0,
+        left: 0,
+        width: CHANNEL_WIDTH,
+        height: VU_BAR_HEIGHT,
+        position: "absolute",
+        background: "#F00",
+        transform: "translateY(" + VU_BAR_HEIGHT + "px)"    
+    }),
+    indicatorBar: css({
+        position: "absolute",
+        left: 0,
         width: CHANNEL_WIDTH,
         height: TELLTALE_HEIGHT + "px",
-        top: "100%",
-        background: "#F00"
+        top: 0,
+        background: "#F00",
+        transform: "translateY(" + VU_BAR_HEIGHT + "px)"    
+
 
     }),
-    redFrameR: css({
-        position: "absolute",
-        top: "100%",
-        left: RIGHT_X,
-        width: CHANNEL_WIDTH,
-        height: DISPLAY_HEIGHT - 2,
-        background: "#F00"
-    }),
-    yellowFrameR: css({
-        top: "100%",
-        left: RIGHT_X,
-        width: CHANNEL_WIDTH,
-        position: "absolute",
-        height: DISPLAY_HEIGHT - 2,
-        background: "#CC0"
-    }),
-    greenFrameR: css({
-        top: "100%",
-        left: RIGHT_X,
-        width: CHANNEL_WIDTH,
-        position: "absolute",
-        height: DISPLAY_HEIGHT - 2,
-        background: "#0C2"
-    }),
-    indicatorR: css({
-        position: "absolute",
-        left: RIGHT_X,
-        width: CHANNEL_WIDTH,
-        height: TELLTALE_HEIGHT + "px",
-        top: "100%",
-        background: "#F00"
-
-    })
-
 });
 
 
@@ -261,10 +251,12 @@ export const VuMeter =
             telltaleStateR: TelltaleState = new TelltaleState();
 
             vuInfo?: VuUpdateInfo;
-            requesttedStereoState: boolean = false;
+            requestedStereoState: boolean = false;
 
+            private currentDisplayValue: string | null = null;
             updateText(telltaleDb: number)
             {
+
                 if (this.textRef.current) {
                     let displayValue: string; 
                     if (telltaleDb <= MIN_DB)
@@ -288,16 +280,39 @@ export const VuMeter =
                             }
                         }
                     }
-                    this.textRef.current.innerText = displayValue;
+                    
+                    if (this.currentDisplayValue !== displayValue)  
+                    {
+                        this.currentDisplayValue = displayValue;
+                        this.textRef.current.innerText = displayValue;
+                    }
                 }
             }
 
+            private currentVuInfo: VuUpdateInfo | null = null;
+
+            private animationFrameHandle: number | null = null;
             onVuChanged(vuInfo: VuUpdateInfo): void {
+                this.currentVuInfo = vuInfo;
+                if (this.animationFrameHandle == null)
+                {
+                    this.animationFrameHandle = window.requestAnimationFrame(() => {
+                        this.animationFrameHandle = null;
+                        this.animateVuUpdate();
+                    });
+                }
+            }
+            private animateVuUpdate() : void
+            {
                 let value: number;
                 let valueR: number;
-
-                this.vuInfo = vuInfo;
-
+                let vuInfo = this.currentVuInfo;
+                if (!vuInfo) {
+                    return; // no vu info.
+                }
+                if (!this.divRef.current) { // unmounted?
+                    return;
+                } 
 
                 let isStereo: boolean;
 
@@ -312,34 +327,37 @@ export const VuMeter =
                 }
                 if (this.state.isStereo !== isStereo)
                 {
-                    if (isStereo !== this.requesttedStereoState) // guard against overrunning the layout engine.
+                    if (isStereo !== this.requestedStereoState) // guard against overrunning the layout engine.
                     {
-                        this.requesttedStereoState = isStereo;
+                        this.requestedStereoState = isStereo;
 
                         this.setState({
                             isStereo: isStereo
                         });
-                        return; // we can't procede without stereo layout.
+                        return; // we can't proceed without stereo layout.
                     }
                 }
 
                 let childNodes = this.divRef.current!.childNodes;
 
+                let leftFrameChildNodes = childNodes[0].childNodes;
+
                 let vuData: VuChannelData = {
                     value: value,
-                    redDiv: childNodes[0] as HTMLDivElement,
-                    yellowDiv: childNodes[1] as HTMLDivElement,
-                    greenDiv: childNodes[2] as HTMLDivElement,
-                    telltaleDiv: childNodes[3] as HTMLDivElement
+                    redDiv: leftFrameChildNodes[0] as HTMLDivElement,
+                    yellowDiv: leftFrameChildNodes[1] as HTMLDivElement,
+                    greenDiv: leftFrameChildNodes[2] as HTMLDivElement,
+                    telltaleDiv: leftFrameChildNodes[3] as HTMLDivElement
                 };
                 this.updateChannel(vuData,this.telltaleStateL);
                 if (this.state.isStereo) {
+                    let rightFrameChildren = childNodes[1].childNodes;
                     vuData = {
                         value: valueR,
-                        redDiv: childNodes[4] as HTMLDivElement,
-                        yellowDiv: childNodes[5] as HTMLDivElement,
-                        greenDiv: childNodes[6] as HTMLDivElement,
-                        telltaleDiv: childNodes[7] as HTMLDivElement
+                        redDiv: rightFrameChildren[0] as HTMLDivElement,
+                        yellowDiv: rightFrameChildren[1] as HTMLDivElement,
+                        greenDiv: rightFrameChildren[2] as HTMLDivElement,
+                        telltaleDiv: rightFrameChildren[3] as HTMLDivElement
                     };
                     this.updateChannel(vuData, this.telltaleStateR);
                 }
@@ -367,17 +385,17 @@ export const VuMeter =
                 let INVISIBLE_Y = INTERIOR_DISPLAY_HEIGHT + "px";
                 if (y >= this.yYellow) {
                     // green only.
-                    vuData.greenDiv.style.top = y + "px";
-                    vuData.yellowDiv.style.top = INVISIBLE_Y;
-                    vuData.redDiv.style.top = INVISIBLE_Y;
+                    vuData.greenDiv.style.transform = `translateY(${y}px)`;
+                    vuData.yellowDiv.style.transform = `translateY(${INVISIBLE_Y})`;
+                    vuData.redDiv.style.transform = `translateY(${INVISIBLE_Y})`;
                 } else {
-                    vuData.greenDiv.style.top = this.yYellow + "px";
+                    vuData.greenDiv.style.transform = `translateY(${this.yYellow}px)`;
                     if (y >= this.yZero) {
-                        vuData.yellowDiv.style.top = y + "px";
-                        vuData.redDiv.style.top = INVISIBLE_Y;
+                        vuData.yellowDiv.style.transform = `translateY(${y}px)`;
+                        vuData.redDiv.style.transform = `translateY(${INVISIBLE_Y})`;
                     } else {
-                        vuData.yellowDiv.style.top = this.yZero + "px";
-                        vuData.redDiv.style.top = y + "px";
+                        vuData.yellowDiv.style.transform = `translateY(${this.yZero}px)`;
+                        vuData.redDiv.style.transform = `translateY(${y}px)`;
                     }
                 }
                 let dbTelltale = telltaleState.getTelltaleHoldValue(db);
@@ -399,7 +417,7 @@ export const VuMeter =
                         yTelltale = INTERIOR_DISPLAY_HEIGHT;
                     }
                 }
-                vuData.telltaleDiv.style.top = yTelltale + "px";
+                vuData.telltaleDiv.style.transform = `translateY(${yTelltale}px)`;
 
 
             }
@@ -467,23 +485,28 @@ export const VuMeter =
                 if (!this.state.isStereo) {
                     return (<div className={classes.frame} ref={this.divRef}
                     >
-                        <div className={classes.redFrameL} />
-                        <div className={classes.yellowFrameL} />
-                        <div className={classes.greenFrameL} />
-                        <div className={classes.indicatorL} />
+                        <div className={classes.frameL}>
+                            <div className={classes.redBar} />
+                            <div className={classes.yellowBar} />
+                            <div className={classes.greenBar} />
+                            <div className={classes.indicatorBar} />
+                        </div>
                     </div>);
                 } else {
                     return (<div className={classes.frameStereo} ref={this.divRef}
                     >
-                        <div className={classes.redFrameL} />
-                        <div className={classes.yellowFrameL} />
-                        <div className={classes.greenFrameL} />
-                        <div className={classes.indicatorL} />
-
-                        <div className={classes.redFrameR} />
-                        <div className={classes.yellowFrameR} />
-                        <div className={classes.greenFrameR} />
-                        <div className={classes.indicatorR} />
+                        <div className={classes.frameL}>
+                            <div className={classes.redBar} />
+                            <div className={classes.yellowBar} />
+                            <div className={classes.greenBar} />
+                            <div className={classes.indicatorBar} />
+                        </div>
+                        <div className={classes.frameR}>   
+                            <div className={classes.redBar} />
+                            <div className={classes.yellowBar} />
+                            <div className={classes.greenBar} />
+                            <div className={classes.indicatorBar} />
+                        </div>
 
                     </div>);
 

@@ -45,6 +45,7 @@
 #include "AvahiService.hpp"
 #include "DummyAudioDriver.hpp"
 #include "AudioFiles.hpp"
+#include "CrashGuard.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -242,7 +243,7 @@ void PiPedalModel::LoadLv2PluginInfo()
     }
 
     pluginChangeMonitor = std::make_unique<Lv2PluginChangeMonitor>(*this);
-    pluginHost.Load(configuration.GetLv2Path().c_str());
+    pluginHost.LoadLilv(configuration.GetLv2Path().c_str());
 
     // Copy all presets out of Lilv data to json files
     // so that we can close lilv while we're actually
@@ -271,20 +272,33 @@ void PiPedalModel::Load()
 
     this->pedalboard = storage.GetCurrentPreset(); // the current *saved* preset.
 
+
+
     // the current edited preset, saved only across orderly shutdowns.
-    CurrentPreset currentPreset;
-    try
-    {
-        if (storage.RestoreCurrentPreset(&currentPreset))
+
+    CrashGuard::SetCrashGuardFileName(storage.GetDataRoot() / "crash_guard.data");
+
+    if (CrashGuard::HasCrashed()) {
+        // ignore the current preset, and load a blank pedalboard in order to avoid a potential plugin crash.
+        this->pedalboard = Pedalboard::MakeDefault();
+    } else {
+        CurrentPreset currentPreset;
+        try
         {
-            this->pedalboard = currentPreset.preset_;
-            this->hasPresetChanged = currentPreset.modified_;
+            if (storage.RestoreCurrentPreset(&currentPreset))
+            {
+                this->pedalboard = currentPreset.preset_;
+                this->hasPresetChanged = currentPreset.modified_;
+            } 
+        }
+        catch (const std::exception &e)
+        {
+            Lv2Log::warning(SS("Failed to load current preset. " << e.what()));
         }
     }
-    catch (const std::exception &e)
-    {
-        Lv2Log::warning(SS("Failed to load current preset. " << e.what()));
-    }
+
+
+
     UpdateDefaults(&this->pedalboard);
 
     std::unique_ptr<AudioHost> p{AudioHost::CreateInstance(pluginHost.asIHost())};
@@ -616,6 +630,24 @@ void PiPedalModel::UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalbo
         this->SetPresetChanged(clientId, true);
     }
 }
+
+void PiPedalModel::SetPedalboardItemUseModUi(int64_t clientId, int64_t instanceId, bool enabled)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    {
+        this->pedalboard.SetItemUseModUi(instanceId, enabled);
+
+        // Notify clients.
+        std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
+        for (auto &subscriber : t)
+        {
+            subscriber->OnItemUseModUiChanged(clientId, instanceId, enabled);
+        }
+        this->SetPresetChanged(clientId, true);
+
+    }
+}
+
 
 void PiPedalModel::SetPedalboardItemEnable(int64_t clientId, int64_t pedalItemId, bool enabled)
 {
@@ -2221,7 +2253,10 @@ void PiPedalModel::OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetPropert
             }
         }
     }
-    audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    if (audioHost)
+    {
+        audioHost->SetListenForAtomOutput(atomOutputListeners.size() != 0);
+    }
 }
 
 void PiPedalModel::OnNotifyPathPatchPropertyReceived(
@@ -2577,8 +2612,19 @@ std::shared_ptr<Lv2Pedalboard> PiPedalModel::GetLv2Pedalboard()
     }
     return lv2Pedalboard;
 }
+
+void PiPedalModel::SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedalboardId)
+{
+    // Thinking on this:
+    // 1) do NOT mark the pedalboard as changed. This shouldn't set a change flag.
+    // 2) do NOT broadcast the change. Whoever set it last controls what happens when the plugin is reloaded. Meh.
+    // 3) Clients must be able to save a non-changed pedalboard.
+    pedalboard.selectedPlugin(pedalboardId);
+}
+
 bool PiPedalModel::LoadCurrentPedalboard()
 {
+    CrashGuardLock crashGuardLock;
     if (previousPedalboardLoaded && pedalboard.IsStructureIdentical(previousPedalboard))
     {
         // then we can send a snapshot update instead!
@@ -3056,4 +3102,6 @@ bool PiPedalModel::HasTone3000Auth() const
 {
     return storage.GetTone3000Auth() != "";
 }
+
+
 

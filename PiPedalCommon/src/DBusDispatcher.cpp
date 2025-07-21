@@ -73,6 +73,7 @@ DBusDispatcher::PostHandle DBusDispatcher::PostDelayed(const clock::duration &de
 void DBusDispatcher::Run()
 {
     this->eventFd = eventfd(0, 0);
+    threadStarted = true;
     this->serviceThread = std::thread(
         [this]()
         { this->ThreadProc(); });
@@ -169,7 +170,7 @@ void DBusDispatcher::ThreadProc()
                 int eventTimeout = GetEventTimeoutMs();
                 if (eventTimeout != -1 && eventTimeout < pollTimeout)
                 {
-                    pollTimeout = eventTimeout;/*+-*/
+                    pollTimeout = eventTimeout; /*+-*/
                 }
                 if (pollTimeout > 250 || pollTimeout == -1)
                 {
@@ -197,13 +198,13 @@ void DBusDispatcher::ThreadProc()
     LogTrace("DBusDispatcher", "ThreadProc", "Service thread terminated.");
 }
 
-void DBusDispatcher::Wait()
+void DBusDispatcher::WaitForClose()
 {
     try
     {
-        if (!threadJoined)
+        if (threadStarted)
         {
-            threadJoined = true;
+            threadStarted = false;
             serviceThread.join();
         }
     }
@@ -229,7 +230,7 @@ void DBusDispatcher::Stop()
 
         this->stopping = true;
         WakeThread();
-        Wait();
+        WaitForClose();
     }
 }
 

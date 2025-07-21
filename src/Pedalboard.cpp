@@ -115,6 +115,18 @@ const ControlValue* PedalboardItem::GetControlValue(const std::string&symbol) co
     return nullptr;
 }
 
+bool Pedalboard::SetItemUseModUi(int64_t pedalItemId, bool enabled)
+{
+    PedalboardItem*item = GetItem(pedalItemId);
+    if (!item) return false;
+    if (item->useModUi() != enabled)
+    {
+        item->useModUi(enabled);
+        return true;
+    }
+    return false;
+
+}
 bool Pedalboard::SetItemEnabled(int64_t pedalItemId, bool enabled)
 {
     PedalboardItem*item = GetItem(pedalItemId);
@@ -508,11 +520,13 @@ JSON_MAP_BEGIN(PedalboardItem)
     JSON_MAP_REFERENCE_CONDITIONAL(PedalboardItem,topChain,IsPedalboardSplitItem)
     JSON_MAP_REFERENCE_CONDITIONAL(PedalboardItem,bottomChain,&IsPedalboardSplitItem)
     JSON_MAP_REFERENCE(PedalboardItem,midiBindings)
+    JSON_MAP_REFERENCE(PedalboardItem,midiChannelBinding)
     JSON_MAP_REFERENCE(PedalboardItem,stateUpdateCount)
     JSON_MAP_REFERENCE(PedalboardItem,lv2State)
     JSON_MAP_REFERENCE(PedalboardItem,lilvPresetUri)
     JSON_MAP_REFERENCE(PedalboardItem,pathProperties)
     JSON_MAP_REFERENCE(PedalboardItem,title)
+    JSON_MAP_REFERENCE(PedalboardItem,useModUi)
 JSON_MAP_END()
 
 
@@ -524,6 +538,7 @@ JSON_MAP_BEGIN(Pedalboard)
     JSON_MAP_REFERENCE(Pedalboard,nextInstanceId)
     JSON_MAP_REFERENCE(Pedalboard,snapshots)
     JSON_MAP_REFERENCE(Pedalboard,selectedSnapshot)
+    JSON_MAP_REFERENCE(Pedalboard,selectedPlugin)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(SnapshotValue)

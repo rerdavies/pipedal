@@ -29,7 +29,7 @@
         let galleryFrame = 0;
 
         let calculateWidth = function () {
-            width = Math.min(maxWidth, window.innerWidth * 0.8);
+            width = Math.min(maxWidth, document.documentElement.clientWidth * 0.8);
             height = width * aspectY / aspectX;
             frameWidth = width + borderWidth * 2;
             frameHeight = height + borderWidth * 2;

@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.4.77
+    VERSION 1.4.79
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
 EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 
-set (DISPLAY_VERSION "PiPedal v1.4.77-Beta")
+set (DISPLAY_VERSION "PiPedal v1.4.79-Beta")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
@@ -96,13 +96,17 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IoT guitar effect pedal for Raspberry Pi"
 set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, authbind, curl, gpg, alsa-base| pipewire, alsa-utils" )
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "lv2-dev, ffmpeg, authbind, curl, gpg, alsa-base| pipewire, alsa-utils" )
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
-set (CPACK_STRIP_FILES true)
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    set (CPACK_STRIP_FILES false)
+else()
+    set (CPACK_STRIP_FILES true)
+endif()
 
 set(CPACK_DEBIAN_PACKAGE_SIGN_ALGORITHM "detached")
 set(CPACK_DEBIAN_PACKAGE_SIGN_TYPE "origin")

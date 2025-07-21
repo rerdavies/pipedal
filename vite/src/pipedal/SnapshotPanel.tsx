@@ -123,17 +123,17 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
     getCollapseButtons() {
         if (this.getPortraitOrientation())
         {
-            return window.innerWidth < 550;
+            return document.documentElement.clientWidth < 550;
         } else {
-            return window.innerWidth < 800;
+            return document.documentElement.clientWidth < 800;
         }
     }
     getPortraitOrientation() {
-        return window.innerWidth * 2 < window.innerHeight * 3;
+        return document.documentElement.clientWidth * 2 < document.documentElement.clientHeight * 3;
     }
 
     getLargeText() {
-        return window.innerHeight > 700 && window.innerWidth > 1000;
+        return document.documentElement.clientHeight > 700 && document.documentElement.clientWidth > 1000;
     }
     onSaveSnapshot(index: number) {
         let snapshot = this.state.snapshots[index];

@@ -36,6 +36,7 @@ header_pages:
 theme: minima
 plugins:
   - jekyll-feed
+  - jekyll-seo-tag
 
 include:
   - .well-known

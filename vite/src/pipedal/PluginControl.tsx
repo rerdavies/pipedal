@@ -367,15 +367,15 @@ const PluginControl =
                         }
                     }
 
-                    if (this.isTouchDevice()) {
-                        if (this.props.uiControl
-                            && (this.props.uiControl.isDial() || this.props.uiControl.isGraphicEq())
-                        ) {
-                            this.isTap = false;
-                            this.showZoomedControl();
-                            return;
-                        }
-                    }
+                    // if (this.isTouchDevice()) {
+                    //     if (this.props.uiControl
+                    //         && (this.props.uiControl.isDial() || this.props.uiControl.isGraphicEq())
+                    //     ) {
+                    //         this.isTap = false;
+                    //         this.showZoomedControl();
+                    //         return;
+                    //     }
+                    // }
 
                     ++this.pointersDown;
 

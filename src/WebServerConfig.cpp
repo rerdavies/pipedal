@@ -39,6 +39,7 @@
 #include "AudioFiles.hpp"
 #include "util.hpp"
 #include "HtmlHelper.hpp"
+#include "WebServerMod.hpp"
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
@@ -249,7 +250,7 @@ public:
     void GetPluginPresets(const uri &request_uri, std::string *pName, std::string *pContent)
     {
         std::string pluginUri = request_uri.query("id");
-        auto plugin = model->GetLv2Host().GetPluginInfo(pluginUri);
+        auto plugin = model->GetPluginHost().GetPluginInfo(pluginUri);
         *pName = plugin->name();
 
         PluginPresets pluginPresets = model->GetPluginPresets(pluginUri);
@@ -1102,4 +1103,7 @@ void pipedal::ConfigureWebServer(
 
     std::shared_ptr<DownloadIntercept> downloadIntercept = std::make_shared<DownloadIntercept>(&model);
     server.AddRequestHandler(downloadIntercept);
+
+    std::shared_ptr<ModWebIntercept> modWebIntercept = ModWebIntercept::Create(&model);
+    server.AddRequestHandler(modWebIntercept);
 }

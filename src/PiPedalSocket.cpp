@@ -428,6 +428,22 @@ JSON_MAP_REFERENCE(PedalboardItemEnabledBody, instanceId)
 JSON_MAP_REFERENCE(PedalboardItemEnabledBody, enabled)
 JSON_MAP_END()
 
+class PedalboardItemUseModGuiBody
+{
+public:
+    int64_t clientId_ = -1;
+    int64_t instanceId_ = -1;
+    bool useModUi_ = true;
+
+    DECLARE_JSON_MAP(PedalboardItemUseModGuiBody);
+};
+JSON_MAP_BEGIN(PedalboardItemUseModGuiBody)
+JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, clientId)
+JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, instanceId)
+JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, useModUi)
+JSON_MAP_END()
+
+
 class UpdateCurrentPedalboardBody
 {
 public:
@@ -455,6 +471,21 @@ JSON_MAP_BEGIN(SetSnapshotsBody)
 JSON_MAP_REFERENCE(SetSnapshotsBody, snapshots)
 JSON_MAP_REFERENCE(SetSnapshotsBody, selectedSnapshot)
 JSON_MAP_END()
+
+class SetSelectedPedalboardPluginBody
+{
+public:
+    uint64_t clientId_;
+    uint64_t pluginInstanceId_;
+
+    DECLARE_JSON_MAP(SetSelectedPedalboardPluginBody);
+};
+
+JSON_MAP_BEGIN(SetSelectedPedalboardPluginBody)
+JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, clientId)
+JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, pluginInstanceId)
+JSON_MAP_END()
+
 
 class SnapshotModifiedBody
 {
@@ -1284,6 +1315,12 @@ public:
             int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.name_, body.saveAfterInstanceId_);
             Reply(replyTo, "saveCurrentPresetsAs", result);
         }
+        else if (message == "setSelectedPedalboardPlugin")
+        {
+            SetSelectedPedalboardPluginBody body;
+            pReader->read(&body);
+            this->model.SetSelectedPedalboardPlugin(body.clientId_,body.pluginInstanceId_);
+        }
         else if (message == "savePluginPresetAs")
         {
             SavePluginPresetAsBody body;
@@ -1302,6 +1339,11 @@ public:
             PedalboardItemEnabledBody body;
             pReader->read(&body);
             model.SetPedalboardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
+        }
+        else if (message == "setPedalboardItemUseModUi") {
+            PedalboardItemUseModGuiBody body;
+            pReader->read(&body);
+            model.SetPedalboardItemUseModUi(body.clientId_, body.instanceId_, body.useModUi_);
         }
         else if (message == "updateCurrentPedalboard")
         {
@@ -1331,12 +1373,12 @@ public:
         }
         else if (message == "plugins")
         {
-            auto ui_plugins = model.GetLv2Host().GetUiPlugins();
+            auto ui_plugins = model.GetPluginHost().GetUiPlugins();
             Reply(replyTo, "plugins", ui_plugins);
         }
         else if (message == "pluginClasses")
         {
-            auto classes = model.GetLv2Host().GetLv2PluginClass();
+            auto classes = model.GetPluginHost().GetLv2PluginClass();
             Reply(replyTo, "pluginClasses", classes);
         }
         else if (message == "hello")
@@ -2221,6 +2263,15 @@ private:
         body.enabled_ = enabled;
         Send("onItemEnabledChanged", body);
     }
+    virtual void OnItemUseModUiChanged(int64_t clientId, int64_t pedalItemId, bool enabled)
+    {
+        PedalboardItemEnabledBody body;
+        body.clientId_ = clientId;
+        body.instanceId_ = pedalItemId;
+        body.enabled_ = enabled;
+        Send("onUseItemModUiChanged", body);
+    }
+
 };
 
 std::atomic<uint64_t> PiPedalSocketHandler::nextClientId = 0;

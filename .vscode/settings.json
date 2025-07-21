@@ -115,6 +115,7 @@
         "Chowdhury",
         "Chowdhury's",
         "discursus",
+        "distro",
         "distros",
         "dpkg",
         "flac",
@@ -134,6 +135,7 @@
         "midiclip",
         "midisong",
         "mlmodel",
+        "modui",
         "MOTU",
         "Netplan",
         "Pedalboard",
@@ -161,7 +163,7 @@
     "cSpell.ignoreWords": [
         "nammodel"
     ],
-    "cSpell.enabled": true,
+    "cSpell.enabled": false,
     
     // Disable all automatic completion suggestions - only show when Ctrl+Space is pressed
     "editor.quickSuggestions": {

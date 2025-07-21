@@ -23,8 +23,9 @@ import { createStyles } from './WithStyles';
 
 // import Tone3000Dialog from './Tone3000Dialog';
 import Tone3000HelpDialog from './Tone3000HelpDialog';
+import GuitarMLHelpDialog from './GuitarMlHelpDialog';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import Link from '@mui/material/Link';
+import LinkEx from './LinkEx';
 import DraggableButtonBase from './DraggableButtonBase';
 import CloseIcon from '@mui/icons-material/Close';
 import { Theme } from '@mui/material/styles';
@@ -69,6 +70,7 @@ import { getAlbumArtUri, getTrackTitle } from './AudioFileMetadata';
 
 
 const ToobNamModelFileUrl = "http://two-play.com/plugins/toob-nam#modelFile";
+const ToobMlModelFileUrl = "http://two-play.com/plugins/toob-ml#modelFile";
 
 const AUTOSCROLL_TICK_DELAY = 30;
 const AUTOSCROLL_THRESHOLD = 48;
@@ -168,7 +170,8 @@ export interface FilePropertyDialogState {
     multiSelect: boolean,
     selectedFiles: string[],
     //openTone3000Dialog: boolean,
-    openTone3000Help: boolean
+    openTone3000Help: boolean,
+    openGuitarMlHelp: boolean
 
 };
 
@@ -241,12 +244,13 @@ export default withStyles(
                 multiSelect: false,
                 selectedFiles: [],
                 //openTone3000Dialog: false,
-                openTone3000Help: false
+                openTone3000Help: false,
+                openGuitarMlHelp: false
             };
             this.requestScroll = true;
         }
         getFullScreen() {
-            return window.innerWidth < 450 || window.innerHeight < 450;
+            return document.documentElement.clientWidth < 450 || document.documentElement.clientHeight < 450;
         }
 
         hProgressTimeout: number | null = null;
@@ -1057,6 +1061,15 @@ export default withStyles(
         // }
 
 
+        handleGuitarMlHelp(e: React.MouseEvent<HTMLButtonElement>) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            this.setState({ openGuitarMlHelp: true });
+
+        }
+
+
         handleTone3000Help(e: React.MouseEvent<HTMLButtonElement>) {
             e.stopPropagation();
             e.preventDefault();
@@ -1068,6 +1081,7 @@ export default withStyles(
         render() {
             const isTracksDirectory = this.isTracksDirectory();
             const isToobNamModelFile = this.props.fileProperty.patchProperty === ToobNamModelFileUrl;
+            const isToobMLModelFile = this.props.fileProperty.patchProperty === ToobMlModelFileUrl;
 
             const classes = withStyles.getClasses(this.props);
             let columnWidth = this.state.columnWidth;
@@ -1487,26 +1501,46 @@ export default withStyles(
                         </DialogContent>
                         {(!this.state.reordering && !this.state.multiSelect) && (
                             <>
-                                <DialogActions style={{ justifyContent: "stretch" }}>
+                                <DialogActions style={{ justifyContent: "stretch", width: "100%" }}>
+                                    <div style={{display: "flex", flexFlow: "column nowrap", width: "100%", alignItems: "stretch", }}>
+                                    {isToobNamModelFile && (
+                                        <div style={{
+                                            display: "flex", flexFlow: "row nowrap", justifyContent: "center",
+                                            alignItems: "center", width: "100%"
+                                        }}>
+                                            <Typography variant="body2" >
+                                                Download model files from <LinkEx
+                                                    href="https://www.tone3000.com/search" target="_blank">TONE3000</LinkEx>
+                                            </Typography>
+                                            <IconButtonEx tooltip="Help"
+                                            onClick={(e) => { this.handleTone3000Help(e); }} aria-label="help" edge="end" color="inherit" style={{ opacity: 0.6, marginLeft: 8 }}
+                                            >
+                                                <HelpOutlineIcon />
+                                            </IconButtonEx>
+                                        </div>
+
+                                    )}
+                                    {isToobMLModelFile && (
+                                        <div style={{
+                                            display: "flex", flexFlow: "row nowrap", justifyContent: "center", width: "100%",
+                                            alignItems: "center"
+                                        }}>
+                                            <Typography variant="body2" >
+                                                Download model files from <LinkEx
+                                                    href="https://github.com/GuitarML/ToneLibrary/releases/download/v1.0/Proteus_Tone_Packs.zip" target="_blank">GuitarML</LinkEx>
+                                            </Typography>
+                                            <IconButtonEx tooltip="Help"
+                                            onClick={(e) => { this.handleGuitarMlHelp(e); }} aria-label="help" edge="end" color="inherit" style={{ opacity: 0.6, marginLeft: 8 }}
+                                            >
+                                                <HelpOutlineIcon />
+                                            </IconButtonEx>
+                                        </div>
+
+                                    )}
+
+
                                     {this.state.windowWidth > 500 ? (
                                         <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "column nowrap" }}>
-                                            {isToobNamModelFile && (
-                                                <div style={{
-                                                    display: "flex", flexFlow: "row nowrap", justifyContent: "center",
-                                                    alignItems: "center", width: "100%"
-                                                }}>
-                                                    <Typography variant="body2" >
-                                                        Download model files from <Link
-                                                            href="https://www.tone3000.com/search" target="_blank">TONE3000</Link>
-                                                    </Typography>
-                                                    <IconButtonEx tooltip="Help"
-                                                    onClick={(e) => { this.handleTone3000Help(e); }} aria-label="help" edge="end" color="inherit" style={{ opacity: 0.6, marginLeft: 8 }}
-                                                    >
-                                                        <HelpOutlineIcon />
-                                                    </IconButtonEx>
-                                                </div>
-
-                                            )}
 
                                             <div style={{ flex: "1 1 100%", display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
                                                 <IconButtonEx style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
@@ -1587,6 +1621,7 @@ export default withStyles(
                                             </div>
                                         </div>
                                     )}
+                                    </div>
                                 </DialogActions>
                             </>
                         )}
@@ -1700,6 +1735,12 @@ export default withStyles(
                             <Tone3000HelpDialog
                                 open={this.state.openTone3000Help}
                                 onClose={() => this.setState({ openTone3000Help: false })}
+                            />
+                        )}
+                        {this.state.openGuitarMlHelp && (
+                            <GuitarMLHelpDialog
+                                open={this.state.openGuitarMlHelp}
+                                onClose={() => this.setState({ openGuitarMlHelp: false })}
                             />
                         )}
                     </DialogEx>

@@ -110,6 +110,9 @@ const GxTunerView =
                     item={this.props.item}
                     customization={this}
                     customizationId={this.customizationId}
+                    showModGui={false} 
+                    onSetShowModGui= {(instanceId: number, showModGui: boolean) => {}}
+
                 />);
             }
         },

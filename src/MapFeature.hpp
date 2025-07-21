@@ -65,5 +65,8 @@ namespace pipedal {
         const LV2_URID_Map *GetMap() const { return &map;}
         LV2_URID_Map *GetMap() { return &map;}
 
+        const LV2_URID_Unmap *GetUnmap() const { return &unmap;}
+        LV2_URID_Unmap *GetUnmap() { return &unmap;}
+
 	};
 }

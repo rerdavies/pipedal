@@ -39,13 +39,13 @@ export interface ControlEntry {
 
 const Utility = class {
     static isLandscape(): boolean {
-        return window.innerWidth > window.innerHeight;
+        return document.documentElement.clientWidth > document.documentElement.clientHeight;
     }
     static needsZoomedControls(): boolean {
         if (!this.isLandscape()) return false;
 
-        if (window.innerHeight > 500) return false;
-        if (window.innerHeight > 300) return true;
+        if (document.documentElement.clientHeight > 500) return false;
+        if (document.documentElement.clientHeight > 300) return true;
         return (('ontouchstart' in window) &&
         ((navigator.maxTouchPoints??0) > 0) );
     }

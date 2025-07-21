@@ -164,7 +164,8 @@ interface PluginGridProps extends WithStyles<typeof pluginGridStyles> {
     uri?: string;
     minimumItemWidth?: number;
     theme: Theme;
-    open: boolean
+    open: boolean;
+    modGuiOnly?: boolean;
 };
 
 type PluginGridState = {
@@ -208,10 +209,10 @@ export const LoadPluginDialog =
                     search_string: "",
                     search_collapsed: true,
                     filterType: filterType_,
-                    client_width: window.innerWidth,
-                    client_height: window.innerHeight,
-                    grid_cell_width: this.getCellWidth(window.innerWidth),
-                    grid_cell_columns: this.getCellColumns(window.innerWidth),
+                    client_width: document.documentElement.clientWidth,
+                    client_height: document.documentElement.clientHeight,
+                    grid_cell_width: this.getCellWidth(document.documentElement.clientWidth),
+                    grid_cell_columns: this.getCellColumns(document.documentElement.clientWidth),
                     minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220,
                     favoritesList: this.model.favorites.get(),
                     uiPlugins: this.model.ui_plugins.get()
@@ -275,9 +276,9 @@ export const LoadPluginDialog =
 
             updateWindowSize() {
                 this.setState({
-                    client_width: window.innerWidth,
-                    client_height: window.innerHeight,
-                    grid_cell_width: this.getCellWidth(window.innerWidth),
+                    client_width: document.documentElement.clientWidth,
+                    client_height: document.documentElement.clientHeight,
+                    grid_cell_width: this.getCellWidth(document.documentElement.clientWidth),
                     grid_cell_columns: this.getCellColumns(window.innerWidth)
                 });
             }
@@ -526,6 +527,8 @@ export const LoadPluginDialog =
 
                     for (let i = 0; i < plugins.length; ++i) {
                         let plugin = plugins[i];
+                        if (this.props.modGuiOnly == true && !plugin.modGui)
+                            continue;
                         try {
                             if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
                                 let score: number = 0;
@@ -720,9 +723,15 @@ export const LoadPluginDialog =
                             style={{ overflowX: "hidden", overflowY: "hidden", display: "flex", flexDirection: "column", flexWrap: "nowrap" }}
                             aria-labelledby="select-plugin-dialog-title">
                             <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", height: "100%" }}>
-                                <DialogTitle id="select-plugin-dialog-title" style={{ flex: "0 0 auto", padding: "0px", height: 54 }}>
-                                    <div style={{ display: "flex", flexDirection: "row", paddingTop: 3, paddingBottom: 3, flexWrap: "nowrap", width: "100%", alignItems: "center" }}>
-                                        <IconButtonEx tooltip="Back" onClick={() => { this.cancel(); }} style={{ flex: "0 0 auto" }} >
+                                <DialogTitle id="select-plugin-dialog-title" style={{ flex: "0 0 auto", padding: "0px", height: 54,
+                                    marginRight: 16
+                                }}>
+                                    <div style={{ display: "flex", flexDirection: "row", paddingTop: 3, paddingBottom: 3, flexWrap: "nowrap", 
+                                    height: 64,
+                                    width: "100%", alignItems: "center"
+                                     }}>
+                                        <IconButtonEx tooltip="Back" onClick={() => { this.cancel(); }} 
+                                            style={{ flex: "0 0 auto", marginRight: 16 }} >
                                             <ArrowBackIcon />
                                         </IconButtonEx>
 
@@ -731,9 +740,9 @@ export const LoadPluginDialog =
                                             visibility: (this.state.search_collapsed ? "visible" : "collapse"),
                                             width: (this.state.search_collapsed ? undefined : "0px")
                                         }}>
-                                            {this.state.client_width > 520 ? "Select Plugin" : ""}
+                                            {this.state.client_width > 645 ? "Select Plugin" : ""}
                                         </Typography>
-                                        <div style={{ flex: "1 1 auto" }} >
+                                        <div style={{ flex: "2 2 auto" }} >
                                             <SearchControl collapsed={this.state.search_collapsed} searchText={this.state.search_string}
                                                 inputRef={this.searchInputRef}
                                                 showSearchIcon={showSearchIcon}
@@ -784,13 +793,13 @@ export const LoadPluginDialog =
                                                 )}
                                             </IconButtonEx>
                                         </div>
-                                        <div style={{ flex: "0 0 160px", marginRight: 24 }} >
+                                        <div style={{ flex: "0 1 160px", position: "relative", marginRight: 24 }} >
 
                                             <TextField select variant="standard"
                                                 defaultValue={this.state.filterType}
                                                 key={this.state.filterType}
                                                 onChange={(e) => { this.onFilterChange(e); }}
-                                                sx={{ minWidth: 160 }}
+                                                sx={{ width: "100%",minWidth: "100%" }}
                                             >
                                                 {this.createFilterOptions()}
                                             </TextField>

@@ -304,7 +304,7 @@ const PresetSelector =
                     }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <IconButtonEx tooltip="Save current preset"
-                                style={{ flex: "0 0 auto", opacity: this.state.presets.presetChanged ? 1.0 : 0.0, color: "#FFFFFF" }}
+                                style={{ flex: "0 0 auto", color: "#FFFFFF" }}
                                 onClick={(e) => { this.handleSave(); }}
                                 size="large">
                                 <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />

@@ -16,8 +16,11 @@
 #### [Optimizing Audio Latency](AudioLatency.md)  
 #### [Command-Line Configuration of PiPedal](CommandLine.md)
 #### [Changing the Web Server Port](ChangingTheWebServerPort.md)
+
+&nbsp;
 #### [Using LV2 Audio Plugins](UsingLv2Plugins.md)
 #### [Which LV2 Plugins does PiPedal support?](WhichLv2PluginsAreSupported.md)
+#### [LV2 Plugins with MOD User Interfaces](ModUiSupport.md)
 
 &nbsp;
 

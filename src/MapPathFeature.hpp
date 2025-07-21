@@ -21,17 +21,24 @@
 #include "lv2/state/state.h"
 #include <filesystem>
 #include "MapFeature.hpp"
+#include <memory>
+#include <vector>
+#include <filesystem>
+#include "PiPedalUI.hpp"
 
 namespace pipedal
 {
+    class Lv2PluginInfo;
     struct ResourceFileMapping {
-        std::string resourcePath; // absolute path of the resource directory.
-        std::string storagePath;  // absolute path of where resource directory files get placed.
+        std::filesystem::path  resourcePath; // absolute path of the resource directory.
+        std::filesystem::path  storagePath;  // absolute path of where resource directory files get placed.
+        std::vector<UiFileType> fileTypes;
     };
     class MapPathFeature
     {
     public:
         MapPathFeature();
+
 		void Prepare(MapFeature* map);
         void SetPluginStoragePath(const std::string&path) { storagePath = path;}
 
@@ -46,6 +53,8 @@ namespace pipedal
         const LV2_Feature*GetMakePathFeature() { return &makePathFeature;}
         const LV2_Feature*GetFreePathFeature() { return &freePathFeature;}
     private:
+
+        std::shared_ptr<Lv2PluginInfo> pluginInfo;
         char *AbsolutePath(const char *abstract_path);
         static char *FnAbsolutePath(LV2_State_Map_Path_Handle handle,
                                     const char *abstract_path);

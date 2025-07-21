@@ -61,7 +61,7 @@ namespace pipedal
 
         FileBrowserFilesFeature fileBrowserFilesFeature;
         std::unique_ptr<StateInterface> stateInterface;
-        void RestoreState(PedalboardItem&pedalboardItem);
+        bool RestoreState(PedalboardItem&pedalboardItem);
         LogFeature logFeature;
         std::map<std::string,AtomBuffer> patchPropertyPrototypes;
 

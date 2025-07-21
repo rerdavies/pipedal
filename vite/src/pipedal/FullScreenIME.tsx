@@ -99,14 +99,14 @@ const FullScreenIME =
                     // because we can't determine the initial window heigth anymore.
                     if (this.currentWidth === undefined)
                     {
-                        this.currentWidth = window.innerWidth;
+                        this.currentWidth = document.documentElement.clientWidth;
                     }
-                    if (this.currentWidth !== window.innerWidth)
+                    if (this.currentWidth !== document.documentElement.clientWidth)
                     {
                         this.validateInput(true);
                     }
                     // eslint-disable-next-line no-restricted-globals
-                    if (window.innerHeight >= this.props.initialHeight) {
+                    if (document.documentElement.clientHeight >= this.props.initialHeight) {
                         this.validateInput(true);
                     }
                 }
@@ -194,7 +194,7 @@ const FullScreenIME =
                     this.currentWidth = undefined;
                     return (<div/>);
                 }
-                this.currentWidth = window.innerWidth;
+                this.currentWidth = document.documentElement.clientWidth;
 
                 this.uiControl = control;
 

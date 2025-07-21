@@ -38,6 +38,7 @@
 #include <stdexcept>
 #include "ss.hpp"
 #include "SchedulerPriority.hpp"
+#include "CrashGuard.hpp"
 
 #include "CpuUse.hpp"
 
@@ -287,6 +288,7 @@ namespace pipedal
 
                 bool ok = true;
 
+                CrashGuardLock crashGuardLock;
                 while (true)
                 {
 

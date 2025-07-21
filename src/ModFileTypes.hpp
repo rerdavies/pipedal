@@ -32,12 +32,14 @@ namespace pipedal
         ModFileTypes(const std::string &fileTypes);
         const std::vector<std::string> &rootDirectories() const { return rootDirectories_; }
         std::vector<std::string> &rootDirectories()  { return rootDirectories_; }
+        const std::vector<std::string> &modFileTypes() const { return modFileTypes_; }
         const std::vector<std::string> &fileTypes() const { return fileTypes_; }
 
         static constexpr const char *DEFAULT_FILE_TYPES = "audio,nammodel,mlmodel,sf2,sfz,midisong,midiclip,*"; // (everything)
 
     private:
         std::vector<std::string> rootDirectories_;
+        std::vector<std::string> modFileTypes_; // e.g. "audio", "nammodel", etc.
         std::vector<std::string> fileTypes_;
 
     public:
@@ -54,6 +56,7 @@ namespace pipedal
             const std::string displayName;
             const std::vector<std::string> fileTypesX; // mixture of .ext and mime types. Use fileExtensions instead.
             const std::set<std::string> fileExtensions;
+
 
         };
 

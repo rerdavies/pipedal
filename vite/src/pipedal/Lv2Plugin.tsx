@@ -26,10 +26,10 @@ interface Deserializable<T> {
 }
 
 const noteNames: string[] = [
-    "C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B","C"
+    "C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B", "C"
 ];
 
-function semitone12TETValue(value: number) : string {
+function semitone12TETValue(value: number): string {
     let iValue = Math.round(value) % 12;
     return noteNames[iValue];
 
@@ -313,10 +313,85 @@ export class UiFileProperty {
     useLegacyModDirectory: boolean = false;
 
 };
+
+export class ModGuiPort {
+    deserialize(input: any): ModGuiPort {
+        this.index = input.index;
+        this.symbol = input.symbol;
+        this.name = input.name;
+        return this;
+    }
+    static deserialize_array(input: any): ModGuiPort[] {
+        let result: ModGuiPort[] = [];
+        for (let i = 0; i < input.length; ++i) {
+            result[i] = new ModGuiPort().deserialize(input[i]);
+        }
+        return result;
+    }
+    index: number = -1;
+    symbol: string = "";
+    name: string = "";
+};
+export class ModGui {
+    deserialize(input: any): ModGui {
+        this.pluginUri = input.pluginUri;
+        this.resourceDirectory = input.resourceDirectory;
+        this.iconTemplate = input.iconTemplate ?? "";
+        this.settingsTemplate = input.settingsTemplate;
+        this.javascript = input.javascript;
+        this.stylesheet = input.stylesheet ?? "";
+        this.screenshot = input.screenshot;
+        this.thumbnail = input.thumbnail;
+        this.discussionUrl = input.discussionUrl;
+        this.documentationUrl = input.documentationUrl;
+        this.brand = input.brand;
+        this.label = input.label;
+        this.model = input.model;
+        this.panel = input.panel;
+        this.color = input.color;
+        this.knob = input.knob;
+
+        if (input.ports) {
+            this.ports = ModGuiPort.deserialize_array(input.ports);
+        } else {
+            this.ports = [];
+        }
+        return this;
+    }
+    static serialize_array(input: any): ModGui[] {
+        let result: ModGui[] = [];
+        for (let i = 0; i < input.length; ++i) {
+            result[i] = new ModGui().deserialize(input[i]);
+        }
+        return result;
+    }
+    pluginUri = "";
+    resourceDirectory = "";
+    iconTemplate = "";
+    settingsTemplate = "";
+    javascript = "";
+    stylesheet = "";
+    screenshot = "";
+    thumbnail = "";
+    discussionUrl = "";
+    documentationUrl = "";
+    brand = "";
+    label = "";
+    model = "";
+    panel = "";
+    color = "";
+    knob = "";
+    ports: ModGuiPort[] = [];
+
+
+};
+
 export class Lv2Plugin implements Deserializable<Lv2Plugin> {
     deserialize(input: any): Lv2Plugin {
         this.uri = input.uri;
         this.name = input.name;
+        this.minorVersion = input.minorVersion ? input.minorVersion : 0;
+        this.microVersion = input.microVersion ? input.microVersion : 0;
         this.brand = input.name ? input.name : "";
         this.label = input.label ? input.label : this.name;
         this.plugin_class = input.plugin_class;
@@ -344,12 +419,18 @@ export class Lv2Plugin implements Deserializable<Lv2Plugin> {
         } else {
             this.uiPortNotifications = [];
         }
+        this.modGui = null;
+        if (input.modGui) {
+            this.modGui = new ModGui().deserialize(input.modGui);
+        }
         return this;
     }
     static EmptyFeatures: string[] = [];
 
     uri: string = "";
     name: string = "";
+    minorVersion: number = 0;
+    microVersion: number = 0;
     brand: string = "";
     label: string = "";
     plugin_class: string = "";
@@ -364,6 +445,7 @@ export class Lv2Plugin implements Deserializable<Lv2Plugin> {
     fileProperties: UiFileProperty[] = [];
     frequencyPlots: UiFrequencyPlot[] = [];
     uiPortNotifications: UiPropertyNotification[] = [];
+    modGui: ModGui | null = null;
 }
 
 
@@ -459,10 +541,12 @@ export enum ControlType {
     Vu,
     Progress,
     DbVu,
-    OutputText
+    OutputText,
+
+    BypassLight
 }
 
-const textUnits : Set<Units> = new Set<Units>([
+const textUnits: Set<Units> = new Set<Units>([
     Units.bar,
     Units.beat,
     Units.bpm,
@@ -478,13 +562,12 @@ const textUnits : Set<Units> = new Set<Units>([
     Units.semitone12TET
 ]);
 
-function displayUnitAsText(unit: Units): boolean
-{
+function displayUnitAsText(unit: Units): boolean {
     return textUnits.has(unit);
 }
 
 export class UiControl implements Deserializable<UiControl> {
-deserialize(input: any): UiControl {
+    deserialize(input: any): UiControl {
         this.symbol = input.symbol;
         this.name = input.name;
         this.index = input.index;
@@ -531,12 +614,11 @@ deserialize(input: any): UiControl {
                 this.controlType = ControlType.Progress;
             } else if (this.enumeration_property) {
                 this.controlType = ControlType.OutputText;
-            } else if (displayUnitAsText(this.units))
-            {
+            } else if (displayUnitAsText(this.units)) {
                 this.controlType = ControlType.OutputText
             } else {
                 this.controlType = ControlType.Vu;
-            } 
+            }
         }
         if (this.isValidEnumeration()) {
             this.controlType = ControlType.Select;
@@ -548,10 +630,8 @@ deserialize(input: any): UiControl {
                 this.controlType = ControlType.OnOffSwitch;
             }
         }
-        if (this.is_input)
-        {
-            if (this.pipedal_graphicEq)
-            {
+        if (this.is_input) {
+            if (this.pipedal_graphicEq) {
                 this.controlType = ControlType.GraphicEq;
             }
             else if (this.mod_momentaryOnByDefault) {
@@ -560,7 +640,7 @@ deserialize(input: any): UiControl {
                 this.controlType = ControlType.Momentary;
             } else if (this.trigger_property) {
                 this.controlType = ControlType.Trigger;
-            } 
+            }
         }
         return this;
     }
@@ -654,7 +734,7 @@ deserialize(input: any): UiControl {
     isAbToggle(): boolean {
         return this.controlType === ControlType.ABSwitch;
     }
-    isGraphicEq() : boolean {
+    isGraphicEq(): boolean {
         return this.controlType === ControlType.GraphicEq;
     }
     isSelect(): boolean {
@@ -739,15 +819,12 @@ deserialize(input: any): UiControl {
             }
         }
 
-        if (this.units === Units.s)
-        {
+        if (this.units === Units.s) {
             let iValue = Math.round(value);
-            if (iValue >= 60)
-            {
-                let minutes = Math.floor(iValue/60);
+            if (iValue >= 60) {
+                let minutes = Math.floor(iValue / 60);
                 let seconds = iValue % 60;
-                if (seconds < 10)
-                {
+                if (seconds < 10) {
                     return minutes + ":0" + seconds;
 
                 }
@@ -756,11 +833,10 @@ deserialize(input: any): UiControl {
                 return this.formatShortValue(value);
             }
         }
-        if (this.units === Units.semitone12TET)
-        {
+        if (this.units === Units.semitone12TET) {
             return semitone12TETValue(value);
         }
-    
+
         let text = this.formatShortValue(value);
 
         switch (this.units) {
@@ -831,11 +907,45 @@ deserialize(input: any): UiControl {
 
 }
 
+export class Lv2PatchPropertyInfo {
+    deserialize(input: any): Lv2PatchPropertyInfo {
+        this.uri = input.uri;
+        this.writable = input.writable;
+        this.readable = input.readable;
+        this.label = input.label;
+        this.index = input.index;
+        this.type = input.type;
+        this.comment = input.comment;
+        this.shortName = input.shortName;
+        this.fileTypes = input.fileTypes;
+        this.supportedExtensions = input.supportedExtensions;
+        return this;
+    }
+    static deserialize_array(input: any): Lv2PatchPropertyInfo[] {
+        let result: Lv2PatchPropertyInfo[] = [];
+        for (let i = 0; i < input.length; ++i) {
+            result[i] = new Lv2PatchPropertyInfo().deserialize(input[i]);
+        }
+        return result;
+    }
+    uri: string = "";
+    writable : boolean = false;
+    readable: boolean = false;
+    label: string = "";
+    index: number = -1;
+    type: string = "";
+    comment: string = "";
+    shortName: string = "";
+    fileTypes: string[] = [];
+    supportedExtensions: string[] = [];
+};
 
 export class UiPlugin implements Deserializable<UiPlugin> {
     deserialize(input: any): UiPlugin {
         this.uri = input.uri;
         this.name = input.name;
+        this.minorVersion = input.minorVersion ? input.minorVersion : 0;
+        this.microVersion = input.microVersion ? input.microVersion : 0;
         this.brand = input.brand ? input.brand : "";
         this.label = input.label ? input.label : this.name;
         this.plugin_type = input.plugin_type as PluginType;
@@ -861,6 +971,11 @@ export class UiPlugin implements Deserializable<UiPlugin> {
         }
 
         this.is_vst3 = input.is_vst3;
+        this.modGui = null;
+        if (input.modGui) {
+            this.modGui = new ModGui().deserialize(input.modGui);
+        }
+        this.patchProperties = Lv2PatchPropertyInfo.deserialize_array(input.patchProperties ?? []);
         return this;
 
     }
@@ -906,8 +1021,21 @@ export class UiPlugin implements Deserializable<UiPlugin> {
         return null;
     }
 
+    getFilePropertyByUri(patchPropertyUri: string): UiFileProperty | null {
+        for (let i = 0; i < this.fileProperties.length; ++i)
+        {
+            let fileProperty = this.fileProperties[i];
+            if (fileProperty.patchProperty === patchPropertyUri) {
+                return fileProperty;
+            }
+        }
+        return null;
+    }
+
     uri: string = "";
     name: string = "";
+    minorVersion: number = 0;
+    microVersion: number = 0;
     brand: string = "";
     label: string = "";
     plugin_type: PluginType = PluginType.InvalidPlugin;
@@ -924,6 +1052,8 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     fileProperties: UiFileProperty[] = [];
     frequencyPlots: UiFrequencyPlot[] = [];
     is_vst3: boolean = false;
+    modGui: ModGui | null = null; // null if no mod gui.
+    patchProperties: Lv2PatchPropertyInfo[] = []; 
 }
 
 

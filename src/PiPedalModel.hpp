@@ -59,6 +59,7 @@ namespace pipedal
         
         virtual int64_t GetClientId() = 0;
         virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
+        virtual void OnItemUseModUiChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
         virtual void OnControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value) = 0;
         virtual void OnInputVolumeChanged(float value) = 0;
         virtual void OnOutputVolumeChanged(float value) = 0;
@@ -331,7 +332,9 @@ namespace pipedal
         void LoadLv2PluginInfo();
         void Load();
 
-        const PluginHost &GetLv2Host() const { return pluginHost; }
+        const PluginHost &GetPluginHost() const { return pluginHost; }
+        PluginHost &GetPluginHost() { return pluginHost; }
+        
         Pedalboard GetCurrentPedalboardCopy()
         {
             std::lock_guard<std::recursive_mutex> guard(mutex);
@@ -346,6 +349,7 @@ namespace pipedal
         void RemoveNotificationSubsription(std::shared_ptr<IPiPedalModelSubscriber> pSubscriber);
 
         void SetPedalboardItemEnable(int64_t clientId, int64_t instanceId, bool enabled);
+        void SetPedalboardItemUseModUi(int64_t clientId, int64_t instanceId, bool enabled);
         void SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
         void PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
 
@@ -484,6 +488,8 @@ namespace pipedal
 
         void SetTone3000Auth(const std::string &apiKey);
         bool HasTone3000Auth() const;
+
+        void SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedalboardId);
 
     };
 

@@ -51,7 +51,7 @@ export default class VirtualKeyboardHandler
             enabled = false;
         }
         this.enabled = enabled;
-        this.originalPosition = new Rectangle(0,0, window.innerWidth,window.innerHeight)
+        this.originalPosition = new Rectangle(0,0, document.documentElement.clientWidth,document.documentElement.clientHeight)
     }
     private handleVisualViewportResize(event: Event): void {
         const viewport = event.target as VisualViewport;

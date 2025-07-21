@@ -46,10 +46,10 @@ import DialogEx from './DialogEx'
 import GovernorSettings from './GovernorSettings';
 import SystemMidiBindingsDialog from './SystemMidiBindingsDialog';
 import SelectThemeDialog from './SelectThemeDialog';
-import {AlsaSequencerConfiguration} from './AlsaSequencer';
+import { AlsaSequencerConfiguration } from './AlsaSequencer';
 
 import Slide, { SlideProps } from '@mui/material/Slide';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { Theme } from '@mui/material/styles';
 import { withStyles } from "tss-react/mui";
@@ -57,6 +57,8 @@ import WithStyles from './WithStyles';
 import { canScaleWindow, getWindowScaleOptions, getWindowScaleText, setWindowScale, getWindowScale } from './WindowScale';
 import OptionsDialog from './OptionsDialog';
 import { css } from '@emotion/react';
+import ScreenOrientation from './ScreenOrientation';
+import SelectScreenOrientationDialog from './SelectScreenOrientationDialog';
 
 
 interface SettingsDialogProps extends WithStyles<typeof styles> {
@@ -74,6 +76,8 @@ interface SettingsDialogState {
     jackSettings: JackChannelSelection;
     jackServerSettings: JackServerSettings;
     alsaSequencerConfiguration: AlsaSequencerConfiguration;
+    keepScreenOn: boolean;
+    screenOrientation: ScreenOrientation;
 
     jackStatus?: JackHostStatus;
     governorSettings: GovernorSettings;
@@ -88,6 +92,7 @@ interface SettingsDialogState {
     showGovernorSettingsDialog: boolean;
     showInputSelectDialog: boolean;
     showOutputSelectDialog: boolean;
+    showScreenOrientationDialog: boolean;
     showMidiSelectDialog: boolean;
     showThemeSelectDialog: boolean;
     showJackServerSettingsDialog: boolean;
@@ -191,13 +196,15 @@ const SettingsDialog = withStyles(
                 wifiDirectConfigSettings: this.model.wifiDirectConfigSettings.get(),
                 governorSettings: this.model.governorSettings.get(),
                 continueDisabled: true,
-
+                keepScreenOn: this.model.keepScreenOn.get(),
+                screenOrientation: this.model.getScreenOrientation(),
                 showWindowScaleDialog: false,
                 showWifiConfigDialog: false,
                 showWifiDirectConfigDialog: false,
                 showGovernorSettingsDialog: false,
                 showInputSelectDialog: false,
                 showOutputSelectDialog: false,
+                showScreenOrientationDialog: false,
                 showMidiSelectDialog: false,
                 showThemeSelectDialog: false,
                 showJackServerSettingsDialog: false,
@@ -219,11 +226,21 @@ const SettingsDialog = withStyles(
             this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
             this.handleShowStatusMonitorChanged = this.handleShowStatusMonitorChanged.bind(this);
             this.handleHasWifiChanged = this.handleHasWifiChanged.bind(this);
+            this.handleKeepScreenOnChanged = this.handleKeepScreenOnChanged.bind(this);
+            this.handleScreenOrientationChanged = this.handleScreenOrientationChanged.bind(this);
 
         }
 
+        handleScreenOrientationChanged(newValue: ScreenOrientation) {
+            this.setState({
+                screenOrientation: newValue
+            });
+        }
+        handleKeepScreenOnChanged(newValue: boolean) {
+            this.setState({ keepScreenOn: newValue });
+        }
         handleHasWifiChanged(newValue: boolean) {
-            this.setState({hasWifiDevice: newValue});
+            this.setState({ hasWifiDevice: newValue });
         }
 
         handleShowStatusMonitorChanged(): void {
@@ -337,6 +354,8 @@ const SettingsDialog = withStyles(
             if (active !== this.active) {
                 this.active = active;
                 if (active) {
+                    this.model.keepScreenOn.addOnChangedHandler(this.handleKeepScreenOnChanged);
+                    this.model.screenOrientation.addOnChangedHandler(this.handleScreenOrientationChanged);
                     this.model.hasWifiDevice.addOnChangedHandler(this.handleHasWifiChanged);
                     this.model.state.addOnChangedHandler(this.handleConnectionStateChanged);
                     this.model.showStatusMonitor.addOnChangedHandler(this.handleShowStatusMonitorChanged);
@@ -368,7 +387,7 @@ const SettingsDialog = withStyles(
                     this.handleJackServerSettingsChanged();
                     this.handleWifiConfigSettingsChanged();
                     this.handleWifiDirectConfigSettingsChanged();
-                    this.setState({hasWifiDevice: this.model.hasWifiDevice.get()});
+                    this.setState({ hasWifiDevice: this.model.hasWifiDevice.get() });
 
                     this.timerHandle = setInterval(() => this.tick(), 1000);
                 } else {
@@ -377,6 +396,8 @@ const SettingsDialog = withStyles(
                     }
                     this.model.state.removeOnChangedHandler(this.handleConnectionStateChanged);
                     this.model.showStatusMonitor.removeOnChangedHandler(this.handleShowStatusMonitorChanged);
+                    this.model.keepScreenOn.removeOnChangedHandler(this.handleKeepScreenOnChanged);
+                    this.model.screenOrientation.removeOnChangedHandler(this.handleScreenOrientationChanged);
 
                     this.model.jackConfiguration.removeOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.alsaSequencerConfiguration.removeOnChangedHandler(this.handleAlsaSequencerConfigurationChanged);
@@ -440,6 +461,28 @@ const SettingsDialog = withStyles(
                 showInputSelectDialog: true,
                 showOutputSelectDialog: false
             });
+        }
+        handleScreenOrientation() {
+            this.setState({
+                showScreenOrientationDialog: true,
+            });
+        }
+        getOrientationText() {
+            switch (this.state.screenOrientation) {
+                case ScreenOrientation.Portrait:
+                    return "Portrait";
+                case ScreenOrientation.Landscape:
+                    return "Landscape";
+                default:
+                    return "System default";
+            }
+        }
+        handleScreenOrientationDialogResult(orientation: ScreenOrientation | null): void {
+            if (orientation !== null) {
+                this.setState({ screenOrientation: orientation });
+                this.model.setScreenOrientation(orientation);
+            }
+            this.setState({ showScreenOrientationDialog: false });
         }
 
         handleOutputSelection() {
@@ -548,10 +591,12 @@ const SettingsDialog = withStyles(
         }
         render() {
             const classes = withStyles.getClasses(this.props);
-            
+
             let isConfigValid = this.state.jackConfiguration.isValid;
             let selectedChannels: string[] = this.state.showInputSelectDialog ? this.state.jackSettings.inputAudioPorts : this.state.jackSettings.outputAudioPorts;
             let disableShutdown = this.state.shuttingDown || this.state.restarting;
+
+            let canKeepScreenOn = this.model.canKeepScreenOn;
 
             return (
                 <DialogEx tag="settings" fullScreen open={this.props.open}
@@ -730,6 +775,51 @@ const SettingsDialog = withStyles(
                                                 </Typography>
                                             </div>
                                         </ButtonBase>
+                                        {canKeepScreenOn &&
+                                            (
+                                                <ButtonBase
+                                                    className={classes.setting}
+                                                    onClick={() => {
+                                                        this.model.setKeepScreenOn(!this.state.keepScreenOn)
+                                                    }}  >
+                                                    <SelectHoverBackground selected={false} showHover={true} />
+                                                    <div style={{ width: "100%" }}>
+                                                        <div style={{
+                                                            width: "100%", display: "flex", flexDirection: "row", flexWrap: "nowrap",
+                                                            alignItems: "center", maxWidth: 400
+                                                        }}>
+                                                            <div style={{ flex: "1 1 auto" }}>
+                                                                <Typography className={classes.primaryItem} display="block" variant="body2" color="textPrimary" noWrap>
+                                                                    Keep screen on.</Typography>
+                                                            </div>
+
+                                                            <div style={{ flex: "0 0 auto" }}>
+                                                                <Switch
+                                                                    checked={this.state.keepScreenOn}
+                                                                    onChange={
+                                                                        (e) => { this.model.setKeepScreenOn(e.target.checked); }
+                                                                    }
+                                                                />
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                </ButtonBase>
+                                            )
+                                        }
+                                        {this.model.canSetScreenOrientation && (
+                                            <ButtonBase className={classes.setting} onClick={() => this.handleScreenOrientation()}
+                                            >
+                                                <SelectHoverBackground selected={false} showHover={true} />
+                                                <div style={{ width: "100%" }}>
+                                                    <Typography display="block" variant="body2" noWrap>Display Orientation</Typography>
+                                                    <Typography display="block" variant="caption" color="textSecondary" noWrap>{
+                                                        this.getOrientationText()
+                                                    }</Typography>
+                                                </div>
+                                            </ButtonBase>
+                                        )
+                                        }
 
                                         {(canScaleWindow()) &&
                                             (
@@ -908,6 +998,21 @@ const SettingsDialog = withStyles(
 
                         )
                     }
+                    {
+                        this.state.showScreenOrientationDialog &&
+                        (
+                            <SelectScreenOrientationDialog
+                                open={this.state.showScreenOrientationDialog}
+                                onClose={(screenOrientation: ScreenOrientation | null) => {
+                                    this.handleScreenOrientationDialogResult(screenOrientation);
+                                }}
+                                screenOrientation={this.state.screenOrientation}
+
+                            />
+                        )
+
+                    }
+
                     {
                         (this.state.showGovernorSettingsDialog) &&
                         (

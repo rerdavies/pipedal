@@ -19,6 +19,7 @@
 
 
 import './AppThemed.css';
+
 //import {alpha} from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
 
@@ -73,6 +74,7 @@ import SettingsIcon from './svg/ic_settings.svg?react';
 import HelpOutlineIcon from './svg/ic_help_outline.svg?react';
 import FxAmplifierIcon from './svg/fx_amplifier.svg?react';
 import { PerformanceView } from './PerformanceView';
+
 
 import DialogEx from './DialogEx';
 
@@ -811,7 +813,7 @@ export
                         {(!this.state.tinyToolBar) && !this.state.performanceView ?
                             (
                                 <AppBar position="absolute"  >
-                                    <Toolbar variant="dense" className={classes.toolBar}  >
+                                    <Toolbar variant="dense" className={classes.toolBar} style={{overflow: "clip" }}  >
                                         <IconButtonEx tooltip="Menu"
                                             edge="start"
                                             aria-label="menu"
@@ -998,7 +1000,7 @@ export
                                     <ListItemIcon >
                                         <VolunteerActivismIcon className={classes.menuIcon} color="inherit" />
                                     </ListItemIcon>
-                                    <ListItemText primary='Donations' />
+                                    <ListItemText primary='Sponsorship' />
                                 </ListItemButton>
                             </List>
 

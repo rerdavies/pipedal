@@ -206,6 +206,10 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    CrashGuard.cpp CrashGuard.hpp
+    ModTemplateGenerator.cpp ModTemplateGenerator.hpp
+    WebServerMod.cpp WebServerMod.hpp
+    ModGui.cpp ModGui.hpp
     PipewireInputStream.cpp PipewireInputStream.hpp
     AudioFiles.cpp AudioFiles.hpp
     AudioFileMetadataReader.cpp AudioFileMetadataReader.hpp
@@ -414,6 +418,8 @@ add_executable(AuxInTest
 
 add_executable(pipedaltest 
     testMain.cpp
+
+    ModGuiTest.cpp
     PipewireInputStreamTest.cpp
 
     AudioFilesTest.cpp
@@ -762,6 +768,7 @@ add_executable(pipedal_latency_test
     DummyAudioDriver.cpp DummyAudioDriver.hpp
     JackConfiguration.hpp JackConfiguration.cpp
     JackServerSettings.hpp JackServerSettings.cpp
+    CrashGuard.cpp CrashGuard.hpp
     CpuUse.hpp
     CpuUse.cpp
     )

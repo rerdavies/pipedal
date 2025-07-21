@@ -79,6 +79,8 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
         this.lv2State = input.lv2State;
         this.lilvPresetUri = input.lilvPresetUri;
         this.pathProperties = input.pathProperties;
+        this.useModUi = input.useModUi ?? false;
+
         return this;
     }
     deserialize(input: any): PedalboardItem {
@@ -212,6 +214,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     lv2State: [boolean,any] = [false,{}];
     lilvPresetUri: string = "";
     pathProperties: {[Name: string]: string} = {};
+    useModUi: boolean = false; // true if this item should use the mod-ui.
 };
 
 export class SnapshotValue {
@@ -369,6 +372,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         this.snapshots = input.snapshots ? Snapshot.deserializeArray(input.snapshots): [];
         this.selectedSnapshot = input.selectedSnapshot;
         this.pathProperties = input.pathProperties;
+        this.selectedPlugin = input.selectedPlugin??-1;
         return this;
     }
 
@@ -384,6 +388,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     snapshots: (Snapshot | null)[] = [];
     selectedSnapshot: number = -1;
     pathProperties: {[Name: string]: string} = {};
+    selectedPlugin: number = -1;
 
     *itemsGenerator(): Generator<PedalboardItem, void, undefined> {
         let it = itemGenerator_(this.items);

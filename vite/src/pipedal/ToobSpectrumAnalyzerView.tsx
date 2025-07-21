@@ -21,14 +21,14 @@ import React from 'react';
 import { Theme } from '@mui/material/styles';
 
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
 import ToobSpectrumResponseView from './ToobSpectrumResponseView';
 
 
@@ -48,12 +48,11 @@ interface ToobSpectrumAnalyzerState {
 
 const ToobSpectrumAnalyzerView =
     withStyles(
-        class extends React.Component<ToobSpectrumAnalyzerProps, ToobSpectrumAnalyzerState> 
-        implements ControlViewCustomization
-        {
+        class extends React.Component<ToobSpectrumAnalyzerProps, ToobSpectrumAnalyzerState>
+            implements ControlViewCustomization {
             model: PiPedalModel;
 
-            customizationId: number = 1; 
+            customizationId: number = 1;
 
             constructor(props: ToobSpectrumAnalyzerProps) {
                 super(props);
@@ -65,11 +64,10 @@ const ToobSpectrumAnalyzerView =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
-            {
-                controls.splice(0,0,
-                    ( <ToobSpectrumResponseView instanceId={this.props.instanceId}  />)
-                    );
+            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+                controls.splice(0, 0,
+                    (<ToobSpectrumResponseView instanceId={this.props.instanceId} />)
+                );
                 return controls;
             }
             render() {
@@ -78,6 +76,9 @@ const ToobSpectrumAnalyzerView =
                     item={this.props.item}
                     customization={this}
                     customizationId={this.customizationId}
+                    showModGui={false}
+                    onSetShowModGui={(instanceId: number, showModGui: boolean) => { }}
+
                 />);
             }
         },

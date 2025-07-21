@@ -81,7 +81,7 @@ public:
 
 };
 
-class PedalboardItem: public JsonMemberWritable {
+class PedalboardItem {
 public:
     using PropertyMap = std::map<std::string,atom_object>;
     int64_t instanceId_ = 0;
@@ -99,6 +99,7 @@ public:
     std::string lilvPresetUri_;
     std::map<std::string,std::string> pathProperties_;
     std::string title_;
+    bool useModUi_ = false;
 
     // non persistent state.
     PropertyMap patchProperties;
@@ -128,6 +129,7 @@ public:
     GETTER_SETTER(stateUpdateCount)
     GETTER_SETTER_REF(lv2State)
     GETTER_SETTER_REF(title)
+    GETTER_SETTER(useModUi)
     
     Lv2PluginState&lv2State() { return lv2State_; } // non-const version.
     GETTER_SETTER_REF(lilvPresetUri)
@@ -146,17 +148,17 @@ public:
     void AddResetsForMissingProperties(Snapshot&snapshot, size_t*index) const;
 
 
-    virtual void write_members(json_writer&writer) const {
-        writer.write_member("instanceId",instanceId_);
-        writer.write_member("uri",uri_);
-        writer.write_member("pluginName",pluginName_);
-        writer.write_member("isEnabled",isEnabled_);
-        if (isSplit())
-        {
-            writer.write_member("topChain",topChain_);
-            writer.write_member("bottomChain",bottomChain_);
-        }
-    }
+    // virtual void write_members(json_writer&writer) const {
+    //     writer.write_member("instanceId",instanceId_);
+    //     writer.write_member("uri",uri_);
+    //     writer.write_member("pluginName",pluginName_);
+    //     writer.write_member("isEnabled",isEnabled_);
+    //     if (isSplit())
+    //     {
+    //         writer.write_member("topChain",topChain_);
+    //         writer.write_member("bottomChain",bottomChain_);
+    //     }
+    // }
 
     DECLARE_JSON_MAP(PedalboardItem);
 };
@@ -195,6 +197,8 @@ class Pedalboard {
     std::vector<std::shared_ptr<Snapshot>> snapshots_;
     int64_t selectedSnapshot_ = -1;
 
+    int64_t selectedPlugin_ = -1;
+
 public:
     // deep copy, breaking shared pointers.
     Pedalboard DeepCopy(); 
@@ -203,6 +207,7 @@ public:
     bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
     bool SetItemTitle(int64_t pedalItemId, const std::string &title);
     bool SetItemEnabled(int64_t pedalItemId, bool enabled);
+    bool SetItemUseModUi(int64_t pedalItemId, bool enabled);
     void  SetCurrentSnapshotModified(bool modified);
 
     bool IsStructureIdentical(const Pedalboard &other) const; // caan we just send a snapshot-style uddate instead of reloading plugins? All settings are ignored.
@@ -221,6 +226,7 @@ public:
     GETTER_SETTER(output_volume_db)
     GETTER_SETTER_VEC(snapshots)
     GETTER_SETTER(selectedSnapshot)
+    GETTER_SETTER(selectedPlugin)
 
 
     DECLARE_JSON_MAP(Pedalboard);

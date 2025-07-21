@@ -1,112 +1,133 @@
 <!doctype html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual" />
     <meta name="theme-color" content="#000000" />
-    <meta name="color-scheme" content="dark light"/> <!-- uses media queries in web views. -->
+    <meta name="color-scheme" content="dark light" /> <!-- uses media queries in web views. -->
     <meta name="description" content="PiPedal Guitar Stomp Box for Raspberry Pi" />
     <link rel="stylesheet" href="/css/roboto.css" />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
-
+    <link rel="stylesheet" href="/css/modGui.css" />
     <style>
-      BODY {
-        background: #D0D0D0;
-      }
-
+        BODY {
+            background: #D0D0D0;
+        }
     </style>
-  
+
     <style id="bgStyle">
-      BODY {
-        background: #333; overscroll-behavior: "none"
-      }
+        BODY {
+            background: #333; 
+            overscroll-behavior: none;
+        }
     </style>
     <script>
-        
-      const androidHosted = !!(window.AndroidHost);
-  
-      var colorScheme = localStorage.getItem("colorScheme");
-      if (androidHosted)
-      {
-         var hostColorScheme  = window.AndroidHost.getThemePreference();
-         switch (hostColorScheme)
-         {
-          case 0: 
-            colorScheme = "Light";
-            break;
-          case 1:
-            colorScheme = "Dark";
-            break;
-          case 2:
-            {
-              // use the host's interpretation of the current system night mode.
-              colorScheme = window.AndroidHost.isDarkTheme() ? "Dark": "Light";
+
+        const androidHosted = !!(window.AndroidHost);
+
+
+        var colorScheme = localStorage.getItem("colorScheme");
+        if (androidHosted) {
+            var hostColorScheme = window.AndroidHost.getThemePreference();
+            switch (hostColorScheme) {
+                case 0:
+                    colorScheme = "Light";
+                    break;
+                case 1:
+                    colorScheme = "Dark";
+                    break;
+                case 2:
+                    {
+                        // use the host's interpretation of the current system night mode.
+                        colorScheme = window.AndroidHost.isDarkTheme() ? "Dark" : "Light";
+                    }
+                    break;
             }
-            break;
-         }
-         
-      }
-      if (!colorScheme)
-      {
-        colorScheme = "Dark";
-      }
-      var darkMode = false;
-      var useSystem = false;
-  
-      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
-      switch (colorScheme) {
-        case null:
-        default:
-          darkMode = false;
-          break;
-  
-        case "Light":
-          darkMode = false;
-          break;
-        case "Dark":
-          darkMode = true;
-          break;
-        case "System":
-          useSystem = true;
-          break;
-      }
-      if (useSystem) {
-        darkMode = prefersDark;
-      }
-  
-      if (!darkMode) {
-        let bgStyle = document.getElementById("bgStyle");
-        if (bgStyle) {
-          // disable the style block.
-          bgStyle.setAttribute('media', "max-width: 1px");
+
         }
-      }
-      function removeHashOnLoad() {
-        if (window.location.hash) {
-          // Store the hash value (without the '#' symbol)
-          var hash = window.location.hash.substring(1);
-  
-          // Replace the current URL without the hash
-          var newUrl = window.location.href.replace(window.location.hash, '');
-  
-          // Use HTML5 history API to change the URL without reloading the page
-          history.replaceState(null, document.title, newUrl);
-  
+
+        if (!colorScheme) {
+            colorScheme = "Dark";
         }
-      }
-  
-      // Run the function when the window loads
-      window.addEventListener('load', removeHashOnLoad);    
+        var darkMode = false;
+        var useSystem = false;
+
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        switch (colorScheme) {
+            case null:
+            default:
+                darkMode = false;
+                break;
+
+            case "Light":
+                darkMode = false;
+                break;
+            case "Dark":
+                darkMode = true;
+                break;
+            case "System":
+                useSystem = true;
+                break;
+        }
+        if (useSystem) {
+            darkMode = prefersDark;
+        }
+
+        if (!darkMode) {
+            let bgStyle = document.getElementById("bgStyle");
+            if (bgStyle) {
+                // disable the style block.
+                bgStyle.setAttribute('media', "max-width: 1px");
+            }
+        }
+        function removeHashOnLoad() {
+            if (window.location.hash) {
+                // Store the hash value (without the '#' symbol)
+                var hash = window.location.hash.substring(1);
+
+                // Replace the current URL without the hash
+                var newUrl = window.location.href.replace(window.location.hash, '');
+
+                // Use HTML5 history API to change the URL without reloading the page
+                history.replaceState(null, document.title, newUrl);
+
+            }
+        }
+
+        // Run the function when the window loads
+        window.addEventListener('load', removeHashOnLoad);
+        
+        // used by Android client to perform focus scrolling on keyboard open.
+        // function getFocusedElementBounds() {
+        //     let  focusedElement = document.activeElement;
+        //     if (focusedElement && focusedElement !== document.body) {
+        //         let  rect = focusedElement.getBoundingClientRect();
+        //         return {
+        //             top: rect.top,
+        //             left: rect.left,
+        //             right: rect.right,
+        //             bottom: rect.bottom,
+        //             windowWidth: window.innerWidth,
+        //             windowHeight: window.innerHeight,
+        //         };
+        //     }
+        //     return null;
+        // }
     </script>
-  
+
 
     <title>PiPedal</title>
-  </head>
-  <body>
+</head>
+
+<body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-  </body>
+</body>
+
 </html>
+
+

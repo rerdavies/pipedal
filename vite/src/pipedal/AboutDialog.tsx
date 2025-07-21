@@ -152,7 +152,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                                     <ArrowBackIcon />
                                 </IconButtonEx>
                                 <Typography noWrap variant="h6"
-                                    sx={{ maringLeft: 2, flex: 1 }}
+                                    sx={{ marginLeft: 2, flex: 1 }}
                                 >
                                     About
                                 </Typography>

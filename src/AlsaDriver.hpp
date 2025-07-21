@@ -40,5 +40,7 @@ namespace pipedal {
     // test only.
     void AlsaFormatEncodeDecodeTest(AudioDriverHost*driverHost);
     void MidiDecoderTest();
+
+    void FreeAlsaGlobals(); // for valgrind. Free the Alsa configuration cache.
 }
 

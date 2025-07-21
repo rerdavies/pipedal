@@ -29,12 +29,16 @@ namespace pipedal {
 class HtmlHelper {
 
 public:
+
     static std::string timeToHttpDate();
     static std::string timeToHttpDate(time_t time);
     static std::string timeToHttpDate(std::filesystem::file_time_type time);
 
 
     static std::string encode_url_segment(const char*pStart, const char*pEnd, bool isQuerySegment = false);
+    static std::string encode_url_segment(const std::string &segment, bool isQuerySegment = false) {
+        return encode_url_segment(segment.c_str(), segment.c_str() + segment.length(), isQuerySegment);
+    }
     static void encode_url_segment(std::ostream&os, const char*pStart, const char *pEnd, bool isQuerySegment = false);
     static void encode_url_segment(std::ostream&os, const std::string&segment, bool isQuerySegment = false)
     {
@@ -53,6 +57,11 @@ public:
 
     static std::string SafeFileName(const std::string &name);
     static std::string HtmlEncode(const std::string& text);
+
+    static uint64_t crc64(uint8_t *data, size_t length,uint64_t crc = 0);
+    static uint64_t crc64(const std::string&value, uint64_t crc = 0);
+
+    static std::string generateEtag(const std::filesystem::path &path);
 
 };
 

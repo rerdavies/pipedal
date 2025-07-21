@@ -41,6 +41,7 @@
 #include "HtmlHelper.hpp"
 #include <thread>
 #include <atomic>
+#include "AlsaDriver.hpp"
 
 #include <signal.h>
 #include <semaphore.h>
@@ -82,27 +83,27 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
-#if ENABLE_BACKTRACE
-void segvHandler(int sig)
-{
-    void *array[10];
+#if 0 &&  ENABLE_BACKTRACE
+// void segvHandler(int sig)
+// {
+//     void *array[10];
 
-    // Get void*'s for all entries on the stack
-    size_t size;
-    size = backtrace(array, 10);
+//     // Get void*'s for all entries on the stack
+//     size_t size;
+//     size = backtrace(array, 10);
 
-    // Print out all the frames to stderr
-    const char *message = "Error: SEGV signal received.\n";
-    auto _ = write(STDERR_FILENO, message, strlen(message));
+//     // Print out all the frames to stderr
+//     const char *message = "Error: SEGV signal received.\n";
+//     auto _ = write(STDERR_FILENO, message, strlen(message));
 
-    backtrace_symbols_fd(array + 2, size - 2, STDERR_FILENO);
-    _exit(EXIT_FAILURE);
-}
+//     backtrace_symbols_fd(array + 2, size - 2, STDERR_FILENO);
+//     _exit(EXIT_FAILURE);
+// }
 
-static void EnableBacktrace()
-{
-    signal(SIGSEGV, segvHandler);
-}
+// static void EnableBacktrace()
+// {
+//     signal(SIGSEGV, segvHandler);
+// }
 #endif
 
 static bool TryGetLogLevel(const std::string &strLogLevel, LogLevel *result)
@@ -313,6 +314,7 @@ int main(int argc, char *argv[])
             sigset_t sigSet;
             int s;
             sigemptyset(&sigSet);
+            
             sigaddset(&sigSet, SIGINT);
             sigaddset(&sigSet, SIGTERM);
             sigaddset(&sigSet, SIGUSR1);
@@ -420,6 +422,8 @@ int main(int argc, char *argv[])
             server->Join();
         }
         Lv2Log::info("Shutdown complete.");
+
+        FreeAlsaGlobals();
 
         if (systemd)
         {

@@ -9,11 +9,11 @@
 <img src="https://img.shields.io/github/downloads/rerdavies/pipedal/total?color=%23808080&link=https%3A%2F%2Frerdavies.github.io%2Fpipedal%2Fdownload.html"/>
 
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.4.77</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.4.79</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-#### NEW version 1.4.77 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. New Phaser and Graphic Equalizer plugins.
+#### NEW version 1.4.79 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. New Phaser and Graphic Equalizer plugins.
 
 &nbsp;
 
@@ -56,8 +56,12 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 ### [Optimizing Audio Latency](https://rerdavies.github.io/pipedal/AudioLatency.html)
 ### [Command-Line Configuration of PiPedal](https://rerdavies.github.io/pipedal/CommandLine.html)
 ### [Changing the Web Server Port](https://rerdavies.github.io/pipedal/ChangingTheWebServerPort.html)
+
+%nbsp;
+
 ### [Using LV2 Audio Plugins](https://rerdavies.github.io/pipedal/UsingLv2Plugins.md)
 ### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.html)
+### [Support for LV2 Plugins with MOD User Interfaces](https://rerdavies.github.io/pipedal/ModUiSupport.html)
 
  &nbsp;
 

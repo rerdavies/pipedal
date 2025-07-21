@@ -35,6 +35,7 @@
 #include "PiPedalException.hpp"
 #include "DummyAudioDriver.hpp"
 #include "SchedulerPriority.hpp"
+#include "CrashGuard.hpp"
 
 #include "CpuUse.hpp"
 
@@ -1484,7 +1485,7 @@ namespace pipedal
 #endif
         }
 
-        std::jthread *audioThread = nullptr;
+        std::unique_ptr<std::jthread> audioThread;
         bool audioRunning;
 
         bool block = false;
@@ -1518,32 +1519,36 @@ namespace pipedal
             } while (frames > 0);
             return framesRead;
         }
+
     protected:
         void ReadMidiData(uint32_t audioFrame)
         {
             AlsaMidiMessage message;
 
             midiEventCount = 0;
-            while(alsaSequencer->ReadMessage(message,0))
+            while (alsaSequencer->ReadMessage(message, 0))
             {
                 size_t messageSize = message.size;
-                if (messageSize == 0) 
+                if (messageSize == 0)
                 {
                     continue;
                 }
-                if (midiEventMemoryIndex + messageSize  >= this->midiEventMemory.size()) {
+                if (midiEventMemoryIndex + messageSize >= this->midiEventMemory.size())
+                {
                     continue;
                 }
-                if (midiEventCount >= this->midiEvents.size()) {
-                    midiEvents.resize(midiEventCount*2);
+                if (midiEventCount >= this->midiEvents.size())
+                {
+                    midiEvents.resize(midiEventCount * 2);
                 }
-                // for now, prevent META event messages from propagating. 
-                if (message.data[0] == 0xFF && message.size > 1) {
+                // for now, prevent META event messages from propagating.
+                if (message.data[0] == 0xFF && message.size > 1)
+                {
                     continue;
                 }
                 MidiEvent *pEvent = midiEvents.data() + midiEventCount++;
                 pEvent->time = audioFrame;
-                pEvent->size = messageSize; 
+                pEvent->size = messageSize;
                 pEvent->buffer = midiEventMemory.data() + midiEventMemoryIndex;
 
                 memcpy(
@@ -1551,11 +1556,10 @@ namespace pipedal
                     message.data,
                     message.size);
                 midiEventMemoryIndex += messageSize;
-                
             }
         }
-    private:
 
+    private:
         long WriteBuffer(snd_pcm_t *handle, uint8_t *buf, size_t frames)
         {
             long framesRead;
@@ -1592,6 +1596,8 @@ namespace pipedal
                     throw PiPedalStateException("Unable to start ALSA capture.");
                 }
 
+                CrashGuardLock crashGuardLock;
+                
                 cpuUse.SetStartTime(cpuUse.Now());
                 while (true)
                 {
@@ -1759,7 +1765,7 @@ namespace pipedal
                 }
             }
 
-            audioThread = new std::jthread([this]()
+            audioThread = std::make_unique<std::jthread>([this]()
                                            { AudioThread(); });
         }
 
@@ -1773,8 +1779,7 @@ namespace pipedal
             terminateAudio(true);
             if (audioThread)
             {
-                this->audioThread->join();
-                this->audioThread = 0;
+                this->audioThread = 0; // jthread joins.
             }
             Lv2Log::debug("Audio thread joined.");
         }
@@ -1789,9 +1794,6 @@ namespace pipedal
         AlsaSequencer::ptr alsaSequencer;
 
     public:
-
-
-
         virtual void SetAlsaSequencer(AlsaSequencer::ptr alsaSequencer) override
         {
             this->alsaSequencer = alsaSequencer;
@@ -1822,7 +1824,7 @@ namespace pipedal
         {
             for (size_t i = 0; i < buffer.size(); ++i)
             {
-                // delete[] buffer[i];
+                delete[] buffer[i];
                 buffer[i] = 0;
             }
             buffer.clear();
@@ -1887,6 +1889,51 @@ namespace pipedal
         snd_pcm_t *captureHandle = nullptr;
         snd_pcm_hw_params_t *playbackHwParams = nullptr;
         snd_pcm_hw_params_t *captureHwParams = nullptr;
+
+        Finally ff_playbackHandle{
+            [&playbackHandle]()
+            {
+                if (playbackHandle)
+                {
+                    int rc = snd_pcm_close(playbackHandle);
+                    if (rc < 0)
+                    {
+                        throw std::runtime_error("snd_pcm_close failed.");
+                    }
+                    playbackHandle = nullptr;
+                }
+            }};
+        Finally ff_captureHandle{
+            [&captureHandle]()
+            {
+                if (captureHandle)
+                {
+                    int rc = snd_pcm_close(captureHandle);
+                    if (rc < 0)
+                    {
+                        throw std::runtime_error("snd_pcm_close failed.");
+                    }
+
+                    captureHandle = nullptr;
+                }
+            }};
+        Finally ff_playbackHwParams{
+            [&playbackHwParams]()
+            {
+                if (playbackHwParams)
+                {
+                    snd_pcm_hw_params_free(playbackHwParams);
+                }
+            }};
+        Finally ff_captureHwParams{
+            [&captureHwParams]()
+            {
+                if (captureHwParams)
+                {
+                    snd_pcm_hw_params_free(captureHwParams);
+                }
+            }};
+
         std::string alsaDeviceName = jackServerSettings.GetAlsaInputDevice();
         bool result = false;
 
@@ -2000,28 +2047,6 @@ namespace pipedal
         {
             result = false;
             throw;
-        }
-        if (playbackHwParams)
-        {
-            snd_pcm_hw_params_free(playbackHwParams);
-            playbackHwParams = nullptr;
-        }
-
-        if (captureHwParams)
-        {
-            snd_pcm_hw_params_free(captureHwParams);
-            captureHwParams = nullptr;
-        }
-
-        if (playbackHandle)
-        {
-            snd_pcm_close(playbackHandle);
-            playbackHandle = nullptr;
-        }
-        if (captureHandle)
-        {
-            snd_pcm_close(captureHandle);
-            captureHandle = nullptr;
         }
         return result;
     }
@@ -2175,5 +2200,10 @@ namespace pipedal
             AlsaAssert(event.buffer[3] == 0x77);
         }
 #endif
+    }
+
+    void FreeAlsaGlobals()
+    {
+        snd_config_update_free_global(); // to get a clean Valgrind report.
     }
 } // namespace

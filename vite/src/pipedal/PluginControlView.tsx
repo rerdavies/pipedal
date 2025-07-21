@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2025 Robin E. R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -22,6 +22,12 @@ import { Theme } from '@mui/material/styles';
 import WithStyles, { withTheme } from './WithStyles';
 import { createStyles } from './WithStyles';
 import { css } from '@emotion/react';
+
+import AutoZoom from './AutoZoom';
+
+import ModGuiHost from './ModGuiHost';
+
+import {midiChannelBindingControlFeatureEnabled} from './MidiChannelBinding';
 
 import { withStyles } from "tss-react/mui";
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
@@ -77,10 +83,11 @@ function makeIoPluginInfo(name: string, uri: string): UiPlugin {
     return result;
 }
 
-let startPluginInfo: UiPlugin =
+export const startPluginInfo: UiPlugin =
     makeIoPluginInfo("Input", Pedalboard.START_PEDALBOARD_ITEM_URI);
 
-let endPluginInfo: UiPlugin =
+
+export const endPluginInfo: UiPlugin =
     makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
 
 
@@ -142,9 +149,9 @@ const styles = (theme: Theme) => createStyles({
         flexDirection: "row",
         flexWrap: "nowrap",
         paddingTop: "0px",
-        paddingBottom: "0px",
+        paddingBottom: "96px",
         overflowX: "hidden",
-        overflowY: "auto"
+        overflowY: "auto",
     }),
     vuMeterL: css({
         position: "absolute",
@@ -171,7 +178,7 @@ const styles = (theme: Theme) => createStyles({
         right: 0, top: 0,
         paddingRight: 6,
         paddingLeft: 12,
-        paddingBottom: 12, // cover bottom line of a portgroup in landscape.
+        paddingBottom: 13, // cover bottom line of a portgroup in landscape.
         background: theme.mainBackground,
         zIndex: 3
 
@@ -340,6 +347,8 @@ export interface PluginControlViewProps extends WithStyles<typeof styles> {
     item: PedalboardItem;
     customization?: ControlViewCustomization;
     customizationId?: number;
+    showModGui: boolean;
+    onSetShowModGui: (instanceId: number, showModGui: boolean) => void;
 }
 type PluginControlViewState = {
     landscapeGrid: boolean;
@@ -349,7 +358,9 @@ type PluginControlViewState = {
     imeInitialHeight: number;
     showFileDialog: boolean,
     dialogFileProperty: UiFileProperty,
-    dialogFileValue: string
+    dialogFileValue: string,
+    modGuiContentReady: boolean,
+    showModGuiZoomed: boolean,
 };
 
 const PluginControlView =
@@ -360,7 +371,6 @@ const PluginControlView =
             constructor(props: PluginControlViewProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
-
                 this.state = {
                     landscapeGrid: false,
                     imeUiControl: undefined,
@@ -369,13 +379,28 @@ const PluginControlView =
                     imeInitialHeight: 0,
                     showFileDialog: false,
                     dialogFileProperty: new UiFileProperty(),
-                    dialogFileValue: ""
+                    dialogFileValue: "",
+                    modGuiContentReady: false,
+                    showModGuiZoomed: false
 
                 }
                 this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
                 this.onControlValueChanged = this.onControlValueChanged.bind(this);
                 this.onPreviewChange = this.onPreviewChange.bind(this);
             }
+            // unmonitorPort: (handle: MonitorPortHandle) => void;
+            // onValueChanged: (instanceId: number, symbol: string, value: number) => void;
+
+            // monitorPatchProperty(
+            //     instanceId: number,
+            //     propertyUri: string,
+            //     onReceived: PatchPropertyListener
+            // ): ListenHandle;    
+
+            // cancelMonitorPatchProperty(listenHandle: ListenHandle): void;
+
+            // getPatchProperty(instanceId: number, uri: string): Promise<any>;
+            // setPatchProperty(instanceId: number, uri: string, value: any): Promise<boolean>
 
 
             onPreviewChange(key: string, value: number): void {
@@ -426,7 +451,7 @@ const PluginControlView =
                     imeUiControl: uiControl,
                     imeValue: value,
                     imeCaption: uiControl.name,
-                    imeInitialHeight: window.innerHeight
+                    imeInitialHeight: document.documentElement.clientHeight
 
                 });
             }
@@ -739,7 +764,7 @@ const PluginControlView =
                 makeIoPluginInfo("Output", Pedalboard.END_PEDALBOARD_ITEM_URI);
 
             midiBindingControl(pedalboardItem: PedalboardItem): ReactNode {
-                if (!pedalboardItem.midiChannelBinding) {
+                if ((!pedalboardItem.midiChannelBinding) || (midiChannelBindingControlFeatureEnabled === false)) {
                     return false;
                 }
                 return (
@@ -759,18 +784,72 @@ const PluginControlView =
                 return false;
             }
 
-            render(): ReactNode {
-                this.controlKeyIndex = 0;
-                const classes = withStyles.getClasses(this.props);
-                let pedalboardItem: PedalboardItem;
-                let pedalboard = this.model.pedalboard.get();
-                if (this.props.instanceId === Pedalboard.START_CONTROL) {
-                    pedalboardItem = pedalboard.makeStartItem();
-                } else if (this.props.instanceId === Pedalboard.END_CONTROL) {
-                    pedalboardItem = pedalboard.makeEndItem();
-                } else {
-                    pedalboardItem = pedalboard.getItem(this.props.instanceId);
+
+            handleModGuiFileProperty(instanceId: number, filePropertyUri: string, selectedFile: string) {
+                let plugin = this.model.getUiPlugin(this.props.item.uri);
+                if (!plugin) {
+                    throw (new Error("Plugin not found."));
                 }
+                let fileProperty = plugin.getFilePropertyByUri(filePropertyUri);
+                if (!fileProperty) {
+                    throw (new Error("File property not found."));
+                }
+                this.setState({
+                    showFileDialog: true,
+                    dialogFileProperty: fileProperty,
+                    dialogFileValue: selectedFile
+                });
+            }
+            renderModGui(): ReactNode {
+                const classes = withStyles.getClasses(this.props);
+                void classes;
+
+                let uiPlugin = this.model.getUiPlugin(this.props.item.uri);
+                if (!uiPlugin) {
+                    return (<div />);
+                }
+                return (
+                    <div style={{ width: "100%", height: "100%", }}>
+                        <AutoZoom leftPad={36} rightPad={52} contentReady={this.state.modGuiContentReady}
+                            showZoomed={this.state.showModGuiZoomed}
+                            setShowZoomed={
+                                (value) => { this.setState({ showModGuiZoomed: value }); }
+                            }
+                        >
+                            <ModGuiHost
+
+                                key={this.props.instanceId.toString()}
+                                instanceId={this.props.instanceId}
+                                plugin={uiPlugin}
+                                onClose={() => {
+                                    if (this.props.onSetShowModGui) {
+                                        this.props.onSetShowModGui(this.props.instanceId, false);
+                                    }
+                                    this.setState({showModGuiZoomed: false})
+                                }}
+                                handleFileSelect={(instanceId, fileProperty, selectedFile) => {
+                                    this.handleModGuiFileProperty(
+                                        instanceId,
+                                        fileProperty,
+                                        selectedFile);
+
+                                }}
+                                onContentReady={(value) => {
+                                    this.setState({ modGuiContentReady: value });
+                                }}
+                            />
+                        </AutoZoom>
+                    </div>
+
+                )
+            }
+
+            renderPiPedalControl(pedalboardItem?: PedalboardItem): ReactNode {
+                this.controlKeyIndex = 0;
+
+
+                const classes = withStyles.getClasses(this.props);
+                let pedalboard = this.model.pedalboard.get();
 
                 if (!pedalboardItem)
                     return (<div className={classes.frame} ></div>);
@@ -792,19 +871,13 @@ const PluginControlView =
 
                 controlValues = this.filterNotOnGui(controlValues, plugin);
 
-
-
                 let gridClass = this.state.landscapeGrid ? classes.landscapeGrid : classes.normalGrid;
                 let scrollClass = this.state.landscapeGrid ? classes.frameScrollLandscape : classes.frameScrollPortrait;
-                let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
-                let controlNodes: ControlNodes;
-                let frameClass = classes.frame;
-
                 if (this.fullScreen()) {
                     gridClass = classes.noScrollGrid;
                     scrollClass = classes.frameScrollNone;
-                    frameClass = classes.noScrollFrame;
                 }
+                let controlNodes: ControlNodes;
 
                 controlNodes = this.getStandardControlNodes(plugin, controlValues);
 
@@ -819,8 +892,48 @@ const PluginControlView =
                     pedalboardItem.midiChannelBinding = MidiChannelBinding.CreateMissingValue();
 
                 }
-                if (pedalboardItem.midiChannelBinding) {
+                if (pedalboardItem.midiChannelBinding && midiChannelBindingControlFeatureEnabled) {
                     nodes.push(this.midiBindingControl(pedalboardItem));
+                }
+                return (
+                    <div className={scrollClass}>
+                        <div className={gridClass}  >
+                            {
+                                nodes
+                            }
+                            {/* Extra space to allow scrolling right to the end in lascape especially */}
+                            {!this.fullScreen() && (
+                                <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
+                            )}
+                            {
+                                (!this.state.landscapeGrid) && (!this.fullScreen()) && (
+                                    <div style={{ flex: "0 1 100%", width: "0px", height: 40 }} />
+                                )
+                            }
+                        </div>
+                    </div>
+                );
+
+
+            }
+            render(): ReactNode {
+                const classes = withStyles.getClasses(this.props);
+                let pedalboard = this.model.pedalboard.get();
+
+                let pedalboardItem: PedalboardItem;
+                if (this.props.instanceId === Pedalboard.START_CONTROL) {
+                    pedalboardItem = pedalboard.makeStartItem();
+                } else if (this.props.instanceId === Pedalboard.END_CONTROL) {
+                    pedalboardItem = pedalboard.makeEndItem();
+                } else {
+                    pedalboardItem = pedalboard.getItem(this.props.instanceId);
+                }
+
+                let vuMeterRClass = this.state.landscapeGrid ? classes.vuMeterRLandscape : classes.vuMeterR;
+                let frameClass = classes.frame;
+
+                if (this.fullScreen() || this.props.showModGui) {
+                    frameClass = classes.noScrollFrame;
                 }
 
 
@@ -832,22 +945,11 @@ const PluginControlView =
                         <div className={vuMeterRClass}>
                             <VuMeter displayText={true} display="output" instanceId={pedalboardItem.instanceId} />
                         </div>
-                        <div className={scrollClass}>
-                            <div className={gridClass}  >
-                                {
-                                    nodes
-                                }
-                                {/* Extra space to allow scrolling right to the end in lascape especially */}
-                                {!this.fullScreen() && (
-                                    <div style={{ flex: "0 0 40px", width: 40, height: 40 }} />
-                                )}
-                                {
-                                    (!this.state.landscapeGrid) && (!this.fullScreen()) && (
-                                        <div style={{ flex: "0 1 100%", width: "0px", height: 40 }} />
-                                    )
-                                }
-                            </div>
-                        </div>
+                        {
+                            this.props.showModGui && this.renderModGui()
+                            || this.renderPiPedalControl(pedalboardItem)
+                        }
+
                         {this.state.showFileDialog && (
 
                             <FilePropertyDialog open={this.state.showFileDialog}
@@ -855,13 +957,15 @@ const PluginControlView =
                                 instanceId={this.props.instanceId}
                                 selectedFile={this.state.dialogFileValue}
                                 onCancel={() => {
-                                    this.setState({ showFileDialog: false });
+                                    this.setState({
+                                        showFileDialog: false
+                                    });
                                 }}
                                 onApply={(fileProperty, selectedFile) => {
                                     this.model.setPatchProperty(
                                         this.props.instanceId,
                                         fileProperty.patchProperty,
-                                        JsonAtom.Path(selectedFile)
+                                        JsonAtom._Path(selectedFile).asAny()
                                     )
                                         .then(() => {
 
@@ -876,7 +980,7 @@ const PluginControlView =
                                     this.model.setPatchProperty(
                                         this.props.instanceId,
                                         fileProperty.patchProperty,
-                                        JsonAtom.Path(selectedFile)
+                                        JsonAtom._Path(selectedFile).asAny()
                                     )
                                         .then(() => {
 
@@ -889,7 +993,7 @@ const PluginControlView =
                                 }
                             />
                         )}
-
+                        {/* xxx: I don't think we need this anyore. */}
                         <FullScreenIME uiControl={this.state.imeUiControl} value={this.state.imeValue}
 
                             onChange={(key, value) => this.onImeValueChange(key, value)}

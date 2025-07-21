@@ -42,7 +42,11 @@ let pluginFactories: IControlViewFactory[] = [
 ];
 
 
-export function GetControlView(pedalboardItem?: PedalboardItem | null): React.ReactNode {
+export function GetControlView(
+    pedalboardItem: PedalboardItem | null, 
+    showModUi: boolean,
+    onSetShowModGui: (instanceId: number, showModGui: boolean) => void
+): React.ReactNode {
     let model: PiPedalModel = PiPedalModelFactory.getInstance();
 
     if (!pedalboardItem) {
@@ -50,7 +54,13 @@ export function GetControlView(pedalboardItem?: PedalboardItem | null): React.Re
     }
     if (pedalboardItem.isStart() || pedalboardItem.isEnd()) {
         return (
-            <PluginControlView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />
+            <PluginControlView instanceId={pedalboardItem.instanceId} 
+                item={pedalboardItem} 
+                showModGui={showModUi}
+                onSetShowModGui={(instanceId, showModGui) => {
+                    onSetShowModGui?.(instanceId, showModGui);
+                }}  
+                />
         );
     }
     if (pedalboardItem.isSplit()) {
@@ -73,7 +83,11 @@ export function GetControlView(pedalboardItem?: PedalboardItem | null): React.Re
             </div>
         } else {
             return (
-                <PluginControlView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />
+                <PluginControlView instanceId={pedalboardItem.instanceId} item={pedalboardItem} showModGui={showModUi}
+                    onSetShowModGui={(instanceId, showModGui) => {
+                        onSetShowModGui?.(instanceId, showModGui);
+                    }} 
+                />
             )
         }
     }
