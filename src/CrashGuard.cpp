@@ -25,6 +25,7 @@
 #include "ofstream_synced.hpp"
 #include <fstream>
 #include <Lv2Log.hpp>
+#include <chrono>
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -34,16 +35,50 @@ std::mutex CrashGuard::mutex;
 std::filesystem::path CrashGuard::fileName;
 int64_t CrashGuard::depth = 0;
 
+static uint64_t getCurrentTimeMillis()
+{
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+}   
+
 void CrashGuard::SetCrashGuardFileName(const std::filesystem::path &path)
 {
     CrashGuard::fileName = path;
 
     {
         std::ifstream f{path};
+        uint64_t crashTime = 0;
+
+        uint64_t currentTime = getCurrentTimeMillis() ;
+
         if (f.is_open())
         {
-            f >> crashCount;
+            f >> crashCount >> crashTime;
+            if (crashTime > currentTime) 
+            {
+                Lv2Log::info("CrashGuard: power-off reset detected. Ignoring crash count.");
+                crashTime = currentTime; // Pi 4 without an RTC!
+                crashCount = 0;
+            }
         }
+
+        // don't count power-off resets, since this is normal practice fo a pi.
+        // we're only interested in tight-loop crashes while running under systemd.
+
+        constexpr uint64_t TIME_LIMIT = 1000 * 60 * 10; // 10 minutes.
+
+        uint64_t elapsed = currentTime - crashTime;
+        if (elapsed > TIME_LIMIT)
+        {
+            crashCount = 0;
+        }
+        if (elapsed < 3*1000 && crashCount > 0) {
+            // if less than 3 seconds, assume it's a power-off reset, since
+            // the systemd retry is 5 seconds.
+            Lv2Log::info("CrashGuard: power-off reset detected. Ignoring crash count.");
+            crashCount = 0;
+        }
+
         if (crashCount > 0) {
             Lv2Log::info("CrashGuard: Detected previous crash, count = %d", (int)crashCount);
         }
@@ -76,7 +111,7 @@ void CrashGuard::EnterCrashGuardZone()
     {
         if (!fileName.empty()) {
             ofstream_synced f{fileName};
-            f << (crashCount + 1) << std::endl;
+            f << (crashCount + 1) << " " << getCurrentTimeMillis() << std::endl;
         }
     }
 }
