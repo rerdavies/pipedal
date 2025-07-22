@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- */
+ */  
 
 #include "pch.h"
 #include "util.hpp"
@@ -1223,7 +1223,9 @@ namespace pipedal
         {
             int err;
 
-            alsa_device_name = jackServerSettings.GetAlsaInputDevice();
+            std::string inputName  = jackServerSettings.GetAlsaInputDevice();
+			std::string outputName = jackServerSettings.GetAlsaOutputDevice();
+
 
             this->numberOfBuffers = jackServerSettings.GetNumberOfBuffers();
             this->bufferSize = jackServerSettings.GetBufferSize();
@@ -1232,7 +1234,7 @@ namespace pipedal
             try
             {
 
-                err = snd_pcm_open(&playbackHandle, alsa_device_name.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
+                err = snd_pcm_open(&playbackHandle, outputName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
                 if (err < 0)
                 {
                     switch (errno)
@@ -1267,7 +1269,7 @@ namespace pipedal
                     snd_pcm_nonblock(playbackHandle, 0);
                 }
 
-                err = snd_pcm_open(&captureHandle, alsa_device_name.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
+                err = snd_pcm_open(&captureHandle, inputName.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
 
                 if (err < 0)
                 {
@@ -1934,7 +1936,8 @@ namespace pipedal
                 }
             }};
 
-        std::string alsaDeviceName = jackServerSettings.GetAlsaInputDevice();
+        std::string inDev  = jackServerSettings.GetAlsaInputDevice();
+        std::string outDev = jackServerSettings.GetAlsaOutputDevice();
         bool result = false;
 
         try
@@ -1942,7 +1945,7 @@ namespace pipedal
             int err;
             for (int retry = 0; retry < 2; ++retry)
             {
-                err = snd_pcm_open(&playbackHandle, alsaDeviceName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
+                err = snd_pcm_open(&playbackHandle, outDev.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
                 if (err < 0) // field report of a device that is present, but won't immediately open.
                 {
                     sleep(1);
@@ -1958,7 +1961,7 @@ namespace pipedal
 
             for (int retry = 0; retry < 15; ++retry)
             {
-                err = snd_pcm_open(&captureHandle, alsaDeviceName.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
+                err = snd_pcm_open(&captureHandle, inDev.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
                 if (err == -EBUSY)
                 {
                     sleep(1);
@@ -1981,8 +1984,8 @@ namespace pipedal
             snd_pcm_hw_params_any(playbackHandle, playbackHwParams);
             snd_pcm_hw_params_any(captureHandle, captureHwParams);
 
-            SetPreferredAlsaFormat(alsaDeviceName, "capture", captureHandle, captureHwParams);
-            SetPreferredAlsaFormat(alsaDeviceName, "output", playbackHandle, playbackHwParams);
+            SetPreferredAlsaFormat(inDev,   "capture", captureHandle, captureHwParams);
+            SetPreferredAlsaFormat(outDev,  "output", playbackHandle, playbackHwParams);
 
             unsigned int sampleRate = jackServerSettings.GetSampleRate();
             err = snd_pcm_hw_params_set_rate_near(playbackHandle, playbackHwParams, &sampleRate, 0);

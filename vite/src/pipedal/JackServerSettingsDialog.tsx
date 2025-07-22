@@ -15,7 +15,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
 
 
 import { Component } from 'react';
@@ -282,7 +282,9 @@ const JackServerSettingsDialog = withStyles(
             }
             if (!selectedDevice) {
                 selectedDevice = alsaDevices[0];
-                result.alsaDevice = selectedDevice.id;
+			 // if nothing selected yet, pick first for both:
+			if (!result.alsaInputDevice ) result.alsaInputDevice  = selectedDevice.id;
+			if (!result.alsaOutputDevice) result.alsaOutputDevice = selectedDevice.id;
 
             }
             if (result.sampleRate === 0) result.sampleRate = 48000;
@@ -292,7 +294,7 @@ const JackServerSettingsDialog = withStyles(
             result.bufferSize = bestBuffers.bufferSize;
             result.numberOfBuffers = bestBuffers.numberOfBuffers;
 
-            result.valid = true;
+            result.valid = !!result.alsaInputDevice && !!result.alsaOutputDevice;
             return result;
         }
 
@@ -399,7 +401,25 @@ const JackServerSettingsDialog = withStyles(
                 this.props.onApply(this.state.jackServerSettings.clone());
             }
         };
-
+		handleInputDeviceChanged(e: any) {
+			const d = e.target.value as string;
+			let s = this.state.jackServerSettings.clone();
+			s.alsaInputDevice = d;
+			this.setState({
+			jackServerSettings: s,
+			okEnabled: isOkEnabled(s, this.state.alsaDevices)
+			});
+		}
+		
+		handleOutputDeviceChanged(e: any) {
+			const d = e.target.value as string;
+			let s = this.state.jackServerSettings.clone();
+			s.alsaOutputDevice = d;
+			this.setState({
+			jackServerSettings: s,
+			okEnabled: isOkEnabled(s, this.state.alsaDevices)
+			});
+		}
         render() {
             const classes = withStyles.getClasses(this.props);
 
@@ -433,31 +453,35 @@ const JackServerSettingsDialog = withStyles(
                 >
                     <DialogContent>
                         <div>
+						 {/* Audio Input Device */}
                             <FormControl className={classes.formControl}>
-                                <InputLabel htmlFor="jsd_device">Device</InputLabel>
-                                <Select variant="standard" onChange={(e) => this.handleDeviceChanged(e)}
-                                    value={this.state.jackServerSettings.alsaDevice}
-                                    style={{width: 220}}
-                                    inputProps={{
-                                        name: "Device",
-                                        id: "jsd_device",
-                                    }}
-                                >
-                                    {(noDevices && !waitingForDevices) &&
-                                        (
-                                            <MenuItem value={INVALID_DEVICE_ID}>No suitable devices.</MenuItem>
-                                        )
-                                    }
-                                    {((!noDevices) && !waitingForDevices) && (
-                                        this.state.alsaDevices!.map((device) =>
-                                        (
-                                            <MenuItem key={device.id} value={device.id}>{device.name}</MenuItem>
-                                        )
-
-                                        )
-                                    )}
-                                </Select>
-                            </FormControl>
+							<InputLabel htmlFor="jsd_inputDevice">Input Device</InputLabel>
+							<Select
+							id="jsd_inputDevice"
+							value={this.state.jackServerSettings.alsaInputDevice}
+							onChange={e => this.handleInputDeviceChanged(e)}
+							style={{ width: 220 }}
+							>
+							{this.state.alsaDevices!.map(d => (
+								<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+							))}
+							</Select>
+						</FormControl>
+						
+						{/* Audio Output Device */}
+						<FormControl className={classes.formControl}>
+							<InputLabel htmlFor="jsd_outputDevice">Output Device</InputLabel>
+							<Select
+							id="jsd_outputDevice"
+							value={this.state.jackServerSettings.alsaOutputDevice}
+							onChange={e => this.handleOutputDeviceChanged(e)}
+							style={{ width: 220 }}
+							>
+							{this.state.alsaDevices!.map(d => (
+								<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+							))}
+							</Select>
+						</FormControl>
                         </div><div>
                             <FormControl className={classes.formControl}>
                                 <InputLabel htmlFor="jsd_sampleRate">Sample rate</InputLabel>
