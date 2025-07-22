@@ -1780,6 +1780,7 @@ export class PiPedalModel //implements PiPedalModel
                     //  null -> we've never seen a value.
                     item.pathProperties[fileProperty.patchProperty] = "null";
                 }
+                newPedalboard.selectedPlugin = item.instanceId; 
                 this.setModelPedalboard(newPedalboard);
                 this.updateServerPedalboard()
                 return item.instanceId;
