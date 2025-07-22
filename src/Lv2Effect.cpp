@@ -41,6 +41,7 @@
 #include "AudioHost.hpp"
 #include <exception>
 #include "RingBufferReader.hpp"
+#include "Worker.hpp"
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -70,6 +71,11 @@ Lv2Effect::Lv2Effect(
 
     this->bypass = pedalboardItem.isEnabled();
 
+    this->workerThread = std::make_unique<HostWorkerThread>();
+    if (info_->WantsWorkerThread())
+    {
+        workerThread->StartThread();
+    }
     // stash a list of known file properties that we want to keep synced.
     if (info->piPedalUI())
     {
@@ -179,10 +185,8 @@ Lv2Effect::Lv2Effect(
     const LV2_Worker_Interface *worker_interface =
         (const LV2_Worker_Interface *)lilv_instance_get_extension_data(pInstance,
                                                                        LV2_WORKER__interface);
-    if (worker_interface)
-    {
-        this->worker = std::make_unique<Worker>(pHost->GetHostWorkerThread(), pInstance, worker_interface);
-    }
+    this->worker = std::make_unique<Worker>(workerThread, pInstance, worker_interface);
+    
     const LV2_State_Interface *state_interface =
         (const LV2_State_Interface *)lilv_instance_get_extension_data(pInstance,
                                                                       LV2_STATE__interface);

@@ -47,6 +47,7 @@
 #include "StdErrorCapture.hpp"
 #include "util.hpp"
 #include "ModFileTypes.hpp"
+#include  <algorithm>
 
 #include "Locale.hpp"
 
@@ -301,7 +302,6 @@ PluginHost::PluginHost()
 
     this->urids = new Urids(mapFeature);
 
-    pHostWorkerThread = std::make_shared<HostWorkerThread>();
 }
 
 void PluginHost::OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings)
@@ -1668,10 +1668,6 @@ bool Lv2PluginInfo::isSplit() const
 {
     return uri_ == SPLIT_PEDALBOARD_ITEM_URI;
 }
-std::shared_ptr<HostWorkerThread> PluginHost::GetHostWorkerThread()
-{
-    return pHostWorkerThread;
-}
 
 class ResourceInfo
 {
@@ -1883,6 +1879,13 @@ Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNod
     }
 }
 
+// ffs.
+static inline bool contains(const std::vector<std::string> &vec, const std::string &value) {
+    return std::find(vec.begin(),vec.end(),value) != vec.end();
+}
+bool Lv2PluginInfo::WantsWorkerThread() const {
+    return contains(this->required_features_,LV2_WORKER__schedule) || contains(this->supported_features_,LV2_WORKER__schedule);
+}
 // void PiPedalHostLogError(const std::string &error)
 // {
 //     Lv2Log::error("%s",error.c_str());
