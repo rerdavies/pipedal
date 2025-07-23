@@ -1955,8 +1955,8 @@ namespace pipedal
             }
             if (err < 0)
             {
-                throw PiPedalStateException(SS(alsaDeviceName << " playback device not found. "
-                                                              << "(" << snd_strerror(err) << ")"));
+                throw PiPedalStateException(SS(outDev << " playback device not found. "
+                                                             << "(" << snd_strerror(err) << ")"));
             }
 
             for (int retry = 0; retry < 15; ++retry)
@@ -1970,7 +1970,7 @@ namespace pipedal
                 break;
             }
             if (err < 0)
-                throw PiPedalStateException(SS(alsaDeviceName << " capture device not found."));
+                throw PiPedalStateException(SS(inDev << " capture device not found."));
 
             if (snd_pcm_hw_params_malloc(&playbackHwParams) < 0)
             {

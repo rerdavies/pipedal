@@ -114,6 +114,22 @@ function getValidBufferCounts(bufferSize: number, alsaDeviceInfo?: AlsaDeviceInf
 
     return result;
 }
+
+function intersectArrays(a: number[], b: number[]): number[] {
+    return a.filter((v) => b.indexOf(v) !== -1);
+}
+
+function getValidBufferCountsMultiple(bufferSize: number, inDevice?: AlsaDeviceInfo, outDevice?: AlsaDeviceInfo): number[] {
+    let c1 = getValidBufferCounts(bufferSize, inDevice);
+    if (!outDevice) return c1;
+    return intersectArrays(c1, getValidBufferCounts(bufferSize, outDevice));
+}
+
+function getValidBufferSizesMultiple(inDevice?: AlsaDeviceInfo, outDevice?: AlsaDeviceInfo): number[] {
+    let s1 = getValidBufferSizes(inDevice);
+    if (!outDevice) return s1;
+    return intersectArrays(s1, getValidBufferSizes(outDevice));
+}
 function getValidBufferSizes(alsaDeviceInfo? : AlsaDeviceInfo): number[]
 {
     if (!alsaDeviceInfo )
@@ -131,23 +147,31 @@ function getValidBufferSizes(alsaDeviceInfo? : AlsaDeviceInfo): number[]
     return result;
 }
 function getBestBuffers(
-    alsaDeviceInfo: AlsaDeviceInfo | undefined,
-    bufferSize: number, 
+    inDevice: AlsaDeviceInfo | undefined,
+    outDevice: AlsaDeviceInfo | undefined,
+    bufferSize: number,
     numberOfBuffers: number,
     bufferSizeChanging: boolean = false
 ) : BufferSetting {
-    if (!alsaDeviceInfo)
+    if (!inDevice && !outDevice)
     {
         return { bufferSize:bufferSize, numberOfBuffers: numberOfBuffers};
+    }
+    const device = inDevice || outDevice;
+    if (!device)
+    {
+        return { bufferSize:bufferSize, numberOfBuffers:numberOfBuffers};
     }
 
     // If the numberOfbuffers is fine as is, don't change the number of Buffers.
     // set default values. Otherwise, choose the best buffer count from available buffer counts.
-    let validBuffercounts = getValidBufferCounts(bufferSize,alsaDeviceInfo);
+    let validBuffercounts = getValidBufferCountsMultiple(bufferSize,inDevice,outDevice);
+    const minSize = Math.max(inDevice?.minBufferSize ?? MIN_BUFFER_SIZE, outDevice?.minBufferSize ?? MIN_BUFFER_SIZE);
+    const maxSize = Math.min(inDevice?.maxBufferSize ?? MAX_BUFFER_SIZE, outDevice?.maxBufferSize ?? MAX_BUFFER_SIZE);
     let ix = validBuffercounts.indexOf(numberOfBuffers);
     if (ix !== -1) {
-        if (bufferSize*numberOfBuffers <= alsaDeviceInfo.maxBufferSize
-            && bufferSize*numberOfBuffers >= alsaDeviceInfo.minBufferSize)
+    if (bufferSize*numberOfBuffers <= maxSize
+            && bufferSize*numberOfBuffers >= minSize)
         {
             return {bufferSize: bufferSize, numberOfBuffers: numberOfBuffers};
         }
@@ -174,15 +198,15 @@ function getBestBuffers(
     // otherwise select a sensible starting value.
 
     // favored default: 64x3.
-    if (64*3 >= alsaDeviceInfo.minBufferSize && 64*3 <= alsaDeviceInfo.maxBufferSize)
+  if (64*3 >= minSize && 64*3 <= maxSize)
     {
         return { bufferSize: 64, numberOfBuffers: 3};
     }
     // if that isn't possible then minBufferSize/2 x 4.
-    bufferSize = alsaDeviceInfo.minBufferSize/2;
+ bufferSize = minSize/2;
     numberOfBuffers = 4;
     // otherwise, minBufferSize/2 x 2.
-    if (bufferSize*numberOfBuffers > alsaDeviceInfo.maxBufferSize)
+    if (bufferSize*numberOfBuffers > maxSize)
     {
         numberOfBuffers = 2;
     }
@@ -194,29 +218,21 @@ function isOkEnabled(jackServerSettings: JackServerSettings, alsaDevices?: AlsaD
 {
     if (!jackServerSettings.valid) return false;
     if (!alsaDevices) return false;
-    let alsaDevice: AlsaDeviceInfo | undefined = undefined;
-    for (let i = 0; i < alsaDevices.length; ++i)
-    {
-        if (alsaDevices[i].id === jackServerSettings.alsaDevice) 
-        {
-            alsaDevice = alsaDevices[i];
-        }
-    }
-    if (!alsaDevice) 
-    {
-        return false;
-    }
-    let deviceBufferSize = jackServerSettings.bufferSize * jackServerSettings.numberOfBuffers;
-    if (deviceBufferSize < alsaDevice.minBufferSize || deviceBufferSize > alsaDevice.maxBufferSize)
-    {
-        return false;
-    }
-    let validBufferCounts = getValidBufferCounts(jackServerSettings.bufferSize, alsaDevice);
-    let ix = validBufferCounts.indexOf(jackServerSettings.numberOfBuffers);
-    if (ix === -1)
-    {
-        return false;
-    }
+	const inDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaInputDevice);
+    const outDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaOutputDevice);
+    if (!inDevice || !outDevice) return false;
+
+    const deviceBufferSize = jackServerSettings.bufferSize * jackServerSettings.numberOfBuffers;
+    const minSize = Math.max(inDevice.minBufferSize, outDevice.minBufferSize);
+    const maxSize = Math.min(inDevice.maxBufferSize, outDevice.maxBufferSize);
+    if (deviceBufferSize < minSize || deviceBufferSize > maxSize) return false;
+
+    const validBufferCounts = getValidBufferCountsMultiple(jackServerSettings.bufferSize, inDevice, outDevice);
+    if (validBufferCounts.indexOf(jackServerSettings.numberOfBuffers) === -1) return false;
+
+    const sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
+    if (sampleRates.indexOf(jackServerSettings.sampleRate) === -1) return false;
+
     return true;
 }
 
@@ -264,33 +280,36 @@ const JackServerSettingsDialog = withStyles(
 
         applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[]) {
             let result = jackServerSettings.clone();
-            if (!alsaDevices) {
+           if (!alsaDevices || alsaDevices.length === 0) {
+                result.valid = false;
+                result.alsaInputDevice = INVALID_DEVICE_ID;
+                result.alsaOutputDevice = INVALID_DEVICE_ID;
                 return result;
             }
-            result.valid = false;
-            if (alsaDevices.length === 0) {
-                result.alsaDevice = INVALID_DEVICE_ID;
-                return result;
-            }
 
-            let selectedDevice: AlsaDeviceInfo | undefined = undefined;
-            for (let i = 0; i < alsaDevices.length; ++i) {
-                if (alsaDevices[i].id === result.alsaDevice) {
-                    selectedDevice = alsaDevices[i]
-                    break;
-                }
+            let inDevice = alsaDevices.find(d => d.id === result.alsaInputDevice);
+            let outDevice = alsaDevices.find(d => d.id === result.alsaOutputDevice);
+            if (!inDevice) {
+                inDevice = alsaDevices[0];
+                result.alsaInputDevice = inDevice.id;
             }
-            if (!selectedDevice) {
-                selectedDevice = alsaDevices[0];
-			 // if nothing selected yet, pick first for both:
-			if (!result.alsaInputDevice ) result.alsaInputDevice  = selectedDevice.id;
-			if (!result.alsaOutputDevice) result.alsaOutputDevice = selectedDevice.id;
-
+            if (!outDevice) {
+                outDevice = alsaDevices[0];
+                result.alsaOutputDevice = outDevice.id;
             }
-            if (result.sampleRate === 0) result.sampleRate = 48000;
-            result.sampleRate = selectedDevice.closestSampleRate(result.sampleRate);
+            
+			if (result.sampleRate === 0) result.sampleRate = 48000;
+			 let sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
+            if (sampleRates.length === 0) sampleRates = inDevice.sampleRates;
+            let bestSr = sampleRates[0];
+            let bestErr = 1e36;
+            for (let sr of sampleRates) {
+                let err = (sr - result.sampleRate) * (sr - result.sampleRate);
+                if (err < bestErr) { bestErr = err; bestSr = sr; }
+            }
+            result.sampleRate = bestSr;
 
-            let bestBuffers =  getBestBuffers(selectedDevice,result.bufferSize,result.numberOfBuffers);
+            let bestBuffers =  getBestBuffers(inDevice, outDevice, result.bufferSize, result.numberOfBuffers);
             result.bufferSize = bestBuffers.bufferSize;
             result.numberOfBuffers = bestBuffers.numberOfBuffers;
 
@@ -323,37 +342,22 @@ const JackServerSettingsDialog = withStyles(
             this.mounted = false;
 
         }
-        getSelectedDevice(deviceId: string): AlsaDeviceInfo | null {
-            if (!this.state.alsaDevices) return null;
+       getSelectedDevice(deviceId: string): AlsaDeviceInfo | undefined {
+            if (!this.state.alsaDevices) return undefined;
             for (let i = 0; i < this.state.alsaDevices.length; ++i) {
                 if (this.state.alsaDevices[i].id === deviceId) {
                     return this.state.alsaDevices[i];
                 }
 
             }
-            return null;
+             return undefined;
         }
 
-        handleDeviceChanged(e: any) {
-            let device = e.target.value as string;
-
-            let selectedDevice = this.getSelectedDevice(device);
-            if (!selectedDevice) return;
-            let settings = this.state.jackServerSettings.clone();
-            settings.alsaDevice = device;
-            settings = this.applyAlsaDevices(settings,this.state.alsaDevices);
-
-            this.setState({
-                jackServerSettings: settings,
-                latencyText: getLatencyText(settings),
-                okEnabled: isOkEnabled(settings,this.state.alsaDevices)
-            });
-        }
         handleRateChanged(e: any) {
             let rate = e.target.value as number;
-            console.log("New rate: " + rate);
-            let selectedDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaDevice);
-            if (!selectedDevice) return;
+             let inDev = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
+            let outDev = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
+            if (!inDev && !outDev) return;
             let settings = this.state.jackServerSettings.clone();
             settings.sampleRate = rate;
 
@@ -366,11 +370,12 @@ const JackServerSettingsDialog = withStyles(
         handleSizeChanged(e: any) {
             let size = e.target.value as number;
 
-            let selectedDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaDevice);
-            if (!selectedDevice) return;
+            let inDev = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
+            let outDev = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
+            if (!inDev && !outDev) return;
             let settings = this.state.jackServerSettings.clone();
             settings.bufferSize = size;
-            let bestBufferSetting = getBestBuffers(selectedDevice,settings.bufferSize,settings.numberOfBuffers,true);
+              let bestBufferSetting = getBestBuffers(inDev,outDev,settings.bufferSize,settings.numberOfBuffers,true);
             settings.bufferSize = bestBufferSetting.bufferSize;
             settings.numberOfBuffers = bestBufferSetting.numberOfBuffers;
 
@@ -383,8 +388,9 @@ const JackServerSettingsDialog = withStyles(
         handleNumberOfBuffersChanged(e: any) {
             let bufferCount = e.target.value as number;
 
-            let selectedDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaDevice);
-            if (!selectedDevice) return;
+            let inDev = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
+            let outDev = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
+            if (!inDev && !outDev) return;
             let settings = this.state.jackServerSettings.clone();
             settings.numberOfBuffers = bufferCount;
 
@@ -428,21 +434,17 @@ const JackServerSettingsDialog = withStyles(
             const handleClose = () => {
                 onClose();
             };
-            let waitingForDevices = !this.state.alsaDevices
-            let noDevices = this.state.alsaDevices && this.state.alsaDevices.length === 0;
-            let selectedDevice: AlsaDeviceInfo | undefined = undefined;
-            if (this.state.alsaDevices) {
-                for (let device of this.state.alsaDevices) {
-                    if (device.id === this.state.jackServerSettings.alsaDevice) {
-                        selectedDevice = device;
-                        break;
-                    }
-                }
-            }
-            let bufferSizes: number[] = getValidBufferSizes(selectedDevice);
-            let bufferCounts = getValidBufferCounts(this.state.jackServerSettings.bufferSize,selectedDevice);
-            let bufferSizeDisabled = !selectedDevice;
-            let bufferCountDisabled = !selectedDevice;
+           
+			let selectedInputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
+            let selectedOutputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
+
+            let bufferSizes: number[] = getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice);
+            let bufferCounts = getValidBufferCountsMultiple(this.state.jackServerSettings.bufferSize, selectedInputDevice, selectedOutputDevice);
+            let bufferSizeDisabled = !(selectedInputDevice || selectedOutputDevice);
+            let bufferCountDisabled = !(selectedInputDevice || selectedOutputDevice);
+            let sampleRates = selectedInputDevice && selectedOutputDevice ?
+                    intersectArrays(selectedInputDevice.sampleRates, selectedOutputDevice.sampleRates)
+                    : (selectedInputDevice ? selectedInputDevice.sampleRates : (selectedOutputDevice ? selectedOutputDevice.sampleRates : []));
 
             return (
                 <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
@@ -488,7 +490,7 @@ const JackServerSettingsDialog = withStyles(
                                 <Select variant="standard"
                                     onChange={(e) => this.handleRateChanged(e)}
                                     value={this.state.jackServerSettings.sampleRate}
-                                    disabled={!selectedDevice}
+                                     disabled={sampleRates.length === 0}
                                     inputProps={{
                                         id: 'jsd_sampleRate',
                                         style: {
@@ -496,11 +498,9 @@ const JackServerSettingsDialog = withStyles(
                                         }
                                     }}
                                 >
-                                    {selectedDevice &&
-                                        selectedDevice.sampleRates.map((sr) => {
-                                            return ( <MenuItem value={sr}>{sr}</MenuItem> );
-                                        })
-                                    }
+                                 {sampleRates.map((sr) => {
+                                            return (<MenuItem value={sr}>{sr}</MenuItem> );
+                                    })}
                                 </Select>
                             </FormControl>
                             <div style={{ display: "inline", whiteSpace: "nowrap" }}>

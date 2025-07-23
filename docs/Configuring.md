@@ -8,6 +8,10 @@ icon_float: left
 
 Before using PiPedal, you will need to configure settings for the audio device that PiPedal will use.
 
+PiPedal works with either external USB audio interfaces or Raspberry Pi audio HATs. You can now
+select a distinct ALSA input device and output device, so recording and playback can use different
+hardware if desired.
+
 {% include pageIconL.html %}
 
 You will also want to configure PiPedal  to provide a Wi-Fi auto-hotspot so that you can connect to using your using your Android phone or tablet. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that PiPedal's Wi-Fi auto-hotspot is enabled before you do. 
