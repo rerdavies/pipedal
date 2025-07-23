@@ -59,8 +59,8 @@ find_package(sdbus-c++ REQUIRED)
 
 
 
-find_package(ICU REQUIRED COMPONENTS uc i18n  )
-message(STATUS  "ICU_LIBRARIES: ${ICU_LIBRARIES}")
+find_package(ICU REQUIRED COMPONENTS uc i18n)
+message(STATUS "ICU_LIBRARIES: ${ICU_LIBRARIES}")
 
 
 if(DEFINED ENV{GITHUB_ACTIONS})
@@ -72,19 +72,19 @@ endif()
 #################################################################
 # ENABLE/DISABLE VST3 Support.
 # Disabled, pending approval of Steinberg VST3 License.
-# Do not enable unless you have non-GPL3 access to the Steinberg 
+# Do not enable unless you have non-GPL3 access to the Steinberg
 # SDK.
 #
-# Plus, there don't seem to be any VST3 plugins for linux, as it 
-# turns out. :-/ Status: not completely implemented due to lack 
+# Plus, there don't seem to be any VST3 plugins for linux, as it
+# turns out. :-/ Status: not completely implemented due to lack
 # of test targets. Deprecated, and non-functional.
 #################################################################
 
 set (ENABLE_VST3 0)
 
 
-if (ENABLE_VST3) 
-    set (VST3PATH  "../../vst3sdk")
+if (ENABLE_VST3)
+    set (VST3PATH "../../vst3sdk")
     message(STATUS " VST3 Support Enabled")
     set (VST3_INCLUDES "${VST3PATH}")
     set (VST3_LIBRARIES vst3_lib dl)
@@ -129,11 +129,11 @@ pkg_check_modules(ZIP "lilv-0")
 set (LV2DEV_INCLUDE_DIRS ) # use lvt headers fro /usr/include
 
 
-# Use submodules/websocketpp heders taken from websocketpp/develop branch, because debian-provided 
+# Use submodules/websocketpp heders taken from websocketpp/develop branch, because debian-provided
 # version of websocketpp cannot compile under GCC 12.x.
 
-set (WEBSOCKETPP_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/modules/websocketpp) 
-message(STATUS "WEBSOCKETPP_INCLUDE_DIRS ${WEBSOCKETPP_INCLUDE_DIRS}" )
+set (WEBSOCKETPP_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/modules/websocketpp)
+message(STATUS "WEBSOCKETPP_INCLUDE_DIRS ${WEBSOCKETPP_INCLUDE_DIRS}")
 
 # pkg_check_modules(JACK "jack")
 # if(!JACK_FOUND)
@@ -151,7 +151,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 if (!ENABLE_VST3)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-psabi -DARCHITECTURE=${CPACK_SYSTEM_NAME}")
 else()
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
 endif()
 
 EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
@@ -163,22 +163,22 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
     # Must not -D_GLIBCXX_DEBUG, since it conflict with SQLiteCpp.lol
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG " )
-    if (USE_SANITIZE) 
-        set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -static-libasan  " )
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG " )
+    if (USE_SANITIZE)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -static-libasan " )
     endif()
 elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     message(STATUS "RelWithgDebInfo build")
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g -O3 -DNDEBUG" )
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -ffast-math -DNDEBUG" )
 else()
     message(STATUS "Release build")
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG" )
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -DNDEBUG" )
 endif()
 
 if (ENABLE_BACKTRACE)
-    set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic")
     if (${DEBIAN_ARCHITECTURE} MATCHES arm64)
-        set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -funwind-tables")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funwind-tables")
     endif()
 endif()
 
@@ -189,11 +189,11 @@ endif()
 # message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 # set(CMAKE_ENABLE_EXPORTS 1)
 
-message (STATUS "Cxx flags: ${CMAKE_CXX_FLAGS}"  )
+message (STATUS "Cxx flags: ${CMAKE_CXX_FLAGS}")
 
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_BIND_GLOBAL_PLACEHOLDERS -DONBOARDING)
 
- 
+
 if (VST3PATH)
 set (VST3_SOURCES
     vst3/Vst3Effect.hpp Vst3Effect.cpp
@@ -233,8 +233,8 @@ set (PIPEDAL_SOURCES
     WebServerConfig.cpp WebServerConfig.hpp
     Locale.hpp Locale.cpp
     ZipFile.cpp ZipFile.hpp
-    TemporaryFile.cpp TemporaryFile.hpp     
-    FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp 
+    TemporaryFile.cpp TemporaryFile.hpp
+    FilePropertyDirectoryTree.cpp FilePropertyDirectoryTree.hpp
     FileEntry.cpp FileEntry.hpp
     atom_object.hpp atom_object.cpp
     lv2ext/pipedal.lv2/ext/fileBrowser.h
@@ -243,7 +243,7 @@ set (PIPEDAL_SOURCES
     DbDezipper.hpp DbDezipper.cpp
     WebServerLog.hpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp
-    
+
     PiPedalUI.hpp
     PiPedalUI.cpp
     MapPathFeature.hpp
@@ -319,15 +319,15 @@ set (PIPEDAL_SOURCES
 
 configure_file(config.hpp.in config.hpp)
 include_directories( 
-    ${pipedald_SOURCE_DIR}/. 
+    ${pipedald_SOURCE_DIR}/.
     ../build/src
-    ) 
+    )
 
-set (PIPEDAL_INCLUDES     
+set (PIPEDAL_INCLUDES
     ${LV2DEV_INCLUDE_DIRS}
-    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}  
+    ${JACK_INCLUDE_DIRS} ${LILV_0_INCLUDE_DIRS}
     ${VST3_INCLUDES}
-    ${WEBSOCKETPP_INCLUDE_DIRS}    
+    ${WEBSOCKETPP_INCLUDE_DIRS}
     ${PipeWire_INCLUDE_DIRS}
     .
 )
@@ -337,7 +337,7 @@ set(PIPEDAL_LIBS libpipedald zip
     PiPedalCommon
     pthread atomic stdc++fs asound avahi-common avahi-client systemd
     ${VST3_LIBRARIES}
-    ${LILV_0_LIBRARIES} 
+    ${LILV_0_LIBRARIES}
     asound
      # ${JACK_LIBRARIES} - pending delete for JACK support.
      )
@@ -345,16 +345,15 @@ set(PIPEDAL_LIBS libpipedald zip
 
 
 ##########################
- 
+
 add_library(libpipedald STATIC ${PIPEDAL_SOURCES})
 
 target_compile_definitions(libpipedald PUBLIC "_REENTRANT")
 
-target_include_directories(libpipedald PUBLIC ${PIPEDAL_INCLUDES} 
-    ) 
+target_include_directories(libpipedald PUBLIC ${PIPEDAL_INCLUDES})
 
-target_link_libraries(libpipedald 
-    PUBLIC 
+target_link_libraries(libpipedald
+    PUBLIC
    PiPedalCommon
    SQLiteCpp
    ${PipeWire_LIBRARIES}
@@ -382,26 +381,23 @@ target_link_libraries(pipedal_kconfig
   PRIVATE PiPedalCommon
   asound
   systemd
-) 
+)
 
 #################################
-add_executable(pipedald 
+add_executable(pipedald
     asan_options.cpp  # disable leak checking for sanitize=address.
-    main.cpp 
+    main.cpp
     )
 target_include_directories(pipedald PRIVATE ${PIPEDAL_INCLUDES})
 
 target_compile_definitions(pipedald PRIVATE "ENABLE_BACKTRACE=${ENABLE_BACKTRACE}")
 
 
-target_link_libraries(pipedald PRIVATE PiPedalCommon
-   
-    ${PIPEDAL_LIBS}
-    )
+target_link_libraries(pipedald PRIVATE PiPedalCommon ${PIPEDAL_LIBS})
 
 
 #################################
-add_executable(hotspotManagerTest 
+add_executable(hotspotManagerTest
     hotspotManagerTestMain.cpp
     HotspotManager.cpp HotspotManager.hpp)
 
@@ -416,7 +412,7 @@ add_executable(AuxInTest
     AuxInTest.cpp
 )
 
-add_executable(pipedaltest 
+add_executable(pipedaltest
     testMain.cpp
 
     ModGuiTest.cpp
@@ -427,9 +423,9 @@ add_executable(pipedaltest
     ModFileTypesTest.cpp
     jsonTest.cpp
     UpdaterTest.cpp
-    
+
     utilTest.cpp
-    
+
     AlsaDriverTest.cpp
     AvahiServiceTest.cpp
     WifiChannelsTest.cpp
@@ -448,29 +444,23 @@ add_executable(pipedaltest
     MemDebug.hpp
     )
 target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} ${ICU_LIBRARIES})
-target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
-) 
+target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES})
 
 set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
-
-
-
     add_executable(pipedalProfilePlugin
         profilePluginMain.cpp ArmPerformanceCounters.hpp
         )
-    target_link_libraries(pipedalProfilePlugin PRIVATE profiler  ${PIPEDAL_LIBS}) 
+    target_link_libraries(pipedalProfilePlugin PRIVATE profiler ${PIPEDAL_LIBS})
 
     target_include_directories(pipedalProfilePlugin PRIVATE ${PIPEDAL_INCLUDES}
         )
     if (${DEBIAN_ARCHITECTURE} MATCHES arm64)
         target_compile_definitions(pipedalProfilePlugin PRIVATE "PIPEDAL_AARCH64")
-     endif()
-     
-
-
+    endif()
 endif()
+
 add_executable(jsonTest
      testMain.cpp
      jsonTest.cpp
@@ -484,8 +474,7 @@ add_executable(jsonTest
      PromiseTest.cpp
 )
 target_link_libraries(jsonTest PRIVATE PiPedalCommon)
-target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES}
-    ) 
+target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES})
 
 set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
@@ -498,7 +487,7 @@ add_test(NAME jsonTest COMMAND jsonTest)
 
 
 
-include_directories( ${pipedald_SOURCE_DIR}/. ../build/src) 
+include_directories( ${pipedald_SOURCE_DIR}/. ../build/src)
 
 if(${USE_PCH})
 target_precompile_headers(pipedaltest PRIVATE pch.h)
@@ -508,25 +497,25 @@ endif()
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES}
     )
 
-target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} 
+target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS}
     )
 
 
 #########################################################
 #  VST3 Source.
 #
-#  VST3 support is optional, because it poses unfortunate 
+#  VST3 support is optional, because it poses unfortunate
 #  licensing problems.
 
 #  There's no easy way to get the VST SDK to build without
-#  GCC c++11 linkage, which is not compatible with  pipedal's
+#  GCC c++11 linkage, which is not compatible with pipedal's
 #  use of C++20 features (strictly a link time breakage).
 #
 #  So pipedal rebuilds the VST3 SDK using pipedal-compatible
 #  compile flags.
 #
-#  The current build supports only Linux builds. Refer to the 
-#  original VST3 SDK build for details on how to build 
+#  The current build supports only Linux builds. Refer to the
+#  original VST3 SDK build for details on how to build
 #  for other platforms.
 #
 #########################################################
@@ -566,12 +555,12 @@ if(ENABLE_VST3)
         ${VST3_BASEPATH}/source/timer.h
         ${VST3_BASEPATH}/source/updatehandler.cpp
         ${VST3_BASEPATH}/source/updatehandler.h
-    
+
         ${VST3_BASEPATH}/thread/include/fcondition.h
         ${VST3_BASEPATH}/thread/include/flock.h
         ${VST3_BASEPATH}/thread/source/fcondition.cpp
         ${VST3_BASEPATH}/thread/source/flock.cpp
-    
+
 
 
         # sdk_common files.
@@ -615,7 +604,7 @@ if(ENABLE_VST3)
         ${VST3_PLUGININTERFACES_BASE_PATH}/ucolorspec.h
         ${VST3_PLUGININTERFACES_BASE_PATH}/ustring.cpp
         ${VST3_PLUGININTERFACES_BASE_PATH}/ustring.h
-    
+
 
         # sdk files.
         # ${VST3_SRCPATH}/main/moduleinit.cpp
@@ -664,7 +653,7 @@ if(ENABLE_VST3)
         ${VST3_SRCPATH}/vst/hosting/module.cpp
         ${VST3_SRCPATH}/vst/hosting/module.h
         ${VST3_SRCPATH}/vst/hosting/parameterchanges.cpp
-        ${VST3_SRCPATH}/vst/hosting/parameterchanges.h 
+        ${VST3_SRCPATH}/vst/hosting/parameterchanges.h
         ${VST3_SRCPATH}/vst/hosting/pluginterfacesupport.cpp
         ${VST3_SRCPATH}/vst/hosting/pluginterfacesupport.h
         ${VST3_SRCPATH}/vst/hosting/plugprovider.cpp
@@ -693,10 +682,10 @@ if(ENABLE_VST3)
 
     add_library(vst3_lib STATIC ${vst3_sources})
 
-    target_include_directories(vst3_lib PRIVATE  ${VST3_INCLUDES}
+    target_include_directories(vst3_lib PRIVATE ${VST3_INCLUDES}
     )
 
-    
+
     # add_executable(vst3test Vst3test.cpp
 
     #     MemDebug.cpp
@@ -705,16 +694,15 @@ if(ENABLE_VST3)
     #     Vst3SdkRepro.cpp
 
     #     ${VST3_FILES}
-    
+
     #     #vst3/Vst3PresetFile.hpp Vst3PresetFile.cpp
     #     asan_options.cpp
     # )
 
-    target_include_directories(vst3test PRIVATE ${PIPEDAL_INCLUDES} 
-        )
+    target_include_directories(vst3test PRIVATE ${PIPEDAL_INCLUDES})
 
-    
-    target_link_libraries(vst3test PRIVATE ${PIPEDAL_LIBS} 
+
+    target_link_libraries(vst3test PRIVATE ${PIPEDAL_LIBS}
         vst3_lib dl pthread
         )
 
@@ -733,11 +721,11 @@ add_test(NAME DevTest COMMAND pipedaltest "[Dev]")
 
 
 
-add_executable(pipedalconfig 
+add_executable(pipedalconfig
     PrettyPrinter.hpp
     SetWifiConfig.cpp SetWifiConfig.hpp
     CommandLineParser.hpp
-    PiPedalException.hpp 
+    PiPedalException.hpp
     ConfigMain.cpp
     alsaCheck.cpp
     alsaCheck.hpp
@@ -773,13 +761,12 @@ add_executable(pipedal_latency_test
     CpuUse.cpp
     )
 
-target_link_libraries(pipedal_latency_test PRIVATE pthread  asound PiPedalCommon
-    )
- 
+target_link_libraries(pipedal_latency_test PRIVATE pthread asound PiPedalCommon)
+
 
 add_executable(pipedal_alsa_info
     alsaCheck.cpp alsaCheck.hpp
-    alsaCheckMain.cpp    
+    alsaCheckMain.cpp
 )
 target_link_libraries(pipedal_alsa_info PRIVATE asound)
 
@@ -788,7 +775,7 @@ add_executable(capturepresets
     Storage.cpp
     Storage.hpp
     CommandLineParser.hpp
-) 
+)
 
 target_include_directories(capturepresets PRIVATE ${PIPEDAL_INCLUDES})
 
@@ -797,7 +784,7 @@ target_link_libraries(capturepresets ${PIPEDAL_LIBS})
 add_executable(makeRelease
     makeReleaseMain.cpp
     CommandLineParser.hpp
-) 
+)
 target_include_directories(makeRelease PRIVATE ${PIPEDAL_INCLUDES})
 
 target_link_libraries(makeRelease ${PIPEDAL_LIBS})
@@ -807,14 +794,14 @@ target_link_libraries(makeRelease ${PIPEDAL_LIBS})
 
 
 add_executable(pipedal_update
-    UpdateMain.cpp 
+    UpdateMain.cpp
     UpdateResults.cpp UpdateResults.hpp
     Lv2SystemdLogger.cpp Lv2SystemdLogger.hpp
     TemporaryFile.cpp TemporaryFile.hpp
     AdminInstallUpdate.cpp AdminInstallUpdate.hpp
 )
 
-target_link_libraries(pipedal_update PRIVATE  stdc++fs systemd PiPedalCommon )
+target_link_libraries(pipedal_update PRIVATE stdc++fs systemd PiPedalCommon )
 
 
 add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
@@ -824,7 +811,7 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     JackServerSettings.hpp JackServerSettings.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
 
-    SystemConfigFile.hpp SystemConfigFile.cpp    
+    SystemConfigFile.hpp SystemConfigFile.cpp
     CpuGovernor.cpp CpuGovernor.hpp
     asan_options.cpp
 
@@ -832,9 +819,9 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
 target_link_libraries(pipedaladmind PRIVATE PiPedalCommon pthread atomic stdc++fs systemd )
 
 add_executable(processcopyrights copyrightMain.cpp
-    CommandLineParser.hpp 
-    PiPedalException.hpp 
-    asan_options.cpp    )
+    CommandLineParser.hpp
+    PiPedalException.hpp
+    asan_options.cpp)
 target_link_libraries(processcopyrights PRIVATE PiPedalCommon stdc++fs)
 
 set (REACT_BUILD_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/react/build/)
@@ -854,13 +841,13 @@ elseif(EXISTS "/usr/share/doc/libboost1.67-dev")
    set (BOOST_COPYRIGHT_DIR "libboost1.67-dev")
 else()
     message(FATAL_ERROR "Boost libary version has changed. Please update me.")
-endif() 
+endif()
 
 
-add_custom_command(OUTPUT ${REACT_NOTICES_FILE} 
+add_custom_command(OUTPUT ${REACT_NOTICES_FILE}
     COMMAND "$<TARGET_FILE:processcopyrights>"
-        --output ${REACT_NOTICES_FILE} 
-        --projectCopyright ${DEBIAN_COPYRIGHT_FILE} 
+        --output ${REACT_NOTICES_FILE}
+        --projectCopyright ${DEBIAN_COPYRIGHT_FILE}
         liblilv-0-0 ${BOOST_COPYRIGHT_DIR} lv2-dev libsdbus-c++-dev librsvg2-2 libpango-1.0-0 libx11-6 libxrandr2
 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${DEBIAN_COPYRIGHT_FILE} "$<TARGET_FILE:processcopyrights>"
@@ -869,14 +856,14 @@ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 
 add_custom_target (
     CopyrightBuild ALL
-    DEPENDS ${REACT_NOTICES_FILE} 
+    DEPENDS ${REACT_NOTICES_FILE}
 )
 
 
 install (TARGETS pipedalconfig pipedal_kconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
    EXPORT pipedalTargets)
 
-   install (TARGETS pipedald pipedaladmind pipedal_update DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
+install (TARGETS pipedald pipedaladmind pipedal_update DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
    EXPORT pipedalSbinTargets)
 
 
