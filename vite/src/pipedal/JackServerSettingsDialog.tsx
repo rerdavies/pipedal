@@ -458,31 +458,33 @@ const JackServerSettingsDialog = withStyles(
 						 {/* Audio Input Device */}
                             <FormControl className={classes.formControl}>
 							<InputLabel htmlFor="jsd_inputDevice">Input Device</InputLabel>
-							<Select
-							id="jsd_inputDevice"
-							value={this.state.jackServerSettings.alsaInputDevice}
-							onChange={e => this.handleInputDeviceChanged(e)}
-							style={{ width: 220 }}
-							>
-							{this.state.alsaDevices!.map(d => (
+						<Select
+						id="jsd_inputDevice"
+						value={this.state.jackServerSettings.alsaInputDevice}
+						onChange={e => this.handleInputDeviceChanged(e)}
+						disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
+						style={{ width: 220 }}
+						>
+						{this.state.alsaDevices?.map(d => (
 								<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
-							))}
-							</Select>
+						)) || <MenuItem value="" disabled>Loading...</MenuItem>}
+						</Select>
 						</FormControl>
 						
 						{/* Audio Output Device */}
 						<FormControl className={classes.formControl}>
 							<InputLabel htmlFor="jsd_outputDevice">Output Device</InputLabel>
-							<Select
-							id="jsd_outputDevice"
-							value={this.state.jackServerSettings.alsaOutputDevice}
-							onChange={e => this.handleOutputDeviceChanged(e)}
-							style={{ width: 220 }}
-							>
-							{this.state.alsaDevices!.map(d => (
-								<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
-							))}
-							</Select>
+							  <Select
+								id="jsd_outputDevice"
+								value={this.state.jackServerSettings.alsaOutputDevice}
+								onChange={e => this.handleOutputDeviceChanged(e)}
+								disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
+								style={{ width: 220 }}
+								>
+								{this.state.alsaDevices?.map(d => (
+										<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+								)) || <MenuItem value="" disabled>Loading...</MenuItem>}
+								</Select>
 						</FormControl>
                         </div><div>
                             <FormControl className={classes.formControl}>
