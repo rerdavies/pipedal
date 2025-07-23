@@ -16,4 +16,4 @@ As a last resort, you be able to configure VSCode and/or CMake to cross-compile 
 
 
 --------
-[<< Which LV2 Plugins Does PiPedal Support?](WhichLv2PluginsAreSupported.md) | [Up](Documentation.md) | [Build Prerequisites >>](BuildPrerequisites.md)
+[<< Frequently Asked Questions](FAQ.md) | [Up](Documentation.md) | [Build Prerequisites >>](BuildPrerequisites.md)

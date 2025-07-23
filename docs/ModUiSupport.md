@@ -32,4 +32,4 @@ Support for MOD UIs in PiPedal is still experimental, so you may encounter some 
 
 
 --------
-[<< Which Plugins are Supported?](WhichLv2PluginsAreSupported.md)  | [Up](Documentation.md) | [BuildingPiPedal from Source >>](BuildingPiPedalFromSource.md)
+[<< Which Plugins are Supported?](WhichLv2PluginsAreSupported.md)  | [Up](Documentation.md) | [Frequenty Asked Questions >>](FAQ.md)
