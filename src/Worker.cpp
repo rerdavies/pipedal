@@ -158,9 +158,11 @@ void Worker::WaitForAllResponses()
                 break;
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        // pump the plugin with a zero-length buffer.
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         std::chrono::milliseconds waitDuration = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-startTime);
-        if (waitDuration.count() > 250) {
+        if (waitDuration.count() > 1500) {
             Lv2Log::error("Timed out waiting for a Worker task to complete.");
             // better to leak than to terminate the application.
         }
