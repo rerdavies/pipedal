@@ -1,4 +1,9 @@
 # Release Notes
+## Pipedal 1.4.79 Experimental
+Bug fixes:
+- Thread-per-plugin-instance for LV2_WORKER threads (see issue #339)
+- Fixes for selection issues when modifying pedalboard structure.
+
 ## Pipedal 1.4.79 Beta
 
 The Big Feature:
