@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pch.h"
+#include "restrict.hpp"
 #include "Lv2Effect.hpp"
 #include "PiPedalException.hpp"
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
@@ -514,14 +515,14 @@ int Lv2Effect::GetControlIndex(const std::string &key) const
 
 Lv2Effect::~Lv2Effect()
 {
-    if (activated)
-    {
-        Deactivate();
-    }
     if (worker)
     {
         worker->Close();
         worker = nullptr; // delete the worker first!
+    }
+    if (activated)
+    {
+        Deactivate();
     }
     if (pInstance)
     {
@@ -635,7 +636,7 @@ void Lv2Effect::Deactivate()
     lilv_instance_deactivate(pInstance);
 }
 
-static inline void CopyBuffer(float *input, float *output, uint32_t frames)
+static inline void CopyBuffer(float *restrict input, float *restrict output, uint32_t frames)
 {
     for (uint32_t i = 0; i < frames; ++i)
     {
@@ -673,7 +674,7 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
         {
             for (size_t i = 0; i < this->outputMixBuffers.size(); ++i)
             {
-                float *__restrict input;
+                float *restrict input;
                 if (i >= this->inputAudioBuffers.size())
                 {
                     if (this->inputAudioBuffers.size() == 0)
@@ -686,8 +687,8 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
                 {
                     input = this->inputAudioBuffers[i];
                 }
-                float *__restrict pluginOutput = this->outputMixBuffers[i].data();
-                float *__restrict finalOutput = this->outputAudioBuffers[i];
+                float *restrict pluginOutput = this->outputMixBuffers[i].data();
+                float *restrict finalOutput = this->outputAudioBuffers[i];
 
                 for (uint32_t i = 0; i < samples; ++i)
                 {
@@ -698,11 +699,11 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
         else if (this->outputAudioPortIndices.size() == 1 && this->outputAudioBuffers.size() == 2)
         {
             // 1 plugin output into 2 outputs.
-            float *__restrict pluginOutput = this->outputMixBuffers[0].data();
+            float *restrict pluginOutput = this->outputMixBuffers[0].data();
             for (size_t i = 0; i < this->outputMixBuffers.size(); ++i)
             {
-                float *__restrict input = this->inputAudioBuffers[i];
-                float *__restrict finalOutput = this->outputAudioBuffers[i];
+                float *restrict input = this->inputAudioBuffers[i];
+                float *restrict finalOutput = this->outputAudioBuffers[i];
 
                 for (uint32_t i = 0; i < samples; ++i)
                 {
@@ -750,8 +751,8 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
 
         if (this->outputAudioBuffers.size() == 1)
         {
-            float *input = this->inputAudioBuffers[0];
-            float *output = this->outputAudioBuffers[0];
+            float * restrict input = this->inputAudioBuffers[0];
+            float * restrict output = this->outputAudioBuffers[0];
             for (uint32_t i = 0; i < samples; ++i)
             {
                 output[i] = currentBypass * output[i] + (1 - currentBypass) * input[i];
@@ -766,8 +767,8 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
         }
         else
         {
-            float *inputL;
-            float *inputR;
+            float * restrict inputL;
+            float * restrict inputR;
             if (this->inputAudioBuffers.size() == 1)
             {
                 inputL = inputR = inputAudioBuffers[0];
@@ -777,8 +778,8 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
                 inputL = inputAudioBuffers[0];
                 inputR = inputAudioBuffers[1];
             }
-            float *outputL = outputAudioBuffers[0];
-            float *outputR = outputAudioBuffers[1];
+            float * restrict outputL = outputAudioBuffers[0];
+            float * restrict outputR = outputAudioBuffers[1];
             for (uint32_t i = 0; i < samples; ++i)
             {
                 outputL[i] = currentBypass * outputL[i] + (1 - currentBypass) * inputL[i];
