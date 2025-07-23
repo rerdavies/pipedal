@@ -1844,6 +1844,7 @@ export class PiPedalModel //implements PiPedalModel
         newPedalboard.deleteItem(fromInstanceId);
 
         newPedalboard.addBefore(fromItem, toInstanceId);
+        newPedalboard.selectedPlugin = fromItem.instanceId;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
 
@@ -1863,7 +1864,7 @@ export class PiPedalModel //implements PiPedalModel
         newPedalboard.deleteItem(fromInstanceId);
 
         newPedalboard.addAfter(fromItem, toInstanceId);
-
+        newPedalboard.selectedPlugin = fromItem.instanceId;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
     }
@@ -1885,6 +1886,7 @@ export class PiPedalModel //implements PiPedalModel
 
         newPedalboard.addToStart(fromItem);
 
+        newPedalboard.selectedPlugin = fromItem.instanceId;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
     }
@@ -1904,6 +1906,7 @@ export class PiPedalModel //implements PiPedalModel
 
         newPedalboard.addToEnd(fromItem);
 
+        newPedalboard.selectedPlugin = fromItem.instanceId;
         this.setModelPedalboard(newPedalboard);
 
         this.updateServerPedalboard();
@@ -1931,7 +1934,7 @@ export class PiPedalModel //implements PiPedalModel
         let emptyItem = newPedalboard.createEmptyItem();
         newPedalboard.replaceItem(fromInstanceId, emptyItem);
         newPedalboard.replaceItem(toInstanceId, fromItem);
-
+        newPedalboard.selectedPlugin = fromItem.instanceId;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
 
@@ -1955,6 +1958,7 @@ export class PiPedalModel //implements PiPedalModel
         }
         let newItem = newPedalboard.createEmptyItem();
         newPedalboard.addItem(newItem, instanceId, append);
+        newPedalboard.selectedPlugin = newItem.instanceId;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
         return newItem.instanceId;
@@ -1980,6 +1984,8 @@ export class PiPedalModel //implements PiPedalModel
         }
         let newItem = newPedalboard.createEmptySplit();
         newPedalboard.addItem(newItem, instanceId, append);
+        newPedalboard.selectedPlugin = newItem.instanceId;
+
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
         return newItem.instanceId;
@@ -1998,6 +2004,7 @@ export class PiPedalModel //implements PiPedalModel
         newPedalboard.setItemEmpty(item);
 
 
+        newPedalboard.selectedPlugin = item.instanceId;
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
         return item.instanceId;

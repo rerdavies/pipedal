@@ -28,6 +28,7 @@
 #include "Lv2EventBufferWriter.hpp"
 #include "Lv2Log.hpp"
 #include "CrashGuard.hpp"
+#include "restrict.hpp"
 
 using namespace pipedal;
 
@@ -417,7 +418,7 @@ void Lv2Pedalboard::Deactivate()
     }
 }
 
-static void Copy(float *input, float *output, uint32_t samples)
+static void Copy(float *restrict input, float *restrict output, uint32_t samples)
 {
     for (uint32_t i = 0; i < samples; ++i)
     {
@@ -434,6 +435,7 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
             return false;
         }
     }
+    
     for (size_t i = 0; i < samples; ++i)
     {
         float volume = this->inputVolume.Tick();

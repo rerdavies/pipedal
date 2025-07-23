@@ -143,6 +143,7 @@ bool Worker::EmitResponses()
 
 void Worker::WaitForAllResponses()
 {
+    // do what we can to clear the response queue in order to avoid memory/object leaks
     using Clock = std::chrono::steady_clock;
     auto startTime = Clock::now();
     while (true)
@@ -157,11 +158,14 @@ void Worker::WaitForAllResponses()
                 break;
             }
         }
-        std::chrono::seconds waitDuration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now()-startTime);
-        if (waitDuration.count() > 5) {
-            throw std::logic_error("Timed out waiting for a Worker task to complete.");
+        // pump the plugin with a zero-length buffer.
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::chrono::milliseconds waitDuration = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-startTime);
+        if (waitDuration.count() > 1500) {
+            Lv2Log::error("Timed out waiting for a Worker task to complete.");
+            // better to leak than to terminate the application.
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(15));
     }
 }
 
@@ -260,20 +264,15 @@ bool HostWorkerThread::StartThread()
 void HostWorkerThread::Close()
 {
 
-    bool sendClose = false;
     {
         std::lock_guard lock{submitMutex};
         if (pThread) {
             if (!closed)
             {
                 closed = true;
-                sendClose = true;
+                ScheduleWorkNoLock(nullptr, 0, nullptr);
             }
         }
-    }
-    if (sendClose)
-    {
-        ScheduleWork(nullptr, 0, nullptr);
     }
 }
 HostWorkerThread::~HostWorkerThread()
@@ -302,6 +301,11 @@ LV2_Worker_Status HostWorkerThread::ScheduleWork(Worker *worker, size_t size, co
     {
         exiting = true;
     }
+    return ScheduleWorkNoLock(worker, size, data);
+
+}
+LV2_Worker_Status HostWorkerThread::ScheduleWorkNoLock(Worker *worker, size_t size, const void *data)
+{
 
     if (requestRingBuffer.writeSpace() < sizeof(worker) + sizeof(size) + size)
     {

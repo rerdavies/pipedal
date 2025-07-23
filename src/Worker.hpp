@@ -57,6 +57,7 @@ namespace pipedal {
         bool Closed() const { return closed || pThread == nullptr; }
         LV2_Worker_Status ScheduleWork(Worker*worker, size_t size, const void*data);
     private:
+        LV2_Worker_Status ScheduleWorkNoLock(Worker*worker, size_t size, const void*data);
         std::atomic<bool> closed = false;
         std::unique_ptr<std::thread> pThread;
         void ThreadProc() noexcept;

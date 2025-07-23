@@ -104,7 +104,7 @@ static void SetPriority(int realtimePriority, const char *priorityName)
         int result = sched_setscheduler(0, SCHED_RR, &param);
         if (result == 0)
         {
-            Lv2Log::debug("Service thread priority successfully boosted.");
+            Lv2Log::debug(SS("Service thread priority successfully boosted. (" << priorityName << ")"));
             return;
         }
         else
