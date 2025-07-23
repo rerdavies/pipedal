@@ -40,6 +40,8 @@ import DialogContent from '@mui/material/DialogContent';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
+import IconButtonEx from './IconButtonEx';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 
@@ -454,7 +456,7 @@ const JackServerSettingsDialog = withStyles(
 
                 >
                     <DialogContent>
-                        <div>
+                        <div style={{ display: "flex", alignItems: "center" }}>
 						 {/* Audio Input Device */}
                             <FormControl className={classes.formControl}>
 							<InputLabel htmlFor="jsd_inputDevice">Input Device</InputLabel>
@@ -469,10 +471,10 @@ const JackServerSettingsDialog = withStyles(
 								<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
 						)) || <MenuItem value="" disabled>Loading...</MenuItem>}
 						</Select>
-						</FormControl>
-						
-						{/* Audio Output Device */}
-						<FormControl className={classes.formControl}>
+						    </FormControl>
+
+                                                {/* Audio Output Device */}
+                                                <FormControl className={classes.formControl}>
 							<InputLabel htmlFor="jsd_outputDevice">Output Device</InputLabel>
 							  <Select
 								id="jsd_outputDevice"
@@ -484,8 +486,11 @@ const JackServerSettingsDialog = withStyles(
 								{this.state.alsaDevices?.map(d => (
 										<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
 								)) || <MenuItem value="" disabled>Loading...</MenuItem>}
-								</Select>
-						</FormControl>
+								 </Select>
+                                                </FormControl>
+                                                <IconButtonEx tooltip="Refresh devices" onClick={() => this.requestAlsaInfo()} aria-label="refresh-audio-devices">
+                                                    <RefreshIcon />
+                                                </IconButtonEx>
                         </div><div>
                             <FormControl className={classes.formControl}>
                                 <InputLabel htmlFor="jsd_sampleRate">Sample rate</InputLabel>
