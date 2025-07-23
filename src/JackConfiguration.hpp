@@ -125,4 +125,4 @@ namespace pipedal
     };
 
 
-} // namespace. 
+} // namespace.

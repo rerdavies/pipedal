@@ -2005,13 +2005,13 @@ namespace pipedal
             err = snd_pcm_hw_params_get_channels_max(playbackHwParams, &playbackChannels);
             if (err < 0)
             {
-                throw PiPedalLogicException("No outut channels.");
+                throw PiPedalLogicException("No output channels.");
             }
             unsigned int channelsMin;
             err = snd_pcm_hw_params_get_channels_min(playbackHwParams, &channelsMin);
             if (err < 0)
             {
-                throw PiPedalLogicException("No outut channels.");
+                throw PiPedalLogicException("No output channels.");
             }
             if (ShouldForceStereoChannels(playbackHandle, playbackHwParams, channelsMin, playbackChannels))
             {
