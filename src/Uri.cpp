@@ -457,6 +457,7 @@ std::string uri_builder::str() const {
         s << '?';
         for (size_t i = 0; i < queries_.size(); ++i)
         {
+			if (i != 0) s << '&';
             s << queries_[i].key << "=";
             HtmlHelper::encode_url_segment(s,queries_[i].value,true);
         }

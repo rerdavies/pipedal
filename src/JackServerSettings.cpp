@@ -148,7 +148,13 @@ void JackServerSettings::ReadJackDaemonConfiguration()
             this->bufferSize_ = GetJackArg(argv, "-p", "--period");
             this->numberOfBuffers_ = (uint32_t)GetJackArg(argv, "-n", "--nperiods");
             this->sampleRate_ = (uint32_t)GetJackArg(argv, "-r", "--rate");
-            this->alsaDevice_ = GetJackStringArg(argv,"-d", "--device");
+			// read new dual device flags, fallback on old -d/--device
+            std::string capDev  = GetJackStringArg(argv, "-C", "--capture");
+            std::string playDev = GetJackStringArg(argv, "-P", "--playback");
+            std::string dev     = "";
+            try { dev = GetJackStringArg(argv, "-d", "--device"); } catch(...) {}
+            this->alsaInputDevice_  = capDev.empty()  ? dev : capDev;
+            this->alsaOutputDevice_ = playDev.empty() ? dev : playDev;
             this->valid_ = true;
         }
         catch (std::exception &)
@@ -219,11 +225,13 @@ void JackServerSettings::WriteDaemonConfig()
         {
             output << line << endl;
         }
-        // the style used by qjackctl. :-/
+        // the style used by qjackctl. :-/  
         // Lower to -P70 in order to allow the USB soft-irq to run at higher priority than JACK (it runs at 80).
         output << "/usr/bin/jackd "
             << "-R -P70 --silent"
-            << " -dalsa -d" << this->alsaDevice_ 
+            << " -dalsa"
+            << " -C" << this->GetAlsaInputDevice()
+            << " -P" << this->GetAlsaOutputDevice()
             << " -r" << this->sampleRate_ 
             << " -p" << this->bufferSize_ 
             << " -n" << this->numberOfBuffers_ << " -Xseq" 
@@ -246,7 +254,8 @@ JSON_MAP_REFERENCE(JackServerSettings, valid)
 JSON_MAP_REFERENCE(JackServerSettings, isOnboarding)
 JSON_MAP_REFERENCE(JackServerSettings, rebootRequired)
 JSON_MAP_REFERENCE(JackServerSettings, isJackAudio)
-JSON_MAP_REFERENCE(JackServerSettings, alsaDevice)
+JSON_MAP_REFERENCE(JackServerSettings, alsaInputDevice)
+JSON_MAP_REFERENCE(JackServerSettings, alsaOutputDevice)
 JSON_MAP_REFERENCE(JackServerSettings, sampleRate)
 JSON_MAP_REFERENCE(JackServerSettings, bufferSize)
 JSON_MAP_REFERENCE(JackServerSettings, numberOfBuffers)
