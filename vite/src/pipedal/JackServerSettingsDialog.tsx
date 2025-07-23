@@ -220,8 +220,8 @@ function isOkEnabled(jackServerSettings: JackServerSettings, alsaDevices?: AlsaD
 {
     if (!jackServerSettings.valid) return false;
     if (!alsaDevices) return false;
-	const inDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaInputDevice);
-    const outDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaOutputDevice);
+    const inDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaInputDevice && d.supportsCapture);
+    const outDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaOutputDevice && d.supportsPlayback);
     if (!inDevice || !outDevice) return false;
 
     const deviceBufferSize = jackServerSettings.bufferSize * jackServerSettings.numberOfBuffers;
@@ -289,15 +289,24 @@ const JackServerSettingsDialog = withStyles(
                 return result;
             }
 
-            let inDevice = alsaDevices.find(d => d.id === result.alsaInputDevice);
-            let outDevice = alsaDevices.find(d => d.id === result.alsaOutputDevice);
+            let inDevice = alsaDevices.find(d => d.id === result.alsaInputDevice && d.supportsCapture);
+            let outDevice = alsaDevices.find(d => d.id === result.alsaOutputDevice && d.supportsPlayback);
             if (!inDevice) {
-                inDevice = alsaDevices[0];
-                result.alsaInputDevice = inDevice.id;
+                inDevice = alsaDevices.find(d => d.supportsCapture);
+                if (inDevice) {
+                    result.alsaInputDevice = inDevice.id;
+                }
             }
             if (!outDevice) {
-                outDevice = alsaDevices[0];
-                result.alsaOutputDevice = outDevice.id;
+               outDevice = alsaDevices.find(d => d.supportsPlayback);
+                if (outDevice) {
+                    result.alsaOutputDevice = outDevice.id;
+                }
+            }
+
+            if (!inDevice || !outDevice) {
+                result.valid = false;
+                return result;
             }
             
 			if (result.sampleRate === 0) result.sampleRate = 48000;
@@ -467,9 +476,9 @@ const JackServerSettingsDialog = withStyles(
 						disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
 						style={{ width: 220 }}
 						>
-						{this.state.alsaDevices?.map(d => (
-								<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
-						)) || <MenuItem value="" disabled>Loading...</MenuItem>}
+						 {this.state.alsaDevices?.filter(d => d.supportsCapture).map(d => (
+                                                                <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+                                                )) || <MenuItem value="" disabled>Loading...</MenuItem>}
 						</Select>
 						    </FormControl>
 
@@ -483,8 +492,8 @@ const JackServerSettingsDialog = withStyles(
 								disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
 								style={{ width: 220 }}
 								>
-								{this.state.alsaDevices?.map(d => (
-										<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+								{this.state.alsaDevices?.filter(d => d.supportsPlayback).map(d => (
+											   <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
 								)) || <MenuItem value="" disabled>Loading...</MenuItem>}
 								 </Select>
                                                 </FormControl>
