@@ -20,10 +20,17 @@ the following shell scripts have been provided in the root of the project.
 
     ./mk.sh   # Build all targets (release build)
     
-    sudo ./install.sh   # Deploy all targets 
+    sudo ./install.sh   # Deploy all targets
     
     sudo ./makePackage.sh    # Build a .deb file for distribution.
     
+	If you only need the `pipedalconfig` command line tool and want to skip the
+	web client build, you can build it directly using:
+
+	```bash
+	cmake --build build --target pipedalconfig
+	```	
+	
 If you are using a development environment other than Visual Studio Code, it should be fairly straightforward to figure out how
 to incorporate the PiPedal build procedure into your IDE workflow by using the contents of the build shell scripts as a model.
 
