@@ -8,13 +8,9 @@ icon_float: left
 
 Before using PiPedal, you will need to configure settings for the audio device that PiPedal will use.
 
-PiPedal works with either external USB audio interfaces or Raspberry Pi audio HATs. You can now
-select a distinct ALSA input device and output device, so recording and playback can use different
-hardware if desired.
-
 {% include pageIconL.html %}
 
-You will also want to configure PiPedal  to provide a Wi-Fi auto-hotspot so that you can connect to it using your Android phone or tablet. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that PiPedal's Wi-Fi auto-hotspot is enabled before you do.
+You will also want to configure PiPedal  to provide a Wi-Fi auto-hotspot so that you can connect to using your using your Android phone or tablet. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that PiPedal's Wi-Fi auto-hotspot is enabled before you do. 
 
 PiPedal uses LV2 audio plugins. There are literally thousands of freely available high-quality LV2 plugins that are suitable for use as guitar effects.
 
@@ -25,9 +21,9 @@ with PiPedal.
 
 ### Installing the PiPedal Remote Android app
 
-If you are using an Android phone or tablet to connect to PiPedal, you should download and install the [PiPedal Android Client](https://play.google.com/store/apps/details?id=com.twoplay.pipedal)
+If you are using an Android phone or table to connect to PiPedal, you should download and install the [PiPedal Android Client](https://play.google.com/store/apps/details?id=com.twoplay.pipedal)
 
-The Android PiPedal client provides three features: 
+The Android PiPedal client provides three  feature: 
 
 1. It automatically locates running instances of PiPedal on the local Wi-Fi network using dns/Bonjour discovery. So you don't need to keep track of which IP address to connect with.
 
@@ -76,7 +72,7 @@ an audio device. Many external USB audio devices that have two inputs provide th
 
 #### Selecting Audio Buffer Sizes
 
-You may have to experiment to find the buffer size and buffer count that works best for you. The actual round-trip latency and frequency of audio overruns and underruns depends on the operating system version, the audio hardware being used, and upon CPU use of the audio patches you are using. Selecting larger buffer sizes or larger buffer counts increases the amount of computing power available for your audio effects and will reduce the number of dropouts caused by audio overruns/underruns (xruns); smaller buffer sizes and buffer counts improve the overall round-trip latency but will increase the likelihood of xruns.
+You may have to experiment to find the buffer size, and buffer count that works best for your. The actual round-trip latency and frequency of audio overruns and underruns depends the the operating system system version, the audio hardware being used, and upon CPU use of the audio patches you are using. Selecting larger buffer sizes or larger buffer counts increase the amount of computing power available for your audio effects, and will reduce the number of dropouts caused by audio overruns/underruns (xruns); smaller buffer sizes and buffer counts improve the overall round-trip latency but will increase the likelihood of xruns.
 
 Please note that the Raspberry Pi OS is not completely robust with respect to realtime scheduling. Significant display activity, SD-CARD activity or heavy CPU use by programs other than PiPedal may cause audio xruns. For best results, run PiPedal without a display attached, and with no other programs running. Connecting remotely to the PiPedal web interface should not cause problems. 
 

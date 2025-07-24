@@ -18,7 +18,7 @@
 
 
 
-// forward declaration.  
+// forward declaration.
 
 class websocket_session;
 

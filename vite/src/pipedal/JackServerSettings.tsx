@@ -25,8 +25,7 @@ export default class JackServerSettings {
         this.isOnboarding = input.isOnboarding;
         this.isJackAudio = input.isJackAudio;
         this.rebootRequired = input.rebootRequired;
-        this.alsaInputDevice  = input.alsaInputDevice  ?? "";
-        this.alsaOutputDevice = input.alsaOutputDevice ?? "";
+        this.alsaDevice = input.alsaDevice?? "";
         this.sampleRate = input.sampleRate;
         this.bufferSize = input.bufferSize;
         this.numberOfBuffers = input.numberOfBuffers;
@@ -40,7 +39,7 @@ export default class JackServerSettings {
     //     if (numberOfBuffers) {
     //         this.valid = true;
     //     }
-    // } 
+    // }
     clone(): JackServerSettings
     {
         return new JackServerSettings().deserialize(this);
@@ -49,18 +48,16 @@ export default class JackServerSettings {
     isOnboarding: boolean = true;
     rebootRequired = false;
     isJackAudio = false;
-	alsaInputDevice:  string = "";
-	alsaOutputDevice: string = "";
+    alsaDevice: string = "";
     sampleRate = 48000;
     bufferSize = 64;
     numberOfBuffers = 3;
 
     getSummaryText() {
         if (this.valid) {
-              let inDev  = this.alsaInputDevice.startsWith("hw:")  ? this.alsaInputDevice .substring(3) : this.alsaInputDevice;
-              let outDev = this.alsaOutputDevice.startsWith("hw:") ? this.alsaOutputDevice.substring(3) : this.alsaOutputDevice;
-			return "In: "+inDev+"  Out: "+outDev+" — Rate "+this.sampleRate+", "+this.bufferSize+"×"+this.numberOfBuffers;
-        			  
+            let device = this.alsaDevice;
+            if (device.startsWith("hw:")) device = device.substring(3);
+            return device + " - Rate: " + this.sampleRate + " BufferSize: " + this.bufferSize + " Buffers: " + this.numberOfBuffers;
         } else {
             return "Not configured";
         }

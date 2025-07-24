@@ -204,7 +204,7 @@ public:
     bool has_query(const std::string &key) const {
         for (size_t i = 0; i < queries_.size(); ++i)
         {
-            if (queries_[i].key == key) return true;
+            if (queries_[i].key == key) true;
         }
         return false;
 
