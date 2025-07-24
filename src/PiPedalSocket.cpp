@@ -41,10 +41,72 @@
 #include "SysExec.hpp"
 #include "PiPedalAlsa.hpp"
 #include <filesystem>
+#include <sstream>
 #include "FileEntry.hpp"
 
 using namespace std;
 using namespace pipedal;
+
+static std::string JoinStrings(const std::vector<std::string> &values, const std::string &sep = ", ")
+{
+    std::stringstream ss;
+    for (size_t i = 0; i < values.size(); ++i)
+    {
+        if (i != 0)
+            ss << sep;
+        ss << values[i];
+    }
+    return ss.str();
+}
+
+static void CheckJackServerSettings(const JackServerSettings &settings)
+{
+    std::vector<std::string> missing;
+    if (settings.GetAlsaInputDevice().empty())
+        missing.push_back("alsaInputDevice");
+    if (settings.GetAlsaOutputDevice().empty())
+        missing.push_back("alsaOutputDevice");
+    if (settings.GetSampleRate() == 0)
+        missing.push_back("sampleRate");
+    if (settings.GetBufferSize() == 0)
+        missing.push_back("bufferSize");
+    if (settings.GetNumberOfBuffers() == 0)
+        missing.push_back("numberOfBuffers");
+    if (!missing.empty())
+        throw PiPedalArgumentException("Missing properties: " + JoinStrings(missing));
+}
+
+static void CheckWifiConfigSettings(const WifiConfigSettings &settings)
+{
+    std::vector<std::string> missing;
+    if (settings.countryCode_.empty())
+        missing.push_back("countryCode");
+    if (settings.hotspotName_.empty())
+        missing.push_back("hotspotName");
+    if (settings.channel_.empty())
+        missing.push_back("channel");
+    if (settings.IsEnabled() && !settings.hasSavedPassword_ && settings.password_.empty())
+        missing.push_back("password");
+    if (!missing.empty())
+        throw PiPedalArgumentException("Missing properties: " + JoinStrings(missing));
+}
+
+static void CheckWifiDirectConfigSettings(const WifiDirectConfigSettings &settings)
+{
+    std::vector<std::string> missing;
+    if (settings.countryCode_.empty())
+        missing.push_back("countryCode");
+    if (settings.hotspotName_.empty())
+        missing.push_back("hotspotName");
+    if (settings.pin_.empty())
+        missing.push_back("pin");
+    if (settings.channel_.empty())
+        missing.push_back("channel");
+    if (settings.wlan_.empty())
+        missing.push_back("wlan");
+    if (!missing.empty())
+        throw PiPedalArgumentException("Missing properties: " + JoinStrings(missing));
+}
 
 class PathPatchPropertyChangedBody
 {
@@ -1222,6 +1284,7 @@ public:
         {
             JackServerSettings jackServerSettings;
             pReader->read(&jackServerSettings);
+			 CheckJackServerSettings(jackServerSettings);
             this->model.SetJackServerSettings(jackServerSettings);
             this->Reply(replyTo, "setJackserverSettings");
         }
@@ -1241,6 +1304,7 @@ public:
         {
             WifiConfigSettings wifiConfigSettings;
             pReader->read(&wifiConfigSettings);
+			 CheckWifiConfigSettings(wifiConfigSettings);
             if (!GetAdminClient().CanUseAdminClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");
@@ -1262,6 +1326,7 @@ public:
         {
             WifiDirectConfigSettings wifiDirectConfigSettings;
             pReader->read(&wifiDirectConfigSettings);
+			CheckWifiDirectConfigSettings(wifiDirectConfigSettings);
             if (!GetAdminClient().CanUseAdminClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");
