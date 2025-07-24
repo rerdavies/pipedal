@@ -452,15 +452,16 @@ std::string uri_builder::str() const {
         if (i != 0) s << '/';
         HtmlHelper::encode_url_segment(s,segments_[i],false);
     }
-    if (queries_.size() != 0)
+    for (size_t i = 0; i < queries_.size(); ++i)
     {
-        s << '?';
-        for (size_t i = 0; i < queries_.size(); ++i)
+        if (i == 0) 
         {
-            s << queries_[i].key << "=";
-            HtmlHelper::encode_url_segment(s,queries_[i].value,true);
+            s << '?';
+        } else {
+            s << '&';
         }
-
+        s << queries_[i].key << "=";
+        HtmlHelper::encode_url_segment(s,queries_[i].value,true);
     }
     if (fragment_.length() != 0)
     {
