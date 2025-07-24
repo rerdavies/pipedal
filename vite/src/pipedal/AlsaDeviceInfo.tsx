@@ -2,7 +2,7 @@
 
 interface AlsaDeviceInfoJson {
     cardId: number;
-    id: number;
+    id: string;
     name: string;
     longName: string;
     sampleRates: number[];
