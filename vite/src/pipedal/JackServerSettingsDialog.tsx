@@ -300,8 +300,7 @@ const JackServerSettingsDialog = withStyles(
                                 alsaDevices: devices,
                                 jackServerSettings: settings,
                                 latencyText: getLatencyText(settings),
-                                okEnabled: isOkEnabled(settings,devices),
-                                useSameDevice: settings.alsaInputDevice === settings.alsaOutputDevice
+                                okEnabled: isOkEnabled(settings,devices)
                             });
                         } else {
                             this.setState({ alsaDevices: devices });
@@ -504,25 +503,27 @@ const JackServerSettingsDialog = withStyles(
                         okEnabled: isOkEnabled(settings, this.state.alsaDevices)
                         });
                 }
-				handleUseSameDeviceChanged(e: any, checked: boolean) {
-                        let s = this.state.jackServerSettings.clone();
-                        const useSame = checked;
-                        
-						// release previous selection
+				 handleUseSameDeviceChanged(e: any, checked: boolean) {
+                let s = this.state.jackServerSettings.clone();
+                const useSame = checked;
+
+                if (!useSame) {
+                        // clear selections when switching to separate devices
                         s.alsaInputDevice = INVALID_DEVICE_ID;
                         s.alsaOutputDevice = INVALID_DEVICE_ID;
                         s.valid = false;
-						
-                        let settings = this.applyAlsaDevices(s, this.state.alsaDevices, useSame);
-                        this.setState({
-                            useSameDevice: useSame,
-                            jackServerSettings: settings,
-                            latencyText: getLatencyText(settings),
-                            okEnabled: isOkEnabled(settings, this.state.alsaDevices)
-						 }, () => {
-                            this.requestAlsaInfo();	
-                        });
                 }
+				
+                let settings = this.applyAlsaDevices(s, this.state.alsaDevices, useSame);
+                this.setState({
+                        useSameDevice: useSame,
+                        jackServerSettings: settings,
+                        latencyText: getLatencyText(settings),
+                        okEnabled: isOkEnabled(settings, this.state.alsaDevices)
+                }, () => {
+                        this.requestAlsaInfo();
+                });
+				 }	
         render() {
             const classes = withStyles.getClasses(this.props);
 
