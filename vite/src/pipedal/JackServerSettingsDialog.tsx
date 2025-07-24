@@ -528,7 +528,7 @@ const JackServerSettingsDialog = withStyles(
 
                 >
                     <DialogContent>
-                        <div style={{ display: "flex", alignItems: "center" }}>
+                         <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
 						 {/* Audio Input Device */}
                             <FormControl className={classes.formControl}>
 							<InputLabel htmlFor="jsd_inputDevice">{this.state.useSameDevice ? "Device" : "Input Device"}</InputLabel>
