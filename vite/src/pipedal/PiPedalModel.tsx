@@ -3046,12 +3046,12 @@ export class PiPedalModel //implements PiPedalModel
                 serverConfigSettings
             )
                 .then(() => {
-                    //resolve();
+                       resolve();
                 })
                 .catch((err) => {
-                    //resolve();
+                       resolve();
                 });
-            resolve();
+            //resolve();
 
         });
         this.expectDisconnect(ReconnectReason.LoadingSettings);
