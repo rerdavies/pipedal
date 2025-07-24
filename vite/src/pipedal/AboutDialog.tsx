@@ -62,14 +62,14 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                 .then(jackStatus => {
                     this.setState({ jackStatus: jackStatus });
                 })
-                .catch(_error => { /* ignore*/ });
+                .catch(() => { /* ignore*/ });
         }
     }
 
     timerHandle?: number;
 
     updateNotifications() {
-        let subscribed = this.mounted && this.props.open;
+        const subscribed = this.mounted && this.props.open;
         if (subscribed !== this.subscribed) {
             if (subscribed) {
                 this.timerHandle = setInterval(() => this.tick(), 1000);
@@ -116,12 +116,12 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
         this.mounted = false;
         this.updateNotifications();
     }
-    componentDidUpdate(prevProps: Readonly<AboutDialogProps>, prevState: Readonly<AboutDialogState>, snapshot: any): void {
+     componentDidUpdate(prevProps: Readonly<AboutDialogProps>, prevState: Readonly<AboutDialogState>, snapshot: unknown): void {
         super.componentDidUpdate?.(prevProps, prevState, snapshot);
         this.updateNotifications();
     }
 
-    handleDialogClose(_e: SyntheticEvent) {
+    handleDialogClose() {
         this.props.onClose();
     }
 
@@ -129,7 +129,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
     render() {
         let addressKey = 0;
         let serverVersion = this.model.serverVersion?.serverVersion ?? "";
-        let nPos = serverVersion.indexOf(' ');
+        const nPos = serverVersion.indexOf(' ');
         if (nPos !== -1) {
             serverVersion = serverVersion.substring(nPos + 1);
         }

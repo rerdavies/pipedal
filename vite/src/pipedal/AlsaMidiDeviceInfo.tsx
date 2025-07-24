@@ -22,14 +22,19 @@
  * SOFTWARE.
  */
 
+interface AlsaMidiDeviceInfoJson {
+    name: string;
+    description: string;
+}
+
 export class AlsaMidiDeviceInfo  {
-    deserialize(input: any) : AlsaMidiDeviceInfo{
+     deserialize(input: AlsaMidiDeviceInfoJson) : AlsaMidiDeviceInfo{
         this.name = input.name;
         this.description = input.description;
         return this;
     }
-    static deserializeArray(input: any[]): AlsaMidiDeviceInfo[] {
-        let result: AlsaMidiDeviceInfo[] = [];
+    static deserializeArray(input: AlsaMidiDeviceInfoJson[]): AlsaMidiDeviceInfo[] {
+        const result: AlsaMidiDeviceInfo[] = [];
         for (let i = 0; i < input.length; ++i) {
             result[i] = new AlsaMidiDeviceInfo().deserialize(input[i]);
         }

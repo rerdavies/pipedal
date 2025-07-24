@@ -94,21 +94,21 @@ const ZoomedUiControl = withTheme(withStyles(
             if (!this.props.controlInfo) {
                 return 0;
             } else {
-                let uiControl = this.props.controlInfo.uiControl;
-                let instanceId = this.props.controlInfo.instanceId;
+                const uiControl = this.props.controlInfo.uiControl;
+                const instanceId = this.props.controlInfo.instanceId;
                 if (instanceId === -2 && uiControl.symbol === "volume_db") {
                     return this.model.pedalboard.get()?.input_volume_db??0;
                 }
 
-                let pedalboardItem = this.model.pedalboard.get()?.getItem(instanceId);
-                let value: number = pedalboardItem?.getControlValue(uiControl.symbol) ?? 0;
+                const pedalboardItem = this.model.pedalboard.get()?.getItem(instanceId);
+                const value: number = pedalboardItem?.getControlValue(uiControl.symbol) ?? 0;
                 return value;
             }
         }
 
 
         onSelectChanged(val: string | number) {
-            let v = Number.parseFloat(val.toString());
+            const v = Number.parseFloat(val.toString());
             this.setState({ value: v });
             if (this.props.controlInfo) {
                 this.model.setPedalboardControl(
@@ -119,7 +119,7 @@ const ZoomedUiControl = withTheme(withStyles(
         }
 
         onCheckChanged(checked: boolean): void {
-            let v = checked ? 1: 0;
+              const v = checked ? 1: 0;
             this.setState({ value: v });
             if (this.props.controlInfo) {
                 this.model.setPedalboardControl(
@@ -142,9 +142,9 @@ const ZoomedUiControl = withTheme(withStyles(
 
         }
 
-        componentDidUpdate(oldProps: ZoomedUiControlProps, oldState: ZoomedUiControlState) {
+         componentDidUpdate(oldProps: ZoomedUiControlProps) {
             if (this.hasControlChanged(oldProps, this.props)) {
-                let currentValue = this.getCurrentValue();
+                 const currentValue = this.getCurrentValue();
                 if (this.state.value !== currentValue) {
                     this.setState({ value: this.getCurrentValue() });
                 }
@@ -204,10 +204,10 @@ const ZoomedUiControl = withTheme(withStyles(
             }
         }
         onDoubleTap() {
-            let controlInfo = this.props.controlInfo;
+            const controlInfo = this.props.controlInfo;
             if (!controlInfo) return;
-            let instanceId = controlInfo?.instanceId;
-            let uiControl = controlInfo?.uiControl
+            const instanceId = controlInfo?.instanceId;
+            const uiControl = controlInfo?.uiControl;
             
             this.model.setPedalboardControl(instanceId,uiControl.symbol,uiControl.default_value);
         }
@@ -216,9 +216,9 @@ const ZoomedUiControl = withTheme(withStyles(
             if (!this.props.controlInfo) {
                 return false;
             }
-            let uiControl = this.props.controlInfo.uiControl;
+           const uiControl = this.props.controlInfo.uiControl;
 
-            let displayValue = uiControl.formatDisplayValue(this.state.value) ?? "";
+           const displayValue = uiControl.formatDisplayValue(this.state.value) ?? "";
             if (uiControl.isOnOffSwitch())
             {
                 displayValue = this.state.value !== 0 ? "On": "Off";
