@@ -41,14 +41,15 @@ namespace pipedal
     void SetAlsaInputDevice(const std::string &d){ alsaInputDevice_ = d; }
     void SetAlsaOutputDevice(const std::string &d){ alsaOutputDevice_ = d; }
         JackServerSettings();
-		JackServerSettings(
-            const std::string alsaInputDevice,
+        JackServerSettings(
+            const std::string &alsaInputDevice,
+            const std::string &alsaOutputDevice,
             uint64_t sampleRate,
             uint32_t bufferSize,
             uint32_t numberOfBuffers)
             : valid_(true),
               alsaInputDevice_(alsaInputDevice),
-              alsaOutputDevice_(alsaInputDevice), // default same
+              alsaOutputDevice_(alsaOutputDevice),
               sampleRate_(sampleRate),
               bufferSize_(bufferSize),
               numberOfBuffers_(numberOfBuffers),

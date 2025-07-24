@@ -47,6 +47,22 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 
+function sortDevices(devices: AlsaDeviceInfo[]): AlsaDeviceInfo[] {
+    function category(d: AlsaDeviceInfo): number {
+        if (d.supportsCapture && d.supportsPlayback) return 0;
+        if (d.longName.toLowerCase().includes("usb")) return 1;
+        return 2;
+    }
+    let copy = [...devices];
+    copy.sort((a,b) => {
+        let ca = category(a);
+        let cb = category(b);
+        if (ca !== cb) return ca - cb;
+        return a.name.localeCompare(b.name);
+    });
+    return copy;
+}
+
 const  MIN_BUFFER_SIZE = 16;
 const  MAX_BUFFER_SIZE = 2048;
 
@@ -263,7 +279,7 @@ const JackServerSettingsDialog = withStyles(
                 .then((devices) => {
                     if (this.mounted) {
                         if (this.props.open) {
-                            let settings = this.applyAlsaDevices(this.props.jackServerSettings, devices);
+                            let settings = this.applyAlsaDevices(this.state.jackServerSettings, devices);
                             this.setState({
                                 alsaDevices: devices,
                                 jackServerSettings: settings,
@@ -292,21 +308,9 @@ const JackServerSettingsDialog = withStyles(
 
             let inDevice = alsaDevices.find(d => d.id === result.alsaInputDevice && d.supportsCapture);
             let outDevice = alsaDevices.find(d => d.id === result.alsaOutputDevice && d.supportsPlayback);
-            if (!inDevice) {
-                inDevice = alsaDevices.find(d => d.supportsCapture);
-                if (inDevice) {
-                    result.alsaInputDevice = inDevice.id;
-                }
-            }
-            if (!outDevice) {
-               outDevice = alsaDevices.find(d => d.supportsPlayback);
-                if (outDevice) {
-                    result.alsaOutputDevice = outDevice.id;
-                }
-            }
 
-			  const sameDevice = useSameDevice !== undefined ? useSameDevice : this.state.useSameDevice;
-                        if (sameDevice) {
+			const sameDevice = useSameDevice !== undefined ? useSameDevice : this.state.useSameDevice;
+            if (sameDevice) {
                 if (!inDevice || !inDevice.supportsPlayback) {
                     const both = alsaDevices.find(d => d.supportsCapture && d.supportsPlayback);
                     if (both) {
@@ -324,24 +328,35 @@ const JackServerSettingsDialog = withStyles(
                     result.alsaOutputDevice = result.alsaInputDevice;
                     outDevice = inDevice;
                 }
+				 } else {
+                if (!inDevice) {
+                    result.valid = false;
+                    result.alsaInputDevice = INVALID_DEVICE_ID;
+                }
+                if (!outDevice) {
+                    result.valid = false;
+                    result.alsaOutputDevice = INVALID_DEVICE_ID;
+                }
+                if (!inDevice || !outDevice) {
+                    return result;
+                }
             }
 
             if (!inDevice || !outDevice) {
                 result.valid = false;
                 return result;
             }
-            
-			if (result.sampleRate === 0) result.sampleRate = 48000;
-			 let sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
-            if (sampleRates.length === 0) sampleRates = inDevice.sampleRates;
-			if (sampleRates.length === 0) sampleRates = [result.sampleRate || 48000];
-            let bestSr = sampleRates[0];
-            let bestErr = 1e36;
-            for (let sr of sampleRates) {
-                let err = (sr - result.sampleRate) * (sr - result.sampleRate);
-                if (err < bestErr) { bestErr = err; bestSr = sr; }
+      
+            let sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
+            if (sampleRates.length !== 0 && sampleRates.indexOf(result.sampleRate) === -1) {
+                let bestSr = sampleRates[0];
+                let bestErr = 1e36;
+                for (let sr of sampleRates) {
+                    let err = (sr - result.sampleRate) * (sr - result.sampleRate);
+                    if (err < bestErr) { bestErr = err; bestSr = sr; }
+                }
+                result.sampleRate = bestSr;
             }
-            result.sampleRate = bestSr;
 
             let bestBuffers =  getBestBuffers(inDevice, outDevice, result.bufferSize, result.numberOfBuffers);
             result.bufferSize = bestBuffers.bufferSize;
@@ -507,7 +522,9 @@ const JackServerSettingsDialog = withStyles(
                 onClose();
             };
            
-			let selectedInputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
+            const sortedDevices = sortDevices(this.state.alsaDevices ?? []);
+
+            let selectedInputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
             let selectedOutputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
 			if (this.state.useSameDevice) {
                 selectedOutputDevice = selectedInputDevice;
@@ -520,7 +537,7 @@ const JackServerSettingsDialog = withStyles(
             let sampleRates = selectedInputDevice && selectedOutputDevice ?
                     intersectArrays(selectedInputDevice.sampleRates, selectedOutputDevice.sampleRates)
                     : (selectedInputDevice ? selectedInputDevice.sampleRates : (selectedOutputDevice ? selectedOutputDevice.sampleRates : []));
-			let sampleRateOptions = sampleRates.length === 0 ? [this.state.jackServerSettings.sampleRate || 48000] : sampleRates;
+			let sampleRateOptions = sampleRates.length === 0 && this.state.jackServerSettings.sampleRate ? [this.state.jackServerSettings.sampleRate] : sampleRates;
  
             return (
                 <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
@@ -541,7 +558,7 @@ const JackServerSettingsDialog = withStyles(
 						disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
 						style={{ width: 220 }}
 						>
-						 {this.state.alsaDevices?.filter(d => d.supportsCapture && (!this.state.useSameDevice || d.supportsPlayback)).map(d => (
+                       {sortedDevices.filter(d => d.supportsCapture && (!this.state.useSameDevice || d.supportsPlayback)).map(d => (
                                                                 <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
                                                 )) || <MenuItem value="" disabled>Loading...</MenuItem>}
 						</Select>
@@ -558,7 +575,7 @@ const JackServerSettingsDialog = withStyles(
 								 disabled={this.state.useSameDevice || !this.state.alsaDevices || this.state.alsaDevices.length === 0}
 								style={{ width: 220 }}
 								>
-								{this.state.alsaDevices?.filter(d => d.supportsPlayback).map(d => (
+								{sortedDevices.filter(d => d.supportsPlayback).map(d => (
 											   <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
 								)) || <MenuItem value="" disabled>Loading...</MenuItem>}
 								 </Select>

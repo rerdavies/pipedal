@@ -57,9 +57,9 @@ void PrintHelp()
     pp << "Copyright (c) 2022 Robin Davies\n";
     pp << "\n";
     pp << Indent(0) << "Syntax\n\n";
-    pp << Indent(2) << "pipedal_latency_test [<options>] <device-name>\n\n";
-    pp << "where <device-name> is the name of an ALSA device. Typically this should be the name of a hardware "
-         "device (a device name starting with 'hw:').\n\n";
+    pp << Indent(2) << "pipedal_latency_test [<options>] <input-device> [<output-device>]\n\n";
+    pp << "where <input-device> is the name of an ALSA capture device and <output-device> is the name of a playback device. "
+         "If <output-device> is omitted, the input device will be used for both capture and playback. Typically the device names start with 'hw:'.\n\n";
     pp << Indent(0) << "Options\n\n";
     pp << Indent(15);
 
@@ -95,7 +95,8 @@ void PrintHelp()
 
     pp << Indent(0) << "Examples\n\n";
     pp << Indent(2) << "pipedal_latency_test --list\n\n";
-    pp << Indent(2) << "pipedal_latency_test hw:M2\n\n";
+    pp << Indent(2) << "pipedal_latency_test hw:M2\n";
+    pp << Indent(2) << "pipedal_latency_test hw:M2 hw:Device2\n\n";
 }
 
 void ListDevices()
@@ -138,7 +139,8 @@ public:
 private:
     AudioDriver *audioDriver = nullptr;
 
-    const std::string &deviceId;
+    const std::string &inputDeviceId;
+    const std::string &outputDeviceId;
     ChannelsT inputChannels;
     ChannelsT outputChannels;
     uint32_t sampleRate;
@@ -147,11 +149,13 @@ private:
 
 public:
     AlsaTester(
-        const std::string &deviceId,
+        const std::string &inputDeviceId,
+        const std::string &outputDeviceId,
         const ChannelsT &inputChannels,
         const ChannelsT &outputChannels,
         uint32_t sampleRate, int bufferSize, int buffers)
-        : deviceId(deviceId),
+        : inputDeviceId(inputDeviceId),
+          outputDeviceId(outputDeviceId),
           sampleRate(sampleRate),
           inputChannels(inputChannels),
           outputChannels(outputChannels),
@@ -186,7 +190,7 @@ public:
         TestResult result;
         try
         {
-            JackServerSettings serverSettings(deviceId, sampleRate, bufferSize, buffers);
+            JackServerSettings serverSettings(inputDeviceId, outputDeviceId, sampleRate, bufferSize, buffers);
 
             JackConfiguration jackConfiguration;
             jackConfiguration.AlsaInitialize(serverSettings);
@@ -403,12 +407,13 @@ public:
 };
 
 TestResult RunLatencyTest(
-    const std::string deviceId,
+    const std::string inputDeviceId,
+    const std::string outputDeviceId,
     const ChannelsT &inputChannels,
     const ChannelsT &outputChannels,
     uint32_t sampleRate, int bufferSize, int buffers)
 {
-    AlsaTester tester(deviceId, inputChannels, outputChannels, sampleRate, bufferSize, buffers);
+     AlsaTester tester(inputDeviceId, outputDeviceId, inputChannels, outputChannels, sampleRate, bufferSize, buffers);
     return tester.Test();
 }
 
@@ -428,13 +433,14 @@ static std::string overheadDisplay(float value)
 }
 
 void RunLatencyTest(
-    const std::string &deviceId,
+    const std::string &inputDeviceId,
+    const std::string &outputDeviceId,
     const ChannelsT &inputChannels,
     const ChannelsT &outputChannels,
     uint32_t sampleRate)
 {
     PrettyPrinter pp;
-    pp << "Device: " << deviceId << " Rate: " << sampleRate << "\n\n";
+     pp << "Input: " << inputDeviceId << "  Output: " << outputDeviceId << "  Rate: " << sampleRate << "\n\n";
 
     const int SIZE_COLUMN_WIDTH = 8;
     const int BUFFERS_COLUMN_WIDTH = 20;
@@ -461,7 +467,7 @@ void RunLatencyTest(
 
         for (auto bufferCount : bufferCounts)
         {
-            auto result = RunLatencyTest(deviceId, inputChannels,outputChannels, sampleRate, bufferSize, bufferCount);
+             auto result = RunLatencyTest(inputDeviceId, outputDeviceId, inputChannels,outputChannels, sampleRate, bufferSize, bufferCount);
 
             pp.Column(column);
             column += BUFFERS_COLUMN_WIDTH;
@@ -556,11 +562,14 @@ std:
         {
             ListDevices();
         }
-        else if (parser.Arguments().size() == 1)
+        else if (parser.Arguments().size() >= 1 && parser.Arguments().size() <= 2)
         {
             inputChannels = ParseChannels(strInputChannels);
-            outputChannels = ParseChannels(strInputChannels);
-            RunLatencyTest(parser.Arguments()[0], inputChannels, outputChannels, sampleRate);
+            outputChannels = ParseChannels(strOutputChannels);
+
+            std::string inDev  = parser.Arguments()[0];
+            std::string outDev = parser.Arguments().size() == 2 ? parser.Arguments()[1] : inDev;
+            RunLatencyTest(inDev, outDev, inputChannels, outputChannels, sampleRate);
         }
         else
         {
