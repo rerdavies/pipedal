@@ -520,7 +520,8 @@ const JackServerSettingsDialog = withStyles(
             let sampleRates = selectedInputDevice && selectedOutputDevice ?
                     intersectArrays(selectedInputDevice.sampleRates, selectedOutputDevice.sampleRates)
                     : (selectedInputDevice ? selectedInputDevice.sampleRates : (selectedOutputDevice ? selectedOutputDevice.sampleRates : []));
-
+			let sampleRateOptions = sampleRates.length === 0 ? [this.state.jackServerSettings.sampleRate || 48000] : sampleRates;
+ 
             return (
                 <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
                     onEnterKey={() => {
@@ -589,7 +590,7 @@ const JackServerSettingsDialog = withStyles(
                                         }
                                     }}
                                 >
-                                 {sampleRates.map((sr) => {
+                                   {sampleRateOptions.map((sr) => {
                                             return (<MenuItem value={sr}>{sr}</MenuItem> );
                                     })}
                                 </Select>
