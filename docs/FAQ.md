@@ -1,14 +1,22 @@
 ---
 page_icon: img/Setup.jpg
 icon_width: 320px
-icon_float: left
+icon_float: right
 ---
 
 ## Frequently Asked Questions
 
+{% include pageIcon.html %}
+
+### Q. Dial control movements are too coarse. How do I make them finer?
+
+A. If you are using a desktop browser, the Ctrl and Shift keys modify the behaviour of the dial control.
+If you press the Shift key while you are dragging the control, the values will change in 10x smaller increments.
+If you press the Ctrl key while you are dragging the control, the values will change in 50x smaller increments. 
+
+
 Before using PiPedal, you will need to configure settings for the audio device that PiPedal will use.
 
-{% include pageIconL.html %}
 
 You will also want to configure PiPedal  to provide a Wi-Fi auto-hotspot so that you can connect to using your using your Android phone or tablet. It's fine to use your home Wi-Fi network to connect to PiPedal when you're at home; but don't forget that when you take PiPedal out to a gig, you will need to ensure that PiPedal's Wi-Fi auto-hotspot is enabled before you do. 
 
