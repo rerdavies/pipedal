@@ -1,4 +1,4 @@
-#/usr/bin/sudo /usr/bin/bash
+#!/usr/bin/sudo /usr/bin/bash
 # CMake doesn't have an uninstall option, so remove files manually.
 export PREFIX=/usr
 
