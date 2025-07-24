@@ -305,10 +305,25 @@ const JackServerSettingsDialog = withStyles(
                 }
             }
 
-			const sameDevice = useSameDevice !== undefined ? useSameDevice : this.state.useSameDevice;
+			  const sameDevice = useSameDevice !== undefined ? useSameDevice : this.state.useSameDevice;
                         if (sameDevice) {
-                result.alsaOutputDevice = result.alsaInputDevice;
-                outDevice = inDevice;
+                if (!inDevice || !inDevice.supportsPlayback) {
+                    const both = alsaDevices.find(d => d.supportsCapture && d.supportsPlayback);
+                    if (both) {
+                        result.alsaInputDevice = both.id;
+                        result.alsaOutputDevice = both.id;
+                        inDevice = both;
+                        outDevice = both;
+                    } else {
+                        result.valid = false;
+                        result.alsaInputDevice = INVALID_DEVICE_ID;
+                        result.alsaOutputDevice = INVALID_DEVICE_ID;
+                        return result;
+                    }
+                } else {
+                    result.alsaOutputDevice = result.alsaInputDevice;
+                    outDevice = inDevice;
+                }
             }
 
             if (!inDevice || !outDevice) {
@@ -459,7 +474,20 @@ const JackServerSettingsDialog = withStyles(
                         let s = this.state.jackServerSettings.clone();
                         const useSame = checked;
                         if (useSame) {
-                            s.alsaOutputDevice = s.alsaInputDevice;
+                               const inputDev = this.state.alsaDevices?.find(d => d.id === s.alsaInputDevice && d.supportsCapture);
+                            if (!inputDev || !inputDev.supportsPlayback) {
+                                const both = this.state.alsaDevices?.find(d => d.supportsCapture && d.supportsPlayback);
+                                if (both) {
+                                    s.alsaInputDevice = both.id;
+                                    s.alsaOutputDevice = both.id;
+                                } else {
+                                    s.alsaInputDevice = INVALID_DEVICE_ID;
+                                    s.alsaOutputDevice = INVALID_DEVICE_ID;
+                                    s.valid = false;
+                                }
+                            } else {
+                                s.alsaOutputDevice = s.alsaInputDevice;
+                            }
                         }
                         let settings = this.applyAlsaDevices(s, this.state.alsaDevices, useSame);
                         this.setState({
@@ -503,7 +531,7 @@ const JackServerSettingsDialog = withStyles(
                         <div style={{ display: "flex", alignItems: "center" }}>
 						 {/* Audio Input Device */}
                             <FormControl className={classes.formControl}>
-							<InputLabel htmlFor="jsd_inputDevice">Input Device</InputLabel>
+							<InputLabel htmlFor="jsd_inputDevice">{this.state.useSameDevice ? "Device" : "Input Device"}</InputLabel>
 						<Select
 						id="jsd_inputDevice"
 						value={this.state.jackServerSettings.alsaInputDevice}
