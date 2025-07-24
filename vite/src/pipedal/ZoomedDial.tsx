@@ -159,7 +159,7 @@ const ZoomedDial = withStyles(
 
         }
 
-        onTouchStart(e: TouchEvent<SVGSVGElement>) {
+        onTouchStart() {
             //must be defined to get onTouchMove
         }
         onTouchMove(e: TouchEvent<SVGSVGElement>) {
@@ -377,8 +377,7 @@ const ZoomedDial = withStyles(
         }
 
 
-        onBodyPointerDownCapture(e_: any): any {
-            let e = e_ as PointerEvent;
+        onBodyPointerDownCapture(e: PointerEvent): any {
             if (this.isExtraTouch(e)) {
                 this.captureElement!.setPointerCapture(e.pointerId);
                 this.capturedPointers.push(e.pointerId);

@@ -142,7 +142,7 @@ const ZoomedUiControl = withTheme(withStyles(
 
         }
 
-        componentDidUpdate(oldProps: ZoomedUiControlProps, oldState: ZoomedUiControlState) {
+          componentDidUpdate(oldProps: ZoomedUiControlProps) {
             if (this.hasControlChanged(oldProps, this.props)) {
                 let currentValue = this.getCurrentValue();
                 if (this.state.value !== currentValue) {
