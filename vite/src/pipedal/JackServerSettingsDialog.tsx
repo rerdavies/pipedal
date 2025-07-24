@@ -46,6 +46,7 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 import AlsaDeviceInfo from './AlsaDeviceInfo';
+import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 
 function sortDevices(devices: AlsaDeviceInfo[]): AlsaDeviceInfo[] {
     function category(d: AlsaDeviceInfo): number {
@@ -79,6 +80,7 @@ interface JackServerSettingsDialogState {
     alsaDevices?: AlsaDeviceInfo[];
     okEnabled: boolean;
 	useSameDevice: boolean;
+    fullScreen: boolean;
 }
 
 const styles = (theme: Theme) =>
@@ -254,14 +256,14 @@ function isOkEnabled(jackServerSettings: JackServerSettings, alsaDevices?: AlsaD
 
 
 const JackServerSettingsDialog = withStyles(
-    class extends Component<JackServerSettingsDialogProps, JackServerSettingsDialogState> {
+    class extends ResizeResponsiveComponent<JackServerSettingsDialogProps, JackServerSettingsDialogState> {
 
         model: PiPedalModel;
 
         constructor(props: JackServerSettingsDialogProps) {
             super(props);
-            this.model = PiPedalModelFactory.getInstance();
-            
+            this.model = PiPedalModelFactory.getInstance();  
+
 
  const sameDevice = props.jackServerSettings.alsaInputDevice === props.jackServerSettings.alsaOutputDevice;
             this.state = {
@@ -269,10 +271,24 @@ const JackServerSettingsDialog = withStyles(
                 jackServerSettings: props.jackServerSettings.clone(), // invalid, but not nullish
                 alsaDevices: undefined,
                 okEnabled: false,
-                useSameDevice: sameDevice
+                useSameDevice: sameDevice,
+                fullScreen: this.getFullScreen()
             };
         }
         mounted: boolean = false;
+
+	getFullScreen() {
+            return document.documentElement.clientWidth < 420 ||
+                document.documentElement.clientHeight < 700;
+        }
+
+        onWindowSizeChanged(width: number, height: number): void {
+            super.onWindowSizeChanged(width, height);
+            const fullScreen = this.getFullScreen();
+            if (fullScreen !== this.state.fullScreen) {
+                this.setState({ fullScreen });
+            }
+        }
 
         requestAlsaInfo() {
             this.model.getAlsaDevices()
@@ -367,6 +383,7 @@ const JackServerSettingsDialog = withStyles(
         }
 
         componentDidMount() {
+			super.componentDidMount();
             this.mounted = true;
             if (this.props.open) {
                 this.requestAlsaInfo();
@@ -389,6 +406,7 @@ const JackServerSettingsDialog = withStyles(
         }
 
         componentWillUnmount() {
+			super.componentWillUnmount();
             this.mounted = false;
 
         }
@@ -489,28 +507,20 @@ const JackServerSettingsDialog = withStyles(
 				handleUseSameDeviceChanged(e: any, checked: boolean) {
                         let s = this.state.jackServerSettings.clone();
                         const useSame = checked;
-                        if (useSame) {
-                               const inputDev = this.state.alsaDevices?.find(d => d.id === s.alsaInputDevice && d.supportsCapture);
-                            if (!inputDev || !inputDev.supportsPlayback) {
-                                const both = this.state.alsaDevices?.find(d => d.supportsCapture && d.supportsPlayback);
-                                if (both) {
-                                    s.alsaInputDevice = both.id;
-                                    s.alsaOutputDevice = both.id;
-                                } else {
-                                    s.alsaInputDevice = INVALID_DEVICE_ID;
-                                    s.alsaOutputDevice = INVALID_DEVICE_ID;
-                                    s.valid = false;
-                                }
-                            } else {
-                                s.alsaOutputDevice = s.alsaInputDevice;
-                            }
-                        }
+                        
+						// release previous selection
+                        s.alsaInputDevice = INVALID_DEVICE_ID;
+                        s.alsaOutputDevice = INVALID_DEVICE_ID;
+                        s.valid = false;
+						
                         let settings = this.applyAlsaDevices(s, this.state.alsaDevices, useSame);
                         this.setState({
                             useSameDevice: useSame,
                             jackServerSettings: settings,
                             latencyText: getLatencyText(settings),
                             okEnabled: isOkEnabled(settings, this.state.alsaDevices)
+						 }, () => {
+                            this.requestAlsaInfo();	
                         });
                 }
         render() {
@@ -530,20 +540,27 @@ const JackServerSettingsDialog = withStyles(
                 selectedOutputDevice = selectedInputDevice;
             }
 			
-            let bufferSizes: number[] = getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice);
-            let bufferCounts = getValidBufferCountsMultiple(this.state.jackServerSettings.bufferSize, selectedInputDevice, selectedOutputDevice);
-            let bufferSizeDisabled = !(selectedInputDevice || selectedOutputDevice);
-            let bufferCountDisabled = !(selectedInputDevice || selectedOutputDevice);
-            let sampleRates = selectedInputDevice && selectedOutputDevice ?
+            const devicesSelected = this.state.useSameDevice ?
+                    !!selectedInputDevice :
+                    (selectedInputDevice && selectedOutputDevice);
+
+            let bufferSizes: number[] = devicesSelected ?
+                    getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice) : [];
+            let bufferCounts = devicesSelected ?
+                    getValidBufferCountsMultiple(this.state.jackServerSettings.bufferSize, selectedInputDevice, selectedOutputDevice) : [];
+            let bufferSizeDisabled = !devicesSelected;
+            let bufferCountDisabled = !devicesSelected;
+            let sampleRates = devicesSelected && selectedInputDevice && selectedOutputDevice ?
                     intersectArrays(selectedInputDevice.sampleRates, selectedOutputDevice.sampleRates)
-                    : (selectedInputDevice ? selectedInputDevice.sampleRates : (selectedOutputDevice ? selectedOutputDevice.sampleRates : []));
-			let sampleRateOptions = sampleRates.length === 0 && this.state.jackServerSettings.sampleRate ? [this.state.jackServerSettings.sampleRate] : sampleRates;
+                     : (this.state.useSameDevice && selectedInputDevice ? selectedInputDevice.sampleRates : []);
+            let sampleRateOptions = sampleRates.length === 0 && this.state.jackServerSettings.sampleRate ? [this.state.jackServerSettings.sampleRate] : sampleRates;
  
             return (
                 <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
                     onEnterKey={() => {
                         this.handleApply();
                     }}
+					fullScreen={this.state.fullScreen}
 
                 >
                     <DialogContent>
