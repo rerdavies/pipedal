@@ -618,6 +618,7 @@ namespace pipedal
 
             if (this->captureHandle)
             {
+				this->alsa_device_name = this->jackServerSettings.GetAlsaInputDevice();
                 AlsaConfigureStream(
                     this->alsa_device_name,
                     "capture",
@@ -629,6 +630,7 @@ namespace pipedal
             }
             if (this->playbackHandle)
             {
+				this->alsa_device_name = this->jackServerSettings.GetAlsaOutputDevice();
                 AlsaConfigureStream(
                     this->alsa_device_name,
                     "playback",
@@ -1234,7 +1236,8 @@ namespace pipedal
             try
             {
 
-                err = snd_pcm_open(&playbackHandle, outputName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
+                this->alsa_device_name = outputName;
+				err = snd_pcm_open(&playbackHandle, outputName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
                 if (err < 0)
                 {
                     switch (errno)
@@ -1268,7 +1271,8 @@ namespace pipedal
                 {
                     snd_pcm_nonblock(playbackHandle, 0);
                 }
-
+				
+				this->alsa_device_name = inputName;
                 err = snd_pcm_open(&captureHandle, inputName.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
 
                 if (err < 0)
