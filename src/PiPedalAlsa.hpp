@@ -31,8 +31,6 @@ namespace pipedal {
         std::string longName_;
         std::vector<uint32_t> sampleRates_;
         uint32_t minBufferSize_ = 0,maxBufferSize_ = 0;
-		bool supportsCapture_ = false;
-        bool supportsPlayback_ = false;
 
         bool isDummyDevice() const {
             return id_.starts_with("dummy:");

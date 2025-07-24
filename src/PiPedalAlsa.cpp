@@ -97,16 +97,20 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                 info.name_ = snd_ctl_card_info_get_name(alsaInfo);
                 info.longName_ = snd_ctl_card_info_get_longname(alsaInfo);
 
-                snd_pcm_t *captureDevice = nullptr;
-                snd_pcm_t *playbackDevice = nullptr;
-                bool captureOk = snd_pcm_open(&captureDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, 0) == 0;
-                bool playbackOk = snd_pcm_open(&playbackDevice, cardId.c_str(), SND_PCM_STREAM_PLAYBACK, 0) == 0;
-                info.supportsCapture_ = captureOk;
-                info.supportsPlayback_ = playbackOk;
+                snd_pcm_t *hDevice = nullptr;
 
-                if (captureOk || playbackOk)
+                // must support capture AND playback
+                err = snd_pcm_open(&hDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, 0);
+                if (err == 0)
                 {
-					snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
+                    snd_pcm_close(hDevice);
+                }
+                if (err == 0)
+                {
+                    err = snd_pcm_open(&hDevice, cardId.c_str(), SND_PCM_STREAM_PLAYBACK, 0);
+                }
+                if (err == 0)
+                {
                     snd_pcm_hw_params_t *params = nullptr;
                     err = snd_pcm_hw_params_malloc(&params);
                     if (err == 0)
@@ -147,25 +151,15 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 
                                 info.minBufferSize_ = (uint32_t)minBufferSize;
                                 info.maxBufferSize_ = (uint32_t)maxBufferSize;
+                                cacheDevice(info.name_, info);
+                                result.push_back(info);
                             }
                         }
                     }
                     if (params != nullptr)
                         snd_pcm_hw_params_free(params);
-                   if (captureOk)
-                        snd_pcm_close(captureDevice);
-                    if (playbackOk && playbackDevice != captureDevice)
-                        snd_pcm_close(playbackDevice);
-                    if (err == 0)
-                    {
-                        cacheDevice(info.name_, info);
-                        result.push_back(info);
-                    }
-                    else if (getCachedDevice(info.name_, &info))
-                    {
-                        result.push_back(info);
-                    }
-				}
+                    snd_pcm_close(hDevice);
+                }
                 else
                 {
                     if (getCachedDevice(info.name_, &info))
@@ -486,8 +480,6 @@ JSON_MAP_REFERENCE(AlsaDeviceInfo, longName)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, sampleRates)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, minBufferSize)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, maxBufferSize)
-JSON_MAP_REFERENCE(AlsaDeviceInfo, supportsCapture)
-JSON_MAP_REFERENCE(AlsaDeviceInfo, supportsPlayback)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(AlsaMidiDeviceInfo)
