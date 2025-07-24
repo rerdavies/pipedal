@@ -54,13 +54,13 @@ export class FakeAndroidHost implements AndroidHostInterface
         return true;
     }
     setDisconnected(_isDisconnected: boolean): void {
-    void _isDisconnected;     
+        
     }
     showSponsorship() : void { }
 
     launchExternalUrl(_url:string): boolean
     {
-		void _url;
+		
         return false;
     }
     private theme = 1;
@@ -72,7 +72,7 @@ export class FakeAndroidHost implements AndroidHostInterface
     }
     setServerVersion(_serverVersion: string): void {
         // No-op for fake host
-	void _serverVersion;
+	
     }
 
     private keepScreenOn = false;

@@ -62,7 +62,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                 .then(jackStatus => {
                     this.setState({ jackStatus: jackStatus });
                 })
-               .catch(() => { /* ignore*/ });
+               .catch(_error => { /* ignore*/ });
         }
     }
 
@@ -116,12 +116,12 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
         this.mounted = false;
         this.updateNotifications();
     }
-     componentDidUpdate(prevProps: Readonly<AboutDialogProps>, prevState: Readonly<AboutDialogState>, snapshot: unknown): void {
+     componentDidUpdate(prevProps: Readonly<AboutDialogProps>, prevState: Readonly<AboutDialogState>, snapshot: any): void {
         super.componentDidUpdate?.(prevProps, prevState, snapshot);
         this.updateNotifications();
     }
 
-      handleDialogClose() {
+      handleDialogClose(_e: SyntheticEvent) {
         this.props.onClose();
     }
 
