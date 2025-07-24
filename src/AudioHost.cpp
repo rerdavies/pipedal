@@ -2119,7 +2119,11 @@ public:
 
         if (this->audioDriver != nullptr)
         {
-            result.cpuUsage_ = audioDriver->CpuUse();
+            result.cpuUsage_ = audioDriver->CpuUse();            
+			if (!std::isfinite(result.cpuUsage_))
+            {
+                result.cpuUsage_ = 0.0f;
+            }
         }
         GetCpuFrequency(&result.cpuFreqMin_, &result.cpuFreqMax_);
         result.hasCpuGovernor_ = HasCpuGovernor();
