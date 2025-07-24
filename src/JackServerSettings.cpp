@@ -254,6 +254,7 @@ JSON_MAP_REFERENCE(JackServerSettings, valid)
 JSON_MAP_REFERENCE(JackServerSettings, isOnboarding)
 JSON_MAP_REFERENCE(JackServerSettings, rebootRequired)
 JSON_MAP_REFERENCE(JackServerSettings, isJackAudio)
+JSON_MAP_REFERENCE(JackServerSettings, alsaDevice) // legacy field
 JSON_MAP_REFERENCE(JackServerSettings, alsaInputDevice)
 JSON_MAP_REFERENCE(JackServerSettings, alsaOutputDevice)
 JSON_MAP_REFERENCE(JackServerSettings, sampleRate)

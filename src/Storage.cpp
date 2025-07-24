@@ -1573,6 +1573,14 @@ std::map<std::string, bool> Storage::GetFavorites() const
     {
         json_reader reader(f);
         reader.read(&result);
+		 if (!result.GetLegacyAlsaDevice().empty() &&
+            result.GetAlsaInputDevice().empty() &&
+            result.GetAlsaOutputDevice().empty())
+        {
+            result.SetAlsaInputDevice(result.GetLegacyAlsaDevice());
+            result.SetAlsaOutputDevice(result.GetLegacyAlsaDevice());
+            result.SetLegacyAlsaDevice("");
+        }
     }
     return result;
 }

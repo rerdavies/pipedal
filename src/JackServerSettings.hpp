@@ -33,6 +33,7 @@ namespace pipedal
         bool rebootRequired_ = false;
 		std::string alsaInputDevice_;
         std::string alsaOutputDevice_;
+		std::string alsaDevice_; // legacy
         uint64_t sampleRate_ = 0;
         uint32_t bufferSize_ = 64;
         uint32_t numberOfBuffers_ = 3;
@@ -61,7 +62,9 @@ namespace pipedal
         uint32_t GetBufferSize() const { return bufferSize_; }
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
 		const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
-		const std::string &GetAlsaOutputDevice() const { return alsaOutputDevice_; }
+        const std::string &GetAlsaOutputDevice() const { return alsaOutputDevice_; }
+        const std::string &GetLegacyAlsaDevice() const { return alsaDevice_; } //legacy
+        void SetLegacyAlsaDevice(const std::string &d) { alsaDevice_ = d; }
         void UseDummyAudioDevice() {
             this->valid_ = true;
             if (sampleRate_ == 0) sampleRate_ = 48000;
