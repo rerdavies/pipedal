@@ -117,29 +117,47 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                             unsigned int minRate = 0, maxRate = 0;
                             snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
                             int dir;
+							
                             err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
-                            if (err == 0)
+                            if (err != 0)
                             {
-                                err = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
+                                Lv2Log::warning(SS("Failed to get minimum sample rate for device '" << info.name_ << "'. Using default 48000."));
+                                info.sampleRates_.push_back(48000);
+                                err = 0; // continue using fallback rate
                             }
-                            if (err == 0)
+                             else
                             {
-                                err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
+                                  int err2 = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
+                                if (err2 != 0)
+                                {
+                                    Lv2Log::warning(SS("Failed to get maximum sample rate for device '" << info.name_ << "'. Using default 48000."));
+                                    info.sampleRates_.push_back(48000);
+                                }
+                                else
+                                {
+                                    for (size_t i = 0; i < sizeof(RATES) / sizeof(RATES[0]); ++i)
+                                    {
+                                        uint32_t rate = RATES[i];
+                                        if (rate >= minRate && rate <= maxRate)
+                                        {
+                                            info.sampleRates_.push_back(rate);
+                                        }
+                                    }
+                                    if (info.sampleRates_.empty())
+                                    {
+                                        Lv2Log::warning(SS("No supported sample rates for device '" << info.name_ << "'. Using default 48000."));
+                                        info.sampleRates_.push_back(48000);
+                                    }
+                                }
                             }
+							
+							err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
                             if (err == 0)
                             {
                                 err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
                             }
                             if (err == 0)
                             {
-                                for (size_t i = 0; i < sizeof(RATES) / sizeof(RATES[0]); ++i)
-                                {
-                                    uint32_t rate = RATES[i];
-                                    if (rate >= minRate && rate <= maxRate)
-                                    {
-                                        info.sampleRates_.push_back(rate);
-                                    }
-                                }
                                 if (minBufferSize < 16)
                                 {
                                     minBufferSize = 16;
