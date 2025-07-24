@@ -162,11 +162,6 @@ function getBestBuffers(
     {
         return { bufferSize:bufferSize, numberOfBuffers: numberOfBuffers};
     }
-    const device = inDevice || outDevice;
-    if (!device)
-    {
-        return { bufferSize:bufferSize, numberOfBuffers:numberOfBuffers};
-    }
 
     // If the numberOfbuffers is fine as is, don't change the number of Buffers.
     // set default values. Otherwise, choose the best buffer count from available buffer counts.
@@ -286,7 +281,7 @@ const JackServerSettingsDialog = withStyles(
                 });
         }
 
-        applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[]) {
+         applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[], useSameDevice?: boolean) {
             let result = jackServerSettings.clone();
            if (!alsaDevices || alsaDevices.length === 0) {
                 result.valid = false;
@@ -310,7 +305,8 @@ const JackServerSettingsDialog = withStyles(
                 }
             }
 
-			if (this.state.useSameDevice) {
+			const sameDevice = useSameDevice !== undefined ? useSameDevice : this.state.useSameDevice;
+                        if (sameDevice) {
                 result.alsaOutputDevice = result.alsaInputDevice;
                 outDevice = inDevice;
             }
@@ -437,34 +433,40 @@ const JackServerSettingsDialog = withStyles(
                         if (this.state.useSameDevice) {
                             s.alsaOutputDevice = d;
                         }
+						let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
                         this.setState({
-                        jackServerSettings: s,
-                        okEnabled: isOkEnabled(s, this.state.alsaDevices)
+                        jackServerSettings: settings,
+                        latencyText: getLatencyText(settings),
+                        okEnabled: isOkEnabled(settings, this.state.alsaDevices)
                         });
                 }
 
-                handleOutputDeviceChanged(e: any) {
+                  handleOutputDeviceChanged(e: any) {
                         const d = e.target.value as string;
                         let s = this.state.jackServerSettings.clone();
                         s.alsaOutputDevice = d;
                         if (this.state.useSameDevice) {
                             s.alsaInputDevice = d;
                         }
+                        let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
                         this.setState({
-                        jackServerSettings: s,
-                        okEnabled: isOkEnabled(s, this.state.alsaDevices)
+                       jackServerSettings: settings,
+                        latencyText: getLatencyText(settings),
+                        okEnabled: isOkEnabled(settings, this.state.alsaDevices)
                         });
                 }
-                handleUseSameDeviceChanged(e: any, checked: boolean) {
+				handleUseSameDeviceChanged(e: any, checked: boolean) {
                         let s = this.state.jackServerSettings.clone();
                         const useSame = checked;
                         if (useSame) {
                             s.alsaOutputDevice = s.alsaInputDevice;
                         }
+                        let settings = this.applyAlsaDevices(s, this.state.alsaDevices, useSame);
                         this.setState({
                             useSameDevice: useSame,
-                            jackServerSettings: s,
-                            okEnabled: isOkEnabled(s, this.state.alsaDevices)
+                            jackServerSettings: settings,
+                            latencyText: getLatencyText(settings),
+                            okEnabled: isOkEnabled(settings, this.state.alsaDevices)
                         });
                 }
         render() {
@@ -509,7 +511,7 @@ const JackServerSettingsDialog = withStyles(
 						disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
 						style={{ width: 220 }}
 						>
-						 {this.state.alsaDevices?.filter(d => d.supportsCapture).map(d => (
+						 {this.state.alsaDevices?.filter(d => d.supportsCapture && (!this.state.useSameDevice || d.supportsPlayback)).map(d => (
                                                                 <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
                                                 )) || <MenuItem value="" disabled>Loading...</MenuItem>}
 						</Select>
