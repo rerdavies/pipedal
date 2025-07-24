@@ -334,6 +334,7 @@ const JackServerSettingsDialog = withStyles(
 			if (result.sampleRate === 0) result.sampleRate = 48000;
 			 let sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
             if (sampleRates.length === 0) sampleRates = inDevice.sampleRates;
+			if (sampleRates.length === 0) sampleRates = [result.sampleRate || 48000];
             let bestSr = sampleRates[0];
             let bestErr = 1e36;
             for (let sr of sampleRates) {
