@@ -154,7 +154,7 @@ const theme = createTheme(
                 /* make the selection state for MuiListItemButtons a smidgen darker (light theme only) */
                 MuiListItemButton: {
                     styleOverrides: {
-                        root: () => ({
+                        root: ({ theme }) => ({
                             '&.Mui-selected': {
                                 backgroundColor: 'rgba(0, 0, 0, 0.2)', // Adjust for desired darkness
                                 '&:hover': {
@@ -220,17 +220,19 @@ const theme = createTheme(
 
 
 
-type AppThemeProps = Record<string, never>;
+type AppThemeProps = {
+
+};
 
 
 function isTone3000Auth() {
-    const url = new URL(window.location.href);
-    const param = url.searchParams.get("api_key");
+    let url = new URL(window.location.href);
+    let param = url.searchParams.get("api_key");
     return (param !== null && param !== "")
 }
 function isFontTest() {
-    const url = new URL(window.location.href);
-    const param = url.searchParams.get("fontTest");
+    let url = new URL(window.location.href);
+    let param = url.searchParams.get("fontTest");
     return (param !== null)
 }
 

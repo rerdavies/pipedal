@@ -30,7 +30,7 @@ export function createStyles<T>(style: T): T {
 }
 
 export default
-    interface WithStyles<T extends (...args: unknown[]) => unknown> {
+    interface WithStyles<T extends (...args: any) => any> {
     className?: string;
     classes?: Partial<Record<keyof ReturnType<T>, string>>;
 

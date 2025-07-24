@@ -82,7 +82,8 @@ import { IDialogStackable, popDialogStack, pushDialogStack } from './DialogStack
 
 
 
-type AppProps = WithStyles<typeof appStyles>;
+interface AppProps extends WithStyles<typeof appStyles> {
+};
 
 const appStyles = ((theme: Theme) => (
     {

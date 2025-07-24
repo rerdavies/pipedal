@@ -54,7 +54,9 @@ interface ZoomedDialProps extends WithStyles<typeof styles> {
     onSetValue(value: number): void
 }
 
-type ZoomedDialState = Record<string, never>;
+interface ZoomedDialState {
+
+}
 
 const ZoomedDial = withStyles(
 
@@ -157,7 +159,7 @@ const ZoomedDial = withStyles(
 
         }
 
-         onTouchStart() {
+        onTouchStart(e: TouchEvent<SVGSVGElement>) {
             //must be defined to get onTouchMove
         }
         onTouchMove(e: TouchEvent<SVGSVGElement>) {
@@ -375,7 +377,8 @@ const ZoomedDial = withStyles(
         }
 
 
-        onBodyPointerDownCapture(e: PointerEvent): any {
+        onBodyPointerDownCapture(e_: any): any {
+            let e = e_ as PointerEvent;
             if (this.isExtraTouch(e)) {
                 this.captureElement!.setPointerCapture(e.pointerId);
                 this.capturedPointers.push(e.pointerId);

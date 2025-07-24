@@ -17,21 +17,15 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-interface AlsaSequencerPortSelectionJson {
-    id: string;
-    name: string;
-    sortOrder: number;
-}
-
 export class AlsaSequencerPortSelection {
-    deserialize(json: AlsaSequencerPortSelectionJson) {
+    deserialize(json: any) {
         this.id = json.id;
         this.name = json.name;
         this.sortOrder = json.sortOrder;
         return this;
     };
-    static deserialize_array(input: AlsaSequencerPortSelectionJson[]): AlsaSequencerPortSelection[] {
-        const result: AlsaSequencerPortSelection[] = [];
+    static deserialize_array(input: any): AlsaSequencerPortSelection[] {
+        let result: AlsaSequencerPortSelection[] = [];
         for (let i = 0; i < input.length; ++i) {
             result[i] = new AlsaSequencerPortSelection().deserialize(input[i]);
         }
@@ -42,17 +36,13 @@ export class AlsaSequencerPortSelection {
     sortOrder: number = 0;
 };
 
-interface AlsaSequencerConfigurationJson {
-    connections: AlsaSequencerPortSelectionJson[];
-}
-
 export class AlsaSequencerConfiguration {
-    deserialize(input: AlsaSequencerConfigurationJson) {
+    deserialize(input: any) {
         this.connections = AlsaSequencerPortSelection.deserialize_array(input.connections);
         return this;
     }
-     deserialize_array(input: AlsaSequencerConfigurationJson[]): AlsaSequencerConfiguration[] {
-        const result: AlsaSequencerConfiguration[] = [];
+    deserialize_array(input: any): AlsaSequencerConfiguration[] {
+        let result: AlsaSequencerConfiguration[] = [];
         for (let i = 0; i < input.length; ++i) {
             result[i] = new AlsaSequencerConfiguration().deserialize(input[i]);
         }

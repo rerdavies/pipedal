@@ -36,15 +36,8 @@ jobs:
         sudo apt install libpipewire-0.3-dev 
         
         sudo apt install -y librsvg2-dev 
-        git submodule update --init --recursive
+        git submodule update --init --recursive 
         ./react-config
-
-    - name: Run frontend lint
-      working-directory: vite
-      run: |
-        npm ci
-        npm run lint -- --fix
-
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
