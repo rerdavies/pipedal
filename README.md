@@ -57,20 +57,34 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 ### [Command-Line Configuration of PiPedal](https://rerdavies.github.io/pipedal/CommandLine.html)
 ### [Changing the Web Server Port](https://rerdavies.github.io/pipedal/ChangingTheWebServerPort.html)
 
-%nbsp;
+&nbsp;
 
 ### [Using LV2 Audio Plugins](https://rerdavies.github.io/pipedal/UsingLv2Plugins.md)
 ### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.html)
 ### [Support for LV2 Plugins with MOD User Interfaces](https://rerdavies.github.io/pipedal/ModUiSupport.html)
 
- &nbsp;
+&nbsp;
 
 ### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.html)
 ### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.html)
 ### [The Build System](https://rerdavies.github.io/pipedal/TheBuildSystem.html)
+### Setup
+
+Fetch the project's submodules before building:
+
+```sh
+git submodule update --init --recursive
+```
+
+After running this command the following directories should be populated:
+
+- `modules/SQLiteCpp`
+- `modules/websocketpp`
+- `submodules/pipedal_p2pd`
+
 ### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.html)
 
- &nbsp;
+&nbsp;
 
 #### [PiPedal Architecture](https://rerdavies.github.io/pipedal/Architecture.html)
  
