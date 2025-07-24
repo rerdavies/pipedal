@@ -42,6 +42,8 @@ import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import IconButtonEx from './IconButtonEx';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 
@@ -60,6 +62,7 @@ interface JackServerSettingsDialogState {
     jackServerSettings: JackServerSettings;
     alsaDevices?: AlsaDeviceInfo[];
     okEnabled: boolean;
+	useSameDevice: boolean;
 }
 
 const styles = (theme: Theme) =>
@@ -249,11 +252,13 @@ const JackServerSettingsDialog = withStyles(
             this.model = PiPedalModelFactory.getInstance();
             
 
+ const sameDevice = props.jackServerSettings.alsaInputDevice === props.jackServerSettings.alsaOutputDevice;
             this.state = {
                 latencyText: getLatencyText(props.jackServerSettings),
                 jackServerSettings: props.jackServerSettings.clone(), // invalid, but not nullish
                 alsaDevices: undefined,
-                okEnabled: false
+                okEnabled: false,
+                useSameDevice: sameDevice
             };
         }
         mounted: boolean = false;
@@ -268,7 +273,8 @@ const JackServerSettingsDialog = withStyles(
                                 alsaDevices: devices,
                                 jackServerSettings: settings,
                                 latencyText: getLatencyText(settings),
-                                okEnabled: isOkEnabled(settings,devices)
+                                okEnabled: isOkEnabled(settings,devices),
+                                useSameDevice: settings.alsaInputDevice === settings.alsaOutputDevice
                             });
                         } else {
                             this.setState({ alsaDevices: devices });
@@ -302,6 +308,11 @@ const JackServerSettingsDialog = withStyles(
                 if (outDevice) {
                     result.alsaOutputDevice = outDevice.id;
                 }
+            }
+
+			if (this.state.useSameDevice) {
+                result.alsaOutputDevice = result.alsaInputDevice;
+                outDevice = inDevice;
             }
 
             if (!inDevice || !outDevice) {
@@ -341,7 +352,8 @@ const JackServerSettingsDialog = withStyles(
                 this.setState({ 
                     jackServerSettings: settings,
                     latencyText: getLatencyText(settings),
-                    okEnabled:  isOkEnabled(settings,this.state.alsaDevices)
+                    okEnabled:  isOkEnabled(settings,this.state.alsaDevices),
+                    useSameDevice: settings.alsaInputDevice === settings.alsaOutputDevice
                  });
                 if (!this.state.alsaDevices) {
                     this.requestAlsaInfo();
@@ -418,25 +430,43 @@ const JackServerSettingsDialog = withStyles(
                 this.props.onApply(this.state.jackServerSettings.clone());
             }
         };
-		handleInputDeviceChanged(e: any) {
-			const d = e.target.value as string;
-			let s = this.state.jackServerSettings.clone();
-			s.alsaInputDevice = d;
-			this.setState({
-			jackServerSettings: s,
-			okEnabled: isOkEnabled(s, this.state.alsaDevices)
-			});
-		}
-		
-		handleOutputDeviceChanged(e: any) {
-			const d = e.target.value as string;
-			let s = this.state.jackServerSettings.clone();
-			s.alsaOutputDevice = d;
-			this.setState({
-			jackServerSettings: s,
-			okEnabled: isOkEnabled(s, this.state.alsaDevices)
-			});
-		}
+				handleInputDeviceChanged(e: any) {
+                        const d = e.target.value as string;
+                        let s = this.state.jackServerSettings.clone();
+                        s.alsaInputDevice = d;
+                        if (this.state.useSameDevice) {
+                            s.alsaOutputDevice = d;
+                        }
+                        this.setState({
+                        jackServerSettings: s,
+                        okEnabled: isOkEnabled(s, this.state.alsaDevices)
+                        });
+                }
+
+                handleOutputDeviceChanged(e: any) {
+                        const d = e.target.value as string;
+                        let s = this.state.jackServerSettings.clone();
+                        s.alsaOutputDevice = d;
+                        if (this.state.useSameDevice) {
+                            s.alsaInputDevice = d;
+                        }
+                        this.setState({
+                        jackServerSettings: s,
+                        okEnabled: isOkEnabled(s, this.state.alsaDevices)
+                        });
+                }
+                handleUseSameDeviceChanged(e: any, checked: boolean) {
+                        let s = this.state.jackServerSettings.clone();
+                        const useSame = checked;
+                        if (useSame) {
+                            s.alsaOutputDevice = s.alsaInputDevice;
+                        }
+                        this.setState({
+                            useSameDevice: useSame,
+                            jackServerSettings: s,
+                            okEnabled: isOkEnabled(s, this.state.alsaDevices)
+                        });
+                }
         render() {
             const classes = withStyles.getClasses(this.props);
 
@@ -448,7 +478,10 @@ const JackServerSettingsDialog = withStyles(
            
 			let selectedInputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
             let selectedOutputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
-
+			if (this.state.useSameDevice) {
+                selectedOutputDevice = selectedInputDevice;
+            }
+			
             let bufferSizes: number[] = getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice);
             let bufferCounts = getValidBufferCountsMultiple(this.state.jackServerSettings.bufferSize, selectedInputDevice, selectedOutputDevice);
             let bufferSizeDisabled = !(selectedInputDevice || selectedOutputDevice);
@@ -483,13 +516,14 @@ const JackServerSettingsDialog = withStyles(
 						    </FormControl>
 
                                                 {/* Audio Output Device */}
-                                                <FormControl className={classes.formControl}>
+                            <FormControl className={classes.formControl}
+                                                    style={{ display: this.state.useSameDevice ? 'none' : undefined }}>
 							<InputLabel htmlFor="jsd_outputDevice">Output Device</InputLabel>
 							  <Select
 								id="jsd_outputDevice"
 								value={this.state.jackServerSettings.alsaOutputDevice}
 								onChange={e => this.handleOutputDeviceChanged(e)}
-								disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
+								 disabled={this.state.useSameDevice || !this.state.alsaDevices || this.state.alsaDevices.length === 0}
 								style={{ width: 220 }}
 								>
 								{this.state.alsaDevices?.filter(d => d.supportsPlayback).map(d => (
@@ -500,6 +534,16 @@ const JackServerSettingsDialog = withStyles(
                                                 <IconButtonEx tooltip="Refresh devices" onClick={() => this.requestAlsaInfo()} aria-label="refresh-audio-devices">
                                                     <RefreshIcon />
                                                 </IconButtonEx>
+												<FormControlLabel
+                                                    control={
+                                                        <Checkbox
+                                                            checked={this.state.useSameDevice}
+                                                            onChange={(e, c) => this.handleUseSameDeviceChanged(e, c)}
+                                                        />
+                                                    }
+                                                    label="Use same device for input/output"
+                                                    style={{ marginLeft: 16 }}
+                                                />
                         </div><div>
                             <FormControl className={classes.formControl}>
                                 <InputLabel htmlFor="jsd_sampleRate">Sample rate</InputLabel>
