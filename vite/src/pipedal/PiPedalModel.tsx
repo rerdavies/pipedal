@@ -3049,7 +3049,7 @@ export class PiPedalModel //implements PiPedalModel
                        resolve();
                 })
                 .catch((err) => {
-                       resolve();
+                       reject(err);
                 });
             //resolve();
 
