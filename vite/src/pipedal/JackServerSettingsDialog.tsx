@@ -641,6 +641,12 @@ const JackServerSettingsDialog = withStyles(
                             color="textSecondary">
                             Latency: {this.state.latencyText}
                         </Typography>
+						  {!this.state.okEnabled && (
+                            <Typography display="block" variant="caption" color="error"
+                                style={{ textAlign: "left", marginLeft: 24 }}>
+                                Please select all audio settings.
+                            </Typography>
+                        )}
                     </DialogContent>
 
                     <DialogActions>
