@@ -535,7 +535,9 @@ const JackServerSettingsDialog = withStyles(
             if (this.state.okEnabled)
             {
                 let s = this.state.jackServerSettings.clone();
-                s.valid = false;
+                // Apply immediately so the status display can confirm
+                // whether the selected devices are working.
+                s.valid = true;
                 this.model.setJackServerSettings(s);
                 this.startStatusTimer();
             }
