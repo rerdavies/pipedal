@@ -107,7 +107,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 
                 if (captureOk || playbackOk)
                 {
-					snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
+                    snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
                     snd_pcm_hw_params_t *params = nullptr;
                     err = snd_pcm_hw_params_malloc(&params);
                     if (err == 0)
@@ -118,7 +118,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                             unsigned int minRate = 0, maxRate = 0;
                             snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
                             int dir;
-							
+                            
                             err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                             if (err == 0)
                             {
@@ -134,7 +134,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                                         }
                                     }                                   
                             }
-							else
+                            else
                                 {
                                     Lv2Log::warning(SS("Failed to get maximum sample rate for device '" << info.name_ << "'."));
                                 }
@@ -143,9 +143,9 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                             {
                                 Lv2Log::warning(SS("Failed to get minimum sample rate for device '" << info.name_ << "'."));
                                 err = 0; // continue using fallback rate for other parameters
-							}
-							
-							err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
+                            }
+                            
+                            err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
                             if (err == 0)
                             {
                                 err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
@@ -177,7 +177,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                     {
                         result.push_back(info);
                     }
-				}
+                }
                 else
                 {
                     if (getCachedDevice(info.name_, &info))

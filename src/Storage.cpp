@@ -1598,7 +1598,7 @@ pipedal::JackServerSettings Storage::GetJackServerSettings()
     {
         json_reader reader(f);
         reader.read(&result);
-		if (!result.GetLegacyAlsaDevice().empty() &&
+        if (!result.GetLegacyAlsaDevice().empty() &&
             result.GetAlsaInputDevice().empty() &&
             result.GetAlsaOutputDevice().empty())
         {

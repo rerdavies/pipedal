@@ -49,8 +49,8 @@ export default class JackServerSettings {
     isOnboarding: boolean = true;
     rebootRequired = false;
     isJackAudio = false;
-	alsaInputDevice:  string = "";
-	alsaOutputDevice: string = "";
+    alsaInputDevice:  string = "";
+    alsaOutputDevice: string = "";
     sampleRate = 48000;
     bufferSize = 64;
     numberOfBuffers = 3;
@@ -69,7 +69,7 @@ export default class JackServerSettings {
 
         if (inDev === outDev) {
             return inDev;
-        			  
+                      
         } else {
             return inDev+" → "+outDev;
         }

@@ -13,8 +13,6 @@ available through the Code plugins store) has configured itself, build commands 
 If you are not using Visual Studio Code, you can configure, build and install PiPedal using CMake build tools. For your convenience,
 the following shell scripts have been provided in the root of the project.
 
-    ./scripts/check_deps.sh   # Verify required system packages
-
     ./init.sh   # Configure the CMake build for the first time, or if you
               # have changed one of the CMakeList.txt files. (release build)
 
@@ -24,7 +22,7 @@ the following shell scripts have been provided in the root of the project.
     
     sudo ./makePackage.sh    # Build a .deb file for distribution.
     
-	
+    
 If you are using a development environment other than Visual Studio Code, it should be fairly straightforward to figure out how
 to incorporate the PiPedal build procedure into your IDE workflow by using the contents of the build shell scripts as a model.
 

@@ -2120,7 +2120,7 @@ public:
         if (this->audioDriver != nullptr)
         {
             result.cpuUsage_ = audioDriver->CpuUse();            
-			if (!std::isfinite(result.cpuUsage_))
+            if (!std::isfinite(result.cpuUsage_))
             {
                 result.cpuUsage_ = 0.0f;
             }

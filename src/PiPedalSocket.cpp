@@ -1284,7 +1284,7 @@ public:
         {
             JackServerSettings jackServerSettings;
             pReader->read(&jackServerSettings);
-			 CheckJackServerSettings(jackServerSettings);
+             CheckJackServerSettings(jackServerSettings);
             this->model.SetJackServerSettings(jackServerSettings);
             this->Reply(replyTo, "setJackserverSettings");
         }
@@ -1304,7 +1304,7 @@ public:
         {
             WifiConfigSettings wifiConfigSettings;
             pReader->read(&wifiConfigSettings);
-			 CheckWifiConfigSettings(wifiConfigSettings);
+             CheckWifiConfigSettings(wifiConfigSettings);
             if (!GetAdminClient().CanUseAdminClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");
@@ -1326,7 +1326,7 @@ public:
         {
             WifiDirectConfigSettings wifiDirectConfigSettings;
             pReader->read(&wifiDirectConfigSettings);
-			CheckWifiDirectConfigSettings(wifiDirectConfigSettings);
+            CheckWifiDirectConfigSettings(wifiDirectConfigSettings);
             if (!GetAdminClient().CanUseAdminClient())
             {
                 throw PiPedalException("Can't change server settings when running interactively.");

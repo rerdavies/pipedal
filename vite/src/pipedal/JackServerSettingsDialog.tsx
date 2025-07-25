@@ -87,7 +87,7 @@ interface JackServerSettingsDialogState {
     alsaDevices?: AlsaDeviceInfo[];
     okEnabled: boolean;
     fullScreen: boolean;
-	compactWidth: boolean;
+    compactWidth: boolean;
     jackStatus?: JackHostStatus;
     showDeviceWarning: boolean;
     dontShowWarningAgain: boolean;
@@ -102,7 +102,7 @@ const styles = (theme: Theme) =>
         selectEmpty: {
             marginTop: theme.spacing(2),
         },
-		 inputLabel: {
+         inputLabel: {
             backgroundColor: theme.palette.background.paper,
             paddingLeft: 4,
             paddingRight: 4
@@ -276,15 +276,15 @@ function getBestBuffers(
 function isOkEnabled(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[])
 {
     if (!alsaDevices) return false;
-	if (!jackServerSettings.alsaInputDevice || !jackServerSettings.alsaOutputDevice) return false;
+    if (!jackServerSettings.alsaInputDevice || !jackServerSettings.alsaOutputDevice) return false;
     
-	const inDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaInputDevice && d.supportsCapture);
+    const inDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaInputDevice && d.supportsCapture);
     const outDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaOutputDevice && d.supportsPlayback);
     if (!inDevice || !outDevice) return false;
 
     const sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
     if (sampleRates.indexOf(jackServerSettings.sampleRate) === -1) return false;
-	
+    
     const deviceBufferSize = jackServerSettings.bufferSize * jackServerSettings.numberOfBuffers;
     const minSize = Math.max(inDevice.minBufferSize, outDevice.minBufferSize);
     const maxSize = Math.min(inDevice.maxBufferSize, outDevice.maxBufferSize);
@@ -324,8 +324,8 @@ const JackServerSettingsDialog = withStyles(
         statusTimer?: number = undefined;
 
         suppressDeviceWarning: boolean;
-		
-	getFullScreen() {
+        
+    getFullScreen() {
             return document.documentElement.clientWidth < 420 ||
                 document.documentElement.clientHeight < 700;
         }
@@ -414,11 +414,11 @@ const JackServerSettingsDialog = withStyles(
 
             if (!inDevice || !outDevice) {
                 result.valid = false;
-				if (!inDevice) result.alsaInputDevice = INVALID_DEVICE_ID;
+                if (!inDevice) result.alsaInputDevice = INVALID_DEVICE_ID;
                 if (!outDevice) result.alsaOutputDevice = INVALID_DEVICE_ID;
                 return result;
             }
-			
+            
             let sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
             if (sampleRates.length !== 0 && sampleRates.indexOf(result.sampleRate) === -1) {
                 let bestSr = sampleRates[0];
@@ -437,11 +437,11 @@ const JackServerSettingsDialog = withStyles(
         }
 
         componentDidMount() {
-			super.componentDidMount();
+            super.componentDidMount();
             this.mounted = true;
             if (this.props.open) {
                 this.requestAlsaInfo();
-				this.startStatusTimer();
+                this.startStatusTimer();
             }
 
         }
@@ -456,16 +456,16 @@ const JackServerSettingsDialog = withStyles(
                 if (!this.state.alsaDevices) {
                     this.requestAlsaInfo();
                 }
-				  this.startStatusTimer();
+                  this.startStatusTimer();
             } else if (!this.props.open && oldProps.open) {
                 this.stopStatusTimer();
             }
         }
 
         componentWillUnmount() {
-		 super.componentWillUnmount();
+         super.componentWillUnmount();
             this.mounted = false;
-			 this.stopStatusTimer();
+             this.stopStatusTimer();
 
         }
        getSelectedDevice(deviceId: string): AlsaDeviceInfo | undefined {
@@ -486,7 +486,7 @@ const JackServerSettingsDialog = withStyles(
             if (!inDev && !outDev) return;
             let settings = this.state.jackServerSettings.clone();
             settings.sampleRate = rate;
-			settings.valid = false;
+            settings.valid = false;
 
             this.setState({
                 jackServerSettings: settings,
@@ -521,7 +521,7 @@ const JackServerSettingsDialog = withStyles(
             if (!inDev && !outDev) return;
             let settings = this.state.jackServerSettings.clone();
             settings.numberOfBuffers = bufferCount;
-			settings.valid = false;
+            settings.valid = false;
 
             this.setState({
                 jackServerSettings: settings,
@@ -538,42 +538,42 @@ const JackServerSettingsDialog = withStyles(
                 this.model.setJackServerSettings(s);
             }
         };
-				handleOk() {
-					if (!this.state.okEnabled) return;
-					if (this.state.jackServerSettings.alsaInputDevice !== this.state.jackServerSettings.alsaOutputDevice
-						&& !this.suppressDeviceWarning) {
-						this.setState({ showDeviceWarning: true });
-						return;
-					}
-					let s = this.state.jackServerSettings.clone();
-					s.valid = true;
-					this.props.onApply(s);
-				};
+                handleOk() {
+                    if (!this.state.okEnabled) return;
+                    if (this.state.jackServerSettings.alsaInputDevice !== this.state.jackServerSettings.alsaOutputDevice
+                        && !this.suppressDeviceWarning) {
+                        this.setState({ showDeviceWarning: true });
+                        return;
+                    }
+                    let s = this.state.jackServerSettings.clone();
+                    s.valid = true;
+                    this.props.onApply(s);
+                };
 
-				handleWarningProceed() {
-					if (this.state.dontShowWarningAgain) {
-						localStorage.setItem("suppressSeparateDeviceWarning", "1");
-						this.suppressDeviceWarning = true;
-					}
-					this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
-						let s = this.state.jackServerSettings.clone();
-						s.valid = true;
-						this.props.onApply(s);
-					});
-				}
-				handleWarningCancel() {
-					this.setState({ showDeviceWarning: false, dontShowWarningAgain: false });
-				}
+                handleWarningProceed() {
+                    if (this.state.dontShowWarningAgain) {
+                        localStorage.setItem("suppressSeparateDeviceWarning", "1");
+                        this.suppressDeviceWarning = true;
+                    }
+                    this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
+                        let s = this.state.jackServerSettings.clone();
+                        s.valid = true;
+                        this.props.onApply(s);
+                    });
+                }
+                handleWarningCancel() {
+                    this.setState({ showDeviceWarning: false, dontShowWarningAgain: false });
+                }
 
-				handleWarningCheck(e: any, checked: boolean) {
-					this.setState({ dontShowWarningAgain: checked });
-				}
-				handleInputDeviceChanged(e: any) {
+                handleWarningCheck(e: any, checked: boolean) {
+                    this.setState({ dontShowWarningAgain: checked });
+                }
+                handleInputDeviceChanged(e: any) {
                         const d = e.target.value as string;
                         let s = this.state.jackServerSettings.clone();
                         s.alsaInputDevice = d;
                         s.valid = false;
-						let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
+                        let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
                         this.setState({
                         jackServerSettings: settings,
                         latencyText: getLatencyText(settings),
@@ -585,7 +585,7 @@ const JackServerSettingsDialog = withStyles(
                         const d = e.target.value as string;
                         let s = this.state.jackServerSettings.clone();
                         s.alsaOutputDevice = d;
-						s.valid = false;
+                        s.valid = false;
                         let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
                         this.setState({
                        jackServerSettings: settings,
@@ -607,9 +607,9 @@ const JackServerSettingsDialog = withStyles(
 
             let selectedInputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
             let selectedOutputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
-			
-			const devicesSelected = (selectedInputDevice && selectedOutputDevice);
-			
+            
+            const devicesSelected = (selectedInputDevice && selectedOutputDevice);
+            
             let bufferSizes: number[] = devicesSelected ?
                     getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice) : [];
             let bufferCounts = devicesSelected ?
@@ -622,19 +622,19 @@ const JackServerSettingsDialog = withStyles(
             let sampleRateOptions = sampleRates.length === 0 && this.state.jackServerSettings.sampleRate ? [this.state.jackServerSettings.sampleRate] : sampleRates;
  
             return (
-			 <>
+             <>
                 <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
                     onEnterKey={() => {
                         this.handleOk();
                     }}
-					 fullScreen={this.state.fullScreen}
+                     fullScreen={this.state.fullScreen}
 
                 >
                     <DialogContent>
                           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
                           <div style={{ display: "flex", flexDirection: this.state.compactWidth ? "column" : "row", gap: 8 }}>
-						 {/* Audio Input Device */}
+                         {/* Audio Input Device */}
                                 <FormControl variant="standard" className={classes.formControl}>
                                 <InputLabel shrink className={classes.inputLabel} htmlFor="jsd_inputDevice">Input Device</InputLabel>
                                 <Select variant="standard"
@@ -660,10 +660,10 @@ const JackServerSettingsDialog = withStyles(
                                     disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
                                     style={{ width: 220 }}
                                 >
-								{sortedDevices.filter(d => d.supportsPlayback).map(d => (
-											   <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
-								)) || <MenuItem value="" disabled>Loading...</MenuItem>}
-								 </Select>
+                                {sortedDevices.filter(d => d.supportsPlayback).map(d => (
+                                               <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+                                )) || <MenuItem value="" disabled>Loading...</MenuItem>}
+                                 </Select>
                                </FormControl>
                                 </div>
                                 <IconButtonEx tooltip="Refresh devices" onClick={() => this.requestAlsaInfo()} aria-label="refresh-audio-devices">
@@ -737,7 +737,7 @@ const JackServerSettingsDialog = withStyles(
                             color="textSecondary">
                             Latency: {this.state.latencyText}
                         </Typography>
-						   <div className={classes.cpuStatusColor} style={{ paddingLeft: 24 }}>
+                           <div className={classes.cpuStatusColor} style={{ paddingLeft: 24 }}>
                             {JackHostStatus.getDisplayView("", this.state.jackStatus)}
                         </div>
                             {!this.state.okEnabled && (
@@ -759,7 +759,7 @@ const JackServerSettingsDialog = withStyles(
                     </DialogActions>
 
                 </DialogEx>
-				  {this.state.showDeviceWarning && (
+                  {this.state.showDeviceWarning && (
                     <DialogEx open={this.state.showDeviceWarning} tag="ioWarning"
                         onEnterKey={() => this.handleWarningProceed()}
                         onClose={() => this.handleWarningCancel()}

@@ -31,9 +31,9 @@ namespace pipedal
         bool isOnboarding_ = true;
         bool isJackAudio_ = JACK_HOST ? true : false;
         bool rebootRequired_ = false;
-		std::string alsaInputDevice_;
+        std::string alsaInputDevice_;
         std::string alsaOutputDevice_;
-		std::string alsaDevice_; // legacy
+        std::string alsaDevice_; // legacy
         uint64_t sampleRate_ = 0;
         uint32_t bufferSize_ = 64;
         uint32_t numberOfBuffers_ = 3;
@@ -61,7 +61,7 @@ namespace pipedal
         uint64_t GetSampleRate() const { return sampleRate_; }
         uint32_t GetBufferSize() const { return bufferSize_; }
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
-		const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
+        const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
         const std::string &GetAlsaOutputDevice() const { return alsaOutputDevice_; }
         const std::string &GetLegacyAlsaDevice() const { return alsaDevice_; } //legacy
         void SetLegacyAlsaDevice(const std::string &d) { alsaDevice_ = d; }
@@ -89,7 +89,7 @@ namespace pipedal
         // {
         //     this->valid_ = true;
         //     this->rebootRequired_ = true;
-		//     this->alsaInputDevice_ = device;
+        //     this->alsaInputDevice_ = device;
         //     this->alsaOutputDevice_ = device;
         //     this->sampleRate_ = sampleRate;
         //     this->bufferSize_ = bufferSize;
