@@ -102,10 +102,11 @@ const styles = (theme: Theme) =>
         selectEmpty: {
             marginTop: theme.spacing(2),
         },
-         inputLabel: {
+        inputLabel: {
             backgroundColor: theme.palette.background.paper,
             paddingLeft: 4,
-            paddingRight: 4
+            paddingRight: 4,
+            whiteSpace: "nowrap"
         },
         cpuStatusColor: {
             color: theme.palette.text.secondary,
@@ -536,6 +537,7 @@ const JackServerSettingsDialog = withStyles(
                 let s = this.state.jackServerSettings.clone();
                 s.valid = false;
                 this.model.setJackServerSettings(s);
+                this.startStatusTimer();
             }
         };
                 handleOk() {
@@ -738,14 +740,8 @@ const JackServerSettingsDialog = withStyles(
                             Latency: {this.state.latencyText}
                         </Typography>
                            <div className={classes.cpuStatusColor} style={{ paddingLeft: 24 }}>
-                             {JackHostStatus.getDisplayViewNoCpu("", this.state.jackStatus)}
+                            {JackHostStatus.getDisplayView("", this.state.jackStatus)}
                         </div>
-                            {!this.state.okEnabled && (
-                            <Typography display="block" variant="caption" color="error"
-                                style={{ textAlign: "left", marginLeft: 24 }}>
-                                Please select all audio settings.
-                            </Typography>
-                        )}
                     </DialogContent>
 
                     <DialogActions>
