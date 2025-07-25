@@ -742,7 +742,7 @@ const JackServerSettingsDialog = withStyles(
                             Latency: {this.state.latencyText}
                         </Typography>
                            <div className={classes.cpuStatusColor} style={{ paddingLeft: 24 }}>
-                            {JackHostStatus.getDisplayView("", this.state.jackStatus)}
+                             {JackHostStatus.getDisplayViewNoCpu("", this.state.jackStatus)}
                         </div>
                     </DialogContent>
 
