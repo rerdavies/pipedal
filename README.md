@@ -68,19 +68,6 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 ### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.html)
 ### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.html)
 ### [The Build System](https://rerdavies.github.io/pipedal/TheBuildSystem.html)
-### Setup
-
-Fetch the project's submodules before building:
-
-```sh
-git submodule update --init --recursive
-```
-
-After running this command the following directories should be populated:
-
-- `modules/SQLiteCpp`
-- `modules/websocketpp`
-- `submodules/pipedal_p2pd`
 
 ### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.html)
 
