@@ -8,7 +8,7 @@ packages=(\
     authbind libavahi-client-dev libnm-dev libicu-dev \
     libsdbus-c++-dev libzip-dev google-perftools \
     libgoogle-perftools-dev libpipewire-0.3-dev \
-    libwebsocketpp-dev libsdl2-dev
+    libwebsocketpp-dev
 )
 
 missing=()

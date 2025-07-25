@@ -80,10 +80,17 @@ namespace pipedal
 
         bool IsValid() const { return valid_; }
 
-        // JackServerSettings(uint64_t sampleRate, uint32_t bufferSize, uint32_t numberOfBuffers)
+        // Legacy constructor used by tests prior to the addition of
+        // separate input and output ALSA devices.
+        // JackServerSettings(const std::string &device,
+        //                    uint64_t sampleRate,
+        //                    uint32_t bufferSize,
+        //                    uint32_t numberOfBuffers)
         // {
         //     this->valid_ = true;
         //     this->rebootRequired_ = true;
+		//     this->alsaInputDevice_ = device;
+        //     this->alsaOutputDevice_ = device;
         //     this->sampleRate_ = sampleRate;
         //     this->bufferSize_ = bufferSize;
         //     this->numberOfBuffers_ = numberOfBuffers; 

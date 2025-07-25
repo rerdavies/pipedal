@@ -95,7 +95,7 @@ void PrintHelp()
 
     pp << Indent(0) << "Examples\n\n";
     pp << Indent(2) << "pipedal_latency_test --list\n\n";
-    pp << Indent(2) << "pipedal_latency_test hw:M2\n";
+    pp << Indent(2) << "pipedal_latency_test hw:M2 hw:M2\n";
     pp << Indent(2) << "pipedal_latency_test hw:M2 hw:Device2\n\n";
 }
 

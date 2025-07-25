@@ -22,6 +22,7 @@
 
 import { Theme } from '@mui/material/styles';
 
+import React from 'react';
 import WithStyles from './WithStyles';
 import {createStyles} from './WithStyles';
 
@@ -44,9 +45,17 @@ import IconButtonEx from './IconButtonEx';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import JackHostStatus from './JackHostStatus';
 
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
+
+function filterDevices(devices: AlsaDeviceInfo[]): AlsaDeviceInfo[] {
+    return devices.filter(d => {
+        const name = (d.name + ' ' + d.longName).toLowerCase();
+        return !(name.includes('hdmi') || name.includes('bcm2835'));
+    });
+}
 
 function sortDevices(devices: AlsaDeviceInfo[]): AlsaDeviceInfo[] {
     function category(d: AlsaDeviceInfo): number {
@@ -73,14 +82,18 @@ interface BufferSetting {
     numberOfBuffers: number;
 };
 
-const INVALID_DEVICE_ID = "_invalid_";
+// empty string used when no valid device is selected - the default.
+const INVALID_DEVICE_ID = "";
 interface JackServerSettingsDialogState {
     latencyText: string;
     jackServerSettings: JackServerSettings;
     alsaDevices?: AlsaDeviceInfo[];
     okEnabled: boolean;
-	useSameDevice: boolean;
     fullScreen: boolean;
+	compactWidth: boolean;
+    jackStatus?: JackHostStatus;
+    showDeviceWarning: boolean;
+    dontShowWarningAgain: boolean;
 }
 
 const styles = (theme: Theme) =>
@@ -92,6 +105,15 @@ const styles = (theme: Theme) =>
         selectEmpty: {
             marginTop: theme.spacing(2),
         },
+		 inputLabel: {
+            backgroundColor: theme.palette.background.paper,
+            paddingLeft: 4,
+            paddingRight: 4
+        },
+        cpuStatusColor: {
+            color: theme.palette.text.secondary,
+            opacity: 0.7
+        }
     });
 export interface JackServerSettingsDialogProps extends WithStyles<typeof styles> {
     open: boolean;
@@ -101,13 +123,15 @@ export interface JackServerSettingsDialogProps extends WithStyles<typeof styles>
 }
 
 function getLatencyText(settings?: JackServerSettings ): string {
-    if (!settings)
-    {
+    if (!settings) {
         return "\u00A0";
     }
 
-    if (!settings.valid) return "\u00A0";
-    let ms = settings.bufferSize * settings.numberOfBuffers / settings.sampleRate * 1000;
+    if (!settings.sampleRate || !settings.bufferSize || !settings.numberOfBuffers) {
+        return "\u00A0";
+    }
+
+    let ms = (settings.bufferSize * settings.numberOfBuffers) / settings.sampleRate * 1000;
     return ms.toFixed(1) + "ms";
 }
 
@@ -213,33 +237,57 @@ function getBestBuffers(
             return {bufferSize: bufferSize, numberOfBuffers:numberOfBuffers};
         }
     }
-    // otherwise select a sensible starting value.
+     // otherwise select a sensible starting value.
 
-    // favored default: 64x3.
-  if (64*3 >= minSize && 64*3 <= maxSize)
-    {
-        return { bufferSize: 64, numberOfBuffers: 3};
+    // Build candidate sizes with 32 first if present.
+    let validBufferSizes = getValidBufferSizesMultiple(inDevice, outDevice);
+    validBufferSizes.sort((a,b)=>a-b);
+    if (validBufferSizes.indexOf(32) !== -1) {
+        validBufferSizes = [32, ...validBufferSizes.filter(v => v !== 32)];
     }
-    // if that isn't possible then minBufferSize/2 x 4.
- bufferSize = minSize/2;
+  
+  function tryPick(count: number): BufferSetting | undefined {
+        for (let bs of validBufferSizes) {
+            const counts = getValidBufferCountsMultiple(bs, inDevice, outDevice);
+            if (counts.indexOf(count) !== -1) {
+                if (bs * count >= minSize && bs * count <= maxSize) {
+                    return { bufferSize: bs, numberOfBuffers: count };
+                }
+            }
+        }
+        return undefined;
+    }
+
+    let result = tryPick(4);
+    if (!result) result = tryPick(3);
+    if (!result) result = tryPick(2);
+    if (result) return result;
+
+    // Fallback to previous behaviour.
+    if (64*3 >= minSize && 64*3 <= maxSize) {
+        return { bufferSize: 64, numberOfBuffers: 3 };
+    }
+    bufferSize = minSize/2;
     numberOfBuffers = 4;
-    // otherwise, minBufferSize/2 x 2.
-    if (bufferSize*numberOfBuffers > maxSize)
-    {
+    if (bufferSize * numberOfBuffers > maxSize) {
         numberOfBuffers = 2;
     }
-    return { bufferSize: bufferSize, numberOfBuffers: numberOfBuffers};
+   return { bufferSize: bufferSize, numberOfBuffers: numberOfBuffers };
 
 };
 
 function isOkEnabled(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[])
 {
-    if (!jackServerSettings.valid) return false;
     if (!alsaDevices) return false;
-    const inDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaInputDevice && d.supportsCapture);
+	if (!jackServerSettings.alsaInputDevice || !jackServerSettings.alsaOutputDevice) return false;
+    
+	const inDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaInputDevice && d.supportsCapture);
     const outDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaOutputDevice && d.supportsPlayback);
     if (!inDevice || !outDevice) return false;
 
+    const sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
+    if (sampleRates.indexOf(jackServerSettings.sampleRate) === -1) return false;
+	
     const deviceBufferSize = jackServerSettings.bufferSize * jackServerSettings.numberOfBuffers;
     const minSize = Math.max(inDevice.minBufferSize, outDevice.minBufferSize);
     const maxSize = Math.min(inDevice.maxBufferSize, outDevice.maxBufferSize);
@@ -247,9 +295,6 @@ function isOkEnabled(jackServerSettings: JackServerSettings, alsaDevices?: AlsaD
 
     const validBufferCounts = getValidBufferCountsMultiple(jackServerSettings.bufferSize, inDevice, outDevice);
     if (validBufferCounts.indexOf(jackServerSettings.numberOfBuffers) === -1) return false;
-
-    const sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
-    if (sampleRates.indexOf(jackServerSettings.sampleRate) === -1) return false;
 
     return true;
 }
@@ -265,18 +310,24 @@ const JackServerSettingsDialog = withStyles(
             this.model = PiPedalModelFactory.getInstance();  
 
 
- const sameDevice = props.jackServerSettings.alsaInputDevice === props.jackServerSettings.alsaOutputDevice;
-            this.state = {
-                latencyText: getLatencyText(props.jackServerSettings),
-                jackServerSettings: props.jackServerSettings.clone(), // invalid, but not nullish
-                alsaDevices: undefined,
-                okEnabled: false,
-                useSameDevice: sameDevice,
-                fullScreen: this.getFullScreen()
-            };
+  this.suppressDeviceWarning = localStorage.getItem("suppressSeparateDeviceWarning") === "1";
+        this.state = {
+            latencyText: getLatencyText(props.jackServerSettings),
+            jackServerSettings: props.jackServerSettings.clone(), // invalid, but not nullish
+            alsaDevices: undefined,
+            okEnabled: false,
+            fullScreen: this.getFullScreen(),
+            compactWidth: document.documentElement.clientWidth < 600,
+            jackStatus: undefined,
+            showDeviceWarning: false,
+            dontShowWarningAgain: false
+        };
         }
         mounted: boolean = false;
+        statusTimer?: number = undefined;
 
+        suppressDeviceWarning: boolean;
+		
 	getFullScreen() {
             return document.documentElement.clientWidth < 420 ||
                 document.documentElement.clientHeight < 700;
@@ -285,8 +336,9 @@ const JackServerSettingsDialog = withStyles(
         onWindowSizeChanged(width: number, height: number): void {
             super.onWindowSizeChanged(width, height);
             const fullScreen = this.getFullScreen();
-            if (fullScreen !== this.state.fullScreen) {
-                this.setState({ fullScreen });
+            const compactWidth = width < 600;
+            if (fullScreen !== this.state.fullScreen || compactWidth !== this.state.compactWidth) {
+                this.setState({ fullScreen, compactWidth });
             }
         }
 
@@ -295,15 +347,16 @@ const JackServerSettingsDialog = withStyles(
                 .then((devices) => {
                     if (this.mounted) {
                         if (this.props.open) {
-                            let settings = this.applyAlsaDevices(this.state.jackServerSettings, devices);
+                            let f = filterDevices(devices);
+                            let settings = this.applyAlsaDevices(this.state.jackServerSettings, f);
                             this.setState({
-                                alsaDevices: devices,
+                                alsaDevices: f,
                                 jackServerSettings: settings,
                                 latencyText: getLatencyText(settings),
-                                okEnabled: isOkEnabled(settings,devices)
+                                okEnabled: isOkEnabled(settings, f)
                             });
                         } else {
-                            this.setState({ alsaDevices: devices });
+                             this.setState({ alsaDevices: filterDevices(devices) });
                         }
                     }
                 })
@@ -312,7 +365,28 @@ const JackServerSettingsDialog = withStyles(
                 });
         }
 
-         applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[], useSameDevice?: boolean) {
+       tickStatus() {
+            this.model.getJackStatus()
+                .then(status => {
+                    if (this.mounted) {
+                        this.setState({ jackStatus: status });
+                    }
+                })
+                .catch(() => { });
+        }
+        startStatusTimer() {
+            if (this.statusTimer) return;
+            this.tickStatus();
+            this.statusTimer = window.setInterval(() => this.tickStatus(), 1000);
+        }
+        stopStatusTimer() {
+            if (this.statusTimer) {
+                clearInterval(this.statusTimer);
+                this.statusTimer = undefined;
+            }
+        }
+
+        applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[]) {
             let result = jackServerSettings.clone();
            if (!alsaDevices || alsaDevices.length === 0) {
                 result.valid = false;
@@ -321,47 +395,33 @@ const JackServerSettingsDialog = withStyles(
                 return result;
             }
 
-            let inDevice = alsaDevices.find(d => d.id === result.alsaInputDevice && d.supportsCapture);
-            let outDevice = alsaDevices.find(d => d.id === result.alsaOutputDevice && d.supportsPlayback);
+            let devices = filterDevices(alsaDevices);
+            let inDevice = devices.find(d => d.id === result.alsaInputDevice && d.supportsCapture);
+            let outDevice = devices.find(d => d.id === result.alsaOutputDevice && d.supportsPlayback);
 
-			const sameDevice = useSameDevice !== undefined ? useSameDevice : this.state.useSameDevice;
-            if (sameDevice) {
-                if (!inDevice || !inDevice.supportsPlayback) {
-                    const both = alsaDevices.find(d => d.supportsCapture && d.supportsPlayback);
-                    if (both) {
-                        result.alsaInputDevice = both.id;
-                        result.alsaOutputDevice = both.id;
-                        inDevice = both;
-                        outDevice = both;
-                    } else {
-                        result.valid = false;
-                        result.alsaInputDevice = INVALID_DEVICE_ID;
-                        result.alsaOutputDevice = INVALID_DEVICE_ID;
-                        return result;
-                    }
-                } else {
-                    result.alsaOutputDevice = result.alsaInputDevice;
-                    outDevice = inDevice;
-                }
-				 } else {
-                if (!inDevice) {
-                    result.valid = false;
-                    result.alsaInputDevice = INVALID_DEVICE_ID;
-                }
-                if (!outDevice) {
-                    result.valid = false;
-                    result.alsaOutputDevice = INVALID_DEVICE_ID;
-                }
-                if (!inDevice || !outDevice) {
-                    return result;
+            if (!inDevice || !outDevice) {
+                const capture = devices.filter(d => d.supportsCapture);
+                const playback = devices.filter(d => d.supportsPlayback);
+                if (capture.length === 1 && playback.length === 1) {
+                    inDevice = capture[0];
+                    outDevice = playback[0];
+                    result.alsaInputDevice = inDevice.id;
+                    result.alsaOutputDevice = outDevice.id;
+                } else if (capture.length === 1 && capture[0].supportsPlayback && playback.length === 0) {
+                    inDevice = capture[0];
+                    outDevice = capture[0];
+                    result.alsaInputDevice = inDevice.id;
+                    result.alsaOutputDevice = outDevice.id;
                 }
             }
 
             if (!inDevice || !outDevice) {
                 result.valid = false;
+				if (!inDevice) result.alsaInputDevice = INVALID_DEVICE_ID;
+                if (!outDevice) result.alsaOutputDevice = INVALID_DEVICE_ID;
                 return result;
             }
-      
+			
             let sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
             if (sampleRates.length !== 0 && sampleRates.indexOf(result.sampleRate) === -1) {
                 let bestSr = sampleRates[0];
@@ -376,8 +436,6 @@ const JackServerSettingsDialog = withStyles(
             let bestBuffers =  getBestBuffers(inDevice, outDevice, result.bufferSize, result.numberOfBuffers);
             result.bufferSize = bestBuffers.bufferSize;
             result.numberOfBuffers = bestBuffers.numberOfBuffers;
-
-            result.valid = !!result.alsaInputDevice && !!result.alsaOutputDevice;
             return result;
         }
 
@@ -386,27 +444,31 @@ const JackServerSettingsDialog = withStyles(
             this.mounted = true;
             if (this.props.open) {
                 this.requestAlsaInfo();
+				this.startStatusTimer();
             }
 
         }
         componentDidUpdate(oldProps: JackServerSettingsDialogProps) {
             if ((this.props.open && !oldProps.open) && this.mounted) {
                 let settings = this.applyAlsaDevices(this.props.jackServerSettings.clone(), this.state.alsaDevices);
-                this.setState({ 
+                 this.setState({
                     jackServerSettings: settings,
                     latencyText: getLatencyText(settings),
-                    okEnabled:  isOkEnabled(settings,this.state.alsaDevices),
-                    useSameDevice: settings.alsaInputDevice === settings.alsaOutputDevice
+                    okEnabled:  isOkEnabled(settings,this.state.alsaDevices)
                  });
                 if (!this.state.alsaDevices) {
                     this.requestAlsaInfo();
                 }
+				  this.startStatusTimer();
+            } else if (!this.props.open && oldProps.open) {
+                this.stopStatusTimer();
             }
         }
 
         componentWillUnmount() {
-			super.componentWillUnmount();
+		 super.componentWillUnmount();
             this.mounted = false;
+			 this.stopStatusTimer();
 
         }
        getSelectedDevice(deviceId: string): AlsaDeviceInfo | undefined {
@@ -427,6 +489,7 @@ const JackServerSettingsDialog = withStyles(
             if (!inDev && !outDev) return;
             let settings = this.state.jackServerSettings.clone();
             settings.sampleRate = rate;
+			settings.valid = false;
 
             this.setState({
                 jackServerSettings: settings,
@@ -442,7 +505,8 @@ const JackServerSettingsDialog = withStyles(
             if (!inDev && !outDev) return;
             let settings = this.state.jackServerSettings.clone();
             settings.bufferSize = size;
-              let bestBufferSetting = getBestBuffers(inDev,outDev,settings.bufferSize,settings.numberOfBuffers,true);
+                settings.valid = false;
+            let bestBufferSetting = getBestBuffers(inDev,outDev,settings.bufferSize,settings.numberOfBuffers,true);
             settings.bufferSize = bestBufferSetting.bufferSize;
             settings.numberOfBuffers = bestBufferSetting.numberOfBuffers;
 
@@ -460,6 +524,7 @@ const JackServerSettingsDialog = withStyles(
             if (!inDev && !outDev) return;
             let settings = this.state.jackServerSettings.clone();
             settings.numberOfBuffers = bufferCount;
+			settings.valid = false;
 
             this.setState({
                 jackServerSettings: settings,
@@ -471,16 +536,46 @@ const JackServerSettingsDialog = withStyles(
         handleApply() {
             if (this.state.okEnabled)
             {
-                this.props.onApply(this.state.jackServerSettings.clone());
+                let s = this.state.jackServerSettings.clone();
+                s.valid = false;
+                this.model.setJackServerSettings(s);
             }
         };
+				handleOk() {
+					if (!this.state.okEnabled) return;
+					if (this.state.jackServerSettings.alsaInputDevice !== this.state.jackServerSettings.alsaOutputDevice
+						&& !this.suppressDeviceWarning) {
+						this.setState({ showDeviceWarning: true });
+						return;
+					}
+					let s = this.state.jackServerSettings.clone();
+					s.valid = true;
+					this.props.onApply(s);
+				};
+
+				handleWarningProceed() {
+					if (this.state.dontShowWarningAgain) {
+						localStorage.setItem("suppressSeparateDeviceWarning", "1");
+						this.suppressDeviceWarning = true;
+					}
+					this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
+						let s = this.state.jackServerSettings.clone();
+						s.valid = true;
+						this.props.onApply(s);
+					});
+				}
+				handleWarningCancel() {
+					this.setState({ showDeviceWarning: false, dontShowWarningAgain: false });
+				}
+
+				handleWarningCheck(e: any, checked: boolean) {
+					this.setState({ dontShowWarningAgain: checked });
+				}
 				handleInputDeviceChanged(e: any) {
                         const d = e.target.value as string;
                         let s = this.state.jackServerSettings.clone();
                         s.alsaInputDevice = d;
-                        if (this.state.useSameDevice) {
-                            s.alsaOutputDevice = d;
-                        }
+                        s.valid = false;
 						let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
                         this.setState({
                         jackServerSettings: settings,
@@ -493,9 +588,7 @@ const JackServerSettingsDialog = withStyles(
                         const d = e.target.value as string;
                         let s = this.state.jackServerSettings.clone();
                         s.alsaOutputDevice = d;
-                        if (this.state.useSameDevice) {
-                            s.alsaInputDevice = d;
-                        }
+						s.valid = false;
                         let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
                         this.setState({
                        jackServerSettings: settings,
@@ -503,28 +596,8 @@ const JackServerSettingsDialog = withStyles(
                         okEnabled: isOkEnabled(settings, this.state.alsaDevices)
                         });
                 }
-				 handleUseSameDeviceChanged(e: any, checked: boolean) {
-                let s = this.state.jackServerSettings.clone();
-                const useSame = checked;
 
-                if (!useSame) {
-                        // clear selections when switching to separate devices
-                        s.alsaInputDevice = INVALID_DEVICE_ID;
-                        s.alsaOutputDevice = INVALID_DEVICE_ID;
-                        s.valid = false;
-                }
-				
-                let settings = this.applyAlsaDevices(s, this.state.alsaDevices, useSame);
-                this.setState({
-                        useSameDevice: useSame,
-                        jackServerSettings: settings,
-                        latencyText: getLatencyText(settings),
-                        okEnabled: isOkEnabled(settings, this.state.alsaDevices)
-                }, () => {
-                        this.requestAlsaInfo();
-                });
-				 }	
-        render() {
+            render() {
             const classes = withStyles.getClasses(this.props);
 
             const { onClose, open } = this.props;
@@ -537,14 +610,9 @@ const JackServerSettingsDialog = withStyles(
 
             let selectedInputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
             let selectedOutputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
-			if (this.state.useSameDevice) {
-                selectedOutputDevice = selectedInputDevice;
-            }
 			
-            const devicesSelected = this.state.useSameDevice ?
-                    !!selectedInputDevice :
-                    (selectedInputDevice && selectedOutputDevice);
-
+			const devicesSelected = (selectedInputDevice && selectedOutputDevice);
+			
             let bufferSizes: number[] = devicesSelected ?
                     getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice) : [];
             let bufferCounts = devicesSelected ?
@@ -553,67 +621,61 @@ const JackServerSettingsDialog = withStyles(
             let bufferCountDisabled = !devicesSelected;
             let sampleRates = devicesSelected && selectedInputDevice && selectedOutputDevice ?
                     intersectArrays(selectedInputDevice.sampleRates, selectedOutputDevice.sampleRates)
-                     : (this.state.useSameDevice && selectedInputDevice ? selectedInputDevice.sampleRates : []);
+                     : [];
             let sampleRateOptions = sampleRates.length === 0 && this.state.jackServerSettings.sampleRate ? [this.state.jackServerSettings.sampleRate] : sampleRates;
  
             return (
+			 <>
                 <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
                     onEnterKey={() => {
-                        this.handleApply();
+                        this.handleOk();
                     }}
-					fullScreen={this.state.fullScreen}
+					 fullScreen={this.state.fullScreen}
 
                 >
                     <DialogContent>
-                         <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
+                          <div style={{ display: "flex", flexDirection: this.state.compactWidth ? "column" : "row", gap: 8 }}>
 						 {/* Audio Input Device */}
-                            <FormControl className={classes.formControl}>
-							<InputLabel htmlFor="jsd_inputDevice">{this.state.useSameDevice ? "Device" : "Input Device"}</InputLabel>
-						<Select
-						id="jsd_inputDevice"
-						value={this.state.jackServerSettings.alsaInputDevice}
-						onChange={e => this.handleInputDeviceChanged(e)}
-						disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
-						style={{ width: 220 }}
-						>
-                       {sortedDevices.filter(d => d.supportsCapture && (!this.state.useSameDevice || d.supportsPlayback)).map(d => (
-                                                                <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+                                <FormControl variant="standard" className={classes.formControl}>
+                                <InputLabel shrink className={classes.inputLabel} htmlFor="jsd_inputDevice">Input Device</InputLabel>
+                                <Select variant="standard"
+                                    id="jsd_inputDevice"
+                                    value={this.state.jackServerSettings.alsaInputDevice}
+                                    onChange={e => this.handleInputDeviceChanged(e)}
+                                    disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
+                                    style={{ width: 220 }}
+                                >
+                       {sortedDevices.filter(d => d.supportsCapture).map(d => (
+                       <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
                                                 )) || <MenuItem value="" disabled>Loading...</MenuItem>}
-						</Select>
-						    </FormControl>
+                                </Select>
+                            </FormControl>
 
                                                 {/* Audio Output Device */}
-                            <FormControl className={classes.formControl}
-                                                    style={{ display: this.state.useSameDevice ? 'none' : undefined }}>
-							<InputLabel htmlFor="jsd_outputDevice">Output Device</InputLabel>
-							  <Select
-								id="jsd_outputDevice"
-								value={this.state.jackServerSettings.alsaOutputDevice}
-								onChange={e => this.handleOutputDeviceChanged(e)}
-								 disabled={this.state.useSameDevice || !this.state.alsaDevices || this.state.alsaDevices.length === 0}
-								style={{ width: 220 }}
-								>
+                             <FormControl variant="standard" className={classes.formControl}>
+                                <InputLabel shrink className={classes.inputLabel} htmlFor="jsd_outputDevice">Output Device</InputLabel>
+                                <Select variant="standard"
+                                    id="jsd_outputDevice"
+                                    value={this.state.jackServerSettings.alsaOutputDevice}
+                                    onChange={e => this.handleOutputDeviceChanged(e)}
+                                    disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
+                                    style={{ width: 220 }}
+                                >
 								{sortedDevices.filter(d => d.supportsPlayback).map(d => (
 											   <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
 								)) || <MenuItem value="" disabled>Loading...</MenuItem>}
 								 </Select>
-                                                </FormControl>
-                                                <IconButtonEx tooltip="Refresh devices" onClick={() => this.requestAlsaInfo()} aria-label="refresh-audio-devices">
-                                                    <RefreshIcon />
-                                                </IconButtonEx>
-												<FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            checked={this.state.useSameDevice}
-                                                            onChange={(e, c) => this.handleUseSameDeviceChanged(e, c)}
-                                                        />
-                                                    }
-                                                    label="Use same device for input/output"
-                                                    style={{ marginLeft: 16 }}
-                                                />
+                               </FormControl>
+                                </div>
+                                <IconButtonEx tooltip="Refresh devices" onClick={() => this.requestAlsaInfo()} aria-label="refresh-audio-devices">
+                                    <RefreshIcon />
+                                </IconButtonEx>
+                            </div>
                         </div><div>
-                            <FormControl className={classes.formControl}>
-                                <InputLabel htmlFor="jsd_sampleRate">Sample rate</InputLabel>
+                        <FormControl variant="standard" className={classes.formControl}>
+                                <InputLabel shrink className={classes.inputLabel} htmlFor="jsd_sampleRate">Sample rate</InputLabel>
                                 <Select variant="standard"
                                     onChange={(e) => this.handleRateChanged(e)}
                                     value={this.state.jackServerSettings.sampleRate}
@@ -631,8 +693,8 @@ const JackServerSettingsDialog = withStyles(
                                 </Select>
                             </FormControl>
                             <div style={{ display: "inline", whiteSpace: "nowrap" }}>
-                                <FormControl className={classes.formControl}>
-                                    <InputLabel htmlFor="bufferSize">Buffer size</InputLabel>
+                               <FormControl variant="standard" className={classes.formControl}>
+                                    <InputLabel shrink className={classes.inputLabel} htmlFor="bufferSize">Buffer size</InputLabel>
                                     <Select variant="standard"
                                         onChange={(e) => this.handleSizeChanged(e)}
                                         value={this.state.jackServerSettings.bufferSize}
@@ -650,8 +712,8 @@ const JackServerSettingsDialog = withStyles(
                                         )}
                                     </Select>
                                 </FormControl>
-                                <FormControl className={classes.formControl}>
-                                    <InputLabel htmlFor="numberofBuffers">Buffers</InputLabel>
+                               <FormControl variant="standard" className={classes.formControl}>
+                                    <InputLabel shrink className={classes.inputLabel} htmlFor="numberofBuffers">Buffers</InputLabel>
                                     <Select variant="standard"
                                         onChange={(e) => this.handleNumberOfBuffersChanged(e)}
                                         value={this.state.jackServerSettings.numberOfBuffers}
@@ -678,7 +740,10 @@ const JackServerSettingsDialog = withStyles(
                             color="textSecondary">
                             Latency: {this.state.latencyText}
                         </Typography>
-						  {!this.state.okEnabled && (
+						   <div className={classes.cpuStatusColor} style={{ paddingLeft: 24 }}>
+                            {JackHostStatus.getDisplayView("", this.state.jackStatus)}
+                        </div>
+                            {!this.state.okEnabled && (
                             <Typography display="block" variant="caption" color="error"
                                 style={{ textAlign: "left", marginLeft: 24 }}>
                                 Please select all audio settings.
@@ -687,16 +752,39 @@ const JackServerSettingsDialog = withStyles(
                     </DialogContent>
 
                     <DialogActions>
-                        <Button variant="dialogSecondary" onClick={handleClose} >
+                        <Button variant="dialogSecondary" onClick={handleClose}>
                             Cancel
                         </Button>
-                        <Button variant="dialogPrimary" onClick={() => this.handleApply()} 
-                            disabled={!this.state.okEnabled}>
+                     <Button variant="dialogSecondary" onClick={() => this.handleApply()} disabled={!this.state.okEnabled}>Apply</Button>
+                        <Button variant="dialogPrimary" onClick={() => this.handleOk()} disabled={!this.state.okEnabled}>
                             OK
                         </Button>
                     </DialogActions>
 
                 </DialogEx>
+				  {this.state.showDeviceWarning && (
+                    <DialogEx open={this.state.showDeviceWarning} tag="ioWarning"
+                        onEnterKey={() => this.handleWarningProceed()}
+                        onClose={() => this.handleWarningCancel()}
+                        style={{ userSelect: "none" }}
+                    >
+                        <DialogContent>
+                            <Typography variant="body2" color="textPrimary" gutterBottom>
+                                Using different input and output devices may cause issues when streaming audio.
+                                Are you sure you want to continue?
+                            </Typography>
+                            <FormControlLabel
+                                control={<Checkbox checked={this.state.dontShowWarningAgain} onChange={(e,c)=>this.handleWarningCheck(e,c)} />}
+                                label="Don't show me this message again"
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => this.handleWarningCancel()} variant="dialogSecondary" style={{ width: 120 }}>Cancel</Button>
+                            <Button onClick={() => this.handleWarningProceed()} variant="dialogPrimary" style={{ width: 120 }}>PROCEED</Button>
+                        </DialogActions>
+                    </DialogEx>
+                )}
+                </>
             );
         }
     },

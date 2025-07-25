@@ -27,7 +27,7 @@ Run the following commands to install dependent libraries required by the PiPeda
         authbind libavahi-client-dev  libnm-dev libicu-dev \
         libsdbus-c++-dev libzip-dev google-perftools \
         libgoogle-perftools-dev \
-        libpipewire-0.3-dev libwebsocketpp-dev libsdl2-dev
+        libpipewire-0.3-dev libwebsocketpp-dev
 
 After installing these packages, run the dependency checker to verify that
 everything required is present:

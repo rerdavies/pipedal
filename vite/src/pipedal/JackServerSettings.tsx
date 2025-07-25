@@ -56,13 +56,22 @@ export default class JackServerSettings {
     numberOfBuffers = 3;
 
     getSummaryText() {
-        if (this.valid) {
-              let inDev  = this.alsaInputDevice.startsWith("hw:")  ? this.alsaInputDevice .substring(3) : this.alsaInputDevice;
-              let outDev = this.alsaOutputDevice.startsWith("hw:") ? this.alsaOutputDevice.substring(3) : this.alsaOutputDevice;
-			return "In: "+inDev+"  Out: "+outDev+" — Rate "+this.sampleRate+", "+this.bufferSize+"×"+this.numberOfBuffers;
+      if (!this.valid || !this.alsaInputDevice || !this.alsaOutputDevice) {
+            return "Not selected";
+        }
+
+        let inDev = this.alsaInputDevice.startsWith("hw:")
+            ? this.alsaInputDevice.substring(3)
+            : this.alsaInputDevice;
+        let outDev = this.alsaOutputDevice.startsWith("hw:")
+            ? this.alsaOutputDevice.substring(3)
+            : this.alsaOutputDevice;
+
+        if (inDev === outDev) {
+            return inDev;
         			  
         } else {
-            return "Not configured";
+            return inDev+" → "+outDev;
         }
     }
 

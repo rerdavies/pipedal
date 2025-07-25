@@ -22,6 +22,7 @@
 #include "alsa/asoundlib.h"
 #include "Lv2Log.hpp"
 #include <mutex>
+#include <algorithm>
 
 using namespace pipedal;
 
@@ -191,12 +192,24 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
     }
     snd_config_update_free_global();
 
+    auto isFiltered = [](const AlsaDeviceInfo &d) {
+        std::string name = d.name_ + " " + d.longName_;
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c){return std::tolower(c);});
+        return name.find("hdmi") != std::string::npos || name.find("bcm2835") != std::string::npos;
+    };
+
+    std::vector<AlsaDeviceInfo> filtered;
+    for (auto &d : result)
+    {
+        if (!isFiltered(d)) filtered.push_back(d);
+    }
+
     Lv2Log::debug("GetAlsaDevices --");
-    for (auto &device : result)
+    for (auto &device : filtered)
     {
         Lv2Log::debug(SS("   " << device.name_ << " " << device.longName_ << " " << device.cardId_));
     }
-    return result;
+     return filtered;
 }
 
 static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaMidiDeviceInfo::Direction direction, std::vector<AlsaMidiDeviceInfo> *result)
