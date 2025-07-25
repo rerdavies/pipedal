@@ -103,9 +103,6 @@ const styles = (theme: Theme) =>
             marginTop: theme.spacing(2),
         },
         inputLabel: {
-            backgroundColor: theme.palette.background.paper,
-            paddingLeft: 4,
-            paddingRight: 4,
             whiteSpace: "nowrap"
         },
         cpuStatusColor: {
