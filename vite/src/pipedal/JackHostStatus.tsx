@@ -189,4 +189,46 @@ export default class JackHostStatus {
         }
     }
 
+ static getDisplayViewNoCpu(label: string, status?: JackHostStatus): React.ReactNode {
+        if (!status) {
+            return (<div style={{ whiteSpace: "nowrap" }}>
+                <Typography variant="caption" color="inherit">{label}</Typography>
+                <Typography variant="caption">&nbsp;</Typography>
+            </div>);
+        }
+        if (status.restarting) {
+            return (
+                <div style={{ whiteSpace: "nowrap" }}>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
+                    <span style={{ color: RED_COLOR }}>
+                        <Typography variant="caption" color="inherit">Restarting&nbsp;&nbsp;</Typography>
+                    </span>
+                </div>
+            );
+
+        } else if (!status.active) {
+            return (
+                <div style={{ whiteSpace: "nowrap" }}>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
+
+                    <span style={{ color: RED_COLOR }}>
+                        <Typography variant="caption" color="inherit">{status.errorMessage === "" ? "Audio\u00A0Stopped" : status.errorMessage}&nbsp;&nbsp;</Typography>
+                    </span>
+                </div>
+            );
+        } else {
+            let underrunError = status.msSinceLastUnderrun < 15 * 1000;
+            return (
+                <div style={{ whiteSpace: "nowrap" }}>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
+                    <span style={{ color: underrunError ? RED_COLOR : GREEN_COLOR }}>
+                        <Typography variant="caption" color="inherit">
+                            XRuns:&nbsp;{status.underruns + ""}&nbsp;&nbsp;
+                        </Typography>
+                    </span>
+                </div>
+            );
+        }
+    }
+
 };
