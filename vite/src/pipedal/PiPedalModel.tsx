@@ -2530,6 +2530,12 @@ export class PiPedalModel //implements PiPedalModel
                 this.showAlert(error);
             });
     }
+    applyJackServerSettings(jackServerSettings: JackServerSettings): void {
+        this.webSocket?.request<void>("applyJackServerSettings", jackServerSettings)
+            .catch((error) => {
+                this.showAlert(error);
+            });
+    }
 
     updateVst3State(pedalboard: Pedalboard) {
         // let it = pedalboard.itemsGenerator();

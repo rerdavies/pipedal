@@ -544,7 +544,7 @@ const JackServerSettingsDialog = withStyles(
                 // Apply immediately so the status display can confirm
                 // whether the selected devices are working.
                 s.valid = true;
-                this.model.setJackServerSettings(s);
+                this.model.applyJackServerSettings(s);
                 this.startStatusTimer();
             }
         };

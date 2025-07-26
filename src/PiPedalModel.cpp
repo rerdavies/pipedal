@@ -1911,7 +1911,7 @@ void PiPedalModel::SetOnboarding(bool value)
     SetJackServerSettings(this->jackServerSettings);
 }
 
-void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSettings)
+void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSettings, bool persist)
 {
     std::unique_lock<std::recursive_mutex> guard(mutex);
 
@@ -1932,7 +1932,10 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     }
 
 #if ALSA_HOST
-    storage.SetJackServerSettings(jackServerSettings);
+    if (persist)
+    {
+        storage.SetJackServerSettings(jackServerSettings);
+    }
 
     FireJackConfigurationChanged(this->jackConfiguration);
 

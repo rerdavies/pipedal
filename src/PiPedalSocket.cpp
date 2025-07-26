@@ -1285,8 +1285,16 @@ public:
             JackServerSettings jackServerSettings;
             pReader->read(&jackServerSettings);
              CheckJackServerSettings(jackServerSettings);
-            this->model.SetJackServerSettings(jackServerSettings);
+            this->model.SetJackServerSettings(jackServerSettings, true);
             this->Reply(replyTo, "setJackserverSettings");
+        }
+         else if (message == "applyJackServerSettings")
+        {
+            JackServerSettings jackServerSettings;
+            pReader->read(&jackServerSettings);
+            CheckJackServerSettings(jackServerSettings);
+            this->model.SetJackServerSettings(jackServerSettings, false);
+            this->Reply(replyTo, "applyJackServerSettings");
         }
         else if (message == "setGovernorSettings")
         {
