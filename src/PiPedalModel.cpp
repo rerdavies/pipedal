@@ -1922,6 +1922,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     }
 #endif
 
+    bool changed = !jackServerSettings.Equals(this->jackServerSettings);
     this->jackServerSettings = jackServerSettings;
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
@@ -1938,11 +1939,19 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     }
 
     FireJackConfigurationChanged(this->jackConfiguration);
+    //Only if different. Trying to decrease audio server restarts.
+    if (changed)
+    {
+        CancelAudioRetry();
 
-    CancelAudioRetry();
-
-    guard.unlock();
-    RestartAudio();
+        guard.unlock();
+        RestartAudio();
+    }
+    else
+    {
+        // Only persistence requested.
+        guard.unlock();
+    }
 
 #endif
 #if JACK_HOST
@@ -1953,13 +1962,15 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
         currentPreset.modified_ = this->hasPresetChanged;
         currentPreset.preset_ = this->pedalboard;
         storage.SaveCurrentPreset(currentPreset);
-
-        this->jackConfiguration.SetIsRestarting(true);
-        FireJackConfigurationChanged(this->jackConfiguration);
-        this->audioHost->UpdateServerConfiguration(
-            jackServerSettings,
-            [this](bool success, const std::string &errorMessage)
-            {
+        //Only if different. Trying to decrease server restarts.
+        if (changed)
+        {
+            this->jackConfiguration.SetIsRestarting(true);
+            FireJackConfigurationChanged(this->jackConfiguration);
+            this->audioHost->UpdateServerConfiguration(
+                jackServerSettings,
+                [this](bool success, const std::string &errorMessage)
+                {
                 std::lock_guard<std::recursive_mutex> lock(mutex);
                 if (!success)
                 {
@@ -1991,7 +2002,8 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
                     UpdateRealtimeMonitorPortSubscriptions();
 #endif
                 }
-            });
+                });
+        }
     }
 #endif
 }
