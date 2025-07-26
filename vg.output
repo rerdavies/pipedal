@@ -1,146 +1,339 @@
-==5249== Memcheck, a memory error detector
-==5249== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==5249== Using Valgrind-3.19.0 and LibVEX; rerun with -h for copyright info
-==5249== Command: ./build/src/pipedald /etc/pipedal/config ./vite/dist -port 0.0.0.0:8080 -log-level debug
-==5249== Parent PID: 5248
-==5249== 
-==5249== 
-==5249== HEAP SUMMARY:
-==5249==     in use at exit: 88,737 bytes in 474 blocks
-==5249==   total heap usage: 662,523 allocs, 662,049 frees, 52,720,309 bytes allocated
-==5249== 
-==5249== 22 bytes in 1 blocks are definitely lost in loss record 11 of 102
-==5249==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
-==5249==    by 0x61DC32F: ???
-==5249==    by 0x61BFFC3: ???
-==5249==    by 0x61C01DB: ???
-==5249==    by 0x61BF9D7: ???
-==5249==    by 0x61C0267: ???
-==5249==    by 0x61C0677: ???
-==5249==    by 0x61C0C1B: ???
-==5249==    by 0x61C0C47: ???
-==5249==    by 0x5F143DB: ???
-==5249==    by 0x5F14613: ???
-==5249==    by 0x6046B87: ???
-==5249== 
-==5249== 56 bytes in 1 blocks are definitely lost in loss record 45 of 102
-==5249==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
-==5249==    by 0x6233FC7: ???
-==5249==    by 0x6232503: ???
-==5249==    by 0x6233197: ???
-==5249==    by 0x6233343: ???
-==5249==    by 0x6233AB7: ???
-==5249==    by 0x5F14453: ???
-==5249==    by 0x5F14613: ???
-==5249==    by 0x6046B87: ???
-==5249==    by 0x5EFD7B7: ???
-==5249==    by 0x5EFE143: ???
-==5249==    by 0x60467A7: ???
-==5249== 
-==5249== 88 bytes in 1 blocks are definitely lost in loss record 52 of 102
-==5249==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
-==5249==    by 0x625EF8B: ???
-==5249==    by 0x61CD1E7: ???
-==5249==    by 0x61CD3AF: ???
-==5249==    by 0x61CD46B: ???
-==5249==    by 0x5F1C0E7: ???
-==5249==    by 0x5F0A637: ???
-==5249==    by 0x5F143AB: ???
-==5249==    by 0x5F14613: ???
-==5249==    by 0x6046B87: ???
-==5249==    by 0x5EFD7B7: ???
-==5249==    by 0x5EFE143: ???
-==5249== 
-==5249== 3,352 (80 direct, 3,272 indirect) bytes in 1 blocks are definitely lost in loss record 89 of 102
-==5249==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
-==5249==    by 0x6235507: ???
-==5249==    by 0x61BFFEB: ???
-==5249==    by 0x61C01DB: ???
-==5249==    by 0x61BF9D7: ???
-==5249==    by 0x61C0267: ???
-==5249==    by 0x61C0677: ???
-==5249==    by 0x61C0C1B: ???
-==5249==    by 0x61C0C47: ???
-==5249==    by 0x5F143DB: ???
-==5249==    by 0x5F14613: ???
-==5249==    by 0x6046B87: ???
-==5249== 
-==5249== 3,709 (80 direct, 3,629 indirect) bytes in 1 blocks are definitely lost in loss record 91 of 102
-==5249==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
-==5249==    by 0x6235507: ???
-==5249==    by 0x626268B: ???
-==5249==    by 0x604751B: ???
-==5249==    by 0x624C53B: ???
-==5249==    by 0x6046AA7: ???
-==5249==    by 0x6046C17: ???
-==5249==    by 0x5EFD7B7: ???
-==5249==    by 0x5EFE143: ???
-==5249==    by 0x60467A7: ???
-==5249==    by 0x1B727F: CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl>, char const*) (Locale.cpp:385)
-==5249==    by 0x1B7717: LocaleImpl::GetCollator() (Locale.cpp:444)
-==5249== 
-==5249== 3,950 (56 direct, 3,894 indirect) bytes in 1 blocks are definitely lost in loss record 92 of 102
-==5249==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
-==5249==    by 0x625EF8B: ???
-==5249==    by 0x624BE7B: ???
-==5249==    by 0x60460BF: ???
-==5249==    by 0x6046C0B: ???
-==5249==    by 0x5EFD7B7: ???
-==5249==    by 0x5EFE143: ???
-==5249==    by 0x60467A7: ???
-==5249==    by 0x1B727F: CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl>, char const*) (Locale.cpp:385)
-==5249==    by 0x1B7717: LocaleImpl::GetCollator() (Locale.cpp:444)
-==5249==    by 0x156B67: main (main.cpp:303)
-==5249== 
-==5249== 4,264 bytes in 1 blocks are definitely lost in loss record 99 of 102
-==5249==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
-==5249==    by 0x625EFDF: ???
-==5249==    by 0x61C063F: ???
-==5249==    by 0x61C0C1B: ???
-==5249==    by 0x61C0C47: ???
-==5249==    by 0x5F143DB: ???
-==5249==    by 0x5F14613: ???
-==5249==    by 0x6046B87: ???
-==5249==    by 0x5EFD7B7: ???
-==5249==    by 0x5EFE143: ???
-==5249==    by 0x60467A7: ???
-==5249==    by 0x1B727F: CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl>, char const*) (Locale.cpp:385)
-==5249== 
-==5249== 5,804 (256 direct, 5,548 indirect) bytes in 1 blocks are definitely lost in loss record 100 of 102
-==5249==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
-==5249==    by 0x625EF8B: ???
-==5249==    by 0x5F143CF: ???
-==5249==    by 0x5F14613: ???
-==5249==    by 0x6046B87: ???
-==5249==    by 0x5EFD7B7: ???
-==5249==    by 0x5EFE143: ???
-==5249==    by 0x60467A7: ???
-==5249==    by 0x1B727F: CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl>, char const*) (Locale.cpp:385)
-==5249==    by 0x1B7717: LocaleImpl::GetCollator() (Locale.cpp:444)
-==5249==    by 0x156B67: main (main.cpp:303)
-==5249== 
-==5249== 7,733 bytes in 276 blocks are definitely lost in loss record 101 of 102
-==5249==    at 0x488A1C4: realloc (vg_replace_malloc.c:1437)
-==5249==    by 0x5912A2B: serd_chunk_sink (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
-==5249==    by 0x5912A87: serd_chunk_sink_finish (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
-==5249==    by 0x590DA67: serd_file_uri_parse (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
-==5249==    by 0x470DE3: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:831)
-==5249==    by 0x49D8F7: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
-==5249==    by 0x49A61F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
-==5249==    by 0x496C5F: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
-==5249==    by 0x48F12B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
-==5249==    by 0x488A3B: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
-==5249==    by 0x482803: std::shared_ptr<pipedal::Lv2PluginInfo>::shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr.h:464)
-==5249==    by 0x47E363: std::shared_ptr<pipedal::Lv2PluginInfo> std::make_shared<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr.h:1010)
-==5249== 
-==5249== LEAK SUMMARY:
-==5249==    definitely lost: 12,635 bytes in 284 blocks
-==5249==    indirectly lost: 16,343 bytes in 30 blocks
-==5249==      possibly lost: 0 bytes in 0 blocks
-==5249==    still reachable: 59,759 bytes in 160 blocks
-==5249==         suppressed: 0 bytes in 0 blocks
-==5249== Reachable blocks (those to which a pointer was found) are not shown.
-==5249== To see them, rerun with: --leak-check=full --show-leak-kinds=all
-==5249== 
-==5249== For lists of detected and suppressed errors, rerun with: -s
-==5249== ERROR SUMMARY: 9 errors from 9 contexts (suppressed: 0 from 0)
+==587874== Memcheck, a memory error detector
+==587874== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==587874== Using Valgrind-3.19.0 and LibVEX; rerun with -h for copyright info
+==587874== Command: ./build/src/pipedald /etc/pipedal/config ./vite/dist -port 0.0.0.0:8080 -log-level debug
+==587874== Parent PID: 587873
+==587874== 
+==587874== 
+==587874== HEAP SUMMARY:
+==587874==     in use at exit: 96,771 bytes in 635 blocks
+==587874==   total heap usage: 1,049,648 allocs, 1,049,013 frees, 168,645,673 bytes allocated
+==587874== 
+==587874== 22 bytes in 1 blocks are definitely lost in loss record 11 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x61CC32F: ???
+==587874==    by 0x61AFFC3: ???
+==587874==    by 0x61B01DB: ???
+==587874==    by 0x61AF9D7: ???
+==587874==    by 0x61B0267: ???
+==587874==    by 0x61B0677: ???
+==587874==    by 0x61B0C1B: ???
+==587874==    by 0x61B0C47: ???
+==587874==    by 0x5F043DB: ???
+==587874==    by 0x5F04613: ???
+==587874==    by 0x6036B87: ???
+==587874== 
+==587874== 32 bytes in 1 blocks are definitely lost in loss record 19 of 117
+==587874==    at 0x4886B58: operator new[](unsigned long) (vg_replace_malloc.c:640)
+==587874==    by 0x13E98F13: toob::WavReader::ReadData() (WavReader.cpp:399)
+==587874==    by 0x13E9900F: toob::WavReader::Read(toob::AudioData&) (WavReader.cpp:415)
+==587874==    by 0x13E99097: toob::WavReader::Load(std::filesystem::__cxx11::path const&) (WavReader.cpp:431)
+==587874==    by 0x13E7E5BF: toob::ToobConvolutionReverbBase::LoadWorker::LoadFile(std::filesystem::__cxx11::path const&, float) (ToobConvolutionReverb.cpp:824)
+==587874==    by 0x13E7EA9F: toob::ToobConvolutionReverbBase::LoadWorker::OnWork() (ToobConvolutionReverb.cpp:884)
+==587874==    by 0x13DC564B: lv2c::lv2_plugin::Lv2Plugin::WorkerAction::Work(LV2_Worker_Status (*)(void*, unsigned int, void const*), void*) (Lv2Plugin.cpp:372)
+==587874==    by 0x13DC6DBB: lv2c::lv2_plugin::Lv2Plugin::OnWork(LV2_Worker_Status (*)(void*, unsigned int, void const*), void*, unsigned int, void const*) (Lv2Plugin.hpp:323)
+==587874==    by 0x13DC47B7: lv2c::lv2_plugin::Lv2Plugin::work(void*, LV2_Worker_Status (*)(void*, unsigned int, void const*), void*, unsigned int, void const*) (Lv2Plugin.cpp:85)
+==587874==    by 0x3AB21F: pipedal::Worker::RunBackgroundTask(unsigned long, unsigned char*) (Worker.cpp:330)
+==587874==    by 0x3AAC8F: pipedal::HostWorkerThread::ThreadProc() (Worker.cpp:236)
+==587874==    by 0x3AAE83: pipedal::HostWorkerThread::StartThread()::{lambda()#1}::operator()() const (Worker.cpp:259)
+==587874== 
+==587874== 43 bytes in 1 blocks are definitely lost in loss record 30 of 117
+==587874==    at 0x488A1C4: realloc (vg_replace_malloc.c:1437)
+==587874==    by 0x5902A2B: serd_chunk_sink (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x5902A87: serd_chunk_sink_finish (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x58FDA67: serd_file_uri_parse (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x3D4E7B: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:209)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874==    by 0x485247: std::shared_ptr<pipedal::Lv2PluginInfo>::shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr.h:464)
+==587874== 
+==587874== 48 bytes in 2 blocks are definitely lost in loss record 42 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x4B67D9B: lilv_node_duplicate (in /usr/lib/aarch64-linux-gnu/liblilv-0.so.0.24.14)
+==587874==    by 0x4B707C7: lilv_world_get (in /usr/lib/aarch64-linux-gnu/liblilv-0.so.0.24.14)
+==587874==    by 0x3D5083: pipedal::ModGuiPort::ModGuiPort(pipedal::PluginHost*, LilvNodeImpl const*) (ModGui.cpp:230)
+==587874==    by 0x3D4877: pipedal::ModGui::ModGui(pipedal::PluginHost*, LilvPluginImpl const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LilvNodeImpl const*) (ModGui.cpp:170)
+==587874==    by 0x3D4F5F: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:221)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874== 
+==587874== 48 bytes in 2 blocks are definitely lost in loss record 43 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x4B67D9B: lilv_node_duplicate (in /usr/lib/aarch64-linux-gnu/liblilv-0.so.0.24.14)
+==587874==    by 0x4B707C7: lilv_world_get (in /usr/lib/aarch64-linux-gnu/liblilv-0.so.0.24.14)
+==587874==    by 0x3D50B3: pipedal::ModGuiPort::ModGuiPort(pipedal::PluginHost*, LilvNodeImpl const*) (ModGui.cpp:231)
+==587874==    by 0x3D4877: pipedal::ModGui::ModGui(pipedal::PluginHost*, LilvPluginImpl const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LilvNodeImpl const*) (ModGui.cpp:170)
+==587874==    by 0x3D4F5F: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:221)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874== 
+==587874== 48 bytes in 2 blocks are definitely lost in loss record 44 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x4B67D9B: lilv_node_duplicate (in /usr/lib/aarch64-linux-gnu/liblilv-0.so.0.24.14)
+==587874==    by 0x4B707C7: lilv_world_get (in /usr/lib/aarch64-linux-gnu/liblilv-0.so.0.24.14)
+==587874==    by 0x3D50EB: pipedal::ModGuiPort::ModGuiPort(pipedal::PluginHost*, LilvNodeImpl const*) (ModGui.cpp:232)
+==587874==    by 0x3D4877: pipedal::ModGui::ModGui(pipedal::PluginHost*, LilvPluginImpl const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LilvNodeImpl const*) (ModGui.cpp:170)
+==587874==    by 0x3D4F5F: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:221)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874== 
+==587874== 51 bytes in 1 blocks are definitely lost in loss record 45 of 117
+==587874==    at 0x488A1C4: realloc (vg_replace_malloc.c:1437)
+==587874==    by 0x5902A2B: serd_chunk_sink (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x5902A87: serd_chunk_sink_finish (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x58FDA67: serd_file_uri_parse (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x3D4527: pipedal::ModGui::ModGui(pipedal::PluginHost*, LilvPluginImpl const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LilvNodeImpl const*) (ModGui.cpp:128)
+==587874==    by 0x3D4F5F: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:221)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874== 
+==587874== 56 bytes in 1 blocks are definitely lost in loss record 51 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x6223FC7: ???
+==587874==    by 0x6222503: ???
+==587874==    by 0x6223197: ???
+==587874==    by 0x6223343: ???
+==587874==    by 0x6223AB7: ???
+==587874==    by 0x5F04453: ???
+==587874==    by 0x5F04613: ???
+==587874==    by 0x6036B87: ???
+==587874==    by 0x5EED7B7: ???
+==587874==    by 0x5EEE143: ???
+==587874==    by 0x60367A7: ???
+==587874== 
+==587874== 57 bytes in 1 blocks are definitely lost in loss record 52 of 117
+==587874==    at 0x488A1C4: realloc (vg_replace_malloc.c:1437)
+==587874==    by 0x5902A2B: serd_chunk_sink (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x5902A87: serd_chunk_sink_finish (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x58FDA67: serd_file_uri_parse (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x3D42B7: pipedal::ModGui::ModGui(pipedal::PluginHost*, LilvPluginImpl const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LilvNodeImpl const*) (ModGui.cpp:99)
+==587874==    by 0x3D4F5F: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:221)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874== 
+==587874== 61 bytes in 1 blocks are definitely lost in loss record 54 of 117
+==587874==    at 0x488A1C4: realloc (vg_replace_malloc.c:1437)
+==587874==    by 0x5902A2B: serd_chunk_sink (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x5902A87: serd_chunk_sink_finish (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x58FDA67: serd_file_uri_parse (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x3D44BF: pipedal::ModGui::ModGui(pipedal::PluginHost*, LilvPluginImpl const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LilvNodeImpl const*) (ModGui.cpp:124)
+==587874==    by 0x3D4F5F: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:221)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874== 
+==587874== 62 bytes in 1 blocks are definitely lost in loss record 55 of 117
+==587874==    at 0x488A1C4: realloc (vg_replace_malloc.c:1437)
+==587874==    by 0x5902A2B: serd_chunk_sink (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x5902A87: serd_chunk_sink_finish (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x58FDA67: serd_file_uri_parse (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x3D43EF: pipedal::ModGui::ModGui(pipedal::PluginHost*, LilvPluginImpl const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LilvNodeImpl const*) (ModGui.cpp:114)
+==587874==    by 0x3D4F5F: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:221)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874== 
+==587874== 62 bytes in 1 blocks are definitely lost in loss record 56 of 117
+==587874==    at 0x488A1C4: realloc (vg_replace_malloc.c:1437)
+==587874==    by 0x5902A2B: serd_chunk_sink (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x5902A87: serd_chunk_sink_finish (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x58FDA67: serd_file_uri_parse (in /usr/lib/aarch64-linux-gnu/libserd-0.so.0.30.16)
+==587874==    by 0x3D4457: pipedal::ModGui::ModGui(pipedal::PluginHost*, LilvPluginImpl const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LilvNodeImpl const*) (ModGui.cpp:119)
+==587874==    by 0x3D4F5F: pipedal::ModGui::Create(pipedal::PluginHost*, LilvPluginImpl const*) (ModGui.cpp:221)
+==587874==    by 0x4747B7: pipedal::Lv2PluginInfo::Lv2PluginInfo(pipedal::PluginHost*, LilvWorldImpl*, LilvPluginImpl const*) (PluginHost.cpp:1048)
+==587874==    by 0x49FC8B: void std::_Construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (stl_construct.h:119)
+==587874==    by 0x49CA5F: void std::allocator_traits<std::allocator<void> >::construct<pipedal::Lv2PluginInfo, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>&, pipedal::Lv2PluginInfo*, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (alloc_traits.h:635)
+==587874==    by 0x499297: std::_Sp_counted_ptr_inplace<pipedal::Lv2PluginInfo, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_Sp_counted_ptr_inplace<pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::allocator<void>, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:604)
+==587874==    by 0x49190B: std::__shared_count<(__gnu_cxx::_Lock_policy)2>::__shared_count<pipedal::Lv2PluginInfo, std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(pipedal::Lv2PluginInfo*&, std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:971)
+==587874==    by 0x48B37F: std::__shared_ptr<pipedal::Lv2PluginInfo, (__gnu_cxx::_Lock_policy)2>::__shared_ptr<std::allocator<void>, pipedal::PluginHost*, LilvWorldImpl*&, LilvPluginImpl const*&>(std::_Sp_alloc_shared_tag<std::allocator<void> >, pipedal::PluginHost*&&, LilvWorldImpl*&, LilvPluginImpl const*&) (shared_ptr_base.h:1712)
+==587874== 
+==587874== 88 bytes in 1 blocks are definitely lost in loss record 62 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x624EF8B: ???
+==587874==    by 0x61BD1E7: ???
+==587874==    by 0x61BD3AF: ???
+==587874==    by 0x61BD46B: ???
+==587874==    by 0x5F0C0E7: ???
+==587874==    by 0x5EFA637: ???
+==587874==    by 0x5F043AB: ???
+==587874==    by 0x5F04613: ???
+==587874==    by 0x6036B87: ???
+==587874==    by 0x5EED7B7: ???
+==587874==    by 0x5EEE143: ???
+==587874== 
+==587874== 176 bytes in 2 blocks are definitely lost in loss record 71 of 117
+==587874==    at 0x4885828: operator new(unsigned long) (vg_replace_malloc.c:422)
+==587874==    by 0x27E247: void PiPedalSocketHandler::Request<bool, NotifyAtomOutputBody>(char const*, NotifyAtomOutputBody const&, std::function<void (bool const&)>, std::function<void (std::exception const&)>) (PiPedalSocket.cpp:895)
+==587874==    by 0x270453: PiPedalSocketHandler::OnNotifyPatchProperty(long, unsigned long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (PiPedalSocket.cpp:2196)
+==587874==    by 0x2EEB07: pipedal::PiPedalModel::MonitorPatchProperty(long, long, unsigned long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (PiPedalModel.cpp:2380)
+==587874==    by 0x26BC57: PiPedalSocketHandler::handleMessage(int, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, pipedal::json_reader*) (PiPedalSocket.cpp:1161)
+==587874==    by 0x26EE67: PiPedalSocketHandler::onReceive(std::basic_string_view<char, std::char_traits<char> > const&) (PiPedalSocket.cpp:1855)
+==587874==    by 0x1F56CB: pipedal::WebServerImpl::WebSocketSession::on_message(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >) (WebServer.cpp:857)
+==587874==    by 0x225A2F: void std::__invoke_impl<void, void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> > >(std::__invoke_memfun_deref, void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&) (invoke.h:74)
+==587874==    by 0x220083: std::__invoke_result<void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> > >::type std::__invoke<void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> > >(void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&) (invoke.h:96)
+==587874==    by 0x21ABD7: void std::_Bind<void (pipedal::WebServerImpl::WebSocketSession::*(pipedal::WebServerImpl::WebSocketSession*, std::_Placeholder<1>, std::_Placeholder<2>))(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >)>::__call<void, std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&, 0ul, 1ul, 2ul>(std::tuple<std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&>&&, std::_Index_tuple<0ul, 1ul, 2ul>) (functional:484)
+==587874==    by 0x21496F: void std::_Bind<void (pipedal::WebServerImpl::WebSocketSession::*(pipedal::WebServerImpl::WebSocketSession*, std::_Placeholder<1>, std::_Placeholder<2>))(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >)>::operator()<std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >, void>(std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&) (functional:567)
+==587874==    by 0x20E6F3: void std::__invoke_impl<void, std::_Bind<void (pipedal::WebServerImpl::WebSocketSession::*(pipedal::WebServerImpl::WebSocketSession*, std::_Placeholder<1>, std::_Placeholder<2>))(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >)>&, std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> > >(std::__invoke_other, std::_Bind<void (pipedal::WebServerImpl::WebSocketSession::*(pipedal::WebServerImpl::WebSocketSession*, std::_Placeholder<1>, std::_Placeholder<2>))(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >)>&, std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&) (invoke.h:61)
+==587874== 
+==587874== 176 bytes in 2 blocks are definitely lost in loss record 72 of 117
+==587874==    at 0x4885828: operator new(unsigned long) (vg_replace_malloc.c:422)
+==587874==    by 0x27D5AF: void PiPedalSocketHandler::Request<bool, pipedal::VuUpdate>(char const*, pipedal::VuUpdate const&, std::function<void (bool const&)>, std::function<void (std::exception const&)>) (PiPedalSocket.cpp:895)
+==587874==    by 0x26F85F: PiPedalSocketHandler::OnVuMeterUpdate(std::vector<pipedal::VuUpdate, std::allocator<pipedal::VuUpdate> > const&) (PiPedalSocket.cpp:2020)
+==587874==    by 0x2EB9CF: pipedal::PiPedalModel::OnNotifyVusSubscription(std::vector<pipedal::VuUpdate, std::allocator<pipedal::VuUpdate> > const&) (PiPedalModel.cpp:1633)
+==587874==    by 0x35F833: AudioHostImpl::ThreadProc() (AudioHost.cpp:1465)
+==587874==    by 0x360063: AudioHostImpl::StartReaderThread()::{lambda()#1}::operator()() const (AudioHost.cpp:1645)
+==587874==    by 0x3748D7: void std::__invoke_impl<void, AudioHostImpl::StartReaderThread()::{lambda()#1}>(std::__invoke_other, AudioHostImpl::StartReaderThread()::{lambda()#1}&&) (invoke.h:61)
+==587874==    by 0x3747EB: std::__invoke_result<AudioHostImpl::StartReaderThread()::{lambda()#1}>::type std::__invoke<AudioHostImpl::StartReaderThread()::{lambda()#1}>(AudioHostImpl::StartReaderThread()::{lambda()#1}&&) (invoke.h:96)
+==587874==    by 0x3746EB: void std::thread::_Invoker<std::tuple<AudioHostImpl::StartReaderThread()::{lambda()#1}> >::_M_invoke<0ul>(std::_Index_tuple<0ul>) (std_thread.h:252)
+==587874==    by 0x37465B: std::thread::_Invoker<std::tuple<AudioHostImpl::StartReaderThread()::{lambda()#1}> >::operator()() (std_thread.h:259)
+==587874==    by 0x374167: std::thread::_State_impl<std::thread::_Invoker<std::tuple<AudioHostImpl::StartReaderThread()::{lambda()#1}> > >::_M_run() (std_thread.h:210)
+==587874==    by 0x4CBE9DB: ??? (in /usr/lib/aarch64-linux-gnu/libstdc++.so.6.0.30)
+==587874== 
+==587874== 1,760 bytes in 20 blocks are definitely lost in loss record 98 of 117
+==587874==    at 0x4885828: operator new(unsigned long) (vg_replace_malloc.c:422)
+==587874==    by 0x27746F: void PiPedalSocketHandler::Request<bool, MonitorResultBody>(char const*, MonitorResultBody const&, std::function<void (bool const&)>, std::function<void (std::exception const&)>) (PiPedalSocket.cpp:895)
+==587874==    by 0x26A42F: PiPedalSocketHandler::SendMonitorPortMessage_Inner(std::shared_ptr<PiPedalSocketHandler::PortMonitorSubscription>&, float) (PiPedalSocket.cpp:996)
+==587874==    by 0x26A16F: PiPedalSocketHandler::SendMonitorPortMessage(std::shared_ptr<PiPedalSocketHandler::PortMonitorSubscription>&, float) (PiPedalSocket.cpp:986)
+==587874==    by 0x26A4C3: PiPedalSocketHandler::MonitorPort(int, MonitorPortBody&)::{lambda(long, float)#1}::operator()(long, float) const (PiPedalSocket.cpp:1047)
+==587874==    by 0x2B3FBF: void std::__invoke_impl<void, PiPedalSocketHandler::MonitorPort(int, MonitorPortBody&)::{lambda(long, float)#1}&, long, float>(std::__invoke_other, PiPedalSocketHandler::MonitorPort(int, MonitorPortBody&)::{lambda(long, float)#1}&, long&&, float&&) (invoke.h:61)
+==587874==    by 0x29D0B7: std::enable_if<is_invocable_r_v<void, PiPedalSocketHandler::MonitorPort(int, MonitorPortBody&)::{lambda(long, float)#1}&, long, float>, void>::type std::__invoke_r<void, PiPedalSocketHandler::MonitorPort(int, MonitorPortBody&)::{lambda(long, float)#1}&, long, float>(PiPedalSocketHandler::MonitorPort(int, MonitorPortBody&)::{lambda(long, float)#1}&, long&&, float&&) (invoke.h:111)
+==587874==    by 0x28AC7B: std::_Function_handler<void (long, float), PiPedalSocketHandler::MonitorPort(int, MonitorPortBody&)::{lambda(long, float)#1}>::_M_invoke(std::_Any_data const&, long&&, float&&) (std_function.h:290)
+==587874==    by 0x2FC283: std::function<void (long, float)>::operator()(long, float) const (std_function.h:591)
+==587874==    by 0x2EBEF3: pipedal::PiPedalModel::OnNotifyMonitorPort(pipedal::MonitorPortUpdate const&) (PiPedalModel.cpp:1702)
+==587874==    by 0x35F7CB: AudioHostImpl::ThreadProc() (AudioHost.cpp:1454)
+==587874==    by 0x360063: AudioHostImpl::StartReaderThread()::{lambda()#1}::operator()() const (AudioHost.cpp:1645)
+==587874== 
+==587874== 3,352 (80 direct, 3,272 indirect) bytes in 1 blocks are definitely lost in loss record 103 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x6225507: ???
+==587874==    by 0x61AFFEB: ???
+==587874==    by 0x61B01DB: ???
+==587874==    by 0x61AF9D7: ???
+==587874==    by 0x61B0267: ???
+==587874==    by 0x61B0677: ???
+==587874==    by 0x61B0C1B: ???
+==587874==    by 0x61B0C47: ???
+==587874==    by 0x5F043DB: ???
+==587874==    by 0x5F04613: ???
+==587874==    by 0x6036B87: ???
+==587874== 
+==587874== 3,709 (80 direct, 3,629 indirect) bytes in 1 blocks are definitely lost in loss record 104 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x6225507: ???
+==587874==    by 0x625268B: ???
+==587874==    by 0x603751B: ???
+==587874==    by 0x623C53B: ???
+==587874==    by 0x6036AA7: ???
+==587874==    by 0x6036C17: ???
+==587874==    by 0x5EED7B7: ???
+==587874==    by 0x5EEE143: ???
+==587874==    by 0x60367A7: ???
+==587874==    by 0x1B6C97: CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl>, char const*) (Locale.cpp:385)
+==587874==    by 0x1B712F: LocaleImpl::GetCollator() (Locale.cpp:444)
+==587874== 
+==587874== 3,950 (56 direct, 3,894 indirect) bytes in 1 blocks are definitely lost in loss record 106 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x624EF8B: ???
+==587874==    by 0x623BE7B: ???
+==587874==    by 0x60360BF: ???
+==587874==    by 0x6036C0B: ???
+==587874==    by 0x5EED7B7: ???
+==587874==    by 0x5EEE143: ???
+==587874==    by 0x60367A7: ???
+==587874==    by 0x1B6C97: CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl>, char const*) (Locale.cpp:385)
+==587874==    by 0x1B712F: LocaleImpl::GetCollator() (Locale.cpp:444)
+==587874==    by 0x156C67: main (main.cpp:303)
+==587874== 
+==587874== 4,264 bytes in 1 blocks are definitely lost in loss record 113 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x624EFDF: ???
+==587874==    by 0x61B063F: ???
+==587874==    by 0x61B0C1B: ???
+==587874==    by 0x61B0C47: ???
+==587874==    by 0x5F043DB: ???
+==587874==    by 0x5F04613: ???
+==587874==    by 0x6036B87: ???
+==587874==    by 0x5EED7B7: ???
+==587874==    by 0x5EEE143: ???
+==587874==    by 0x60367A7: ???
+==587874==    by 0x1B6C97: CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl>, char const*) (Locale.cpp:385)
+==587874== 
+==587874== 5,804 (256 direct, 5,548 indirect) bytes in 1 blocks are definitely lost in loss record 114 of 117
+==587874==    at 0x48850C8: malloc (vg_replace_malloc.c:381)
+==587874==    by 0x624EF8B: ???
+==587874==    by 0x5F043CF: ???
+==587874==    by 0x5F04613: ???
+==587874==    by 0x6036B87: ???
+==587874==    by 0x5EED7B7: ???
+==587874==    by 0x5EEE143: ???
+==587874==    by 0x60367A7: ???
+==587874==    by 0x1B6C97: CollatorImpl::CollatorImpl(std::shared_ptr<LocaleImpl>, char const*) (Locale.cpp:385)
+==587874==    by 0x1B712F: LocaleImpl::GetCollator() (Locale.cpp:444)
+==587874==    by 0x156C67: main (main.cpp:303)
+==587874== 
+==587874== 6,080 bytes in 190 blocks are definitely lost in loss record 115 of 117
+==587874==    at 0x4885828: operator new(unsigned long) (vg_replace_malloc.c:422)
+==587874==    by 0x361553: AudioHostImpl::MakeRealtimeSubscription(pipedal::MonitorPortSubscription const&) (AudioHost.cpp:1962)
+==587874==    by 0x36173B: AudioHostImpl::SetMonitorPortSubscriptions(std::vector<pipedal::MonitorPortSubscription, std::allocator<pipedal::MonitorPortSubscription> > const&) (AudioHost.cpp:1985)
+==587874==    by 0x2EBC5B: pipedal::PiPedalModel::UpdateRealtimeMonitorPortSubscriptions() (PiPedalModel.cpp:1663)
+==587874==    by 0x2EBE0B: pipedal::PiPedalModel::UnmonitorPort(long) (PiPedalModel.cpp:1686)
+==587874==    by 0x2692C3: PiPedalSocketHandler::FinalCleanup() (PiPedalSocket.cpp:671)
+==587874==    by 0x26943F: PiPedalSocketHandler::Close() (PiPedalSocket.cpp:692)
+==587874==    by 0x2E556B: pipedal::PiPedalModel::Close() (PiPedalModel.cpp:155)
+==587874==    by 0x156ED7: main (main.cpp:418)
+==587874== 
+==587874== 6,720 bytes in 210 blocks are definitely lost in loss record 116 of 117
+==587874==    at 0x4885828: operator new(unsigned long) (vg_replace_malloc.c:422)
+==587874==    by 0x361553: AudioHostImpl::MakeRealtimeSubscription(pipedal::MonitorPortSubscription const&) (AudioHost.cpp:1962)
+==587874==    by 0x36173B: AudioHostImpl::SetMonitorPortSubscriptions(std::vector<pipedal::MonitorPortSubscription, std::allocator<pipedal::MonitorPortSubscription> > const&) (AudioHost.cpp:1985)
+==587874==    by 0x2EBC5B: pipedal::PiPedalModel::UpdateRealtimeMonitorPortSubscriptions() (PiPedalModel.cpp:1663)
+==587874==    by 0x2EBD23: pipedal::PiPedalModel::MonitorPort(long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, float, std::function<void (long, float)>) (PiPedalModel.cpp:1673)
+==587874==    by 0x26A58F: PiPedalSocketHandler::MonitorPort(int, MonitorPortBody&) (PiPedalSocket.cpp:1037)
+==587874==    by 0x26D6DF: PiPedalSocketHandler::handleMessage(int, int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, pipedal::json_reader*) (PiPedalSocket.cpp:1598)
+==587874==    by 0x26EE67: PiPedalSocketHandler::onReceive(std::basic_string_view<char, std::char_traits<char> > const&) (PiPedalSocket.cpp:1855)
+==587874==    by 0x1F56CB: pipedal::WebServerImpl::WebSocketSession::on_message(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >) (WebServer.cpp:857)
+==587874==    by 0x225A2F: void std::__invoke_impl<void, void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> > >(std::__invoke_memfun_deref, void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&) (invoke.h:74)
+==587874==    by 0x220083: std::__invoke_result<void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> > >::type std::__invoke<void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> > >(void (pipedal::WebServerImpl::WebSocketSession::*&)(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >), pipedal::WebServerImpl::WebSocketSession*&, std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&) (invoke.h:96)
+==587874==    by 0x21ABD7: void std::_Bind<void (pipedal::WebServerImpl::WebSocketSession::*(pipedal::WebServerImpl::WebSocketSession*, std::_Placeholder<1>, std::_Placeholder<2>))(std::weak_ptr<void>, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >)>::__call<void, std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&, 0ul, 1ul, 2ul>(std::tuple<std::weak_ptr<void>&&, std::shared_ptr<websocketpp::message_buffer::message<websocketpp::message_buffer::alloc::con_msg_manager> >&&>&&, std::_Index_tuple<0ul, 1ul, 2ul>) (functional:484)
+==587874== 
+==587874== LEAK SUMMARY:
+==587874==    definitely lost: 20,326 bytes in 445 blocks
+==587874==    indirectly lost: 16,343 bytes in 30 blocks
+==587874==      possibly lost: 0 bytes in 0 blocks
+==587874==    still reachable: 60,102 bytes in 160 blocks
+==587874==         suppressed: 0 bytes in 0 blocks
+==587874== Reachable blocks (those to which a pointer was found) are not shown.
+==587874== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==587874== 
+==587874== For lists of detected and suppressed errors, rerun with: -s
+==587874== ERROR SUMMARY: 23 errors from 23 contexts (suppressed: 0 from 0)

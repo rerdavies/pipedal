@@ -319,10 +319,17 @@ int main(int argc, char *argv[])
             sigaddset(&sigSet, SIGTERM);
             sigaddset(&sigSet, SIGUSR1);
 
+            // block these signasl for all threads.
             s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
             if (s != 0)
             {
                 throw std::logic_error("pthread_sigmask failed.");
+            }
+
+            // Clear any pending signals before waiting
+            struct timespec timeout = {0, 0};
+            while (sigtimedwait(&sigSet, NULL, &timeout) > 0) {
+                // Consume any pending signals
             }
 
             PiPedalModel model;

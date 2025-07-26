@@ -83,6 +83,26 @@ simultaneously on a Pi 5. N100 micro PCs could presumably do even better. Howeve
 Users have reported success using NAM on Raspberry Pi 3 devices, but this is not recommended (or really supported), as CPU usage is very high on a Raspberry Pi 3.
 If you are interested in profiling your own amps and effect pedals, please visit https://www.tone3000.com/capture
 
+When the Threaded control is on, neural amp modelling calculations are run on a separate thread from the 
+real-time audio thread. This introduces one extra audio buffer of latency, but allows the plugin to make full 
+use of all availble processor cores when running more than one instance of TooB Neural Amp Modeler. As a result, 
+you can run more instances of TooB Neural Amp Modeler than you ordinarily could. On a Pi 5, you can run up to 8 
+instances of TooB Neural Amp Modeler in a single preset (as opposed to four or five), and up to 5 instances of TooB 
+Neural Amp Modeler (as opposed to two or three). 
+
+You need to check that the  PiPedal server's CPU is not temperature throttling 
+when using this feature. If the CPU temperature exceeds 80 degrees Celcius on a Raspberry Pi, the CPU clock rate is reduced, and
+the performance of the plugins will be affected. Having a good heat sink, or active cooling system is recommended when using this feature. 
+PiPedal displays the current CPU temperature in a status message at the bottom of the display (unless you've turned 
+that off in settings), and also displays the current CPU temperature in the status message found at the top 
+of the Settings page. The exact temperature at which the CPU starts to throttle varies from computer to computer. If 
+you are running on a system that is not a Raspberry Pi, please consult your manufacturer's help documentation 
+to find out what temperature heat throttling starts at on your particular computer, if you really need to know 
+what the threshold is; but the effect on performance is pretty obvious when heat throttling does start. 
+
+Note that heat throttling is done to protect your processor from permanent damage due to overheating; but there's no real risk of actual 
+damage, since heat throttling thresholds are set well below the point at which damage occurs. 
+
 TooB Neural Amp Modeler contains code optimizations that allow use of a third model on Raspberry PI 4 devices. These optimizations
 were offered to the upstream NAM project, but we recommended that they not be merged into upstream sources, because they
 significantly affect maintainability of the codebase. and the performance increase they provide (about 30%) is really only
@@ -90,7 +110,8 @@ relevant on Raspberry PI 4-class devices. If you are interested in these optimiz
 project sources on GitHub.
 
 TooB Neural Amp Modeler uses code from the NeuralAmp Modeler Core project (https://www.neuralampmodeler.com/). The TooB team wishes 
-to express gratitude to Steven Atkinson for making this revolutionary technology available as open-source code.
+to express gratitude to Steven Atkinson for making this revolutionary technology available as open-source code. This is groundbreaking 
+technology that changes everything; and work that would be impossible to replicate without the work that Steven has done.
 
 Code from the the NeuralAmpModelerCore project (https://github.com/sdatkinson/NeuralAmpModelerCore) is provided 
 under the following license. 
@@ -180,6 +201,21 @@ SOFTWARE.
                 lv2:ControlPort ;
 
                 lv2:index 3;
+                lv2:symbol "buffer" ;
+                lv2:name "Threaded";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                lv2:portProperty lv2:toggled;
+                rdfs:comment "Run computation on a separate thread. This allows more instances of NAM to run simultaneously, but adds one extra audio buffer of latency.";
+                rdfs:comment "Output gain";
+
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 4;
                 lv2:symbol "gate" ;
                 lv2:name "Noise Gate";
                 lv2:default -100.0 ;
@@ -198,7 +234,7 @@ SOFTWARE.
                 a lv2:OutputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 4;
+                lv2:index 5;
                 lv2:symbol "gateOut" ;
                 lv2:name "\u00A0";
                 lv2:default 0.0;
@@ -212,7 +248,7 @@ SOFTWARE.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 5 ;
+                lv2:index 6 ;
                 lv2:symbol "toneStack" ;
                 lv2:name "Type";
                 lv2:default 3.0 ;
@@ -241,7 +277,7 @@ SOFTWARE.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 6;
+                lv2:index 7;
                 lv2:symbol "bass" ;
                 lv2:name "Bass";
                 lv2:default 5.0;
@@ -255,7 +291,7 @@ SOFTWARE.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 7;
+                lv2:index 8;
                 lv2:symbol "mid" ;
                 lv2:name "Mid";
                 lv2:default 5.0;
@@ -268,7 +304,7 @@ SOFTWARE.
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 8;
+                lv2:index 9;
                 lv2:symbol "treble" ;
                 lv2:name "Treble";
                 lv2:default 5.0;
@@ -280,14 +316,14 @@ SOFTWARE.
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 9 ;
+                lv2:index 10 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 10 ;
+                lv2:index 11 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ],
@@ -299,7 +335,7 @@ SOFTWARE.
                 lv2:designation lv2:control ;
                 atom:supports patch:Message ;
 
-                lv2:index 11 ;
+                lv2:index 12 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Control" ;
@@ -309,7 +345,7 @@ SOFTWARE.
                 atom:bufferType atom:Sequence ;
                 # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 12;
+                lv2:index 13;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Notification" ;
@@ -351,10 +387,9 @@ toobNam:ui
         pipedal_ui:frequencyPlot 
         [
                 pipedal_ui:patchProperty toobNam:FrequencyResponse;
-                lv2:index 9 ;
+                lv2:index 10 ;
                 pg:group toobNam:eqGroup ;
                 pipedal_ui:width: 200;
         ]
-
         .
 
