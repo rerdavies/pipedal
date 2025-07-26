@@ -1377,31 +1377,6 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
             jackServerSettings.UseDummyAudioDevice();
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         auto jackConfiguration = this->jackConfiguration;
         jackConfiguration.AlsaInitialize(jackServerSettings);
         if (!jackConfiguration.isValid())
@@ -2772,31 +2747,6 @@ static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::
     return false;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void PiPedalModel::StartHotspotMonitoring()
 {
     this->avahiService = std::make_unique<AvahiService>();
@@ -3065,25 +3015,25 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally()
         auto now = clock::now();
         clock::duration timeSinceLastRetry = now-this->lastRestartTime;
         this->lastRestartTime = now;
-        if (timeSinceLastRetry > std::chrono::duration_cast<clock::duration>(std::chrono::seconds(6))) {
+        if (timeSinceLastRetry > std::chrono::duration_cast<clock::duration>(std::chrono::milliseconds(1000))) {
             audioRestartRetries = 0;
         }
         CancelAudioRetry();
 
         if (audioRestartRetries == 0)
         {
-            this->audioRetryPostHandle = this->PostDelayed(
-                std::chrono::seconds(5),
+            this->audioRetryPostHandle = this->Post(
+
                 // No lock to avoid deadlocks!
                 [this]() {
                     Lv2Log::info("Restarting audio.");
                     this->RestartAudio();
                 });
             ++audioRestartRetries;
-        } else if (audioRestartRetries < 3)
+        } else if (audioRestartRetries < 3) 
         {
             this->audioRetryPostHandle = this->PostDelayed(
-                std::chrono::seconds(5),
+                std::chrono::milliseconds(100 * audioRestartRetries),
                 [this]() {
                     if (closed) {
                         return;

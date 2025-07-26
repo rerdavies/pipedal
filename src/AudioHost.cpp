@@ -2086,8 +2086,8 @@ public:
     virtual void UpdateServerConfiguration(const JackServerSettings &jackServerSettings,
                                            std::function<void(bool success, const std::string &errorMessage)> onComplete)
     {
-        // Only allow one restart operation at a time.
-        CleanRestartThreads(true);
+
+
         std::lock_guard guard(restart_mutex);
         RestartThread *pShutdown = new RestartThread(this, jackServerSettings, onComplete);
         restartThreads.push_back(pShutdown);

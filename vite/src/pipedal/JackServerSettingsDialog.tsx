@@ -240,7 +240,7 @@ function getBestBuffers(
     if (validBufferSizes.indexOf(32) !== -1) {
         validBufferSizes = [32, ...validBufferSizes.filter(v => v !== 32)];
     }
-  
+
   function tryPick(count: number): BufferSetting | undefined {
         for (let bs of validBufferSizes) {
             const counts = getValidBufferCountsMultiple(bs, inDevice, outDevice);
@@ -275,14 +275,14 @@ function isOkEnabled(jackServerSettings: JackServerSettings, alsaDevices?: AlsaD
 {
     if (!alsaDevices) return false;
     if (!jackServerSettings.alsaInputDevice || !jackServerSettings.alsaOutputDevice) return false;
-    
+
     const inDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaInputDevice && d.supportsCapture);
     const outDevice = alsaDevices.find(d => d.id === jackServerSettings.alsaOutputDevice && d.supportsPlayback);
     if (!inDevice || !outDevice) return false;
 
     const sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
     if (sampleRates.indexOf(jackServerSettings.sampleRate) === -1) return false;
-    
+
     const deviceBufferSize = jackServerSettings.bufferSize * jackServerSettings.numberOfBuffers;
     const minSize = Math.max(inDevice.minBufferSize, outDevice.minBufferSize);
     const maxSize = Math.min(inDevice.maxBufferSize, outDevice.maxBufferSize);
@@ -323,7 +323,7 @@ const JackServerSettingsDialog = withStyles(
 
         suppressDeviceWarning: boolean;
         originalJackServerSettings?: JackServerSettings;
-        
+
     getFullScreen() {
             return document.documentElement.clientWidth < 420 ||
                 document.documentElement.clientHeight < 700;
@@ -417,7 +417,7 @@ const JackServerSettingsDialog = withStyles(
                 if (!outDevice) result.alsaOutputDevice = INVALID_DEVICE_ID;
                 return result;
             }
-            
+
             let sampleRates = intersectArrays(inDevice.sampleRates, outDevice.sampleRates);
             if (sampleRates.length !== 0 && sampleRates.indexOf(result.sampleRate) === -1) {
                 let bestSr = sampleRates[0];
@@ -472,11 +472,11 @@ const JackServerSettingsDialog = withStyles(
         componentWillUnmount() {
          super.componentWillUnmount();
             this.mounted = false;
-            this.stopStatusTimer();
-            if (this.originalJackServerSettings) {
-                this.model.setJackServerSettings(this.originalJackServerSettings);
-                this.originalJackServerSettings = undefined;
-            }
+             this.stopStatusTimer();
+
+
+
+
 
         }
        getSelectedDevice(deviceId: string): AlsaDeviceInfo | undefined {
@@ -562,9 +562,9 @@ const JackServerSettingsDialog = withStyles(
                     let s = this.state.jackServerSettings.clone();
                     s.valid = true;
                     this.props.onApply(s);
-                    // Prevent componentWillUnmount from reverting after the
-                    // settings have been saved.
-                    this.originalJackServerSettings = undefined;
+
+
+
                 };
 
                 handleWarningProceed() {
@@ -619,18 +619,18 @@ const JackServerSettingsDialog = withStyles(
             const handleClose = () => {
                 if (this.originalJackServerSettings) {
                     this.model.setJackServerSettings(this.originalJackServerSettings);
-                    this.originalJackServerSettings = undefined;
+
                 }
                 onClose();
             };
-           
+
             const sortedDevices = sortDevices(this.state.alsaDevices ?? []);
 
             let selectedInputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaInputDevice);
             let selectedOutputDevice = this.getSelectedDevice(this.state.jackServerSettings.alsaOutputDevice);
-            
+
             const devicesSelected = (selectedInputDevice && selectedOutputDevice);
-            
+
             let bufferSizes: number[] = devicesSelected ?
                     getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice) : [];
             let bufferCounts = devicesSelected ?
@@ -641,7 +641,7 @@ const JackServerSettingsDialog = withStyles(
                     intersectArrays(selectedInputDevice.sampleRates, selectedOutputDevice.sampleRates)
                      : [];
             let sampleRateOptions = sampleRates.length === 0 && this.state.jackServerSettings.sampleRate ? [this.state.jackServerSettings.sampleRate] : sampleRates;
- 
+
             return (
              <>
                 <DialogEx tag="jack" onClose={handleClose} aria-labelledby="select-channels-title" open={open}
