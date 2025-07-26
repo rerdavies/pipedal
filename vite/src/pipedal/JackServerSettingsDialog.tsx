@@ -618,6 +618,9 @@ const JackServerSettingsDialog = withStyles(
 
             const handleClose = () => {
                 if (this.originalJackServerSettings) {
+                    // Revert any applied settings by restoring the
+                    // persisted configuration and re-applying it.
+                    this.model.applyJackServerSettings(this.originalJackServerSettings);
                     this.model.setJackServerSettings(this.originalJackServerSettings);
 
                 }
