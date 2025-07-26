@@ -322,6 +322,7 @@ const JackServerSettingsDialog = withStyles(
         statusTimer?: number = undefined;
 
         suppressDeviceWarning: boolean;
+        originalJackServerSettings?: JackServerSettings;
         
     getFullScreen() {
             return document.documentElement.clientWidth < 420 ||
@@ -445,6 +446,7 @@ const JackServerSettingsDialog = withStyles(
         }
         componentDidUpdate(oldProps: JackServerSettingsDialogProps) {
             if ((this.props.open && !oldProps.open) && this.mounted) {
+                this.originalJackServerSettings = this.props.jackServerSettings.clone();
                 // When opening, preserve the current settings until ALSA device
                 // information is loaded. If we don't have device info yet, just
                 // clone the provided settings without applying device defaults.
@@ -463,6 +465,7 @@ const JackServerSettingsDialog = withStyles(
                  this.startStatusTimer();
             } else if (!this.props.open && oldProps.open) {
                 this.stopStatusTimer();
+                this.originalJackServerSettings = undefined;
             }
         }
 
@@ -607,6 +610,9 @@ const JackServerSettingsDialog = withStyles(
             const { onClose, open } = this.props;
 
             const handleClose = () => {
+                if (this.originalJackServerSettings) {
+                    this.model.setJackServerSettings(this.originalJackServerSettings);
+                }
                 onClose();
             };
            
