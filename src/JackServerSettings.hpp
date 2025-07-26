@@ -106,9 +106,13 @@ namespace pipedal
             isOnboarding_ = value;
         }
 
-        bool Equals(const JackServerSettings &other)
+        bool Equals(const JackServerSettings &other) const
         {
-            return this->alsaInputDevice_  == other.alsaInputDevice_ && this->alsaOutputDevice_ == other.alsaOutputDevice_ && this->sampleRate_        == other.sampleRate_ && this->bufferSize_        == other.bufferSize_ && this->numberOfBuffers_   == other.numberOfBuffers_;
+        return this->alsaInputDevice_  == other.alsaInputDevice_ &&
+                   this->alsaOutputDevice_ == other.alsaOutputDevice_ &&
+                   this->sampleRate_       == other.sampleRate_ &&
+                   this->bufferSize_       == other.bufferSize_ &&
+                   this->numberOfBuffers_  == other.numberOfBuffers_;
         }
 
         DECLARE_JSON_MAP(JackServerSettings);
