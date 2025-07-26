@@ -3015,24 +3015,25 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally()
         auto now = clock::now();
         clock::duration timeSinceLastRetry = now-this->lastRestartTime;
         this->lastRestartTime = now;
-        if (timeSinceLastRetry > std::chrono::duration_cast<clock::duration>(std::chrono::milliseconds(1000))) {
+        if (timeSinceLastRetry > std::chrono::duration_cast<clock::duration>(std::chrono::seconds(6))) {
             audioRestartRetries = 0;
         }
         CancelAudioRetry();
 
         if (audioRestartRetries == 0)
         {
-            this->audioRetryPostHandle = this->Post(
+            this->audioRetryPostHandle = this->PostDelayed(
+                std::chrono::seconds(5),
                 // No lock to avoid deadlocks!
                 [this]() {
                     Lv2Log::info("Restarting audio.");
                     this->RestartAudio();
                 });
             ++audioRestartRetries;
-        } else if (audioRestartRetries < 3) 
+        } else if (audioRestartRetries < 3)
         {
             this->audioRetryPostHandle = this->PostDelayed(
-                std::chrono::milliseconds(100 * audioRestartRetries),
+                std::chrono::seconds(5),
                 [this]() {
                     if (closed) {
                         return;
