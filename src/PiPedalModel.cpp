@@ -2787,18 +2787,26 @@ static uint32_t SelectBestSampleRate(const AlsaDeviceInfo &inDev, const AlsaDevi
             intersection.push_back(sr);
         }
     }
-    if (intersection.empty()) return desiredRate;
-    if (desiredRate != 0 && std::find(intersection.begin(), intersection.end(), desiredRate) != intersection.end())
+    if (intersection.empty())
+    {
+        return desiredRate == 0 ? 48000 : desiredRate;
+    }
+    if (desiredRate != 0 &&
+        std::find(intersection.begin(), intersection.end(), desiredRate) != intersection.end())
     {
         return desiredRate;
     }
+    std::sort(intersection.begin(), intersection.end());
     uint32_t best = 0;
     for (auto sr : intersection)
     {
-        if (sr == 48000) return 48000;
-        if (sr <= 48000 && sr > best) best = sr;
+        if (sr == 48000)
+            return 48000;
+        if (sr <= 48000 && sr > best)
+            best = sr;
     }
-    if (best == 0) best = intersection.back();
+    if (best == 0)
+    best = intersection.back();
     return best;
 }
 
