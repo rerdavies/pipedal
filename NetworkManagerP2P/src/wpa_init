@@ -1,3 +1,4 @@
+#!/bin/bash
 wpa_cli -ip2p-dev-wlan0 GET device_name pipedal
 wpa_cli -ip2p-dev-wlan0 GET country CA
 wpa_cli -ip2p-dev-wlan0 GET device_type 1-0050F204-1

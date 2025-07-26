@@ -68,6 +68,7 @@ export default class JackHostStatus {
         this.errorMessage = input.errorMessage;
         this.underruns = input.underruns;
         this.cpuUsage = input.cpuUsage;
+        this.memoryUsage = input.memoryUsage;
         this.msSinceLastUnderrun = input.msSinceLastUnderrun;
         this.temperaturemC = input.temperaturemC;
         this.cpuFreqMax = input.cpuFreqMax;
@@ -84,6 +85,7 @@ export default class JackHostStatus {
     restarting: boolean = false;
     underruns: number = 0;
     cpuUsage: number = 0;
+    memoryUsage: number = 0;
     msSinceLastUnderrun: number = -5000 * 1000;
     temperaturemC: number = -1000000;
     cpuFreqMax: number = 0;
@@ -177,6 +179,11 @@ export default class JackHostStatus {
                             CPU:&nbsp;{cpuDisplay(status.cpuUsage)}&nbsp;&nbsp;
                         </Typography>
                     </span>
+                    <span style={{ color: underrunError ? RED_COLOR : GREEN_COLOR }}>
+                        <Typography variant="caption" color="inherit">
+                            MEM:&nbsp;{cpuDisplay(status.memoryUsage)}&nbsp;&nbsp;
+                        </Typography>
+                    </span>
 
                     <span style={{ color: GREEN_COLOR }}>
                         <Typography variant="caption" color="inherit">{tempDisplay(status.temperaturemC)}</Typography>
@@ -186,6 +193,48 @@ export default class JackHostStatus {
             );
 
 
+        }
+    }
+
+ static getDisplayViewNoCpu(label: string, status?: JackHostStatus): React.ReactNode {
+        if (!status) {
+            return (<div style={{ whiteSpace: "nowrap" }}>
+                <Typography variant="caption" color="inherit">{label}</Typography>
+                <Typography variant="caption">&nbsp;</Typography>
+            </div>);
+        }
+        if (status.restarting) {
+            return (
+                <div style={{ whiteSpace: "nowrap" }}>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
+                    <span style={{ color: RED_COLOR }}>
+                        <Typography variant="caption" color="inherit">Restarting&nbsp;&nbsp;</Typography>
+                    </span>
+                </div>
+            );
+
+        } else if (!status.active) {
+            return (
+                <div style={{ whiteSpace: "nowrap" }}>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
+
+                    <span style={{ color: RED_COLOR }}>
+                        <Typography variant="caption" color="inherit">{status.errorMessage === "" ? "Audio\u00A0Stopped" : status.errorMessage}&nbsp;&nbsp;</Typography>
+                    </span>
+                </div>
+            );
+        } else {
+            let underrunError = status.msSinceLastUnderrun < 15 * 1000;
+            return (
+                <div style={{ whiteSpace: "nowrap" }}>
+                    <Typography variant="caption" color="inherit">{label}</Typography>
+                    <span style={{ color: underrunError ? RED_COLOR : GREEN_COLOR }}>
+                        <Typography variant="caption" color="inherit">
+                            XRuns:&nbsp;{status.underruns + ""}&nbsp;&nbsp;
+                        </Typography>
+                    </span>
+                </div>
+            );
         }
     }
 

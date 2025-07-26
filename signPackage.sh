@@ -11,4 +11,8 @@
 # to NOT do auto-updating (probably best). The build doesn't currently have a procedure for 
 # knocking out Auto-Update from UpdaterSecurity.hpp. But I would happily accept a pull request
 # to bring such a feature back into mainline if you do it.
-build/src/makeRelease
+
+# Build the release package and create a detached GPG signature. This
+# command assumes you have already run makePackage.sh so the .deb file
+# exists in the build directory.
+./build/src/makeRelease

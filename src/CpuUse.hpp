@@ -140,14 +140,19 @@ namespace pipedal
                 overheadTime = readTime;
             }
 
-            SampleT totalTime = writeTime+ readTime + processingTime;
-            SampleT maxTime = waitTime+processingTime;
-            
+            SampleT totalTime = writeTime + readTime + processingTime;
+            SampleT maxTime = waitTime + processingTime;
 
-            float result = 100.0f*(processingTime)/(maxTime);
-            float overhead = 100.0F*(overheadTime*2)/totalTime;
+            float result = 0.0f;
+            float overhead = 0.0f;
+            if (maxTime != 0 && totalTime != 0)
             {
-                std::lock_guard lock { sync};
+                result = 100.0f * (processingTime) / (maxTime);
+                overhead = 100.0f * (overheadTime * 2) / totalTime;
+            }
+
+            {
+                std::lock_guard lock{sync};
                 currentCpuUse = result;
                 currentOverhead = overhead;
             }

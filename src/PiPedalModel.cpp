@@ -41,6 +41,7 @@
 #include "SysExec.hpp"
 #include "Updater.hpp"
 #include "util.hpp"
+#include <algorithm>
 #include "DBusLog.hpp"
 #include "AvahiService.hpp"
 #include "DummyAudioDriver.hpp"
@@ -73,6 +74,10 @@ static std::string BytesToHex(const std::vector<uint8_t> &bytes)
     }
     return s.str();
 }
+
+static uint32_t SelectBestSampleRate(const AlsaDeviceInfo &inDev,
+                                     const AlsaDeviceInfo &outDev,
+                                     uint32_t desiredRate);
 
 PiPedalModel::PiPedalModel()
     : pluginHost(),
@@ -1376,6 +1381,31 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
         {
             jackServerSettings.UseDummyAudioDevice();
         }
+        else
+        {
+            auto devices = GetAlsaDevices();
+            AlsaDeviceInfo inDev, outDev;
+            bool inFound = false, outFound = false;
+            for (auto &d : devices)
+            {
+                if (d.id_ == jackServerSettings.GetAlsaInputDevice())
+                {
+                    inDev = d;
+                    inFound = true;
+                }
+                if (d.id_ == jackServerSettings.GetAlsaOutputDevice())
+                {
+                    outDev = d;
+                    outFound = true;
+                }
+            }
+            if (inFound && outFound)
+            {
+                uint32_t best = SelectBestSampleRate(inDev, outDev, (uint32_t)jackServerSettings.GetSampleRate());
+                jackServerSettings.SetSampleRate(best);
+                this->jackServerSettings.SetSampleRate(best);
+            }
+        }
 
         auto jackConfiguration = this->jackConfiguration;
         jackConfiguration.AlsaInitialize(jackServerSettings);
@@ -1911,7 +1941,7 @@ void PiPedalModel::SetOnboarding(bool value)
     SetJackServerSettings(this->jackServerSettings);
 }
 
-void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSettings)
+void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSettings, bool persist)
 {
     std::unique_lock<std::recursive_mutex> guard(mutex);
 
@@ -1932,7 +1962,10 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     }
 
 #if ALSA_HOST
-    storage.SetJackServerSettings(jackServerSettings);
+    if (persist)
+    {
+        storage.SetJackServerSettings(jackServerSettings);
+    }
 
     FireJackConfigurationChanged(this->jackConfiguration);
 
@@ -2744,6 +2777,31 @@ static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::
     return false;
 }
 
+static uint32_t SelectBestSampleRate(const AlsaDeviceInfo &inDev, const AlsaDeviceInfo &outDev, uint32_t desiredRate)
+{
+    std::vector<uint32_t> intersection;
+    for (auto sr : inDev.sampleRates_)
+    {
+        if (std::find(outDev.sampleRates_.begin(), outDev.sampleRates_.end(), sr) != outDev.sampleRates_.end())
+        {
+            intersection.push_back(sr);
+        }
+    }
+    if (intersection.empty()) return desiredRate;
+    if (desiredRate != 0 && std::find(intersection.begin(), intersection.end(), desiredRate) != intersection.end())
+    {
+        return desiredRate;
+    }
+    uint32_t best = 0;
+    for (auto sr : intersection)
+    {
+        if (sr == 48000) return 48000;
+        if (sr <= 48000 && sr > best) best = sr;
+    }
+    if (best == 0) best = intersection.back();
+    return best;
+}
+
 void PiPedalModel::StartHotspotMonitoring()
 {
     this->avahiService = std::make_unique<AvahiService>();
@@ -3012,24 +3070,25 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally()
         auto now = clock::now();
         clock::duration timeSinceLastRetry = now-this->lastRestartTime;
         this->lastRestartTime = now;
-        if (timeSinceLastRetry > std::chrono::duration_cast<clock::duration>(std::chrono::milliseconds(1000))) {
+        if (timeSinceLastRetry > std::chrono::duration_cast<clock::duration>(std::chrono::seconds(6))) {
             audioRestartRetries = 0;
         }
         CancelAudioRetry();
 
         if (audioRestartRetries == 0)
         {
-            this->audioRetryPostHandle = this->Post(
+            this->audioRetryPostHandle = this->PostDelayed(
+                std::chrono::seconds(5),
                 // No lock to avoid deadlocks!
                 [this]() {
                     Lv2Log::info("Restarting audio.");
                     this->RestartAudio();
                 });
             ++audioRestartRetries;
-        } else if (audioRestartRetries < 3) 
+        } else if (audioRestartRetries < 3)
         {
             this->audioRetryPostHandle = this->PostDelayed(
-                std::chrono::milliseconds(100 * audioRestartRetries),
+                std::chrono::seconds(5),
                 [this]() {
                     if (closed) {
                         return;
@@ -3051,7 +3110,7 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally()
             } 
             ++audioRestartRetries;
         } else {
-            Lv2Log::error(SS("Unable to reastart audio."));
+            Lv2Log::error(SS("Unable to restart audio."));
 
         } });
 }

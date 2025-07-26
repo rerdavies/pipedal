@@ -377,7 +377,7 @@ const ZoomedDial = withStyles(
         }
 
 
-        onBodyPointerDownCapture(e_: any): any {
+         onBodyPointerDownCapture(e_: any): any {
             let e = e_ as PointerEvent;
             if (this.isExtraTouch(e)) {
                 this.captureElement!.setPointerCapture(e.pointerId);

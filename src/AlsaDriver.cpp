@@ -618,6 +618,7 @@ namespace pipedal
 
             if (this->captureHandle)
             {
+                this->alsa_device_name = this->jackServerSettings.GetAlsaInputDevice();
                 AlsaConfigureStream(
                     this->alsa_device_name,
                     "capture",
@@ -629,6 +630,7 @@ namespace pipedal
             }
             if (this->playbackHandle)
             {
+                this->alsa_device_name = this->jackServerSettings.GetAlsaOutputDevice();
                 AlsaConfigureStream(
                     this->alsa_device_name,
                     "playback",
@@ -1224,7 +1226,7 @@ namespace pipedal
             int err;
 
             std::string inputName  = jackServerSettings.GetAlsaInputDevice();
-			std::string outputName = jackServerSettings.GetAlsaOutputDevice();
+            std::string outputName = jackServerSettings.GetAlsaOutputDevice();
 
 
             this->numberOfBuffers = jackServerSettings.GetNumberOfBuffers();
@@ -1234,6 +1236,7 @@ namespace pipedal
             try
             {
 
+                this->alsa_device_name = outputName;
                 err = snd_pcm_open(&playbackHandle, outputName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
                 if (err < 0)
                 {
@@ -1268,7 +1271,8 @@ namespace pipedal
                 {
                     snd_pcm_nonblock(playbackHandle, 0);
                 }
-
+                
+                this->alsa_device_name = inputName;
                 err = snd_pcm_open(&captureHandle, inputName.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
 
                 if (err < 0)

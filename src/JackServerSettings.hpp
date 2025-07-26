@@ -31,8 +31,9 @@ namespace pipedal
         bool isOnboarding_ = true;
         bool isJackAudio_ = JACK_HOST ? true : false;
         bool rebootRequired_ = false;
-		std::string alsaInputDevice_;
+        std::string alsaInputDevice_;
         std::string alsaOutputDevice_;
+        std::string alsaDevice_; // legacy
         uint64_t sampleRate_ = 0;
         uint32_t bufferSize_ = 64;
         uint32_t numberOfBuffers_ = 3;
@@ -41,14 +42,15 @@ namespace pipedal
     void SetAlsaInputDevice(const std::string &d){ alsaInputDevice_ = d; }
     void SetAlsaOutputDevice(const std::string &d){ alsaOutputDevice_ = d; }
         JackServerSettings();
-		JackServerSettings(
-            const std::string alsaInputDevice,
+        JackServerSettings(
+            const std::string &alsaInputDevice,
+            const std::string &alsaOutputDevice,
             uint64_t sampleRate,
             uint32_t bufferSize,
             uint32_t numberOfBuffers)
             : valid_(true),
               alsaInputDevice_(alsaInputDevice),
-              alsaOutputDevice_(alsaInputDevice), // default same
+              alsaOutputDevice_(alsaOutputDevice),
               sampleRate_(sampleRate),
               bufferSize_(bufferSize),
               numberOfBuffers_(numberOfBuffers),
@@ -57,10 +59,13 @@ namespace pipedal
         }
 
         uint64_t GetSampleRate() const { return sampleRate_; }
+        void SetSampleRate(uint64_t sampleRate) { sampleRate_ = sampleRate; }
         uint32_t GetBufferSize() const { return bufferSize_; }
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
-		const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
-		const std::string &GetAlsaOutputDevice() const { return alsaOutputDevice_; }
+        const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
+        const std::string &GetAlsaOutputDevice() const { return alsaOutputDevice_; }
+        const std::string &GetLegacyAlsaDevice() const { return alsaDevice_; } //legacy
+        void SetLegacyAlsaDevice(const std::string &d) { alsaDevice_ = d; }
         void UseDummyAudioDevice() {
             this->valid_ = true;
             if (sampleRate_ == 0) sampleRate_ = 48000;
@@ -76,10 +81,17 @@ namespace pipedal
 
         bool IsValid() const { return valid_; }
 
-        // JackServerSettings(uint64_t sampleRate, uint32_t bufferSize, uint32_t numberOfBuffers)
+        // Legacy constructor used by tests prior to the addition of
+        // separate input and output ALSA devices.
+        // JackServerSettings(const std::string &device,
+        //                    uint64_t sampleRate,
+        //                    uint32_t bufferSize,
+        //                    uint32_t numberOfBuffers)
         // {
         //     this->valid_ = true;
         //     this->rebootRequired_ = true;
+        //     this->alsaInputDevice_ = device;
+        //     this->alsaOutputDevice_ = device;
         //     this->sampleRate_ = sampleRate;
         //     this->bufferSize_ = bufferSize;
         //     this->numberOfBuffers_ = numberOfBuffers; 

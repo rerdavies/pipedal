@@ -110,6 +110,36 @@ static void GetCpuFrequency(uint64_t *freqMin, uint64_t *freqMax)
     *freqMin = fMin;
     *freqMax = fMax;
 }
+static float GetMemoryUsagePercent()
+{
+    try {
+        std::ifstream f("/proc/meminfo");
+        if (!f.is_open()) return 0.0f;
+        std::string label;
+        uint64_t memTotal = 0;
+        uint64_t memAvailable = 0;
+        while (f >> label)
+        {
+            if (label == "MemTotal:")
+            {
+                f >> memTotal;
+            } else if (label == "MemAvailable:")
+            {
+                f >> memAvailable;
+            } else {
+                std::string rest;
+                std::getline(f, rest);
+            }
+            if (memTotal && memAvailable) break;
+        }
+        if (memTotal == 0) return 0.0f;
+        return (float)(memTotal - memAvailable) * 100.0f / (float)memTotal;
+    } catch (const std::exception &)
+    {
+        return 0.0f;
+    }
+}
+
 static std::string GetGovernor()
 {
     return pipedal::GetCpuGovernor();
@@ -2056,6 +2086,8 @@ public:
     virtual void UpdateServerConfiguration(const JackServerSettings &jackServerSettings,
                                            std::function<void(bool success, const std::string &errorMessage)> onComplete)
     {
+        // Only allow one restart operation at a time.
+        CleanRestartThreads(true);
         std::lock_guard guard(restart_mutex);
         RestartThread *pShutdown = new RestartThread(this, jackServerSettings, onComplete);
         restartThreads.push_back(pShutdown);
@@ -2119,8 +2151,13 @@ public:
 
         if (this->audioDriver != nullptr)
         {
-            result.cpuUsage_ = audioDriver->CpuUse();
+            result.cpuUsage_ = audioDriver->CpuUse();          
+            if (!std::isfinite(result.cpuUsage_))
+            {
+                result.cpuUsage_ = 0.0f;
+            }
         }
+        result.memoryUsage_ = GetMemoryUsagePercent();
         GetCpuFrequency(&result.cpuFreqMin_, &result.cpuFreqMax_);
         result.hasCpuGovernor_ = HasCpuGovernor();
         if (result.hasCpuGovernor_)
@@ -2320,6 +2357,7 @@ JSON_MAP_REFERENCE(JackHostStatus, errorMessage)
 JSON_MAP_REFERENCE(JackHostStatus, restarting)
 JSON_MAP_REFERENCE(JackHostStatus, underruns)
 JSON_MAP_REFERENCE(JackHostStatus, cpuUsage)
+JSON_MAP_REFERENCE(JackHostStatus, memoryUsage)
 JSON_MAP_REFERENCE(JackHostStatus, msSinceLastUnderrun)
 JSON_MAP_REFERENCE(JackHostStatus, temperaturemC)
 JSON_MAP_REFERENCE(JackHostStatus, cpuFreqMin)

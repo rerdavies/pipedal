@@ -517,7 +517,7 @@ namespace pipedal
         result.sampleRates_.push_back(48000);
         result.minBufferSize_ = 16;
         result.maxBufferSize_ = 1024;
-		result.supportsCapture_ = true;
+        result.supportsCapture_ = true;
         result.supportsPlayback_ = true;
         return result;
     }

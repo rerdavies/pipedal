@@ -60,6 +60,7 @@ export class FakeAndroidHost implements AndroidHostInterface
 
     launchExternalUrl(_url:string): boolean
     {
+        
         return false;
     }
     private theme = 1;
@@ -71,6 +72,7 @@ export class FakeAndroidHost implements AndroidHostInterface
     }
     setServerVersion(_serverVersion: string): void {
         // No-op for fake host
+    
     }
 
     private keepScreenOn = false;

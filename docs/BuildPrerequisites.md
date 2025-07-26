@@ -21,13 +21,13 @@ Run the following commands to install dependent libraries required by the PiPeda
  
     sudo apt update 
     sudo apt upgrade
+    
     sudo apt install -y liblilv-dev libboost-dev  \
         libsystemd-dev catch libasound2-dev uuid-dev \
         authbind libavahi-client-dev  libnm-dev libicu-dev \
         libsdbus-c++-dev libzip-dev google-perftools \
         libgoogle-perftools-dev \
-        libpipewire-0.3-dev 
-    
+        libpipewire-0.3-dev
 
 ### Installing Sources
 
