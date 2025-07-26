@@ -3054,7 +3054,7 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally()
             } 
             ++audioRestartRetries;
         } else {
-            Lv2Log::error(SS("Unable to reastart audio."));
+            Lv2Log::error(SS("Unable to restart audio."));
 
         } });
 }
