@@ -445,16 +445,22 @@ const JackServerSettingsDialog = withStyles(
         }
         componentDidUpdate(oldProps: JackServerSettingsDialogProps) {
             if ((this.props.open && !oldProps.open) && this.mounted) {
-                let settings = this.applyAlsaDevices(this.props.jackServerSettings.clone(), this.state.alsaDevices);
-                 this.setState({
+                // When opening, preserve the current settings until ALSA device
+                // information is loaded. If we don't have device info yet, just
+                // clone the provided settings without applying device defaults.
+                let settings = this.state.alsaDevices
+                    ? this.applyAlsaDevices(this.props.jackServerSettings.clone(), this.state.alsaDevices)
+                    : this.props.jackServerSettings.clone();
+
+                this.setState({
                     jackServerSettings: settings,
                     latencyText: getLatencyText(settings),
-                    okEnabled:  isOkEnabled(settings,this.state.alsaDevices)
-                 });
+               okEnabled: isOkEnabled(settings, this.state.alsaDevices)
+                });
                 if (!this.state.alsaDevices) {
                     this.requestAlsaInfo();
                 }
-                  this.startStatusTimer();
+                 this.startStatusTimer();
             } else if (!this.props.open && oldProps.open) {
                 this.stopStatusTimer();
             }
