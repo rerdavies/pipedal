@@ -41,7 +41,6 @@
 #include "SysExec.hpp"
 #include "Updater.hpp"
 #include "util.hpp"
-#include <algorithm>
 #include "DBusLog.hpp"
 #include "AvahiService.hpp"
 #include "DummyAudioDriver.hpp"
@@ -74,10 +73,6 @@ static std::string BytesToHex(const std::vector<uint8_t> &bytes)
     }
     return s.str();
 }
-
-static uint32_t SelectBestSampleRate(const AlsaDeviceInfo &inDev,
-                                     const AlsaDeviceInfo &outDev,
-                                     uint32_t desiredRate);
 
 PiPedalModel::PiPedalModel()
     : pluginHost(),
@@ -1381,31 +1376,31 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
         {
             jackServerSettings.UseDummyAudioDevice();
         }
-        else
-        {
-            auto devices = GetAlsaDevices();
-            AlsaDeviceInfo inDev, outDev;
-            bool inFound = false, outFound = false;
-            for (auto &d : devices)
-            {
-                if (d.id_ == jackServerSettings.GetAlsaInputDevice())
-                {
-                    inDev = d;
-                    inFound = true;
-                }
-                if (d.id_ == jackServerSettings.GetAlsaOutputDevice())
-                {
-                    outDev = d;
-                    outFound = true;
-                }
-            }
-            if (inFound && outFound)
-            {
-                uint32_t best = SelectBestSampleRate(inDev, outDev, (uint32_t)jackServerSettings.GetSampleRate());
-                jackServerSettings.SetSampleRate(best);
-                this->jackServerSettings.SetSampleRate(best);
-            }
-        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         auto jackConfiguration = this->jackConfiguration;
         jackConfiguration.AlsaInitialize(jackServerSettings);
@@ -2777,38 +2772,30 @@ static bool HasAlsaDevice(const std::vector<AlsaDeviceInfo> devices, const std::
     return false;
 }
 
-static uint32_t SelectBestSampleRate(const AlsaDeviceInfo &inDev, const AlsaDeviceInfo &outDev, uint32_t desiredRate)
-{
-    std::vector<uint32_t> intersection;
-    for (auto sr : inDev.sampleRates_)
-    {
-        if (std::find(outDev.sampleRates_.begin(), outDev.sampleRates_.end(), sr) != outDev.sampleRates_.end())
-        {
-            intersection.push_back(sr);
-        }
-    }
-    if (intersection.empty())
-    {
-        return desiredRate == 0 ? 48000 : desiredRate;
-    }
-    if (desiredRate != 0 &&
-        std::find(intersection.begin(), intersection.end(), desiredRate) != intersection.end())
-    {
-        return desiredRate;
-    }
-    std::sort(intersection.begin(), intersection.end());
-    uint32_t best = 0;
-    for (auto sr : intersection)
-    {
-        if (sr == 48000)
-            return 48000;
-        if (sr <= 48000 && sr > best)
-            best = sr;
-    }
-    if (best == 0)
-    best = intersection.back();
-    return best;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void PiPedalModel::StartHotspotMonitoring()
 {
@@ -3156,7 +3143,7 @@ void PiPedalModel::SetTone3000Auth(const std::string &apiKey)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     storage.SetTone3000Auth(apiKey);
-    
+
     std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
     bool hasAuth = apiKey != "";
     for (auto &subscriber : t)
@@ -3169,6 +3156,5 @@ bool PiPedalModel::HasTone3000Auth() const
 {
     return storage.GetTone3000Auth() != "";
 }
-
 
 

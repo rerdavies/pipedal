@@ -59,7 +59,7 @@ namespace pipedal
         }
 
         uint64_t GetSampleRate() const { return sampleRate_; }
-        void SetSampleRate(uint64_t sampleRate) { sampleRate_ = sampleRate; }
+
         uint32_t GetBufferSize() const { return bufferSize_; }
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
         const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
