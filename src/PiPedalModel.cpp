@@ -41,6 +41,7 @@
 #include "SysExec.hpp"
 #include "Updater.hpp"
 #include "util.hpp"
+#include <algorithm>
 #include "DBusLog.hpp"
 #include "AvahiService.hpp"
 #include "DummyAudioDriver.hpp"
@@ -73,6 +74,10 @@ static std::string BytesToHex(const std::vector<uint8_t> &bytes)
     }
     return s.str();
 }
+
+static uint32_t SelectBestSampleRate(const AlsaDeviceInfo &inDev,
+                                     const AlsaDeviceInfo &outDev,
+                                     uint32_t desiredRate);
 
 PiPedalModel::PiPedalModel()
     : pluginHost(),
