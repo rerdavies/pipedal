@@ -472,7 +472,11 @@ const JackServerSettingsDialog = withStyles(
         componentWillUnmount() {
          super.componentWillUnmount();
             this.mounted = false;
-             this.stopStatusTimer();
+            this.stopStatusTimer();
+            if (this.originalJackServerSettings) {
+                this.model.setJackServerSettings(this.originalJackServerSettings);
+                this.originalJackServerSettings = undefined;
+            }
 
         }
        getSelectedDevice(deviceId: string): AlsaDeviceInfo | undefined {
@@ -558,6 +562,9 @@ const JackServerSettingsDialog = withStyles(
                     let s = this.state.jackServerSettings.clone();
                     s.valid = true;
                     this.props.onApply(s);
+                    // Prevent componentWillUnmount from reverting after the
+                    // settings have been saved.
+                    this.originalJackServerSettings = undefined;
                 };
 
                 handleWarningProceed() {
@@ -612,6 +619,7 @@ const JackServerSettingsDialog = withStyles(
             const handleClose = () => {
                 if (this.originalJackServerSettings) {
                     this.model.setJackServerSettings(this.originalJackServerSettings);
+                    this.originalJackServerSettings = undefined;
                 }
                 onClose();
             };
