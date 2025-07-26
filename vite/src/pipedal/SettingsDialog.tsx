@@ -705,6 +705,10 @@ const SettingsDialog = withStyles(
                                             showJackServerSettingsDialog: false,
                                             jackServerSettings: jackServerSettings
                                         });
+                                        // Apply immediately so the audio driver is
+                                        // restarted with the chosen devices before
+                                        // saving the settings.
+                                        this.model.applyJackServerSettings(jackServerSettings);
                                         this.model.setJackServerSettings(jackServerSettings);
                                     }}
                                 />
