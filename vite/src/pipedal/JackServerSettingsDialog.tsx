@@ -322,6 +322,9 @@ const JackServerSettingsDialog = withStyles(
         statusTimer?: number = undefined;
 
         suppressDeviceWarning: boolean;
+         /**
+         * Copy of the settings when the dialog is opened. Pressing Apply only tests these settings temporarily. Closing the dialog without OK re-applies the saved copy so the audio driver returns to its previous configuration.
+         */
         originalJackServerSettings?: JackServerSettings;
 
     getFullScreen() {
@@ -470,9 +473,15 @@ const JackServerSettingsDialog = withStyles(
         }
 
         componentWillUnmount() {
-         super.componentWillUnmount();
+            super.componentWillUnmount();
             this.mounted = false;
-             this.stopStatusTimer();
+            this.stopStatusTimer();
+            if (this.originalJackServerSettings) {
+                // Revert any unapplied changes when the dialog is unmounted
+                this.model.applyJackServerSettings(this.originalJackServerSettings);
+                this.model.setJackServerSettings(this.originalJackServerSettings);
+                this.originalJackServerSettings = undefined;
+            }
 
 
 
@@ -582,7 +591,14 @@ const JackServerSettingsDialog = withStyles(
                     this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
                         let s = this.state.jackServerSettings.clone();
                         s.valid = true;
-                        this.props.onApply(s);
+                        // Accept the new settings so the dialog won't revert them on close
+                        this.originalJackServerSettings = undefined;
+                        // Apply and persist the settings just like the OK handler
+                        this.model.applyJackServerSettings(s);
+                        this.model.setJackServerSettings(s);
+                        if (this.props.onApply) {
+                            this.props.onApply(s);
+                        }
                     });
                 }
                 handleWarningCancel() {
