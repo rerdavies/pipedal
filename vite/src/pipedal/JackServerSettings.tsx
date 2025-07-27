@@ -55,6 +55,21 @@ export default class JackServerSettings {
     bufferSize = 64;
     numberOfBuffers = 3;
 
+    /**
+     * Configure this instance to use the dummy audio device. This mirrors the
+     * behaviour of the backend JackServerSettings::UseDummyAudioDevice method
+     * and is used when temporarily releasing ALSA devices.
+     * Needed when changing devices and when testing new settings with apply button.
+     */
+    useDummyAudioDevice() {
+        if (this.sampleRate === 0) {
+            this.sampleRate = 48000;
+        }
+        this.valid = true;
+        this.alsaInputDevice = "__DUMMY_AUDIO__dummy:channels_2";
+        this.alsaOutputDevice = "__DUMMY_AUDIO__dummy:channels_2";
+    }
+
     getSummaryText() {
       if (!this.valid || !this.alsaInputDevice || !this.alsaOutputDevice) {
             return "Not selected";

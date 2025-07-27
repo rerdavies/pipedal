@@ -385,6 +385,56 @@ const JackServerSettingsDialog = withStyles(
             }
         }
 
+  // ---------------------- New API helpers ----------------------
+        /** Persist the current settings to permanent storage. */
+        saveSettings(settings?: JackServerSettings) {
+            const s = (settings ?? this.state.jackServerSettings).clone();
+            this.model.setJackServerSettings(s);
+        }
+
+        /**
+         * Save the current settings temporarily so they can be restored if the
+         * dialog is cancelled.
+         */
+        saveSettingsTemporary(settings?: JackServerSettings) {
+            this.originalJackServerSettings = (settings ?? this.state.jackServerSettings).clone();
+        }
+
+        /** Apply the provided settings to the audio system. */
+        applySettings(settings?: JackServerSettings) {
+            const s = (settings ?? this.state.jackServerSettings).clone();
+            s.valid = true;
+            this.model.applyJackServerSettings(s);
+        }
+
+        /**
+         * Revert the dialog state to the persisted settings. The reverted
+         * settings are applied immediately as well.
+         */
+        revertSettings() {
+            this.model.getJackServerSettings()
+                .then((s) => {
+                    const applied = this.applyAlsaDevices(s.clone(), this.state.alsaDevices);
+                    this.setState({
+                        jackServerSettings: applied,
+                        latencyText: getLatencyText(applied),
+                        okEnabled: isOkEnabled(applied, this.state.alsaDevices)
+                    });
+                    this.applySettings(s);
+                })
+                .catch(() => { });
+        }
+
+        /**
+         * Release currently used ALSA devices by switching to the dummy audio
+         * driver. This allows testing alternative devices without conflicts.
+         */
+        releaseDevices() {
+            const dummy = new JackServerSettings();
+            dummy.useDummyAudioDevice();
+            this.model.applyJackServerSettings(dummy);
+        }
+
         applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[]) {
             let result = jackServerSettings.clone();
            if (!alsaDevices || alsaDevices.length === 0) {
@@ -449,7 +499,7 @@ const JackServerSettingsDialog = withStyles(
         }
         componentDidUpdate(oldProps: JackServerSettingsDialogProps) {
             if ((this.props.open && !oldProps.open) && this.mounted) {
-                this.originalJackServerSettings = this.props.jackServerSettings.clone();
+               this.saveSettingsTemporary(this.props.jackServerSettings);
                 // When opening, preserve the current settings until ALSA device
                 // information is loaded. If we don't have device info yet, just
                 // clone the provided settings without applying device defaults.
@@ -478,8 +528,9 @@ const JackServerSettingsDialog = withStyles(
             this.stopStatusTimer();
             if (this.originalJackServerSettings) {
                 // Revert any unapplied changes when the dialog is unmounted
-                this.model.applyJackServerSettings(this.originalJackServerSettings);
-                this.model.setJackServerSettings(this.originalJackServerSettings);
+                this.applySettings(this.originalJackServerSettings);
+                // Persist the original settings so future dialogs show them
+                this.saveSettings(this.originalJackServerSettings);
                 this.originalJackServerSettings = undefined;
             }
 
@@ -551,85 +602,76 @@ const JackServerSettingsDialog = withStyles(
         }
 
         handleApply() {
-            if (this.state.okEnabled)
-            {
-                let s = this.state.jackServerSettings.clone();
-                // Apply immediately so the status display can confirm
-                // whether the selected devices are working.
-                s.valid = true;
-                this.model.applyJackServerSettings(s);
+            if (this.state.okEnabled) {
+                this.applySettings();
                 this.startStatusTimer();
             }
         };
-        
-        applyAndPersistSettings(s: JackServerSettings) {
-            // Accept the new settings so handleClose doesn't revert them
-            this.originalJackServerSettings = undefined;
-            // Apply the new settings immediately and persist them.
-            this.model.applyJackServerSettings(s);
-            this.model.setJackServerSettings(s);
-            this.startStatusTimer();
-            if (this.props.onApply) {
-                this.props.onApply(s);
+        handleOk() {
+            if (!this.state.okEnabled) return;
+            if (this.state.jackServerSettings.alsaInputDevice !== this.state.jackServerSettings.alsaOutputDevice
+                && !this.suppressDeviceWarning) {
+                this.setState({ showDeviceWarning: true });
+                return;
             }
+            // apply and persist the selected settings
+            this.releaseDevices();
+            this.applySettings();
+            this.saveSettings();
+            this.originalJackServerSettings = undefined;
+            if (this.props.onApply) {
+                this.props.onApply(this.state.jackServerSettings.clone());
+            }
+        };
+
+        handleWarningProceed() {
+            if (this.state.dontShowWarningAgain) {
+                localStorage.setItem("suppressSeparateDeviceWarning", "1");
+                this.suppressDeviceWarning = true;
+            }
+            this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
+                this.releaseDevices();
+                this.applySettings();
+                this.saveSettings();
+                this.originalJackServerSettings = undefined;
+                if (this.props.onApply) {
+                    this.props.onApply(this.state.jackServerSettings.clone());
+                }
+            });
         }
-                handleOk() {
-                    if (!this.state.okEnabled) return;
-                    if (this.state.jackServerSettings.alsaInputDevice !== this.state.jackServerSettings.alsaOutputDevice
-                        && !this.suppressDeviceWarning) {
-                        this.setState({ showDeviceWarning: true });
-                        return;
-                    }
+        
+        handleWarningCancel() {
+            this.setState({ showDeviceWarning: false, dontShowWarningAgain: false });
+        }
+
+        handleWarningCheck(e: any, checked: boolean) {
+            this.setState({ dontShowWarningAgain: checked });
+        }
+        handleInputDeviceChanged(e: any) {
+                const d = e.target.value as string;
                 let s = this.state.jackServerSettings.clone();
-                s.valid = true;
-                this.applyAndPersistSettings(s);
+                s.alsaInputDevice = d;
+                s.valid = false;
+                let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
+                this.setState({
+                jackServerSettings: settings,
+                latencyText: getLatencyText(settings),
+                okEnabled: isOkEnabled(settings, this.state.alsaDevices)
+                });
+        }
 
-
-                };
-
-                handleWarningProceed() {
-                    if (this.state.dontShowWarningAgain) {
-                        localStorage.setItem("suppressSeparateDeviceWarning", "1");
-                        this.suppressDeviceWarning = true;
-                    }
-                    this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
-                        let s = this.state.jackServerSettings.clone();
-                        s.valid = true;
-                        this.applyAndPersistSettings(s);
-                    });
-                }
-                handleWarningCancel() {
-                    this.setState({ showDeviceWarning: false, dontShowWarningAgain: false });
-                }
-
-                handleWarningCheck(e: any, checked: boolean) {
-                    this.setState({ dontShowWarningAgain: checked });
-                }
-                handleInputDeviceChanged(e: any) {
-                        const d = e.target.value as string;
-                        let s = this.state.jackServerSettings.clone();
-                        s.alsaInputDevice = d;
-                        s.valid = false;
-                        let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
-                        this.setState({
-                        jackServerSettings: settings,
-                        latencyText: getLatencyText(settings),
-                        okEnabled: isOkEnabled(settings, this.state.alsaDevices)
-                        });
-                }
-
-                  handleOutputDeviceChanged(e: any) {
-                        const d = e.target.value as string;
-                        let s = this.state.jackServerSettings.clone();
-                        s.alsaOutputDevice = d;
-                        s.valid = false;
-                        let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
-                        this.setState({
-                       jackServerSettings: settings,
-                        latencyText: getLatencyText(settings),
-                        okEnabled: isOkEnabled(settings, this.state.alsaDevices)
-                        });
-                }
+          handleOutputDeviceChanged(e: any) {
+                const d = e.target.value as string;
+                let s = this.state.jackServerSettings.clone();
+                s.alsaOutputDevice = d;
+                s.valid = false;
+                let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
+                this.setState({
+               jackServerSettings: settings,
+                latencyText: getLatencyText(settings),
+                okEnabled: isOkEnabled(settings, this.state.alsaDevices)
+                });
+        }
 
             render() {
             const classes = withStyles.getClasses(this.props);
@@ -637,12 +679,11 @@ const JackServerSettingsDialog = withStyles(
             const { onClose, open } = this.props;
 
             const handleClose = () => {
+                this.releaseDevices();
                 if (this.originalJackServerSettings) {
-                    // Revert the temporary settings. The dialog is being closed
-                    // without OK, so restore the previous configuration.
-                    this.model.applyJackServerSettings(this.originalJackServerSettings);
-                    this.model.setJackServerSettings(this.originalJackServerSettings);
-                    // Prevent componentWillUnmount from reverting again.
+                    // Revert any applied settings
+                    this.applySettings(this.originalJackServerSettings);
+                    this.saveSettings(this.originalJackServerSettings);
                     this.originalJackServerSettings = undefined;
                 }
                 onClose();
