@@ -38,7 +38,7 @@ import DialogContent from '@mui/material/DialogContent';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import IconButtonEx from './IconButtonEx';
+import IconButtonEx from '@mui/icons-material/Refresh';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -387,8 +387,9 @@ const JackServerSettingsDialog = withStyles(
         }
 
         /** Persist the current settings to permanent storage. */
-        saveSettings(settings?: JackServerSettings) {
+        saveSettings(settings?: JackServerSettings): void {
             const s = (settings ?? this.state.jackServerSettings).clone();
+            // Fire and forget. Errors will be handled by PiPedalModel's internal error handling (e.g., showAlert).
             this.model.setJackServerSettings(s);
         }
 
@@ -401,9 +402,10 @@ const JackServerSettingsDialog = withStyles(
         }
 
         /** Apply the provided settings to the audio system. */
-        applySettings(settings?: JackServerSettings) {
+        applySettings(settings?: JackServerSettings): void {
             const s = (settings ?? this.state.jackServerSettings).clone();
             s.valid = true;
+            // Fire and forget. Errors will be handled by PiPedalModel's internal error handling.
             this.model.applyJackServerSettings(s);
         }
 
@@ -432,6 +434,7 @@ const JackServerSettingsDialog = withStyles(
         releaseDevices() {
             const dummy = new JackServerSettings();
             dummy.useDummyAudioDevice();
+            // Fire and forget.
             this.model.applyJackServerSettings(dummy);
         }
 
@@ -529,8 +532,6 @@ const JackServerSettingsDialog = withStyles(
             super.componentWillUnmount();
             this.mounted = false;
             this.stopStatusTimer();
-            // Removed the saveSettings call from here.
-            // Persistence should only happen on explicit OK/PROCEED.
             if (this.originalJackServerSettings) {
                 // Revert any unapplied changes when the dialog is unmounted
                 this.applySettings(this.originalJackServerSettings);
@@ -602,7 +603,7 @@ const JackServerSettingsDialog = withStyles(
 
         handleApply() {
             if (this.state.okEnabled) {
-                this.applySettings();
+                this.applySettings(); // Fire and forget
                 this.startStatusTimer();
             }
         };
@@ -612,9 +613,9 @@ const JackServerSettingsDialog = withStyles(
 
             const proceedWithOk = () => {
                 this.ignoreClose = true; // Indicate that the closing is intentional
-                this.releaseDevices(); // Release devices
-                this.applySettings(); // Apply current settings
-                this.saveSettings(); // Save settings permanently
+                this.releaseDevices(); // Fire and forget
+                this.applySettings(); // Fire and forget
+                this.saveSettings(); // Fire and forget
                 this.originalJackServerSettings = undefined;
                 if (this.props.onApply) {
                     this.props.onApply(this.state.jackServerSettings.clone());
@@ -638,9 +639,9 @@ const JackServerSettingsDialog = withStyles(
             }
             this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
                 this.ignoreClose = true;
-                this.releaseDevices();
-                this.applySettings();
-                this.saveSettings();
+                this.releaseDevices(); // Fire and forget
+                this.applySettings(); // Fire and forget
+                this.saveSettings(); // Fire and forget
                 this.originalJackServerSettings = undefined;
                 if (this.props.onApply) {
                     this.props.onApply(this.state.jackServerSettings.clone());
@@ -692,13 +693,10 @@ const JackServerSettingsDialog = withStyles(
                  if (this.ignoreClose) {
                     return;
                 } else {
-                    this.releaseDevices();
+                    this.releaseDevices(); // Fire and forget
                     if (this.originalJackServerSettings) {
                         // Revert any applied settings
-                        this.applySettings(this.originalJackServerSettings);
-                        // IMPORTANT: Removed the saveSettings call here.
-                        // If the user cancels, we only want to revert the active settings,
-                        // not overwrite the permanently saved settings with the old ones.
+                        this.applySettings(this.originalJackServerSettings); // Fire and forget
                         this.originalJackServerSettings = undefined;
                     }
                 }
