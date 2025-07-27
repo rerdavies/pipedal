@@ -491,6 +491,7 @@ const JackServerSettingsDialog = withStyles(
         componentDidMount() {
             super.componentDidMount();
             this.mounted = true;
+            this.ignoreClose = false;
             if (this.props.open) {
                 this.requestAlsaInfo();
                 this.startStatusTimer();
@@ -499,6 +500,7 @@ const JackServerSettingsDialog = withStyles(
         }
         componentDidUpdate(oldProps: JackServerSettingsDialogProps) {
             if ((this.props.open && !oldProps.open) && this.mounted) {
+               this.ignoreClose = false;
                this.saveSettingsTemporary(this.props.jackServerSettings);
                 // When opening, preserve the current settings until ALSA device
                 // information is loaded. If we don't have device info yet, just
@@ -683,7 +685,6 @@ const JackServerSettingsDialog = withStyles(
             //Ignore close rutine if the ignoreclose is true. (After OK or Proceed or Multi Device Warning)
             const handleClose = () => {
                  if (this.ignoreClose) {
-                    this.ignoreClose = false;
                     return;
                 } else {
                 this.releaseDevices();
