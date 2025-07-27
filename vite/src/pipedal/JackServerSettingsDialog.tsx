@@ -15,7 +15,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 import { Theme } from '@mui/material/styles';
@@ -303,32 +303,32 @@ const JackServerSettingsDialog = withStyles(
 
         constructor(props: JackServerSettingsDialogProps) {
             super(props);
-            this.model = PiPedalModelFactory.getInstance();  
+            this.model = PiPedalModelFactory.getInstance();
 
 
-  this.suppressDeviceWarning = localStorage.getItem("suppressSeparateDeviceWarning") === "1";
-        this.state = {
-            latencyText: getLatencyText(props.jackServerSettings),
-            jackServerSettings: props.jackServerSettings.clone(), // invalid, but not nullish
-            alsaDevices: undefined,
-            okEnabled: false,
-            fullScreen: this.getFullScreen(),
-            compactWidth: document.documentElement.clientWidth < 600,
-            jackStatus: undefined,
-            showDeviceWarning: false,
-            dontShowWarningAgain: false
-        };
+            this.suppressDeviceWarning = localStorage.getItem("suppressSeparateDeviceWarning") === "1";
+            this.state = {
+                latencyText: getLatencyText(props.jackServerSettings),
+                jackServerSettings: props.jackServerSettings.clone(), // invalid, but not nullish
+                alsaDevices: undefined,
+                okEnabled: false,
+                fullScreen: this.getFullScreen(),
+                compactWidth: document.documentElement.clientWidth < 600,
+                jackStatus: undefined,
+                showDeviceWarning: false,
+                dontShowWarningAgain: false
+            };
         }
         mounted: boolean = false;
         statusTimer?: number = undefined;
 
         suppressDeviceWarning: boolean;
-         /**
+        /**
          * Copy of the settings when the dialog is opened. Pressing Apply only tests these settings temporarily. Closing the dialog without OK re-applies the saved copy so the audio driver returns to its previous configuration.
          */
         originalJackServerSettings?: JackServerSettings;
 
-    getFullScreen() {
+        getFullScreen() {
             return document.documentElement.clientWidth < 420 ||
                 document.documentElement.clientHeight < 700;
         }
@@ -361,7 +361,7 @@ const JackServerSettingsDialog = withStyles(
                     }
                 })
                 .catch((error) => {
-
+                    // Error requesting ALSA info.
                 });
         }
 
@@ -495,9 +495,10 @@ const JackServerSettingsDialog = withStyles(
             if (this.props.open) {
                 this.requestAlsaInfo();
                 this.startStatusTimer();
+                this.saveSettingsTemporary(this.props.jackServerSettings);
             }
-
         }
+
         componentDidUpdate(oldProps: JackServerSettingsDialogProps) {
             if ((this.props.open && !oldProps.open) && this.mounted) {
                this.ignoreClose = false;
@@ -512,7 +513,7 @@ const JackServerSettingsDialog = withStyles(
                 this.setState({
                     jackServerSettings: settings,
                     latencyText: getLatencyText(settings),
-               okEnabled: isOkEnabled(settings, this.state.alsaDevices)
+                    okEnabled: isOkEnabled(settings, this.state.alsaDevices)
                 });
                 if (!this.state.alsaDevices) {
                     this.requestAlsaInfo();
@@ -535,12 +536,8 @@ const JackServerSettingsDialog = withStyles(
                 this.saveSettings(this.originalJackServerSettings);
                 this.originalJackServerSettings = undefined;
             }
-
-
-
-
-
         }
+
        getSelectedDevice(deviceId: string): AlsaDeviceInfo | undefined {
             if (!this.state.alsaDevices) return undefined;
             for (let i = 0; i < this.state.alsaDevices.length; ++i) {
@@ -609,22 +606,29 @@ const JackServerSettingsDialog = withStyles(
                 this.startStatusTimer();
             }
         };
+
         handleOk() {
             if (!this.state.okEnabled) return;
+
+            const proceedWithOk = () => {
+                this.ignoreClose = true; // Indicate that the closing is intentional
+                this.releaseDevices(); // Release devices
+                this.applySettings(); // Apply current settings
+                this.saveSettings(); // Save settings permanently
+                this.originalJackServerSettings = undefined;
+                if (this.props.onApply) {
+                    this.props.onApply(this.state.jackServerSettings.clone());
+                }
+                this.props.onClose(); // Close the dialog
+            };
+
             if (this.state.jackServerSettings.alsaInputDevice !== this.state.jackServerSettings.alsaOutputDevice
                 && !this.suppressDeviceWarning) {
                 this.setState({ showDeviceWarning: true });
                 return;
             }
-            // apply and persist the selected settings
-            this.ignoreClose = true;
-            this.releaseDevices();
-            this.applySettings();
-            this.saveSettings();
-            this.originalJackServerSettings = undefined;
-            if (this.props.onApply) {
-                this.props.onApply(this.state.jackServerSettings.clone());
-            }
+
+            proceedWithOk();
         };
 
         handleWarningProceed() {
@@ -641,9 +645,10 @@ const JackServerSettingsDialog = withStyles(
                 if (this.props.onApply) {
                     this.props.onApply(this.state.jackServerSettings.clone());
                 }
+                this.props.onClose(); // Close the dialog after the warning
             });
         }
-        
+
         handleWarningCancel() {
             this.setState({ showDeviceWarning: false, dontShowWarningAgain: false });
         }
@@ -687,7 +692,7 @@ const JackServerSettingsDialog = withStyles(
                  if (this.ignoreClose) {
                     return;
                 } else {
-                this.releaseDevices();
+                    this.releaseDevices();
                     if (this.originalJackServerSettings) {
                         // Revert any applied settings
                         this.applySettings(this.originalJackServerSettings);
