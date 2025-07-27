@@ -563,7 +563,12 @@ const JackServerSettingsDialog = withStyles(
                     s.valid = true;
                     // Accept the new settings so handleClose doesn't revert
                     this.originalJackServerSettings = undefined;
-                    this.props.onApply(s);
+                    // Apply the new settings immediately and persist them.
+                    this.model.applyJackServerSettings(s);
+                    this.model.setJackServerSettings(s);
+                    if (this.props.onApply) {
+                        this.props.onApply(s);
+                    }
 
 
 
