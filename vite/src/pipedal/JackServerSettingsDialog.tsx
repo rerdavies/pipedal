@@ -561,6 +561,8 @@ const JackServerSettingsDialog = withStyles(
                     }
                     let s = this.state.jackServerSettings.clone();
                     s.valid = true;
+                    // Accept the new settings so handleClose doesn't revert
+                    this.originalJackServerSettings = undefined;
                     this.props.onApply(s);
 
 

@@ -2525,6 +2525,10 @@ export class PiPedalModel //implements PiPedalModel
             });
     }
     setJackServerSettings(jackServerSettings: JackServerSettings): void {
+               // Update the local observable so the UI reflects the new selection
+        // immediately. Persist the settings via the websocket as well.
+        this.jackServerSettings.set(jackServerSettings.clone());
+
         this.webSocket?.request<void>("setJackServerSettings", jackServerSettings)
             .catch((error) => {
                 this.showAlert(error);
