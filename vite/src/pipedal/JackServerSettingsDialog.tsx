@@ -299,6 +299,7 @@ const JackServerSettingsDialog = withStyles(
     class extends ResizeResponsiveComponent<JackServerSettingsDialogProps, JackServerSettingsDialogState> {
 
         model: PiPedalModel;
+        ignoreClose: boolean = false;
 
         constructor(props: JackServerSettingsDialogProps) {
             super(props);
@@ -385,7 +386,6 @@ const JackServerSettingsDialog = withStyles(
             }
         }
 
-  // ---------------------- New API helpers ----------------------
         /** Persist the current settings to permanent storage. */
         saveSettings(settings?: JackServerSettings) {
             const s = (settings ?? this.state.jackServerSettings).clone();
@@ -615,6 +615,7 @@ const JackServerSettingsDialog = withStyles(
                 return;
             }
             // apply and persist the selected settings
+            this.ignoreClose = true;
             this.releaseDevices();
             this.applySettings();
             this.saveSettings();
@@ -630,6 +631,7 @@ const JackServerSettingsDialog = withStyles(
                 this.suppressDeviceWarning = true;
             }
             this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
+                this.ignoreClose = true;
                 this.releaseDevices();
                 this.applySettings();
                 this.saveSettings();
@@ -678,13 +680,19 @@ const JackServerSettingsDialog = withStyles(
 
             const { onClose, open } = this.props;
 
+            //Ignore close rutine if the ignoreclose is true. (After OK or Proceed or Multi Device Warning)
             const handleClose = () => {
+                 if (this.ignoreClose) {
+                    this.ignoreClose = false;
+                    return;
+                } else {
                 this.releaseDevices();
-                if (this.originalJackServerSettings) {
-                    // Revert any applied settings
-                    this.applySettings(this.originalJackServerSettings);
-                    this.saveSettings(this.originalJackServerSettings);
-                    this.originalJackServerSettings = undefined;
+                    if (this.originalJackServerSettings) {
+                        // Revert any applied settings
+                        this.applySettings(this.originalJackServerSettings);
+                        this.saveSettings(this.originalJackServerSettings);
+                        this.originalJackServerSettings = undefined;
+                    }
                 }
                 onClose();
             };
