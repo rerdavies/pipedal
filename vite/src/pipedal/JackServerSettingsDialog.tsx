@@ -561,6 +561,18 @@ const JackServerSettingsDialog = withStyles(
                 this.startStatusTimer();
             }
         };
+        
+        applyAndPersistSettings(s: JackServerSettings) {
+            // Accept the new settings so handleClose doesn't revert them
+            this.originalJackServerSettings = undefined;
+            // Apply the new settings immediately and persist them.
+            this.model.applyJackServerSettings(s);
+            this.model.setJackServerSettings(s);
+            this.startStatusTimer();
+            if (this.props.onApply) {
+                this.props.onApply(s);
+            }
+        }
                 handleOk() {
                     if (!this.state.okEnabled) return;
                     if (this.state.jackServerSettings.alsaInputDevice !== this.state.jackServerSettings.alsaOutputDevice
@@ -568,17 +580,9 @@ const JackServerSettingsDialog = withStyles(
                         this.setState({ showDeviceWarning: true });
                         return;
                     }
-                    let s = this.state.jackServerSettings.clone();
-                    s.valid = true;
-                    // Accept the new settings so handleClose doesn't revert
-                    this.originalJackServerSettings = undefined;
-                    // Apply the new settings immediately and persist them.
-                    this.model.applyJackServerSettings(s);
-                    this.model.setJackServerSettings(s);
-                    if (this.props.onApply) {
-                        this.props.onApply(s);
-                    }
-
+                let s = this.state.jackServerSettings.clone();
+                s.valid = true;
+                this.applyAndPersistSettings(s);
 
 
                 };
@@ -591,14 +595,7 @@ const JackServerSettingsDialog = withStyles(
                     this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
                         let s = this.state.jackServerSettings.clone();
                         s.valid = true;
-                        // Accept the new settings so the dialog won't revert them on close
-                        this.originalJackServerSettings = undefined;
-                        // Apply and persist the settings just like the OK handler
-                        this.model.applyJackServerSettings(s);
-                        this.model.setJackServerSettings(s);
-                        if (this.props.onApply) {
-                            this.props.onApply(s);
-                        }
+                        this.applyAndPersistSettings(s);
                     });
                 }
                 handleWarningCancel() {
@@ -641,11 +638,12 @@ const JackServerSettingsDialog = withStyles(
 
             const handleClose = () => {
                 if (this.originalJackServerSettings) {
-                    // Revert any applied settings by restoring the
-                    // persisted configuration and re-applying it.
+                    // Revert the temporary settings. The dialog is being closed
+                    // without OK, so restore the previous configuration.
                     this.model.applyJackServerSettings(this.originalJackServerSettings);
                     this.model.setJackServerSettings(this.originalJackServerSettings);
-
+                    // Prevent componentWillUnmount from reverting again.
+                    this.originalJackServerSettings = undefined;
                 }
                 onClose();
             };
