@@ -1,3 +1,4 @@
+@@ -1,3543 +1,3543 @@
 // Copyright (c) 2022 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -2343,22 +2344,6 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
     setPatchProperty(instanceId: number, uri: string, value: any): Promise<boolean> {
-        // Audio related properties are written without waiting for a reply.
-        // These URIs correspond to Toob player audio state. The server
-        // broadcasts changes via on...changed messages, so we don't
-        // need to wait for the reply when updating them.
-        const audioProps = [
-            "http://two-play.com/plugins/toob-player#audioFile",
-            "http://two-play.com/plugins/toob-player#loop",
-            "http://two-play.com/plugins/toob-player#seek",
-        ];
-        if (audioProps.indexOf(uri) >= 0) {
-            if (this.webSocket) {
-                this.webSocket.send("setPatchProperty", { instanceId: instanceId, propertyUri: uri, value: value });
-            }
-            return Promise.resolve(true);
-        }
-
         let result = new Promise<boolean>((resolve, reject) => {
             if (this.webSocket) {
                 this.webSocket.request<boolean>(
@@ -2525,14 +2510,7 @@ export class PiPedalModel //implements PiPedalModel
             });
     }
     setJackServerSettings(jackServerSettings: JackServerSettings): void {
-
         this.webSocket?.request<void>("setJackServerSettings", jackServerSettings)
-            .catch((error) => {
-                this.showAlert(error);
-            });
-    }
-    applyJackServerSettings(jackServerSettings: JackServerSettings): void {
-        this.webSocket?.request<void>("applyJackServerSettings", jackServerSettings)
             .catch((error) => {
                 this.showAlert(error);
             });
@@ -3006,7 +2984,7 @@ export class PiPedalModel //implements PiPedalModel
             // notify the server.
             let ws = this.webSocket;
             if (!ws) {
-                resolve();
+                reject("Not connected.");
                 return;
             }
             ws.request<void>(
@@ -3017,8 +2995,7 @@ export class PiPedalModel //implements PiPedalModel
                     resolve();
                 })
                 .catch((err) => {
-                // ignore expected disconnects/errors
-                resolve();
+                    reject(err);
                 });
 
         });
@@ -3070,13 +3047,12 @@ export class PiPedalModel //implements PiPedalModel
                 serverConfigSettings
             )
                 .then(() => {
-                       resolve();
+                    //resolve();
                 })
                 .catch((err) => {
-                     // ignore expected disconnects/errors
-                       resolve();
+                    //resolve();
                 });
-            //resolve();
+            resolve();
 
         });
         this.expectDisconnect(ReconnectReason.LoadingSettings);
@@ -3563,5 +3539,4 @@ export class PiPedalModelFactory {
 
     }
 };
-
 
