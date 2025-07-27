@@ -1911,7 +1911,7 @@ void PiPedalModel::SetOnboarding(bool value)
     SetJackServerSettings(this->jackServerSettings);
 }
 
-void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSettings, bool persist)
+void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSettings)
 {
     std::unique_lock<std::recursive_mutex> guard(mutex);
 
@@ -1922,7 +1922,6 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     }
 #endif
 
-    bool changed = !jackServerSettings.Equals(this->jackServerSettings);
     this->jackServerSettings = jackServerSettings;
 
     // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
@@ -1933,25 +1932,14 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
     }
 
 #if ALSA_HOST
-    if (persist)
-    {
-        storage.SetJackServerSettings(jackServerSettings);
-    }
+    storage.SetJackServerSettings(jackServerSettings);
 
     FireJackConfigurationChanged(this->jackConfiguration);
-    //Only if different. Trying to decrease audio server restarts.
-    if (changed)
-    {
-        CancelAudioRetry();
 
-        guard.unlock();
-        RestartAudio();
-    }
-    else
-    {
-        // Only persistence requested.
-        guard.unlock();
-    }
+    CancelAudioRetry();
+
+    guard.unlock();
+    RestartAudio();
 
 #endif
 #if JACK_HOST
@@ -1962,15 +1950,13 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
         currentPreset.modified_ = this->hasPresetChanged;
         currentPreset.preset_ = this->pedalboard;
         storage.SaveCurrentPreset(currentPreset);
-        //Only if different. Trying to decrease server restarts.
-        if (changed)
-        {
-            this->jackConfiguration.SetIsRestarting(true);
-            FireJackConfigurationChanged(this->jackConfiguration);
-            this->audioHost->UpdateServerConfiguration(
-                jackServerSettings,
-                [this](bool success, const std::string &errorMessage)
-                {
+
+        this->jackConfiguration.SetIsRestarting(true);
+        FireJackConfigurationChanged(this->jackConfiguration);
+        this->audioHost->UpdateServerConfiguration(
+            jackServerSettings,
+            [this](bool success, const std::string &errorMessage)
+            {
                 std::lock_guard<std::recursive_mutex> lock(mutex);
                 if (!success)
                 {
@@ -2002,8 +1988,7 @@ void PiPedalModel::SetJackServerSettings(const JackServerSettings &jackServerSet
                     UpdateRealtimeMonitorPortSubscriptions();
 #endif
                 }
-                });
-        }
+            });
     }
 #endif
 }
@@ -3035,7 +3020,6 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally()
         if (audioRestartRetries == 0)
         {
             this->audioRetryPostHandle = this->Post(
-
                 // No lock to avoid deadlocks!
                 [this]() {
                     Lv2Log::info("Restarting audio.");
@@ -3067,7 +3051,7 @@ void PiPedalModel::OnAlsaDriverTerminatedAbnormally()
             } 
             ++audioRestartRetries;
         } else {
-            Lv2Log::error(SS("Unable to restart audio."));
+            Lv2Log::error(SS("Unable to reastart audio."));
 
         } });
 }
@@ -3105,7 +3089,7 @@ void PiPedalModel::SetTone3000Auth(const std::string &apiKey)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     storage.SetTone3000Auth(apiKey);
-
+    
     std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
     bool hasAuth = apiKey != "";
     for (auto &subscriber : t)
@@ -3118,5 +3102,6 @@ bool PiPedalModel::HasTone3000Auth() const
 {
     return storage.GetTone3000Auth() != "";
 }
+
 
 

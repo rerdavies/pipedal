@@ -449,7 +449,7 @@ namespace pipedal
             return this->audioHost->getJackStatus();
         }
         JackServerSettings GetJackServerSettings();
-        void SetJackServerSettings(const JackServerSettings &jackServerSettings, bool persist = true);
+        void SetJackServerSettings(const JackServerSettings &jackServerSettings);
 
         void ListenForMidiEvent(int64_t clientId, int64_t clientHandle);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
