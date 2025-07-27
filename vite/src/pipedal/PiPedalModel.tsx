@@ -2225,6 +2225,8 @@ export class PiPedalModel //implements PiPedalModel
             m = message.toString();
         }
         this.alertMessage.set(m);
+        // TEMPORARY DEBUGGING: Log alert messages to console. Remove later.
+        console.error("PiPedalModel Alert:", m);
     }
 
 
@@ -2532,14 +2534,20 @@ export class PiPedalModel //implements PiPedalModel
         this.webSocket?.request<void>("setJackServerSettings", jackServerSettings)
             .catch((error) => {
                 this.showAlert(error);
+                 // TEMPORARY DEBUGGING: Log saving errors to console. Remove later.
+                 console.error("setJackServerSettings failed:", error);
             });
     }
     applyJackServerSettings(jackServerSettings: JackServerSettings): void {
-        this.webSocket?.request<void>("applyJackServerSettings", jackServerSettings)
-            .catch((error) => {
-                this.showAlert(error);
-            });
-    }
+    // CONSISTENCY FIX: Ensure local model state is updated immediately.
+    this.jackServerSettings.set(jackServerSettings.clone()); 
+    this.webSocket?.request<void>("applyJackServerSettings", jackServerSettings)
+        .catch((error) => {
+            this.showAlert(error);
+            // TEMPORARY DEBUGGING: Log applying errors to console. Remove later.
+            console.error("applyJackServerSettings failed:", error);
+        });
+}
 
     updateVst3State(pedalboard: Pedalboard) {
         // let it = pedalboard.itemsGenerator();
