@@ -38,7 +38,7 @@ import DialogContent from '@mui/material/DialogContent';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
-import IconButtonEx from '@mui/icons-material/Refresh';
+import IconButtonEx from './IconButtonEx'; 
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
