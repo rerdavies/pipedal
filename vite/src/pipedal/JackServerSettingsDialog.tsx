@@ -529,11 +529,11 @@ const JackServerSettingsDialog = withStyles(
             super.componentWillUnmount();
             this.mounted = false;
             this.stopStatusTimer();
+            // Removed the saveSettings call from here.
+            // Persistence should only happen on explicit OK/PROCEED.
             if (this.originalJackServerSettings) {
                 // Revert any unapplied changes when the dialog is unmounted
                 this.applySettings(this.originalJackServerSettings);
-                // Persist the original settings so future dialogs show them
-                this.saveSettings(this.originalJackServerSettings);
                 this.originalJackServerSettings = undefined;
             }
         }
@@ -696,7 +696,9 @@ const JackServerSettingsDialog = withStyles(
                     if (this.originalJackServerSettings) {
                         // Revert any applied settings
                         this.applySettings(this.originalJackServerSettings);
-                        this.saveSettings(this.originalJackServerSettings);
+                        // IMPORTANT: Removed the saveSettings call here.
+                        // If the user cancels, we only want to revert the active settings,
+                        // not overwrite the permanently saved settings with the old ones.
                         this.originalJackServerSettings = undefined;
                     }
                 }
