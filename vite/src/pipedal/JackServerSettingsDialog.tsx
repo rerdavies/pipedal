@@ -406,7 +406,7 @@ const JackServerSettingsDialog = withStyles(
             const s = (settings ?? this.state.jackServerSettings).clone();
             s.valid = true;
             // Fire and forget. Errors will be handled by PiPedalModel's internal error handling.
-            this.model.applyJackServerSettings(s);
+            this.model.setJackServerSettings(s);
         }
 
         /**
@@ -435,7 +435,7 @@ const JackServerSettingsDialog = withStyles(
             const dummy = new JackServerSettings();
             dummy.useDummyAudioDevice();
             // Fire and forget.
-            this.model.applyJackServerSettings(dummy);
+            this.model.setJackServerSettings(dummy);
         }
 
         applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[]) {
