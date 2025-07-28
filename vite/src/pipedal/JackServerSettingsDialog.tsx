@@ -401,12 +401,22 @@ const JackServerSettingsDialog = withStyles(
             this.originalJackServerSettings = (settings ?? this.state.jackServerSettings).clone();
         }
 
-        /** Apply the provided settings to the audio system. */
+      /**
+         * Apply the provided settings to the audio system without persisting
+         * them. Falls back to the regular setter if the temporary apply API is
+         * unavailable.
+         */
         applySettings(settings?: JackServerSettings): void {
             const s = (settings ?? this.state.jackServerSettings).clone();
             s.valid = true;
-            // Fire and forget. Errors will be handled by PiPedalModel's internal error handling.
-            this.model.setJackServerSettings(s);
+
+            const ws = this.model.webSocket;
+            if (ws) {
+                ws.request<void>("applyJackServerSettings", s)
+                    .catch(() => { }); // Fire and forget
+            } else {
+                this.model.setJackServerSettings(s);
+            }
         }
 
         /**
