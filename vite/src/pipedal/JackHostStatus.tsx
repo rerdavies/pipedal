@@ -68,7 +68,6 @@ export default class JackHostStatus {
         this.errorMessage = input.errorMessage;
         this.underruns = input.underruns;
         this.cpuUsage = input.cpuUsage;
-        this.memoryUsage = input.memoryUsage;
         this.msSinceLastUnderrun = input.msSinceLastUnderrun;
         this.temperaturemC = input.temperaturemC;
         this.cpuFreqMax = input.cpuFreqMax;
@@ -85,7 +84,6 @@ export default class JackHostStatus {
     restarting: boolean = false;
     underruns: number = 0;
     cpuUsage: number = 0;
-    memoryUsage: number = 0;
     msSinceLastUnderrun: number = -5000 * 1000;
     temperaturemC: number = -1000000;
     cpuFreqMax: number = 0;
@@ -177,11 +175,6 @@ export default class JackHostStatus {
                     <span style={{ color: underrunError ? RED_COLOR : GREEN_COLOR }}>
                         <Typography variant="caption" color="inherit">
                             CPU:&nbsp;{cpuDisplay(status.cpuUsage)}&nbsp;&nbsp;
-                        </Typography>
-                    </span>
-                    <span style={{ color: underrunError ? RED_COLOR : GREEN_COLOR }}>
-                        <Typography variant="caption" color="inherit">
-                            MEM:&nbsp;{cpuDisplay(status.memoryUsage)}&nbsp;&nbsp;
                         </Typography>
                     </span>
 

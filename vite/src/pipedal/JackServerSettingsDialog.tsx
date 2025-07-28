@@ -42,7 +42,6 @@ import IconButtonEx from './IconButtonEx';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import JackHostStatus from './JackHostStatus';
 
 import AlsaDeviceInfo from './AlsaDeviceInfo';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
@@ -88,7 +87,6 @@ interface JackServerSettingsDialogState {
     okEnabled: boolean;
     fullScreen: boolean;
     compactWidth: boolean;
-    jackStatus?: JackHostStatus;
     showDeviceWarning: boolean;
     dontShowWarningAgain: boolean;
 }
@@ -104,10 +102,6 @@ const styles = (theme: Theme) =>
         },
         inputLabel: {
             whiteSpace: "nowrap"
-        },
-        cpuStatusColor: {
-            color: theme.palette.text.secondary,
-            opacity: 0.7
         }
     });
 export interface JackServerSettingsDialogProps extends WithStyles<typeof styles> {
@@ -314,13 +308,11 @@ const JackServerSettingsDialog = withStyles(
                 okEnabled: false,
                 fullScreen: this.getFullScreen(),
                 compactWidth: document.documentElement.clientWidth < 600,
-                jackStatus: undefined,
                 showDeviceWarning: false,
                 dontShowWarningAgain: false
             };
         }
         mounted: boolean = false;
-        statusTimer?: number = undefined;
 
         suppressDeviceWarning: boolean;
         /**
@@ -364,28 +356,9 @@ const JackServerSettingsDialog = withStyles(
                     // Error requesting ALSA info.
                 });
         }
-
-       tickStatus() {
-            this.model.getJackStatus()
-                .then(status => {
-                    if (this.mounted) {
-                        this.setState({ jackStatus: status });
-                    }
-                })
-                .catch(() => { });
-        }
-        startStatusTimer() {
-            if (this.statusTimer) return;
-            this.tickStatus();
-            this.statusTimer = window.setInterval(() => this.tickStatus(), 1000);
-        }
-        stopStatusTimer() {
-            if (this.statusTimer) {
-                clearInterval(this.statusTimer);
-                this.statusTimer = undefined;
-            }
-        }
-
+        
+        
+        
         /** Persist the current settings to permanent storage. */
         saveSettings(settings?: JackServerSettings): void {
             const s = (settings ?? this.state.jackServerSettings).clone();
@@ -496,7 +469,6 @@ const JackServerSettingsDialog = withStyles(
             this.ignoreClose = false;
             if (this.props.open) {
                 this.requestAlsaInfo();
-                this.startStatusTimer();
                 this.saveSettingsTemporary(this.props.jackServerSettings);
             }
         }
@@ -520,17 +492,14 @@ const JackServerSettingsDialog = withStyles(
                 if (!this.state.alsaDevices) {
                     this.requestAlsaInfo();
                 }
-                 this.startStatusTimer();
-            } else if (!this.props.open && oldProps.open) {
-                this.stopStatusTimer();
-                this.originalJackServerSettings = undefined;
-            }
+              } else if (!this.props.open && oldProps.open) {
+                  this.originalJackServerSettings = undefined;
+              }
         }
 
         componentWillUnmount() {
             super.componentWillUnmount();
             this.mounted = false;
-            this.stopStatusTimer();
             if (this.originalJackServerSettings) {
                 // Revert any unapplied changes when the dialog is unmounted
                 this.applySettings(this.originalJackServerSettings);
@@ -603,7 +572,6 @@ const JackServerSettingsDialog = withStyles(
         handleApply() {
             if (this.state.okEnabled) {
                 this.applySettings(); // Fire and forget
-                this.startStatusTimer();
             }
         };
 
@@ -837,9 +805,6 @@ const JackServerSettingsDialog = withStyles(
                             color="textSecondary">
                             Latency: {this.state.latencyText}
                         </Typography>
-                           <div className={classes.cpuStatusColor} style={{ paddingLeft: 24 }}>
-                             {JackHostStatus.getDisplayViewNoCpu("", this.state.jackStatus)}
-                        </div>
                     </DialogContent>
 
                     <DialogActions>

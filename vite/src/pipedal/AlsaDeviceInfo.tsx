@@ -9,6 +9,8 @@ export default class AlsaDeviceInfo {
         this.sampleRates = input.sampleRates as number[];
         this.minBufferSize = input.minBufferSize;
         this.maxBufferSize = input.maxBufferSize;
+        this.supportsCapture = input.supportsCapture ? true : false;
+        this.supportsPlayback = input.supportsPlayback ? true : false;
         return this;
     }
     static deserialize_array(input: any): AlsaDeviceInfo[]
@@ -62,5 +64,7 @@ export default class AlsaDeviceInfo {
     longName: string = "";
     sampleRates: number[] = [];
     minBufferSize: number = 0;
-    maxBufferSize: number = 0; 
+    maxBufferSize: number = 0;
+    supportsCapture: boolean = false;
+    supportsPlayback: boolean = false;
 };
