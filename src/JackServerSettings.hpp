@@ -95,6 +95,7 @@ namespace pipedal
         {
         return this->alsaInputDevice_  == other.alsaInputDevice_ &&
                    this->alsaOutputDevice_ == other.alsaOutputDevice_ &&
+                   this->alsaDevice_       == other.alsaDevice_ &&
                    this->sampleRate_       == other.sampleRate_ &&
                    this->bufferSize_       == other.bufferSize_ &&
                    this->numberOfBuffers_  == other.numberOfBuffers_;
