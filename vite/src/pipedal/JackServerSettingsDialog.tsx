@@ -427,17 +427,6 @@ const JackServerSettingsDialog = withStyles(
                 .catch(() => { });
         }
 
-        /**
-         * Release currently used ALSA devices by switching to the dummy audio
-         * driver. This allows testing alternative devices without conflicts.
-         */
-        releaseDevices() {
-            const dummy = new JackServerSettings();
-            dummy.useDummyAudioDevice();
-            // Fire and forget.
-            this.model.setJackServerSettings(dummy);
-        }
-
         applyAlsaDevices(jackServerSettings: JackServerSettings, alsaDevices?: AlsaDeviceInfo[]) {
             let result = jackServerSettings.clone();
            if (!alsaDevices || alsaDevices.length === 0) {
@@ -613,7 +602,6 @@ const JackServerSettingsDialog = withStyles(
 
             const proceedWithOk = () => {
                 this.ignoreClose = true; // Indicate that the closing is intentional
-                this.releaseDevices(); // Fire and forget
                 this.applySettings(); // Fire and forget
                 this.saveSettings(); // Fire and forget
                 this.originalJackServerSettings = undefined;
@@ -639,7 +627,6 @@ const JackServerSettingsDialog = withStyles(
             }
             this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
                 this.ignoreClose = true;
-                this.releaseDevices(); // Fire and forget
                 this.applySettings(); // Fire and forget
                 this.saveSettings(); // Fire and forget
                 this.originalJackServerSettings = undefined;
@@ -693,7 +680,6 @@ const JackServerSettingsDialog = withStyles(
                  if (this.ignoreClose) {
                     return;
                 } else {
-                    this.releaseDevices(); // Fire and forget
                     if (this.originalJackServerSettings) {
                         // Revert any applied settings
                         this.applySettings(this.originalJackServerSettings); // Fire and forget
