@@ -122,8 +122,8 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                             err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                             if (err == 0)
                             {
-                               int err2 = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
-                                if (err2 == 0)
+                                err = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
+                                if (err == 0)
                                 {
                                     for (size_t i = 0; i < sizeof(RATES) / sizeof(RATES[0]); ++i)
                                     {
@@ -132,9 +132,9 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                                         {
                                             info.sampleRates_.push_back(rate);
                                         }
-                                    }                                   
-                            }
-                            else
+                                    }
+                                }
+                                else
                                 {
                                     Lv2Log::warning(SS("Failed to get maximum sample rate for device '" << info.name_ << "'."));
                                 }
@@ -142,13 +142,15 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                             else
                             {
                                 Lv2Log::warning(SS("Failed to get minimum sample rate for device '" << info.name_ << "'."));
-                                err = 0; // continue using fallback rate for other parameters
                             }
                             
-                            err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
                             if (err == 0)
                             {
-                                err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
+                                err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
+                                if (err == 0)
+                                {
+                                    err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
+                                }
                             }
                             if (err == 0)
                             {
