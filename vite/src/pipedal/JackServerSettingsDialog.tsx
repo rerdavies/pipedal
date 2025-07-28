@@ -601,12 +601,14 @@ const JackServerSettingsDialog = withStyles(
             if (!this.state.okEnabled) return;
 
             const proceedWithOk = () => {
+                const settings = this.state.jackServerSettings.clone();
+                settings.valid = true;
                 this.ignoreClose = true; // Indicate that the closing is intentional
-                this.applySettings(); // Fire and forget
-                this.saveSettings(); // Fire and forget
+                this.applySettings(settings); // Fire and forget
+                this.saveSettings(settings); // Fire and forget
                 this.originalJackServerSettings = undefined;
                 if (this.props.onApply) {
-                    this.props.onApply(this.state.jackServerSettings.clone());
+                    this.props.onApply(settings.clone());
                 }
                 this.props.onClose(); // Close the dialog
             };
@@ -626,12 +628,14 @@ const JackServerSettingsDialog = withStyles(
                 this.suppressDeviceWarning = true;
             }
             this.setState({ showDeviceWarning: false, dontShowWarningAgain: false }, () => {
+                const settings = this.state.jackServerSettings.clone();
+                settings.valid = true;
                 this.ignoreClose = true;
-                this.applySettings(); // Fire and forget
-                this.saveSettings(); // Fire and forget
+                this.applySettings(settings); // Fire and forget
+                this.saveSettings(settings); // Fire and forget
                 this.originalJackServerSettings = undefined;
                 if (this.props.onApply) {
-                    this.props.onApply(this.state.jackServerSettings.clone());
+                    this.props.onApply(settings.clone());
                 }
                 this.props.onClose(); // Close the dialog after the warning
             });
