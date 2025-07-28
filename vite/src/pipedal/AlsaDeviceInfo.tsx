@@ -1,19 +1,7 @@
 
 
-interface AlsaDeviceInfoJson {
-    cardId: number;
-    id: string;
-    name: string;
-    longName: string;
-    sampleRates: number[];
-    minBufferSize: number;
-    maxBufferSize: number;
-    supportsCapture?: boolean;
-    supportsPlayback?: boolean;
-}
-
 export default class AlsaDeviceInfo {
-     deserialize(input: AlsaDeviceInfoJson): AlsaDeviceInfo {
+    deserialize(input: any): AlsaDeviceInfo {
         this.cardId = input.cardId;
         this.id = input.id;
         this.name = input.name;
@@ -21,11 +9,9 @@ export default class AlsaDeviceInfo {
         this.sampleRates = input.sampleRates as number[];
         this.minBufferSize = input.minBufferSize;
         this.maxBufferSize = input.maxBufferSize;
-        this.supportsCapture = input.supportsCapture ? true : false;
-        this.supportsPlayback = input.supportsPlayback ? true : false;
         return this;
     }
-   static deserialize_array(input: AlsaDeviceInfoJson[]): AlsaDeviceInfo[]
+    static deserialize_array(input: any): AlsaDeviceInfo[]
     {
         let result: AlsaDeviceInfo[] = [];
         for (let i = 0; i < input.length; ++i)
@@ -76,7 +62,5 @@ export default class AlsaDeviceInfo {
     longName: string = "";
     sampleRates: number[] = [];
     minBufferSize: number = 0;
-    maxBufferSize: number = 0;
-    supportsCapture: boolean = false;
-    supportsPlayback: boolean = false;
+    maxBufferSize: number = 0; 
 };

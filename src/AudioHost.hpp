@@ -191,7 +191,6 @@ namespace pipedal
         bool restarting_;
         uint64_t underruns_;
         float cpuUsage_ = 0;
-        float memoryUsage_ = 0;
         uint64_t msSinceLastUnderrun_ = 0;
         int32_t temperaturemC_ = -100000;
         uint64_t cpuFreqMax_ = 0;
