@@ -49,20 +49,44 @@ export default class JackServerSettings {
     isOnboarding: boolean = true;
     rebootRequired = false;
     isJackAudio = false;
-	alsaInputDevice:  string = "";
-	alsaOutputDevice: string = "";
+    alsaInputDevice:  string = "";
+    alsaOutputDevice: string = "";
     sampleRate = 48000;
     bufferSize = 64;
     numberOfBuffers = 3;
 
+    /**
+     * Configure this instance to use the dummy audio device. This mirrors the
+     * behaviour of the backend JackServerSettings::UseDummyAudioDevice method
+     * and is used when temporarily releasing ALSA devices.
+     * Needed when changing devices and when testing new settings with apply button.
+     */
+    useDummyAudioDevice() {
+        if (this.sampleRate === 0) {
+            this.sampleRate = 48000;
+        }
+        this.valid = true;
+        this.alsaInputDevice = "__DUMMY_AUDIO__dummy:channels_2";
+        this.alsaOutputDevice = "__DUMMY_AUDIO__dummy:channels_2";
+    }
+
     getSummaryText() {
-        if (this.valid) {
-              let inDev  = this.alsaInputDevice.startsWith("hw:")  ? this.alsaInputDevice .substring(3) : this.alsaInputDevice;
-              let outDev = this.alsaOutputDevice.startsWith("hw:") ? this.alsaOutputDevice.substring(3) : this.alsaOutputDevice;
-			return "In: "+inDev+"  Out: "+outDev+" — Rate "+this.sampleRate+", "+this.bufferSize+"×"+this.numberOfBuffers;
-        			  
+      if (!this.valid || !this.alsaInputDevice || !this.alsaOutputDevice) {
+            return "Not selected";
+        }
+
+        let inDev = this.alsaInputDevice.startsWith("hw:")
+            ? this.alsaInputDevice.substring(3)
+            : this.alsaInputDevice;
+        let outDev = this.alsaOutputDevice.startsWith("hw:")
+            ? this.alsaOutputDevice.substring(3)
+            : this.alsaOutputDevice;
+
+        if (inDev === outDev) {
+            return inDev;
+                      
         } else {
-            return "Not configured";
+            return inDev+" → "+outDev;
         }
     }
 

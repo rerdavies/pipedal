@@ -1598,6 +1598,14 @@ pipedal::JackServerSettings Storage::GetJackServerSettings()
     {
         json_reader reader(f);
         reader.read(&result);
+        if (!result.GetLegacyAlsaDevice().empty() &&
+            result.GetAlsaInputDevice().empty() &&
+            result.GetAlsaOutputDevice().empty())
+        {
+            result.SetAlsaInputDevice(result.GetLegacyAlsaDevice());
+            result.SetAlsaOutputDevice(result.GetLegacyAlsaDevice());
+            result.SetLegacyAlsaDevice("");
+        }
     }
 #if JACK_HOST
     result.Initialize();

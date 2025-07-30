@@ -22,6 +22,7 @@
 #include "alsa/asoundlib.h"
 #include "Lv2Log.hpp"
 #include <mutex>
+#include <algorithm>
 
 using namespace pipedal;
 
@@ -106,7 +107,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 
                 if (captureOk || playbackOk)
                 {
-					snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
+                    snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
                     snd_pcm_hw_params_t *params = nullptr;
                     err = snd_pcm_hw_params_malloc(&params);
                     if (err == 0)
@@ -117,29 +118,42 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                             unsigned int minRate = 0, maxRate = 0;
                             snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
                             int dir;
+                            
                             err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                             if (err == 0)
                             {
                                 err = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
+                                if (err == 0)
+                                {
+                                    for (size_t i = 0; i < sizeof(RATES) / sizeof(RATES[0]); ++i)
+                                    {
+                                        uint32_t rate = RATES[i];
+                                        if (rate >= minRate && rate <= maxRate)
+                                        {
+                                            info.sampleRates_.push_back(rate);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    Lv2Log::warning(SS("Failed to get maximum sample rate for device '" << info.name_ << "'."));
+                                }
                             }
+                            else
+                            {
+                                Lv2Log::warning(SS("Failed to get minimum sample rate for device '" << info.name_ << "'."));
+                            }
+                            
                             if (err == 0)
                             {
                                 err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
-                            }
-                            if (err == 0)
-                            {
-                                err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
-                            }
-                            if (err == 0)
-                            {
-                                for (size_t i = 0; i < sizeof(RATES) / sizeof(RATES[0]); ++i)
+                                if (err == 0)
                                 {
-                                    uint32_t rate = RATES[i];
-                                    if (rate >= minRate && rate <= maxRate)
-                                    {
-                                        info.sampleRates_.push_back(rate);
-                                    }
+                                    err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
                                 }
+                            }
+                            if (err == 0)
+                            {
                                 if (minBufferSize < 16)
                                 {
                                     minBufferSize = 16;
@@ -165,7 +179,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                     {
                         result.push_back(info);
                     }
-				}
+                }
                 else
                 {
                     if (getCachedDevice(info.name_, &info))
@@ -180,12 +194,24 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
     }
     snd_config_update_free_global();
 
+    auto isFiltered = [](const AlsaDeviceInfo &d) {
+        std::string name = d.name_ + " " + d.longName_;
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c){return std::tolower(c);});
+        return name.find("hdmi") != std::string::npos || name.find("bcm2835") != std::string::npos;
+    };
+
+    std::vector<AlsaDeviceInfo> filtered;
+    for (auto &d : result)
+    {
+        if (!isFiltered(d)) filtered.push_back(d);
+    }
+
     Lv2Log::debug("GetAlsaDevices --");
-    for (auto &device : result)
+    for (auto &device : filtered)
     {
         Lv2Log::debug(SS("   " << device.name_ << " " << device.longName_ << " " << device.cardId_));
     }
-    return result;
+     return filtered;
 }
 
 static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaMidiDeviceInfo::Direction direction, std::vector<AlsaMidiDeviceInfo> *result)

@@ -148,7 +148,7 @@ void JackServerSettings::ReadJackDaemonConfiguration()
             this->bufferSize_ = GetJackArg(argv, "-p", "--period");
             this->numberOfBuffers_ = (uint32_t)GetJackArg(argv, "-n", "--nperiods");
             this->sampleRate_ = (uint32_t)GetJackArg(argv, "-r", "--rate");
-			// read new dual device flags, fallback on old -d/--device
+            // read new dual device flags, fallback on old -d/--device
             std::string capDev  = GetJackStringArg(argv, "-C", "--capture");
             std::string playDev = GetJackStringArg(argv, "-P", "--playback");
             std::string dev     = "";
@@ -254,6 +254,7 @@ JSON_MAP_REFERENCE(JackServerSettings, valid)
 JSON_MAP_REFERENCE(JackServerSettings, isOnboarding)
 JSON_MAP_REFERENCE(JackServerSettings, rebootRequired)
 JSON_MAP_REFERENCE(JackServerSettings, isJackAudio)
+JSON_MAP_REFERENCE(JackServerSettings, alsaDevice) // legacy field
 JSON_MAP_REFERENCE(JackServerSettings, alsaInputDevice)
 JSON_MAP_REFERENCE(JackServerSettings, alsaOutputDevice)
 JSON_MAP_REFERENCE(JackServerSettings, sampleRate)
