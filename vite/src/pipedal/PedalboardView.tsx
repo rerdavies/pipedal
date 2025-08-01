@@ -327,8 +327,12 @@ class PedalLayout {
         else {
             let uiPlugin = model.getUiPlugin(pedalItem.uri);
             if (uiPlugin != null) {
-                this.pluginType = uiPlugin.plugin_type;
-                this.iconUrl = SelectIconUri(uiPlugin.plugin_type);
+                let pluginType = uiPlugin.plugin_type;
+                this.pluginType = pluginType;
+                if (this.uri === "http://two-play.com/plugins/toob-nam") {
+                    pluginType = PluginType.NamPlugin;
+                }
+                this.iconUrl = SelectIconUri(pluginType);
                 this.name = uiPlugin.label;
                 if (pedalItem.title !== "") {
                     this.name = pedalItem.title;
@@ -1109,12 +1113,18 @@ withStyles(
                                 </div>
                             )
                             let uiPlugin = this.model.getUiPlugin(item.pedalItem?.uri ?? "");
-                            let pluginMissing = uiPlugin == null;
+                            let pluginMissing = uiPlugin === null;
+                            let pluginType = item.pluginType;
+                            if (uiPlugin && uiPlugin.uri === "http://two-play.com/plugins/toob-nam")
+                            {   
+                                pluginType = PluginType.NamPlugin;
+
+                            }
 
                             result.push(<div key={this.renderKey++} className={classes.pedalItem} style={{ left: item.bounds.x, top: item.bounds.y }} >
                                 {this.pedalButton(
                                     item.pedalItem?.instanceId ?? -1,
-                                    item.pluginType,
+                                    pluginType,
                                     !item.isEmpty(),
                                     item.pedalItem?.isEnabled ?? false,
                                     true,

@@ -114,7 +114,8 @@
                 {
                     "name": "LD_LIBRARY_PATH",
                     "value": "/usr/local/lib/aarch64-linux-gnu"
-                }
+                }, 
+
             ],
             "externalConsole": false,
             "MIMode": "gdb",

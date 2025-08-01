@@ -870,6 +870,13 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     const LilvPluginClass *pClass = lilv_plugin_get_class(pPlugin);
     this->plugin_class_ = nodeAsString(lilv_plugin_class_get_uri(pClass));
 
+    if (this->plugin_class_ == "") // carla does this.
+    {
+        // set to plain Plugin.
+        this->plugin_class_ = "http://lv2plug.in/ns/lv2core#Plugin";
+    }
+
+
     AutoLilvNodes required_features = lilv_plugin_get_required_features(pPlugin);
     this->required_features_ = nodeAsStringArray(required_features);
 

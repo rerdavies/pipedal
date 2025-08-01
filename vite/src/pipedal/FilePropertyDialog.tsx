@@ -167,6 +167,7 @@ export interface FilePropertyDialogState {
     moveDialogOpen: boolean;
     copyDialogOpen: boolean;
     initialSelection: string;
+    previousSelection: string;
     multiSelect: boolean,
     selectedFiles: string[],
     //openTone3000Dialog: boolean,
@@ -241,6 +242,7 @@ export default withStyles(
                 moveDialogOpen: false,
                 copyDialogOpen: false,
                 initialSelection: this.props.selectedFile,
+                previousSelection: this.props.selectedFile,
                 multiSelect: false,
                 selectedFiles: [],
                 //openTone3000Dialog: false,
@@ -678,7 +680,7 @@ export default withStyles(
             this.requestScroll = true;
             if (!fileEntry.isDirectory) {
                 if (!this.isFolderArtwork(fileEntry.pathname)) {
-                    this.props.onApply(this.props.fileProperty, fileEntry.pathname);
+                    this.handleApply(this.props.fileProperty, fileEntry.pathname);
                 }
             }
             this.setState({
@@ -695,6 +697,15 @@ export default withStyles(
             }
             this.openSelectedFile();
         }
+        handleApply(fileProperty: UiFileProperty, selectedItem: string)
+        {
+            if (this.state.previousSelection == selectedItem) {
+                return;
+            }
+            this.props.onApply(fileProperty, selectedItem);
+            this.setState({previousSelection: selectedItem});
+        }
+
 
         handleMenuOpen(event: React.MouseEvent<HTMLElement>) {
             this.setState({ menuAnchorEl: event.currentTarget });
@@ -1565,7 +1576,7 @@ export default withStyles(
                                                 <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
 
                                                 <Button variant="dialogSecondary" onClick={() => {
-                                                    this.props.onApply(this.props.fileProperty, this.state.initialSelection);
+                                                    this.handleApply(this.props.fileProperty, this.state.initialSelection);
                                                     this.props.onCancel();
                                                 }} aria-label="cancel">
                                                     Cancel

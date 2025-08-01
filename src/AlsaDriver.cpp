@@ -427,6 +427,7 @@ namespace pipedal
 
         std::string discover_alsa_using_apps()
         {
+            
             return ""; // xxx fix me.
         }
 
@@ -1119,6 +1120,7 @@ namespace pipedal
             int err;
             if ((err = snd_pcm_start(captureHandle)) < 0)
             {
+                Lv2Log::error(SS("Unable to restart ALSA capture: " << snd_strerror(err)));
                 throw PiPedalStateException("Unable to restart ALSA capture.");
             }
 
@@ -1286,7 +1288,7 @@ namespace pipedal
                         {
                             message =
                                 SS("Device " << alsa_device_name << " in use. The following applications are using your soundcard: " << apps
-                                             << ". Stop them as neccesary before trying to   pipedald.");
+                                             << ". Stop them as neccesary before trying to  start pipedald.");
                         }
                         else
                         {
@@ -1411,14 +1413,11 @@ namespace pipedal
                     {
                         throw PiPedalStateException(SS("Audio playback failed. " << snd_strerror(err)));
                     }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     continue;
                 }
                 if (avail == 0)
                     break;
-                if (avail > this->bufferSize)
-                    avail = this->bufferSize;
-
                 ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer.data(), avail);
                 if (err < 0)
                 {
@@ -1429,6 +1428,8 @@ namespace pipedal
         }
         void recover_from_output_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
         {
+            Lv2Log::error("XXX: Output underrun");
+
             validate_capture_handle();
             try {
 
@@ -1437,12 +1438,15 @@ namespace pipedal
                     err = snd_pcm_prepare(playback_handle);
                     if (err < 0)
                     {
+                        Lv2Log::error(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
                         throw PiPedalStateException(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
                     }
+                    snd_pcm_drain(capture_handle);
                     FillOutputBuffer();
                 }
                 else
                 {
+                    Lv2Log::error(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
                     throw PiPedalStateException(SS("Can't recover from ALSA output error. (" << snd_strerror(err) << ")"));
                 }
             } catch (const std::exception &e) {
@@ -1454,6 +1458,7 @@ namespace pipedal
         }
         void recover_from_input_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
         {
+            Lv2Log::error("XXX: Input underring");
             validate_capture_handle();
 
             try {
@@ -1463,12 +1468,7 @@ namespace pipedal
                     // Unlink the streams before recovery
                     snd_pcm_unlink(capture_handle);
 
-                    err = snd_pcm_drop(capture_handle);
-                    if (err < 0)
-                    {
-                        throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
-                    }
-                    err = snd_pcm_drop(playback_handle);
+                    err = snd_pcm_drain(capture_handle);
                     if (err < 0)
                     {
                         throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
@@ -1484,8 +1484,6 @@ namespace pipedal
                         throw std::runtime_error(SS("Cannot prepare capture stream: " << snd_strerror(err)));
                     }
 
-                    // Fill the playback buffer with silence
-                    FillOutputBuffer();
 
                     // Resynchronize the streams
                     if ((err = snd_pcm_link(capture_handle, playback_handle)) < 0)
@@ -1494,10 +1492,12 @@ namespace pipedal
                     }
 
                     // Start the streams
+                    FillOutputBuffer();
                     if ((err = snd_pcm_start(capture_handle)) < 0)
                     {
                         throw std::runtime_error(SS("Cannot restart capture stream: " << snd_strerror(err)));
                     }
+                                        
                     validate_capture_handle();
                 }
                 else if (err == ESTRPIPE)
@@ -1507,7 +1507,7 @@ namespace pipedal
 
                     while ((err = snd_pcm_resume(capture_handle)) == -EAGAIN)
                     {
-                        sleep(1);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     }
                     if (err < 0)
                     {
@@ -1640,6 +1640,8 @@ namespace pipedal
         void AudioThread()
         {
             SetThreadName("alsaDriver");
+
+            
             try
             {
                 SetThreadPriority(SchedulerPriority::RealtimeAudio);
@@ -1725,6 +1727,7 @@ namespace pipedal
                     if (err < 0)
                     {
                         this->driverHost->OnUnderrun();
+                        
                         recover_from_output_underrun(captureHandle, playbackHandle, err);
                     }
                     cpuUse.AddSample(ProfileCategory::Write);

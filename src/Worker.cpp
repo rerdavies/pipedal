@@ -163,8 +163,9 @@ void Worker::WaitForAllResponses()
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         std::chrono::milliseconds waitDuration = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-startTime);
         if (waitDuration.count() > 1500) {
-            Lv2Log::error("Timed out waiting for a Worker task to complete.");
             // better to leak than to terminate the application.
+            Lv2Log::error("Timed out waiting for a Worker task to complete.");
+            break;
         }
     }
 }
@@ -327,7 +328,12 @@ LV2_Worker_Status HostWorkerThread::ScheduleWorkNoLock(Worker *worker, size_t si
 
 void Worker::RunBackgroundTask(size_t size, uint8_t *data)
 {
-    workerInterface->work(lilvInstance->lv2_handle, worker_respond_fn, (LV2_Handle)this, size, data);
+    try {
+        workerInterface->work(lilvInstance->lv2_handle, worker_respond_fn, (LV2_Handle)this, size, data);
+    } catch (const std::exception &e) 
+    {
+        Lv2Log::error(SS("Unhandled exception on LV2 Worker thread: " << e.what()));
+    }
     {
         std::lock_guard lock { this->outstandingRequestMutex};
         --this->outstandingRequests;
