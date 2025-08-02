@@ -1428,7 +1428,7 @@ namespace pipedal
         }
         void recover_from_output_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
         {
-            Lv2Log::error("XXX: Output underrun");
+            // Lv2Log::error("XXX: Output underrun");
 
             validate_capture_handle();
             try {
