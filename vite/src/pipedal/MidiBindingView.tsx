@@ -205,7 +205,7 @@ const MidiBindingView =
 
                 for (let i = 0; i < 127; ++i) {
                     result.push(
-                        <MenuItem key={"k" + i} value={i}>{i} ({Utility.midiNoteName(i)})</MenuItem>
+                        <MenuItem key={"k" + i} value={i}>{i} {Utility.midiNoteName(i)}</MenuItem>
                     )
                 }
 
