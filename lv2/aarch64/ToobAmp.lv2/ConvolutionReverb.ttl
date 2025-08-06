@@ -53,7 +53,7 @@ toobimpulse:impulseFile
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 65 ;
+        lv2:microVersion 66 ;
         rdfs:comment """
 
 Convolution reverb is a notoriously compute-intensive effect. If you are having performance issues,  use the Max T control to constrain the length of the impulse file to

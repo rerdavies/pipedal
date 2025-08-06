@@ -54,7 +54,7 @@ noisegate:envelope_group
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 65 ;
+        lv2:microVersion 66 ;
         rdfs:comment """
 A noise gate is an audio processing tool that controls the volume of an audio signal 
 by allowing it to pass through only when it exceeds a set threshold. 

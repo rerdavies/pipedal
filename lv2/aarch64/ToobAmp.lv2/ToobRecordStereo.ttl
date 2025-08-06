@@ -88,7 +88,7 @@ myprefix:loop3_group
         doap:license <https://opensource.org/license/mit/> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 1 ;
-        lv2:microVersion 65 ;
+        lv2:microVersion 66 ;
 
         ui:ui <http://two-play.com/plugins/toob-record-stereo-ui>;
 
