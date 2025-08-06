@@ -13,18 +13,18 @@ page_icon: img/Install4.jpg
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS bookworm (aarch64) v1.4.85](https://github.com/rerdavies/pipedal/releases/download/v1.4.85/pipedal_1.4.85_arm64.deb)
-- [Ubuntu 24.x (aarch64) v1.4.85](https://github.com/rerdavies/pipedal/releases/download/v1.4.85/pipedal_1.4.85_arm64.deb)
-- [Ubuntu 24.x (amd64) v1.4.85](https://github.com/rerdavies/pipedal/releases/download/v1.4.85/pipedal_1.4.85_amd64.deb)
+- [Raspberry Pi OS bookworm (aarch64) v1.4.86](https://github.com/rerdavies/pipedal/releases/download/v1.4.86/pipedal_1.4.86_arm64.deb)
+- [Ubuntu 24.x (aarch64) v1.4.86](https://github.com/rerdavies/pipedal/releases/download/v1.4.86/pipedal_1.4.86_arm64.deb)
+- [Ubuntu 24.x (amd64) v1.4.86](https://github.com/rerdavies/pipedal/releases/download/v1.4.86/pipedal_1.4.86_amd64.deb)
 
 
-Version 1.4.85 has been tested on Raspberry Pi OS bookworm, Ubuntu 24.04 (amd64), and Ubuntu 24.10 (aarch64). Download the appropriate package for your platform, and install using the following procedure:
+Version 1.4.86 has been tested on Raspberry Pi OS bookworm, Ubuntu 24.04 (amd64), and Ubuntu 24.10 (aarch64). Download the appropriate package for your platform, and install using the following procedure:
 
 ```
   sudo apt update
   sudo apt upgrade
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_1.4.85_arm64.deb 
+  sudo apt-get install ./pipedal_1.4.86_arm64.deb 
 ```
 You MUST use `apt-get`. `apt` will not install downloaded packages; and `dpkg -i` will not install dependencies. 
 
