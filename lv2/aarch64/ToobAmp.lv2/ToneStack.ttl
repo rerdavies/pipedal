@@ -57,7 +57,7 @@ tonestack:eqGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 65 ;
+        lv2:microVersion 66 ;
 
         uiext:ui <http://two-play.com/plugins/toob-tone-stack-ui>;                
 

@@ -1647,7 +1647,8 @@ function ModGuiHost(props: ModGuiHostProps) {
 
     return (
         <ModGuiErrorBoundary plugin={props.plugin} onClose={() => { props.onClose(); setErrorMessage(null); }}>
-            <div style={{
+            <div 
+            style={{
                 display: "inline-block",
                 paddingLeft: 20, paddingRight: 20,
                 overflow: "hidden",
