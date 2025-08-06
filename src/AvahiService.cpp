@@ -40,6 +40,40 @@
 
 using namespace pipedal;
 
+int avahiPollLockCount = 0;
+static std::mutex avahiLockMutex;
+class AvahiPollLock {
+public:
+    AvahiPollLock() = delete;
+    AvahiPollLock(AvahiThreadedPoll*threadedPoll)
+    : threadedPoll(threadedPoll) {
+        std::lock_guard<std::mutex> lock(avahiLockMutex);
+        if (!threadedPoll) {
+            throw std::runtime_error("AvahiPollLock: threadedPoll is null.");
+        }
+        if (++avahiPollLockCount > 1) {
+            throw std::runtime_error("AvahiPollLock: nested locks are not allowed.");
+        }
+        avahi_threaded_poll_lock(threadedPoll);
+    }
+    void release() {
+        std::lock_guard<std::mutex> lock(avahiLockMutex);
+        if (threadedPoll)
+        {
+            if (avahiPollLockCount <= 0) {
+                throw std::runtime_error("AvahiPollLock: release called without a lock.");
+            }
+            --avahiPollLockCount;
+            avahi_threaded_poll_unlock(threadedPoll);
+            threadedPoll = nullptr;
+        }
+    }   
+    ~AvahiPollLock() {
+        release();
+    }
+private:
+    AvahiThreadedPoll *threadedPoll;
+};
 void AvahiService::Announce(
     int portNumber,
     const std::string &name,
@@ -75,7 +109,7 @@ void AvahiService::Announce(
     else
     {
         // already started, so we have to use poll_lock instead.
-        avahi_threaded_poll_lock(threadedPoll);
+        AvahiPollLock lock(threadedPoll);
 
         // all state that we have to protect with the lock now that the avahi serv3ce is running.
         this->portNumber = portNumber;
@@ -104,7 +138,7 @@ void AvahiService::Announce(
                 Lv2Log::error("Failed to update mDNS service because of a synch problem.");
             }
         }
-        avahi_threaded_poll_unlock(threadedPoll);
+        lock.release();
         if (wait)
         {
             Wait();
@@ -118,30 +152,31 @@ void AvahiService::Unannounce(bool wait)
         return;
     if (this->threadedPoll)
     {
-        avahi_threaded_poll_lock(threadedPoll);
-        if (started)
         {
-            if (this->createPending)
+            AvahiPollLock lock(threadedPoll);
+            if (started)
             {
-                // if service is starting up, and we haven't yet made our first announcement,
-                // just signal that we don't want to announc.
-                this->makeAnnouncement = false;
-            }
-            else
-            {
-                this->makeAnnouncement = false;
-                // we have previously made a successful announcement. Retract it.
-                if (group)
+                if (this->createPending)
                 {
-                    int rc = avahi_entry_group_reset(group);
-                    if (rc < 0)
+                    // if service is starting up, and we haven't yet made our first announcement,
+                    // just signal that we don't want to announc.
+                    this->makeAnnouncement = false;
+                }
+                else
+                {
+                    this->makeAnnouncement = false;
+                    // we have previously made a successful announcement. Retract it.
+                    if (group)
                     {
-                        Lv2Log::error("Avahi: failed to un-announce.");
+                        int rc = avahi_entry_group_reset(group);
+                        if (rc < 0)
+                        {
+                            Lv2Log::error("Avahi: failed to un-announce.");
+                        }
                     }
                 }
             }
         }
-        avahi_threaded_poll_unlock(threadedPoll);
         if (wait)
         {
             WaitForUnannounce();
@@ -411,6 +446,7 @@ void AvahiService::Start()
 
         if (!client)
         {
+            AvahiPollLock lock(threadedPoll);
             /* Allocate a new client */
             client = avahi_client_new(avahi_threaded_poll_get(threadedPoll), AvahiClientFlags::AVAHI_CLIENT_NO_FAIL, client_callback, (void *)this, &error);
             /* Check wether creating the client object succeeded */
@@ -442,20 +478,22 @@ void AvahiService::Stop()
 
     if (threadedPoll)
     {
-        avahi_threaded_poll_lock(threadedPoll);
-        if (group)
         {
-            avahi_entry_group_free(group);
-            group = nullptr;
+            AvahiPollLock lock(threadedPoll);
+            if (group)
+            {
+                avahi_entry_group_free(group);
+                group = nullptr;
+            }
         }
-        avahi_threaded_poll_unlock(threadedPoll);
-        avahi_threaded_poll_lock(threadedPoll);
-        if (client)
         {
-            avahi_client_free(client);
-            client = nullptr;
+            AvahiPollLock lock(threadedPoll);
+            if (client)
+            {
+                avahi_client_free(client);
+                client = nullptr;
+            }
         }
-        avahi_threaded_poll_unlock(threadedPoll);
 
         avahi_threaded_poll_stop(threadedPoll);
         avahi_threaded_poll_free(threadedPoll);

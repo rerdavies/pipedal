@@ -34,6 +34,7 @@
 #include "PluginHost.hpp"
 #include "PatchPropertyWriter.hpp"
 #include "CpuTemperatureMonitor.hpp"
+#include "restrict.hpp"
 
 using namespace pipedal;
 
@@ -618,7 +619,7 @@ private:
     {
         for (size_t i = 0; i < audioDriver->OutputBufferCount(); ++i)
         {
-            float *out = (float *)audioDriver->GetOutputBuffer(i);
+            float * out = (float *)audioDriver->GetOutputBuffer(i);
             if (out)
             {
                 ZeroBuffer(out, nframes);
@@ -1141,7 +1142,7 @@ private:
     {
         try
         {
-            float *in, *out;
+            float * restrict in , * restrict out;
 
             Lv2Pedalboard *pedalboard = nullptr;
             pedalboard = this->realtimeActivePedalboard;
@@ -1724,6 +1725,7 @@ public:
         {
             Close();
             active = false;
+            isOpen = false;
             throw;
         }
     }

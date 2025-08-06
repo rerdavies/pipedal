@@ -24,6 +24,10 @@
 
 &nbsp;
 
+#### [Frequently Asked Questions](FAQ.md)
+
+&nbsp;
+
 #### [Building PiPedal from Source](BuildingPiPedalFromSource.md)
 #### [Build Prerequisites](BuildPrerequisites.md)
 #### [The Build Systems](TheBuildSystem.md)

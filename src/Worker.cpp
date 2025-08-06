@@ -15,7 +15,7 @@
 */
 // (Borrows heavily from worker.c by David Robillard.)
 
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2024 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -143,6 +143,7 @@ bool Worker::EmitResponses()
 
 void Worker::WaitForAllResponses()
 {
+    // do what we can to clear the response queue in order to avoid memory/object leaks
     using Clock = std::chrono::steady_clock;
     auto startTime = Clock::now();
     while (true)
@@ -157,11 +158,15 @@ void Worker::WaitForAllResponses()
                 break;
             }
         }
-        std::chrono::seconds waitDuration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now()-startTime);
-        if (waitDuration.count() > 5) {
-            throw std::logic_error("Timed out waiting for a Worker task to complete.");
+        // pump the plugin with a zero-length buffer.
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::chrono::milliseconds waitDuration = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-startTime);
+        if (waitDuration.count() > 1500) {
+            // better to leak than to terminate the application.
+            Lv2Log::error("Timed out waiting for a Worker task to complete.");
+            break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(15));
     }
 }
 
@@ -242,25 +247,33 @@ void HostWorkerThread::ThreadProc() noexcept
 HostWorkerThread::HostWorkerThread()
 {
     this->dataBuffer.resize(16*1024);
-    pThread = std::make_unique<std::thread>([this]()
-                                            { this->ThreadProc(); });
+}
+
+bool HostWorkerThread::StartThread()
+{
+    if (!pThread)
+    {
+        if (closed) {
+            return false;
+        }
+        pThread = std::make_unique<std::thread>([this]()
+                                                { this->ThreadProc(); });
+    }    
+    return true;
 }
 
 void HostWorkerThread::Close()
 {
 
-    bool sendClose = false;
     {
         std::lock_guard lock{submitMutex};
-        if (!closed)
-        {
-            closed = true;
-            sendClose = true;
+        if (pThread) {
+            if (!closed)
+            {
+                closed = true;
+                ScheduleWorkNoLock(nullptr, 0, nullptr);
+            }
         }
-    }
-    if (sendClose)
-    {
-        ScheduleWork(nullptr, 0, nullptr);
     }
 }
 HostWorkerThread::~HostWorkerThread()
@@ -278,7 +291,10 @@ LV2_Worker_Status HostWorkerThread::ScheduleWork(Worker *worker, size_t size, co
 {
     std::lock_guard lock(submitMutex);
 
-    if (exiting)
+    if (!StartThread()) { // ensures thread is running, when plugins haven't declared they want a worker thread.
+        return LV2_Worker_Status::LV2_WORKER_ERR_NO_SPACE;
+    }
+    if (exiting )
     {
         return LV2_Worker_Status::LV2_WORKER_ERR_NO_SPACE;
     }
@@ -286,6 +302,11 @@ LV2_Worker_Status HostWorkerThread::ScheduleWork(Worker *worker, size_t size, co
     {
         exiting = true;
     }
+    return ScheduleWorkNoLock(worker, size, data);
+
+}
+LV2_Worker_Status HostWorkerThread::ScheduleWorkNoLock(Worker *worker, size_t size, const void *data)
+{
 
     if (requestRingBuffer.writeSpace() < sizeof(worker) + sizeof(size) + size)
     {
@@ -307,7 +328,12 @@ LV2_Worker_Status HostWorkerThread::ScheduleWork(Worker *worker, size_t size, co
 
 void Worker::RunBackgroundTask(size_t size, uint8_t *data)
 {
-    workerInterface->work(lilvInstance->lv2_handle, worker_respond_fn, (LV2_Handle)this, size, data);
+    try {
+        workerInterface->work(lilvInstance->lv2_handle, worker_respond_fn, (LV2_Handle)this, size, data);
+    } catch (const std::exception &e) 
+    {
+        Lv2Log::error(SS("Unhandled exception on LV2 Worker thread: " << e.what()));
+    }
     {
         std::lock_guard lock { this->outstandingRequestMutex};
         --this->outstandingRequests;

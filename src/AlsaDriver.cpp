@@ -245,6 +245,9 @@ namespace pipedal
     class AlsaDriverImpl : public AudioDriver
     {
     private:
+        void TraceBuffers(size_t framesInBuffers, char code = ' ');
+        std::recursive_mutex restartMutex;
+
         pipedal::CpuUse cpuUse;
 
 #ifdef ALSADRIVER_CONFIG_DBG
@@ -378,16 +381,21 @@ namespace pipedal
         }
 
     private:
-        void AlsaCleanup()
+        void AlsaCloseAudio()
         {
+            std::lock_guard lock{restartMutex};
 
             if (captureHandle)
             {
+                Lv2Log::debug("ALSA capture handle closed.");
+                snd_pcm_drain(captureHandle);
                 snd_pcm_close(captureHandle);
                 captureHandle = nullptr;
             }
             if (playbackHandle)
             {
+                Lv2Log::debug("ALSA playback handle closed.");
+                snd_pcm_drain(playbackHandle);
                 snd_pcm_close(playbackHandle);
                 playbackHandle = nullptr;
             }
@@ -411,7 +419,10 @@ namespace pipedal
                 snd_pcm_sw_params_free(playbackSwParams);
                 playbackSwParams = nullptr;
             }
-            this->alsaSequencer = nullptr;
+        }
+        void AlsaCleanup()
+        {
+            AlsaCloseAudio();
         }
 
         std::string discover_alsa_using_apps()
@@ -1085,6 +1096,40 @@ namespace pipedal
             }
         }
 
+        void RestartAlsa()
+        {
+            std::lock_guard lock{restartMutex};
+            Lv2Log::info("Restarting ALSA devices.");
+
+            try
+            {
+                AlsaCloseAudio();
+            }
+            catch (const std::exception &e)
+            {
+                Lv2Log::error(SS("Error cleaning up ALSA: " << e.what()));
+                throw std::runtime_error("Unable to restart the audio stream.");
+            }
+            try
+            {
+                OpenAudio(this->jackServerSettings, this->channelSelection);
+                validate_capture_handle();
+                FillOutputBuffer();
+                audioRunning = true;
+            }
+            catch (const std::exception &e)
+            {
+                Lv2Log::error(SS("Error opening ALSA: " << e.what()));
+                throw std::runtime_error("Unable to restart the audio stream.");
+            }
+            int err;
+            if ((err = snd_pcm_start(captureHandle)) < 0)
+            {
+                Lv2Log::error(SS("Unable to restart ALSA capture: " << snd_strerror(err)));
+                throw PiPedalStateException("Unable to restart ALSA capture.");
+            }
+        }
+
         void PrepareCaptureFunctions(snd_pcm_format_t captureFormat)
         {
             this->captureFormat = captureFormat;
@@ -1221,6 +1266,8 @@ namespace pipedal
 
         void OpenAudio(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
         {
+            std::lock_guard lock{restartMutex};
+
             int err;
 
             alsa_device_name = jackServerSettings.GetAlsaInputDevice();
@@ -1245,7 +1292,7 @@ namespace pipedal
                         {
                             message =
                                 SS("Device " << alsa_device_name << " in use. The following applications are using your soundcard: " << apps
-                                             << ". Stop them as neccesary before trying to   pipedald.");
+                                             << ". Stop them as neccesary before trying to  start pipedald.");
                         }
                         else
                         {
@@ -1370,7 +1417,7 @@ namespace pipedal
                     {
                         throw PiPedalStateException(SS("Audio playback failed. " << snd_strerror(err)));
                     }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     continue;
                 }
                 if (avail == 0)
@@ -1386,94 +1433,106 @@ namespace pipedal
             }
             validate_capture_handle();
         }
-        void recover_from_output_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
+        void recover_from_output_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err, size_t framesRead)
         {
             validate_capture_handle();
-            if (err == -EPIPE)
+            try
             {
-                err = snd_pcm_prepare(playback_handle);
-                if (err < 0)
+
+                TraceBuffers(framesRead,'w');
+                if (err == -EPIPE)
                 {
-                    throw PiPedalStateException(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
+                    err = snd_pcm_prepare(playback_handle);
+                    if (err < 0)
+                    {
+                        Lv2Log::error(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
+                        throw PiPedalStateException(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
+                    }
+                    snd_pcm_drain(capture_handle);
+                    FillOutputBuffer();
                 }
-                FillOutputBuffer();
+                else
+                {
+                    Lv2Log::error(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
+                    throw PiPedalStateException(SS("Can't recover from ALSA output error. (" << snd_strerror(err) << ")"));
+                }
             }
-            else
+            catch (const std::exception &e)
             {
-                throw PiPedalStateException(SS("Can't recover from ALSA output error. (" << snd_strerror(err) << ")"));
+                Lv2Log::info(SS("Soft audio restart failed. " << e.what()));
+                RestartAlsa();
+                audioRunning = true;
             }
             validate_capture_handle();
         }
-        void recover_from_input_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err)
+        void recover_from_input_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err, size_t bufferedFrames)
         {
             validate_capture_handle();
 
-            if (err == -EPIPE)
+            try
             {
+                TraceBuffers(bufferedFrames,'r');
+                if (err == -EPIPE)
+                {
 
-                // Unlink the streams before recovery
-                snd_pcm_unlink(capture_handle);
+                    // Unlink the streams before recovery
+                    snd_pcm_unlink(capture_handle);
 
-                err = snd_pcm_drop(capture_handle);
-                if (err < 0)
-                {
-                    throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
-                }
-                err = snd_pcm_drop(playback_handle);
-                if (err < 0)
-                {
-                    throw PiPedalStateException(SS("Can't recover from ALSA underrun. (" << snd_strerror(err) << ")"));
-                }
+                    // Prepare both streams
+                    if ((err = snd_pcm_prepare(playback_handle)) < 0)
+                    {
+                        throw std::runtime_error(SS("Cannot prepare playback stream: " << snd_strerror(err)));
+                    }
+                    if ((err = snd_pcm_prepare(capture_handle)) < 0)
+                    {
+                        throw std::runtime_error(SS("Cannot prepare capture stream: " << snd_strerror(err)));
+                    }
 
-                // Prepare both streams
-                if ((err = snd_pcm_prepare(playback_handle)) < 0)
-                {
-                    throw std::runtime_error(SS("Cannot prepare playback stream: " << snd_strerror(err)));
-                }
-                if ((err = snd_pcm_prepare(capture_handle)) < 0)
-                {
-                    throw std::runtime_error(SS("Cannot prepare capture stream: " << snd_strerror(err)));
-                }
+                    // Resynchronize the streams
+                    if ((err = snd_pcm_link(capture_handle, playback_handle)) < 0)
+                    {
+                        throw std::runtime_error(SS("Cannot relink streams: " << snd_strerror(err)));
+                    }
 
-                // Fill the playback buffer with silence
-                FillOutputBuffer();
+                    // Start the streams
+                    FillOutputBuffer();
+                    if ((err = snd_pcm_start(capture_handle)) < 0)
+                    {
+                        throw std::runtime_error(SS("Cannot restart capture stream: " << snd_strerror(err)));
+                    }
 
-                // Resynchronize the streams
-                if ((err = snd_pcm_link(capture_handle, playback_handle)) < 0)
-                {
-                    throw std::runtime_error(SS("Cannot relink streams: " << snd_strerror(err)));
+                    validate_capture_handle();
                 }
+                else if (err == ESTRPIPE)
+                {
+                    audioRunning = false;
+                    validate_capture_handle();
 
-                // Start the streams
-                if ((err = snd_pcm_start(capture_handle)) < 0)
-                {
-                    throw std::runtime_error(SS("Cannot restart capture stream: " << snd_strerror(err)));
-                }
-                validate_capture_handle();
-            }
-            else if (err == ESTRPIPE)
-            {
-                audioRunning = false;
-                validate_capture_handle();
-
-                while ((err = snd_pcm_resume(capture_handle)) == -EAGAIN)
-                {
-                    sleep(1);
-                }
-                if (err < 0)
-                {
-                    err = snd_pcm_prepare(capture_handle);
+                    while ((err = snd_pcm_resume(capture_handle)) == -EAGAIN)
+                    {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    }
                     if (err < 0)
                     {
-                        throw PiPedalStateException(SS("Can't recover from ALSA suspend. (" << snd_strerror(err) << ")"));
+                        err = snd_pcm_prepare(capture_handle);
+                        if (err < 0)
+                        {
+                            throw PiPedalStateException(SS("Can't recover from ALSA suspend. (" << snd_strerror(err) << ")"));
+                        }
                     }
+                    audioRunning = true;
+                    validate_capture_handle();
                 }
-                audioRunning = true;
-                validate_capture_handle();
+                else
+                {
+                    throw PiPedalStateException(SS("Can't recover from ALSA input error. (" << snd_strerror(err) << ")"));
+                }
             }
-            else
+            catch (const std::exception &e)
             {
-                throw std::runtime_error(SS("Can't restart audio: " << snd_strerror(err)));
+                Lv2Log::info(SS("Soft audio restart failed. " << e.what()));
+                RestartAlsa();
+                audioRunning = true;
             }
         }
 
@@ -1516,6 +1575,7 @@ namespace pipedal
                 {
                     snd_pcm_wait(captureHandle, 1);
                 }
+                TraceBuffers(framesRead);
             } while (frames > 0);
             return framesRead;
         }
@@ -1526,6 +1586,11 @@ namespace pipedal
             AlsaMidiMessage message;
 
             midiEventCount = 0;
+            auto alsaSequener = this->alsaSequencer; // take an addref
+            if (!alsaSequener)
+            {
+                return;
+            }
             while (alsaSequencer->ReadMessage(message, 0))
             {
                 size_t messageSize = message.size;
@@ -1580,6 +1645,7 @@ namespace pipedal
         void AudioThread()
         {
             SetThreadName("alsaDriver");
+
             try
             {
                 SetThreadPriority(SchedulerPriority::RealtimeAudio);
@@ -1597,7 +1663,7 @@ namespace pipedal
                 }
 
                 CrashGuardLock crashGuardLock;
-                
+
                 cpuUse.SetStartTime(cpuUse.Now());
                 while (true)
                 {
@@ -1628,7 +1694,7 @@ namespace pipedal
                                  framesToRead)) < 0)
                         {
                             this->driverHost->OnUnderrun();
-                            recover_from_input_underrun(captureHandle, playbackHandle, nFrames);
+                            recover_from_input_underrun(captureHandle, playbackHandle, nFrames, framesRead);
                             xrun = true;
                             break;
                         }
@@ -1665,7 +1731,8 @@ namespace pipedal
                     if (err < 0)
                     {
                         this->driverHost->OnUnderrun();
-                        recover_from_output_underrun(captureHandle, playbackHandle, err);
+
+                        recover_from_output_underrun(captureHandle, playbackHandle, err, framesRead);
                     }
                     cpuUse.AddSample(ProfileCategory::Write);
                 }
@@ -1675,11 +1742,11 @@ namespace pipedal
                 Lv2Log::error(e.what());
                 Lv2Log::error("ALSA audio thread terminated abnormally.");
             }
-            this->driverHost->OnAlsaDriverStopped();
 
             // if we terminated abnormally, pump messages until we have been terminated.
             if (!terminateAudio())
             {
+                this->driverHost->OnAlsaDriverStopped();
                 // zero out input buffers.
                 for (size_t i = 0; i < this->captureBuffers.size(); ++i)
                 {
@@ -1694,7 +1761,6 @@ namespace pipedal
                     while (!terminateAudio())
                     {
                         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                        // zero out input buffers.
                         this->driverHost->OnProcess(this->bufferSize);
                     }
                 }
@@ -1766,7 +1832,7 @@ namespace pipedal
             }
 
             audioThread = std::make_unique<std::jthread>([this]()
-                                           { AudioThread(); });
+                                                         { AudioThread(); });
         }
 
         virtual void Deactivate()
@@ -1848,6 +1914,8 @@ namespace pipedal
             Deactivate();
             AlsaCleanup();
             DeleteBuffers();
+            this->alsaSequencer = nullptr;
+
             std::atomic_thread_fence(std::memory_order::release);
         }
 
@@ -1940,7 +2008,7 @@ namespace pipedal
         try
         {
             int err;
-            for (int retry = 0; retry < 2; ++retry)
+            for (int retry = 0; retry < 4; ++retry)
             {
                 err = snd_pcm_open(&playbackHandle, alsaDeviceName.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
                 if (err < 0) // field report of a device that is present, but won't immediately open.
@@ -2200,6 +2268,36 @@ namespace pipedal
             AlsaAssert(event.buffer[3] == 0x77);
         }
 #endif
+    }
+
+    struct BufferTrace
+    {
+        snd_pcm_sframes_t inAvail;
+        snd_pcm_sframes_t outAvail;
+        snd_pcm_sframes_t buffered;
+        snd_pcm_sframes_t total;
+        char code;
+    };
+
+    std::vector<BufferTrace> bufferTraces(1000);
+    size_t bufferTraceIndex;
+
+    void AlsaDriverImpl::TraceBuffers(size_t framesInBuffer,char code)
+    {
+        auto inAvail = snd_pcm_avail_update(this->captureHandle);
+        auto outAvail = snd_pcm_avail_update(this->playbackHandle);
+
+        auto total = inAvail + outAvail + framesInBuffer;
+        bufferTraces[bufferTraceIndex++] = {
+            inAvail,
+            outAvail,
+            (snd_pcm_sframes_t)framesInBuffer,
+            (snd_pcm_sframes_t)total,
+            code};
+        if (bufferTraceIndex == bufferTraces.size())
+        {
+            bufferTraceIndex = 0;
+        }
     }
 
     void FreeAlsaGlobals()

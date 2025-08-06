@@ -471,6 +471,9 @@ export enum PluginType {
     None = "",
     InvalidPlugin = "InvalidPlugin",
 
+    // "special"
+    NamPlugin = "NamPlugin",
+
     Plugin = "Plugin",
     AllpassPlugin = "AllpassPlugin",
     AmplifierPlugin = "AmplifierPlugin",
@@ -510,7 +513,7 @@ export enum PluginType {
     UtilityPlugin = "UtilityPlugin",
     WaveshaperPlugin = "WaveshaperPlugin",
 
-    // psuedo plugin type for the Amps node of the filter dialog.
+    // pseudo plugin type for the Amps node of the filter dialog.
     PiPedalAmpsNode = "PiPedalAmpsNode",
 
     // pseudo plugin types for splitter.
@@ -521,7 +524,7 @@ export enum PluginType {
 
 
 
-    // psuedo plugin type for misc icons.
+    // pseudo plugin type for misc icons.
     ErrorPlugin = "ErrorPlugin",
     Terminal = "Terminal", //"img/fx_terminal.svg"; 
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2025 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -32,6 +32,7 @@
 #include "lv2/atom/atom.h"
 #include "lv2/worker/worker.h"
 #include "condition_variable"
+#include <atomic>
 
 #include <map>
 #include <string>
@@ -51,10 +52,13 @@ namespace pipedal {
         HostWorkerThread();
         ~HostWorkerThread();
 
+        bool StartThread();
         void Close();
+        bool Closed() const { return closed || pThread == nullptr; }
         LV2_Worker_Status ScheduleWork(Worker*worker, size_t size, const void*data);
     private:
-        bool closed = false;
+        LV2_Worker_Status ScheduleWorkNoLock(Worker*worker, size_t size, const void*data);
+        std::atomic<bool> closed = false;
         std::unique_ptr<std::thread> pThread;
         void ThreadProc() noexcept;
 
@@ -63,8 +67,6 @@ namespace pipedal {
         inverting_mutex submitMutex;
 
         std::vector<uint8_t> dataBuffer;
-
-        
 
     };
 
@@ -75,8 +77,8 @@ namespace pipedal {
         LilvInstance*lilvInstance;
         const LV2_Worker_Interface*workerInterface;
 
-        bool closed = false;
-        bool exiting = false;
+        std::atomic<bool> closed = false;
+        std::atomic<bool> exiting = false;
         RingBuffer<true,false> responseRingBuffer;
 
         std::vector<uint8_t> responseBuffer;
@@ -94,6 +96,7 @@ namespace pipedal {
 	public:
 		Worker(const std::shared_ptr<HostWorkerThread>& pHostWorker,LilvInstance *instance, const LV2_Worker_Interface *iface);
         ~Worker();
+        
         void Close();
 
         LV2_Worker_Status ScheduleWork(

@@ -32,6 +32,7 @@ import FxPhaserIcon from './svg/fx_phaser.svg?react';
 import FxFilterIcon from './svg/fx_filter.svg?react';
 import FxDelayIcon from './svg/fx_delay.svg?react';
 
+import FxNamIcon from './svg/fx_nam.svg?react';
 import FxAmplifierIcon from './svg/fx_amplifier.svg?react';
 import FxChorusIcon from './svg/fx_chorus.svg?react';
 import FxModulatorIcon from './svg/fx_modulator.svg?react';
@@ -97,9 +98,14 @@ export function SelectSvgIcon(plugin_type: PluginType, className: string, size: 
     }
     let myStyle = { width: size, height: size, opacity: opacity, color: color, fill: color };
     switch (plugin_type) {
+
+        case PluginType.NamPlugin:
+            return <FxNamIcon className={className} style={myStyle} />;
         case PluginType.PhaserPlugin:
             return <FxPhaserIcon className={className} style={myStyle} />;
         case PluginType.FilterPlugin:
+        case PluginType.BandpassPlugin:
+        case PluginType.AllpassPlugin:
             return <FxFilterIcon className={className} style={myStyle} />;
         case PluginType.DelayPlugin:
             return <FxDelayIcon className={className} style={myStyle} />;
@@ -175,16 +181,20 @@ export function SelectSvgIcon(plugin_type: PluginType, className: string, size: 
         case PluginType.Terminal:
             return <FxTerminalIcon className={className} style={myStyle} />;
 
-        default:
         case PluginType.Plugin:
+        default:
             return <FxPluginIcon className={className} style={myStyle} />;
     }
 }
 export function SelectBaseIcon(plugin_type: PluginType): string {
     switch (plugin_type) {
+        case PluginType.NamPlugin:
+            return "fx_nam.svg";
         case PluginType.PhaserPlugin:
             return "fx_phaser.svg";
         case PluginType.FilterPlugin:
+        case PluginType.BandpassPlugin:
+        case PluginType.AllpassPlugin:
             return "fx_filter.svg";
         case PluginType.DelayPlugin:
             return "fx_delay.svg";

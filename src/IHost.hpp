@@ -46,7 +46,6 @@ namespace pipedal {
         virtual int GetNumberOfInputAudioChannels() const = 0;
         virtual int GetNumberOfOutputAudioChannels() const = 0;
         virtual std::shared_ptr<Lv2PluginInfo> GetPluginInfo(const std::string &uri) const = 0;
-        virtual std::shared_ptr<HostWorkerThread> GetHostWorkerThread() = 0;
 
         virtual IEffect *CreateEffect(PedalboardItem &pedalboard) = 0;
 

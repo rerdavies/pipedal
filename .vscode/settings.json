@@ -114,11 +114,14 @@
         "Bassman",
         "Chowdhury",
         "Chowdhury's",
+        "datasheet",
+        "datasheets",
         "discursus",
         "distro",
         "distros",
         "dpkg",
         "flac",
+        "Focusrite",
         "Freeverb",
         "Guitarix",
         "gxplugins",
@@ -150,7 +153,9 @@
         "pipedalui",
         "rdfs",
         "RTAS",
+        "Scarlett",
         "setlist",
+        "Sonus",
         "stompboxes",
         "ToobAmp",
         "toolsets",
@@ -163,7 +168,7 @@
     "cSpell.ignoreWords": [
         "nammodel"
     ],
-    "cSpell.enabled": true,
+    "cSpell.enabled": false,
     
     // Disable all automatic completion suggestions - only show when Ctrl+Space is pressed
     "editor.quickSuggestions": {

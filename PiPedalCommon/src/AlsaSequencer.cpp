@@ -259,6 +259,8 @@ namespace pipedal
         // Open sequencer in input mode
         int rc;
 
+        Lv2Log::debug("Opening ALSA Sequencer");
+
         rc = snd_seq_open(&seqHandle, "default", SND_SEQ_OPEN_DUPLEX, 0);
         if (rc < 0)
         {

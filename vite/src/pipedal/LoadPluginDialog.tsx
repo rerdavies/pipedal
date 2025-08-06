@@ -602,10 +602,12 @@ export const LoadPluginDialog =
                     return;
                 }
                 if (this.changedSearchString !== undefined) {
-                    this.requestScrollTo();
-                    this.setState({
-                        search_string: this.changedSearchString
-                    });
+                    if (this.state.search_string !== this.changedSearchString) {
+                        this.requestScrollTo();
+                        this.setState({
+                            search_string: this.changedSearchString
+                        });
+                    }
                     this.changedSearchString = undefined;
                 }
                 this.hSearchTimeout = undefined;
@@ -642,7 +644,10 @@ export const LoadPluginDialog =
 
                 const classes = withStyles.getClasses(this.props);
                 let isFavorite: boolean = this.state.favoritesList[value.uri] ?? false;
-
+                let pluginType = value.plugin_type;
+                if (value.uri === "http://two-play.com/plugins/toob-nam") {
+                    pluginType = PluginType.NamPlugin;
+                }
                 return (
                     <div key={value.uri}
                         onDoubleClick={(e) => { this.onDoubleClick(e, value.uri) }}
@@ -654,7 +659,7 @@ export const LoadPluginDialog =
                             <SelectHoverBackground selected={value.uri === this.state.selected_uri} showHover={true} />
                             <div className={classes.content}>
                                 <div className={classes.iconBorder} >
-                                    <PluginIcon pluginType={value.plugin_type} size={24} opacity={0.6} />
+                                    <PluginIcon pluginType={pluginType} size={24} opacity={0.6} />
                                 </div>
                                 <div className={classes.content2}>
                                     <div className={classes.label} style={{ display: "flex", flexFlow: "row nowrap", alignItems: "center" }} >

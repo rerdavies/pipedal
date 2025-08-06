@@ -106,6 +106,27 @@ static bool isJackServiceRunning()
 // }
 #endif
 
+#define ENABLE_SEGV_DEBUG 0
+#if ENABLE_SEGV_DEBUG
+void debug_segvHandler(int sig)
+{
+    // Print out all the frames to stderr
+    const char *message = "Error: SEGV signal received.\n";
+    auto _ = write(STDERR_FILENO, message, strlen(message));
+
+    _exit(EXIT_FAILURE);
+}
+
+static void EnableDebugSevHandler()
+{
+    signal(SIGSEGV, debug_segvHandler);
+    signal(SIGILL, debug_segvHandler);
+    signal(SIGKILL, debug_segvHandler);
+}
+
+#endif
+
+
 static bool TryGetLogLevel(const std::string &strLogLevel, LogLevel *result)
 {
     if (strLogLevel == "debug")
@@ -319,13 +340,24 @@ int main(int argc, char *argv[])
             sigaddset(&sigSet, SIGTERM);
             sigaddset(&sigSet, SIGUSR1);
 
+            // block these signasl for all threads.
             s = pthread_sigmask(SIG_BLOCK, &sigSet, NULL);
             if (s != 0)
             {
                 throw std::logic_error("pthread_sigmask failed.");
             }
 
+            // Clear any pending signals before waiting
+            struct timespec timeout = {0, 0};
+            while (sigtimedwait(&sigSet, NULL, &timeout) > 0) {
+                // Consume any pending signals
+            }
+#if ENABLE_SEGV_DEBUG
+            EnableDebugSevHandler();
+#endif
+
             PiPedalModel model;
+
 
             model.SetNetworkChangedListener(
                 [&server]() mutable

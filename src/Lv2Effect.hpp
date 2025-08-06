@@ -40,12 +40,12 @@
 #include "StateInterface.hpp"
 #include "LogFeature.hpp"
 
-
 namespace pipedal
 {
 
     class RealtimeRingBufferWriter;    
     class IPatchWriterCallback;
+    class HostWorkerThread;
 
     class Lv2Effect : public IEffect, private LogFeature::LogMessageListener
     {
@@ -57,6 +57,10 @@ namespace pipedal
 
     private:
         
+
+        std::shared_ptr<HostWorkerThread> workerThread;
+        std::unique_ptr<Worker> worker;
+
         std::unordered_map<std::string,int> controlIndex;
 
         FileBrowserFilesFeature fileBrowserFilesFeature;
@@ -70,7 +74,6 @@ namespace pipedal
         int numberOfOutputs = 0;
         int numberOfMidiInputs = 0;
 
-        std::unique_ptr<Worker> worker;
         LilvInstance *pInstance;
         std::shared_ptr<Lv2PluginInfo> info;
         std::vector<float> controlValues;

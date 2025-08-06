@@ -454,6 +454,8 @@ namespace pipedal
         LV2_PROPERTY_GETSET(patchProperties)
         LV2_PROPERTY_GETSET(hasDefaultState)
 
+        bool WantsWorkerThread() const;
+
         const Lv2PortInfo &getPort(const std::string &symbol)
         {
             for (size_t i = 0; i < ports_.size(); ++i)
@@ -913,7 +915,6 @@ namespace pipedal
         }
 
     private:
-        std::shared_ptr<HostWorkerThread> pHostWorkerThread;
         // IHost implementation.
         virtual void SetMaxAudioBufferSize(size_t size) { maxBufferSize = size; }
         virtual size_t GetMaxAudioBufferSize() const { return maxBufferSize; }
@@ -922,7 +923,6 @@ namespace pipedal
         virtual int GetNumberOfInputAudioChannels() const { return numberOfAudioInputChannels; }
         virtual int GetNumberOfOutputAudioChannels() const { return numberOfAudioOutputChannels; }
         virtual LV2_Feature *const *GetLv2Features() const { return (LV2_Feature *const *)&(this->lv2Features[0]); }
-        virtual std::shared_ptr<HostWorkerThread> GetHostWorkerThread();
 
     public:
         virtual MapFeature &GetMapFeature() override { return this->mapFeature; }

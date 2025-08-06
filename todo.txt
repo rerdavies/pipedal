@@ -1,10 +1,5 @@
-Crash-proofing: do not reload pedalboard if the previous run crashed before normal shutdown.
 
-MOD ir uses some scheme to limit the minimum buffer size, which is not implemented in Pipedal.
-
-wa
-Vu Meters, move rendering to background images, in order to reduce layout overhead.
-
+Carla Project icons.
 check reload after change of LV2 plugins.
 
 Exactly one underrun per seek in Toob Player

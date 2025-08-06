@@ -306,7 +306,11 @@ class CustomSelectPathControl implements ModGuiControl {
             this.requestUpdate();
         }
         if (this.enumeratedValueElement) {
-            this.enumeratedValueElement.textContent = pathFileName(this.pathValue);
+            if (this.pathValue === "") {
+                this.enumeratedValueElement.textContent = "<none>";
+            } else {
+                this.enumeratedValueElement.textContent = pathFileName(this.pathValue);
+            }
         }
     }
 
@@ -1643,7 +1647,8 @@ function ModGuiHost(props: ModGuiHostProps) {
 
     return (
         <ModGuiErrorBoundary plugin={props.plugin} onClose={() => { props.onClose(); setErrorMessage(null); }}>
-            <div style={{
+            <div 
+            style={{
                 display: "inline-block",
                 paddingLeft: 20, paddingRight: 20,
                 overflow: "hidden",
