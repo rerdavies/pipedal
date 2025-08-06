@@ -306,7 +306,11 @@ class CustomSelectPathControl implements ModGuiControl {
             this.requestUpdate();
         }
         if (this.enumeratedValueElement) {
-            this.enumeratedValueElement.textContent = pathFileName(this.pathValue);
+            if (this.pathValue === "") {
+                this.enumeratedValueElement.textContent = "<none>";
+            } else {
+                this.enumeratedValueElement.textContent = pathFileName(this.pathValue);
+            }
         }
     }
 
