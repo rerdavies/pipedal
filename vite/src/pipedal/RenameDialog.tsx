@@ -129,7 +129,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
 
                 <DialogContent >
                     <TextField
-                    
+                        autoFocus 
                         onKeyDown={handleKeyDown}
                         variant="standard"
                         slotProps={{

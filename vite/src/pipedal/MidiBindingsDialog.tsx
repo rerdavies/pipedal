@@ -185,7 +185,7 @@ export const MidiBindingDialog =
                             <tr key={"k" + keyIx++}>
                                 <td colSpan={2} className={classes.pluginHead}>
                                     <Typography variant="caption" color="textSecondary" noWrap>
-                                        {plugin.name}
+                                	{item.title ? item.title : plugin.name}
                                     </Typography>
                                 </td>
                             </tr>
