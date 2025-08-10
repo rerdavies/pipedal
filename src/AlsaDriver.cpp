@@ -24,6 +24,7 @@
 
 #include "pch.h"
 #include "util.hpp"
+#include <cmath>
 #include "Finally.hpp"
 #include <bit>
 #include <memory>
@@ -56,6 +57,7 @@ using namespace pipedal;
 namespace pipedal
 {
 
+#define TRACE_BUFFER_POSITIONS 1
     static bool ShouldForceStereoChannels(snd_pcm_t *pcmHandle, snd_pcm_hw_params_t *hwParams, unsigned int channelsMin, unsigned int channelsMax)
     {
         // The problem: old IC2 drivers seem to return 1-8 channels, but 8 channels is non-functinal. The assumption is that legacy drivers
@@ -245,7 +247,41 @@ namespace pipedal
     class AlsaDriverImpl : public AudioDriver
     {
     private:
-        void TraceBuffers(size_t framesInBuffers, char code = ' ');
+        struct BufferTrace
+        {
+            uint64_t time;
+            snd_pcm_sframes_t inAvail;
+            snd_pcm_sframes_t outAvail;
+            snd_pcm_sframes_t buffered;
+            snd_pcm_sframes_t total;
+            char code;
+        };
+
+        std::vector<BufferTrace> bufferTraces{1000};
+        size_t bufferTraceIndex = 0;
+
+        inline void TraceBufferPositions(size_t framesInBuffer, char code = ' ')
+        {
+#if TRACE_BUFFER_POSITIONS
+            uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+            auto inAvail = snd_pcm_avail_update(this->captureHandle);
+            auto outAvail = snd_pcm_avail_update(this->playbackHandle);
+
+            auto total = inAvail + outAvail + framesInBuffer;
+            bufferTraces[bufferTraceIndex++] = {
+                time,
+                inAvail,
+                outAvail,
+                (snd_pcm_sframes_t)framesInBuffer,
+                (snd_pcm_sframes_t)total,
+                code};
+            if (bufferTraceIndex == bufferTraces.size())
+            {
+                bufferTraceIndex = 0;
+            }
+#endif
+        }
+
         std::recursive_mutex restartMutex;
 
         pipedal::CpuUse cpuUse;
@@ -257,8 +293,15 @@ namespace pipedal
 #endif
         uint32_t sampleRate = 0;
 
-        uint32_t bufferSize;
-        uint32_t numberOfBuffers;
+        uint32_t bufferSize = 0;
+        uint32_t numberOfBuffers = 0;
+
+        unsigned int capturePeriods = 0;
+        unsigned int playbackPeriods = 0;
+
+        uint32_t captureHardwarePeriodSize = 0;
+        uint32_t playbackHardwarePeriodSize = 0;
+        ;
 
         int playbackChannels = 0;
         int captureChannels = 0;
@@ -357,8 +400,6 @@ namespace pipedal
         snd_pcm_t *playbackHandle = nullptr;
         snd_pcm_t *captureHandle = nullptr;
 
-        unsigned int periods = 0;
-
         snd_pcm_hw_params_t *captureHwParams = nullptr;
         snd_pcm_sw_params_t *captureSwParams = nullptr;
         snd_pcm_hw_params_t *playbackHwParams = nullptr;
@@ -437,10 +478,13 @@ namespace pipedal
             snd_pcm_hw_params_t *hwParams,
             snd_pcm_sw_params_t *swParams,
             int *channels,
-            unsigned int *periods)
+            unsigned int *periods,
+            unsigned int *hwPeriodSize)
         {
             int err;
             snd_pcm_uframes_t stop_th;
+
+            bool isCaptureStream = strcmp(streamType, "capture") == 0;
 
             if ((err = snd_pcm_hw_params_any(handle, hwParams)) < 0)
             {
@@ -513,7 +557,7 @@ namespace pipedal
             {
                 AlsaError(SS("Can't set period size to " << this->bufferSize << " (" << alsa_device_name << "/" << streamType << ")"));
             }
-            this->bufferSize = effectivePeriodSize;
+            *hwPeriodSize = effectivePeriodSize;
 
             *periods = this->numberOfBuffers;
             dir = 0;
@@ -547,7 +591,7 @@ namespace pipedal
 
             snd_pcm_sw_params_current(handle, swParams);
 
-            if (handle == this->captureHandle)
+            if (isCaptureStream)
             {
                 if ((err = snd_pcm_sw_params_set_start_threshold(handle, swParams,
                                                                  0)) < 0)
@@ -564,7 +608,7 @@ namespace pipedal
                 }
             }
 
-            stop_th = *periods * this->bufferSize;
+            stop_th = *periods * *hwPeriodSize;
             if (this->soft_mode)
             {
                 stop_th = (snd_pcm_uframes_t)-1;
@@ -582,13 +626,19 @@ namespace pipedal
                 AlsaError(SS("Cannot set silence threshold for " << alsa_device_name));
             }
 
-            if (handle == this->playbackHandle)
+            if (!isCaptureStream)
+            {
+                // For playback, set avail_min to one buffer size to minimize latency
+                // while ensuring we have enough buffered data to prevent underruns
+                snd_pcm_uframes_t playback_avail_min = this->bufferSize;
                 err = snd_pcm_sw_params_set_avail_min(
-                    handle, swParams,
-                    this->bufferSize * (*periods - this->numberOfBuffers + 1));
+                    handle, swParams, playback_avail_min);
+            }
             else
+            {
                 err = snd_pcm_sw_params_set_avail_min(
                     handle, swParams, this->bufferSize);
+            }
 
             if (err < 0)
             {
@@ -636,7 +686,8 @@ namespace pipedal
                     captureHwParams,
                     captureSwParams,
                     &captureChannels,
-                    &this->periods);
+                    &this->capturePeriods,
+                    &this->captureHardwarePeriodSize);
             }
             if (this->playbackHandle)
             {
@@ -647,7 +698,8 @@ namespace pipedal
                     playbackHwParams,
                     playbackSwParams,
                     &playbackChannels,
-                    &this->periods);
+                    &this->playbackPeriods,
+                    &this->playbackHardwarePeriodSize);
             }
 
 #ifdef ALSADRIVER_CONFIG_DBG
@@ -1186,8 +1238,8 @@ namespace pipedal
             }
 
             captureFrameSize = captureSampleSize * captureChannels;
-            rawCaptureBuffer.resize(captureFrameSize * bufferSize);
-            memset(rawCaptureBuffer.data(), 0, captureFrameSize * bufferSize);
+            rawCaptureBuffer.resize(captureFrameSize * bufferSize * 2);
+            memset(rawCaptureBuffer.data(), 0, rawCaptureBuffer.size());
 
             AllocateBuffers(captureBuffers, captureChannels);
         }
@@ -1401,17 +1453,22 @@ namespace pipedal
         {
             validate_capture_handle();
 
-            memset(rawPlaybackBuffer.data(), 0, playbackFrameSize * bufferSize);
+            memset(rawPlaybackBuffer.data(), 0, rawPlaybackBuffer.size());
             int retry = 0;
             while (true)
             {
                 auto avail = snd_pcm_avail(this->playbackHandle);
                 if (avail < 0)
                 {
+                    if (avail == -EAGAIN)
+                    {
+                        return;
+                    }
                     if (++retry >= 5) // kinda sus code. let's make sure we don't spin forever.
                     {
                         throw std::runtime_error("Timed out trying to fill the audio output buffer.");
                     }
+
                     int err = snd_pcm_prepare(playbackHandle);
                     if (err < 0)
                     {
@@ -1422,8 +1479,9 @@ namespace pipedal
                 }
                 if (avail == 0)
                     break;
-                if (avail > this->bufferSize)
-                    avail = this->bufferSize;
+
+                if (avail * playbackFrameSize > this->rawPlaybackBuffer.size())
+                    this->rawPlaybackBuffer.resize(avail * playbackFrameSize);
 
                 ssize_t err = WriteBuffer(playbackHandle, rawPlaybackBuffer.data(), avail);
                 if (err < 0)
@@ -1439,7 +1497,7 @@ namespace pipedal
             try
             {
 
-                TraceBuffers(framesRead,'w');
+                TraceBufferPositions(framesRead, 'w');
                 if (err == -EPIPE)
                 {
                     err = snd_pcm_prepare(playback_handle);
@@ -1471,7 +1529,7 @@ namespace pipedal
 
             try
             {
-                TraceBuffers(bufferedFrames,'r');
+                TraceBufferPositions(bufferedFrames, 'r');
                 if (err == -EPIPE)
                 {
 
@@ -1575,7 +1633,7 @@ namespace pipedal
                 {
                     snd_pcm_wait(captureHandle, 1);
                 }
-                TraceBuffers(framesRead);
+                TraceBufferPositions(framesRead);
             } while (frames > 0);
             return framesRead;
         }
@@ -1659,7 +1717,7 @@ namespace pipedal
                 int err;
                 if ((err = snd_pcm_start(captureHandle)) < 0)
                 {
-                    throw PiPedalStateException("Unable to start ALSA capture.");
+                    throw PiPedalStateException(SS("Unable to start ALSA capture. " << snd_strerror(err)));
                 }
 
                 CrashGuardLock crashGuardLock;
@@ -1733,6 +1791,7 @@ namespace pipedal
                         this->driverHost->OnUnderrun();
 
                         recover_from_output_underrun(captureHandle, playbackHandle, err, framesRead);
+                        framesRead = 0;
                     }
                     cpuUse.AddSample(ProfileCategory::Write);
                 }
@@ -2268,36 +2327,6 @@ namespace pipedal
             AlsaAssert(event.buffer[3] == 0x77);
         }
 #endif
-    }
-
-    struct BufferTrace
-    {
-        snd_pcm_sframes_t inAvail;
-        snd_pcm_sframes_t outAvail;
-        snd_pcm_sframes_t buffered;
-        snd_pcm_sframes_t total;
-        char code;
-    };
-
-    std::vector<BufferTrace> bufferTraces(1000);
-    size_t bufferTraceIndex;
-
-    void AlsaDriverImpl::TraceBuffers(size_t framesInBuffer,char code)
-    {
-        auto inAvail = snd_pcm_avail_update(this->captureHandle);
-        auto outAvail = snd_pcm_avail_update(this->playbackHandle);
-
-        auto total = inAvail + outAvail + framesInBuffer;
-        bufferTraces[bufferTraceIndex++] = {
-            inAvail,
-            outAvail,
-            (snd_pcm_sframes_t)framesInBuffer,
-            (snd_pcm_sframes_t)total,
-            code};
-        if (bufferTraceIndex == bufferTraces.size())
-        {
-            bufferTraceIndex = 0;
-        }
     }
 
     void FreeAlsaGlobals()
