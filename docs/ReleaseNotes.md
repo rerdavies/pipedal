@@ -1,14 +1,18 @@
 # Release Notes
-## PiPedal 1.4.86 Beta
+## PiPedal 1.4.87 Beta
 The Big Feature: 
-- Code optimizations for Raspberry Pi 5 (Cortex-A76), providing a potential 2x performance improvement for TooB Neural Amp Modeler.
+- Code optimizations for Raspberry Pi 5 (Cortex-A76), providing substantial performance improvements for TooB Neural Amp Modeler.
 - New "Threaded" button optionally executes TooB NAM computation on a separate thread. Allows up to 5 NAM instances on Pi 4, and practically unlimited NAM instances on Pi 5.
 - TooB Neural Amp Modeler: Switch to the NeuralAudio NAM Backend
 Bug fixes:
 - Compatibility with plugins expecting certain MOD host features.
 - Improvements to recovery from audio underruns and overruns.
 - Fixes for loss of currently selected plugin when modifying pedalboard structure.
+- Fixes for TooB NAM lockups when using 16- and 32-sample buffer sizes.
+- Fixes for performance issues with TooB NAM when using 16- and 32-sample buffer sizes.
+- Fixes for volume adjustments in TooB NAM.
 
+(A re-issue of 1.4.86)
 ## Pipedal 1.4.79 Beta
 
 The Big Feature:
