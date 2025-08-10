@@ -8,7 +8,7 @@ Bug fixes:
 - Compatibility with plugins expecting certain MOD host features.
 - Improvements to recovery from audio underruns and overruns.
 - Fixes for loss of currently selected plugin when modifying pedalboard structure.
-- Fixes for TooB NAM when using 16- and 32-sample buffer sizes.
+- Fixes for TooB NAM lockups when using 16- and 32-sample buffer sizes.
 - Fixes for performance issues with TooB NAM when using 16- and 32-sample buffer sizes.
 - Fixes for volume adjustments in TooB NAM.
 
