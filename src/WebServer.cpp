@@ -1464,7 +1464,7 @@ void WebServerImpl::DisplayIpAddresses()
     if (hostName.length() != 0)
     {
         std::stringstream ss;
-        ss << "Listening on mDns address " << hostName << ":" << this->port;
+        ss << "Listening on mDns address " << hostName << ".local:" << this->port;
         Lv2Log::info(ss.str());
     }
     auto ethAddresses = GetEthernetIpv4Addresses();

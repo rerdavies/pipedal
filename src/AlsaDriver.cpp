@@ -1151,7 +1151,7 @@ namespace pipedal
         void RestartAlsa()
         {
             std::lock_guard lock{restartMutex};
-            Lv2Log::info("Restarting ALSA devices.");
+            Lv2Log::debug("Restarting ALSA devices.");
 
             try
             {
@@ -1517,7 +1517,6 @@ namespace pipedal
             }
             catch (const std::exception &e)
             {
-                Lv2Log::info(SS("Soft audio restart failed. " << e.what()));
                 RestartAlsa();
                 audioRunning = true;
             }
@@ -1588,7 +1587,6 @@ namespace pipedal
             }
             catch (const std::exception &e)
             {
-                Lv2Log::info(SS("Soft audio restart failed. " << e.what()));
                 RestartAlsa();
                 audioRunning = true;
             }
