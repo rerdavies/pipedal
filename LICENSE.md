@@ -1,5 +1,8 @@
-```
-Copyright 2021-2024 Robin E. R. Davies
+Original content in this project is covered under the following license.
+
+MIT License
+
+© 2021-2024 Robin E. R. Davies
 
 Permission is hereby granted, free of charge, to any person obtaining 
 a copy of this software and associated documentation files (the "Software"), 
@@ -19,14 +22,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 THE SOFTWARE.
 
+---
 
-Portions of this code are licensed under other licenses (none of them GPL).
+PiPedal also makes use of a wide variety of open-source source-code, data, 
+and directly- or indirectly-linked libraries that are covered under the following licenses.
 
-See the file debian/copyright for an enumeration of open-source files licensed
-under other terms. A complete list of notices for both source code and dependent
-libraries can be viewed in PiPedal's About page.
-```
-
+---
 <p>PiPedal uses open-source software covered by the following copyright notices and licenses.</p>
 </div>
 <div class='fossCopyrights'>
