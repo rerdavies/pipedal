@@ -9,3 +9,6 @@
 [submodule "modules/SQLiteCpp"]
 	path = modules/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
+[submodule "modules/sdbus-cpp"]
+	path = modules/sdbus-cpp
+	url = https://github.com/Kistler-Group/sdbus-cpp.git
