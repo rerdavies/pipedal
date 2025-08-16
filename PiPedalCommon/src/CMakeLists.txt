@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.19.0)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)# apt get lbsdbus-c++-dev
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-find_package(sdbus-c++ REQUIRED)
+
 
 include(FindPkgConfig)
  
@@ -97,7 +97,8 @@ add_library(PiPedalCommon STATIC
   ss.hpp
 )
 target_include_directories(PiPedalCommon PUBLIC "include" ${LIBNL3_INCLUDE_DIRS})
-target_link_libraries(PiPedalCommon PUBLIC ${LIBNL3_LIBRARIES} SDBusCpp::sdbus-c++ )
+target_link_libraries(PiPedalCommon PUBLIC ${LIBNL3_LIBRARIES} sdbus-c++-objlib
+ )
 
 
 

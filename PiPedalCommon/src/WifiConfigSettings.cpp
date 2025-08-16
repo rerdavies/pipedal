@@ -188,8 +188,8 @@ namespace pipedal::priv
         Device(const std::string &path)
             : m_proxy(sdbus::createProxy(
                   sdbus::createSystemBusConnection(),
-                  "org.freedesktop.NetworkManager",
-                  path))
+                  sdbus::ServiceName("org.freedesktop.NetworkManager"),
+                  sdbus::ObjectPath(path)))
         {
         }
 
@@ -217,12 +217,12 @@ namespace pipedal::priv
         NetworkManager()
             : m_proxy(sdbus::createProxy(
                   sdbus::createSystemBusConnection(),
-                  "org.freedesktop.NetworkManager",
-                  "/org/freedesktop/NetworkManager")),
+                  sdbus::ServiceName("org.freedesktop.NetworkManager"),
+                  sdbus::ObjectPath("/org/freedesktop/NetworkManager"))),
               m_settings_proxy(sdbus::createProxy(
                   sdbus::createSystemBusConnection(),
-                  "org.freedesktop.NetworkManager",
-                  "/org/freedesktop/NetworkManager/Settings"))
+                  sdbus::ServiceName("org.freedesktop.NetworkManager"),
+                  sdbus::ObjectPath("/org/freedesktop/NetworkManager/Settings")))
         {
         }
 
@@ -329,8 +329,8 @@ namespace pipedal::priv
         {
             auto connection_proxy = sdbus::createProxy(
                 m_proxy->getConnection(),
-                "org.freedesktop.NetworkManager",
-                connection);
+                sdbus::ServiceName("org.freedesktop.NetworkManager"),
+                sdbus::ObjectPath(connection));
             connection_proxy->callMethod("Delete")
                 .onInterface("org.freedesktop.NetworkManager.Settings.Connection");
         }
@@ -347,7 +347,7 @@ namespace pipedal::priv
             {
                 auto conn_proxy = sdbus::createProxy(
                     m_proxy->getConnection(),
-                    "org.freedesktop.NetworkManager",
+                    sdbus::ServiceName("org.freedesktop.NetworkManager"),
                     conn);
 
                 sdbus::ObjectPath conn_device;
@@ -374,7 +374,7 @@ namespace pipedal::priv
             for (const auto &conn_path : connections)
             {
                 auto conn_proxy = sdbus::createProxy(sdbus::createSystemBusConnection(),
-                                                     "org.freedesktop.NetworkManager",
+                                                     sdbus::ServiceName("org.freedesktop.NetworkManager"),
                                                      conn_path);
 
                 sdbus::Variant settings_variant;

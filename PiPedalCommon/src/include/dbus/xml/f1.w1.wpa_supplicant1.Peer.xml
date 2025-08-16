@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+    <interface name="fi.w1.wpa_supplicant1.Peer">
+        <signal name="PropertiesChanged">
+            <arg name="properties" type="a{sv}"/>
+        </signal>
+        <property name="DeviceName" type="s" access="read"/>
+        <property name="Manufacturer" type="s" access="read"/>
+        <property name="ModelName" type="s" access="read"/>
+        <property name="ModelNumber" type="s" access="read"/>
+        <property name="SerialNumber" type="s" access="read"/>
+        <property name="PrimaryDeviceType" type="ay" access="read"/>
+        <property name="config_method" type="q" access="read"/>
+        <property name="level" type="i" access="read"/>
+        <property name="devicecapability" type="y" access="read"/>
+        <property name="groupcapability" type="y" access="read"/>
+        <property name="SecondaryDeviceTypes" type="aay" access="read"/>
+        <property name="VendorExtension" type="aay" access="read"/>
+        <property name="IEs" type="ay" access="read"/>
+        <property name="DeviceAddress" type="ay" access="read"/>
+        <property name="Groups" type="ao" access="read"/>
+        <property name="VSIE" type="ay" access="read"/>
+    </interface>
+</node>

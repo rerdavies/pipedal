@@ -5,7 +5,7 @@ project(pipedal
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
-EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
+execute_process( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 
 set (DISPLAY_VERSION "PiPedal v1.4.87-Experimental")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
@@ -18,6 +18,16 @@ enable_testing()
 
 #add_subdirectory("submodules/pipedal_p2pd")
 add_subdirectory("modules/SQLiteCpp")
+
+set(SDBUSCPP_BUILD_CODEGEN on)
+set(SDBUSCPP_INSTALL off)
+set(SDBUSCPP_BUILD_DOCS off)
+set(SDBUSCPP_BUILD_DOXYGEN_DOCS off)
+set(SDBUSCPP_BUILD_TESTS off)
+#set(BUILD_SHARED_LIBS on)
+add_subdirectory("modules/sdbus-cpp")
+
+
 add_subdirectory("PiPedalCommon")
 
 add_subdirectory("vite")
@@ -96,7 +106,10 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IoT guitar effect pedal for Raspberry Pi"
 set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libicu-dev ,lv2-dev, ffmpeg, authbind, curl, gpg, alsa-base| pipewire, alsa-utils" )
+
+# Accept either libzip4 or libzip5 to satisfy libzip 4 linkage (because Ubuntu nonsense)
+
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libicu-dev ,lv2-dev, ffmpeg, authbind, curl, gpg, alsa-base| pipewire, alsa-utils")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
@@ -111,7 +124,9 @@ endif()
 set(CPACK_DEBIAN_PACKAGE_SIGN_ALGORITHM "detached")
 set(CPACK_DEBIAN_PACKAGE_SIGN_TYPE "origin")
 
-set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm")
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA 
+   "${CMAKE_CURRENT_SOURCE_DIR}/debian/shlibs.override;${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm;${CMAKE_CURRENT_SOURCE_DIR}/debian/shlibs.local"
+   )
 
 
 include(CPack)

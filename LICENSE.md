@@ -2,7 +2,7 @@ Original content in this project is covered under the following license.
 
 MIT License
 
-© 2021-2024 Robin E. R. Davies
+© Robin E. R. Davies
 
 Permission is hereby granted, free of charge, to any person obtaining 
 a copy of this software and associated documentation files (the "Software"), 
@@ -25,10 +25,21 @@ THE SOFTWARE.
 ---
 
 PiPedal also makes use of a wide variety of open-source source-code, data, 
-and directly- or indirectly-linked libraries that are covered under the following licenses.
+and directly- or indirectly-linked libraries that are covered under the following 
+licenses.
+
+Portions of PiPedal are covered by the folling well-known open-source licenses:
+
+    MIT, MIT-like, BSD variants, Mozilla, LGPL, Apache 2.0, CC BY. SIL
+
+as well as a variety of other licenses. None of these licenses are GPL. And none 
+of these licenses restrict commercial use. However some of them are restrictive, 
+and are not compatible with GPL licenses. You should NOT combine PiPedal with 
+GPL-licensed code unless you have taken appropriate steps to remove
+source-code, data or dependencies that PiPedal uses which are not
+compatible with a GPL license.
 
 ---
-<p>PiPedal uses open-source software covered by the following copyright notices and licenses.</p>
 </div>
 <div class='fossCopyrights'>
  © 1995-2017 Jean-loup Gailly  <br/>

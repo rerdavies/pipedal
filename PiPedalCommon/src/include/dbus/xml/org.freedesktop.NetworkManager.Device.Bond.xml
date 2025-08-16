@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node name="/">
+  <!--
+      org.freedesktop.NetworkManager.Device.Bond:
+      @short_description: Bonding Device.
+
+  -->
+  <interface name="org.freedesktop.NetworkManager.Device.Bond">
+
+    <!--
+        HwAddress:
+
+        Hardware address of the device.
+n
+        DEPRECATED. Use the "HwAddress" property in "org.freedesktop.NetworkManager.Device" instead which exists since version NetworkManager 1.24.0.
+    -->
+    <property name="HwAddress" type="s" access="read"/>
+
+    <!--
+        Carrier:
+
+        Indicates whether the physical carrier is found (e.g. whether a cable is
+        plugged in or not).
+
+        DEPRECATED: check for the "lower-up" flag in the "InterfaceFlags"
+        property on the "org.freedesktop.NetworkManager.Device" interface.
+    -->
+    <property name="Carrier" type="b" access="read"/>
+
+    <!--
+        Slaves:
+
+        DEPRECATED. Use the "Ports" property in
+        "org.freedesktop.NetworkManager.Device" instead which exists since
+        version NetworkManager 1.34.0.
+    -->
+    <property name="Slaves" type="ao" access="read"/>
+
+  </interface>
+</node>

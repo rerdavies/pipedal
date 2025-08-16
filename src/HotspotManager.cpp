@@ -688,14 +688,14 @@ std::vector<std::vector<uint8_t>> HotspotManagerImpl::GetAllAutoConnectSsids()
             bool autoConnect = true;
             if (settings["connection"].count("autoconnect") > 0)
             {
-                autoConnect = settings["connection"]["autoconnect"];
+                autoConnect = settings["connection"]["autoconnect"].get<bool>();
             }
             bool isInfrastructure =
                 settings["802-11-wireless"].count("mode") > 0 && settings["802-11-wireless"]["mode"].get<std::string>() == "infrastructure";
             if (isInfrastructure && autoConnect)
             {
                 std::vector<uint8_t> ssid =
-                    settings["802-11-wireless"]["ssid"];
+                    settings["802-11-wireless"]["ssid"].get<std::vector<uint8_t>>();
                 ssids.push_back(std::move(ssid));
             }
         }
@@ -855,18 +855,20 @@ void HotspotManagerImpl::StartHotspot()
 
             std::map<std::string, sdbus::Variant> &connection = settings["connection"];
 
-            connection["type"] = "802-11-wireless";
-            connection["autoconnect"] = false;
-            connection["id"] = PIPEDAL_HOTSPOT_NAME;
-            connection["interface-name"] = wlanDevice->Interface();
-            connection["uuid"] = serviceConfiguration.uuid;
+            using namespace sdbus;
+
+            connection["type"] = sdbus::Variant("802-11-wireless");
+            connection["autoconnect"] = sdbus::Variant(false);
+            connection["id"] = sdbus::Variant(PIPEDAL_HOTSPOT_NAME);
+            connection["interface-name"] = sdbus::Variant(wlanDevice->Interface());
+            connection["uuid"] = sdbus::Variant(serviceConfiguration.uuid);
 
             std::map<std::string, sdbus::Variant> &wireless = settings["802-11-wireless"];
 
             std::string ssid = this->wifiConfigSettings.hotspotName_;
             std::vector<uint8_t> vSsid{ssid.begin(), ssid.end()};
-            wireless["ssid"] = vSsid;
-            wireless["mode"] = "ap";
+            wireless["ssid"] = sdbus::Variant(vSsid);
+            wireless["mode"] = sdbus::Variant("ap");
 
             uint32_t iChannel = 0;
             auto channel = this->wifiConfigSettings.channel_;
@@ -879,18 +881,18 @@ void HotspotManagerImpl::StartHotspot()
             // NM "band" values: "a" (5GHz), "bg" (2.4GHz). Channels 1-14 -> 2.4GHz; >14 -> 5GHz.
             if (iChannel != 0)
             {
-                wireless["channel"] = iChannel;
-                wireless["band"] = (iChannel > 14) ? "a" : "bg";
+                wireless["channel"] = sdbus::Variant(iChannel);
+                wireless["band"] = sdbus::Variant((iChannel > 14) ? "a" : "bg");
             }
 
             std::map<std::string, sdbus::Variant> &wirelessSecurity = settings["802-11-wireless-security"];
-            wirelessSecurity["key-mgmt"] = "wpa-psk";
-            wirelessSecurity["psk"] = wifiConfigSettings.password_;
+            wirelessSecurity["key-mgmt"] = sdbus::Variant("wpa-psk");
+            wirelessSecurity["psk"] = sdbus::Variant(wifiConfigSettings.password_);
 
             // IPv4 shared method: NM will configure NAT and DHCP; static address is fine.
-            settings["ipv4"]["method"] = "shared";
+            settings["ipv4"]["method"] = sdbus::Variant("shared");
             // For IPv6, use ignore to avoid advertising IPv6 if not needed; shared IPv6 is less common and can cause issues.
-            settings["ipv6"]["method"] = "ignore";
+            settings["ipv6"]["method"] = sdbus::Variant("ignore");
             // If IPv6 were used, addr-gen-mode would be numeric enum; with method=ignore, omit it.
 
             ////////////////////////////////////////////////////////////////
@@ -903,16 +905,16 @@ void HotspotManagerImpl::StartHotspot()
                      {"prefix", sdbus::Variant(uint32_t(24))}}});
             // For method=shared, NM provides DHCP; explicit DHCP client options on this device are not applicable.
             // settings["ipv4"]["dhcp-options"] = sdbus::Variant(std::vector<std::string>{
-            //     "option:classless-static-route,192.168.60.0/8,0.0.0.0,0.0.0.0/0,192.168.60.1"});
+            //     "option:classless-static-route,192.168.60.0/24,0.0.0.0,0.0.0.0/0,192.168.60.1"});
 
             // settings["ipv4"]["dhcp-options"] = sdbus::Variant(std::vector<std::string>{
-            //        "option:classless-static-route,192.168.60.0/8,192.168.60.1"});
+            //        "option:classless-static-route,192.168.60.0/24,192.168.60.1"});
 
             ////////////////////////////////////////////////////////////
 
             // With IPv6 ignored, don't set address-data or gateway; NM may reject extraneous keys.
             std::map<std::string, sdbus::Variant> options;
-            options["persist"] = "disk";
+            options["persist"] = sdbus::Variant("disk");
 
             Connection::ptr existingConnection = FindExistingConnection();
             if (existingConnection)
@@ -921,7 +923,7 @@ void HotspotManagerImpl::StartHotspot()
                 auto activeConnectionPath = networkManager->ActivateConnection(
                     existingConnection->getObjectPath(),
                     wlanDevice->getObjectPath(),
-                    "/");
+                    sdbus::ObjectPath("/"));
                 this->activeConnection = ActiveConnection::Create(dbusDispatcher, activeConnectionPath);
             }
             else
@@ -930,7 +932,10 @@ void HotspotManagerImpl::StartHotspot()
                 // Call AddAndActivateConnection2 method to create and activate the hotspot
                 sdbus::ObjectPath nullPath("/");
                 auto result = networkManager->AddAndActivateConnection2(
-                    settings, wlanDevice->getObjectPath(), "/", options
+                    settings, 
+                    wlanDevice->getObjectPath(), 
+                    sdbus::ObjectPath("/"),
+                    options
 
                 );
                 auto connectionPath = std::get<0>(result);
