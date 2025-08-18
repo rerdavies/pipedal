@@ -19,12 +19,11 @@ enable_testing()
 #add_subdirectory("submodules/pipedal_p2pd")
 add_subdirectory("modules/SQLiteCpp")
 
-set(SDBUSCPP_BUILD_CODEGEN on)
+set(SDBUSCPP_BUILD_CODEGEN off)
 set(SDBUSCPP_INSTALL off)
 set(SDBUSCPP_BUILD_DOCS off)
 set(SDBUSCPP_BUILD_DOXYGEN_DOCS off)
 set(SDBUSCPP_BUILD_TESTS off)
-#set(BUILD_SHARED_LIBS on)
 add_subdirectory("modules/sdbus-cpp")
 
 

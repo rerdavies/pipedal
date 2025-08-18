@@ -1,12 +1,10 @@
+add apt install expat 
+
 
 Carla Project icons.
 check reload after change of LV2 plugins.
 
 Exactly one underrun per seek in Toob Player
-
-
-check filetime conversion in gcc 12.2! (missing c++ 20 time conversion functions)
- AudioFiles.cpp   fileTimeToInt64
 
 
 json "skip" code doesn't work with complex objects (MidiChannelBinding specifically).

@@ -846,7 +846,7 @@ add_custom_command(OUTPUT ${REACT_NOTICES_FILE}
     COMMAND "$<TARGET_FILE:processcopyrights>"
         --output ${REACT_NOTICES_FILE}
         --projectCopyright ${DEBIAN_COPYRIGHT_FILE}
-        liblilv-0-0 ${BOOST_COPYRIGHT_DIR} lv2-dev libsdbus-c++-dev librsvg2-2 libpango-1.0-0 libx11-6 libxrandr2
+        liblilv-0-0 ${BOOST_COPYRIGHT_DIR} lv2-dev librsvg2-2 libpango-1.0-0 libx11-6 libxrandr2
 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${DEBIAN_COPYRIGHT_FILE} "$<TARGET_FILE:processcopyrights>"
     COMMENT "Updating copyright notices."
