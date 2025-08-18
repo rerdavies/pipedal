@@ -12,3 +12,6 @@
 [submodule "modules/sdbus-cpp"]
 	path = modules/sdbus-cpp
 	url = https://github.com/Kistler-Group/sdbus-cpp.git
+[submodule "modules/libzip"]
+	path = modules/libzip
+	url = https://github.com/nih-at/libzip.git
