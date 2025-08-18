@@ -889,6 +889,12 @@ void HotspotManagerImpl::StartHotspot()
             wirelessSecurity["key-mgmt"] = sdbus::Variant("wpa-psk");
             wirelessSecurity["psk"] = sdbus::Variant(wifiConfigSettings.password_);
 
+            // required by Ubuntu 25.04
+            wirelessSecurity["group"] = sdbus::Variant("ccmp");
+            wirelessSecurity["pairwise"] = sdbus::Variant("ccmp");
+            wirelessSecurity["proto"] = sdbus::Variant("rsn");
+
+
             // IPv4 shared method: NM will configure NAT and DHCP; static address is fine.
             settings["ipv4"]["method"] = sdbus::Variant("shared");
             // For IPv6, use ignore to avoid advertising IPv6 if not needed; shared IPv6 is less common and can cause issues.
