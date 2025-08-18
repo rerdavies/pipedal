@@ -1,4 +1,8 @@
 # Release Notes
+## PiPedal 1.4.88 Alpha 
+- Ubuntu 25.04 experimental release.
+- Ubutnu 24.04 Hotspot compatibility fix
+
 ## PiPedal 1.4.87 Beta
 The Big Feature: 
 - Code optimizations for Raspberry Pi 5 (Cortex-A76), providing substantial performance improvements for TooB Neural Amp Modeler.
