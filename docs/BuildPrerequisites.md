@@ -26,7 +26,7 @@ Run the following commands to install dependent libraries required by the PiPeda
         authbind libavahi-client-dev  libnm-dev libicu-dev \
         libsdbus-c++-dev libzip-dev google-perftools \
         libgoogle-perftools-dev \
-        libpipewire-0.3-dev 
+        libpipewire-0.3-dev libbz2-dev
     
 
 ### Installing Sources
