@@ -890,9 +890,9 @@ void HotspotManagerImpl::StartHotspot()
             wirelessSecurity["psk"] = sdbus::Variant(wifiConfigSettings.password_);
 
             // required by Ubuntu 25.04
-            wirelessSecurity["group"] = sdbus::Variant("ccmp");
-            wirelessSecurity["pairwise"] = sdbus::Variant("ccmp");
-            wirelessSecurity["proto"] = sdbus::Variant("rsn");
+            wirelessSecurity["proto"] = sdbus::Variant(std::vector<std::string>{"rsn"});
+            wirelessSecurity["group"] = sdbus::Variant(std::vector<std::string>{"ccmp"});
+            wirelessSecurity["pairwise"] = sdbus::Variant(std::vector<std::string>{"ccmp"});
 
 
             // IPv4 shared method: NM will configure NAT and DHCP; static address is fine.
