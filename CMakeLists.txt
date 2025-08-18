@@ -15,17 +15,7 @@ set (PIPEDAL_EXCLUDE_TESTS false)
 include(CTest)
 enable_testing()
 
-
-#add_subdirectory("submodules/pipedal_p2pd")
-add_subdirectory("modules/SQLiteCpp")
-
-set(SDBUSCPP_BUILD_CODEGEN off)
-set(SDBUSCPP_INSTALL off)
-set(SDBUSCPP_BUILD_DOCS off)
-set(SDBUSCPP_BUILD_DOXYGEN_DOCS off)
-set(SDBUSCPP_BUILD_TESTS off)
-add_subdirectory("modules/sdbus-cpp")
-
+add_subdirectory("modules")
 
 add_subdirectory("PiPedalCommon")
 
@@ -124,7 +114,7 @@ set(CPACK_DEBIAN_PACKAGE_SIGN_ALGORITHM "detached")
 set(CPACK_DEBIAN_PACKAGE_SIGN_TYPE "origin")
 
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA 
-   "${CMAKE_CURRENT_SOURCE_DIR}/debian/shlibs.override;${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm;${CMAKE_CURRENT_SOURCE_DIR}/debian/shlibs.local"
+   "${CMAKE_CURRENT_SOURCE_DIR}/debian/shlibs.override;${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm"
    )
 
 

@@ -1,4 +1,5 @@
 add apt install expat 
+sudo apt install libbz2-dev
 
 
 Carla Project icons.
