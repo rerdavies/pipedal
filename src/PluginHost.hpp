@@ -231,6 +231,7 @@ namespace pipedal
         std::string port_group_;
 
         std::string designation_;
+        bool is_bypass_ = false;
         Units units_ = Units::none;
         std::string comment_;
         PiPedalUI::ptr piPedalUI_;
@@ -280,6 +281,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(min_value);
         LV2_PROPERTY_GETSET_SCALAR(max_value);
         LV2_PROPERTY_GETSET_SCALAR(default_value);
+        LV2_PROPERTY_GETSET_SCALAR(is_bypass);
 
         LV2_PROPERTY_GETSET_SCALAR(is_input);
         LV2_PROPERTY_GETSET_SCALAR(is_output);
@@ -594,7 +596,9 @@ namespace pipedal
                     }
                 }
             }
-            is_bypass_ = name_ == "bypass" || name_ == "Bypass" || symbol_ == "bypass" || symbol_ == "Bypass";
+            is_bypass_ = 
+                pPort->is_bypass() ||
+                name_ == "bypass" || name_ == "Bypass" || symbol_ == "bypass" || symbol_ == "Bypass";
         }
 
     private:

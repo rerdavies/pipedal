@@ -33,6 +33,8 @@
 #include "JackConfiguration.hpp"
 #include "lv2/urid/urid.h"
 #include "lv2/ui/ui.h"
+#include "lv2/core/lv2.h"
+
 // #include "lv2.h"
 #include "lv2/atom/atom.h"
 #include "lv2/time/time.h"
@@ -1224,6 +1226,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
 
     AutoLilvNode designationValue = lilv_port_get(plugin, pPort, host->lilvUris->core__designation);
     designation_ = nodeAsString(designationValue);
+    is_bypass_ = designation_ == LV2_CORE__enabled;
 
     AutoLilvNode portGroup_value = lilv_port_get(plugin, pPort, host->lilvUris->portgroups__group);
     port_group_ = nodeAsString(portGroup_value);
@@ -1957,6 +1960,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      MAP_REF(Lv2PortInfo, not_on_gui),
      MAP_REF(Lv2PortInfo, buffer_type),
      MAP_REF(Lv2PortInfo, port_group),
+     MAP_REF(Lv2PortInfo, is_bypass),
      MAP_REF(Lv2PortInfo, pipedal_ledColor),
 
      json_map::enum_reference("units", &Lv2PortInfo::units_, get_units_enum_converter()),

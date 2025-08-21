@@ -728,7 +728,7 @@ export class UiControl implements Deserializable<UiControl> {
     }
 
     isHidden(): boolean {
-        return this.not_on_gui || (this.connection_optional && !this.is_input);
+        return this.is_bypass || this.not_on_gui || (this.connection_optional && !this.is_input);
     }
     isOnOffSwitch(): boolean {
         return this.controlType === ControlType.OnOffSwitch;

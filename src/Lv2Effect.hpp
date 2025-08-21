@@ -101,6 +101,7 @@ namespace pipedal
         std::vector<bool> isInputControlPort;
         std::vector<float> defaultInputControlValues;
         std::vector<bool> isInputTriggerControlPort;;
+        int bypassControlIndex = -1;
 
         virtual std::string GetUri() const { return info->uri(); }
 
@@ -185,6 +186,8 @@ namespace pipedal
                                                     const void *data);
 
 
+        int GetBypassControlPort() const { return bypassControlIndex; }
+
         void ResetInputAtomBuffer(char*data);
         void ResetOutputAtomBuffer(char*data);
 
@@ -202,7 +205,9 @@ namespace pipedal
         int actualAudioInputs = 0;
         int actualAudioOutputs = 0;
         std::vector<std::vector<float>> outputMixBuffers;
-        void BypassTo(float value);
+        void BypassDezipperTo(float value);
+        void BypassDezipperSet(float value);
+
         bool borrowedEffect = false;
         bool activated = false;
 
@@ -329,7 +334,11 @@ namespace pipedal
             if (bypass != this->bypass)
             {
                 this->bypass = bypass;
-                BypassTo(bypass? 1.0f: 0.0f);
+                if (bypassControlIndex == -1) {
+                    BypassDezipperTo(bypass? 1.0f: 0.0f);
+                } else {
+                    controlValues[bypassControlIndex] = bypass? 1.0f: 0.0f;
+                }
             }
 
         }
