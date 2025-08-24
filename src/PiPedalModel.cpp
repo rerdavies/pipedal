@@ -2030,6 +2030,19 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {
             auto port = pPlugin->ports()[i];
+
+            //////// PLUGIN SPECIFIC UPGRADES //////////////////////
+            if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
+            {
+                ControlValue *pValue = pedalboardItem->GetControlValue("inputCalibrationMode");
+                if (pValue == nullptr)
+                {
+                    // calibration is OFF when upgrading.
+                    pedalboardItem->SetControlValue("inputCalibrationMode",0.0f);
+                }
+
+            }
+
             if (port->is_control_port() && port->is_input())
             {
                 ControlValue *pValue = pedalboardItem->GetControlValue(port->symbol());
@@ -2098,7 +2111,7 @@ void PiPedalModel::UpdateDefaults(Pedalboard *pedalboard)
 {
     // add missing values.
     std::unordered_map<int64_t, PedalboardItem *> itemMap;
-    for (size_t i = 0; i < pedalboard->items().size(); ++i)
+    for (size_t i = 0; i < pedalboard->GetAllPlugins().size(); ++i)
     {
         UpdateDefaults(&(pedalboard->items()[i]), itemMap);
     }

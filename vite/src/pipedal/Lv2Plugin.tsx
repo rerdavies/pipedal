@@ -702,7 +702,7 @@ export class UiControl implements Deserializable<UiControl> {
     port_group: string = "";
     units: Units = Units.none;
     comment: string = "";
-    is_bypass: boolean = true;
+    is_bypass: boolean = false;
     is_program_controller: boolean = true;
     custom_units: string = "";
     connection_optional: boolean = false;
