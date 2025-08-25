@@ -14,7 +14,7 @@ With a good USB audio device, PiPedal should be able to provide stable audio wit
 PiPedal uses ALSA audio drivers directly. Unlike Jack audio drivers, ALSA can use 44.1k or 48k audio with no significant difference in latency, and
 does not require 3 audio buffers to work efficiently.  
 
-PiPedal provides the pipedal_latency_test utility to measure actual round-trip audio latency. You must temporarily disable pipedal (`sudo systemctl stop pipedal`), and connect the left audio output of your audio device to the left audio input of your audio device with a guitar cable to use this test. 
+PiPedal provides the pipedal_latency_test utility to measure actual round-trip audio latency. You must temporarily disable pipedal (`sudo systemctl stop pipedald`), and connect the left audio output of your audio device to the left audio input of your audio device with a guitar cable to use this test. 
 
 The following table shows measured round-trip audio latencies for a MOTU M2 external USB adapter running on Raspberry Pi OS with a 48 KHz sample rate. You can use these figures as a rough guideline; but actual round-trip audio latency will depend on the audio device you are using.
 
