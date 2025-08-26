@@ -133,6 +133,7 @@ const PluginOutputControl =
             private progressRef: React.RefObject<HTMLDivElement|null>;
             private dbVuRef: React.RefObject<HTMLDivElement|null>;
             private dbVuTelltaleRef: React.RefObject<HTMLDivElement|null>;
+            private dbVuTextRef: React.RefObject<HTMLDivElement|null>;
             private lampRef: React.RefObject<HTMLDivElement|null>;
 
 
@@ -141,6 +142,7 @@ const PluginOutputControl =
                 this.vuRef = React.createRef<HTMLDivElement>();
                 this.progressRef = React.createRef<HTMLDivElement>();
                 this.dbVuRef = React.createRef<HTMLDivElement>();
+                this.dbVuTextRef = React.createRef<HTMLDivElement>();
                 this.dbVuTelltaleRef = React.createRef<HTMLDivElement>();
                 this.lampRef = React.createRef<HTMLDivElement>();
                 this.state = {
@@ -194,6 +196,8 @@ const PluginOutputControl =
 
             private dbVuHoldTime = 0.0;
 
+            private lastDbText = "";
+
             private requestDbVuAnimation() {
                 if (!this.animationHandle) {
                     this.animationHandle = requestAnimationFrame(
@@ -210,6 +214,28 @@ const PluginOutputControl =
                             if (this.dbVuRef.current) {
                                 this.dbVuRef.current.style.marginTop = top + "px";
                             }
+                            if (this.dbVuTextRef.current) {
+                                let text: string;
+                                if (this.dbVuTelltale  <= this.props.uiControl.min_value)
+                                {
+                                    text = "-";
+                                } else {
+                                    if (Math.abs(this.dbVuTelltale) >= 99.5)
+                                    {
+                                        text = Math.round(this.dbVuTelltale).toString();
+                                    } else {
+                                        text = this.dbVuTelltale.toFixed(1);
+                                    }
+                                    if (!text.startsWith("-")) {
+                                        text = '+'+text; 
+                                    }   
+                                }
+                                if (this.lastDbText !== text) 
+                                {
+                                    this.lastDbText = text;
+                                    this.dbVuTextRef.current.innerText = text;
+                                }
+                            }   
                             this.animationHandle = undefined;
                             this.updateDbVuTelltale();
                         }
@@ -414,7 +440,6 @@ const PluginOutputControl =
 
                             </div>
                             <div className={classes.editSectionNoContent}>
-
                             </div>
 
                         </div >
@@ -454,8 +479,11 @@ const PluginOutputControl =
                                 </div>
 
                             </div>
-                            <div className={classes.editSectionNoContent}>
-
+                            <div className={classes.editSection}>
+                                <Typography ref={this.dbVuTextRef} variant="caption" display="block" style={{
+                                    width: "100%", opacity: 0.6,
+                                    textAlign: "center"
+                                }}> </Typography>
                             </div>
 
                         </div >
