@@ -2040,6 +2040,11 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
                     // calibration is OFF when upgrading.
                     pedalboardItem->SetControlValue("inputCalibrationMode",0.0f);
                 }
+                pValue = pedalboardItem->GetControlValue("version");
+                if (pValue == nullptr)
+                {
+                    pedalboardItem->SetControlValue("version",0.0f);
+                }
 
             }
 

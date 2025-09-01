@@ -3,40 +3,59 @@
 find_program(NPM_COMMAND npm)
 
 
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-   set(BUILD_REACT "echo")
-   set(BUILD_REACT_ARGS Skipping react debug build)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    set(BUILD_REACT "echo")
+    set(BUILD_REACT_ARGS Skipping react debug build)
 else()
     set(BUILD_REACT npm)
     set(BUILD_REACT_ARGS run build)
 endif()
 
-set (BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/vite/dist)
+set(BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/vite/dist)
 
 
 add_custom_command(
     OUTPUT ${BUILD_DIRECTORY}/index.html
     COMMAND ${BUILD_REACT}
-    ARGS  ${BUILD_REACT_ARGS}
+    ARGS ${BUILD_REACT_ARGS}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/vite
 
-    DEPENDS 
+    DEPENDS
     # find public src *.json *.ts  -type f >/tmp/tmp.txt                    
     public/serve.json
     public/fonts/Roboto-BoldItalic.woff2
     public/fonts/Roboto-MediumItalic.woff2
     public/fonts/Roboto-Thin.woff2
     public/fonts/Roboto-LightItalic.woff2
+    public/fonts/epf/epf_lul-webfont.woff
+    public/fonts/epf/stylesheet.css
+    public/fonts/england-hand/stylesheet.css
+    public/fonts/england-hand/england-webfont.woff
+    public/fonts/comforta/Comfortaa-Bold.ttf
+    public/fonts/comforta/Comfortaa-Light.ttf
+    public/fonts/comforta/Comfortaa-Regular.ttf
     public/fonts/Roboto-Light.woff2
     public/fonts/Roboto-BlackItalic.woff2
     public/fonts/Roboto-ThinItalic.woff2
+    public/fonts/cooper/cooperhewitt-book-webfont.woff2
+    public/fonts/cooper/cooperhewitt-lightitalic-webfont.woff2
+    public/fonts/cooper/cooperhewitt-bookitalic-webfont.woff2
+    public/fonts/cooper/cooperhewitt-semibold-webfont.woff2
+    public/fonts/cooper/cooperhewitt-light-webfont.woff2
     public/fonts/LICENSE.txt
     public/fonts/Roboto-Regular.woff2
     public/fonts/Roboto-Medium.woff2
     public/fonts/Roboto-Black.woff2
     public/fonts/Roboto-Bold.woff2
     public/fonts/Roboto-Italic.woff2
+    public/fonts/pirulen/stylesheet.css
+    public/fonts/pirulen/pirulen_rg-webfont.woff
+    public/fonts/questrial/questrial-regular-webfont.woff
+    public/fonts/questrial/stylesheet.css
+    public/fonts/nexa/Nexa_Free_Bold-webfont.woff
+    public/fonts/nexa/stylesheet.css
     public/robots.txt
+    public/css/modGui.css
     public/css/roboto.css
     public/manifest.json
     public/logo192.png
@@ -48,6 +67,7 @@ add_custom_command(
     public/img/fx_lr.svg
     public/img/fx_pitch.svg
     public/img/vst.svg
+    public/img/missing_thumbnail.jpg
     public/img/ic_bank.svg
     public/img/fx_utility.svg
     public/img/fx_compressor.svg
@@ -70,28 +90,35 @@ add_custom_command(
     public/img/fx_flanger2.svg
     public/img/fx_generator.svg
     public/img/Pi-Logo-3.png
+    public/img/red-light-on.png
     public/img/fx_oscillator.svg
     public/img/ic_drawer_2.svg
     public/img/ic_presets_white.svg
     public/img/fx_chorus.svg
     public/img/settings_black_24dp.svg
+    public/img/footswitch_strip.png
+    public/img/BlackKnob.png
     public/img/fx_analyzer.svg
     public/img/old_delete_outline_white_24dp.svg
     public/img/fx_reverb.svg
     public/img/fx_instrument.svg
+    public/img/audio-output.png
     public/img/ic_drawer_2.png
     public/img/cx_mono.svg
     public/img/fx_split_b.svg
+    public/img/default_album.jpg
     public/img/fx_filter_hp.svg
     public/img/fx_parametric_eq.svg
     public/img/fx_filter.svg
     public/img/fx_error.svg
     public/img/cx_stereo.svg
     public/img/fx_modulator.svg
+    public/img/red-light-off.png
     public/img/delete_outline_black_24dp.svg
     public/img/fx_gate.svg
     public/img/vst.png
     public/img/fx_function.svg
+    public/img/audio-input.png
     public/img/fx_terminal.svg
     public/img/fx_plugin.svg
     public/img/fx_distortion.svg
@@ -109,30 +136,46 @@ add_custom_command(
     public/logo512.png
     public/sample_lv2_plugins.json
     src/pipedal/SplitUiControls.tsx
+    src/pipedal/IconButtonEx.tsx
     src/pipedal/JackHostStatus.tsx
+    src/pipedal/FontTest.tsx
+    src/pipedal/DraggableButtonBase.tsx
+    src/pipedal/AlsaSequencer.tsx
     src/pipedal/VirtualKeyboardHandler.tsx
+    src/pipedal/TimebaseselectorDialog.tsx
     src/pipedal/JackStatusView.tsx
     src/pipedal/Pedal.tsx
     src/pipedal/PiPedalError.tsx
+    src/pipedal/AudioFileMetadata.tsx
     src/pipedal/FilePropertyControl.tsx
     src/pipedal/PerformanceView.tsx
     src/pipedal/ChannelBindingsHelpDialog.tsx
+    src/pipedal/UseWindowSize.tsx
     src/pipedal/TemporaryDrawer.tsx
     src/pipedal/OkCancelDialog.tsx
     src/pipedal/SystemMidiBindingView.tsx
     src/pipedal/WifiConfigSettings.tsx
+    src/pipedal/Timebase.tsx
+    src/pipedal/LinkEx.tsx
     src/pipedal/react-app-env.d.ts
+    src/pipedal/FileUtils.tsx
     src/pipedal/UpdateDialog.tsx
     src/pipedal/PresetSelector.tsx
+    src/pipedal/OkDialog.tsx
     src/pipedal/JackServerSettings.tsx
+    src/pipedal/LoopDialog.tsx
+    src/pipedal/ToobNamView.tsx
     src/pipedal/SearchControl.tsx
+    src/pipedal/Tone3000AuthComplete.tsx
     src/pipedal/ObservableEvent.tsx
     src/pipedal/WindowScale.tsx
     src/pipedal/DialogStack.tsx
     src/pipedal/ToobToneStackView.tsx
     src/pipedal/TextFieldEx.tsx
     src/pipedal/AppThemed.css
+    src/pipedal/ScreenOrientation.tsx
     src/pipedal/PluginIcon.tsx
+    src/pipedal/ControlSlider.tsx
     src/pipedal/svg/snapshot_4.svg
     src/pipedal/svg/fx_dial.svg
     src/pipedal/svg/fx_spatial.svg
@@ -141,9 +184,11 @@ add_custom_command(
     src/pipedal/svg/ic_save_bank_as.svg
     src/pipedal/svg/fx_lr.svg
     src/pipedal/svg/fx_pitch.svg
+    src/pipedal/svg/fx_nam.svg
     src/pipedal/svg/snapshot_3.svg
     src/pipedal/svg/ic_pluginpreset2.svg
     src/pipedal/svg/ic_bank.svg
+    src/pipedal/svg/mod_ui.svg
     src/pipedal/svg/fx_utility.svg
     src/pipedal/svg/fx_compressor.svg
     src/pipedal/svg/fx_phaser.svg
@@ -155,6 +200,7 @@ add_custom_command(
     src/pipedal/svg/fx_amplifier.svg
     src/pipedal/svg/ic_help_outline.svg
     src/pipedal/svg/fx_eq.svg
+    src/pipedal/svg/pp_ui.svg
     src/pipedal/svg/fx_split_a.svg
     src/pipedal/svg/fx_spectral.svg
     src/pipedal/svg/fx_converter.svg
@@ -191,6 +237,7 @@ add_custom_command(
     src/pipedal/svg/fx_empty.svg
     src/pipedal/svg/fx_flanger.svg
     src/pipedal/AboutDialog.tsx
+    src/pipedal/ToobPlayerView.tsx
     src/pipedal/NumericInput.tsx
     src/pipedal/SelectHoverBackground.tsx
     src/pipedal/MidiBindingView.tsx
@@ -199,6 +246,7 @@ add_custom_command(
     src/pipedal/AndroidHost.tsx
     src/pipedal/SplitControlView.tsx
     src/pipedal/ToobFrequencyResponseView.tsx
+    src/pipedal/ButtonTooltip.tsx
     src/pipedal/ObservableProperty.tsx
     src/pipedal/UploadPresetDialog.tsx
     src/pipedal/Utility.tsx
@@ -209,6 +257,8 @@ add_custom_command(
     src/pipedal/StringBuilder.tsx
     src/pipedal/ToobCabSimView.tsx
     src/pipedal/ToobSpectrumAnalyzerView.tsx
+    src/pipedal/ScratchClass.tsx
+    src/pipedal/ButtonEx.tsx
     src/pipedal/ControlTooltip.tsx
     src/pipedal/AlsaMidiDeviceInfo.tsx
     src/pipedal/ToobInputStageView.tsx
@@ -224,6 +274,7 @@ add_custom_command(
     src/pipedal/DarkMode.tsx
     src/pipedal/Updater.tsx
     src/pipedal/Rect.tsx
+    src/pipedal/ToolTipEx.tsx
     src/pipedal/PedalboardView.tsx
     src/pipedal/JackServerSettingsDialog.tsx
     src/pipedal/PluginOutputControl.tsx
@@ -236,6 +287,7 @@ add_custom_command(
     src/pipedal/WifiChannel.tsx
     src/pipedal/App.tsx
     src/pipedal/IControlViewFactory.tsx
+    src/pipedal/Tone3000HelpDialog.tsx
     src/pipedal/WifiDirectConfigSettings.tsx
     src/pipedal/ZoomedUiControl.tsx
     src/pipedal/MidiBindingsDialog.tsx
@@ -244,6 +296,7 @@ add_custom_command(
     src/pipedal/FullScreenIME.tsx
     src/pipedal/FilePropertyDialog.tsx
     src/pipedal/RenameDialog.tsx
+    src/pipedal/SelectScreenOrientationDialog.tsx
     src/pipedal/ControlViewFactory.tsx
     src/pipedal/MaterialColors.tsx
     src/pipedal/PluginPresetsDialog.tsx
@@ -265,19 +318,25 @@ add_custom_command(
     src/pipedal/BankDialog.tsx
     src/pipedal/FilePropertyDirectorySelectDialog.tsx
     src/pipedal/GovernorSettings.tsx
+    src/pipedal/ModGuiHost.tsx
     src/pipedal/XxxSnippet.tsx
+    src/pipedal/Tone3000Dialog.tsx
     src/pipedal/PluginPresetSelector.tsx
     src/pipedal/OldDeleteIcon.tsx
     src/pipedal/SelectMidiChannelsDialog.tsx
     src/pipedal/SearchFilter.tsx
     src/pipedal/Jack.tsx
+    src/pipedal/ToobPlayerControl.tsx
+    src/pipedal/ModGuiErrorBoundary.tsx
     src/pipedal/LoadPluginDialog.tsx
     src/pipedal/Pedalboard.tsx
     src/pipedal/Draggable.tsx
     src/pipedal/SelectChannelsDialog.tsx
     src/pipedal/PluginClass.tsx
     src/pipedal/DraggableGrid.tsx
+    src/pipedal/GraphicEqCtl.tsx
     src/pipedal/WifiConfigDialog.tsx
+    src/pipedal/GuitarMlHelpDialog.tsx
     src/pipedal/SelectThemeDialog.tsx
     src/pipedal/WifiDirectConfigDialog.tsx
     src/pipedal/UploadFileDialog.tsx
@@ -285,6 +344,7 @@ add_custom_command(
     src/pipedal/Rectangle.tsx
     src/pipedal/PluginPreset.tsx
     src/pipedal/SettingsDialog.tsx
+    src/pipedal/AutoZoom.tsx
     src/pipedal/AppThemed.tsx
     src/pipedal/OptionsDialog.tsx
     src/pipedal/MidiChannelBinding.tsx
@@ -299,12 +359,12 @@ add_custom_command(
     tsconfig.json
     tsconfig.node.json
     vite.config.ts
-        
+
 )
 
 message(STATUS "VITE TARGET: ${BUILD_DIRECTORY}/index.html")
 
-add_custom_target (
+add_custom_target(
     ReactBuild ALL
     DEPENDS ${BUILD_DIRECTORY}/index.html
 )

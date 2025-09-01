@@ -1,5 +1,11 @@
-add apt install expat 
+
+Versioning for legacy NAM presets!
+Convert CRVB presets!
+
+double select on double-click/ok in file dialog.
 sudo apt install libbz2-dev
+Move status to pedalboard view.
+Default to dark theme.
 
 
 Carla Project icons.
@@ -9,6 +15,7 @@ Exactly one underrun per seek in Toob Player
 
 
 json "skip" code doesn't work with complex objects (MidiChannelBinding specifically).
+json nan/inf is fatal.
 
 - pipewire aux in?
 

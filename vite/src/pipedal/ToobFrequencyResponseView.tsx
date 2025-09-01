@@ -32,14 +32,14 @@ import SvgPathBuilder from './SvgPathBuilder';
 
 const StandardItemSize = { width: 80, height: 110 };
 
-const FREQUENCY_RESPONSE_VECTOR_URI = "http://two-play.com/plugins/toob#frequencyResponseVector";
+export const FREQUENCY_RESPONSE_VECTOR_URI = "http://two-play.com/plugins/toob#frequencyResponseVector";
 
-const PLOT_WIDTH = StandardItemSize.width * 2 - 16;
+const DEFAULT_PLOT_WIDTH = StandardItemSize.width * 2 - 16;
 const PLOT_HEIGHT = StandardItemSize.height - 12;
 
 const styles = (theme: Theme) => createStyles({
     frame: {
-        width: PLOT_WIDTH, height: PLOT_HEIGHT, background: "#444",
+        width: DEFAULT_PLOT_WIDTH, height: PLOT_HEIGHT, background: "#444",
         borderRadius: 6,
         marginTop: 12, marginLeft: 8, marginRight: 8,
         boxShadow: "1px 4px 8px #000 inset"
@@ -127,14 +127,16 @@ const ToobFrequencyResponseView =
 
             // Size of the SVG element.
             xMin: number = 0;
-            xMax: number = PLOT_WIDTH + 4;
+            xMax() {
+                return this.props.width ? this.props.width: DEFAULT_PLOT_WIDTH;
+            }
             yMin: number = 0;
             yMax: number = PLOT_HEIGHT;
             dbTickSpacing: number = this.dbTickSpacingOpt;
 
             toX(frequency: number): number {
                 var logV = Math.log(frequency);
-                return (this.xMax - this.xMin) * (logV - this.logMin) / (this.logMax - this.logMin) + this.xMin;
+                return (this.xMax() - this.xMin) * (logV - this.logMin) / (this.logMax - this.logMin) + this.xMin;
 
             }
             toY(value: number): number {
@@ -156,11 +158,12 @@ const ToobFrequencyResponseView =
                
                 let dbMin = data[2];
                 let dbMax = data[3];
+                let xMax = this.xMax();
 
                 let n = data.length-4;
 
                 let toX_ = (bin: number): number => {
-                    return (this.xMax - this.xMin) * bin/n;
+                    return (xMax - this.xMin) * bin/n;
     
                 };
                 let toY_ = (value: number): number => {
@@ -240,16 +243,17 @@ const ToobFrequencyResponseView =
             grid(): React.ReactNode[] {
                 let result: React.ReactNode[] = [];
 
+                let xMax = this.xMax();
                 for (var db = Math.ceil(this.dbMax / this.dbTickSpacing) * this.dbTickSpacing; db < this.dbMin; db += this.dbTickSpacing) {
                     var y = (db - this.dbMin) / (this.dbMax - this.dbMin) * (this.yMax - this.yMin);
                     if (db === 0) {
                         result.push(
-                            this.majorGridLine(this.xMin, y, this.xMax, y)
+                            this.majorGridLine(this.xMin, y, xMax, y)
                         );
 
                     } else {
                         result.push(
-                            this.gridLine(this.xMin, y, this.xMax, y)
+                            this.gridLine(this.xMin, y, xMax, y)
                         );
                     }
                 }
@@ -286,11 +290,12 @@ const ToobFrequencyResponseView =
                 this.logMin = Math.log(this.fMin);
                 this.logMax = Math.log(this.fMax);
 
+                let xMax = this.xMax();
 
                 const classes = withStyles.getClasses(this.props);
                 return (
-                    <div className={classes.frame} >
-                        <svg width={PLOT_WIDTH} height={PLOT_HEIGHT} viewBox={"0 0 " + PLOT_WIDTH + " " + PLOT_HEIGHT} stroke="#0F8" fill="none" strokeWidth="2.5" opacity="0.6">
+                    <div className={classes.frame} style={{width: xMax }} >
+                        <svg width={xMax} height={PLOT_HEIGHT} viewBox={"0 0 " + xMax + " " + PLOT_HEIGHT} stroke="#0F8" fill="none" strokeWidth="2.5" opacity="0.6">
                             {this.grid()}
                             <path d={this.state.path} ref={this.pathRef} />
                         </svg>

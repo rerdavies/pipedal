@@ -1769,7 +1769,7 @@ public:
         std::lock_guard guard(mutex);
 
         this->currentPedalboard = pedalboard;
-        if (active)
+        if (active && pedalboard)
         {
             pedalboard->Activate();
             this->activePedalboards.push_back(pedalboard);

@@ -45,7 +45,7 @@ import FilePropertyDirectoryTree from './FilePropertyDirectoryTree';
 import AudioFileMetadata from './AudioFileMetadata';
 import { pathFileName } from './FileUtils';
 import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
-import {getDefaultModGuiPreference} from './ModGuiHost';
+import { getDefaultModGuiPreference } from './ModGuiHost';
 
 export enum State {
     Loading,
@@ -96,11 +96,10 @@ export class HostVersion {
         } else {
             this.hostName = "Unknown Host";
             remainder = "v0.0.0";
-        }   
+        }
 
         const args = remainder.split(","); // make make provisions for more.
-        if (args.length >= 1) 
-        {
+        if (args.length >= 1) {
             let versionString = args[0].trim();
             if (versionString.startsWith('v')) {
                 versionString = versionString.substring(1).trim();
@@ -119,7 +118,7 @@ export class HostVersion {
                 this.majorVersion = parseInt(parts[0]);
                 this.minorVersion = parseInt(parts[1]);
                 this.buildNumber = parseInt(parts[2]);
-            }   
+            }
         }
     }
     lessThan(major: number, minor: number, build: number): boolean {
@@ -133,7 +132,7 @@ export class HostVersion {
     hostName: string = "";
     releaseType: string = "";
     majorVersion: number = 0;
-    minorVersion: number = 0; 
+    minorVersion: number = 0;
     buildNumber: number = 0;
 }
 export type PedalboardItemEnabledChangeCallback = (instanceId: number, isEnabled: boolean) => void;
@@ -533,7 +532,7 @@ export class PiPedalModel //implements PiPedalModel
 
     favorites: ObservableProperty<FavoritesList> = new ObservableProperty<FavoritesList>({});
 
-    alsaSequencerConfiguration : ObservableProperty<AlsaSequencerConfiguration> = new ObservableProperty<AlsaSequencerConfiguration>(new AlsaSequencerConfiguration());
+    alsaSequencerConfiguration: ObservableProperty<AlsaSequencerConfiguration> = new ObservableProperty<AlsaSequencerConfiguration>(new AlsaSequencerConfiguration());
 
     presets: ObservableProperty<PresetIndex> = new ObservableProperty<PresetIndex>
         (
@@ -652,11 +651,10 @@ export class PiPedalModel //implements PiPedalModel
         return true;
 
     }
-    private updateEnabledItems(pedalboard: Pedalboard)
-    {
+    private updateEnabledItems(pedalboard: Pedalboard) {
         for (let item of pedalboard.itemsGenerator()) {
             this.updatePedalboardItemEnabled(item.instanceId, item.isEnabled);
-            this.updatePedalboardItemUseModUi(item.instanceId, item.useModUi);  
+            this.updatePedalboardItemUseModUi(item.instanceId, item.useModUi);
         }
     }
 
@@ -1358,9 +1356,8 @@ export class PiPedalModel //implements PiPedalModel
                     this.state.set(State.Ready);
                     if (this.androidHost) {
                         this.hostVersion = new HostVersion(this.androidHost.getHostVersion());
-                        if (!this.hostVersion.lessThan(1,1,16))
-                        {
-                            this.androidHost.setServerVersion(this.serverVersion?.serverVersion??"");
+                        if (!this.hostVersion.lessThan(1, 1, 16)) {
+                            this.androidHost.setServerVersion(this.serverVersion?.serverVersion ?? "");
                             this.canKeepScreenOn = true;
                             this.keepScreenOn.set(this.androidHost.getKeepScreenOn())
                             this.canSetScreenOrientation = true;
@@ -1424,7 +1421,8 @@ export class PiPedalModel //implements PiPedalModel
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalboard = pedalboard.clone();
 
-        let item = newPedalboard.getItem(instanceId);
+        let item = newPedalboard.tryGetItem(instanceId);
+        if (!item) return;
 
         let changed = false;
         for (let i = 0; i < controlValues.length; ++i) {
@@ -1780,7 +1778,7 @@ export class PiPedalModel //implements PiPedalModel
                     //  null -> we've never seen a value.
                     item.pathProperties[fileProperty.patchProperty] = "null";
                 }
-                newPedalboard.selectedPlugin = item.instanceId; 
+                newPedalboard.selectedPlugin = item.instanceId;
                 this.setModelPedalboard(newPedalboard);
                 this.updateServerPedalboard()
                 return item.instanceId;
@@ -2372,14 +2370,19 @@ export class PiPedalModel //implements PiPedalModel
         let result = new Promise<Type>((resolve, reject) => {
             let pedalboard = this.pedalboard.get();
             if (pedalboard) {
-                let item = pedalboard.getItem(instanceId);
-                if (item) {
-                    if (item.pathProperties.hasOwnProperty(uri)) {
-                        let value = item.pathProperties[uri];
-                        let jsonValue = JSON.parse(value);
-                        resolve(jsonValue as Type);
-                    }
+                try {
+                    let item = pedalboard.getItem(instanceId);
+                    if (item) {
+                        if (item.pathProperties.hasOwnProperty(uri)) {
+                            let value = item.pathProperties[uri];
+                            let jsonValue = JSON.parse(value);
+                            resolve(jsonValue as Type);
+                        }
 
+                    }
+                } catch (error) {
+                    reject(error);
+                    return;
                 }
             }
             if (!this.webSocket) {
@@ -2618,9 +2621,13 @@ export class PiPedalModel //implements PiPedalModel
     }
     private handleNotifyPatchProperty(clientHandle: number, instanceId: number, propertyUri: string, jsonObject: any) {
         let pedalboard = this.pedalboard.get();
-        let pedalboardItem = pedalboard.getItem(instanceId);
-        if (pedalboardItem) {
-            pedalboardItem.pathProperties[propertyUri] = JSON.stringify(jsonObject);
+        try {
+            let pedalboardItem = pedalboard.tryGetItem(instanceId);
+            if (pedalboardItem) {
+                pedalboardItem.pathProperties[propertyUri] = JSON.stringify(jsonObject);
+            }
+        } catch (ignored) {
+            // e.g. notification for a pedalboard item that is no longer valid.
         }
         for (let i = 0; i < this.monitorPatchPropertyListeners.length; ++i) {
             let listener = this.monitorPatchPropertyListeners[i];
@@ -3390,9 +3397,8 @@ export class PiPedalModel //implements PiPedalModel
         this.webSocket?.send("setAlsaSequencerConfiguration", alsaSequencerConfiguration);
     }
     async getAlsaSequencerConfiguration(): Promise<AlsaSequencerConfiguration> {
-        if (this.webSocket)
-        {
-            let  result = await this.webSocket.request<any>("getAlsaSequencerConfiguration");
+        if (this.webSocket) {
+            let result = await this.webSocket.request<any>("getAlsaSequencerConfiguration");
             return new AlsaSequencerConfiguration().deserialize(result);
         }
         throw new Error("No connection.");
@@ -3417,7 +3423,7 @@ export class PiPedalModel //implements PiPedalModel
                     listener.onEnabledChanged(instanceId, enabled);
                 }
             }
-        }   
+        }
     }
 
     private updatePedalboardItemUseModUi(instanceId: number, useModUi: boolean) {
@@ -3434,18 +3440,18 @@ export class PiPedalModel //implements PiPedalModel
     addPedalboardItemEnabledChangeListener(
         instanceId: number,
         onEnabledChanged: PedalboardItemEnabledChangeCallback
-    ) : ListenHandle{
+    ): ListenHandle {
         let handle = ++this.nextListenHandle;
         let currentValue = this.getPedalboardItemEnabled(instanceId);
 
-        let entry: PedalboardItemEnabledChangeItem = { 
-            instanceId: instanceId, 
-            handle: handle, 
-            currentValue: currentValue, 
+        let entry: PedalboardItemEnabledChangeItem = {
+            instanceId: instanceId,
+            handle: handle,
+            currentValue: currentValue,
             onEnabledChanged: onEnabledChanged
         };
 
-        this.pedalboardItemEnabledChangeListeners.push( entry);
+        this.pedalboardItemEnabledChangeListeners.push(entry);
 
         onEnabledChanged(instanceId, currentValue);
 
@@ -3453,20 +3459,20 @@ export class PiPedalModel //implements PiPedalModel
     }
     addPedalboardItemUseModUiChangeListener(
         instanceId: number,
-        onUseModUiChanged : PedalboardItemUseModUiChangeCallback
-    ) : ListenHandle{
+        onUseModUiChanged: PedalboardItemUseModUiChangeCallback
+    ): ListenHandle {
 
         let handle = ++this.nextListenHandle;
         let currentValue = this.getPedalboardItemUseModUi(instanceId);
 
-        let entry: PedalboardItemUseModUiChangeItem = { 
-            instanceId: instanceId, 
-            handle: handle, 
-            currentValue: currentValue, 
+        let entry: PedalboardItemUseModUiChangeItem = {
+            instanceId: instanceId,
+            handle: handle,
+            currentValue: currentValue,
             onUseModUiChanged: onUseModUiChanged
         };
 
-        this.pedalboardItemUseModUiChangeListeners.push( entry);
+        this.pedalboardItemUseModUiChangeListeners.push(entry);
 
         onUseModUiChanged(instanceId, currentValue);
 
@@ -3493,7 +3499,7 @@ export class PiPedalModel //implements PiPedalModel
         return false;
     }
 
-      setKeepScreenOn(keepScreenOn: boolean): void {
+    setKeepScreenOn(keepScreenOn: boolean): void {
         if (this.canKeepScreenOn) {
             this.keepScreenOn.set(keepScreenOn);
             if (this.androidHost) {

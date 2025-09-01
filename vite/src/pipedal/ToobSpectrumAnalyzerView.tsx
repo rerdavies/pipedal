@@ -28,7 +28,7 @@ import { withStyles } from "tss-react/mui";
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ICustomizationHost, ControlGroup, ControlViewCustomization } from './PluginControlView';
 import ToobSpectrumResponseView from './ToobSpectrumResponseView';
 
 
@@ -64,7 +64,7 @@ const ToobSpectrumAnalyzerView =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+            modifyControls(host: ICustomizationHost, controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
                 controls.splice(0, 0,
                     (<ToobSpectrumResponseView instanceId={this.props.instanceId} />)
                 );

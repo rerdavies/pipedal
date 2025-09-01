@@ -143,7 +143,7 @@ export interface PluginControlProps extends WithStyles<typeof pluginControlStyle
     theme: Theme;
     requestIMEEdit: (uiControl: UiControl, value: number) => void;
 }
-type PluginControlState = {
+export type PluginControlState = {
     error: boolean;
     editFocused: boolean;
     previewValue?: string;

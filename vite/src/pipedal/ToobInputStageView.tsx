@@ -28,7 +28,7 @@ import { withStyles } from "tss-react/mui";
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ICustomizationHost, ControlGroup, ControlViewCustomization } from './PluginControlView';
 //import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
 
@@ -63,7 +63,7 @@ const ToobInputStageView =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+            modifyControls(host: ICustomizationHost,controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
                 return controls;
                 // let group = controls[1] as ControlGroup;
                 // group.controls.splice(0,0,

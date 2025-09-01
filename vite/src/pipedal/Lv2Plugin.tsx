@@ -647,6 +647,10 @@ export class UiControl implements Deserializable<UiControl> {
         }
         return this;
     }
+
+    clone() {
+        return new UiControl().deserialize(this);
+    }
     applyProperties(properties: Partial<UiControl>): UiControl {
         return { ...this, ...properties };
     }
@@ -878,6 +882,11 @@ export class UiControl implements Deserializable<UiControl> {
                 break;
             case Units.pc:
                 text += "%";
+                break;
+            case Units.unknown:
+                if (this.custom_units !== "") {
+                    text = this.custom_units.replace("%f",text);
+                } 
                 break;
             default:
                 break;

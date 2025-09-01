@@ -31,6 +31,8 @@ import ToobPowerstage2ViewFactory from './ToobPowerStage2View';
 import ToobSpectrumAnalyzerViewFactory from './ToobSpectrumAnalyzerView';
 import ToobMLViewFactory from './ToobMLView';
 import ToobPlayerFactory from './ToobPlayerView';
+import ToobNamViewFactory from './ToobNamView';
+import ToobParametericEqViewFactory from './ToobParametricEqView';
 
 
 let pluginFactories: IControlViewFactory[] = [
@@ -38,7 +40,9 @@ let pluginFactories: IControlViewFactory[] = [
     new ToobPowerstage2ViewFactory(),
     new ToobSpectrumAnalyzerViewFactory(),
     new ToobMLViewFactory(),
-    new ToobPlayerFactory()
+    new ToobPlayerFactory(),
+    new ToobNamViewFactory(),
+    new ToobParametericEqViewFactory()
 ];
 
 

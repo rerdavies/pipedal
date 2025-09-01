@@ -127,6 +127,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     core__designation = lilv_new_uri(pWorld, LV2_CORE__designation);
     portgroups__group = lilv_new_uri(pWorld, LV2_PORT_GROUPS__group);
     units__unit = lilv_new_uri(pWorld, LV2_UNITS__unit);
+    units__render = lilv_new_uri(pWorld, LV2_UNITS__render);
 
     invada_units__unit = lilv_new_uri(pWorld, "http://lv2plug.in/ns/extension/units#unit");                   // a typo in invada plugin ttl files.
     invada_portprops__logarithmic = lilv_new_uri(pWorld, "http://lv2plug.in/ns/dev/extportinfo#logarithmic"); // a typo in invada plugin ttl files.
@@ -1235,6 +1236,19 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     if (unitsValueUri)
     {
         this->units_ = UriToUnits(nodeAsString(unitsValueUri));
+        if (this->units_ == Units::unknown) {
+            // try for a custom format string.
+            AutoLilvNode render = lilv_world_get(
+                pWorld,
+                unitsValueUri,
+                host->lilvUris->units__render,
+                nullptr);
+            if (render) {
+                const char*strRender = lilv_node_as_string(render);
+                custom_units_ = strRender;
+            }
+
+        }
     }
     else
     {
@@ -1964,6 +1978,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      MAP_REF(Lv2PortInfo, pipedal_ledColor),
 
      json_map::enum_reference("units", &Lv2PortInfo::units_, get_units_enum_converter()),
+     MAP_REF(Lv2PortInfo, custom_units),
      MAP_REF(Lv2PortInfo, comment)}};
 
 json_map::storage_type<Lv2PortGroup> Lv2PortGroup::jmap{{
@@ -2041,10 +2056,10 @@ json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
     MAP_REF(Lv2PluginUiPort, pipedal_ledColor),
 
     json_map::enum_reference("units", &Lv2PluginUiPort::units_, get_units_enum_converter()),
+    MAP_REF(Lv2PluginUiPort, custom_units),
     MAP_REF(Lv2PluginUiPort, comment),
     MAP_REF(Lv2PluginUiPort, is_bypass),
     MAP_REF(Lv2PluginUiPort, is_program_controller),
-    MAP_REF(Lv2PluginUiPort, custom_units),
     MAP_REF(Lv2PluginUiPort, connection_optional),
 
 }};

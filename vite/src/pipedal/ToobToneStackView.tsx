@@ -28,7 +28,7 @@ import { withStyles } from "tss-react/mui";
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel, ControlValueChangedHandle } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ICustomizationHost,  ControlGroup, ControlViewCustomization } from './PluginControlView';
 import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
 
@@ -86,7 +86,7 @@ const ToobToneStackView =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+            modifyControls(host: ICustomizationHost, controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
                 if (this.state.isBaxandall) {
                     controls.splice(0, 0,
                         (<ToobFrequencyResponseView instanceId={this.props.instanceId}
