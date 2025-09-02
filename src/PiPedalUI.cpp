@@ -539,7 +539,7 @@ UiFrequencyPlot::UiFrequencyPlot(PluginHost*pHost, const LilvNode*node,
     this->yTop_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__yTop,5);
     this->yBottom_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__yBottom,-35);
     this->xLog_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__xLog,-35);
-    this->width_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__width,60);
+    this->width_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__width,176);
 }
 
 

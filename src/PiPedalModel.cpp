@@ -272,16 +272,17 @@ void PiPedalModel::Load()
 
     this->pedalboard = storage.GetCurrentPreset(); // the current *saved* preset.
 
-
-
     // the current edited preset, saved only across orderly shutdowns.
 
     CrashGuard::SetCrashGuardFileName(storage.GetDataRoot() / "crash_guard.data");
 
-    if (CrashGuard::HasCrashed()) {
+    if (CrashGuard::HasCrashed())
+    {
         // ignore the current preset, and load a blank pedalboard in order to avoid a potential plugin crash.
         this->pedalboard = Pedalboard::MakeDefault();
-    } else {
+    }
+    else
+    {
         CurrentPreset currentPreset;
         try
         {
@@ -289,15 +290,13 @@ void PiPedalModel::Load()
             {
                 this->pedalboard = currentPreset.preset_;
                 this->hasPresetChanged = currentPreset.modified_;
-            } 
+            }
         }
         catch (const std::exception &e)
         {
             Lv2Log::warning(SS("Failed to load current preset. " << e.what()));
         }
     }
-
-
 
     UpdateDefaults(&this->pedalboard);
 
@@ -644,10 +643,8 @@ void PiPedalModel::SetPedalboardItemUseModUi(int64_t clientId, int64_t instanceI
             subscriber->OnItemUseModUiChanged(clientId, instanceId, enabled);
         }
         this->SetPresetChanged(clientId, true);
-
     }
 }
-
 
 void PiPedalModel::SetPedalboardItemEnable(int64_t clientId, int64_t pedalItemId, bool enabled)
 {
@@ -1449,7 +1446,8 @@ void PiPedalModel::OnAlsaSequencerDeviceAdded(int client, const std::string &cli
             {
                 // reconfigure connections.
                 std::lock_guard<std::recursive_mutex> lock(this->mutex);
-                if (this->audioHost) {
+                if (this->audioHost)
+                {
                     this->audioHost->SetAlsaSequencerConfiguration(this->storage.GetAlsaSequencerConfiguration());
                 }
             });
@@ -1457,7 +1455,7 @@ void PiPedalModel::OnAlsaSequencerDeviceAdded(int client, const std::string &cli
 }
 void PiPedalModel::OnAlsaSequencerDeviceRemoved(int client)
 {
-    // no action  required. 
+    // no action  required.
 }
 
 void PiPedalModel::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
@@ -2027,26 +2025,24 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
                 pedalboardItem->midiChannelBinding(std::optional<MidiChannelBinding>()); // clear it.
             }
         }
+        //////// PLUGIN SPECIFIC UPGRADES //////////////////////
+        if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
+        {
+            ControlValue *pValue = pedalboardItem->GetControlValue("inputCalibrationMode");
+            if (pValue == nullptr)
+            {
+                // calibration is OFF when upgrading.
+                pedalboardItem->SetControlValue("inputCalibrationMode", 0.0f);
+            }
+            pValue = pedalboardItem->GetControlValue("version");
+            if (pValue == nullptr)
+            {
+                pedalboardItem->SetControlValue("version", 0.0f);
+            }
+        }
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {
             auto port = pPlugin->ports()[i];
-
-            //////// PLUGIN SPECIFIC UPGRADES //////////////////////
-            if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
-            {
-                ControlValue *pValue = pedalboardItem->GetControlValue("inputCalibrationMode");
-                if (pValue == nullptr)
-                {
-                    // calibration is OFF when upgrading.
-                    pedalboardItem->SetControlValue("inputCalibrationMode",0.0f);
-                }
-                pValue = pedalboardItem->GetControlValue("version");
-                if (pValue == nullptr)
-                {
-                    pedalboardItem->SetControlValue("version",0.0f);
-                }
-
-            }
 
             if (port->is_control_port() && port->is_input())
             {
@@ -3107,19 +3103,15 @@ void PiPedalModel::SetTone3000Auth(const std::string &apiKey)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     storage.SetTone3000Auth(apiKey);
-    
+
     std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
     bool hasAuth = apiKey != "";
     for (auto &subscriber : t)
     {
-        subscriber->OnTone3000AuthChanged(hasAuth);  
+        subscriber->OnTone3000AuthChanged(hasAuth);
     }
-
 }
 bool PiPedalModel::HasTone3000Auth() const
 {
     return storage.GetTone3000Auth() != "";
 }
-
-
-

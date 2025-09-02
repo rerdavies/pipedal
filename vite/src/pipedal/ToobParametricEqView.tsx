@@ -451,7 +451,7 @@ const ToobParametricEqView =
                 if (isLandscape) {
                     panelStyle = { display: "flex", flexDirection: "row", alignItems: "stretch", width: "100%" };
                     scrollStyle = { flex: "1 1 auto", overflowX: "auto", overflowY: "hidden", whiteSpace: "nowrap" };
-                    frameStyle = { display: "flex", flexFlow: "row nowrap", alignItems: "center",paddingTop: 8 };
+                    frameStyle = { display: "flex", flexFlow: "row nowrap", alignItems: "center", paddingTop: 8 };
                 } else {
                     panelStyle = { display: "flex", flexDirection: "column", alignItems: "stretch", height: "100%" };
                     scrollStyle = { flex: "1 1 auto", overflowX: "hidden", overflowY: "auto", whiteSpace: "nowrap" };
@@ -460,17 +460,33 @@ const ToobParametricEqView =
 
                 return [(
                     <div key={"vtc_container"} style={panelStyle}>
-                        <div key={"vtc_panel"} style={{ flex: " 0 0 auto", paddingBottom: 8, display: "flex", alignItems: "center", flexFlow: "row nowrap" }}>
-                            {controls[0] as React.ReactNode}
-                            <div style={{ alignSelf: "flex-start", marginTop: 8 }}>
-                                <IconButton onClick={(e) => {
-                                    e.stopPropagation();
-                                    this.setState({ maximized: true });
-                                }}>
-                                    <CircleUpIcon className={classes.upIcon} />
-                                </IconButton>
+                        {host.isLandscapeGrid() ? (
+                            <div key={"vtc_panel"} style={{ flex: " 0 0 auto", paddingBottom: 8, display: "flex", alignItems: "center", flexFlow: "row nowrap" }}>
+                                <div style={{ alignSelf: "flex-start", marginTop: 8 }}>
+                                    <IconButton 
+                                        style={{marginTop: 24}}
+                                        onClick={(e) => {
+                                        e.stopPropagation();
+                                        this.setState({ maximized: true });
+                                    }}>
+                                        <CircleUpIcon className={classes.upIcon} />
+                                    </IconButton>
+                                </div>
+                                {controls[0] as React.ReactNode}
                             </div>
-                        </div>
+                        ) : (
+                            <div key={"vtc_panel"} style={{ flex: " 0 0 auto", paddingBottom: 8, display: "flex", alignItems: "center", flexFlow: "row nowrap" }}>
+                                {controls[0] as React.ReactNode}
+                                <div style={{ alignSelf: "flex-start", marginTop: 8 }}>
+                                    <IconButton onClick={(e) => {
+                                        e.stopPropagation();
+                                        this.setState({ maximized: true });
+                                    }}>
+                                        <CircleUpIcon className={classes.upIcon} />
+                                    </IconButton>
+                                </div>
+                            </div>
+                        )}
                         <div style={scrollStyle}>
                             <div style={frameStyle}>
                                 {panelControls}

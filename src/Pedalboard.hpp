@@ -108,7 +108,6 @@ public:
     const ControlValue*GetControlValue(const std::string&symbol) const;
     bool SetControlValue(const std::string&key, float value);
 
-
     bool IsStructurallyIdentical(const PedalboardItem&other) const;
 
     void ApplySnapshotValue(SnapshotValue*snapshotValue);
@@ -161,6 +160,7 @@ public:
     // }
 
     DECLARE_JSON_MAP(PedalboardItem);
+
 };
 
 class SnapshotValue {

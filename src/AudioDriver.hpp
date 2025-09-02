@@ -80,6 +80,7 @@ namespace pipedal {
         virtual void Close() = 0;
 
         virtual std::string GetConfigurationDescription() = 0;
+        virtual void DumpBufferTrace(size_t nEntries) {}
 
     };
 
