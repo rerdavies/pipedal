@@ -48,11 +48,10 @@ export function getColorScheme(): ColorTheme {
         }
     }
     switch (localStorage.getItem('colorScheme')) {
-        case null:
-        default:
-            return ColorTheme.Light;
         case "Light":
             return ColorTheme.Light;
+        default:
+        case null:
         case "Dark":
             return ColorTheme.Dark;
         case "System":
