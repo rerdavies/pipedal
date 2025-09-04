@@ -76,6 +76,7 @@ public:
     PluginPreset(uint64_t instanceId, const std::string&label,const PedalboardItem&pedalboardItem)
     : instanceId_(instanceId)
     , label_(label)
+    , pathProperties_(pedalboardItem.pathProperties())
     , state_(pedalboardItem.lv2State())
     { 
         for (auto & controlValue : pedalboardItem.controlValues())
@@ -89,10 +90,12 @@ public:
         const std::string&label,
         const std::map<std::string,
         float> & controlValues,
+        const std::map<std::string,std::string>&pathProperties,
         const Lv2PluginState &state)
     :   instanceId_(instanceId),
         label_(label),
         controlValues_((controlValues)),
+        pathProperties_(pathProperties),
         state_(state)
     {
     }
@@ -117,7 +120,9 @@ public:
     std::string label_;
     std::string lilvPresetUri_;
     std::map<std::string,float> controlValues_;
+    std::map<std::string,std::string> pathProperties_;
     Lv2PluginState state_;
+
     DECLARE_JSON_MAP(PluginPreset);
 };
 

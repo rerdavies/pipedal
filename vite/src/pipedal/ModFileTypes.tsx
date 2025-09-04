@@ -42,7 +42,7 @@ export const modDirectories: ModDirectory[] = [
         {modType: "sfz", pipedalPath: "shared/sfz",displayName:  "Sfz Files", defaultFileExtensions: [".sfz"]},                       // SFZ Instruments, must have sfz file extension
         // extensions observed in the field.
         {modType: "audio", pipedalPath: "shared/audio", displayName: "Audio", defaultFileExtensions: ["audio/*"]},                              // all audio files (Ratatoille)
-        {modType: "nammodel", pipedalPath: "NeuralAmpModels", displayName: "Neural Amp Models", defaultFileExtensions: [".nam"]},              // Ratatoille, Mike's NAM.
+        {modType: "nammodel", pipedalPath: "NeuralAmpModels", displayName: "Neural Amp Models", defaultFileExtensions: [".nam","aidax"]},              // Ratatoille, Mike's NAM.
         {modType: "aidadspmodel", pipedalPath: "shared/aidaaix", displayName: "AIDA IAX Models", defaultFileExtensions: [".json", ".aidaiax"]}, // Ratatoille
         {modType: "mlmodel", pipedalPath: "ToobMlModels", displayName: "ML Models", defaultFileExtensions: [".json"]},                         //
   

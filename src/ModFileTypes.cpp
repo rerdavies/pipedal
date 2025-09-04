@@ -49,7 +49,7 @@ static std::vector<ModFileTypes::ModDirectory> *CreateModDirectories()
         {"sfz", "shared/sfz", "Sfz Files", {".sfz"}},                       // SFZ Instruments, must have sfz file extension
         // extensions observed in the field.
         {"audio", "shared/audio", "Audio", {"audio/*"}},                              // all audio files (Ratatouille)
-        {"nammodel", "NeuralAmpModels", "Neural Amp Models", {".nam"}},              // Ratatouille, Mike's NAM.
+        {"nammodel", "NeuralAmpModels", "Neural Amp Models", {".nam" ,".aidax"}},              // Ratatouille, Mike's NAM.
         {"aidadspmodel", "shared/aidaaix", "AIDA IAX Models", {".json", ".aidaiax"}}, // Ratatouille
         {"mlmodel", "ToobMlModels", "ML Models", {".json"}},                         //
 

@@ -2623,7 +2623,8 @@ export class PiPedalModel //implements PiPedalModel
         let pedalboard = this.pedalboard.get();
         try {
             let pedalboardItem = pedalboard.tryGetItem(instanceId);
-            if (pedalboardItem) {
+
+            if (pedalboardItem && pedalboardItem.pathProperties[propertyUri] !== undefined) {
                 pedalboardItem.pathProperties[propertyUri] = JSON.stringify(jsonObject);
             }
         } catch (ignored) {

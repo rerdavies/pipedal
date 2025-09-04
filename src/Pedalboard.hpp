@@ -125,6 +125,7 @@ public:
     GETTER_SETTER_VEC(bottomChain)
     GETTER_SETTER_VEC(midiBindings)
     GETTER_SETTER_REF(midiChannelBinding)
+    GETTER_SETTER_REF(pathProperties)
     GETTER_SETTER(stateUpdateCount)
     GETTER_SETTER_REF(lv2State)
     GETTER_SETTER_REF(title)
@@ -134,6 +135,8 @@ public:
     GETTER_SETTER_REF(lilvPresetUri)
 
     PropertyMap&PatchProperties() { return patchProperties; }
+    const PropertyMap&PatchProperties() const { return patchProperties; }
+
 
     bool isSplit() const
     {

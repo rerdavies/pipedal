@@ -153,16 +153,20 @@ namespace pipedal
 
         std::string ToString(const LV2_Atom*atom);
 
-        json_variant MapPath(const json_variant&json, const std::string &pluginStoragePath);
-        json_variant AbstractPath(const json_variant&json, const std::string &pluginStoragePath);
+        static json_variant MapPath(const json_variant&json, const std::string &pluginStoragePath);
+        static json_variant AbstractPath(const json_variant&json, const std::string &pluginStoragePath);
 
 
         static std::string EmptyPathstring();
+        static const json_variant& EmptyPath()  { return gEmptyPath; }
+
 
     private:
         static const std::string OTYPE_TAG;
         static const std::string VTYPE_TAG;
         static const std::string ID_TAG;
+
+        static json_variant gEmptyPath;
 
         std::map<std::string, LV2_URID> stringToTypeUrid;
         std::map<LV2_URID,std::string> typeUridToString;

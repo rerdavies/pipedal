@@ -87,6 +87,8 @@ namespace pipedal
 
         json_variant(const void *) = delete; // do NOT allow implicit conversion of pointers to bool
 
+        static json_variant parse(const std::string&text);
+
         json_variant &operator=(json_variant &&value);
         json_variant &operator=(const json_variant &value);
         json_variant &operator=(bool value);

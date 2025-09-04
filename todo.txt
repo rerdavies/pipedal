@@ -1,26 +1,12 @@
 
-ffmpeg -ss <start_time> -i input.mp4 -filter_complex "loop=loop=<num_loops>:size=<frame_count>:start=<start_frame>" output.mp4
--ss <start_time>: Seeks to the desired start point (e.g., 00:00:10 or 10).
-loop=<num_loops>: Number of times to loop the segment (e.g., 3 for 4 total plays).
-size=<frame_count>: The number of frames in the segment to loop.
-start=<start_frame>: The starting frame of the segment to loop within the input.
-Note: This method requires re-encoding, as filters are applied.
-3. Looping a single image:
-To loop a single image for a specific duration, use the -loop option with the image demuxer:
-Code
-
-
-Use ffmpeg 
-Check ToOB Cab SIM F/R range.
-
-Convert CRVB presets!
-
 double select on double-click/ok in file dialog.
 sudo apt install libbz2-dev
-Move status to pedalboard view.
-Default to dark theme.
+
+README, license files in file browser.
 
 
+
+ls 
 Carla Project icons.
 check reload after change of LV2 plugins.
 

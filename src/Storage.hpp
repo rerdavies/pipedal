@@ -60,15 +60,19 @@ public:
 struct PluginPresetValues {
 
     std::vector<ControlValue> controls;
+    std::map<std::string,std::string> pathProperties;
     Lv2PluginState state;
     std::string lilvPresetUri;
 };
 
+
 // controls user-defined storage. Implmentation hidden to allow to later migration to a database (perhaps)
 
-class Storage {
+class Storage  {
 private:
     std::filesystem::path dataRoot;
+    std::filesystem::path dataRoot__audio_uploads;
+
     std::filesystem::path configRoot;
     BankIndex bankIndex;
     BankFile currentBank;
@@ -125,7 +129,11 @@ public:
     const std::filesystem::path&GetConfigRoot();
     const std::filesystem::path&GetDataRoot();
 
-    std::filesystem::path GetPluginUploadDirectory() const;
+    const std::filesystem::path &GetPluginUploadDirectory() const;
+
+    std::string ToAbstractPathJson(const std::string &jsonAtomPath);
+    std::string FromAbstractPathJson(const std::string &jsonAtomPath);
+
 
     //std::vector<std::string> GetPedalboards();
 
@@ -208,6 +216,8 @@ private:
     std::filesystem::path GetPluginPresetPath(const std::string &pluginUri) const;
     bool IsValidSampleFileName(const std::filesystem::path&fileName);
     std::filesystem::path MakeUserFilePath(const std::string &directory, const std::string&filename);
+    void ToAbstractPaths(PluginPreset&pluginPreset);
+    void FromAbstractPaths(PluginPreset&pluginPreset);
 
 public:
     bool HasPluginPresets(const std::string&pluginUri) const;
@@ -227,9 +237,8 @@ public:
     uint64_t SavePluginPreset(
         const std::string &pluginUri,
         const std::string &name,
-        float inputVolume,
-        float outputVolume,
         const std::map<std::string, float> &values,
+        const std::map<std::string,std::string>&pathProperties,
         const Lv2PluginState& lv2State);
 
     void UpdatePluginPresets(const PluginUiPresets &pluginPresets);

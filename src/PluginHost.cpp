@@ -49,7 +49,7 @@
 #include "StdErrorCapture.hpp"
 #include "util.hpp"
 #include "ModFileTypes.hpp"
-#include  <algorithm>
+#include <algorithm>
 
 #include "Locale.hpp"
 
@@ -304,7 +304,6 @@ PluginHost::PluginHost()
     lv2Features.push_back(nullptr);
 
     this->urids = new Urids(mapFeature);
-
 }
 
 void PluginHost::OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings)
@@ -660,13 +659,14 @@ static std::vector<UiFileType> ToPiPedalFileTypes(
         std::string type = fileType;
         if (type.find("/") != std::string::npos) // mime type?
         {
-            UiFileType t = UiFileType(type,type,"");
+            UiFileType t = UiFileType(type, type, "");
             result.push_back(t);
         }
-        else 
-        {   
+        else
+        {
             // add a leading dot.
-            if (!type.starts_with(".")) {
+            if (!type.starts_with("."))
+            {
                 type = "." + type;
             }
             auto t = UiFileType(SS(type << " file"), type);
@@ -776,7 +776,8 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                             auto modDirectory = modFileTypes.GetModDirectory(modName);
                             fileProperty->directory(modDirectory->pipedalPath);
                             std::set<std::string> fileExtensions = modDirectory->fileExtensions;
-                            if (!modFileExtensions.empty()) {
+                            if (!modFileExtensions.empty())
+                            {
                                 auto extensions = split(modFileExtensions, ',');
                                 fileExtensions = std::set<std::string>(extensions.begin(), extensions.end());
                             }
@@ -878,7 +879,6 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
         // set to plain Plugin.
         this->plugin_class_ = "http://lv2plug.in/ns/lv2core#Plugin";
     }
-
 
     AutoLilvNodes required_features = lilv_plugin_get_required_features(pPlugin);
     this->required_features_ = nodeAsStringArray(required_features);
@@ -1236,18 +1236,19 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     if (unitsValueUri)
     {
         this->units_ = UriToUnits(nodeAsString(unitsValueUri));
-        if (this->units_ == Units::unknown) {
+        if (this->units_ == Units::unknown)
+        {
             // try for a custom format string.
             AutoLilvNode render = lilv_world_get(
                 pWorld,
                 unitsValueUri,
                 host->lilvUris->units__render,
                 nullptr);
-            if (render) {
-                const char*strRender = lilv_node_as_string(render);
+            if (render)
+            {
+                const char *strRender = lilv_node_as_string(render);
                 custom_units_ = strRender;
             }
-
         }
     }
     else
@@ -1630,7 +1631,13 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
                 {
                     if (!cbData.failed)
                     {
-                        result.presets_.push_back(PluginPreset(result.nextInstanceId_++, strLabel, controlValues, Lv2PluginState()));
+                        result.presets_.push_back(
+                            PluginPreset(
+                                result.nextInstanceId_++,
+                                strLabel,
+                                controlValues,
+                                std::map<std::string, std::string>(),
+                                Lv2PluginState()));
                     }
                 }
                 else
@@ -1904,11 +1911,13 @@ Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNod
 }
 
 // ffs.
-static inline bool contains(const std::vector<std::string> &vec, const std::string &value) {
-    return std::find(vec.begin(),vec.end(),value) != vec.end();
+static inline bool contains(const std::vector<std::string> &vec, const std::string &value)
+{
+    return std::find(vec.begin(), vec.end(), value) != vec.end();
 }
-bool Lv2PluginInfo::WantsWorkerThread() const {
-    return contains(this->required_features_,LV2_WORKER__schedule) || contains(this->supported_features_,LV2_WORKER__schedule);
+bool Lv2PluginInfo::WantsWorkerThread() const
+{
+    return contains(this->required_features_, LV2_WORKER__schedule) || contains(this->supported_features_, LV2_WORKER__schedule);
 }
 // void PiPedalHostLogError(const std::string &error)
 // {

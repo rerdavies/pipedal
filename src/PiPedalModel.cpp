@@ -1721,23 +1721,20 @@ void PiPedalModel::SendSetPatchProperty(
 
     // save the property to the preset (currently used to reconstruct snapshots only)
     PedalboardItem *pedalboardItem = this->pedalboard.GetItem(instanceId);
-    if (pedalboardItem && value.is_string())
+    if (pedalboardItem)
     {
         std::shared_ptr<Lv2PluginInfo> pluginInfo = GetPluginInfo(pedalboardItem->uri_);
         auto pipedalUi = pluginInfo->piPedalUI();
         auto fileProperty = pipedalUi->GetFileProperty(propertyUri);
-        if (fileProperty && value.is_string())
+        if (fileProperty)
         {
 
             json_variant abstractPath = pluginHost.AbstractPath(value);
-            std::ostringstream ss;
-            json_writer writer(ss);
-            writer.write(abstractPath);
-            std::string atomString = ss.str();
+            std::string atomString = abstractPath.to_string();
             pedalboardItem->pathProperties_[propertyUri] = atomString;
         }
         this->SetPresetChanged(clientId, true);
-    }
+}
     LV2_Atom *atomValue = atomConverter.ToAtom(value);
 
     std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
@@ -1827,7 +1824,24 @@ void PiPedalModel::SendGetPatchProperty(
                     {
                         if (pParameter->onError)
                         {
-                            pParameter->onError("No response.");
+                            // For plugins that don't respond (e.g. a buncha MOD plugins), use the value we last set on the plugin!
+                            bool foundValue = false;
+                            std::lock_guard<std::recursive_mutex> lock(mutex);
+                            auto pedalboardItem = this->pedalboard.GetItem(pParameter->instanceId);
+                            if (pedalboardItem) {
+                                if (pedalboardItem->pathProperties_.contains(pParameter->uri))
+                                {
+                                    pParameter->jsonResponse = pedalboardItem->pathProperties_[pParameter->uri];
+                                    if (pParameter->onSuccess) {
+                                        foundValue = true;
+                                        pParameter->onSuccess(pParameter->jsonResponse);
+                                    }
+                                }
+                            }
+                            if (!foundValue)
+                            {
+                                pParameter->onError("No response.");
+                            }
                         }
                     }
                     else
@@ -1854,6 +1868,7 @@ void PiPedalModel::SendGetPatchProperty(
     RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
         onRequestComplete,
         clientId, instanceId, urid, onSuccess, onError, sampleTimeout);
+    request->uri = uri;
 
     outstandingParameterRequests.push_back(request);
     this->audioHost->sendRealtimeParameterRequest(request);
@@ -2058,12 +2073,22 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
         if (pPlugin->piPedalUI())
         {
             PiPedalUI::ptr piPedalUI = pPlugin->piPedalUI();
+            std::set<std::string> validFileProperties;
             for (auto &fileProperty : piPedalUI->fileProperties())
             {
+                validFileProperties.insert(fileProperty->patchProperty());
                 if (!pedalboardItem->pathProperties_.contains(fileProperty->patchProperty()))
                 {
                     // make sure each pedalboard item has a complete list of path properties, even if it doesn't yet have values.
                     pedalboardItem->pathProperties_[fileProperty->patchProperty()] = "null";
+                }
+            }
+            for (auto i = pedalboardItem->pathProperties_.begin(); i != pedalboardItem->pathProperties_.end(); /**/)
+            {
+                if (!validFileProperties.contains(i->first)) {
+                    i = pedalboardItem->pathProperties_.erase(i);
+                } else {
+                    ++i;
                 }
             }
         }
@@ -2162,8 +2187,9 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
             this->pedalboard.SetControlValue(pluginInstanceId, control.key(), control.value());
         }
 
-        if ((!presetValues.state.isValid_) && presetValues.lilvPresetUri.empty())
+        if ((!presetValues.state.isValid_) && presetValues.lilvPresetUri.empty() && presetValues.pathProperties.empty())
         {
+            // fast path for control changes only.
             audioHost->SetPluginPreset(pluginInstanceId, presetValues.controls);
 
             std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
@@ -2177,6 +2203,7 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
             pedalboardItem->lv2State(presetValues.state);
             pedalboardItem->lilvPresetUri(presetValues.lilvPresetUri);
             pedalboardItem->stateUpdateCount(oldStateUpdateCount + 1);
+            pedalboardItem->pathProperties(presetValues.pathProperties);
             FirePedalboardChanged(-1); // does a complete reload of both client and audio server.
         }
         this->SetPresetChanged(-1, true);
@@ -2297,7 +2324,8 @@ void PiPedalModel::OnNotifyPathPatchPropertyReceived(
     auto i = pedalboardItem->pathProperties_.find(pathPatchPropertyUri);
     if (i != pedalboardItem->pathProperties_.end())
     {
-        pedalboardItem->pathProperties_[pathPatchPropertyUri] = atomString;
+        std::string abstractAtomString = storage.ToAbstractPathJson(atomString);
+        pedalboardItem->pathProperties_[pathPatchPropertyUri] = abstractAtomString;
 
         std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
         for (auto &subscriber : t)
@@ -2305,7 +2333,7 @@ void PiPedalModel::OnNotifyPathPatchPropertyReceived(
             subscriber->OnNotifyPathPatchPropertyChanged(
                 instanceId,
                 pathPatchPropertyUri,
-                atomString);
+                abstractAtomString);
         }
     }
 }
@@ -2382,16 +2410,23 @@ void PiPedalModel::MonitorPatchProperty(int64_t clientId, int64_t clientHandle, 
     PedalboardItem *item = this->pedalboard.GetItem(instanceId);
     if (item)
     {
-        auto &map = item->PatchProperties();
+        auto &map = item->pathProperties();
         if (map.contains(propertyUri))
         {
-            const auto &value = map[propertyUri];
-            std::string json = this->audioHost->AtomToJson(value.get());
-            for (auto &subscriber : this->subscribers)
-            {
-                if (subscriber->GetClientId() == clientId)
-                {
-                    subscriber->OnNotifyPatchProperty(clientHandle, instanceId, propertyUri, json);
+            const auto &value = map.at(propertyUri);
+            if (value != "null") {
+                try {
+                    std::string json = storage.FromAbstractPathJson(value);
+
+                    for (auto &subscriber : this->subscribers)
+                    {
+                        if (subscriber->GetClientId() == clientId)
+                        {
+                            subscriber->OnNotifyPatchProperty(clientHandle, instanceId, propertyUri, json);
+                        }
+                    }
+                } catch (const std::exception& ignored) {
+
                 }
             }
         }
