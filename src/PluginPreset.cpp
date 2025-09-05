@@ -90,6 +90,7 @@ JSON_MAP_END()
 
 JSON_MAP_BEGIN(PluginPresetIndex)
     JSON_MAP_REFERENCE(PluginPresetIndex,entries)
+    JSON_MAP_REFERENCE(PluginPresetIndex,version)
     JSON_MAP_REFERENCE(PluginPresetIndex,nextInstanceId)
 JSON_MAP_END()
 

@@ -248,6 +248,8 @@ void PiPedalModel::LoadLv2PluginInfo()
     // Copy all presets out of Lilv data to json files
     // so that we can close lilv while we're actually
     // running.
+
+    uint64_t pluginPresetIndexVersion = storage.GetPluginPresetIndexVersion();
     for (const auto &plugin : pluginHost.GetPlugins())
     {
         if (plugin->has_factory_presets())
@@ -256,9 +258,26 @@ void PiPedalModel::LoadLv2PluginInfo()
             {
                 PluginPresets pluginPresets = pluginHost.GetFactoryPluginPresets(plugin->uri());
                 storage.SavePluginPresets(plugin->uri(), pluginPresets);
+            } else {
+                if (pluginPresetIndexVersion == 0)
+                {
+                    if (plugin->uri() == "http://two-play.com/plugins/toob-convolution-reverb" || plugin->uri() == "http://two-play.com/plugins/toob-convolution-reverb-stereo")
+                    {
+                        // overwrite previous factory presets!
+                        PluginPresets pluginPresets = pluginHost.GetFactoryPluginPresets(plugin->uri());
+                        for (auto & pluginPreset: pluginPresets.presets_) 
+                        {
+                            storage.SavePluginPreset(
+                                plugin->uri(),
+                                pluginPreset);
+                        }
+
+                    }
+                }
             }
         }
     }
+    storage.SetPluginPresetIndexVersion(1);
 }
 
 void PiPedalModel::Load()
@@ -1734,7 +1753,7 @@ void PiPedalModel::SendSetPatchProperty(
             pedalboardItem->pathProperties_[propertyUri] = atomString;
         }
         this->SetPresetChanged(clientId, true);
-}
+    }
     LV2_Atom *atomValue = atomConverter.ToAtom(value);
 
     std::function<void(RealtimePatchPropertyRequest *)> onRequestComplete{
@@ -1828,11 +1847,13 @@ void PiPedalModel::SendGetPatchProperty(
                             bool foundValue = false;
                             std::lock_guard<std::recursive_mutex> lock(mutex);
                             auto pedalboardItem = this->pedalboard.GetItem(pParameter->instanceId);
-                            if (pedalboardItem) {
+                            if (pedalboardItem)
+                            {
                                 if (pedalboardItem->pathProperties_.contains(pParameter->uri))
                                 {
                                     pParameter->jsonResponse = pedalboardItem->pathProperties_[pParameter->uri];
-                                    if (pParameter->onSuccess) {
+                                    if (pParameter->onSuccess)
+                                    {
                                         foundValue = true;
                                         pParameter->onSuccess(pParameter->jsonResponse);
                                     }
@@ -2085,9 +2106,12 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
             }
             for (auto i = pedalboardItem->pathProperties_.begin(); i != pedalboardItem->pathProperties_.end(); /**/)
             {
-                if (!validFileProperties.contains(i->first)) {
+                if (!validFileProperties.contains(i->first))
+                {
                     i = pedalboardItem->pathProperties_.erase(i);
-                } else {
+                }
+                else
+                {
                     ++i;
                 }
             }
@@ -2414,8 +2438,10 @@ void PiPedalModel::MonitorPatchProperty(int64_t clientId, int64_t clientHandle, 
         if (map.contains(propertyUri))
         {
             const auto &value = map.at(propertyUri);
-            if (value != "null") {
-                try {
+            if (value != "null")
+            {
+                try
+                {
                     std::string json = storage.FromAbstractPathJson(value);
 
                     for (auto &subscriber : this->subscribers)
@@ -2425,8 +2451,9 @@ void PiPedalModel::MonitorPatchProperty(int64_t clientId, int64_t clientHandle, 
                             subscriber->OnNotifyPatchProperty(clientHandle, instanceId, propertyUri, json);
                         }
                     }
-                } catch (const std::exception& ignored) {
-
+                }
+                catch (const std::exception &ignored)
+                {
                 }
             }
         }

@@ -156,6 +156,7 @@ namespace pipedal
         static json_variant MapPath(const json_variant&json, const std::string &pluginStoragePath);
         static json_variant AbstractPath(const json_variant&json, const std::string &pluginStoragePath);
 
+        static json_variant MakePathVariant(const std::string&pathString);
 
         static std::string EmptyPathstring();
         static const json_variant& EmptyPath()  { return gEmptyPath; }

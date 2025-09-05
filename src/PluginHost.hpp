@@ -512,6 +512,7 @@ namespace pipedal
                 }
             }
         }
+        bool IsPathProperty(const std::string &uri) const;
 
     public:
         virtual ~Lv2PluginInfo();

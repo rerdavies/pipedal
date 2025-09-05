@@ -140,6 +140,11 @@ json_variant AtomConverter::AbstractPath(const json_variant&json, const std::str
 
 }
 
+json_variant AtomConverter::MakePathVariant(const std::string&pathString)
+{
+    return TypedProperty(SHORT_ATOM__Path,pathString);
+}
+
 
 LV2_Atom*AtomConverter::ToAtom(const json_variant&json)
 {

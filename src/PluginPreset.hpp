@@ -65,6 +65,7 @@ class PluginPresetIndex {
 public:
     std::vector<PluginPresetIndexEntry> entries_;
     uint64_t nextInstanceId_ = 1;
+    uint64_t version_ = 0;
     DECLARE_JSON_MAP(PluginPresetIndex);
 
 };

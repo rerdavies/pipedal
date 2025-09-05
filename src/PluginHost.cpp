@@ -19,6 +19,7 @@
 
 #include "pch.h"
 #include "AtomConverter.hpp"
+#include "HtmlHelper.hpp"
 #include "PluginHost.hpp"
 #include <lilv/lilv.h>
 #include <stdexcept>
@@ -1590,6 +1591,210 @@ void PluginHost::PortValueCallback(const char *symbol, void *user_data, const vo
         pState->failed = true;
     }
 }
+
+static bool lineStartsWith(const std::string &line, const char*text) {
+    for (char c: line) {
+        if (c == ' ' || c == '\t') {
+            continue;
+        }
+        if (c != *text) {
+            return false;
+        }
+        ++text;
+        if (*text == '\0')
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void skipWhitespace(std::istream &s) {
+    while (true)
+    {
+        auto c = s.peek();
+        if (c == ' ' || c == '\t') {
+            s.get();
+        } else {
+            return;
+        }
+    }
+}
+
+static bool parseTtlUrl(std::istream &s, std::string *result)
+{
+    if (s.peek() != '<') {
+        return false;
+    }
+    s.get();
+    std::ostringstream o;
+    while (s.peek() != '>')
+    {
+
+        int c = s.get();
+        if (c ==  EOF)
+        {
+            return false;
+
+        }
+        o << (char)c;
+    }
+    s.get();
+
+    *result = o.str();
+    return true;
+}
+
+static uint32_t readTtlUnicodeEscape(std::istream&s, size_t nChars)
+{
+    uint32_t result = 0;
+
+    for (size_t i = 0; i < nChars; ++i)
+    {
+        int c = s.peek();
+        if (c >= '0' && c <= '9') 
+        {
+            result = result*16 + (uint32_t)(c-'0');
+        } else if (c >= 'a' && c <= 'f') {
+            result = result*16 + (uint32_t)(c-'a'+10);
+        } else if (c >= 'A' && c <= 'F') {
+            result = result*16 + (uint32_t)(c-'A'+10);
+        }
+        s.get();
+    }
+    return result;
+}
+static bool parseTtlString(std::istream&s, std::string *result)
+{
+    if (s.peek() != '"') {
+        return false;
+    }
+    s.get(); // consume opening quote
+    std::ostringstream o;
+    while (s.peek() != '"') {
+        int c = s.get();
+        if (c == EOF) {
+            return false;
+        }
+        if (c == '\\') {
+            // Handle escape sequences
+            int next = s.get();
+            if (next == EOF) {
+                return false;
+            }
+            switch (next) {
+                case 'n':
+                    o << '\n';
+                    break;
+                case 't':
+                    o << '\t';
+                    break;
+                case 'r':
+                    o << '\r';
+                    break;
+                case '\\':
+                    o << '\\';
+                    break;
+                case '"':
+                    o << '"';
+                    break;
+                case 'u': 
+                {
+                    uint32_t cc = readTtlUnicodeEscape(s,4);
+                    HtmlHelper::utf32_to_utf8_stream(o,cc);
+                    break;
+                }
+                case 'U': 
+                {
+                    uint32_t cc = readTtlUnicodeEscape(s,8);
+                    HtmlHelper::utf32_to_utf8_stream(o,cc);
+                    break;
+                }
+                default:
+                    o << (char)next;
+                    break;
+            }
+        } else {
+            o << (char)c;
+        }
+    }
+    s.get(); // consume closing quote
+    *result = o.str();
+    return true;
+}
+static bool parseStateProperty(const std::string &line, std::string *property, std::string *value) {
+    std::istringstream s { line};
+
+    skipWhitespace(s);
+    if (!parseTtlUrl(s,property)) {
+        return false;
+    }
+    skipWhitespace(s);
+    if (!parseTtlString(s,value)) 
+    {
+        return false;
+    }
+    return true;
+}
+static std::map<std::string,std::string> ExtractPathPropertiesFromLilvState(
+    Lv2PluginInfo *pluginInfo,
+    const std::string lilvPresetText
+)
+{
+    // <urn:xxx>
+    //     a pset:Preset ;
+    //     ...
+    //     state:state [
+    //             <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Arthur Sykes Rymer Auditorium.wav"
+    //     ] .
+
+    std::map<std::string,std::string> result;
+    std::istringstream s{lilvPresetText};
+    std::string line;
+
+    bool foundState = false;
+    for (std::string line; std::getline(s, line);) {
+        if (lineStartsWith(line,"state:state"))
+        {
+            foundState = true;
+            break;
+        }
+    }
+
+    if (foundState) 
+    {
+        for (std::string line; std::getline(s, line);) {
+            if (lineStartsWith(line,"]"))
+            {
+                break;
+            }
+            std::string property, value;
+            if (parseStateProperty(line,&property,&value)) {
+                if (pluginInfo->IsPathProperty(property)) 
+                {   result[property] = AtomConverter::MakePathVariant(value).to_string();
+                }
+            }
+        }
+    }
+    return result;
+
+}
+
+
+bool Lv2PluginInfo::IsPathProperty(const std::string &uri) const {
+    if (!piPedalUI_) {
+
+    }
+    for (const UiFileProperty::ptr& fileProperty: this->piPedalUI_->fileProperties()) 
+    {
+        if (fileProperty->patchProperty() == uri)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
 {
     const LilvPlugins *plugins = lilv_world_get_all_plugins(this->pWorld);
@@ -1616,7 +1821,6 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
         LilvState *state = lilv_state_new_from_world(pWorld, this->mapFeature.GetMap(), preset);
         if (state != nullptr)
         {
-            const char *t = this->mapFeature.UridToString(14);
             const char *tLabel = lilv_state_get_label(state);
             if (tLabel != nullptr)
             {
@@ -1629,6 +1833,8 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
                 // can't handle std:state part of preset.
                 if (numProperties == 0)
                 {
+
+                    
                     if (!cbData.failed)
                     {
                         result.presets_.push_back(
@@ -1642,7 +1848,23 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
                 }
                 else
                 {
-                    result.presets_.push_back(PluginPreset::MakeLilvPreset(result.nextInstanceId_++, strLabel, controlValues, lilv_node_as_uri(preset)));
+
+                    std::string stateString = lilv_state_to_string(
+                        pWorld,mapFeature.GetMap(),mapFeature.GetUnmap(),
+                            state,
+                            "urn:xxx",
+                            nullptr);
+                    (void)stateString;
+
+                    std::shared_ptr<Lv2PluginInfo> pluginInfo = GetPluginInfo(pluginUri);
+
+                    PluginPreset pluginPreset = PluginPreset::MakeLilvPreset(result.nextInstanceId_++, strLabel, controlValues, lilv_node_as_uri(preset));
+
+                    pluginPreset.pathProperties_ = ExtractPathPropertiesFromLilvState(
+                        pluginInfo.get(),
+                        stateString
+                    );
+                    result.presets_.push_back(pluginPreset);
                 }
                 lilv_state_free(state);
             }

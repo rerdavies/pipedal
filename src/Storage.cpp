@@ -404,6 +404,7 @@ void Storage::SavePluginPresetIndex()
     }
 }
 
+
 void Storage::SaveBankIndex()
 {
     pipedal::ofstream_synced os;
@@ -1234,6 +1235,22 @@ bool Storage::RestoreCurrentPreset(CurrentPreset *pResult)
         return false;
     }
 }
+
+uint64_t Storage::GetPluginPresetIndexVersion()
+{
+    return pluginPresetIndex.version_;
+}
+void Storage::SetPluginPresetIndexVersion(uint64_t version)
+{
+    if (this->pluginPresetIndex.version_ != version)
+    {
+        this->pluginPresetIndexChanged = true;
+        this->pluginPresetIndex.version_ = version;
+        SavePluginPresetIndex();
+    }
+        
+}
+
 bool Storage::HasPluginPresets(const std::string &pluginUri) const
 {
     for (const auto &entry : this->pluginPresetIndex.entries_)
@@ -1486,10 +1503,8 @@ uint64_t Storage::SavePluginPreset(
 
 uint64_t Storage::SavePluginPreset(
     const std::string &pluginUri,
-    const std::string &name,
-    const std::map<std::string, float> &values,
-    const std::map<std::string,std::string> &pathProperties,
-    const Lv2PluginState &lv2State)
+    PluginPreset &pluginPreset
+)
 {
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
@@ -1497,13 +1512,12 @@ uint64_t Storage::SavePluginPreset(
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
         auto &preset = presets.presets_[i];
-        if (preset.label_ == name)
+        if (preset.label_ == pluginPreset.label_)
         {
             existing = true;
-            preset.controlValues_ = values;
-            preset.pathProperties_ = pathProperties;
-            preset.state_ = lv2State;
-
+            auto t = preset.instanceId_;
+            preset = pluginPreset;
+            preset.instanceId_ = t;
             result = preset.instanceId_;
             break;
         }
@@ -1511,13 +1525,9 @@ uint64_t Storage::SavePluginPreset(
     if (!existing)
     {
         result = presets.nextInstanceId_++;
+        pluginPreset.instanceId_ = result;
         presets.presets_.push_back(
-            PluginPreset(
-                result,
-                name,
-                values,
-                pathProperties,
-                lv2State));
+            pluginPreset);
     }
     this->SavePluginPresets(pluginUri, presets);
     return result;
