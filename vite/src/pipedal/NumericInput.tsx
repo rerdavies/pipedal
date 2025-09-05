@@ -32,6 +32,11 @@ const styles = ({ palette }: Theme) => createStyles({
 });
 
 
+function isSamsungDevice() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    return userAgent.includes('samsung') || userAgent.includes('sm-');
+}
+
 
 interface NumericInputProps extends WithStyles<typeof styles> {
     ariaLabel: string;
@@ -155,9 +160,14 @@ export const NumericInput =
                     inputProps={{
                         'aria-label': this.props.ariaLabel,
                         style: { textAlign: 'right' },
-                        "min": this.props.min,
-                        "max": this.props.max,
-                        "step:": this.props.step
+                        type: isSamsungDevice()? "text": "number",
+                        inputMode: "decimal",
+                        autoComplete: "off",
+                        autoCorrect: "off",
+                        autoCapitalize: "off",
+                        min: this.props.min,
+                        max: this.props.max,
+                        step: this.props.step
                     }}
                     onFocus={(e) => {this.handleFocus(e);}}
                     onBlur= {(e) => { this.handleBlur(e); }}

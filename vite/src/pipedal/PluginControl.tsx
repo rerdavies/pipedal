@@ -48,6 +48,11 @@ const MAX_ANGLE = 135;
 const FONT_SIZE = "0.8em";
 
 
+function isSamsungDevice() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    return userAgent.includes('samsung') || userAgent.includes('sm-');
+}
+
 enum ButtonStyle { None, Trigger, Momentary, MomentaryOnByDefault }
 
 
@@ -1089,7 +1094,7 @@ const PluginControl =
                                     ) : (
                                         <div>
                                             <Input key={value}
-                                                type="number"
+                                                type={isSamsungDevice()? "text": "number"} inputMode="decimal"
                                                 defaultValue={control.formatShortValue(value)}
                                                 error={this.state.error}
                                                 inputProps={{
