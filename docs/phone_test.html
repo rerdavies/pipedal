@@ -47,7 +47,7 @@
 
 <body>
     <div style="padding: 24px 16px">
-        <h1>Input Test</h1>
+        <h1>Samsun Phone Input Test</h1>
         <div style="display: flex; flex-flow: column nowrap; align-items: center; justify-content: start; margin: 8px;
             align-items: start">
             <div style="display: grid; 
@@ -69,10 +69,22 @@
 
             </div>
         </div>
-        <div class="grid-cell" style="font-size: 12px; max-width: 300px; word-break: break-all;" id="userAgent"></div>
+        <div class="grid-cell" style="font-size: 12px; max-width: 300px; word-break: break-all;" >
+            <p id="userAgent"></p>
+        </div>
 
         <script>
         document.getElementById('userAgent').textContent = "User agent: " + navigator.userAgent;
+        </script>
+        <div class="grid-cell" style="font-size: 12px; max-width: 300px; word-break: break-all;" >
+            <p id="is_samsung"></p>
+        </div>
+        <script>
+        function isSamsungDevice() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            return userAgent.includes('samsung') || userAgent.includes('sm-');
+        }
+        document.getElementById('is_samsung').textContent = isSamsungDevice() ? 'Samsung device detected' : 'Not a Samsung device'; 
         </script>
         
     </div>
