@@ -2087,6 +2087,7 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
                 }
                 pedalboardItem->SetControlValue("version", 0.0f);
             }
+        }
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {
             auto port = pPlugin->ports()[i];
