@@ -34,6 +34,11 @@
 	foaf:mbox <mailto:rerdavies@gmail.com> ;
 	foaf:homepage <https://github.com/sponsors/rerdavies> .
 
+toobNam:dbuUnits
+    a units:Unit ;
+    rdfs:label   "dBU" ;
+    units:symbol "dbu" ;
+    units:render "%f dBU".
 
 toobNam:modelFile
         a lv2:Parameter;
@@ -46,6 +51,12 @@ toobNam:eqGroup
         pg:InputGroup ;
     lv2:name "Tone" ;
     lv2:symbol "eqGroup" .
+
+toobNam:calibrationGroup
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Calibration" ;
+    lv2:symbol "calibrationGroup" .
 
 
 
@@ -147,7 +158,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-
 Code from the the NeuralAmpModelerCore project (https://github.com/sdatkinson/NeuralAmpModelerCore) is provided 
 under the following license. 
 
@@ -172,7 +182,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
 
 
 """ ;
@@ -237,6 +246,39 @@ SOFTWARE.
                 lv2:ControlPort ;
 
                 lv2:index 3;
+                lv2:symbol "gate" ;
+                lv2:name "Noise Gate";
+                lv2:default -120.0 ;
+                lv2:minimum -120.0;
+                lv2:maximum 0.0;
+                rdfs:comment "Noise gate threshold. Set to minimum to disable.";
+                units:unit units:db;
+                lv2:scalePoint [
+                        rdfs:label "Off" ;
+                        rdf:value -120.0
+                ];
+
+
+        ],
+        [
+                a lv2:OutputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 4;
+                lv2:symbol "gateOut" ;
+                lv2:name "\u00A0";
+                lv2:default 0.0;
+                lv2:minimum 0.0;
+                lv2:maximum 1.0;
+                rdfs:comment "Gate Status";
+                lv2:portProperty lv2:toggled;
+
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 5;
                 lv2:symbol "buffer" ;
                 lv2:name "Threaded";
                 lv2:default 0.0 ;
@@ -247,39 +289,8 @@ SOFTWARE.
                 rdfs:comment "Output gain";
 
         ],
-        [
-                a lv2:InputPort ,
-                lv2:ControlPort ;
 
-                lv2:index 4;
-                lv2:symbol "gate" ;
-                lv2:name "Noise Gate";
-                lv2:default -100.0 ;
-                lv2:minimum -100.0;
-                lv2:maximum 0.0;
-                rdfs:comment "Noise gate threshold. Set to minimum to disable.";
-                units:unit units:db;
-                lv2:scalePoint [
-                        rdfs:label "Off" ;
-                        rdf:value -100.0
-                ];
-
-
-        ],
-        [
-                a lv2:OutputPort ,
-                lv2:ControlPort ;
-
-                lv2:index 5;
-                lv2:symbol "gateOut" ;
-                lv2:name "\u00A0";
-                lv2:default 0.0;
-                lv2:minimum 0.0;
-                lv2:maximum 1.0;
-                rdfs:comment "Gate Status";
-                lv2:portProperty lv2:toggled;
-
-        ],
+        #### EQ ###
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
@@ -349,17 +360,98 @@ SOFTWARE.
                 rdfs:comment "Bass";
                 pg:group toobNam:eqGroup ;
         ],
+
+
+        ### CALIBRATION ######
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 10 ;
+                lv2:symbol "inputCalibrationMode" ;
+                lv2:name "Input Calibration";
+                lv2:default 1.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0; 
+                lv2:portProperty lv2:enumeration ;
+                 lv2:scalePoint [
+                        rdfs:label "Raw" ;
+                        rdf:value 0.0
+                ] , [
+                        rdfs:label "Calibrated" ;
+                        rdf:value 1.0
+                ];   
+
+
+                pg:group toobNam:calibrationGroup ;
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 11 ;
+                lv2:symbol "calibration" ;
+                lv2:name "Value";
+                lv2:default -6.0 ;
+                lv2:minimum -30.0 ;
+                lv2:maximum 12.0; 
+                units:unit toobNam:dbuUnits;
+                rdfs:comment "Measured instrument voltage level in dBU";
+                pg:group toobNam:calibrationGroup ;
+
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 12;
+                lv2:symbol "outputCalibration" ;
+                lv2:name "Output Calibration";
+                lv2:default 0.0;
+                lv2:minimum 0.0;
+                lv2:maximum 2.0;
+                rdfs:comment "Scaling applied to model output";
+
+                lv2:portProperty lv2:enumeration ;
+                 lv2:scalePoint [
+                        rdfs:label "Normalized" ;
+                        rdf:value 0.0
+                ] , [
+                        rdfs:label "Calibrated" ;
+                        rdf:value 1.0
+                ], [
+                        rdfs:label "Raw" ;
+                        rdf:value 2.0
+                ];   
+
+                pg:group toobNam:calibrationGroup ;
+
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 13 ;
+                lv2:symbol "version" ;
+                lv2:name "Preset Version";
+                lv2:default 1.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0; 
+                lv2:portProperty epp:notOnGUI;
+        ],
+
+
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 10 ;
+                lv2:index 14 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 11 ;
+                lv2:index 15 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ],
@@ -371,7 +463,7 @@ SOFTWARE.
                 lv2:designation lv2:control ;
                 atom:supports patch:Message ;
 
-                lv2:index 12 ;
+                lv2:index 16 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Control" ;
@@ -381,7 +473,7 @@ SOFTWARE.
                 atom:bufferType atom:Sequence ;
                 # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 13;
+                lv2:index 17;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Notification" ;
@@ -418,6 +510,11 @@ toobNam:ui
                         rdfs:label ".nam file";
                         pipedal_ui:fileExtension ".nam";
                         pipedal_ui:mimeType "application/octet-stream";
+                ],[
+                        a pipedal_ui:fileType;
+                        rdfs:label ".aidax file";
+                        pipedal_ui:fileExtension ".aidax";
+                        pipedal_ui:mimeType "application/octet-stream";
                 ];
         ];
         pipedal_ui:frequencyPlot 
@@ -425,7 +522,7 @@ toobNam:ui
                 pipedal_ui:patchProperty toobNam:FrequencyResponse;
                 lv2:index 10 ;
                 pg:group toobNam:eqGroup ;
-                pipedal_ui:width: 200;
+                pipedal_ui:width: 120.0 ;
         ]
         .
 
