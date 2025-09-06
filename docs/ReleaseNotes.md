@@ -1,11 +1,83 @@
 # Release Notes
 
-## PiPedal 1.4.89 Internal
-- Toob Crvb for testing. 
+## PiPedal 1.5.90 Beta Pre-Release
 
-## PiPedal 1.4.88 Alpha 
-- Ubuntu 25.04 experimental release.
-- Ubutnu 24.04 Hotspot compatibility fix
+Theme for this release: major improvments to plugins. 
+
+The behaviour of  number of existing plugins has changed. While every effort has been made to prevent breaking 
+changes, it is possible that the beaviour of some existing presets may have changed. Please see the Notes section 
+for details.
+
+Major Features:
+
+- Improvements to the default presets. Default presets have been completely redesigned to make use of 
+  plugins that have been added since the initial release of PiPedal, and to provide really great presets out of the box.
+
+- A new Factory Presets bank as been added. The Factory Presets bank containing the initial set of presets that you
+  would find in the "Default Bank" after a fresh install. If you are upgrading, the "Default Bank" presets will not 
+  be modified; but you will find a new bank named "Factory Presets", which contain the current set of default presets. You 
+  should not modify these presets, as they may be overwritten or added to by future upgrades. Instead, copy presets from the Factory Presets
+  bank into your "Default Bank", or whichever bank you are currently using for personal use. 
+
+- TooB Neural Amp Modeler: input and output Calibration. 
+
+- TooB Convolution Reverb: Predelay, Stretch and Decay controls allow adjustments of impulse/response characteristics.
+
+- TooB Convolution Reverb, Freeverb: New "Tails" control, which allows reverb tails to continue after bypassing the effect.
+
+- TooB Parametric EQ: New plugin providing a 4-band parametric EQ. A musically useful Parametric EQ that's suitable both for 
+  shaping guitar tone before amp models, or for shaping overall sound at the end of plugin chains. This should become your 
+  go-to EQ plugin when using PiPedal.
+
+- TooB 3 Band EQ: New plugin providing a simple 3-band EQ. (Replicates the EQ stage on Steve Atkinson's Windows and Mac-based 
+  Neural Amp Modeler plugin).
+
+- TooB CE-2 Chorus, TooB BF-2 Flanger: TooB Phaser: New "Wet/Dry" controls. 
+
+- Noise Gates threshold ranges have been increased in TooB NAM, TooB Input and TooB Noise Gate plugins.
+
+- Support for Ubuntu 25.04. Compatibility fixes for Ubuntu 25.04 may also make it easier to build PiPedal on 
+  other Debian-based Linux distros.
+
+#### Notes
+
+A number of plugins have been modified to provide better functionality going forward. Every effort has been made to prevent 
+breaking changes in existing plugins. If you encounter a breaking change in an existing preset, please report it as a bug. If 
+you are using presets in live performance, it might be a good idea to check them, before you next use them in live 
+performance,  in order to verify that they have not been inadvertently broken by the upgrade. In particular, CPU use for presets
+that are using TooB  Convolution Reverb may go up slightly; so if you are using presets that run at or close to maximum CPU use, you should check that they still work after the upgrade.
+
+The EQ section in TooB NAM has been removed. It has become apparent that the existing EQ controls were not entirely 
+fit for purpose. To prevent breaking changes, EQ controls will still show up if you
+load an instance of ToB NAM that was saved with a previous version of PiPedal; but when you load . Instead, please consider adding
+one of the rich set of old or new TooB EQ plugins before or after TooB NAM instead:
+
+- TooB Parametric EQ (recommended).
+- TooB GE-7 Graphic Eq.
+- TooB 3 Band EQ (equivalent to Steve Atkinson's NAM EQ section).
+- TooB Tone Stack (replicates the old TooB NAM EQ functionality).
+
+Normaization of reverb I/RSs has been significantly improved in order to esnure that newy loaded I/R files 
+sound reasonable when loaded using default TooB Convolution Reverb control settings. It should now take 
+significanty less effort to adjust levels on Convolution Reverb I/R files. In order to prevent breaking 
+changes, instances of TooB Convolution Reverb that were saved in previous versions of PiPedal will use 
+the old normalization procedure; newly loaded instances of TooB Convolution Reverb. 
+
+In addition, the MaxT control has been removed. I/R files will now play to their full length without 
+feeding back). This change may cause overruns on existing presets if you are using unusually long Reverb I/R files.
+TooB Convolution Reverb can comfortably support reverb I/R well in excess of ten seconds long, even on a Pi 4. For reference, 
+typical I/R files are about 1 to 3 seconds long; and exteremely reverberant I/Rs may sometimes stretch out to five or six 
+seconds long. In practice, the increase in CPU use is relatively modest; but you may want to double-check that 
+presets using exteremely reverberant I/Rs run wihout problems before using them in live performance.
+
+#### Minor Features/Bug Fixes:
+
+- Correct missing '-' key on Samsung keyboards when editing control values.
+- Default to dark theme on first use. 
+- dB Values are now displayed on plugin VU output controls.
+- Correctly display name of plugin in MIDI bindings dialog. (Thanks to Jiri Popek).
+- Auto-focus input control on Rename dialogs. (Thanks to Jiri Popek).
+- Display LICENSE files found in upload directories.
 
 ## PiPedal 1.4.87 Beta
 The Big Feature: 
@@ -21,6 +93,7 @@ Bug fixes:
 - Fixes for volume adjustments in TooB NAM.
 
 (A re-issue of 1.4.86)
+
 ## Pipedal 1.4.79 Beta
 
 The Big Feature:
