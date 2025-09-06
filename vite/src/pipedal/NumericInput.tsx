@@ -32,11 +32,10 @@ const styles = ({ palette }: Theme) => createStyles({
 });
 
 
-function isSamsungDevice() {
-    const userAgent = navigator.userAgent.toLowerCase();
-    return userAgent.includes('samsung') || userAgent.includes('sm-');
-}
 
+function isMobileDevice() {
+    return (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+}
 
 interface NumericInputProps extends WithStyles<typeof styles> {
     ariaLabel: string;
@@ -160,8 +159,8 @@ export const NumericInput =
                     inputProps={{
                         'aria-label': this.props.ariaLabel,
                         style: { textAlign: 'right' },
-                        type: isSamsungDevice()? "text": "number",
-                        inputMode: "decimal",
+                        type: isMobileDevice()? "text": "number", // Avoids missing minus sign on Samsung mobile keyboard.
+                        inputMode: "numeric",
                         autoComplete: "off",
                         autoCorrect: "off",
                         autoCapitalize: "off",
