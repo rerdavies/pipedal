@@ -2064,18 +2064,29 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
         //////// PLUGIN SPECIFIC UPGRADES //////////////////////
         if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
         {
-            ControlValue *pValue = pedalboardItem->GetControlValue("inputCalibrationMode");
-            if (pValue == nullptr)
-            {
-                // calibration is OFF when upgrading.
-                pedalboardItem->SetControlValue("inputCalibrationMode", 0.0f);
-            }
-            pValue = pedalboardItem->GetControlValue("version");
-            if (pValue == nullptr)
-            {
+            ControlValue *pVersion = pedalboardItem->GetControlValue("version");
+            if (pVersion == nullptr) {
+                ControlValue *pValue = pedalboardItem->GetControlValue("inputCalibrationMode");
+                if (pValue == nullptr)
+                {
+                    // calibration is OFF when upgradfing.
+                    pedalboardItem->SetControlValue("inputCalibrationMode", 0.0f);
+                }
+                // convert old gate threshold to new gate threshold.
+                ControlValue *pGateValue = pedalboardItem->GetControlValue("gate");
+                if (pGateValue) {
+                    float value = pGateValue->value();
+                    // Is the gate disabled?
+                    if (value <= -100.0f)
+                    {
+                        value = -120.0f; // "disabled in new range."
+                    } else {
+                        value = value * 0.5; // correct the bug in original implementation.
+                    }
+                    pedalboardItem->SetControlValue("gate", value);
+                }
                 pedalboardItem->SetControlValue("version", 0.0f);
             }
-        }
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {
             auto port = pPlugin->ports()[i];
