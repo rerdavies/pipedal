@@ -1,6 +1,6 @@
 # Release Notes
 
-## PiPedal 1.5.90 Beta Pre-Release
+## PiPedal 1.5.90 Beta Release Candidate
 
 Theme for this release: major improvments to plugins. 
 
