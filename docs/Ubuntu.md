@@ -7,7 +7,7 @@ icon_float: right
 
 {% include pageIcon.html %}
 
-PiPedal will run on Ubuntu 24.04, and 24.10 (both aarch64 and amd64/x64) as well as Raspberry Pi OS. We recommend using Ubuntu Desktop, but Raspberry Pi OS will also run on an Ubuntu Server install. Ubuntu Studio would also be a fine choice. 
+PiPedal will run on Ubuntu 24.04, 24.10 and 25.04 (both aarch64 and amd64/x64) as well as Raspberry Pi OS. We recommend using Ubuntu Desktop, but Raspberry Pi OS will also run on an Ubuntu Server install. Ubuntu Studio would also be a fine choice. 
 
 For best audio latency, you should not use PiPedal with an active desktop. See the Running Headless section below.
 
