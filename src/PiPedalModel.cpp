@@ -308,6 +308,7 @@ void PiPedalModel::Load()
             if (storage.RestoreCurrentPreset(&currentPreset))
             {
                 this->pedalboard = currentPreset.preset_;
+                this->UpdateDefaults(&pedalboard);
                 this->hasPresetChanged = currentPreset.modified_;
             }
         }

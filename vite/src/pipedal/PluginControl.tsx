@@ -1103,12 +1103,11 @@ const PluginControl =
 
                                                     min: this.props.uiControl?.min_value,
                                                     max: this.props.uiControl?.max_value,
-                                                    opacity: this.state.editFocused ? 1 : 0,
                                                 }}
 
                                                 sx={{
                                                     // Style the input element
-                                                    '& input[type=number]': {
+                                                    '& input': {
                                                         width: 60,
                                                         opacity: this.state.editFocused ? 1 : 0,
                                                         textAlign: "center", fontSize: FONT_SIZE,
