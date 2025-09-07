@@ -1094,14 +1094,16 @@ const PluginControl =
                                     ) : (
                                         <div>
                                             <Input key={value}
-                                                type={isMobileDevice()? "text": "number"} 
-                                                inputMode="numeric"
                                                 defaultValue={control.formatShortValue(value)}
                                                 error={this.state.error}
                                                 inputProps={{
                                                     className: "scrollMod",
+                                                    type: isMobileDevice()? "text": "number",
+                                                    inputMode: "numeric",
+
                                                     min: this.props.uiControl?.min_value,
                                                     max: this.props.uiControl?.max_value,
+                                                    opacity: this.state.editFocused ? 1 : 0,
                                                 }}
 
                                                 sx={{
