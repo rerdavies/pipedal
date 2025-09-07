@@ -1,15 +1,20 @@
 
+double select on double-click/ok in file dialog.
+sudo apt install libbz2-dev
+
+README, license files in file browser.
+
+
+
+ls 
 Carla Project icons.
 check reload after change of LV2 plugins.
 
 Exactly one underrun per seek in Toob Player
 
 
-check filetime conversion in gcc 12.2! (missing c++ 20 time conversion functions)
- AudioFiles.cpp   fileTimeToInt64
-
-
 json "skip" code doesn't work with complex objects (MidiChannelBinding specifically).
+json nan/inf is fatal.
 
 - pipewire aux in?
 

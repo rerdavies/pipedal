@@ -494,7 +494,7 @@ public:
 
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
-                fs::path path = request_uri.query("path");
+                fs::path path = model->GetStorage().FromAbstractPathJson(request_uri.query("path"));
 
                 if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                 {

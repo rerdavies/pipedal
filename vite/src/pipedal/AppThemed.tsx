@@ -813,7 +813,7 @@ export
                         {(!this.state.tinyToolBar) && !this.state.performanceView ?
                             (
                                 <AppBar position="absolute"  >
-                                    <Toolbar variant="dense" className={classes.toolBar} style={{overflow: "clip" }}  >
+                                    <Toolbar variant="dense" className={classes.toolBar} style={{ overflow: "clip" }}  >
                                         <IconButtonEx tooltip="Menu"
                                             edge="start"
                                             aria-label="menu"
@@ -1026,40 +1026,51 @@ export
                             (
                                 <AboutDialog open={this.state.aboutDialogOpen} onClose={() => this.setState({ aboutDialogOpen: false })} />
                             )}
-                        <SettingsDialog
-                            open={this.state.isSettingsDialogOpen}
-                            onboarding={this.state.onboarding}
-                            onClose={() => this.handleSettingsDialogClose()} />
-                        <RenameDialog
-                            open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
-                            defaultName={this.model_.banks.get().getSelectedEntryName()}
-                            title="Bank Name"
-                            acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
-                            onClose={() => {
-                                this.setState({
-                                    renameBankDialogOpen: false,
-                                    saveBankAsDialogOpen: false
-                                })
-                            }}
-                            onOk={(text: string) => {
-                                if (this.state.renameBankDialogOpen) {
-                                    this.handleBankRenameOk(text);
-                                } else if (this.state.saveBankAsDialogOpen) {
-                                    this.handleSaveBankAsOk(text);
+                        {this.state.isSettingsDialogOpen && (
+                            <SettingsDialog
+                                open={this.state.isSettingsDialogOpen}
+                                onboarding={this.state.onboarding}
+                                onClose={() => this.handleSettingsDialogClose()} />
+                        )}
+                        {(this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen) && (
+                            <RenameDialog
+                                open={this.state.renameBankDialogOpen || this.state.saveBankAsDialogOpen}
+                                defaultName={this.model_.banks.get().getSelectedEntryName()}
+                                title="Bank Name"
+                                acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
+                                onClose={() => {
+                                    this.setState({
+                                        renameBankDialogOpen: false,
+                                        saveBankAsDialogOpen: false
+                                    })
+                                }}
+                                onOk={(text: string) => {
+                                    if (this.state.renameBankDialogOpen) {
+                                        this.handleBankRenameOk(text);
+                                    } else if (this.state.saveBankAsDialogOpen) {
+                                        this.handleSaveBankAsOk(text);
+                                    }
                                 }
-                            }
-                            }
-                        />
+                                }
+                            />
+                        )}
 
-                        <ZoomedUiControl
-                            dialogOpen={this.state.zoomedControlOpen}
-                            controlInfo={this.state.zoomedControlInfo}
-                            onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
-                            onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
-                            }
-                        />
-                        <UpdateDialog open={this.state.updateDialogOpen} />
-                        {this.state.showStatusMonitor && (<JackStatusView />)}
+                        {this.state.zoomedControlOpen && (
+                            <ZoomedUiControl
+                                dialogOpen={this.state.zoomedControlOpen}
+                                controlInfo={this.state.zoomedControlInfo}
+                                onDialogClose={() => { this.setState({ zoomedControlOpen: false }); }}
+                                onDialogClosed={() => { this.model_.zoomedUiControl.set(undefined); }
+                                }
+                            />
+                        )}
+                        {(this.state.updateDialogOpen) && (
+                            <UpdateDialog open={this.state.updateDialogOpen} />
+                        )}
+                        {this.state.showStatusMonitor && (
+                            <JackStatusView />
+                        )}
+
                     </div>
                 )
                 }

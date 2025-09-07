@@ -9,23 +9,38 @@ tpset:toob-convolution-reverb-preset-0
     lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
     rdfs:label "Hall" ;
     lv2:port [
+        lv2:symbol "bypass" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "decay" ;
+        pset:value 0.0 ;
+    ] , [
         lv2:symbol "direct_mix" ;
-        pset:value -2.222214 ;
+        pset:value -3.0 ;
     ] , [
         lv2:symbol "loading_state" ;
         pset:value 0.0 ;
     ] , [
         lv2:symbol "predelay" ;
-        pset:value 0.0 ;
+        pset:value -1.0 ;
+    ] , [
+        lv2:symbol "predelay_new" ;
+        pset:value 4.799636 ;
     ] , [
         lv2:symbol "reverb_mix" ;
-        pset:value -12.77779 ;
+        pset:value -12.0 ;
+    ] , [
+        lv2:symbol "stretch" ;
+        pset:value 1.542211 ;
+    ] , [
+        lv2:symbol "tails" ;
+        pset:value 1.0 ;
     ] , [
         lv2:symbol "time" ;
         pset:value 1.5 ;
     ] ;
     state:state [
-        <http://two-play.com/plugins/toob-impulse#impulseFile> <impulseFiles/reverb/St.%20Margaret\u0027s%20Church.wav> ;
+        <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Jack Lyons Hall, University of York.wav" ;
     ] .
 
 tpset:toob-convolution-reverb-preset-1
@@ -33,23 +48,38 @@ tpset:toob-convolution-reverb-preset-1
     lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
     rdfs:label "Large Hall" ;
     lv2:port [
+        lv2:symbol "bypass" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "decay" ;
+        pset:value 0.0 ;
+    ] , [
         lv2:symbol "direct_mix" ;
-        pset:value -3.333313 ;
+        pset:value -3.0 ;
     ] , [
         lv2:symbol "loading_state" ;
         pset:value 0.0 ;
     ] , [
         lv2:symbol "predelay" ;
-        pset:value 1.0 ;
+        pset:value -1.0 ;
+    ] , [
+        lv2:symbol "predelay_new" ;
+        pset:value 4.799636 ;
     ] , [
         lv2:symbol "reverb_mix" ;
-        pset:value -15.0 ;
+        pset:value -17.33333 ;
+    ] , [
+        lv2:symbol "stretch" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "tails" ;
+        pset:value 1.0 ;
     ] , [
         lv2:symbol "time" ;
         pset:value 1.5 ;
     ] ;
     state:state [
-        <http://two-play.com/plugins/toob-impulse#impulseFile> <impulseFiles/reverb/Jack%20Lyons%20Hall,%20University%20of%20York.wav> ;
+        <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Jack Lyons Hall, University of York.wav" ;
     ] .
 
 tpset:toob-convolution-reverb-preset-2
@@ -57,23 +87,38 @@ tpset:toob-convolution-reverb-preset-2
     lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
     rdfs:label "Club" ;
     lv2:port [
+        lv2:symbol "bypass" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "decay" ;
+        pset:value 0.0 ;
+    ] , [
         lv2:symbol "direct_mix" ;
-        pset:value -40.0 ;
+        pset:value -3.0 ;
     ] , [
         lv2:symbol "loading_state" ;
         pset:value 0.0 ;
     ] , [
         lv2:symbol "predelay" ;
-        pset:value 0.0 ;
+        pset:value -1.0 ;
+    ] , [
+        lv2:symbol "predelay_new" ;
+        pset:value 1.0 ;
     ] , [
         lv2:symbol "reverb_mix" ;
-        pset:value -5.0 ;
+        pset:value -6.0 ;
+    ] , [
+        lv2:symbol "stretch" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "tails" ;
+        pset:value 1.0 ;
     ] , [
         lv2:symbol "time" ;
         pset:value 1.5 ;
     ] ;
     state:state [
-        <http://two-play.com/plugins/toob-impulse#impulseFile> <impulseFiles/reverb/Arthur%20Sykes%20Rymer%20Auditorium.wav> ;
+        <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Arthur Sykes Rymer Auditorium.wav" ;
     ] .
 
 tpset:toob-convolution-reverb-preset-3
@@ -81,22 +126,37 @@ tpset:toob-convolution-reverb-preset-3
     lv2:appliesTo <http://two-play.com/plugins/toob-convolution-reverb> ;
     rdfs:label "Live Room" ;
     lv2:port [
+        lv2:symbol "bypass" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "decay" ;
+        pset:value 0.0 ;
+    ] , [
         lv2:symbol "direct_mix" ;
-        pset:value -1.111115 ;
+        pset:value -4.0 ;
     ] , [
         lv2:symbol "loading_state" ;
         pset:value 0.0 ;
     ] , [
         lv2:symbol "predelay" ;
-        pset:value 0.0 ;
+        pset:value -1.0 ;
+    ] , [
+        lv2:symbol "predelay_new" ;
+        pset:value 1.0 ;
     ] , [
         lv2:symbol "reverb_mix" ;
-        pset:value -9.444443 ;
+        pset:value -8.0 ;
+    ] , [
+        lv2:symbol "stretch" ;
+        pset:value 1.0 ;
+    ] , [
+        lv2:symbol "tails" ;
+        pset:value 1.0 ;
     ] , [
         lv2:symbol "time" ;
         pset:value 1.5 ;
     ] ;
     state:state [
-        <http://two-play.com/plugins/toob-impulse#impulseFile> <impulseFiles/reverb/Genesis%206%20Studio%20Live%20Room.wav> ;
+        <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Genesis 6 Studio Live Room.wav" ;
     ] .
 

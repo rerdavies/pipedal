@@ -37,6 +37,8 @@
 #include "DummyAudioDriver.hpp"
 #include "SchedulerPriority.hpp"
 #include "CrashGuard.hpp"
+#include <iostream>
+#include <iomanip>
 
 #include "CpuUse.hpp"
 
@@ -259,6 +261,8 @@ namespace pipedal
 
         std::vector<BufferTrace> bufferTraces{1000};
         size_t bufferTraceIndex = 0;
+
+        virtual void DumpBufferTrace(size_t nEntries) override;
 
         inline void TraceBufferPositions(size_t framesInBuffer, char code = ' ')
         {
@@ -1077,7 +1081,7 @@ namespace pipedal
             float *p = (float *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
-            int channels = this->captureChannels;
+            int channels = this->playbackChannels;
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -1092,7 +1096,7 @@ namespace pipedal
             float *p = (float *)rawPlaybackBuffer.data();
 
             std::vector<float *> &buffers = this->playbackBuffers;
-            int channels = this->captureChannels;
+            int channels = this->playbackChannels;
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -1151,7 +1155,7 @@ namespace pipedal
         void RestartAlsa()
         {
             std::lock_guard lock{restartMutex};
-            Lv2Log::info("Restarting ALSA devices.");
+            Lv2Log::debug("Restarting ALSA devices.");
 
             try
             {
@@ -1167,7 +1171,6 @@ namespace pipedal
                 OpenAudio(this->jackServerSettings, this->channelSelection);
                 validate_capture_handle();
                 FillOutputBuffer();
-                audioRunning = true;
             }
             catch (const std::exception &e)
             {
@@ -1180,6 +1183,7 @@ namespace pipedal
                 Lv2Log::error(SS("Unable to restart ALSA capture: " << snd_strerror(err)));
                 throw PiPedalStateException("Unable to restart ALSA capture.");
             }
+            audioRunning = true;
         }
 
         void PrepareCaptureFunctions(snd_pcm_format_t captureFormat)
@@ -1517,7 +1521,6 @@ namespace pipedal
             }
             catch (const std::exception &e)
             {
-                Lv2Log::info(SS("Soft audio restart failed. " << e.what()));
                 RestartAlsa();
                 audioRunning = true;
             }
@@ -1588,7 +1591,6 @@ namespace pipedal
             }
             catch (const std::exception &e)
             {
-                Lv2Log::info(SS("Soft audio restart failed. " << e.what()));
                 RestartAlsa();
                 audioRunning = true;
             }
@@ -1619,6 +1621,8 @@ namespace pipedal
             auto frame_bytes = this->captureFrameSize;
             do
             {
+                TraceBufferPositions(framesRead,'1');
+
                 framesRead = snd_pcm_readi(handle, buffer, frames);
                 if (framesRead < 0)
                 {
@@ -1631,10 +1635,12 @@ namespace pipedal
                 }
                 if (framesRead == 0)
                 {
-                    snd_pcm_wait(captureHandle, 1);
+                    snd_pcm_wait(handle, frames);
                 }
-                TraceBufferPositions(framesRead);
             } while (frames > 0);
+
+            TraceBufferPositions(framesRead,'2');
+
             return framesRead;
         }
 
@@ -2333,4 +2339,50 @@ namespace pipedal
     {
         snd_config_update_free_global(); // to get a clean Valgrind report.
     }
+
+    void AlsaDriverImpl::DumpBufferTrace(size_t nEntries)
+    {
+        using namespace std;
+        int savedPrecision = cout.precision();
+        auto  savedFlags = cout.flags();
+
+        size_t ix = bufferTraceIndex;
+        if (ix < nEntries)
+        {
+            ix = ix + bufferTraces.size()-nEntries;
+        } else {
+            ix -= nEntries;
+        }
+        uint64_t t0;
+        if (bufferTraceIndex == 0) {
+            t0 = bufferTraces[bufferTraces.size()-1].time;
+        } else {
+            t0 = bufferTraces[bufferTraceIndex-1].time;
+        }
+        while (ix != bufferTraceIndex)
+        {
+            auto&bufferTrace = bufferTraces[ix];
+
+            int64_t dt = (int64_t)bufferTrace.time - (int64_t)t0;
+
+
+            cout << bufferTrace.code << " " 
+                << fixed << setprecision(3) << dt*0.001
+                << " " << "inAvail: " << bufferTrace.inAvail
+                << " " << "outAvail: " << bufferTrace.outAvail
+                << " " << "bufferd: " << bufferTrace.buffered
+                << " " << "total: " << bufferTrace.total
+                << endl;
+
+            ++ix;
+            if (ix == bufferTraces.size())
+            {
+                ix = 0;
+            }
+        }
+
+        cout.precision(savedPrecision);
+        cout.flags(savedFlags);
+    }
+
 } // namespace

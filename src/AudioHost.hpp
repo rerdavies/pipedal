@@ -56,6 +56,7 @@ namespace pipedal
         int64_t clientId;
         int64_t instanceId;
         LV2_URID uridUri;
+        std::string uri;
 
         enum class RequestType
         {

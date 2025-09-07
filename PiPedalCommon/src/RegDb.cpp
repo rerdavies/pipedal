@@ -305,8 +305,8 @@ using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
 
-using __be32 = BigEndian<uint32_t>;
-using __be16 = BigEndian<uint16_t>;
+using s__be32 = BigEndian<uint32_t>;
+using s__be16 = BigEndian<uint16_t>;
 #define BIT(n) (1 << n)
 
 template <typename T>
@@ -349,7 +349,7 @@ bool regdb_has_valid_signature(const u8 *data, unsigned int size) { return true;
 struct fwdb_country
 {
     u8 alpha2[2];
-    __be16 coll_ptr;
+    s__be16 coll_ptr;
     /* this struct cannot be extended */
 } __packed __aligned(4);
 
@@ -359,13 +359,13 @@ struct fwdb_collection
     u8 n_rules;
     u8 dfs_region;
     /* no optional data yet */
-    /* aligned to 2, then followed by __be16 array of rule pointers */
+    /* aligned to 2, then followed by s__be16 array of rule pointers */
 } __packed __aligned(4);
 
 struct fwdb_header
 {
-    __be32 magic;
-    __be32 version;
+    s__be32 magic;
+    s__be32 version;
     struct fwdb_country country[];
 } __packed __aligned(4);
 
@@ -382,7 +382,7 @@ struct fwdb_wmm_ac
 {
     u8 ecw;
     u8 aifsn;
-    __be16 cot;
+    s__be16 cot;
 } __packed;
 
 struct fwdb_wmm_rule
@@ -395,11 +395,11 @@ struct fwdb_rule
 {
     u8 len;
     u8 flags;
-    __be16 max_eirp;
-    __be32 start, end, max_bw;
+    s__be16 max_eirp;
+    s__be32 start, end, max_bw;
     /* start of optional data */
-    __be16 cac_timeout;
-    __be16 wmm_ptr;
+    s__be16 cac_timeout;
+    s__be16 wmm_ptr;
 } __packed __aligned(4);
 
 #define FWDB_MAGIC 0x52474442
@@ -462,7 +462,7 @@ static bool valid_country(const u8 *data, unsigned int size,
 {
     unsigned int ptr = be16_to_cpu(country->coll_ptr) << 2;
     struct fwdb_collection *coll = (struct fwdb_collection *)(data + ptr);
-    __be16 *rules_ptr;
+    s__be16 *rules_ptr;
     unsigned int i;
 
     /* make sure we can read len/n_rules */
@@ -479,7 +479,7 @@ static bool valid_country(const u8 *data, unsigned int size,
     if (coll->len < offsetofend(struct fwdb_collection, dfs_region))
         return false;
 
-    rules_ptr = (__be16 *)((u8 *)coll + ALIGN(coll->len, 2));
+    rules_ptr = (s__be16 *)((u8 *)coll + ALIGN(coll->len, 2));
 
     for (i = 0; i < coll->n_rules; i++)
     {
@@ -578,7 +578,7 @@ static WifiRegulations regdb_load_country(const struct fwdb_header *db,
 
     for (i = 0; i < nRules; i++)
     {
-        const __be16 *rules_ptr = (const __be16 *)((u8 *)coll + ALIGN(coll->len, 2));
+        const s__be16 *rules_ptr = (const s__be16 *)((u8 *)coll + ALIGN(coll->len, 2));
         unsigned int rule_ptr = be16_to_cpu(rules_ptr[i]) << 2;
         struct fwdb_rule *rule = (fwdb_rule *)((u8 *)db + rule_ptr);
 

@@ -27,7 +27,7 @@ import AutoZoom from './AutoZoom';
 
 import ModGuiHost from './ModGuiHost';
 
-import {midiChannelBindingControlFeatureEnabled} from './MidiChannelBinding';
+import { midiChannelBindingControlFeatureEnabled } from './MidiChannelBinding';
 
 import { withStyles } from "tss-react/mui";
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
@@ -59,6 +59,12 @@ export const StandardItemSize = { width: 80, height: 110 };
 
 const LANDSCAPE_HEIGHT_BREAK = 500;
 
+
+export interface ICustomizationHost {
+    makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode;
+    renderControlGroup(controlGroup: ControlGroup, key: string): ReactNode;
+    isLandscapeGrid(): boolean;
+}
 
 function makeIoPluginInfo(name: string, uri: string): UiPlugin {
     let result = new UiPlugin();
@@ -336,7 +342,7 @@ export type ControlNodes = (ReactNode | ControlGroup)[];
 
 
 export interface ControlViewCustomization {
-    modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[];
+    modifyControls(host: ICustomizationHost, controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[];
     fullScreen(): boolean;
 
 }
@@ -365,7 +371,7 @@ type PluginControlViewState = {
 
 const PluginControlView =
     withTheme(withStyles(
-        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState> {
+        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState> implements ICustomizationHost {
             model: PiPedalModel;
 
             constructor(props: PluginControlViewProps) {
@@ -546,6 +552,47 @@ const PluginControlView =
                 }
             }
 
+            isLandscapeGrid(): boolean {
+                return this.state.landscapeGrid;
+            }
+            renderControlGroup(controlGroup: ControlGroup, key: string): ReactNode {
+                let isLandscapeGrid = this.state.landscapeGrid;
+
+                const classes = withStyles.getClasses(this.props);
+
+                let controls: ReactNode[] = [];
+                for (let j = 0; j < controlGroup.controls.length; ++j) {
+                    let item = controlGroup.controls[j];
+                    controls.push(
+                        (
+                            <div key={"cgctlx" + j} className={classes.controlPadding}>
+                                {item}
+                            </div>
+
+                        )
+                    );
+                }
+                return (
+                    <div key={key} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}
+                        style={{ borderWidth: (controlGroup.name === "" ? 0: undefined) }}
+                    >
+                        {controlGroup.name !== "" && (
+                            <div className={classes.portGroupTitle}>
+                                <ToolTipEx title={controlGroup.name}
+                                >
+                                    <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
+                                </ToolTipEx>
+                            </div>
+                        )}
+                        <div className={
+                            this.state.landscapeGrid ? classes.portGroupControlsLandscape : classes.portGroupControls} >
+                            {
+                                controls
+                            }
+                        </div>
+                    </div>
+                );
+            }
             getStandardControlNodes(plugin: UiPlugin, controlValues: ControlValue[]): ControlNodes {
                 let result: ControlNodes = [];
                 let portGroupMap: { [id: string]: ControlGroup } = {};
@@ -697,7 +744,6 @@ const PluginControlView =
             controlKeyIndex: number = 0;
             controlNodesToNodes(nodes: (ReactNode | ControlGroup)[]): ReactNode[] {
                 const classes = withStyles.getClasses(this.props);
-                let isLandscapeGrid = this.state.landscapeGrid;
                 let hasGroups = this.hasGroups(nodes);
 
                 let result: ReactNode[] = [];
@@ -706,36 +752,8 @@ const PluginControlView =
                     let node = nodes[i];
                     if (node instanceof ControlGroup) {
                         let controlGroup = node as ControlGroup;
-                        let controls: ReactNode[] = [];
-                        for (let j = 0; j < controlGroup.controls.length; ++j) {
-                            let item = controlGroup.controls[j];
-                            controls.push(
-                                (
-                                    <div key={"ctlx" + (this.controlKeyIndex++)} className={classes.controlPadding}>
-                                        {item}
-                                    </div>
-
-                                )
-                            );
-                        }
-
-                        result.push((
-                            <div key={"ctlx" + (this.controlKeyIndex++)} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}>
-                                <div className={classes.portGroupTitle}>
-                                    <ToolTipEx title={controlGroup.name}
-                                    >
-                                        <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
-                                    </ToolTipEx>
-                                </div>
-                                <div className={
-                                    this.state.landscapeGrid ? classes.portGroupControlsLandscape : classes.portGroupControls} >
-                                    {
-                                        controls
-                                    }
-                                </div>
-                            </div>
-                        ));
-
+                        let item = this.renderControlGroup(controlGroup, "cgix" + i)
+                        result.push(item);
                     } else {
                         if (this.fullScreen()) {
                             result.push(
@@ -825,7 +843,7 @@ const PluginControlView =
                                     if (this.props.onSetShowModGui) {
                                         this.props.onSetShowModGui(this.props.instanceId, false);
                                     }
-                                    this.setState({showModGuiZoomed: false})
+                                    this.setState({ showModGuiZoomed: false })
                                 }}
                                 handleFileSelect={(instanceId, fileProperty, selectedFile) => {
                                     this.handleModGuiFileProperty(
@@ -883,7 +901,7 @@ const PluginControlView =
 
                 if (this.props.customization) {
                     // allow wrapper class to insert/remove/rebuild controls.
-                    controlNodes = this.props.customization.modifyControls(controlNodes);
+                    controlNodes = this.props.customization.modifyControls(this, controlNodes);
                 }
 
                 let nodes = this.controlNodesToNodes(controlNodes);

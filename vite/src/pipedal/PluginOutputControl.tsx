@@ -33,6 +33,30 @@ import ControlTooltip from './ControlTooltip';
 import { css } from '@emotion/react';
 
 
+export interface VuColor {
+    minDb: number;
+    maxDb: number;
+    color: string;
+};
+
+const defaultVuColors: VuColor[] = [
+    { minDb: 0, maxDb: 10000, color: "#F00" },
+    { minDb: -10, maxDb: 0, color: "#FF0" },
+    { minDb: -10000, maxDb: -10, color: "#0C0" },
+];
+
+function getVuColor(vuColors: VuColor[], levelDb: number): string {
+    let ix = 0;
+    for (let i = 0; i < vuColors.length; ++i)
+    {
+        let c = vuColors[i];
+        if (levelDb > c.minDb && levelDb <= c.maxDb) {
+            ix = i;
+            break;
+        }
+    }
+    return vuColors[ix].color;
+}
 
 function makeLedGradient(color: string) {
     if (color === "green") {
@@ -133,6 +157,7 @@ const PluginOutputControl =
             private progressRef: React.RefObject<HTMLDivElement|null>;
             private dbVuRef: React.RefObject<HTMLDivElement|null>;
             private dbVuTelltaleRef: React.RefObject<HTMLDivElement|null>;
+            private dbVuTextRef: React.RefObject<HTMLDivElement|null>;
             private lampRef: React.RefObject<HTMLDivElement|null>;
 
 
@@ -141,6 +166,7 @@ const PluginOutputControl =
                 this.vuRef = React.createRef<HTMLDivElement>();
                 this.progressRef = React.createRef<HTMLDivElement>();
                 this.dbVuRef = React.createRef<HTMLDivElement>();
+                this.dbVuTextRef = React.createRef<HTMLDivElement>();
                 this.dbVuTelltaleRef = React.createRef<HTMLDivElement>();
                 this.lampRef = React.createRef<HTMLDivElement>();
                 this.state = {
@@ -194,6 +220,8 @@ const PluginOutputControl =
 
             private dbVuHoldTime = 0.0;
 
+            private lastDbText = "";
+
             private requestDbVuAnimation() {
                 if (!this.animationHandle) {
                     this.animationHandle = requestAnimationFrame(
@@ -210,12 +238,35 @@ const PluginOutputControl =
                             if (this.dbVuRef.current) {
                                 this.dbVuRef.current.style.marginTop = top + "px";
                             }
+                            if (this.dbVuTextRef.current) {
+                                let text: string;
+                                if (this.dbVuTelltale  <= this.props.uiControl.min_value)
+                                {
+                                    text = "-";
+                                } else {
+                                    if (Math.abs(this.dbVuTelltale) >= 99.5)
+                                    {
+                                        text = Math.round(this.dbVuTelltale).toString();
+                                    } else {
+                                        text = this.dbVuTelltale.toFixed(1);
+                                    }
+                                    if (!text.startsWith("-")) {
+                                        text = '+'+text; 
+                                    }   
+                                }
+                                if (this.lastDbText !== text) 
+                                {
+                                    this.lastDbText = text;
+                                    this.dbVuTextRef.current.innerText = text;
+                                }
+                            }   
                             this.animationHandle = undefined;
                             this.updateDbVuTelltale();
                         }
                     )
                 }
             }
+
 
             updateDbVuTelltale() {
                 let telltaleDone = true;
@@ -238,13 +289,8 @@ const PluginOutputControl =
 
                     if (this.dbVuTelltaleRef.current) {
                         let telltaleStyle = this.dbVuTelltaleRef.current.style;
+                        let telltaleColor = getVuColor(defaultVuColors, this.dbVuTelltale);
                         telltaleStyle.marginTop = y + "px";
-                        let telltaleColor = "#0C0";
-                        if (this.dbVuTelltale >= 0) {
-                            telltaleColor = "#F00";
-                        } else if (this.dbVuTelltale >= -10) {
-                            telltaleColor = "#FF0";
-                        }
                         telltaleStyle.background = telltaleColor;
                     }
                 }
@@ -340,6 +386,13 @@ const PluginOutputControl =
 
             dbVuMap(value: number): number {
                 let control = this.props.uiControl;
+                if (value > control.max_value) {
+                    value = control.max_value;
+                }
+                if (value < control.min_value) 
+                {
+                    value = control.min_value;
+                }
                 let y = (control.max_value - value) * this.DB_VU_HEIGHT / (control.max_value - control.min_value);
                 return y;
             }
@@ -414,7 +467,6 @@ const PluginOutputControl =
 
                             </div>
                             <div className={classes.editSectionNoContent}>
-
                             </div>
 
                         </div >
@@ -423,8 +475,8 @@ const PluginOutputControl =
 
                 } else if (control.isDbVu()) {
                     item_width = undefined;
-                    let redLevel = this.dbVuMap(0);
-                    let yellowLevel = this.dbVuMap(-10);
+                    let vuColors = defaultVuColors;
+
                     return (
                         <div className={classes.controlFrame} 
                             style={{ width: item_width }}>
@@ -444,18 +496,34 @@ const PluginOutputControl =
                                 style={{ flex: "1 1 1", display: "flex", justifyContent: "center", alignItems: "start", flexFlow: "row nowrap" }}>
                                 <div style={{ width: 8, height: this.DB_VU_HEIGHT + 4, background: "#000", }}>
                                     <div style={{ height: this.DB_VU_HEIGHT, width: 4, overflow: "hidden", position: "absolute", margin: 2 }}>
-                                        <div style={{ width: 4, height: redLevel, position: "absolute", marginTop: 0, background: "#F00" }} />
-                                        <div style={{ width: 4, height: (yellowLevel - redLevel), position: "absolute", marginTop: redLevel, background: "#CC0" }} />
-                                        <div style={{ width: 4, height: (this.DB_VU_HEIGHT - yellowLevel), position: "absolute", marginTop: yellowLevel, background: "#0A0" }} />
+                                        <div style={{ width: 4, height: this.DB_VU_HEIGHT, position: "absolute", left: 0, top: 0 }}>
+                                            {
+                                                vuColors.map((vuColor,ix)=>{
+                                                    let top = Math.floor(this.dbVuMap(vuColor.maxDb));
+                                                    let bottom = Math.ceil(this.dbVuMap(vuColor.minDb))+1; 
 
-                                        <div ref={this.dbVuRef} style={{ width: 4, position: "absolute", marginTop: 0, height: this.VU_HEIGHT, background: "#000" }} />
+                                                    return (
+                                                        <div key={ix} 
+                                                            style={{ position: "absolute", width: 4, height: (bottom-top), 
+                                                                top: top, left:0, background: vuColor.color }} />
+                                                    );
+                                                })
+                                            }
+                                        </div>
+
+                                        <div ref={this.dbVuRef} style={{
+                                            width: 4, position: "absolute", marginTop: 0, height: this.VU_HEIGHT, background: "#000" 
+                                        }} />
                                         <div ref={this.dbVuTelltaleRef} style={{ width: 4, position: "absolute", marginTop: 100, height: 3, background: "#C00" }} />
                                     </div>
                                 </div>
 
                             </div>
-                            <div className={classes.editSectionNoContent}>
-
+                            <div className={classes.editSection}>
+                                <Typography ref={this.dbVuTextRef} variant="caption" display="block" style={{
+                                    width: "100%", opacity: 0.6,
+                                    textAlign: "center"
+                                }}> </Typography>
                             </div>
 
                         </div >

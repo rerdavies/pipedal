@@ -28,7 +28,7 @@ import { withStyles } from "tss-react/mui";
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel, MonitorPortHandle } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ICustomizationHost,  ControlGroup, ControlViewCustomization } from './PluginControlView';
 // import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 import ToobPlayerControl from './ToobPlayerControl';
 
@@ -103,7 +103,7 @@ const ToobPlayerView =
             fullScreen() {
                 return true;
             }
-            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+            modifyControls(host: ICustomizationHost, controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
                 let extraControls: React.ReactElement[] = [];
                 let mixPanel = controls[3] as ControlGroup;
                 let iKey = 0;

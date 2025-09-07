@@ -30,8 +30,9 @@ public:
     NetworkManager(DBusDispatcher &dispatcher)
         : sdbus::ProxyInterfaces<org::freedesktop::NetworkManager_proxy>(
               dispatcher.Connection(),
-              INTERFACE_NAME,
-              "/org/freedesktop/NetworkManager")
+              sdbus::ServiceName(INTERFACE_NAME),
+              sdbus::ObjectPath("/org/freedesktop/NetworkManager")),
+              objectPath_("/org/freedesktop/NetworkManager")
     {
         registerProxy();
     }
@@ -46,7 +47,11 @@ public:
     DBusEvent<const sdbus::ObjectPath &> OnDeviceAdded;
     DBusEvent<const sdbus::ObjectPath &> OnDeviceRemoved;
 
+    const sdbus::ObjectPath& getObjectPath() const{ return objectPath_; }
+
 private:
+    sdbus::ObjectPath objectPath_;
+
     void EventTrace(const char *method, const std::string &message)
     {
         LogTrace(getObjectPath(), method, message);
@@ -79,8 +84,9 @@ public:
     Device(DBusDispatcher &dispatcher, const sdbus::ObjectPath &path)
         : sdbus::ProxyInterfaces<org::freedesktop::NetworkManager::Device_proxy>(
               dispatcher.Connection(),
-              "org.freedesktop.NetworkManager",
-              path)
+              sdbus::ServiceName("org.freedesktop.NetworkManager"),
+              path),
+              objectPath_(path)
     {
         registerProxy();
     }
@@ -103,7 +109,10 @@ public:
         return this->DeviceType() == NM_DEVICE_TYPE_WIFI_P2P;
     }
 
+    const sdbus::ObjectPath&getObjectPath() const { return objectPath_; }
+
 private:
+    sdbus::ObjectPath objectPath_;
     void EventTrace(const char *method, const std::string &message)
     {
         LogTrace(getObjectPath(), method, message);
@@ -124,8 +133,12 @@ public:
     using base = sdbus::ProxyInterfaces<
         org::freedesktop::NetworkManager::Device::WifiP2P_proxy>;
 
-    WifiP2P(DBusDispatcher &dispatcher, const std::string &objectPath)
-        : base(dispatcher.Connection(), "org.freedesktop.NetworkManager", objectPath)
+    WifiP2P(DBusDispatcher &dispatcher, const sdbus::ObjectPath&objectPath)
+        : base(dispatcher.Connection(), 
+          sdbus::ServiceName("org.freedesktop.NetworkManager"), 
+          objectPath),
+          objectPath_(objectPath)
+
     {
         registerProxy();
     }
@@ -135,13 +148,16 @@ public:
     }
     static ptr Create(DBusDispatcher &dispatcher, const std::string &objectPath)
     {
-        return std::make_unique<WifiP2P>(dispatcher, objectPath);
+        return std::make_unique<WifiP2P>(dispatcher, sdbus::ObjectPath(objectPath));
     }
     DBusEvent<const sdbus::ObjectPath &> OnPeerAdded;
     DBusEvent<const sdbus::ObjectPath &> OnPeerRemoved;
     DBusEvent<uint32_t> OnStateChanged;
 
+    const sdbus::ObjectPath&getObjectPath() const { return objectPath_; }
 private:
+    sdbus::ObjectPath objectPath_;
+
     void EventTrace(const char *method, const std::string &message)
     {
         LogTrace(getObjectPath(), method, message);
@@ -173,7 +189,10 @@ public:
 
     Connection(DBusDispatcher &dispatcher, const sdbus::ObjectPath &objectPath)
         : sdbus::ProxyInterfaces<org::freedesktop::NetworkManager::Settings::Connection_proxy>(
-              dispatcher.Connection(), "org.freedesktop.NetworkManager", objectPath)
+              dispatcher.Connection(), 
+              sdbus::ServiceName("org.freedesktop.NetworkManager"), 
+              objectPath),
+              objectPath_(objectPath)
     {
         registerProxy();
     }
@@ -190,7 +209,10 @@ public:
     DBusEvent<> OnUpdated;
     DBusEvent<> OnRemoved;
 
+    const sdbus::ObjectPath&getObjectPath() const { return objectPath_; }
 private:
+    sdbus::ObjectPath objectPath_;
+
     virtual void onUpdated() override
     {
         OnUpdated.fire();
@@ -208,7 +230,7 @@ public:
 
     WifiP2PPeer(DBusDispatcher &dispatcher, const sdbus::ObjectPath &objectPath)
         : sdbus::ProxyInterfaces<org::freedesktop::NetworkManager::WifiP2PPeer_proxy>(
-              dispatcher.Connection(), "org.freedesktop.NetworkManager", objectPath)
+              dispatcher.Connection(), sdbus::ServiceName("org.freedesktop.NetworkManager"), objectPath)
     {
         registerProxy();
     }
@@ -243,8 +265,9 @@ public:
     DeviceWireless(DBusDispatcher &dispatcher, const sdbus::ObjectPath &path)
         : sdbus::ProxyInterfaces<proxy_t>(
               dispatcher.Connection(),
-              "org.freedesktop.NetworkManager",
-              path)
+              sdbus::ServiceName("org.freedesktop.NetworkManager"),
+              path),
+              objectPath_(path)
     {
         registerProxy();
     }
@@ -259,7 +282,11 @@ public:
     }
     DBusEvent<const sdbus::ObjectPath&> OnAccessPointAdded;
     DBusEvent<const sdbus::ObjectPath&> OnAccessPointRemoved;
+
+    const sdbus::ObjectPath& getObjectPath() const{ return objectPath_; }
 protected:
+    sdbus::ObjectPath objectPath_;
+
     void EventTrace(const char *method, const std::string &message)
     {
         LogTrace(getObjectPath(), method, message);
@@ -288,8 +315,9 @@ public:
     AccessPoint(DBusDispatcher &dispatcher, const sdbus::ObjectPath &path)
         : sdbus::ProxyInterfaces<proxy_t>(
               dispatcher.Connection(),
-              "org.freedesktop.NetworkManager",
-              path)
+              sdbus::ServiceName("org.freedesktop.NetworkManager"),
+              path),
+              objectPath_(path)
     {
         registerProxy();
     }
@@ -302,7 +330,10 @@ public:
     {
         return std::make_unique<self>(dispatcher, path);
     }
+    const sdbus::ObjectPath& getObjectPath() const{ return objectPath_; }
+
 protected:
+    sdbus::ObjectPath objectPath_;
     void EventTrace(const char *method, const std::string &message)
     {
         LogTrace(getObjectPath(), method, message);
@@ -318,8 +349,9 @@ public:
     ActiveConnection(DBusDispatcher &dispatcher, const sdbus::ObjectPath &path)
         : sdbus::ProxyInterfaces<proxy_t>(
               dispatcher.Connection(),
-              "org.freedesktop.NetworkManager",
-              path)
+              sdbus::ServiceName("org.freedesktop.NetworkManager"),
+              path),
+            objectPath_(path)
     {
         registerProxy();
     }
@@ -333,7 +365,11 @@ public:
         return std::make_unique<self>(dispatcher, path);
     }
     DBusEvent<uint32_t,uint32_t> OnStateChanged;
+
+    const sdbus::ObjectPath& getObjectPath() const{ return objectPath_; }
+
 protected:
+    sdbus::ObjectPath objectPath_;
     void EventTrace(const char *method, const std::string &message)
     {
         LogTrace(getObjectPath(), method, message);

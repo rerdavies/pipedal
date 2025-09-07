@@ -231,7 +231,9 @@ namespace pipedal
         std::string port_group_;
 
         std::string designation_;
+        bool is_bypass_ = false;
         Units units_ = Units::none;
+        std::string custom_units_;
         std::string comment_;
         PiPedalUI::ptr piPedalUI_;
 
@@ -280,6 +282,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(min_value);
         LV2_PROPERTY_GETSET_SCALAR(max_value);
         LV2_PROPERTY_GETSET_SCALAR(default_value);
+        LV2_PROPERTY_GETSET_SCALAR(is_bypass);
 
         LV2_PROPERTY_GETSET_SCALAR(is_input);
         LV2_PROPERTY_GETSET_SCALAR(is_output);
@@ -305,6 +308,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(port_group);
         LV2_PROPERTY_GETSET(comment);
         LV2_PROPERTY_GETSET_SCALAR(units);
+        LV2_PROPERTY_GETSET(custom_units);
         LV2_PROPERTY_GETSET(pipedal_ledColor);
 
         LV2_PROPERTY_GETSET(buffer_type);
@@ -508,6 +512,7 @@ namespace pipedal
                 }
             }
         }
+        bool IsPathProperty(const std::string &uri) const;
 
     public:
         virtual ~Lv2PluginInfo();
@@ -572,6 +577,7 @@ namespace pipedal
               trigger_property_(pPort->trigger_property()),
               pipedal_ledColor_(pPort->pipedal_ledColor()),
               comment_(pPort->comment()), units_(pPort->units()),
+              custom_units_(pPort->custom_units()),
               connection_optional_(pPort->connection_optional())
         {
             // Use symbols to index port groups, instead of uris.
@@ -594,7 +600,9 @@ namespace pipedal
                     }
                 }
             }
-            is_bypass_ = name_ == "bypass" || name_ == "Bypass" || symbol_ == "bypass" || symbol_ == "Bypass";
+            is_bypass_ = 
+                pPort->is_bypass() ||
+                name_ == "bypass" || name_ == "Bypass" || symbol_ == "bypass" || symbol_ == "Bypass";
         }
 
     private:
@@ -622,10 +630,10 @@ namespace pipedal
         std::string pipedal_ledColor_;
 
         Units units_ = Units::none;
+        std::string custom_units_;
         std::string comment_;
         bool is_bypass_ = false;
         bool is_program_controller_ = false;
-        std::string custom_units_;
         bool connection_optional_ = false;
 
     public:
@@ -764,6 +772,7 @@ namespace pipedal
             AutoLilvNode core__designation;
             AutoLilvNode portgroups__group;
             AutoLilvNode units__unit;
+            AutoLilvNode units__render;
             AutoLilvNode invada_units__unit;            // typo in invada plugins.
             AutoLilvNode invada_portprops__logarithmic; // typo in invada plugins.
 

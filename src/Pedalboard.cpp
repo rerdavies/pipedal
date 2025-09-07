@@ -91,10 +91,15 @@ ControlValue* PedalboardItem::GetControlValue(const std::string&symbol)
 }
 
 
+
 bool PedalboardItem::SetControlValue(const std::string&symbol, float value)
 {
     ControlValue*controlValue = GetControlValue(symbol);
-    if (controlValue == nullptr) return false;
+    if (controlValue == nullptr) 
+    {
+        this->controlValues().push_back(ControlValue(symbol.c_str(),value));
+        return true;
+    }
     if (controlValue->value() != value)
     {
         controlValue->value(value);

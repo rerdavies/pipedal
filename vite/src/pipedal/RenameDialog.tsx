@@ -45,6 +45,10 @@ export interface RenameDialogState {
     fullScreen: boolean;
 };
 
+function isTouchUi() 
+{
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
 export default class RenameDialog extends ResizeResponsiveComponent<RenameDialogProps, RenameDialogState> {
 
     refText: React.RefObject<HTMLInputElement|null>;
@@ -129,7 +133,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
 
                 <DialogContent >
                     <TextField
-                        autoFocus 
+                        autoFocus={!isTouchUi()}
                         onKeyDown={handleKeyDown}
                         variant="standard"
                         slotProps={{

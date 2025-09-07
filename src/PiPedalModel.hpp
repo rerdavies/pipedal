@@ -279,7 +279,8 @@ namespace pipedal
             Decrease
         };
 
-    bool GetHasWifi();
+        Storage&GetStorage() { return storage; }
+        bool GetHasWifi();
 
         void NextBank(Direction direction = Direction::Increase);
         void PreviousBank() { NextBank(Direction::Decrease); }

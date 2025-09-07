@@ -4,9 +4,9 @@
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS bookworm (aarch64) v1.4.87 Beta](https://github.com/rerdavies/pipedal/releases/download/v1.4.87/pipedal_1.4.87_arm64.deb)
-- [Ubuntu 24.x (aarch64) v1.4.87 Alpha](https://github.com/rerdavies/pipedal/releases/download/v1.4.87/pipedal_1.4.87_arm64.deb)
-- [Ubuntu 24.x (amd64) v1.4.87 Alpha](https://github.com/rerdavies/pipedal/releases/download/v1.4.87/pipedal_1.4.87_amd64.deb)
+- [Raspberry Pi OS bookworm (aarch64) v1.5.90 Beta](https://github.com/rerdavies/pipedal/releases/download/v1.5.90/pipedal_1.5.90_arm64.deb)
+- [Ubuntu 24.x (aarch64) v1.5.90 Alpha](https://github.com/rerdavies/pipedal/releases/download/v1.5.90/pipedal_1.5.90_arm64.deb)
+- [Ubuntu 24.x (amd64) v1.5.90 Alpha](https://github.com/rerdavies/pipedal/releases/download/v1.5.90/pipedal_1.5.90_amd64.deb)
 
 
 Install the package by running 
@@ -14,7 +14,7 @@ Install the package by running
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_1.4.87_arm64.deb
+  sudo apt-get install ./pipedal_1.5.90_arm64.deb
 ```
 You MUST use `apt-get` to install the package. `apt install` will NOT install the package correctly. The message about missing permissions given by `apt-get` is
 expected, and can be safely ignored.

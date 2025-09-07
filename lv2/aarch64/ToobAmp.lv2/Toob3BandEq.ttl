@@ -1,0 +1,211 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+@prefix pipedal_ui: <http://github.com/rerdavies/pipedal/ui#> .
+@prefix pipedal_patch: <http://github.com/rerdavies/pipedal/patch#> .
+
+@prefix toob: <http://two-play.com/plugins/toob#> .
+
+@prefix tonestack: <two-play.com/plugins/toob-three-band-eq#> .
+
+toob:frequencyResponseVector
+        a lv2:Parameter;
+        rdfs:label "Frequency Response";
+        rdfs:range atom:Vector.
+
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+<http://two-play.com/plugins/toob-three-band-eq>
+        a lv2:Plugin ,
+                lv2:EQPlugin  ;
+        doap:name "TooB 3 Band EQ" ,
+                "TooB  3 Band EQ"@en-gb 
+                ;
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+         lv2:minorVersion 0 ;
+        lv2:microVersion 68 ;
+
+        uiext:ui <http://two-play.com/plugins/toob-three-band-eq-ui>;                
+
+        rdfs:comment """
+TooB 3 Band Eq provides a basic 3-band equalizer optimized for shaping guitar tones. 
+
+Beside being useful, TooB 3 Band Eq matches the EQ section found in Steven Atkinson's Neural Amp Modeler plugin, and is 
+therefore useful for migrating NAM presets to TooB Neural Amp Modeler.
+
+This plugin uses code from https://github.com/sdatkinson/NeuralAmpModelerPlugin covered under the following license.
+
+
+MIT License
+
+Copyright (c) 2022 Steven Atkinson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "3 Band EQ";
+        lv2:requiredFeature urid:map ;
+        lv2:optionalFeature lv2:hardRTCapable;
+        pipedal_patch:readable 
+            toob:frequencyResponseVector;
+
+        
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 0 ;
+                lv2:symbol "bass" ;
+                lv2:name "Bass";
+                lv2:default 5.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 10.0 ;    
+        ], [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 1 ;
+                lv2:symbol "mid" ;
+                lv2:name "Mid";
+                lv2:default 5.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 10.0 ;    
+
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                lv2:symbol "treble" ;
+                lv2:name "Treble";
+                lv2:default 5.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 10.0;    
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 3 ;
+                lv2:symbol "gain" ;
+                lv2:name "Gain";
+                lv2:default 0.0 ;
+                lv2:minimum -40.0 ;
+                lv2:maximum 30.0; 
+                units:unit units:db;
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 4 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ], [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 5 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ],[
+                a atom:AtomPort ,
+                  lv2:InputPort;
+                atom:bufferType atom:Sequence ;
+                # atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 6 ;
+                lv2:symbol "control" ;
+                lv2:name "Control" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ] , [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                # atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 7 ;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ]
+        .
+
+<http://two-play.com/plugins/toob-three-band-eq-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
+
+<http://two-play.com/plugins/toob-three-band-eq> 
+     pipedal_ui:ui <http://two-play.com/plugins/toob-three-band-eq#piPedalUI>.
+
+
+<http://two-play.com/plugins/toob-three-band-eq#piPedalUI> 
+    a pipedal_ui:ui ;
+    pipedal_ui:frequencyPlot
+    [
+        lv2:index 0 ;
+        pipedal_ui:patchProperty toob:frequencyResponseVector;
+        pipedal_ui:xLeft 30 ;
+        pipedal_ui:xRight 22050 ;
+        pipedal_ui:yTop 10 ;
+        pipedal_ui:yBottom -35 ;
+        pipedal_ui:xLog 1 ;
+        pipedal_ui:yDb 1 ;
+        pipedal_ui:width 236 ;
+    ]
+    .
+
+

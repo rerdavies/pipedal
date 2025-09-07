@@ -248,6 +248,8 @@ void PiPedalModel::LoadLv2PluginInfo()
     // Copy all presets out of Lilv data to json files
     // so that we can close lilv while we're actually
     // running.
+
+    uint64_t pluginPresetIndexVersion = storage.GetPluginPresetIndexVersion();
     for (const auto &plugin : pluginHost.GetPlugins())
     {
         if (plugin->has_factory_presets())
@@ -256,9 +258,26 @@ void PiPedalModel::LoadLv2PluginInfo()
             {
                 PluginPresets pluginPresets = pluginHost.GetFactoryPluginPresets(plugin->uri());
                 storage.SavePluginPresets(plugin->uri(), pluginPresets);
+            } else {
+                if (pluginPresetIndexVersion == 0)
+                {
+                    if (plugin->uri() == "http://two-play.com/plugins/toob-convolution-reverb" || plugin->uri() == "http://two-play.com/plugins/toob-convolution-reverb-stereo")
+                    {
+                        // overwrite previous factory presets!
+                        PluginPresets pluginPresets = pluginHost.GetFactoryPluginPresets(plugin->uri());
+                        for (auto & pluginPreset: pluginPresets.presets_) 
+                        {
+                            storage.SavePluginPreset(
+                                plugin->uri(),
+                                pluginPreset);
+                        }
+
+                    }
+                }
             }
         }
     }
+    storage.SetPluginPresetIndexVersion(1);
 }
 
 void PiPedalModel::Load()
@@ -272,32 +291,32 @@ void PiPedalModel::Load()
 
     this->pedalboard = storage.GetCurrentPreset(); // the current *saved* preset.
 
-
-
     // the current edited preset, saved only across orderly shutdowns.
 
     CrashGuard::SetCrashGuardFileName(storage.GetDataRoot() / "crash_guard.data");
 
-    if (CrashGuard::HasCrashed()) {
+    if (CrashGuard::HasCrashed())
+    {
         // ignore the current preset, and load a blank pedalboard in order to avoid a potential plugin crash.
         this->pedalboard = Pedalboard::MakeDefault();
-    } else {
+    }
+    else
+    {
         CurrentPreset currentPreset;
         try
         {
             if (storage.RestoreCurrentPreset(&currentPreset))
             {
                 this->pedalboard = currentPreset.preset_;
+                this->UpdateDefaults(&pedalboard);
                 this->hasPresetChanged = currentPreset.modified_;
-            } 
+            }
         }
         catch (const std::exception &e)
         {
             Lv2Log::warning(SS("Failed to load current preset. " << e.what()));
         }
     }
-
-
 
     UpdateDefaults(&this->pedalboard);
 
@@ -644,10 +663,8 @@ void PiPedalModel::SetPedalboardItemUseModUi(int64_t clientId, int64_t instanceI
             subscriber->OnItemUseModUiChanged(clientId, instanceId, enabled);
         }
         this->SetPresetChanged(clientId, true);
-
     }
 }
-
 
 void PiPedalModel::SetPedalboardItemEnable(int64_t clientId, int64_t pedalItemId, bool enabled)
 {
@@ -1449,7 +1466,8 @@ void PiPedalModel::OnAlsaSequencerDeviceAdded(int client, const std::string &cli
             {
                 // reconfigure connections.
                 std::lock_guard<std::recursive_mutex> lock(this->mutex);
-                if (this->audioHost) {
+                if (this->audioHost)
+                {
                     this->audioHost->SetAlsaSequencerConfiguration(this->storage.GetAlsaSequencerConfiguration());
                 }
             });
@@ -1457,7 +1475,7 @@ void PiPedalModel::OnAlsaSequencerDeviceAdded(int client, const std::string &cli
 }
 void PiPedalModel::OnAlsaSequencerDeviceRemoved(int client)
 {
-    // no action  required. 
+    // no action  required.
 }
 
 void PiPedalModel::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
@@ -1723,19 +1741,16 @@ void PiPedalModel::SendSetPatchProperty(
 
     // save the property to the preset (currently used to reconstruct snapshots only)
     PedalboardItem *pedalboardItem = this->pedalboard.GetItem(instanceId);
-    if (pedalboardItem && value.is_string())
+    if (pedalboardItem)
     {
         std::shared_ptr<Lv2PluginInfo> pluginInfo = GetPluginInfo(pedalboardItem->uri_);
         auto pipedalUi = pluginInfo->piPedalUI();
         auto fileProperty = pipedalUi->GetFileProperty(propertyUri);
-        if (fileProperty && value.is_string())
+        if (fileProperty)
         {
 
             json_variant abstractPath = pluginHost.AbstractPath(value);
-            std::ostringstream ss;
-            json_writer writer(ss);
-            writer.write(abstractPath);
-            std::string atomString = ss.str();
+            std::string atomString = abstractPath.to_string();
             pedalboardItem->pathProperties_[propertyUri] = atomString;
         }
         this->SetPresetChanged(clientId, true);
@@ -1829,7 +1844,26 @@ void PiPedalModel::SendGetPatchProperty(
                     {
                         if (pParameter->onError)
                         {
-                            pParameter->onError("No response.");
+                            // For plugins that don't respond (e.g. a buncha MOD plugins), use the value we last set on the plugin!
+                            bool foundValue = false;
+                            std::lock_guard<std::recursive_mutex> lock(mutex);
+                            auto pedalboardItem = this->pedalboard.GetItem(pParameter->instanceId);
+                            if (pedalboardItem)
+                            {
+                                if (pedalboardItem->pathProperties_.contains(pParameter->uri))
+                                {
+                                    pParameter->jsonResponse = pedalboardItem->pathProperties_[pParameter->uri];
+                                    if (pParameter->onSuccess)
+                                    {
+                                        foundValue = true;
+                                        pParameter->onSuccess(pParameter->jsonResponse);
+                                    }
+                                }
+                            }
+                            if (!foundValue)
+                            {
+                                pParameter->onError("No response.");
+                            }
                         }
                     }
                     else
@@ -1856,6 +1890,7 @@ void PiPedalModel::SendGetPatchProperty(
     RealtimePatchPropertyRequest *request = new RealtimePatchPropertyRequest(
         onRequestComplete,
         clientId, instanceId, urid, onSuccess, onError, sampleTimeout);
+    request->uri = uri;
 
     outstandingParameterRequests.push_back(request);
     this->audioHost->sendRealtimeParameterRequest(request);
@@ -2027,9 +2062,37 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
                 pedalboardItem->midiChannelBinding(std::optional<MidiChannelBinding>()); // clear it.
             }
         }
+        //////// PLUGIN SPECIFIC UPGRADES //////////////////////
+        if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
+        {
+            ControlValue *pVersion = pedalboardItem->GetControlValue("version");
+            if (pVersion == nullptr) {
+                ControlValue *pValue = pedalboardItem->GetControlValue("inputCalibrationMode");
+                if (pValue == nullptr)
+                {
+                    // calibration is OFF when upgradfing.
+                    pedalboardItem->SetControlValue("inputCalibrationMode", 0.0f);
+                }
+                // convert old gate threshold to new gate threshold.
+                ControlValue *pGateValue = pedalboardItem->GetControlValue("gate");
+                if (pGateValue) {
+                    float value = pGateValue->value();
+                    // Is the gate disabled?
+                    if (value <= -100.0f)
+                    {
+                        value = -120.0f; // "disabled in new range."
+                    } else {
+                        value = value * 0.5; // correct the bug in original implementation.
+                    }
+                    pedalboardItem->SetControlValue("gate", value);
+                }
+                pedalboardItem->SetControlValue("version", 0.0f);
+            }
+        }
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {
             auto port = pPlugin->ports()[i];
+
             if (port->is_control_port() && port->is_input())
             {
                 ControlValue *pValue = pedalboardItem->GetControlValue(port->symbol());
@@ -2044,12 +2107,25 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
         if (pPlugin->piPedalUI())
         {
             PiPedalUI::ptr piPedalUI = pPlugin->piPedalUI();
+            std::set<std::string> validFileProperties;
             for (auto &fileProperty : piPedalUI->fileProperties())
             {
+                validFileProperties.insert(fileProperty->patchProperty());
                 if (!pedalboardItem->pathProperties_.contains(fileProperty->patchProperty()))
                 {
                     // make sure each pedalboard item has a complete list of path properties, even if it doesn't yet have values.
                     pedalboardItem->pathProperties_[fileProperty->patchProperty()] = "null";
+                }
+            }
+            for (auto i = pedalboardItem->pathProperties_.begin(); i != pedalboardItem->pathProperties_.end(); /**/)
+            {
+                if (!validFileProperties.contains(i->first))
+                {
+                    i = pedalboardItem->pathProperties_.erase(i);
+                }
+                else
+                {
+                    ++i;
                 }
             }
         }
@@ -2098,7 +2174,7 @@ void PiPedalModel::UpdateDefaults(Pedalboard *pedalboard)
 {
     // add missing values.
     std::unordered_map<int64_t, PedalboardItem *> itemMap;
-    for (size_t i = 0; i < pedalboard->items().size(); ++i)
+    for (size_t i = 0; i < pedalboard->GetAllPlugins().size(); ++i)
     {
         UpdateDefaults(&(pedalboard->items()[i]), itemMap);
     }
@@ -2148,8 +2224,9 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
             this->pedalboard.SetControlValue(pluginInstanceId, control.key(), control.value());
         }
 
-        if ((!presetValues.state.isValid_) && presetValues.lilvPresetUri.empty())
+        if ((!presetValues.state.isValid_) && presetValues.lilvPresetUri.empty() && presetValues.pathProperties.empty())
         {
+            // fast path for control changes only.
             audioHost->SetPluginPreset(pluginInstanceId, presetValues.controls);
 
             std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
@@ -2163,6 +2240,7 @@ void PiPedalModel::LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetIns
             pedalboardItem->lv2State(presetValues.state);
             pedalboardItem->lilvPresetUri(presetValues.lilvPresetUri);
             pedalboardItem->stateUpdateCount(oldStateUpdateCount + 1);
+            pedalboardItem->pathProperties(presetValues.pathProperties);
             FirePedalboardChanged(-1); // does a complete reload of both client and audio server.
         }
         this->SetPresetChanged(-1, true);
@@ -2283,7 +2361,8 @@ void PiPedalModel::OnNotifyPathPatchPropertyReceived(
     auto i = pedalboardItem->pathProperties_.find(pathPatchPropertyUri);
     if (i != pedalboardItem->pathProperties_.end())
     {
-        pedalboardItem->pathProperties_[pathPatchPropertyUri] = atomString;
+        std::string abstractAtomString = storage.ToAbstractPathJson(atomString);
+        pedalboardItem->pathProperties_[pathPatchPropertyUri] = abstractAtomString;
 
         std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
         for (auto &subscriber : t)
@@ -2291,7 +2370,7 @@ void PiPedalModel::OnNotifyPathPatchPropertyReceived(
             subscriber->OnNotifyPathPatchPropertyChanged(
                 instanceId,
                 pathPatchPropertyUri,
-                atomString);
+                abstractAtomString);
         }
     }
 }
@@ -2368,16 +2447,26 @@ void PiPedalModel::MonitorPatchProperty(int64_t clientId, int64_t clientHandle, 
     PedalboardItem *item = this->pedalboard.GetItem(instanceId);
     if (item)
     {
-        auto &map = item->PatchProperties();
+        auto &map = item->pathProperties();
         if (map.contains(propertyUri))
         {
-            const auto &value = map[propertyUri];
-            std::string json = this->audioHost->AtomToJson(value.get());
-            for (auto &subscriber : this->subscribers)
+            const auto &value = map.at(propertyUri);
+            if (value != "null")
             {
-                if (subscriber->GetClientId() == clientId)
+                try
                 {
-                    subscriber->OnNotifyPatchProperty(clientHandle, instanceId, propertyUri, json);
+                    std::string json = storage.FromAbstractPathJson(value);
+
+                    for (auto &subscriber : this->subscribers)
+                    {
+                        if (subscriber->GetClientId() == clientId)
+                        {
+                            subscriber->OnNotifyPatchProperty(clientHandle, instanceId, propertyUri, json);
+                        }
+                    }
+                }
+                catch (const std::exception &ignored)
+                {
                 }
             }
         }
@@ -3089,19 +3178,15 @@ void PiPedalModel::SetTone3000Auth(const std::string &apiKey)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     storage.SetTone3000Auth(apiKey);
-    
+
     std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
     bool hasAuth = apiKey != "";
     for (auto &subscriber : t)
     {
-        subscriber->OnTone3000AuthChanged(hasAuth);  
+        subscriber->OnTone3000AuthChanged(hasAuth);
     }
-
 }
 bool PiPedalModel::HasTone3000Auth() const
 {
     return storage.GetTone3000Auth() != "";
 }
-
-
-

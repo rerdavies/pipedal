@@ -48,6 +48,11 @@ const MAX_ANGLE = 135;
 const FONT_SIZE = "0.8em";
 
 
+function isMobileDevice() {
+    return (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+}
+
+
 enum ButtonStyle { None, Trigger, Momentary, MomentaryOnByDefault }
 
 
@@ -143,7 +148,7 @@ export interface PluginControlProps extends WithStyles<typeof pluginControlStyle
     theme: Theme;
     requestIMEEdit: (uiControl: UiControl, value: number) => void;
 }
-type PluginControlState = {
+export type PluginControlState = {
     error: boolean;
     editFocused: boolean;
     previewValue?: string;
@@ -1089,18 +1094,20 @@ const PluginControl =
                                     ) : (
                                         <div>
                                             <Input key={value}
-                                                type="number"
                                                 defaultValue={control.formatShortValue(value)}
                                                 error={this.state.error}
                                                 inputProps={{
                                                     className: "scrollMod",
+                                                    type: isMobileDevice()? "text": "number",
+                                                    inputMode: "numeric",
+
                                                     min: this.props.uiControl?.min_value,
                                                     max: this.props.uiControl?.max_value,
                                                 }}
 
                                                 sx={{
                                                     // Style the input element
-                                                    '& input[type=number]': {
+                                                    '& input': {
                                                         width: 60,
                                                         opacity: this.state.editFocused ? 1 : 0,
                                                         textAlign: "center", fontSize: FONT_SIZE,

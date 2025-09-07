@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <cstring>
 #include <sstream>
+#include <filesystem>
 #include "json.hpp"
 #include "ss.hpp"
 #include "lv2/atom/util.h"
@@ -90,20 +91,21 @@ std::string AtomConverter::ToString(const LV2_Atom*atom)
 }
 json_variant AtomConverter::MapPath(const json_variant&json, const std::string &pluginStoragePath)
 {
-    std::string oType = json[OTYPE_TAG].as_string();
-    if (oType == SHORT_ATOM__Path)
+    if (json.is_null()) 
     {
-        std::string path = json["value"].as_string().c_str();
-        if (path.length() == 0 || path[0] == '/')
-        {
-            return json;
+        return EmptyPath();
+    }
+    if (json.is_object() && json[OTYPE_TAG].as_string() == SHORT_ATOM__Path)
+    {
+        std::filesystem::path path = json["value"].as_string();
+        if (path.empty()) {
+            return EmptyPath();
         }
-        std::string newPath = SS(pluginStoragePath << "/" << path);
-        json_variant result = json_variant::make_object();
-        result[OTYPE_TAG] = json_variant(SHORT_ATOM__Path);
-        result["value"] = newPath;
-
-        return result;
+        if (path.is_relative())
+        {
+            path = pluginStoragePath / path;
+        }
+        return TypedProperty(SHORT_ATOM__Path,path.string());
     }
     else {
         return json;
@@ -111,8 +113,7 @@ json_variant AtomConverter::MapPath(const json_variant&json, const std::string &
 }
 json_variant AtomConverter::AbstractPath(const json_variant&json, const std::string &pluginStoragePath)
 {
-    std::string oType = json[OTYPE_TAG].as_string();
-    if (oType == SHORT_ATOM__Path)
+    if (json.is_object() && json[OTYPE_TAG].as_string() == SHORT_ATOM__Path)
     {
         std::string path = json["value"].as_string().c_str();
         if (path.length() == 0)
@@ -137,6 +138,11 @@ json_variant AtomConverter::AbstractPath(const json_variant&json, const std::str
         return json;
     }
 
+}
+
+json_variant AtomConverter::MakePathVariant(const std::string&pathString)
+{
+    return TypedProperty(SHORT_ATOM__Path,pathString);
 }
 
 
@@ -591,6 +597,10 @@ std::string AtomConverter::TypeUridToString(LV2_URID urid)
 static bool gEmptyPathInitialized = false;
 static std::mutex gInitMutex;
 std::string gEmptyPathstring;
+
+
+
+json_variant  AtomConverter::gEmptyPath = TypedProperty(SHORT_ATOM__Path,std::string(""));
 
 std::string AtomConverter::EmptyPathstring()
 {

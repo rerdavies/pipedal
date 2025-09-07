@@ -54,7 +54,7 @@ noisegate:envelope_group
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 67 ;
+        lv2:microVersion 68 ;
         rdfs:comment """
 A noise gate is an audio processing tool that controls the volume of an audio signal 
 by allowing it to pass through only when it exceeds a set threshold. 
@@ -90,8 +90,8 @@ like guitar.
                 lv2:symbol "threshold" ;
                 lv2:name "Threshold";
 
-                lv2:default -30.0 ;
-                lv2:minimum -60.0 ;
+                lv2:default -90.0 ;
+                lv2:minimum -120.0 ;
                 lv2:maximum 0.0 ; 
                 units:unit units:db ;
                 rdfs:comment "The level above which the gate opens.";
@@ -137,6 +137,7 @@ like guitar.
                 lv2:index 3 ;
                 lv2:symbol "reduction" ;
                 lv2:name "Range";
+                lv2:portProperty epp:notOnGUI;
 
                 lv2:default -60.0 ;
                 lv2:minimum -60.0 ;
@@ -171,8 +172,10 @@ like guitar.
                 lv2:name "Hold";
 
                 lv2:default 100.0 ;
-                lv2:minimum 10.0 ;
-                lv2:maximum 1000.0 ; 
+                lv2:minimum 1.0 ;
+                lv2:maximum 100.0 ; 
+                lv2:portProperty epp:logarithmic;
+
                 units:unit units:ms ;
                 rdfs:comment "Envelope Hold";
         ],
@@ -188,8 +191,9 @@ like guitar.
 
                 lv2:default 330.0 ;
                 lv2:minimum 10.0 ;
-                lv2:maximum 5000.0 ; 
+                lv2:maximum 1000.0 ; 
                 units:unit units:ms ;
+                lv2:portProperty epp:logarithmic;
                 rdfs:comment "Envelope Release";
         ],
         [
@@ -202,6 +206,7 @@ like guitar.
                 lv2:symbol "gate_level" ;
                 lv2:name "";
                 rdfs:comment "Gate Level";
+                lv2:portProperty epp:notOnGUI;
 
                 lv2:default -60 ;
                 lv2:minimum -60 ;

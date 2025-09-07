@@ -30,6 +30,7 @@ interface DialogExProps extends DialogProps {
     tag: string;
     fullwidth?: boolean;
     onEnterKey: () => void;
+    dlgRef?: (instance: HTMLDivElement | null) => void;
 }
 
 class DialogEx extends React.Component<DialogExProps, DialogExState> implements IDialogStackable {
@@ -99,12 +100,13 @@ class DialogEx extends React.Component<DialogExProps, DialogExState> implements 
         evt.stopPropagation();
     }
     render() {
-        let { tag, onClose, fullWidth, onEnterKey, ...extra } = this.props;
+        let { dlgRef,tag, onClose, fullWidth, onEnterKey, ...extra } = this.props;
         return (
             <Dialog fullWidth={fullWidth ?? false}
                 maxWidth={fullWidth ? false : undefined} {...extra}
                 onClose={(event, reason) => { this.myOnClose(event, reason); }}
                 onKeyDown={(evt) => { this.onKeyDown(evt); }}
+                ref={dlgRef}
             >
                 {this.props.children}
             </Dialog>

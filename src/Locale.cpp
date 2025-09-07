@@ -36,7 +36,7 @@
 #include "Utf8Utils.hpp"
 #include <filesystem>
 
-#define U_SHOW_CPLUSPLUS_API 0
+#define U_SHOW_CPLUSPLUS_API 1
 
 #include <stdlib.h>
 #include "Lv2Log.hpp"

@@ -647,6 +647,10 @@ export class UiControl implements Deserializable<UiControl> {
         }
         return this;
     }
+
+    clone() {
+        return new UiControl().deserialize(this);
+    }
     applyProperties(properties: Partial<UiControl>): UiControl {
         return { ...this, ...properties };
     }
@@ -702,7 +706,7 @@ export class UiControl implements Deserializable<UiControl> {
     port_group: string = "";
     units: Units = Units.none;
     comment: string = "";
-    is_bypass: boolean = true;
+    is_bypass: boolean = false;
     is_program_controller: boolean = true;
     custom_units: string = "";
     connection_optional: boolean = false;
@@ -728,7 +732,7 @@ export class UiControl implements Deserializable<UiControl> {
     }
 
     isHidden(): boolean {
-        return this.not_on_gui || (this.connection_optional && !this.is_input);
+        return this.is_bypass || this.not_on_gui || (this.connection_optional && !this.is_input);
     }
     isOnOffSwitch(): boolean {
         return this.controlType === ControlType.OnOffSwitch;
@@ -878,6 +882,11 @@ export class UiControl implements Deserializable<UiControl> {
                 break;
             case Units.pc:
                 text += "%";
+                break;
+            case Units.unknown:
+                if (this.custom_units !== "") {
+                    text = this.custom_units.replace("%f",text);
+                } 
                 break;
             default:
                 break;

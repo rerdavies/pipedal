@@ -30,7 +30,7 @@ using namespace pipedal;
 using namespace std;
 using namespace std::filesystem;
 
-Storage storage;    
+std::unique_ptr<Storage> storage;    
 
 static std::string GetPluginid(const std::string &pluginUrl)
 {
@@ -136,7 +136,7 @@ void WritePrefixes(ofstream &f)
 static void WriteSeeAlso(ofstream &f, const std::string &uri)
 {
     std::string id = GetPluginid(uri);
-    PluginPresets presets = storage.GetPluginPresets(uri);
+    PluginPresets presets = storage->GetPluginPresets(uri);
 
     f << "###" << endl;
 
@@ -197,7 +197,7 @@ void WritePresetFile(const path &outputDirectory, const std::string &uri)
 
     WritePrefixes(f);
 
-    PluginPresets presets = storage.GetPluginPresets(uri);
+    PluginPresets presets = storage->GetPluginPresets(uri);
 
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
@@ -273,6 +273,9 @@ void WritePresetFile(const path &outputDirectory, const std::string &uri)
 
 int main(int argc, const char *argv[])
 {
+
+    storage = std::make_unique<Storage>();
+
     // A utility for the ToobAmp project which converts Pipedal presets to LV2 presets so
     // that they can be imported as pre-declared presets respective TTL files.
 
@@ -284,11 +287,11 @@ int main(int argc, const char *argv[])
     try
     {
 
-        storage.SetConfigRoot("/etc/pipedal/config");
-        storage.SetDataRoot("/var/pipedal");
-        storage.Initialize();
+        storage->SetConfigRoot("/etc/pipedal/config");
+        storage->SetDataRoot("/var/pipedal");
+        storage->Initialize();
 
-        const PluginPresetIndex &index = storage.GetPluginPresetIndex();
+        const PluginPresetIndex &index = storage->GetPluginPresetIndex();
 
         std::filesystem::create_directories(outputPath);
 

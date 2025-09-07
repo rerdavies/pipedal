@@ -28,7 +28,7 @@ import { withStyles } from "tss-react/mui";
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel, State,ListenHandle } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ICustomizationHost,  ControlGroup,ControlViewCustomization } from './PluginControlView';
 import ToobWaveShapeView, {BidirectionalVuPeak} from './ToobWaveShapeView';
 
 
@@ -130,7 +130,7 @@ const ToobPowerstage2View =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
+            modifyControls(host: ICustomizationHost, controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
                 let time = Date.now()*0.001;
 

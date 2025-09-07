@@ -28,7 +28,7 @@ import { withStyles } from "tss-react/mui";
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup,ControlViewCustomization } from './PluginControlView';
+import PluginControlView, {   ICustomizationHost,ControlGroup,ControlViewCustomization } from './PluginControlView';
 import GxTunerControl from './GxTunerControl';
 
 const GXTUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner";
@@ -81,7 +81,7 @@ const GxTunerView =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
+            modifyControls(host: ICustomizationHost,controls: (React.ReactNode| ControlGroup)[]): (React.ReactNode| ControlGroup)[]
             {
                 let refFreqIndex = this.getControlIndex("REFFREQ");
                 let thresholdIndex = this.getControlIndex("THRESHOLD");

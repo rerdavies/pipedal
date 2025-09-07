@@ -28,7 +28,7 @@ import { withStyles } from "tss-react/mui";
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel, MonitorPortHandle } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
-import PluginControlView, { ControlGroup, ControlViewCustomization } from './PluginControlView';
+import PluginControlView, { ICustomizationHost,  ControlGroup, ControlViewCustomization } from './PluginControlView';
 // import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 
 const styles = (theme: Theme) => createStyles({
@@ -107,7 +107,7 @@ const ToobMLView =
                 return false;
             }
 
-            modifyControls(controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
+            modifyControls(host: ICustomizationHost,controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
                 // Find EQ group
                 // let group = controls.find((control) => typeof control !== 'string' && (control as ControlGroup).name === "EQ") as ControlGroup;
                 // if (group) {

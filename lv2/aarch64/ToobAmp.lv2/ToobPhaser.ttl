@@ -40,7 +40,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 67 ;
+        lv2:microVersion 68 ;
         rdfs:comment """
 A loose emulation of an MXR® Phase 90 Phaser.
 
@@ -66,16 +66,29 @@ MXR is a registered trademark of Dunlop Manufacturing, Inc. The TooB Phaser is n
                 lv2:portProperty epp:logarithmic;
         ],  
         [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 1 ;
+                lv2:symbol "dryWet" ;
+                lv2:name "Dry/Wet";
+                rdfs:comment "Dry/wet mix";
+
+                lv2:default 1.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0 ;
+        ],  
+        [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 1 ;
+                lv2:index 2 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 2 ;
+                lv2:index 3 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ]

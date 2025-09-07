@@ -60,15 +60,19 @@ public:
 struct PluginPresetValues {
 
     std::vector<ControlValue> controls;
+    std::map<std::string,std::string> pathProperties;
     Lv2PluginState state;
     std::string lilvPresetUri;
 };
 
+
 // controls user-defined storage. Implmentation hidden to allow to later migration to a database (perhaps)
 
-class Storage {
+class Storage  {
 private:
     std::filesystem::path dataRoot;
+    std::filesystem::path dataRoot__audio_uploads;
+
     std::filesystem::path configRoot;
     BankIndex bankIndex;
     BankFile currentBank;
@@ -125,7 +129,11 @@ public:
     const std::filesystem::path&GetConfigRoot();
     const std::filesystem::path&GetDataRoot();
 
-    std::filesystem::path GetPluginUploadDirectory() const;
+    const std::filesystem::path &GetPluginUploadDirectory() const;
+
+    std::string ToAbstractPathJson(const std::string &jsonAtomPath);
+    std::string FromAbstractPathJson(const std::string &jsonAtomPath);
+
 
     //std::vector<std::string> GetPedalboards();
 
@@ -145,6 +153,7 @@ public:
     void SaveCurrentPreset(const Pedalboard&pedalboard);
     int64_t SaveCurrentPresetAs(const Pedalboard&pedalboard, const std::string&namne,int64_t saveAfterInstanceId = -1);
     int64_t GetCurrentPresetId() const;
+    
     void GetPresetIndex(PresetIndex*pResult);
     void SetPresetIndex(const PresetIndex &presetIndex);
     Pedalboard GetPreset(int64_t instanceId) const;
@@ -205,11 +214,17 @@ private:
     void LoadPluginPresetIndex();
     void SavePluginPresetIndex();
 
+
     std::filesystem::path GetPluginPresetPath(const std::string &pluginUri) const;
     bool IsValidSampleFileName(const std::filesystem::path&fileName);
     std::filesystem::path MakeUserFilePath(const std::string &directory, const std::string&filename);
+    void ToAbstractPaths(PluginPreset&pluginPreset);
+    void FromAbstractPaths(PluginPreset&pluginPreset);
 
 public:
+    uint64_t GetPluginPresetIndexVersion();
+    void SetPluginPresetIndexVersion(uint64_t version);
+
     bool HasPluginPresets(const std::string&pluginUri) const;
     void SavePluginPresets(const std::string&pluginUri, const PluginPresets&presets);
     void MergePluginPresets(const std::string&pluginUri, const PluginPresets&presets);
@@ -223,14 +238,9 @@ public:
         const std::string&name,
         const PedalboardItem&pedalboardEntry
     );
-
     uint64_t SavePluginPreset(
         const std::string &pluginUri,
-        const std::string &name,
-        float inputVolume,
-        float outputVolume,
-        const std::map<std::string, float> &values,
-        const Lv2PluginState& lv2State);
+        PluginPreset& preset);
 
     void UpdatePluginPresets(const PluginUiPresets &pluginPresets);
     uint64_t CopyPluginPreset(const std::string&pluginUri,uint64_t presetId);

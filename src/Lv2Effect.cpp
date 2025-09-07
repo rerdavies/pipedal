@@ -104,6 +104,14 @@ Lv2Effect::Lv2Effect(
     auto uriNode = lilv_new_uri(pWorld, pedalboardItem.uri().c_str());
     const LilvPlugin *pPlugin = lilv_plugins_get_by_uri(plugins, uriNode);
 
+    for (auto&port : info->ports())
+    {
+        if (port->is_bypass())
+        {
+            this->bypassControlIndex = port->index();
+            break;
+        }
+    }
     lilv_node_free(uriNode);
     {
         AutoLilvNode bundleUri = lilv_plugin_get_bundle_uri(pPlugin);
@@ -545,7 +553,13 @@ void Lv2Effect::Activate()
     this->activated = true;
     this->AssignUnconnectedPorts();
     lilv_instance_activate(pInstance);
-    this->BypassTo(this->bypass ? 1.0f : 0.0f);
+    if (this->bypassControlIndex == -1)
+    {
+        this->BypassDezipperSet(this->bypass ? 1.0f : 0.0f);
+    } else {
+        this->BypassDezipperSet(1.0f);
+        this->controlValues[this->bypassControlIndex] = this->bypass ? 1.0f: 0.0f;
+    }
 }
 
 void Lv2Effect::UpdateAudioPorts()
@@ -835,8 +849,15 @@ void Lv2Effect::ResetOutputAtomBuffer(char *data)
     header->size = pHost->GetAtomBufferSize() - 8;
     header->type = urids.atom__Chunk;
 }
+void Lv2Effect::BypassDezipperSet(float targetValue)
+{
+    this->targetBypass = targetValue;
+    this->currentBypass = targetValue;
+    this->currentBypassDx = 0;
+    this->bypassSamplesRemaining = 0;
+}
 
-void Lv2Effect::BypassTo(float targetValue)
+void Lv2Effect::BypassDezipperTo(float targetValue)
 {
     this->targetBypass = targetValue;
     double dx = targetValue - this->currentBypass;

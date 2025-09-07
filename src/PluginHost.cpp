@@ -19,6 +19,7 @@
 
 #include "pch.h"
 #include "AtomConverter.hpp"
+#include "HtmlHelper.hpp"
 #include "PluginHost.hpp"
 #include <lilv/lilv.h>
 #include <stdexcept>
@@ -33,6 +34,8 @@
 #include "JackConfiguration.hpp"
 #include "lv2/urid/urid.h"
 #include "lv2/ui/ui.h"
+#include "lv2/core/lv2.h"
+
 // #include "lv2.h"
 #include "lv2/atom/atom.h"
 #include "lv2/time/time.h"
@@ -47,7 +50,7 @@
 #include "StdErrorCapture.hpp"
 #include "util.hpp"
 #include "ModFileTypes.hpp"
-#include  <algorithm>
+#include <algorithm>
 
 #include "Locale.hpp"
 
@@ -125,6 +128,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     core__designation = lilv_new_uri(pWorld, LV2_CORE__designation);
     portgroups__group = lilv_new_uri(pWorld, LV2_PORT_GROUPS__group);
     units__unit = lilv_new_uri(pWorld, LV2_UNITS__unit);
+    units__render = lilv_new_uri(pWorld, LV2_UNITS__render);
 
     invada_units__unit = lilv_new_uri(pWorld, "http://lv2plug.in/ns/extension/units#unit");                   // a typo in invada plugin ttl files.
     invada_portprops__logarithmic = lilv_new_uri(pWorld, "http://lv2plug.in/ns/dev/extportinfo#logarithmic"); // a typo in invada plugin ttl files.
@@ -301,7 +305,6 @@ PluginHost::PluginHost()
     lv2Features.push_back(nullptr);
 
     this->urids = new Urids(mapFeature);
-
 }
 
 void PluginHost::OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings)
@@ -657,13 +660,14 @@ static std::vector<UiFileType> ToPiPedalFileTypes(
         std::string type = fileType;
         if (type.find("/") != std::string::npos) // mime type?
         {
-            UiFileType t = UiFileType(type,type,"");
+            UiFileType t = UiFileType(type, type, "");
             result.push_back(t);
         }
-        else 
-        {   
+        else
+        {
             // add a leading dot.
-            if (!type.starts_with(".")) {
+            if (!type.starts_with("."))
+            {
                 type = "." + type;
             }
             auto t = UiFileType(SS(type << " file"), type);
@@ -773,7 +777,8 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                             auto modDirectory = modFileTypes.GetModDirectory(modName);
                             fileProperty->directory(modDirectory->pipedalPath);
                             std::set<std::string> fileExtensions = modDirectory->fileExtensions;
-                            if (!modFileExtensions.empty()) {
+                            if (!modFileExtensions.empty())
+                            {
                                 auto extensions = split(modFileExtensions, ',');
                                 fileExtensions = std::set<std::string>(extensions.begin(), extensions.end());
                             }
@@ -875,7 +880,6 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
         // set to plain Plugin.
         this->plugin_class_ = "http://lv2plug.in/ns/lv2core#Plugin";
     }
-
 
     AutoLilvNodes required_features = lilv_plugin_get_required_features(pPlugin);
     this->required_features_ = nodeAsStringArray(required_features);
@@ -1224,6 +1228,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
 
     AutoLilvNode designationValue = lilv_port_get(plugin, pPort, host->lilvUris->core__designation);
     designation_ = nodeAsString(designationValue);
+    is_bypass_ = designation_ == LV2_CORE__enabled;
 
     AutoLilvNode portGroup_value = lilv_port_get(plugin, pPort, host->lilvUris->portgroups__group);
     port_group_ = nodeAsString(portGroup_value);
@@ -1232,6 +1237,20 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     if (unitsValueUri)
     {
         this->units_ = UriToUnits(nodeAsString(unitsValueUri));
+        if (this->units_ == Units::unknown)
+        {
+            // try for a custom format string.
+            AutoLilvNode render = lilv_world_get(
+                pWorld,
+                unitsValueUri,
+                host->lilvUris->units__render,
+                nullptr);
+            if (render)
+            {
+                const char *strRender = lilv_node_as_string(render);
+                custom_units_ = strRender;
+            }
+        }
     }
     else
     {
@@ -1572,6 +1591,210 @@ void PluginHost::PortValueCallback(const char *symbol, void *user_data, const vo
         pState->failed = true;
     }
 }
+
+static bool lineStartsWith(const std::string &line, const char*text) {
+    for (char c: line) {
+        if (c == ' ' || c == '\t') {
+            continue;
+        }
+        if (c != *text) {
+            return false;
+        }
+        ++text;
+        if (*text == '\0')
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void skipWhitespace(std::istream &s) {
+    while (true)
+    {
+        auto c = s.peek();
+        if (c == ' ' || c == '\t') {
+            s.get();
+        } else {
+            return;
+        }
+    }
+}
+
+static bool parseTtlUrl(std::istream &s, std::string *result)
+{
+    if (s.peek() != '<') {
+        return false;
+    }
+    s.get();
+    std::ostringstream o;
+    while (s.peek() != '>')
+    {
+
+        int c = s.get();
+        if (c ==  EOF)
+        {
+            return false;
+
+        }
+        o << (char)c;
+    }
+    s.get();
+
+    *result = o.str();
+    return true;
+}
+
+static uint32_t readTtlUnicodeEscape(std::istream&s, size_t nChars)
+{
+    uint32_t result = 0;
+
+    for (size_t i = 0; i < nChars; ++i)
+    {
+        int c = s.peek();
+        if (c >= '0' && c <= '9') 
+        {
+            result = result*16 + (uint32_t)(c-'0');
+        } else if (c >= 'a' && c <= 'f') {
+            result = result*16 + (uint32_t)(c-'a'+10);
+        } else if (c >= 'A' && c <= 'F') {
+            result = result*16 + (uint32_t)(c-'A'+10);
+        }
+        s.get();
+    }
+    return result;
+}
+static bool parseTtlString(std::istream&s, std::string *result)
+{
+    if (s.peek() != '"') {
+        return false;
+    }
+    s.get(); // consume opening quote
+    std::ostringstream o;
+    while (s.peek() != '"') {
+        int c = s.get();
+        if (c == EOF) {
+            return false;
+        }
+        if (c == '\\') {
+            // Handle escape sequences
+            int next = s.get();
+            if (next == EOF) {
+                return false;
+            }
+            switch (next) {
+                case 'n':
+                    o << '\n';
+                    break;
+                case 't':
+                    o << '\t';
+                    break;
+                case 'r':
+                    o << '\r';
+                    break;
+                case '\\':
+                    o << '\\';
+                    break;
+                case '"':
+                    o << '"';
+                    break;
+                case 'u': 
+                {
+                    uint32_t cc = readTtlUnicodeEscape(s,4);
+                    HtmlHelper::utf32_to_utf8_stream(o,cc);
+                    break;
+                }
+                case 'U': 
+                {
+                    uint32_t cc = readTtlUnicodeEscape(s,8);
+                    HtmlHelper::utf32_to_utf8_stream(o,cc);
+                    break;
+                }
+                default:
+                    o << (char)next;
+                    break;
+            }
+        } else {
+            o << (char)c;
+        }
+    }
+    s.get(); // consume closing quote
+    *result = o.str();
+    return true;
+}
+static bool parseStateProperty(const std::string &line, std::string *property, std::string *value) {
+    std::istringstream s { line};
+
+    skipWhitespace(s);
+    if (!parseTtlUrl(s,property)) {
+        return false;
+    }
+    skipWhitespace(s);
+    if (!parseTtlString(s,value)) 
+    {
+        return false;
+    }
+    return true;
+}
+static std::map<std::string,std::string> ExtractPathPropertiesFromLilvState(
+    Lv2PluginInfo *pluginInfo,
+    const std::string lilvPresetText
+)
+{
+    // <urn:xxx>
+    //     a pset:Preset ;
+    //     ...
+    //     state:state [
+    //             <http://two-play.com/plugins/toob-impulse#impulseFile> "ReverbImpulseFiles/Arthur Sykes Rymer Auditorium.wav"
+    //     ] .
+
+    std::map<std::string,std::string> result;
+    std::istringstream s{lilvPresetText};
+    std::string line;
+
+    bool foundState = false;
+    for (std::string line; std::getline(s, line);) {
+        if (lineStartsWith(line,"state:state"))
+        {
+            foundState = true;
+            break;
+        }
+    }
+
+    if (foundState) 
+    {
+        for (std::string line; std::getline(s, line);) {
+            if (lineStartsWith(line,"]"))
+            {
+                break;
+            }
+            std::string property, value;
+            if (parseStateProperty(line,&property,&value)) {
+                if (pluginInfo->IsPathProperty(property)) 
+                {   result[property] = AtomConverter::MakePathVariant(value).to_string();
+                }
+            }
+        }
+    }
+    return result;
+
+}
+
+
+bool Lv2PluginInfo::IsPathProperty(const std::string &uri) const {
+    if (!piPedalUI_) {
+
+    }
+    for (const UiFileProperty::ptr& fileProperty: this->piPedalUI_->fileProperties()) 
+    {
+        if (fileProperty->patchProperty() == uri)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
 {
     const LilvPlugins *plugins = lilv_world_get_all_plugins(this->pWorld);
@@ -1598,7 +1821,6 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
         LilvState *state = lilv_state_new_from_world(pWorld, this->mapFeature.GetMap(), preset);
         if (state != nullptr)
         {
-            const char *t = this->mapFeature.UridToString(14);
             const char *tLabel = lilv_state_get_label(state);
             if (tLabel != nullptr)
             {
@@ -1611,14 +1833,38 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
                 // can't handle std:state part of preset.
                 if (numProperties == 0)
                 {
+
+                    
                     if (!cbData.failed)
                     {
-                        result.presets_.push_back(PluginPreset(result.nextInstanceId_++, strLabel, controlValues, Lv2PluginState()));
+                        result.presets_.push_back(
+                            PluginPreset(
+                                result.nextInstanceId_++,
+                                strLabel,
+                                controlValues,
+                                std::map<std::string, std::string>(),
+                                Lv2PluginState()));
                     }
                 }
                 else
                 {
-                    result.presets_.push_back(PluginPreset::MakeLilvPreset(result.nextInstanceId_++, strLabel, controlValues, lilv_node_as_uri(preset)));
+
+                    std::string stateString = lilv_state_to_string(
+                        pWorld,mapFeature.GetMap(),mapFeature.GetUnmap(),
+                            state,
+                            "urn:xxx",
+                            nullptr);
+                    (void)stateString;
+
+                    std::shared_ptr<Lv2PluginInfo> pluginInfo = GetPluginInfo(pluginUri);
+
+                    PluginPreset pluginPreset = PluginPreset::MakeLilvPreset(result.nextInstanceId_++, strLabel, controlValues, lilv_node_as_uri(preset));
+
+                    pluginPreset.pathProperties_ = ExtractPathPropertiesFromLilvState(
+                        pluginInfo.get(),
+                        stateString
+                    );
+                    result.presets_.push_back(pluginPreset);
                 }
                 lilv_state_free(state);
             }
@@ -1887,11 +2133,13 @@ Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNod
 }
 
 // ffs.
-static inline bool contains(const std::vector<std::string> &vec, const std::string &value) {
-    return std::find(vec.begin(),vec.end(),value) != vec.end();
+static inline bool contains(const std::vector<std::string> &vec, const std::string &value)
+{
+    return std::find(vec.begin(), vec.end(), value) != vec.end();
 }
-bool Lv2PluginInfo::WantsWorkerThread() const {
-    return contains(this->required_features_,LV2_WORKER__schedule) || contains(this->supported_features_,LV2_WORKER__schedule);
+bool Lv2PluginInfo::WantsWorkerThread() const
+{
+    return contains(this->required_features_, LV2_WORKER__schedule) || contains(this->supported_features_, LV2_WORKER__schedule);
 }
 // void PiPedalHostLogError(const std::string &error)
 // {
@@ -1957,9 +2205,11 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      MAP_REF(Lv2PortInfo, not_on_gui),
      MAP_REF(Lv2PortInfo, buffer_type),
      MAP_REF(Lv2PortInfo, port_group),
+     MAP_REF(Lv2PortInfo, is_bypass),
      MAP_REF(Lv2PortInfo, pipedal_ledColor),
 
      json_map::enum_reference("units", &Lv2PortInfo::units_, get_units_enum_converter()),
+     MAP_REF(Lv2PortInfo, custom_units),
      MAP_REF(Lv2PortInfo, comment)}};
 
 json_map::storage_type<Lv2PortGroup> Lv2PortGroup::jmap{{
@@ -2037,10 +2287,10 @@ json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
     MAP_REF(Lv2PluginUiPort, pipedal_ledColor),
 
     json_map::enum_reference("units", &Lv2PluginUiPort::units_, get_units_enum_converter()),
+    MAP_REF(Lv2PluginUiPort, custom_units),
     MAP_REF(Lv2PluginUiPort, comment),
     MAP_REF(Lv2PluginUiPort, is_bypass),
     MAP_REF(Lv2PluginUiPort, is_program_controller),
-    MAP_REF(Lv2PluginUiPort, custom_units),
     MAP_REF(Lv2PluginUiPort, connection_optional),
 
 }};

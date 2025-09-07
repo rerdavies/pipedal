@@ -40,6 +40,7 @@
 #include "util.hpp"
 #include "AudioFiles.hpp"
 #include "Utf8Utils.hpp"
+#include "AtomConverter.hpp"
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -189,6 +190,7 @@ void Storage::SetConfigRoot(const std::filesystem::path &path)
 void Storage::SetDataRoot(const std::filesystem::path &path)
 {
     this->dataRoot = ResolveHomePath(path);
+    this->dataRoot__audio_uploads = dataRoot / "audio_uploads";
 }
 
 const std::filesystem::path &Storage::GetConfigRoot()
@@ -302,9 +304,9 @@ std::filesystem::path Storage::GetPluginPresetsDirectory() const
 {
     return this->dataRoot / "plugin_presets";
 }
-std::filesystem::path Storage::GetPluginUploadDirectory() const
+const std::filesystem::path &Storage::GetPluginUploadDirectory() const
 {
-    return this->dataRoot / "audio_uploads";
+    return dataRoot__audio_uploads;
 }
 
 std::filesystem::path Storage::GetCurrentPresetPath() const
@@ -401,6 +403,7 @@ void Storage::SavePluginPresetIndex()
         writer.write(this->pluginPresetIndex);
     }
 }
+
 
 void Storage::SaveBankIndex()
 {
@@ -1232,6 +1235,22 @@ bool Storage::RestoreCurrentPreset(CurrentPreset *pResult)
         return false;
     }
 }
+
+uint64_t Storage::GetPluginPresetIndexVersion()
+{
+    return pluginPresetIndex.version_;
+}
+void Storage::SetPluginPresetIndexVersion(uint64_t version)
+{
+    if (this->pluginPresetIndex.version_ != version)
+    {
+        this->pluginPresetIndexChanged = true;
+        this->pluginPresetIndex.version_ = version;
+        SavePluginPresetIndex();
+    }
+        
+}
+
 bool Storage::HasPluginPresets(const std::string &pluginUri) const
 {
     for (const auto &entry : this->pluginPresetIndex.entries_)
@@ -1409,12 +1428,41 @@ PluginPresetValues Storage::GetPluginPresetValues(const std::string &pluginUri, 
             {
                 result.controls.push_back(ControlValue(valuePair.first.c_str(), valuePair.second));
             }
+            for (const auto&pair: preset.pathProperties_)
+            {
+                result.pathProperties[pair.first] = pair.second;
+            }
             result.state = preset.state_;
             result.lilvPresetUri = preset.lilvPresetUri_;
             return result;
         }
     }
     throw PiPedalException("Plugin preset not found.");
+}
+
+void Storage::ToAbstractPaths(PluginPreset &pluginPreset)
+{
+    if (pluginPreset.pathProperties_.size() != 0)
+    {
+        std::map<std::string, std::string> newPathProperties;
+        for (const auto &pair : pluginPreset.pathProperties_)
+        {
+            newPathProperties[pair.first] = this->ToAbstractPathJson(pair.second);
+        }
+        pluginPreset.pathProperties_ = newPathProperties;
+    }
+}
+void Storage::FromAbstractPaths(PluginPreset &pluginPreset)
+{
+    if (pluginPreset.pathProperties_.size() != 0)
+    {
+        std::map<std::string, std::string> newPathProperties;
+        for (const auto &pair : pluginPreset.pathProperties_)
+        {
+            newPathProperties[pair.first] = this->FromAbstractPathJson(pair.second);
+        }
+        pluginPreset.pathProperties_ = newPathProperties;
+    }
 }
 
 uint64_t Storage::SavePluginPreset(
@@ -1425,6 +1473,7 @@ uint64_t Storage::SavePluginPreset(
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
     bool existing = false;
+
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
         auto &preset = presets.presets_[i];
@@ -1432,6 +1481,8 @@ uint64_t Storage::SavePluginPreset(
         {
             existing = true;
             result = preset.instanceId_;
+            PluginPreset pluginPreset{preset.instanceId_, preset.label_, pedalboardItem};
+
             presets.presets_[i] = PluginPreset(preset.instanceId_, preset.label_, pedalboardItem);
             break;
         }
@@ -1439,10 +1490,12 @@ uint64_t Storage::SavePluginPreset(
     if (!existing)
     {
         result = presets.nextInstanceId_++;
-        presets.presets_.push_back(
-            PluginPreset(result,
-                         name,
-                         pedalboardItem));
+        auto preset = PluginPreset(
+            result,
+            name,
+            pedalboardItem);
+        ToAbstractPaths(preset);
+        presets.presets_.push_back(preset);
     }
     this->SavePluginPresets(pluginUri, presets);
     return result;
@@ -1450,11 +1503,8 @@ uint64_t Storage::SavePluginPreset(
 
 uint64_t Storage::SavePluginPreset(
     const std::string &pluginUri,
-    const std::string &name,
-    float inputVolume,
-    float outputVolume,
-    const std::map<std::string, float> &values,
-    const Lv2PluginState &lv2State)
+    PluginPreset &pluginPreset
+)
 {
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
@@ -1462,12 +1512,12 @@ uint64_t Storage::SavePluginPreset(
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
         auto &preset = presets.presets_[i];
-        if (preset.label_ == name)
+        if (preset.label_ == pluginPreset.label_)
         {
             existing = true;
-            preset.controlValues_ = values;
-            preset.state_ = lv2State;
-
+            auto t = preset.instanceId_;
+            preset = pluginPreset;
+            preset.instanceId_ = t;
             result = preset.instanceId_;
             break;
         }
@@ -1475,12 +1525,9 @@ uint64_t Storage::SavePluginPreset(
     if (!existing)
     {
         result = presets.nextInstanceId_++;
+        pluginPreset.instanceId_ = result;
         presets.presets_.push_back(
-            PluginPreset(
-                result,
-                name,
-                values,
-                lv2State));
+            pluginPreset);
     }
     this->SavePluginPresets(pluginUri, presets);
     return result;
@@ -1533,7 +1580,7 @@ uint64_t Storage::CopyPluginPreset(const std::string &pluginUri, uint64_t preset
     size_t pos = presets.Find(presetId);
     if (pos == -1)
     {
-        throw PiPedalException("Perset not found.");
+        throw PiPedalException("Preset not found.");
     }
     PluginPreset t = presets.presets_[pos];
     t.instanceId_ = presets.nextInstanceId_++;
@@ -1922,7 +1969,7 @@ static void AddTracksToResult(
 FileRequestResult Storage::GetModFileList2(const std::string &relativePath, const UiFileProperty &fileProperty)
 {
     FileRequestResult result;
-    fs::path uploadsDirectory = GetPluginUploadDirectory();
+    const fs::path &uploadsDirectory = GetPluginUploadDirectory();
 
     if (relativePath.empty())
     {
@@ -2649,6 +2696,23 @@ void Storage::SetTone3000Auth(const std::string &apiKey)
 std::string Storage::GetTone3000Auth() const
 {
     return tone3000Auth;
+}
+
+std::string Storage::ToAbstractPathJson(const std::string &pathJson)
+{
+    json_variant v = json_variant::parse(pathJson);
+
+    v = AtomConverter::AbstractPath(v,GetPluginUploadDirectory().string());
+
+    return v.to_string();
+}
+std::string Storage::FromAbstractPathJson(const std::string &pathJson)
+{
+    json_variant v = json_variant::parse(pathJson);
+
+    v = AtomConverter::MapPath(v,GetPluginUploadDirectory().string());
+
+    return v.to_string();
 }
 
 JSON_MAP_BEGIN(UserSettings)

@@ -8,6 +8,15 @@
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToneStack.ttl> .
 
+<http://two-play.com/plugins/toob-three-band-eq> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <Toob3BandEq.ttl> .
+
+<http://two-play.com/plugins/toob-parametric-eq> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobParametricEq.ttl> .
+
+
 <http://two-play.com/plugins/toob-convolution-reverb> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ConvolutionReverb.ttl> .

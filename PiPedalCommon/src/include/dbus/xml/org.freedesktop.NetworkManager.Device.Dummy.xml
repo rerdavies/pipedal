@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node name="/">
+  <!--
+      org.freedesktop.NetworkManager.Device.Dummy:
+      @short_description: Dummy Device.
+
+  -->
+  <interface name="org.freedesktop.NetworkManager.Device.Dummy">
+
+    <!--
+        HwAddress:
+
+        Hardware address of the device.
+n
+        DEPRECATED. Use the "HwAddress" property in "org.freedesktop.NetworkManager.Device" instead which exists since version NetworkManager 1.24.0.
+    -->
+    <property name="HwAddress" type="s" access="read"/>
+
+  </interface>
+</node>

@@ -102,7 +102,7 @@ void DBusDispatcher::ThreadProc()
                 idle = true;
                 quitting = false;
 
-                while (busConnection->processPendingRequest())
+                while (busConnection->processPendingEvent())
                 {
                     idle = false;
                 }

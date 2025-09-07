@@ -38,11 +38,11 @@ std::ostream&operator<<(std::ostream&s, const sdbus::Variant&v)
                 {
                 s << '[';
                 bool first = true;
-                for (const sdbus::ObjectPath&value: values)
+                for (const sdbus::Variant&value: values)
                 {
                     if (!first) s << ", ";
                     first = false;
-                    s << value.c_str();
+                    s << value;
                 }
                 s << ']';
 

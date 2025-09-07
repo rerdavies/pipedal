@@ -486,6 +486,19 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         }
         throw new PiPedalArgumentError("Item not found.");
     }
+    tryGetItem(instanceId: number): PedalboardItem | null {
+        let it = this.itemsGenerator();
+        while (true)
+        {
+            let v = it.next();
+            if (v.done) break;
+            if (v.value.instanceId === instanceId)
+            {
+                return v.value;
+            }
+        }
+        return null;
+    }
     deleteItem_(instanceId: number,items: PedalboardItem[]): number | null
     {
         for (let i = 0; i < items.length; ++i)

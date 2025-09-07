@@ -570,6 +570,15 @@ json_variant::json_variant(json_reader&reader)
 }
 
 
+json_variant json_variant::parse(const std::string&jsonText)
+{
+    std::istringstream s(jsonText);
+    json_reader reader(s);
+    json_variant result;
+    reader.read(&result);
+    return result;
+}
+
 
 /*static*/ json_null json_null::instance;
 /*static*/ int64_t json_array::allocation_count_ = 0; // strictly for testing purposes. not thread safe.

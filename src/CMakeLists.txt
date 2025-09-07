@@ -54,7 +54,6 @@ message(STATUS "*** ${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR}")
 
 include(FindPkgConfig)
 
-find_package(sdbus-c++ REQUIRED)
 
 
 
@@ -122,7 +121,6 @@ else()
   message(STATUS "LILV_0_INCLUDE_DIRS: ${LILV_0_INCLUDE_DIRS}")
 endif()
 
-pkg_check_modules(ZIP "lilv-0")
 
 # Use LV2 headers from the /usr/lib directory.
 #set (LV2DEV_INCLUDE_DIRS /usr/lib)
@@ -154,7 +152,7 @@ else()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
 endif()
 
-EXECUTE_PROCESS( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
+execute_process( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 message(STATUS DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 
 add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
@@ -848,7 +846,7 @@ add_custom_command(OUTPUT ${REACT_NOTICES_FILE}
     COMMAND "$<TARGET_FILE:processcopyrights>"
         --output ${REACT_NOTICES_FILE}
         --projectCopyright ${DEBIAN_COPYRIGHT_FILE}
-        liblilv-0-0 ${BOOST_COPYRIGHT_DIR} lv2-dev libsdbus-c++-dev librsvg2-2 libpango-1.0-0 libx11-6 libxrandr2
+        liblilv-0-0 ${BOOST_COPYRIGHT_DIR} lv2-dev librsvg2-2 libpango-1.0-0 libx11-6 libxrandr2
 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${DEBIAN_COPYRIGHT_FILE} "$<TARGET_FILE:processcopyrights>"
     COMMENT "Updating copyright notices."
