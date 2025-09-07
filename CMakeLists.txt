@@ -114,7 +114,7 @@ set(CPACK_DEBIAN_PACKAGE_SIGN_ALGORITHM "detached")
 set(CPACK_DEBIAN_PACKAGE_SIGN_TYPE "origin")
 
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA 
-   "${CMAKE_CURRENT_SOURCE_DIR}/debian/shlibs.override;${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm"
+   "${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/prerm"
    )
 
 
