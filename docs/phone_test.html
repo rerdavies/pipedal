@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual" />
+    <meta name="color-scheme" content="dark light" /> <!-- uses media queries in web views. -->
+    <meta name="description" content="PiPedal Guitar Stomp Box for Raspberry Pi" />
+    <style>
+        BODY {
+            margin: 0;
+            padding: 0;
+            font-family: Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background-color: #000;
+            color: #E8E8E8;
+        }
+    </style>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .grid-cell {
+            display: flex;
+            padding: 8px;
+            flex-flow: row nowrap;
+
+            align-items: center;
+            justify-content: left;
+        }
+        .text-input {
+            text-align: center;
+            width: 120px;
+            font-size: 16px;
+            padding: 4px;
+        }
+    </style>
+    <script>
+
+
+    </script>
+
+
+    <title>Input Test</title>
+</head>
+
+<body>
+    <div style="padding: 24px 16px">
+        <h1>Samsung Phone Input Test</h1>
+        <div style="display: flex; flex-flow: column nowrap; align-items: center; justify-content: start; margin: 8px;
+            align-items: start">
+            <div style="display: grid; 
+            grid-template-columns: auto auto;
+            grid-template-rows: repeat(3, auto); margin: 8px; 
+            justify-content: start; align-items: start;
+            background-color: #222;
+            padding: 8px 16px;
+
+            ">
+                <div class="grid-cell">type=number</div>
+                <div class="grid-cell"><input type="number" class="text-input" min="-10" max="10" /></div>
+
+                <div class="grid-cell">inputmode="decimal"</div>
+                <div class="grid-cell"><input inputmode="decimal" class="text-input" min="-10" max="10" /></div>
+
+                <div class="grid-cell">Both</div>
+                <div class="grid-cell"><input type="number" inputmode="decimal" class="text-input" min="-100" max="100" /></div>
+                <div class="grid-cell">inputmode="url"</div>
+                <div class="grid-cell"><input type="number" inputmode="url" class="text-input" min="-100" max="100" /></div>
+
+            </div>
+        </div>
+        <div class="grid-cell" style="font-size: 12px; max-width: 300px; word-break: break-all;" >
+            <p id="userAgent"></p>
+        </div>
+
+        <script>
+        document.getElementById('userAgent').textContent = "User agent: " + navigator.userAgent;
+        </script>
+        <div class="grid-cell" style="font-size: 12px; max-width: 300px; word-break: break-all;" >
+            <p id="is_samsung"></p>
+        </div>
+        <script>
+        function isSamsungDevice() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            return userAgent.includes('samsung') || userAgent.includes('sm-');
+        }
+        document.getElementById('is_samsung').textContent = isSamsungDevice() ? 'Samsung device detected' : 'Not a Samsung device'; 
+        </script>
+        
+    </div>
+</body>
+
+</html>
