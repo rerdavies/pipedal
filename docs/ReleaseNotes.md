@@ -6,8 +6,6 @@
 
 - Major improvements to TooB plugins; new plugins, new features.
 
-- Default presets have been redesigned to make use of new and improved plugins. If upgrading, you will 
-    see the new presets in a new "Factory Presets" bank. 
 - Support for Ubuntu 25.04 (am64 and aarch64).
 
 #### Major Features
@@ -28,15 +26,6 @@
 - TooB CE-2 Chorus, TooB BF-2 Flanger, TooB Phaser: New "Wet/Dry" controls. 
 
 - Noise Gates threshold ranges have been increased in TooB NAM, TooB Input and TooB Noise Gate plugins.
-
-- Improvements to the default presets. Default presets have been completely redesigned to make use of 
-    plugins that have been added since the initial release of PiPedal, and to provide really great presets out of the box.
-
-- A new Factory Presets bank has been added. The Factory Presets bank contains the initial set of presets that you
-    would find in the "Default Bank" after a fresh install. If you are upgrading, the "Default Bank" presets will not 
-    be modified; but you will find a new bank named "Factory Presets", which contains the current set of default presets. You 
-    should not modify these presets, as they may be overwritten or added to by future upgrades. Instead, copy presets from the Factory Presets
-    bank into your "Default Bank", or whichever bank you are currently using for personal use. 
 
 - Support for Ubuntu 25.04. Compatibility fixes for Ubuntu 25.04 may also make it easier to build PiPedal on
     other Debian-based Linux distros.
