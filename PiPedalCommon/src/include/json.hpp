@@ -410,7 +410,7 @@ namespace pipedal
         {
             write(string_view(s.c_str()));
         }
-        void write(float f)
+        void write_float(float f)
         {
             if ((std::isnan(f) || std::isinf(f)))
             {
@@ -426,7 +426,16 @@ namespace pipedal
                 os << std::setprecision(std::numeric_limits<float>::max_digits10) << f; // round-trip format
             }
         }
-        void write(double f)
+        void write(float f) {
+            write_float(f);
+        }
+        void write(float &f) {
+            write_float(f);
+        }
+        void write(const float &f) {
+            write_float(f);
+        }
+        void write_double(double f)
         {
             if ((std::isnan(f) || std::isinf(f)))
             {
@@ -442,6 +451,20 @@ namespace pipedal
                 os << std::setprecision(std::numeric_limits<double>::max_digits10) << f; // round-trip format
             }
         }
+        void write(double d)
+        {
+            write_double(d);
+        }
+
+        void write(double &d)
+        {
+            write_double(d);
+        }
+        void write(const double &d)
+        {
+            write_double(d);
+        }
+
 
 
         template <typename T>
