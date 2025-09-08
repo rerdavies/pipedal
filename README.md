@@ -20,17 +20,19 @@ Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](htt
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats. 
 
-PiPedal will also run on Ubuntu 24.04,  24.10, or 25.04 (amd64/x64 or aarch64). Make sure you follow the [Ubuntu post-install instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure your Ubuntu OS is using a  realtime-capable kernel.
+PiPedal will also run on Ubuntu 24.04,  24.10, or 25.04 (amd64/x64 or aarch64). Make sure you follow the [Ubuntu post-install instructions](https://rerdavies.github.io/pipedal/Configuring.html) to ensure that your Ubuntu OS is using a  realtime-capable kernel.
 
 PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
 
-Install the [PiPedal Remote Android app](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) to get one-click access to PiPedal via Wi-Fi or via the PiPedal Wi-Fi hotspot. Or connect from PC or Laptop via a web browser. PiPedal provides a simple configuration tool that allows you to set up the PiPedal's Wi-Fi hotspot access point on your Raspberry Pi.
+Install the [PiPedal Remote Android app](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) to get one-click access to PiPedal via Wi-Fi or via the PiPedal Wi-Fi hotspot. Or connect from PC or Laptop via a web browser. PiPedal provides a simple configuration tool that allows you to set up the PiPedal's Wi-Fi auto-hotspot access point on your Raspberry Pi.
 
 PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp collection of plugins; but it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal. Just install them on your Raspberry Pi, and they will show up in PiPedal.  
 
 
 
-If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
+If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages.
+
+&nbsp;
 
 <img src="docs/gallery/dark-sshot1.png"></img>
 

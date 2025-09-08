@@ -14,7 +14,7 @@ So I would urge you, in the meantime, to experiment with TooB Neural Amp Modeler
 
 The remainder of this page deals with issues relating to how to get the absolute best results out of TooB Neural Amp Modeler. This is not required reading. You will get excellent results if you never read what follows. The purpose of what follows is to provide an explanation of model calibration in TooB Neural Amp Modeler&mdash;how it works, why you might or might not want to use it, and how to get good results even if you don't use it. "Calibration" is a confusing feature. It doesn't entirely do what you might it expect it do do. But it does provide useful functionality that may allow you to make even better use of NAM.
 
-## Calibrating TooB Neural Amp Modeler
+### Calibrating TooB Neural Amp Modeler
 
 This feature isn't what you think it is.
 
