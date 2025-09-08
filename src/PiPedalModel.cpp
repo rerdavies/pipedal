@@ -2033,6 +2033,69 @@ std::shared_ptr<Lv2PluginInfo> PiPedalModel::GetPluginInfo(const std::string &ur
     return pluginHost.GetPluginInfo(uri);
 }
 
+
+void PiPedalModel::UpdateDefaults(SnapshotValue&snapshotValue, const PedalboardItem*pedalboardItem_)
+{
+    std::shared_ptr<Lv2PluginInfo> pPlugin = pluginHost.GetPluginInfo(pedalboardItem_->uri());
+    if (!pPlugin)
+    {
+        if (pedalboardItem_->uri() == SPLIT_PEDALBOARD_ITEM_URI)
+        {
+            pPlugin = GetSplitterPluginInfo();
+        }
+    }
+    if (pPlugin)
+    {
+        //////// PLUGIN SPECIFIC UPGRADES //////////////////////
+        if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
+        {
+            ControlValue *pVersion = snapshotValue.GetControlValue("version");
+            if (pVersion == nullptr) {
+                ControlValue *pValue = snapshotValue.GetControlValue("inputCalibrationMode");
+                if (pValue == nullptr)
+                {
+                    // calibration is OFF when upgradfing.
+                    snapshotValue.SetControlValue("inputCalibrationMode", 0.0f);
+                }
+                // convert old gate threshold to new gate threshold.
+                ControlValue *pGateValue = snapshotValue.GetControlValue("gate");
+                if (pGateValue) {
+                    float value = pGateValue->value();
+                    // Is the gate disabled?
+                    if (value <= -100.0f)
+                    {
+                        value = -120.0f; // "disabled in new range."
+                    } else {
+                        value = value * 0.5; // correct the bug in original implementation.
+                    }
+                    snapshotValue.SetControlValue("gate", value);
+                }
+                snapshotValue.SetControlValue("version", 0.0f);
+            }
+        }
+        if (pPlugin->piPedalUI())
+        {
+            PiPedalUI::ptr piPedalUI = pPlugin->piPedalUI();
+            std::set<std::string> validFileProperties;
+            for (auto &fileProperty : piPedalUI->fileProperties())
+            {
+                validFileProperties.insert(fileProperty->patchProperty());
+            }
+            for (auto i = snapshotValue.pathProperties_.begin(); i != snapshotValue.pathProperties_.end(); /**/)
+            {
+                if (!validFileProperties.contains(i->first))
+                {
+                    i = snapshotValue.pathProperties_.erase(i);
+                }
+                else
+                {
+                    ++i;
+                }
+            }
+        }
+    }
+}
+
 void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered_map<int64_t, PedalboardItem *> &itemMap)
 {
     itemMap[pedalboardItem->instanceId()] = pedalboardItem;
@@ -2161,9 +2224,9 @@ void PiPedalModel::UpdateDefaults(Snapshot *snapshot, std::unordered_map<int64_t
             // plugin is no longer present. Remove from the snapshot.
             snapshot->values_.erase(snapshot->values_.begin() + i);
             --i;
+        } else {
+            UpdateDefaults(value, f->second);
         }
-        // missing values in snapshots get filled in with plugin defaults at load time,
-        // so we don't need to actually populate the missing values.
     }
     for (auto &snapshotValue : snapshot->values_)
     {
@@ -2174,11 +2237,12 @@ void PiPedalModel::UpdateDefaults(Pedalboard *pedalboard)
 {
     // add missing values.
     std::unordered_map<int64_t, PedalboardItem *> itemMap;
-    for (size_t i = 0; i < pedalboard->GetAllPlugins().size(); ++i)
+    auto allPlugins = pedalboard->GetAllPlugins();
+    for (size_t i = 0; i < allPlugins.size(); ++i)
     {
-        UpdateDefaults(&(pedalboard->items()[i]), itemMap);
+        UpdateDefaults(allPlugins[i], itemMap);
     }
-    // set all missiong values on snapshots to default values.
+    // set all missing values on snapshots to default values.
     for (auto snapshot : pedalboard->snapshots())
     {
         if (snapshot)
@@ -2190,7 +2254,7 @@ void PiPedalModel::UpdateDefaults(Pedalboard *pedalboard)
 
 PluginPresets PiPedalModel::GetPluginPresets(const std::string &pluginUri)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutex); 
 
     return storage.GetPluginPresets(pluginUri);
 }
