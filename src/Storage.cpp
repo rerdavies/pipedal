@@ -228,7 +228,6 @@ static void CopyDirectory(const std::filesystem::path &source, const std::filesy
 void Storage::MaybeCopyDefaultPresets()
 {
     auto presetsDirectory = this->GetPresetsDirectory();
-    auto presetsDirectory = this->GetPresetsDirectory();
     auto presetsConfigDirectory = this->configRoot / "default_presets" / "presets";
 
     if (!std::filesystem::exists(presetsDirectory / "index.banks"))

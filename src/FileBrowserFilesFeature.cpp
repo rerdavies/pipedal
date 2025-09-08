@@ -38,13 +38,13 @@ namespace fs = std::filesystem;
 
 
 
-inline uint32_t BrowserFilesVersionInfo::Version() const { return version; }
-inline void BrowserFilesVersionInfo::Version(uint32_t value) { version = value; }
+uint32_t BrowserFilesVersionInfo::Version() const { return version; }
+void BrowserFilesVersionInfo::Version(uint32_t value) { version = value; }
 
-inline const std::vector<std::string> &BrowserFilesVersionInfo::InstalledFiles() const {
+const std::vector<std::string> &BrowserFilesVersionInfo::InstalledFiles() const {
     return installedFiles;
 }
-inline bool BrowserFilesVersionInfo::IsInstalled(const std::string &file) const
+bool BrowserFilesVersionInfo::IsInstalled(const std::string &file) const
 {
     return installedFileMap.contains(file);
 }
