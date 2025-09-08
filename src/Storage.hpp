@@ -66,8 +66,6 @@ struct PluginPresetValues {
 };
 
 
-// controls user-defined storage. Implmentation hidden to allow to later migration to a database (perhaps)
-
 class Storage  {
 private:
     std::filesystem::path dataRoot;
@@ -81,7 +79,7 @@ private:
     
 private:
     void FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const;
-
+    void UpgradeFactoryPresets();
     void MaybeCopyDefaultPresets();
     static std::string SafeEncodeName(const std::string& name);
     static std::string SafeDecodeName(const std::string& name);

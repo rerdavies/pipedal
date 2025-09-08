@@ -41,6 +41,7 @@
 #include "AudioFiles.hpp"
 #include "Utf8Utils.hpp"
 #include "AtomConverter.hpp"
+#include "FileBrowserFilesFeature.hpp"
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -222,23 +223,122 @@ static void CopyDirectory(const std::filesystem::path &source, const std::filesy
         }
     }
 }
+
+
 void Storage::MaybeCopyDefaultPresets()
 {
     auto presetsDirectory = this->GetPresetsDirectory();
+    auto presetsDirectory = this->GetPresetsDirectory();
+    auto presetsConfigDirectory = this->configRoot / "default_presets" / "presets";
 
     if (!std::filesystem::exists(presetsDirectory / "index.banks"))
     {
-        CopyDirectory(this->configRoot / "default_presets" / "presets",
-                      presetsDirectory);
+        fs::copy(presetsConfigDirectory / "index.banks", presetsDirectory / "index.banks");
+        fs::copy(presetsConfigDirectory / "Default+Bank.bank", presetsDirectory / "Default+Bank.bank");
     }
+}
+void Storage::UpgradeFactoryPresets()
+{
+    auto presetsDirectory = this->GetPresetsDirectory();
+    auto presetsConfigDirectory = this->configRoot / "default_presets" / "presets";
 
-    // Obsolete: TooB effects now have correct preset declarations.
-    // auto pluginDirectory = this->GetPluginPresetsDirectory();
-    // if (!std::filesystem::exists(pluginDirectory / "index.json"))
-    // {
-    //     CopyDirectory(this->configRoot / "default_presets" / "plugin_presets",
-    //                   pluginDirectory);
-    // }
+    using namespace ::pipedal::implementation;
+
+    BrowserFilesVersionInfo defaultConfigPresetsVersion;
+    fs::path defaultConfigPresetsVersionFile = presetsConfigDirectory / "banks.versionInfo";
+    defaultConfigPresetsVersion.Load(defaultConfigPresetsVersionFile);
+
+    BrowserFilesVersionInfo presetsVersion;
+    fs::path defaultPresetsVersionFile = presetsDirectory / "banks.versionInfo";
+    presetsVersion.Load(defaultPresetsVersionFile);
+
+    // Maybe install or upgrade factory presets.
+    if (defaultConfigPresetsVersion.Version() > presetsVersion.Version() || defaultConfigPresetsVersion.Version() == 0)
+    {
+
+        std::string name = "Factory Presets";
+        BankFile newFactoryPresets;
+        {
+            fs::path defaultBankPath = presetsConfigDirectory / "Default+Bank.bank";
+            try
+            {
+                std::ifstream is(defaultBankPath);
+                json_reader reader(is);
+                reader.read(&newFactoryPresets);
+            }
+            catch (const std::exception &e)
+            {
+                Lv2Log::error(SS("Failed to isntall factory presets. Can't read " << defaultBankPath << "."));
+            }
+        }
+        newFactoryPresets.name("Factory Presets");
+
+        BankIndexEntry *existingEntry = bankIndex.getEntryByName(name);
+        if (existingEntry == nullptr)
+        {
+            BankFile bankFile;
+            bankFile.name(name);
+
+            for (auto &presetEntry : newFactoryPresets.presets())
+            {
+                bankFile.addPreset(presetEntry->preset(), -1);
+            }
+
+            int64_t instanceId = bankFile.presets()[0]->instanceId();
+            bankFile.selectedPreset(instanceId);
+            SaveBankFile(name, bankFile);
+            this->bankIndex.addBank(-1, name);
+            this->SaveBankIndex();
+        }
+        else
+        {
+
+            // either use the current bank (if the factory bank is selected), or create a new one.
+            BankFile bankFile;
+            bankFile.name(name);
+            BankFile *pFactoryPresetsBank = nullptr;
+            bool usingCurrentBank = false;
+            if (bankIndex.selectedBank() == existingEntry->instanceId())
+            {
+                usingCurrentBank = true;
+                pFactoryPresetsBank = &(this->currentBank);
+            }
+            else
+            {
+                LoadBankFile(name, &bankFile);
+                pFactoryPresetsBank = &bankFile;
+            }
+            // index existing presets.
+            std::unordered_map<std::string, size_t> nameToPositionIndex;
+            for (size_t i = 0; i < pFactoryPresetsBank->presets().size(); ++i)
+            {
+                auto &preset = pFactoryPresetsBank->presets()[i];
+                nameToPositionIndex[preset->preset().name()] = i;
+            }
+
+            // merge new presets into the existing ones (overwriting as neccessary)
+            for (auto &newPresetEntry : newFactoryPresets.presets())
+            {
+                const std::string name = newPresetEntry->preset().name();
+
+                auto f = nameToPositionIndex.find(name);
+                if (f != nameToPositionIndex.end())
+                {
+                    size_t postition = f->second;
+                    // overwrite the existing entry.
+                    pFactoryPresetsBank->presets()[postition]->preset(newPresetEntry->preset());
+                }
+                else
+                {
+                    pFactoryPresetsBank->addPreset(newPresetEntry->preset());
+                }
+            }
+            SaveBankFile(name, *pFactoryPresetsBank);
+
+            presetsVersion.Version(defaultConfigPresetsVersion.Version());
+            presetsVersion.Save(defaultPresetsVersionFile);
+        }
+    }
 }
 void Storage::Initialize()
 {
@@ -269,6 +369,7 @@ void Storage::Initialize()
     LoadWifiConfigSettings();
     LoadWifiDirectConfigSettings();
     LoadUserSettings();
+    UpgradeFactoryPresets();
 }
 
 void Storage::LoadBank(int64_t instanceId)
@@ -1248,7 +1349,6 @@ void Storage::SetPluginPresetIndexVersion(uint64_t version)
         this->pluginPresetIndex.version_ = version;
         SavePluginPresetIndex();
     }
-        
 }
 
 bool Storage::HasPluginPresets(const std::string &pluginUri) const
@@ -1428,7 +1528,7 @@ PluginPresetValues Storage::GetPluginPresetValues(const std::string &pluginUri, 
             {
                 result.controls.push_back(ControlValue(valuePair.first.c_str(), valuePair.second));
             }
-            for (const auto&pair: preset.pathProperties_)
+            for (const auto &pair : preset.pathProperties_)
             {
                 result.pathProperties[pair.first] = pair.second;
             }
@@ -1503,8 +1603,7 @@ uint64_t Storage::SavePluginPreset(
 
 uint64_t Storage::SavePluginPreset(
     const std::string &pluginUri,
-    PluginPreset &pluginPreset
-)
+    PluginPreset &pluginPreset)
 {
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
@@ -1797,6 +1896,17 @@ static bool ensureNoDotDot(const std::filesystem::path &path)
     return true;
 }
 
+static bool isInfoFile(const FileEntry &l)
+{
+    if (l.displayName_.starts_with("LICENSE"))
+        return true;
+    if (l.displayName_.starts_with("README"))
+        return true;
+    if (l.displayName_.find(".md") == l.displayName_.length() - 3)
+        return true;
+    return false;
+}
+
 static void AddFilesToResult(
     FileRequestResult &result,
     const ModFileTypes::ModDirectory *modDirectoryInfo, // yyx
@@ -1861,6 +1971,12 @@ static void AddFilesToResult(
         if (l.isDirectory_ != r.isDirectory_)
         {
             return l.isDirectory_ > r.isDirectory_;
+        }
+        bool lIsInfoFile = isInfoFile(l);
+        bool rIsInfoFile = isInfoFile(r);
+        if (lIsInfoFile != rIsInfoFile)
+        {
+            return lIsInfoFile > rIsInfoFile;
         }
         return collator->Compare(l.displayName_,r.displayName_) < 0; });
 }
@@ -1931,6 +2047,13 @@ static void AddTracksToResult(
                 {
                     return l.isDirectory_ > r.isDirectory_;
                 }
+                bool lIsInfoFile = isInfoFile(l);
+                bool rIsInfoFile = isInfoFile(r);
+                if (lIsInfoFile != rIsInfoFile)
+                {
+                    return lIsInfoFile < rIsInfoFile;
+                }
+
                 return collator->Compare(l.displayName_, r.displayName_) < 0;
             });
         // Add audio files.
@@ -2702,7 +2825,7 @@ std::string Storage::ToAbstractPathJson(const std::string &pathJson)
 {
     json_variant v = json_variant::parse(pathJson);
 
-    v = AtomConverter::AbstractPath(v,GetPluginUploadDirectory().string());
+    v = AtomConverter::AbstractPath(v, GetPluginUploadDirectory().string());
 
     return v.to_string();
 }
@@ -2710,7 +2833,7 @@ std::string Storage::FromAbstractPathJson(const std::string &pathJson)
 {
     json_variant v = json_variant::parse(pathJson);
 
-    v = AtomConverter::MapPath(v,GetPluginUploadDirectory().string());
+    v = AtomConverter::MapPath(v, GetPluginUploadDirectory().string());
 
     return v.to_string();
 }
