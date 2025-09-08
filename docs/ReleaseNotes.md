@@ -1,6 +1,6 @@
 # Release Notes
 
-## PiPedal 1.5.90 Beta (Release Candidate)
+## PiPedal 1.5.91 Beta (Release Candidate)
 
 #### Themes for this release
 

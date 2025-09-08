@@ -207,6 +207,7 @@ namespace pipedal
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
         void FireLv2StateChanged(int64_t instanceId, const Lv2PluginState &lv2State);
+        void UpdateDefaults(SnapshotValue&snapshotValue, const PedalboardItem*pedalboardItem);
         void UpdateDefaults(Snapshot *snapshot, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
         void UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
         void UpdateDefaults(Pedalboard *pedalboard);

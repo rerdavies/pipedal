@@ -73,6 +73,12 @@ public:
     {
 
     }
+    ControlValue(const std::string&key, float value)
+    :key_(key)
+    , value_(value)
+    {
+
+    }
     GETTER_SETTER_REF(key)
     GETTER_SETTER_REF(value)
 
@@ -174,6 +180,24 @@ public:
     Lv2PluginState lv2State_;
     std::map<std::string,std::string> pathProperties_;
     DECLARE_JSON_MAP(SnapshotValue);
+
+    ControlValue*GetControlValue(const std::string& key) {
+        for (ControlValue&controlValue: controlValues_) {
+            if (controlValue.key() == key) {
+                return &controlValue;
+            }
+        }
+        return nullptr;
+    }
+    void SetControlValue(const std::string& key,float value) {
+        for (ControlValue&controlValue: controlValues_) {
+            if (controlValue.key() == key) {
+                controlValue.value(value);
+                return;
+            }
+        }
+        controlValues_.push_back(ControlValue{key,value});
+    }
     
 };
 
