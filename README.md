@@ -13,7 +13,7 @@ Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.5.
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-#### NEW version 1.5.90 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. New Phaser and Graphic Equalizer plugins.
+#### NEW version 1.5.90 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. TooB NAM calibration, manipulation of i/r files in Toob Convolution Reverb, new Parametric EQ and 3 Band EQ plugins, and MORE!
 
 &nbsp;
 
