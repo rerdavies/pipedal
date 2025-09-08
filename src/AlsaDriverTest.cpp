@@ -64,7 +64,7 @@ public:
 
         AlsaFormatEncodeDecodeTest(this);
 
-        JackServerSettings serverSettings("hw:M2",48000,32,3);
+        JackServerSettings serverSettings("hw:M2","hw:M2",48000,32,3);
 
         JackConfiguration jackConfiguration;
         if (useJack)

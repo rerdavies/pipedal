@@ -1,4 +1,4 @@
-
+#!/bin/bash
 rm -rf ./lv2/aarch64/*
 
 cp -R /usr/lib/lv2/ToobAmp.lv2/ ./lv2/aarch64/

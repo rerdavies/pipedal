@@ -31,7 +31,9 @@ namespace pipedal
         bool isOnboarding_ = true;
         bool isJackAudio_ = JACK_HOST ? true : false;
         bool rebootRequired_ = false;
-        std::string alsaDevice_;
+        std::string alsaInputDevice_;
+        std::string alsaOutputDevice_;
+        std::string alsaDevice_; // legacy
         uint64_t sampleRate_ = 0;
         uint32_t bufferSize_ = 64;
         uint32_t numberOfBuffers_ = 3;
@@ -39,10 +41,14 @@ namespace pipedal
     public:
         JackServerSettings();
         JackServerSettings(
-            const std::string alsaInputDevice,
-            uint64_t sampleRate, uint32_t bufferSize, uint32_t numberOfBuffers)
+            const std::string &alsaInputDevice,
+            const std::string &alsaOutputDevice,
+            uint64_t sampleRate,
+            uint32_t bufferSize,
+            uint32_t numberOfBuffers)
             : valid_(true),
-              alsaDevice_(alsaInputDevice),
+              alsaInputDevice_(alsaInputDevice),
+              alsaOutputDevice_(alsaOutputDevice),
               sampleRate_(sampleRate),
               bufferSize_(bufferSize),
               numberOfBuffers_(numberOfBuffers),
@@ -51,9 +57,13 @@ namespace pipedal
         }
 
         uint64_t GetSampleRate() const { return sampleRate_; }
+
         uint32_t GetBufferSize() const { return bufferSize_; }
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
-        const std::string &GetAlsaInputDevice() const { return alsaDevice_; }
+        const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
+        const std::string &GetAlsaOutputDevice() const { return alsaOutputDevice_; }
+        const std::string &GetLegacyAlsaDevice() const { return alsaDevice_; } //legacy
+        void SetLegacyAlsaDevice(const std::string &d) { alsaDevice_ = d; }
         void UseDummyAudioDevice() {
             this->valid_ = true;
             if (sampleRate_ == 0) sampleRate_ = 48000;
@@ -69,14 +79,6 @@ namespace pipedal
 
         bool IsValid() const { return valid_; }
 
-        // JackServerSettings(uint64_t sampleRate, uint32_t bufferSize, uint32_t numberOfBuffers)
-        // {
-        //     this->valid_ = true;
-        //     this->rebootRequired_ = true;
-        //     this->sampleRate_ = sampleRate;
-        //     this->bufferSize_ = bufferSize;
-        //     this->numberOfBuffers_ = numberOfBuffers;
-        // }
         void WriteDaemonConfig(); // requires root perms.
         void SetRebootRequired(bool value)
         {
@@ -87,9 +89,14 @@ namespace pipedal
             isOnboarding_ = value;
         }
 
-        bool Equals(const JackServerSettings &other)
+        bool Equals(const JackServerSettings &other) const
         {
-            return this->alsaDevice_ == other.alsaDevice_ && this->sampleRate_ == other.sampleRate_ && this->bufferSize_ == other.bufferSize_ && this->numberOfBuffers_ == other.numberOfBuffers_;
+        return this->alsaInputDevice_  == other.alsaInputDevice_ &&
+                   this->alsaOutputDevice_ == other.alsaOutputDevice_ &&
+                   this->alsaDevice_       == other.alsaDevice_ &&
+                   this->sampleRate_       == other.sampleRate_ &&
+                   this->bufferSize_       == other.bufferSize_ &&
+                   this->numberOfBuffers_  == other.numberOfBuffers_;
         }
 
         DECLARE_JSON_MAP(JackServerSettings);
