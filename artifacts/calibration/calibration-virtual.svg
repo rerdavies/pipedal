@@ -509,7 +509,7 @@
        inkscape:transform-center-x="-2.9606351"
        inkscape:transform-center-y="-0.93726834" /><text
        xml:space="preserve"
-       style="font-weight:bold;font-size:3.175px;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';text-align:end;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.799999;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;stop-color:#000000;font-style:normal;font-stretch:normal;font-variant:normal;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.175px;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:end;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.799999;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;stop-color:#000000"
        x="112.20033"
        y="25.133066"
        id="text12990"
@@ -517,9 +517,9 @@
        inkscape:transform-center-y="-1.3486"><tspan
          sodipodi:role="line"
          id="tspan12988"
-         style="stroke:none;stroke-width:0.8;-inkscape-font-specification:'Roboto, Bold';font-family:Roboto;font-weight:bold;font-style:normal;font-stretch:normal;font-variant:normal;font-size:3.175px;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.175px;font-family:Roboto;-inkscape-font-specification:'Roboto, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke:none;stroke-width:0.8"
          x="112.20033"
-         y="25.133066">ADC</tspan></text><g
+         y="25.133066">DAC</tspan></text><g
        id="g14486"
        transform="matrix(0.89051808,0,0,0.89051808,222.41305,100.52726)"><circle
          r="5.6253676"

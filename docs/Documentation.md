@@ -11,6 +11,8 @@
 #### [PiPedal on Ubuntu](Ubuntu.md)
 #### [Headless Operation](HeadlessOperation.md)
 #### [Configuring PiPedal After Installation](Configuring.md)  
+&nbsp;
+#### [Using TooB Neural Amp Modeler](UsingNAM.md)  
 #### [An intro to Snapshots](Snapshots.md)  
 #### [Choosing a USB Audio Adapter](ChoosingAUsbAudioAdapter.md)  
 #### [Optimizing Audio Latency](AudioLatency.md)  

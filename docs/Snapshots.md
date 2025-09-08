@@ -53,4 +53,4 @@ When  you click the edit button in the Performance View, you are editing control
 
 
 --------
-[Configuring PiPedal After Installation](Configuring.md) | [Up](Documentation.md) | | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)
+[<< Using TooB Neural Amp Modeler](UsingNAM.md) | [Up](Documentation.md) | | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)

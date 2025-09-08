@@ -51,6 +51,9 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 
 ### [Headless Operation](https://rerdavies.github.io/pipedal/HeadlessOperation.html)
 ### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.html)
+
+&nbsp;
+### [Using TooB Neural Amp Modeler](https://rerdavies.github.io/pipedal/UsingNAM.html)
 ### [An Intro to Snapshots](https://rerdavies.github.io/pipedal/Snapshots.html)
 ### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.html)
 ### [Optimizing Audio Latency](https://rerdavies.github.io/pipedal/AudioLatency.html)
