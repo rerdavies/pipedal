@@ -14,9 +14,9 @@ There is, however, no requirement to perform this calibration step. You can simp
 
 However, there is some value to understanding the calibration process, as it may help you understand how the TooB Neural Amp Modeler works, and it may help you quickly dial in a sound that is close to what you want, which you can then tweak to your liking.
 
-If you frankly don't much care about any of this, skip to the section "What if I Don't Want to Calibrate my Setup?", and contiue from there.
+If you frankly don't much care about any of this (and why would you?), skip to the section "What if I Don't Want to Calibrate my Setup?", for useful guidance on trimming input and output levels for uncalibrated setups.
 
-## What Calibration Actually Does
+### What Calibration Actually Does
 
 The purpose of the calibration process is to precisely replicate the sound of a physical system
 
@@ -50,13 +50,13 @@ Note that if you change the volume level of your guitar, or if you change the at
 
 Note also, that calibration generally only works for the first NAM plugin in an effect chain. Although it is theoretically possible to calibrate the output level of a model that emulates a guitar effect pedal, this is not a common use case, and is not well supported by existing models. And for amplifier models, there is no reasonable interpration of output calibration, since the output signal of an amplifier is not intended to be fed into another amplifier, and is often a recording of a speaker as recorded through a microphone, for which there is no sensible corresponding voltage leve.
 
-## What if I Don't Want to Calibrate my Setup?
+### What if I Don't Want to Calibrate my Setup?
 
 Well, then you won't get calibrated output. But you will still get perfectly good sound. You can simply adjust the "Input Gain" control in TooB Neural Amp Modeler to suit your own tastes and playing style. The sound of the amp model is determined by the selected model and its parameters, not by this calibration process.
 
 There is some value to turning calibration on, even if you don't actually perform the calibration process. You can set a fictional dBU level in the TooB Neural Amp Modeler. Typical dBU measurements for guitar signals are usually in the range of -20 dBU to -2 dBU. Humbucker pickups tend to be in the -10 dBU to -2 dBU range, and are nominally somewhere around -6 dBU. Single coil pickets tend to be somewhere in the -6 to -20 dBU range, and are nomially about -11 dBU. So if you were to set the calibration value to -6 dBU, and trim your digital signal to 0 dBFS, then you would feed the model with data that is close to what the model would expect where you to be playing with a fictional guitar that produces -6 dBU voltage levels. So not calibrated, but almost certainly in the right range for what the NAM model expects. For models that explicitly identify themselves as models that have been calibrated for single-coil pickups, you may want to set the fictional Calibration value to -11 dBU. 
 
-## Recommendeed Settings for Uncalibrated Guitar Signals
+### Recommendeed Settings for Uncalibrated Guitar Signals
 
 There are two types of .nam profiles that you may encounter in the wild: Calibrated models, and Uncalibrated models. For the calibration process to work properly, the .nam profile must provide calibration metadata to TooB Neural Amp Modeler, that indicates the expected input level for the guitar signal. You can check if a .nam profile provides calibration data loading the model and checking to see with the "Input Calibration" control is enabled in TooB Neural Amp Modeler. If the control is disabled, then the model is Uncalibrated.
 
@@ -66,11 +66,11 @@ When using calibrated models, We recommend that you trim input levels to TooB Ne
 
 When using uncalibrated models, things are, unfortunately, more complicated. There is no set convention for correct digital signal levels for uncalibrated profiles. Uncalibrated models may expect to be fed input signals that are anywhere from about -6 dBFS to as much a -30 dBFS. Without metadata from the profile file, there is no way for TooB Nueral Amp Modeler to guess what the profile actually expects. When a model is uncalibrated, the "Input Calibration" control in TooB Neural Amp Modeler is disabled. In this case, you will need to adjust the "Input Gain" control to suit your own tastes and playing style, and ensure that the model is being fed a signal that isn't going to overdrive the model. A good starting point is to trim input levels to TooB Neural Amp Modeler to 0 dBFS (peak), and then set the "Input Gain" control to -12 dB. You can then adjust the "Input Gain" contol until you get a sound that you like. 
 
-## Overdriven Models
+### Overdriven Models
 
 The problem of "overdriven" models is a difficult one. If you feed audio signals to a model that are outside the range of data that they were trained on, NAM models will often produce unpleasant artifacts. The sound is not as disctintive as that of hard digital clipping; but is often unpleasant nonetheless. Overdriven models tend to produce output that is "fizzy", or "muddy", and just does not sound like the amp which is being modelled. If you are not getting good output from an uncalibrated model, try reducing the  "Input Gain" control (and usually the "Output Gain" control as well), until the unpleasant artifacts go away.
 
-## Output Calibration
+### Output Calibration
 
 In theory, the output of NAM models can also be calibrated; but the circumstances under which model output calibration is valid or useful are extremely rare. Output calibration would (for example) allow you to replicate voltage levels output by a NAM model of a guitar effect pedal. This would allow you to replicate, for example, the sound of a guitar effect pedal placed before an amp model. However, in practice, NAM models rarely have meaningful output calibration data. And for amp models, there is no possible meaninful interpreation of model output calbiration data, since the output of an amplifier is not intended to be fed into another amplifier.
 
