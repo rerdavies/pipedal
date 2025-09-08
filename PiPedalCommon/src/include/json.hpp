@@ -429,12 +429,7 @@ namespace pipedal
         void write(float f) {
             write_float(f);
         }
-        void write(float &f) {
-            write_float(f);
-        }
-        void write(const float &f) {
-            write_float(f);
-        }
+
         void write_double(double f)
         {
             if ((std::isnan(f) || std::isinf(f)))
@@ -455,17 +450,6 @@ namespace pipedal
         {
             write_double(d);
         }
-
-        void write(double &d)
-        {
-            write_double(d);
-        }
-        void write(const double &d)
-        {
-            write_double(d);
-        }
-
-
 
         template <typename T>
         void write(const std::vector<T> &value)
