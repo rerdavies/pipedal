@@ -168,7 +168,7 @@
     "cSpell.ignoreWords": [
         "nammodel"
     ],
-    "cSpell.enabled": false,
+    "cSpell.enabled": true,
     
     // Disable all automatic completion suggestions - only show when Ctrl+Space is pressed
     "editor.quickSuggestions": {
