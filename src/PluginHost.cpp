@@ -209,6 +209,13 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     mod__fileTypes = lilv_new_uri(pWorld, "http://moddevices.com/ns/mod#fileTypes");
     mod__supportedExtensions = lilv_new_uri(pWorld, "http://moddevices.com/ns/mod#supportedExtensions");
+
+    buf_size__minBlockLength = lilv_new_uri(pWorld, LV2_BUF_SIZE__minBlockLength);
+    buf_size__maxBlockLength = lilv_new_uri(pWorld, LV2_BUF_SIZE__maxBlockLength);
+    buf_size__fixedBlockLength = lilv_new_uri(pWorld, LV2_BUF_SIZE__fixedBlockLength);
+    buf_size__coarseBlockLength = lilv_new_uri(pWorld, LV2_BUF_SIZE__coarseBlockLength);
+
+
 }
 
 void PluginHost::LilvUris::Free()

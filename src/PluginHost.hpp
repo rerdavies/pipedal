@@ -850,6 +850,12 @@ namespace pipedal
             AutoLilvNode mod__supportedExtensions;
             AutoLilvNode pipedalui__fileTypes;
 
+            AutoLilvNode buf_size__minBlockLength;
+            AutoLilvNode buf_size__maxBlockLength;
+            AutoLilvNode buf_size__fixedBlockLength;
+            AutoLilvNode buf_size__coarseBlockLength;
+
+
             
         };
         LilvUris* lilvUris = nullptr;
