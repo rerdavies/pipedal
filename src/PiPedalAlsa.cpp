@@ -23,6 +23,7 @@
 #include "Lv2Log.hpp"
 #include <mutex>
 #include <algorithm>
+#include "Finally.hpp"
 
 using namespace pipedal;
 
@@ -45,6 +46,14 @@ void PiPedalAlsaDevices::cacheDevice(const std::string &name, const AlsaDeviceIn
 {
     cachedDevices[name] = deviceInfo;
 }
+
+static bool isSupportedAudioDevice(const AlsaDeviceInfo &d)
+{
+    std::string name = d.name_ + " " + d.longName_;
+    std::transform(name.begin(), name.end(), name.begin(), [](char c)
+                   { return std::tolower(c); });
+    return name.find("hdmi") != std::string::npos || name.find("bcm2835") != std::string::npos;
+};
 
 std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 {
@@ -79,13 +88,18 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                 continue;
             }
 
-            snd_ctl_card_info_t *alsaInfo;
+            Finally ffhDevice{[hDevice]()
+                              { snd_ctl_close(hDevice); }};
+
+            snd_ctl_card_info_t *alsaInfo = nullptr;
             if (snd_ctl_card_info_malloc(&alsaInfo) != 0)
             {
                 Lv2Log::error("Failed to allocate ALSA card info");
-                snd_ctl_close(hDevice);
                 continue;
             }
+
+            Finally ffCardInfo{[alsaInfo]()
+                               { snd_ctl_card_info_free(alsaInfo); }};
 
             err = snd_ctl_card_info(hDevice, alsaInfo);
             if (err == 0)
@@ -98,32 +112,38 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                 info.name_ = snd_ctl_card_info_get_name(alsaInfo);
                 info.longName_ = snd_ctl_card_info_get_longname(alsaInfo);
 
-                snd_pcm_t *hDevice = nullptr;
+                snd_pcm_t *captureDevice = nullptr;
+                snd_pcm_t *playbackDevice = nullptr;
+                bool captureOk = snd_pcm_open(&captureDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK) == 0;
+                bool playbackOk = snd_pcm_open(&playbackDevice, cardId.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) == 0;
+                Finally ffCaptureDevice{
+                    [captureDevice]
+                    { if (captureDevice) snd_pcm_close(captureDevice); }};
+                Finally ffPlaybackDevice{
+                    [playbackDevice]
+                    { if (playbackDevice) snd_pcm_close(playbackDevice); }};
 
-                // must support capture AND playback
-                err = snd_pcm_open(&hDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, 0);
-                if (err == 0)
+                info.supportsCapture_ = captureOk;
+                info.supportsPlayback_ = playbackOk;
+
+                if (captureOk || playbackOk)
                 {
-                    snd_pcm_close(hDevice);
-                }
-                if (err == 0)
-                {
-                    err = snd_pcm_open(&hDevice, cardId.c_str(), SND_PCM_STREAM_PLAYBACK, 0);
-                }
-                if (err == 0)
-                {
-                    snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice; // xxx: HECK NO!
+                    snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
                     snd_pcm_hw_params_t *params = nullptr;
                     err = snd_pcm_hw_params_malloc(&params);
+
                     if (err == 0)
                     {
+                        Finally ffParams{[params]
+                                         { snd_pcm_hw_params_free(params); }};
+
                         err = snd_pcm_hw_params_any(hDevice, params);
                         if (err == 0)
                         {
                             unsigned int minRate = 0, maxRate = 0;
                             snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
                             int dir;
-                            
+
                             err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                             if (err == 0)
                             {
@@ -148,7 +168,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                             {
                                 Lv2Log::warning(SS("Failed to get minimum sample rate for device '" << info.name_ << "'."));
                             }
-                            
+
                             if (err == 0)
                             {
                                 err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
@@ -166,17 +186,9 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 
                                 info.minBufferSize_ = (uint32_t)minBufferSize;
                                 info.maxBufferSize_ = (uint32_t)maxBufferSize;
-                                cacheDevice(info.name_, info);
-                                result.push_back(info);
                             }
                         }
                     }
-                    if (params != nullptr)
-                        snd_pcm_hw_params_free(params);
-                   if (captureOk) // HECK NO!! REVIEW THIS!
-                        snd_pcm_close(captureDevice);
-                    if (playbackOk && playbackDevice != captureDevice)
-                        snd_pcm_close(playbackDevice);
                     if (err == 0)
                     {
                         cacheDevice(info.name_, info);
@@ -195,30 +207,25 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                     }
                 }
             }
-            snd_ctl_card_info_free(alsaInfo);
-            snd_ctl_close(hDevice);
         }
-    }
-    snd_config_update_free_global();
-
-    auto isFiltered = [](const AlsaDeviceInfo &d) {
-        std::string name = d.name_ + " " + d.longName_;
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c){return std::tolower(c);});
-        return name.find("hdmi") != std::string::npos || name.find("bcm2835") != std::string::npos;
-    };
-
-    std::vector<AlsaDeviceInfo> filtered;
-    for (auto &d : result)
-    {
-        if (!isFiltered(d)) filtered.push_back(d);
     }
 
     Lv2Log::debug("GetAlsaDevices --");
-    for (auto &device : filtered)
+
+    std::vector<AlsaDeviceInfo> filtered;
+    for (auto &device : result)
     {
-        Lv2Log::debug(SS("   " << device.name_ << " " << device.longName_ << " " << device.cardId_));
+        if (!isSupportedAudioDevice(device))
+        {
+            filtered.push_back(device);
+            Lv2Log::debug(
+                SS("   "
+                   << device.name_ << " " << device.longName_ << " " << device.cardId_
+                   << (device.supportsCapture_ ? " in" : "")
+                   << (device.supportsPlayback_ ? " out" : "")));
+        }
     }
-     return filtered;
+    return filtered;
 }
 
 static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaMidiDeviceInfo::Direction direction, std::vector<AlsaMidiDeviceInfo> *result)
@@ -289,11 +296,12 @@ static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaM
         name = snd_rawmidi_info_get_name(info);
         sub_name = snd_rawmidi_info_get_subdevice_name(info);
         // get card name.
-        
+
         std::string cardName;
         snd_ctl_card_info_t *card_info = nullptr;
         snd_ctl_card_info_malloc(&card_info);
-        if (snd_ctl_card_info(ctl, card_info) == 0) {
+        if (snd_ctl_card_info(ctl, card_info) == 0)
+        {
             cardName = snd_ctl_card_info_get_name(card_info);
         }
         snd_ctl_card_info_free(card_info);
@@ -301,7 +309,7 @@ static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaM
         {
             return;
         }
-        
+
         if (sub == 0 && sub_name[0] == '\0')
         {
             AlsaMidiDeviceInfo info;
@@ -335,7 +343,8 @@ static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaM
         {
             AlsaMidiDeviceInfo info;
             info.name_ = SS("hw:CARD=" << cardName << ",DEV=" << device);
-            if (sub != 0) {
+            if (sub != 0)
+            {
                 info.name_ = SS(info.name_ << "," << sub);
             }
             info.description_ = sub_name;

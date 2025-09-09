@@ -65,4 +65,6 @@ export default class AlsaDeviceInfo {
     sampleRates: number[] = [];
     minBufferSize: number = 0;
     maxBufferSize: number = 0; 
+    supportsCapture: boolean = true;
+    supportsPlayback: boolean = true;
 };

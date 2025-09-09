@@ -25,7 +25,8 @@ export default class JackServerSettings {
         this.isOnboarding = input.isOnboarding;
         this.isJackAudio = input.isJackAudio;
         this.rebootRequired = input.rebootRequired;
-        this.alsaDevice = input.alsaDevice?? "";
+        this.alsaInputDevice  = input.alsaInputDevice  ?? "";
+        this.alsaOutputDevice = input.alsaOutputDevice ?? "";
         this.sampleRate = input.sampleRate;
         this.bufferSize = input.bufferSize;
         this.numberOfBuffers = input.numberOfBuffers;

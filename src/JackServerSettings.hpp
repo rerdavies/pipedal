@@ -63,7 +63,11 @@ namespace pipedal
         const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
         const std::string &GetAlsaOutputDevice() const { return alsaOutputDevice_; }
         const std::string &GetLegacyAlsaDevice() const { return alsaDevice_; } //legacy
+
+        void SetAlsaInputDevice(const std::string &d){ alsaInputDevice_ = d; }
+        void SetAlsaOutputDevice(const std::string &d){ alsaOutputDevice_ = d; }
         void SetLegacyAlsaDevice(const std::string &d) { alsaDevice_ = d; }
+        
         void UseDummyAudioDevice() {
             this->valid_ = true;
             if (sampleRate_ == 0) sampleRate_ = 48000;
