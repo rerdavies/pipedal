@@ -702,7 +702,6 @@ const SettingsDialog = withStyles(
                                     onClose={() => this.setState({ showJackServerSettingsDialog: false })}
                                     onApply={(jackServerSettings) => {
                                         this.setState({
-                                            showJackServerSettingsDialog: false,
                                             jackServerSettings: jackServerSettings
                                         });
                                         this.model.setJackServerSettings(jackServerSettings);

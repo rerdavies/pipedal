@@ -20,12 +20,12 @@
 
 
 export default class JackServerSettings {
-    deserialize(input: any) : JackServerSettings{
+    deserialize(input: any): JackServerSettings {
         this.valid = input.valid;
         this.isOnboarding = input.isOnboarding;
         this.isJackAudio = input.isJackAudio;
         this.rebootRequired = input.rebootRequired;
-        this.alsaInputDevice  = input.alsaInputDevice  ?? "";
+        this.alsaInputDevice = input.alsaInputDevice ?? "";
         this.alsaOutputDevice = input.alsaOutputDevice ?? "";
         this.sampleRate = input.sampleRate;
         this.bufferSize = input.bufferSize;
@@ -41,15 +41,14 @@ export default class JackServerSettings {
     //         this.valid = true;
     //     }
     // }
-    clone(): JackServerSettings
-    {
+    clone(): JackServerSettings {
         return new JackServerSettings().deserialize(this);
     }
     valid: boolean = false;
     isOnboarding: boolean = true;
     rebootRequired = false;
     isJackAudio = false;
-    alsaInputDevice:  string = "";
+    alsaInputDevice: string = "";
     alsaOutputDevice: string = "";
     sampleRate = 48000;
     bufferSize = 64;
@@ -71,7 +70,7 @@ export default class JackServerSettings {
     }
 
     getSummaryText() {
-      if (!this.valid || !this.alsaInputDevice || !this.alsaOutputDevice) {
+        if (!this.valid || !this.alsaInputDevice || !this.alsaOutputDevice) {
             return "Not selected";
         }
 
@@ -84,9 +83,9 @@ export default class JackServerSettings {
 
         if (inDev === outDev) {
             return inDev;
-                      
+
         } else {
-            return inDev+" → "+outDev;
+            return inDev + "-> " + outDev;
         }
     }
 

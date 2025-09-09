@@ -237,6 +237,14 @@ void Storage::MaybeCopyDefaultPresets()
     }
 }
 
+static void removeFileNoThrow(const std::filesystem::path &path)
+{ 
+    try {
+        fs::remove(path);
+    } catch (const std::exception&) 
+    {
+    }
+}
 void Storage::UpgradeFactoryPresets()
 {
     auto presetsDirectory = this->GetPresetsDirectory();
@@ -256,11 +264,11 @@ void Storage::UpgradeFactoryPresets()
     if (defaultConfigPresetsVersion.Version() > presetsVersion.Version() || defaultConfigPresetsVersion.Version() == 0)
     {
         // remove TooB ML README.md
-        fs::remove("/usr/lib/lv2/ToobAmp.lv2/models/tones/README.md");
-        fs::remove("/var/pipedal/audio_uploads/ToobMlModels/model.index");
+        removeFileNoThrow("/usr/lib/lv2/ToobAmp.lv2/models/tones/README.md");
+        removeFileNoThrow("/var/pipedal/audio_uploads/ToobMlModels/model.index");
 
-        fs::remove("/var/pipedal/audio_uploads/ToobMlModels/README.md");
-        fs::remove("/var/pipedal/audio_uploads/ToobMlModels/model.index");
+        removeFileNoThrow("/var/pipedal/audio_uploads/ToobMlModels/README.md");
+        removeFileNoThrow("/var/pipedal/audio_uploads/ToobMlModels/model.index");
 
         std::string name = "Factory Presets";
         BankFile newFactoryPresets;

@@ -108,102 +108,107 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                 info.cardId_ = cardNum;
                 info.id_ = std::string("hw:") + snd_ctl_card_info_get_id(alsaInfo);
                 const char *driver = snd_ctl_card_info_get_driver(alsaInfo);
+                (void)driver;
 
                 info.name_ = snd_ctl_card_info_get_name(alsaInfo);
                 info.longName_ = snd_ctl_card_info_get_longname(alsaInfo);
 
-                snd_pcm_t *captureDevice = nullptr;
-                snd_pcm_t *playbackDevice = nullptr;
-                bool captureOk = snd_pcm_open(&captureDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK) == 0;
-                bool playbackOk = snd_pcm_open(&playbackDevice, cardId.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) == 0;
-                Finally ffCaptureDevice{
-                    [captureDevice]
-                    { if (captureDevice) snd_pcm_close(captureDevice); }};
-                Finally ffPlaybackDevice{
-                    [playbackDevice]
-                    { if (playbackDevice) snd_pcm_close(playbackDevice); }};
+                // we can't read our own device if it's open so use data that gets
+                // cached before we open audio devices.
 
-                info.supportsCapture_ = captureOk;
-                info.supportsPlayback_ = playbackOk;
-
-                if (captureOk || playbackOk)
+                AlsaDeviceInfo cachedInfo;
+                if (getCachedDevice(info.name_, &cachedInfo))
                 {
-                    snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
-                    snd_pcm_hw_params_t *params = nullptr;
-                    err = snd_pcm_hw_params_malloc(&params);
+                    // may have been plugged into a different USB connector.
+                    cachedInfo.cardId_ = info.cardId_;
+                    cachedInfo.id_ = info.id_;
+                    result.push_back(cachedInfo);
 
-                    if (err == 0)
+                }
+                else
+                {
+                    snd_pcm_t *captureDevice = nullptr;
+                    snd_pcm_t *playbackDevice = nullptr;
+                    bool captureOk = snd_pcm_open(&captureDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK) == 0;
+                    bool playbackOk = snd_pcm_open(&playbackDevice, cardId.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) == 0;
+                    Finally ffCaptureDevice{
+                        [captureDevice]
+                        { if (captureDevice) snd_pcm_close(captureDevice); }};
+                    Finally ffPlaybackDevice{
+                        [playbackDevice]
+                        { if (playbackDevice) snd_pcm_close(playbackDevice); }};
+
+                    info.supportsCapture_ = captureOk;
+                    info.supportsPlayback_ = playbackOk;
+
+                    if (captureOk || playbackOk)
                     {
-                        Finally ffParams{[params]
-                                         { snd_pcm_hw_params_free(params); }};
+                        snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
+                        snd_pcm_hw_params_t *params = nullptr;
+                        err = snd_pcm_hw_params_malloc(&params);
 
-                        err = snd_pcm_hw_params_any(hDevice, params);
                         if (err == 0)
                         {
-                            unsigned int minRate = 0, maxRate = 0;
-                            snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
-                            int dir;
+                            Finally ffParams{[params]
+                                             { snd_pcm_hw_params_free(params); }};
 
-                            err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
+                            err = snd_pcm_hw_params_any(hDevice, params);
                             if (err == 0)
                             {
-                                err = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
+                                unsigned int minRate = 0, maxRate = 0;
+                                snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
+                                int dir;
+
+                                err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                                 if (err == 0)
                                 {
-                                    for (size_t i = 0; i < sizeof(RATES) / sizeof(RATES[0]); ++i)
+                                    err = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
+                                    if (err == 0)
                                     {
-                                        uint32_t rate = RATES[i];
-                                        if (rate >= minRate && rate <= maxRate)
+                                        for (size_t i = 0; i < sizeof(RATES) / sizeof(RATES[0]); ++i)
                                         {
-                                            info.sampleRates_.push_back(rate);
+                                            uint32_t rate = RATES[i];
+                                            if (rate >= minRate && rate <= maxRate)
+                                            {
+                                                info.sampleRates_.push_back(rate);
+                                            }
                                         }
+                                    }
+                                    else
+                                    {
+                                        Lv2Log::warning(SS("Failed to get maximum sample rate for device '" << info.name_ << "'."));
                                     }
                                 }
                                 else
                                 {
-                                    Lv2Log::warning(SS("Failed to get maximum sample rate for device '" << info.name_ << "'."));
+                                    Lv2Log::warning(SS("Failed to get minimum sample rate for device '" << info.name_ << "'."));
                                 }
-                            }
-                            else
-                            {
-                                Lv2Log::warning(SS("Failed to get minimum sample rate for device '" << info.name_ << "'."));
-                            }
 
-                            if (err == 0)
-                            {
-                                err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
                                 if (err == 0)
                                 {
-                                    err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
+                                    err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
+                                    if (err == 0)
+                                    {
+                                        err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
+                                    }
                                 }
-                            }
-                            if (err == 0)
-                            {
-                                if (minBufferSize < 16)
+                                if (err == 0)
                                 {
-                                    minBufferSize = 16;
-                                }
+                                    if (minBufferSize < 16)
+                                    {
+                                        minBufferSize = 16;
+                                    }
 
-                                info.minBufferSize_ = (uint32_t)minBufferSize;
-                                info.maxBufferSize_ = (uint32_t)maxBufferSize;
+                                    info.minBufferSize_ = (uint32_t)minBufferSize;
+                                    info.maxBufferSize_ = (uint32_t)maxBufferSize;
+                                }
                             }
                         }
-                    }
-                    if (err == 0)
-                    {
-                        cacheDevice(info.name_, info);
-                        result.push_back(info);
-                    }
-                    else if (getCachedDevice(info.name_, &info))
-                    {
-                        result.push_back(info);
-                    }
-                }
-                else
-                {
-                    if (getCachedDevice(info.name_, &info))
-                    {
-                        result.push_back(info);
+                        if (err == 0)
+                        {
+                            cacheDevice(info.name_, info);
+                            result.push_back(info);
+                        }
                     }
                 }
             }
@@ -528,6 +533,8 @@ JSON_MAP_REFERENCE(AlsaDeviceInfo, longName)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, sampleRates)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, minBufferSize)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, maxBufferSize)
+JSON_MAP_REFERENCE(AlsaDeviceInfo, supportsCapture)
+JSON_MAP_REFERENCE(AlsaDeviceInfo, supportsPlayback)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(AlsaMidiDeviceInfo)

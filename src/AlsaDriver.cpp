@@ -271,7 +271,7 @@ namespace pipedal
             auto inAvail = snd_pcm_avail_update(this->captureHandle);
             auto outAvail = snd_pcm_avail_update(this->playbackHandle);
 
-            auto total = inAvail + outAvail + framesInBuffer;
+            auto total = (inAvail >= 0? inAvail: 0) + (outAvail >= 0 ? outAvail: 0) + framesInBuffer;
             bufferTraces[bufferTraceIndex++] = {
                 time,
                 inAvail,
@@ -1180,11 +1180,13 @@ namespace pipedal
                 throw std::runtime_error("Unable to restart the audio stream.");
             }
             int err;
+            
             if ((err = snd_pcm_start(captureHandle)) < 0)
             {
                 Lv2Log::error(SS("Unable to restart ALSA capture: " << snd_strerror(err)));
                 throw PiPedalStateException("Unable to restart ALSA capture.");
             }
+            TraceBufferPositions(0,'+');
             audioRunning = true;
         }
 
@@ -1518,9 +1520,11 @@ namespace pipedal
                     }
                     snd_pcm_drain(capture_handle);
                     FillOutputBuffer();
+                    TraceBufferPositions(framesRead, 'x');
                 }
                 else
                 {
+                    TraceBufferPositions(framesRead, 'z');
                     Lv2Log::error(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
                     throw PiPedalStateException(SS("Can't recover from ALSA output error. (" << snd_strerror(err) << ")"));
                 }
@@ -1621,7 +1625,7 @@ namespace pipedal
             // expand running status if neccessary.
             // deal with regular and sysex messages split across
             // buffer boundaries (but discard them)
-            snd_pcm_sframes_t framesRead;
+            snd_pcm_sframes_t framesRead = 0;
 
             auto state = snd_pcm_state(handle);
             auto frame_bytes = this->captureFrameSize;
@@ -2369,16 +2373,19 @@ namespace pipedal
         {
             auto&bufferTrace = bufferTraces[ix];
 
-            int64_t dt = (int64_t)bufferTrace.time - (int64_t)t0;
+            if (bufferTrace.time != 0)
+            {
+                int64_t dt = (int64_t)bufferTrace.time - (int64_t)t0;
 
 
-            cout << bufferTrace.code << " " 
-                << fixed << setprecision(3) << dt*0.001
-                << " " << "inAvail: " << bufferTrace.inAvail
-                << " " << "outAvail: " << bufferTrace.outAvail
-                << " " << "bufferd: " << bufferTrace.buffered
-                << " " << "total: " << bufferTrace.total
-                << endl;
+                cout << bufferTrace.code << " " 
+                    << fixed << setprecision(3) << dt*0.001
+                    << " " << "inAvail: " << bufferTrace.inAvail
+                    << " " << "outAvail: " << bufferTrace.outAvail
+                    << " " << "buffered: " << bufferTrace.buffered
+                    << " " << "total: " << bufferTrace.total
+                    << endl;
+            }
 
             ++ix;
             if (ix == bufferTraces.size())
