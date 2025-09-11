@@ -58,6 +58,28 @@ static fs::path makeAbsolutePath(const std::filesystem::path &path, const std::f
     return parentPath / path;
 }
 
+inline void Lv2Effect::CheckStagingBufferSentries()
+{
+#ifndef NDEBUG
+    for (size_t i = 0; i < inputStagingBuffers.size(); ++i)
+    {
+        if (inputStagingBuffers[i].at(stagingBufferSize) != 99.9f)
+        {
+            throw std::logic_error("Staging buffer sentry overwritten.");
+        }
+
+    }
+    for (size_t i = 0; i < outputStagingBuffers.size(); ++i)
+    {
+        if (outputStagingBuffers[i].at(stagingBufferSize) != 99.9f)
+        {
+            throw std::logic_error("Staging buffer sentry overwritten.");
+        }
+
+    }
+#endif
+}
+
 Lv2Effect::Lv2Effect(
     IHost *pHost_,
     const std::shared_ptr<Lv2PluginInfo> &info_,
@@ -66,7 +88,11 @@ Lv2Effect::Lv2Effect(
 {
     auto pWorld = pHost_->getWorld();
 
+    size_t stagedBufferSize = GetStagedBufferSize();
+
     logFeature.Prepare(&pHost_->GetMapFeature(), info_->name() + ": ", this);
+
+    optionsFeature.Prepare(pHost->GetMapFeature(), 44100, stagedBufferSize, pHost->GetAtomBufferSize());
 
     this->bypassStartingSamples = (uint32_t)(pHost->GetSampleRate() * BYPASS_TIME_S);
 
@@ -97,14 +123,15 @@ Lv2Effect::Lv2Effect(
     LV2_URID_Map *map = this->pHost->GetLv2UridMap();
     lv2_atom_forge_init(&inputForgeRt, map);
     lv2_atom_forge_init(&outputForgeRt, map);
+    lv2_atom_forge_init(&stagedInputForgeRt, map);
 
     const LilvPlugins *plugins = lilv_world_get_all_plugins(pWorld);
 
-    // xxx: could we not stash the pPlugin in the plugin info?
+    // FIXME: could we not stash the pPlugin in the plugin info?
     auto uriNode = lilv_new_uri(pWorld, pedalboardItem.uri().c_str());
     const LilvPlugin *pPlugin = lilv_plugins_get_by_uri(plugins, uriNode);
 
-    for (auto&port : info->ports())
+    for (auto &port : info->ports())
     {
         if (port->is_bypass())
         {
@@ -115,7 +142,7 @@ Lv2Effect::Lv2Effect(
     lilv_node_free(uriNode);
     {
         AutoLilvNode bundleUri = lilv_plugin_get_bundle_uri(pPlugin);
-        char* bundleUriString = lilv_file_uri_parse(bundleUri.AsUri().c_str(), nullptr);
+        char *bundleUriString = lilv_file_uri_parse(bundleUri.AsUri().c_str(), nullptr);
 
         std::string storagePath = pHost_->GetPluginStoragePath();
 
@@ -123,7 +150,7 @@ Lv2Effect::Lv2Effect(
             pHost_->GetMapFeature().GetMap(),
             logFeature.GetLog(),
             bundleUriString,
-            storagePath);   
+            storagePath);
 
         mapPathFeature.Prepare(&(pHost_->GetMapFeature()));
         mapPathFeature.SetPluginStoragePath(pHost_->GetPluginStoragePath());
@@ -132,12 +159,10 @@ Lv2Effect::Lv2Effect(
             const auto &fileProperties = info_->piPedalUI()->fileProperties();
             for (const auto &fileProperty : fileProperties)
             {
-                fs::path targetPath = fileProperty->directory()  / std::filesystem::path(bundleUriString).parent_path().filename();
-                mapPathFeature.AddResourceFileMapping({
-                    bundleUriString,
-                    storagePath / targetPath,
-                    fileProperty->fileTypes()
-                });
+                fs::path targetPath = fileProperty->directory() / std::filesystem::path(bundleUriString).parent_path().filename();
+                mapPathFeature.AddResourceFileMapping({bundleUriString,
+                                                       storagePath / targetPath,
+                                                       fileProperty->fileTypes()});
             }
         }
 
@@ -146,12 +171,16 @@ Lv2Effect::Lv2Effect(
 
     LV2_Feature *const *features = pHost_->GetLv2Features();
 
-    this->features.push_back(logFeature.GetFeature());
-
     for (auto p = features; *p != nullptr; ++p)
     {
-        this->features.push_back(*p);
+        if (strcmp((*p)->URI, LV2_LOG__log) != 0)
+        { // ommit the host's LOG feature.
+            this->features.push_back(*p);
+        }
     }
+    this->features.push_back(logFeature.GetFeature());
+    this->features.push_back(optionsFeature.GetFeature());
+
     this->features.push_back(mapPathFeature.GetMapPathFeature());
     this->features.push_back(mapPathFeature.GetMakePathFeature());
     this->features.push_back(mapPathFeature.GetFreePathFeature());
@@ -173,7 +202,7 @@ Lv2Effect::Lv2Effect(
     }
     this->features.push_back(nullptr);
 
-    const LV2_Feature **myFeatures = &this->features[0];
+    const LV2_Feature **myFeatures = &this->features.at(0);
 
     LilvInstance *pInstance = nullptr;
     try
@@ -195,14 +224,14 @@ Lv2Effect::Lv2Effect(
         (const LV2_Worker_Interface *)lilv_instance_get_extension_data(pInstance,
                                                                        LV2_WORKER__interface);
     this->worker = std::make_unique<Worker>(workerThread, pInstance, worker_interface);
-    
+
     const LV2_State_Interface *state_interface =
         (const LV2_State_Interface *)lilv_instance_get_extension_data(pInstance,
                                                                       LV2_STATE__interface);
 
     if (state_interface)
     {
-        this->stateInterface = std::make_unique<StateInterface>(pHost, &(this->features[0]), pInstance, state_interface);
+        this->stateInterface = std::make_unique<StateInterface>(pHost, &(this->features.at(0)), pInstance, state_interface);
     }
 
     this->instanceId = pedalboardItem.instanceId();
@@ -235,7 +264,7 @@ Lv2Effect::Lv2Effect(
         int index = GetControlIndex(v.key());
         if (index != -1)
         {
-            this->controlValues[index] = v.value();
+            this->controlValues.at(index) = v.value();
         }
     }
 
@@ -322,20 +351,20 @@ void Lv2Effect::ConnectControlPorts()
     int controlArrayLength = 0;
     for (int i = 0; i < info->ports().size(); ++i)
     {
-        if (info->ports()[i]->index() >= controlArrayLength)
+        if (info->ports().at(i)->index() >= controlArrayLength)
         {
-            controlArrayLength = info->ports()[i]->index() + 1;
+            controlArrayLength = info->ports().at(i)->index() + 1;
         }
     }
     this->realtimePortInfo.resize(controlArrayLength);
     for (int i = 0; i < info->ports().size(); ++i)
     {
-        const auto &port = info->ports()[i];
+        const auto &port = info->ports().at(i);
         if (port->is_control_port())
         {
             int index = port->index();
-            realtimePortInfo[index] = port.get();
-            lilv_instance_connect_port(pInstance, i, &this->controlValues[index]);
+            realtimePortInfo.at(index) = port.get();
+            lilv_instance_connect_port(pInstance, i, &this->controlValues.at(index));
         }
     }
 }
@@ -348,7 +377,7 @@ void Lv2Effect::PreparePortIndices()
 
     for (int i = 0; i < info->ports().size(); ++i)
     {
-        const auto &port = info->ports()[i];
+        const auto &port = info->ports().at(i);
 
         int portIndex = port->index();
         if (port->is_audio_port())
@@ -386,17 +415,17 @@ void Lv2Effect::PreparePortIndices()
             controlIndex[port->symbol()] = portIndex;
             if (port->is_input())
             {
-                this->isInputControlPort[portIndex] = true;
-                this->defaultInputControlValues[portIndex] = port->default_value();
+                this->isInputControlPort.at(portIndex) = true;
+                this->defaultInputControlValues.at(portIndex) = port->default_value();
                 if (port->trigger_property())
                 {
-                    this->isInputTriggerControlPort[portIndex] = true;
+                    this->isInputTriggerControlPort.at(portIndex) = true;
                 }
             }
         }
     }
     size_t maxInputControlPort = isInputControlPort.size();
-    while (maxInputControlPort != 0 && !isInputControlPort[maxInputControlPort - 1])
+    while (maxInputControlPort != 0 && !isInputControlPort.at(maxInputControlPort - 1))
     {
         --maxInputControlPort;
     }
@@ -406,6 +435,14 @@ void Lv2Effect::PreparePortIndices()
     outputAudioBuffers.resize(outputAudioPortIndices.size());
     inputAtomBuffers.resize(inputAtomPortIndices.size());
     outputAtomBuffers.resize(outputAtomPortIndices.size());
+
+    if (RequiresBufferStaging())
+    {
+        EnableBufferStaging(
+            GetStagedBufferSize(),
+            this->GetNumberOfInputAudioBuffers(),
+            this->GetNumberOfOutputAudioBuffers());
+    }
 }
 
 void Lv2Effect::PrepareNoInputEffect(int numberOfInputs, size_t maxBufferSize)
@@ -425,20 +462,20 @@ void Lv2Effect::PrepareNoInputEffect(int numberOfInputs, size_t maxBufferSize)
         outputMixBuffers.resize(outputAudioPortIndices.size());
         for (size_t i = 0; i < outputMixBuffers.size(); ++i)
         {
-            outputMixBuffers[i].resize(maxBufferSize);
+            outputMixBuffers.at(i).resize(maxBufferSize);
         }
         // connect the plugin to the mix buffer instead of output buffer.
         for (size_t i = 0; i < outputAudioPortIndices.size(); ++i)
         {
-            int pluginIndex = this->outputAudioPortIndices[i];
-            lilv_instance_connect_port(this->pInstance, pluginIndex, outputMixBuffers[i].data());
+            int pluginIndex = this->outputAudioPortIndices.at(i);
+            lilv_instance_connect_port(this->pInstance, pluginIndex, outputMixBuffers.at(i).data());
         }
     }
 }
 
 void Lv2Effect::SetAudioInputBuffer(int index, float *buffer)
 {
-    this->inputAudioBuffers[index] = buffer;
+    this->inputAudioBuffers.at(index) = buffer;
 
     if (borrowedEffect)
     {
@@ -449,8 +486,20 @@ void Lv2Effect::SetAudioInputBuffer(int index, float *buffer)
 
     if (inputAudioPortIndices.size() == inputAudioBuffers.size())
     {
-        int pluginIndex = this->inputAudioPortIndices[index];
-        lilv_instance_connect_port(this->pInstance, pluginIndex, buffer);
+        if (stagingBufferSize != 0)
+        {
+            int pluginIndex = this->inputAudioPortIndices.at(index);
+            if (index >= inputStagingBufferPointers.size())
+            {
+                throw std::runtime_error("Invalid input staging buffer index.");
+            }
+            lilv_instance_connect_port(this->pInstance, pluginIndex, inputStagingBufferPointers.at(index));
+        }
+        else
+        {
+            int pluginIndex = this->inputAudioPortIndices.at(index);
+            lilv_instance_connect_port(this->pInstance, pluginIndex, buffer);
+        }
     }
     else
     {
@@ -458,7 +507,7 @@ void Lv2Effect::SetAudioInputBuffer(int index, float *buffer)
         // // cases: 1->0, 1->1, 2->0, 2->1
         // if (index < inputAudioPortIndices.size())
         // {
-        //     int pluginIndex = this->inputAudioPortIndices[index];
+        //     int pluginIndex = this->inputAudioPortIndices.at(index);
         //     lilv_instance_connect_port(this->pInstance, pluginIndex, buffer);
         // }
     }
@@ -492,7 +541,7 @@ void Lv2Effect::SetAudioInputBuffers(float *left, float *right)
 
 void Lv2Effect::SetAudioOutputBuffer(int index, float *buffer)
 {
-    this->outputAudioBuffers[index] = buffer;
+    this->outputAudioBuffers.at(index) = buffer;
 
     if (borrowedEffect)
     {
@@ -503,10 +552,25 @@ void Lv2Effect::SetAudioOutputBuffer(int index, float *buffer)
 
     if (this->inputAudioPortIndices.size() != 0) // i.e. we're not mixing a zero-input control
     {
-        if ((size_t)index < this->outputAudioPortIndices.size())
+        if (this->stagingBufferSize != 0)
         {
-            int pluginIndex = this->outputAudioPortIndices[index];
-            lilv_instance_connect_port(pInstance, pluginIndex, buffer);
+            if ((size_t)index < this->outputStagingBufferPointers.size())
+            {
+                int pluginIndex = this->outputAudioPortIndices.at(index);
+                lilv_instance_connect_port(pInstance, pluginIndex, outputStagingBufferPointers.at(index));
+            }
+            else
+            {
+                throw std::runtime_error("outputStagingBufferPointers index out of range.");
+            }
+        }
+        else
+        {
+            if ((size_t)index < this->outputAudioPortIndices.size())
+            {
+                int pluginIndex = this->outputAudioPortIndices.at(index);
+                lilv_instance_connect_port(pInstance, pluginIndex, buffer);
+            }
         }
     }
 }
@@ -523,6 +587,16 @@ int Lv2Effect::GetControlIndex(const std::string &key) const
 
 Lv2Effect::~Lv2Effect()
 {
+    if (deleted)
+    {
+        try {
+            throw std::runtime_error("Deleted twice!");
+        } catch (const std::exception&e)
+        {
+            std::terminate();
+        }
+    }
+    deleted = true;
     if (worker)
     {
         worker->Close();
@@ -531,6 +605,7 @@ Lv2Effect::~Lv2Effect()
     if (activated)
     {
         Deactivate();
+        activated = false;
     }
     if (pInstance)
     {
@@ -540,7 +615,9 @@ Lv2Effect::~Lv2Effect()
     if (work_schedule_feature)
     {
         free(work_schedule_feature->data);
+        work_schedule_feature->data = nullptr;
         free(work_schedule_feature);
+        work_schedule_feature = nullptr;
     }
 }
 
@@ -556,9 +633,11 @@ void Lv2Effect::Activate()
     if (this->bypassControlIndex == -1)
     {
         this->BypassDezipperSet(this->bypass ? 1.0f : 0.0f);
-    } else {
+    }
+    else
+    {
         this->BypassDezipperSet(1.0f);
-        this->controlValues[this->bypassControlIndex] = this->bypass ? 1.0f: 0.0f;
+        this->controlValues.at(this->bypassControlIndex) = this->bypass ? 1.0f : 0.0f;
     }
 }
 
@@ -567,21 +646,91 @@ void Lv2Effect::UpdateAudioPorts()
     // called on realtime thread to switch borrowed effects to the new buffer pointers.
     if (borrowedEffect)
     {
-        for (size_t i = 0; i < this->inputAudioPortIndices.size(); ++i)
+        if (stagingBufferSize != 0)
         {
-            int portIndex = this->inputAudioPortIndices[i];
-            if (GetAudioInputBuffer(i) != nullptr)
+            for (size_t i = 0; i < this->inputAudioPortIndices.size(); ++i)
             {
-                lilv_instance_connect_port(pInstance, portIndex, GetAudioInputBuffer(i));
+                int portIndex = this->inputAudioPortIndices.at(i);
+                if (inputStagingBufferPointers.at(i) != nullptr)
+                {
+                    lilv_instance_connect_port(pInstance, portIndex, inputStagingBufferPointers.at(i));
+                }
             }
-        }
-        for (size_t i = 0; i < this->outputAudioPortIndices.size(); ++i)
-        {
-            int portIndex = this->outputAudioPortIndices[i];
-            if (GetAudioOutputBuffer(i) != nullptr)
+            for (size_t i = 0; i < this->outputAudioPortIndices.size(); ++i)
             {
-                lilv_instance_connect_port(pInstance, portIndex, GetAudioOutputBuffer(i));
+                int portIndex = this->outputAudioPortIndices.at(i);
+                if (outputStagingBufferPointers.at(i) != nullptr)
+                {
+                    lilv_instance_connect_port(pInstance, portIndex, outputStagingBufferPointers.at(i));
+                }
             }
+            for (size_t i = 0; i < this->inputAtomPortIndices.size(); ++i)
+            {
+                if (i == 0)
+                {
+                    if (stagedInputAtomBufferPointer == nullptr)
+                    {
+                        throw std::runtime_error("Invalid astagedInputAtomBufferPointer");
+                    }
+                    lilv_instance_connect_port(pInstance, inputAtomPortIndices[i],stagedInputAtomBufferPointer);
+                } else {
+                    auto atomInputBuffer = this->GetAtomInputBuffer(i);
+                    lilv_instance_connect_port(pInstance, inputAtomPortIndices[i],atomInputBuffer);
+                }
+            }
+            for (size_t i = 0; i < this->outputAtomPortIndices.size(); ++i)
+            {
+                if (i == 0)
+                {
+                    if (stagedOutputAtomBufferPointer == nullptr)
+                    {
+                        throw std::runtime_error("Invalid astagedOutputAtomBufferPointer");
+                    }
+                    lilv_instance_connect_port(pInstance, outputAtomPortIndices[i],stagedOutputAtomBufferPointer);
+                } else {
+                    auto atomOutputBuffer = this->GetAtomOutputBuffer(i);
+                    lilv_instance_connect_port(pInstance, outputAtomPortIndices[i],atomOutputBuffer);
+                }
+            }
+            
+        } else {
+            for (size_t i = 0; i < this->inputAudioPortIndices.size(); ++i)
+            {
+                int portIndex = this->inputAudioPortIndices.at(i);
+                if (GetAudioInputBuffer(i) != nullptr)
+                {
+                    lilv_instance_connect_port(pInstance, portIndex, GetAudioInputBuffer(i));
+                }
+            }
+            for (size_t i = 0; i < this->outputAudioPortIndices.size(); ++i)
+            {
+                int portIndex = this->outputAudioPortIndices.at(i);
+                if (GetAudioOutputBuffer(i) != nullptr)
+                {
+                    lilv_instance_connect_port(pInstance, portIndex, GetAudioOutputBuffer(i));
+                }
+            }
+            for (size_t i = 0; i < this->inputAtomPortIndices.size(); ++i)
+            {
+                auto atomInputBuffer = this->GetAtomInputBuffer(i);
+                lilv_instance_connect_port(pInstance, inputAtomPortIndices[i],atomInputBuffer);
+            }
+            for (size_t i = 0; i < this->outputAtomPortIndices.size(); ++i)
+            {
+                auto atomOutputBuffer = this->GetAtomOutputBuffer(i);
+                lilv_instance_connect_port(pInstance, outputAtomPortIndices[i],atomOutputBuffer);
+            }
+            // for (size_t i = 0; i < this->inputMidiPortIndices.size(); ++i)
+            // {
+            //     auto midiInputBuffer = this->GetMidiInputBuffer(i);
+            //     lilv_instance_connect_port(pInstance, inputMidiPortIndices[i],midiInputBuffer);
+            // }
+            // for (size_t i = 0; i < this->outputMidiPortIndices.size(); ++i)
+            // {
+            //     auto midiOutputBuffer = this->GetMidiOutputBuffer(i);
+            //     lilv_instance_connect_port(pInstance, outputMidiPortIndices[i],midiOutputBuffer);
+            // }
+
         }
     }
 }
@@ -592,7 +741,7 @@ void Lv2Effect::AssignUnconnectedPorts()
     {
         if (GetAudioInputBuffer(i) == nullptr)
         {
-            int pluginIndex = this->inputAudioPortIndices[i];
+            int pluginIndex = this->inputAudioPortIndices.at(i);
 
             float *buffer = bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize());
             lilv_instance_connect_port(pInstance, pluginIndex, buffer);
@@ -606,7 +755,7 @@ void Lv2Effect::AssignUnconnectedPorts()
             if (GetAudioOutputBuffer(i) == nullptr)
             {
                 float *buffer = bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize());
-                int pluginIndex = this->outputAudioPortIndices[i];
+                int pluginIndex = this->outputAudioPortIndices.at(i);
                 lilv_instance_connect_port(pInstance, pluginIndex, buffer);
             }
         }
@@ -615,24 +764,42 @@ void Lv2Effect::AssignUnconnectedPorts()
     {
         if (GetAtomInputBuffer(i) == nullptr)
         {
-            int pluginIndex = this->inputAtomPortIndices[i];
+            int pluginIndex = this->inputAtomPortIndices.at(i);
 
             uint8_t *buffer = bufferPool.AllocateBuffer<uint8_t>(pHost->GetAtomBufferSize());
-            lilv_instance_connect_port(pInstance, pluginIndex, buffer);
+            if (stagedInputAtomBufferPointer && i == 0)
+            {
+                lilv_instance_connect_port(pInstance, pluginIndex, stagedInputAtomBufferPointer);
+                ResetInputAtomBuffer((char *)(stagedInputAtomBufferPointer));
+            }
+            else
+            {
+                lilv_instance_connect_port(pInstance, pluginIndex, buffer);
+            }
             ResetInputAtomBuffer((char *)buffer);
-            this->inputAtomBuffers[i] = (char *)buffer;
+            this->inputAtomBuffers.at(i) = (char *)buffer;
         }
     }
     for (int i = 0; i < this->GetNumberOfOutputAtomPorts(); ++i)
     {
         if (GetAtomOutputBuffer(i) == nullptr)
         {
-            int pluginIndex = this->outputAtomPortIndices[i];
+            int pluginIndex = this->outputAtomPortIndices.at(i);
 
             uint8_t *buffer = bufferPool.AllocateBuffer<uint8_t>(pHost->GetAtomBufferSize());
             ResetOutputAtomBuffer((char *)buffer);
+
+            if (stagedOutputAtomBufferPointer && i == 0)
+            {
+                lilv_instance_connect_port(pInstance, pluginIndex, stagedOutputAtomBufferPointer);
+            }
+            else
+            {
+                lilv_instance_connect_port(pInstance, pluginIndex, buffer);
+            }
+
             lilv_instance_connect_port(pInstance, pluginIndex, buffer);
-            this->outputAtomBuffers[i] = (char *)buffer;
+            this->outputAtomBuffers.at(i) = (char *)buffer;
         }
     }
 }
@@ -658,21 +825,154 @@ static inline void CopyBuffer(float *restrict input, float *restrict output, uin
     }
 }
 
-void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter)
+size_t Lv2Effect::stageToOutput(size_t outputIndex, size_t nFrames)
 {
-    // close off the atom input frame.
+    size_t thisTime = nFrames - outputIndex;
+    size_t stagedOutputAvailable = this->stagingBufferSize - this->stagingOutputIx;
+    if (stagedOutputAvailable < thisTime)
+    {
+        thisTime = stagedOutputAvailable;
+    }
+    if (thisTime)
+    {
+        for (size_t ch = 0; ch < this->GetNumberOfOutputAudioBuffers(); ++ch)
+        {
+            float *restrict pIn = this->outputStagingBufferPointers.at(ch) + this->stagingOutputIx;
+            float *restrict pOut = this->GetAudioOutputBuffer(ch) + outputIndex;
+            for (size_t i = 0; i < thisTime; ++i)
+            {
+                pOut[i] = pIn[i];
+            }
+        }
+        this->stagingOutputIx += thisTime;
+    }
+    return outputIndex + thisTime;
+}
+
+void Lv2Effect::copyAtomBufferEventSequence(LV2_Atom_Sequence *controlInput, LV2_Atom_Forge &outputForge)
+{
+    LV2_ATOM_SEQUENCE_FOREACH(controlInput, ev)
+    {
+        lv2_atom_forge_frame_time(&outputForge, ev->time.frames);
+        lv2_atom_forge_raw(&outputForge, &(ev->body), ev->body.size); // literal copy of the atom body.
+    }
+}
+
+size_t Lv2Effect::stageToInput(size_t inputSampleOffset, size_t samples)
+{
+
+    size_t thisTime = samples - inputSampleOffset;
+    size_t inputAvailable = this->stagingBufferSize - this->stagingInputIx;
+    if (thisTime > inputAvailable)
+    {
+        thisTime = inputAvailable;
+    }
+    // copy into staging buffers.
+    for (size_t nInput = 0; nInput < this->inputAudioBuffers.size(); ++nInput)
+    {
+        float *restrict pInput = this->inputAudioBuffers[nInput] + inputSampleOffset;
+        float *restrict pOutput = this->inputStagingBufferPointers.at(nInput) + this->stagingInputIx;
+        for (size_t i = 0; i < thisTime; ++i)
+        {
+            pOutput[i] = pInput[i];
+        }
+    }
+    this->stagingInputIx += thisTime;
+    inputSampleOffset += thisTime;
+
+    if (stagingInputIx == this->stagingBufferSize)
+    {
+        // close off the atom input frame.
+        if (stagedInputAtomBufferPointer)
+        {
+            lv2_atom_forge_pop(&this->stagedInputForgeRt, &staged_input_frame);
+        }
+        if (stagedOutputAtomBufferPointer)
+        {
+            ResetOutputAtomBuffer((char *)stagedOutputAtomBufferPointer);
+        }
+
+        lilv_instance_run(pInstance, this->stagingBufferSize);
+
+        if (worker)
+        {
+
+            worker->EmitResponses();
+        }
+        if (stagedOutputAtomBufferPointer)
+        {
+            copyAtomBufferEventSequence((LV2_Atom_Sequence *)stagedOutputAtomBufferPointer, this->outputForgeRt);
+        }
+
+        this->stagingInputIx = 0;
+        this->stagingOutputIx = 0;
+        this->resetStagedInputAtomBuffer();
+    }
+    return inputSampleOffset;
+}
+
+void Lv2Effect::resetStagedInputAtomBuffer()
+{
+    if (stagedInputAtomBufferPointer)
+    {
+        const uint32_t notify_capacity = pHost->GetAtomBufferSize();
+        lv2_atom_forge_set_buffer(
+            &(this->stagedInputForgeRt), (uint8_t *)(this->stagedInputAtomBufferPointer), notify_capacity);
+        lv2_atom_forge_sequence_head(&this->inputForgeRt, &staged_input_frame, urids.units__frame);
+    }
+}
+void Lv2Effect::RunWithBufferStaging(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter)
+{
+    // accumulte control input sequence until we can execute a run operation.
     if (this->inputAtomBuffers.size() != 0)
     {
         lv2_atom_forge_pop(&this->inputForgeRt, &input_frame);
+
+        LV2_Atom_Sequence *controlInput = (LV2_Atom_Sequence *)GetAtomInputBuffer(0);
+        copyAtomBufferEventSequence(controlInput, this->stagedInputForgeRt);
     }
-
-    lilv_instance_run(pInstance, samples);
-
-    if (worker)
+    // Prepare ACTUAL control output port.
+    if (this->stagedOutputAtomBufferPointer)
     {
-        // relay worker response
-        worker->EmitResponses();
+        const uint32_t notify_capacity = pHost->GetAtomBufferSize();
+        lv2_atom_forge_set_buffer(
+            &(this->outputForgeRt), (uint8_t *)(this->inputAtomBuffers.at(0)), notify_capacity);
+        lv2_atom_forge_sequence_head(&this->outputForgeRt, &output_frame, urids.units__frame);
     }
+
+    uint32_t inputSampleOffset = 0;
+    uint32_t outputSampleOffset = 0;
+
+    while (true)
+    {
+        outputSampleOffset = stageToOutput(outputSampleOffset, samples);
+
+        CheckStagingBufferSentries();
+
+        if (inputSampleOffset == samples)
+        {
+            break;
+        }
+        inputSampleOffset = stageToInput(inputSampleOffset, samples);
+    }
+    // no staging data avaialble? Output zeros.
+    if (outputSampleOffset != samples)
+    {
+        size_t thisTime = samples - outputSampleOffset;
+        for (size_t ch = 0; ch < this->GetNumberOfOutputAudioBuffers(); ++ch)
+        {
+            float *pOut = this->GetAudioOutputBuffer(ch) + outputSampleOffset;
+            for (size_t i = 0; i < thisTime; ++i)
+            {
+                pOut[i] = 0;
+            }
+        }
+    }
+    MixOutput(samples, realtimeRingBufferWriter);
+}
+
+inline void Lv2Effect::MixOutput(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter)
+{
     // for zero-input plugins, mix the plugin output with the input signal.
     if (this->inputAudioPortIndices.size() == 0)
     {
@@ -695,14 +995,14 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
                     {
                         break;
                     }
-                    input = this->inputAudioBuffers[0];
+                    input = this->inputAudioBuffers.at(0);
                 }
                 else
                 {
-                    input = this->inputAudioBuffers[i];
+                    input = this->inputAudioBuffers.at(i);
                 }
-                float *restrict pluginOutput = this->outputMixBuffers[i].data();
-                float *restrict finalOutput = this->outputAudioBuffers[i];
+                float *restrict pluginOutput = this->outputMixBuffers.at(i).data();
+                float *restrict finalOutput = this->outputAudioBuffers.at(i);
 
                 for (uint32_t i = 0; i < samples; ++i)
                 {
@@ -713,11 +1013,11 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
         else if (this->outputAudioPortIndices.size() == 1 && this->outputAudioBuffers.size() == 2)
         {
             // 1 plugin output into 2 outputs.
-            float *restrict pluginOutput = this->outputMixBuffers[0].data();
+            float *restrict pluginOutput = this->outputMixBuffers.at(0).data();
             for (size_t i = 0; i < this->outputMixBuffers.size(); ++i)
             {
-                float *restrict input = this->inputAudioBuffers[i];
-                float *restrict finalOutput = this->outputAudioBuffers[i];
+                float *restrict input = this->inputAudioBuffers.at(i);
+                float *restrict finalOutput = this->outputAudioBuffers.at(i);
 
                 for (uint32_t i = 0; i < samples; ++i)
                 {
@@ -740,19 +1040,19 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
             // replace the contents of the output buffer(s) with the input buffer(s).
             if (this->outputAudioBuffers.size() == 1)
             {
-                CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[0], samples);
+                CopyBuffer(this->inputAudioBuffers.at(0), this->outputAudioBuffers.at(0), samples);
             }
             else
             {
                 if (this->inputAudioBuffers.size() == 1)
                 {
-                    CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[0], samples);
-                    CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[1], samples);
+                    CopyBuffer(this->inputAudioBuffers.at(0), this->outputAudioBuffers.at(0), samples);
+                    CopyBuffer(this->inputAudioBuffers.at(0), this->outputAudioBuffers.at(1), samples);
                 }
                 else
                 {
-                    CopyBuffer(this->inputAudioBuffers[0], this->outputAudioBuffers[0], samples);
-                    CopyBuffer(this->inputAudioBuffers[1], this->outputAudioBuffers[1], samples);
+                    CopyBuffer(this->inputAudioBuffers.at(0), this->outputAudioBuffers.at(0), samples);
+                    CopyBuffer(this->inputAudioBuffers.at(1), this->outputAudioBuffers.at(1), samples);
                 }
             }
         } // else leave the output alone.
@@ -765,8 +1065,8 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
 
         if (this->outputAudioBuffers.size() == 1)
         {
-            float * restrict input = this->inputAudioBuffers[0];
-            float * restrict output = this->outputAudioBuffers[0];
+            float *restrict input = this->inputAudioBuffers.at(0);
+            float *restrict output = this->outputAudioBuffers.at(0);
             for (uint32_t i = 0; i < samples; ++i)
             {
                 output[i] = currentBypass * output[i] + (1 - currentBypass) * input[i];
@@ -781,19 +1081,19 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
         }
         else
         {
-            float * restrict inputL;
-            float * restrict inputR;
+            float *restrict inputL;
+            float *restrict inputR;
             if (this->inputAudioBuffers.size() == 1)
             {
-                inputL = inputR = inputAudioBuffers[0];
+                inputL = inputR = inputAudioBuffers.at(0);
             }
             else
             {
-                inputL = inputAudioBuffers[0];
-                inputR = inputAudioBuffers[1];
+                inputL = inputAudioBuffers.at(0);
+                inputR = inputAudioBuffers.at(1);
             }
-            float * restrict outputL = outputAudioBuffers[0];
-            float * restrict outputR = outputAudioBuffers[1];
+            float *restrict outputL = outputAudioBuffers.at(0);
+            float *restrict outputR = outputAudioBuffers.at(1);
             for (uint32_t i = 0; i < samples; ++i)
             {
                 outputL[i] = currentBypass * outputL[i] + (1 - currentBypass) * inputL[i];
@@ -820,6 +1120,24 @@ void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBuff
         }
     }
     RelayPatchSetMessages(this->instanceId, realtimeRingBufferWriter);
+}
+
+void Lv2Effect::Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter)
+{
+    // close off the atom input frame.
+    if (this->inputAtomBuffers.size() != 0)
+    {
+        lv2_atom_forge_pop(&this->inputForgeRt, &input_frame);
+    }
+    lilv_instance_run(pInstance, samples);
+
+    if (worker)
+    {
+        // relay worker response
+        worker->EmitResponses();
+    }
+
+    MixOutput(samples, realtimeRingBufferWriter);
 }
 
 LV2_Worker_Status Lv2Effect::worker_schedule_fn(LV2_Worker_Schedule_Handle handle,
@@ -880,17 +1198,17 @@ void Lv2Effect::ResetAtomBuffers()
 {
     for (size_t i = 0; i < this->inputAtomBuffers.size(); ++i)
     {
-        ResetInputAtomBuffer(this->inputAtomBuffers[i]);
+        ResetInputAtomBuffer(this->inputAtomBuffers.at(i));
     }
     for (size_t i = 0; i < this->outputAtomBuffers.size(); ++i)
     {
-        ResetOutputAtomBuffer(this->outputAtomBuffers[i]);
+        ResetOutputAtomBuffer(this->outputAtomBuffers.at(i));
     }
     if (inputAtomBuffers.size() != 0)
     {
         const uint32_t notify_capacity = pHost->GetAtomBufferSize();
         lv2_atom_forge_set_buffer(
-            &(this->inputForgeRt), (uint8_t *)(this->inputAtomBuffers[0]), notify_capacity);
+            &(this->inputForgeRt), (uint8_t *)(this->inputAtomBuffers.at(0)), notify_capacity);
 
         // Start a sequence in the notify input port.
 
@@ -1147,13 +1465,13 @@ uint64_t Lv2Effect::GetMaxInputControl() const { return maxInputControlPort; }
 
 bool Lv2Effect::IsInputControl(uint64_t index) const
 {
-    if (index < 0 || index >= isInputControlPort.size())
+    if (index >= isInputControlPort.size())
         return false;
-    return isInputControlPort[index];
+    return isInputControlPort.at(index);
 }
 float Lv2Effect::GetDefaultInputControlValue(uint64_t index) const
 {
-    return defaultInputControlValues[index];
+    return defaultInputControlValues.at(index);
 }
 
 std::string Lv2Effect::GetPathPatchProperty(const std::string &propertyUri)
@@ -1167,4 +1485,98 @@ std::string Lv2Effect::GetPathPatchProperty(const std::string &propertyUri)
 void Lv2Effect::SetPathPatchProperty(const std::string &propertyUri, const std::string &jsonAtom)
 {
     mainThreadPathProperties[propertyUri] = jsonAtom;
+}
+
+void Lv2Effect::EnableBufferStaging(size_t bufferSize, size_t nInputs, size_t nOutputs)
+{
+
+    stagingBufferSize = bufferSize;
+    stagingOutputIx = bufferSize;
+    stagingInputIx = 0;
+    inputStagingBuffers.resize(nInputs);
+    outputStagingBuffers.resize(nOutputs);
+    inputStagingBufferPointers.resize(nInputs);
+    outputStagingBufferPointers.resize(nOutputs);
+
+    if (inputAtomBuffers.size() != 0)
+    {
+        stagedInputAtomBuffer.resize(pHost->GetAtomBufferSize());
+        stagedInputAtomBufferPointer = stagedInputAtomBuffer.data();
+        resetStagedInputAtomBuffer();
+    }
+    else
+    {
+        stagedInputAtomBufferPointer = nullptr;
+    }
+    stagedOutputAtomBufferPointer = nullptr;
+    if (outputAtomBuffers.size() != 0)
+    {
+        stagedOutputAtomBuffer.resize(pHost->GetAtomBufferSize());
+        stagedOutputAtomBufferPointer = stagedOutputAtomBuffer.data();
+    }
+    for (size_t i = 0; i < nInputs; ++i)
+    {
+        inputStagingBuffers.at(i).resize(bufferSize + 1);
+        inputStagingBuffers[i][bufferSize] = 99.9f; // guard entry
+        inputStagingBufferPointers.at(i) = inputStagingBuffers.at(i).data();
+    }
+    for (size_t i = 0; i < nOutputs; ++i)
+    {
+        outputStagingBuffers.at(i).resize(bufferSize + 1);
+        outputStagingBuffers[i][bufferSize] = 99.9f; // guard entry
+        outputStagingBufferPointers.at(i) = outputStagingBuffers.at(i).data();
+    }
+}
+
+static size_t NextPowerOfTwo(size_t value)
+{
+
+    size_t i = 1;
+    while (i < value && i < 65536UL)
+    {
+        i *= 2;
+    }
+    return i;
+}
+
+size_t Lv2Effect::GetStagedBufferSize() const
+{
+    size_t pluginBlockLength = pHost->GetMaxAudioBufferSize();
+    if (info->minBlockLength() != -1 || info->maxBlockLength() != -1)
+    {
+        if (info->minBlockLength() != -1 && pluginBlockLength < info->minBlockLength())
+        {
+            pluginBlockLength = info->minBlockLength();
+        }
+        if (info->maxBlockLength() != -1 && pluginBlockLength > info->maxBlockLength())
+        {
+            pluginBlockLength = info->maxBlockLength();
+        }
+        if (info->powerOf2BlockLength())
+        {
+            pluginBlockLength = NextPowerOfTwo(pluginBlockLength);
+        }
+    }
+    return pluginBlockLength;
+}
+
+bool Lv2Effect::RequiresBufferStaging() const
+{
+    return GetStagedBufferSize() != pHost->GetMaxAudioBufferSize();
+}
+
+float *Lv2Effect::GetAudioInputBuffer(int index) const
+{
+    if (index < 0 || index >= this->inputAudioBuffers.size())
+        throw std::range_error("Lv2Effect::GetAudioInputBuffer");
+    return this->inputAudioBuffers.at(index);
+}
+
+float *Lv2Effect::GetAudioOutputBuffer(int index) const
+{
+    if (index < 0 || index >= this->outputAudioBuffers.size())
+    {
+        throw std::range_error("Lv2Effect::GetAudioOutputBuffer");
+    }
+    return this->outputAudioBuffers.at(index);
 }

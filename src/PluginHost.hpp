@@ -26,7 +26,6 @@
 #include <lilv/lilv.h>
 #include "MapFeature.hpp"
 #include "FileMetadataFeature.hpp"
-#include "OptionsFeature.hpp"
 #include <filesystem>
 #include <cmath>
 #include <string>
@@ -432,6 +431,10 @@ namespace pipedal
 
         bool IsSupportedFeature(const std::string &feature) const;
 
+        bool powerOf2BlockLength_ = false;
+        float minBlockLength_ = -1;
+        float maxBlockLength_ = -1;
+
     public:
         LV2_PROPERTY_GETSET(bundle_path)
         LV2_PROPERTY_GETSET(uri)
@@ -457,6 +460,9 @@ namespace pipedal
         LV2_PROPERTY_GETSET(modGui)
         LV2_PROPERTY_GETSET(patchProperties)
         LV2_PROPERTY_GETSET(hasDefaultState)
+        LV2_PROPERTY_GETSET(minBlockLength)
+        LV2_PROPERTY_GETSET(maxBlockLength)
+        LV2_PROPERTY_GETSET(powerOf2BlockLength)
 
         bool WantsWorkerThread() const;
 
@@ -877,7 +883,6 @@ namespace pipedal
         std::vector<const LV2_Feature *> lv2Features;
         MapFeature mapFeature;
         FileMetadataFeature fileMetadataFeature;
-        OptionsFeature optionsFeature;
         std::string pluginStoragePath;
 
         static void fn_LilvSetPortValueFunc(const char *port_symbol,

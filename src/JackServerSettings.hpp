@@ -72,11 +72,14 @@ namespace pipedal
             this->valid_ = true;
             if (sampleRate_ == 0) sampleRate_ = 48000;
             this->alsaDevice_  = "dummy:channels_2";
+            this->alsaInputDevice_  = "dummy:channels_2";
+            this->alsaOutputDevice_  = "dummy:channels_2";
         }
         bool IsDummyAudioDevice() const {
             return 
                 this->alsaDevice_.starts_with("__DUMMY_AUDIO__")
-                || this->alsaDevice_.starts_with("dummy:");
+                || this->alsaDevice_.starts_with("dummy:")
+                || this->alsaInputDevice_.starts_with("dummy:");
         }
 
         void ReadJackDaemonConfiguration();

@@ -227,6 +227,7 @@ namespace pipedal
 
             for (const auto &patchProperty : pathPatchProperties)
             {
+                // yyy: only if the property changed!.
                 effect->SetPatchProperty(
                     patchProperty.propertyUrid, patchProperty.atomBuffer.size(), (LV2_Atom *)patchProperty.atomBuffer.data());
             }

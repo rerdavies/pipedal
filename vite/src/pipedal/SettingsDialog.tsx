@@ -23,6 +23,7 @@ import OkCancelDialog from './OkCancelDialog';
 import RadioSelectDialog from './RadioSelectDialog';
 import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
+import {isDarkMode} from './DarkMode';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import { ColorTheme } from './DarkMode';
 import ButtonBase from "@mui/material/ButtonBase";
@@ -661,7 +662,8 @@ const SettingsDialog = withStyles(
                                     {(!isConfigValid) ?
                                         (
                                             <div className={classes.cpuStatusColor} style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                                <Typography display="block" variant="caption" color="textSecondary">Status: <span style={{ color: "#F00" }}>Not configured.</span></Typography>
+                                                <Typography display="block" variant="caption" color="textSecondary">Status: 
+                                                    <span style={{ color: isDarkMode() ? "#F88" :  "#F00" }}>Not configured.</span></Typography>
                                                 {(!this.props.onboarding) && (
                                                     <Typography display="block" variant="caption" color="inherit">Governor: </Typography>
                                                 )}

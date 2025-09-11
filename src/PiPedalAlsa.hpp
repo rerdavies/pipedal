@@ -33,6 +33,8 @@ namespace pipedal {
         uint32_t minBufferSize_ = 0,maxBufferSize_ = 0;
         bool supportsCapture_ = false;
         bool supportsPlayback_ = false;
+        bool captureBusy_ = false;
+        bool playbackBusy_ = false;
 
         bool isDummyDevice() const {
             return id_.starts_with("dummy:");

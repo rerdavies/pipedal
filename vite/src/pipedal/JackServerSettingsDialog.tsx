@@ -50,7 +50,9 @@ import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 function filterDevices(devices: AlsaDeviceInfo[]): AlsaDeviceInfo[] {
     return devices.filter(d => {
         const name = (d.name + ' ' + d.longName).toLowerCase();
-        return !(name.includes('hdmi') || name.includes('bcm2835'));
+        return !(name.includes('hdmi') 
+            || name.includes('bcm2835') // Pi 4 headphones out.
+            );
     });
 }
 
@@ -345,7 +347,7 @@ const JackServerSettingsDialog = withStyles(
                     }
                 })
                 .catch((error) => {
-                    // Error requesting ALSA info.
+                    console.log("Failed to get ALSA device info: " + error.message);
                 });
         }
 
@@ -621,16 +623,16 @@ const JackServerSettingsDialog = withStyles(
             const devicesSelected = (selectedInputDevice && selectedOutputDevice);
 
             let bufferSizes: number[] = devicesSelected ?
-                getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice) : [];
+                getValidBufferSizesMultiple(selectedInputDevice, selectedOutputDevice) : [this.state.jackServerSettings.bufferSize];
             let bufferCounts = devicesSelected ?
-                getValidBufferCountsMultiple(this.state.jackServerSettings.bufferSize, selectedInputDevice, selectedOutputDevice) : [];
+                getValidBufferCountsMultiple(this.state.jackServerSettings.bufferSize, selectedInputDevice, selectedOutputDevice) : [this.state.jackServerSettings.numberOfBuffers  ];
             let bufferSizeDisabled = !devicesSelected;
             let bufferCountDisabled = !devicesSelected;
             let sampleRates = devicesSelected && selectedInputDevice && selectedOutputDevice ?
                 intersectArrays(selectedInputDevice.sampleRates, selectedOutputDevice.sampleRates)
                 : [];
             let sampleRateOptions = sampleRates.length === 0 && this.state.jackServerSettings.sampleRate ? [this.state.jackServerSettings.sampleRate] : sampleRates;
-            let ultraCompact = this.windowSize.width < 500;
+
             return (
                 <>
                     <DialogEx tag="jack" onClose={() => { this.handleClose(); }} aria-labelledby="select-channels-title" open={this.props.open}
@@ -654,9 +656,14 @@ const JackServerSettingsDialog = withStyles(
                                                 disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
                                                 style={{ width: 220 }}
                                             >
-                                                {sortedDevices.filter(d => d.supportsCapture).map(d => (
-                                                    <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
-                                                )) || <MenuItem value="" disabled>Loading...</MenuItem>}
+                                                {sortedDevices.filter(d => 
+                                                    (d.supportsCapture || d.captureBusy)
+                                                    ).map(d => (
+                                                    <MenuItem key={d.id} disabled={d.captureBusy}
+                                                        value={d.id}
+                                                        style={{ opacity: d.captureBusy ? 0.3 : 1 }}
+                                                    >{d.name}</MenuItem>
+                                                ))}
                                             </Select>
                                         </FormControl>
 
@@ -670,9 +677,15 @@ const JackServerSettingsDialog = withStyles(
                                                 disabled={!this.state.alsaDevices || this.state.alsaDevices.length === 0}
                                                 style={{ width: 220 }}
                                             >
-                                                {sortedDevices.filter(d => d.supportsPlayback).map(d => (
-                                                    <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
-                                                )) || <MenuItem value="" disabled>Loading...</MenuItem>}
+                                                {sortedDevices.filter(
+                                                    d => (d.supportsPlayback
+                                                    || d.playbackBusy)
+                                                ).map(d => (
+                                                    <MenuItem key={d.id} value={d.id}
+                                                        style={{ opacity: d.playbackBusy ? 0.3 : 1.0 }}
+                                                        disabled={d.playbackBusy}
+                                                    >{d.name}</MenuItem>
+                                                ))}
                                             </Select>
                                         </FormControl>
                                     </div>

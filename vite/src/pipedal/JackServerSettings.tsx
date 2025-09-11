@@ -81,12 +81,14 @@ export default class JackServerSettings {
             ? this.alsaOutputDevice.substring(3)
             : this.alsaOutputDevice;
 
+        let device: string;
         if (inDev === outDev) {
-            return inDev;
+            device =  inDev;
 
         } else {
-            return inDev + "-> " + outDev;
+            device = inDev + "-> " + outDev;
         }
+        return `${device} ${this.sampleRate} ${this.bufferSize}x${this.numberOfBuffers}`;
     }
 
 }

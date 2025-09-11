@@ -11,6 +11,8 @@ export default class AlsaDeviceInfo {
         this.maxBufferSize = input.maxBufferSize;
         this.supportsCapture = input.supportsCapture ? true : false;
         this.supportsPlayback = input.supportsPlayback ? true : false;
+        this.captureBusy = input.captureBusy;
+        this.playbackBusy = input.playbackBusy;
         return this;
     }
     static deserialize_array(input: any): AlsaDeviceInfo[]
@@ -67,4 +69,6 @@ export default class AlsaDeviceInfo {
     maxBufferSize: number = 0; 
     supportsCapture: boolean = true;
     supportsPlayback: boolean = true;
+    captureBusy: boolean = false;
+    playbackBusy: boolean = false;
 };

@@ -42,6 +42,9 @@ namespace pipedal {
                 double sampleRate,
                 int32_t blockLength, 
                 int32_t atomBufferBlockLength);
+
+        void SetBlockLength(int32_t blockLength) { this->blockLength = blockLength; }
+        
         ~OptionsFeature();
 	public:
 		const LV2_Feature* GetFeature()

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2025 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -28,6 +28,7 @@
 #include "PatchPropertyWriter.hpp"
 #include <unordered_map>
 #include "MapPathFeature.hpp"
+#include "OptionsFeature.hpp"
 
 #include "IEffect.hpp"
 #include "Worker.hpp"
@@ -56,7 +57,7 @@ namespace pipedal
         virtual void OnLogDebug(const char*message);
 
     private:
-        
+        size_t GetStagedBufferSize() const;
 
         std::shared_ptr<HostWorkerThread> workerThread;
         std::unique_ptr<Worker> worker;
@@ -115,6 +116,7 @@ namespace pipedal
         LV2_Atom_Forge_Frame input_frame;
 
         LV2_Atom_Forge outputForgeRt;
+        LV2_Atom_Forge_Frame output_frame;
 
         std::vector<LV2_URID> pathProperties;
         std::vector<PatchPropertyWriter> pathPropertyWriters;
@@ -210,8 +212,11 @@ namespace pipedal
 
         bool borrowedEffect = false;
         bool activated = false;
+        void EnableBufferStaging(size_t bufferSize, size_t nInputs, size_t nOutputs);
+        void CheckStagingBufferSentries();
 
     public:
+        bool RequiresBufferStaging() const;
         bool IsBorrowedEffect() const { return borrowedEffect; }
         void SetBorrowedEffect(bool value) { borrowedEffect = value; }
         void UpdateAudioPorts();
@@ -247,9 +252,36 @@ namespace pipedal
             return (uint8_t*)this->outputAtomBuffers[0];
 
         }
+        OptionsFeature optionsFeature;
 
         bool hasErrorMessage = false;
         char errorMessage[1024];
+
+        bool deleted = false;
+        size_t stagingBufferSize = 0;
+        size_t stagingInputIx = 0;
+        size_t stagingOutputIx = 0;
+        std::vector<std::vector<float>> inputStagingBuffers;
+        std::vector<std::vector<float>> outputStagingBuffers;
+        std::vector<float*> inputStagingBufferPointers;
+        std::vector<float*> outputStagingBufferPointers;
+
+        std::vector<uint8_t> stagedInputAtomBuffer;
+        void *stagedInputAtomBufferPointer = nullptr;
+        std::vector<uint8_t> stagedOutputAtomBuffer;
+        void *stagedOutputAtomBufferPointer = nullptr;
+
+        size_t stageToOutput(size_t outputIndex, size_t nFrames);
+        size_t stageToInput(size_t inputIndex, size_t nFrames);
+
+
+        LV2_Atom_Forge stagedInputForgeRt;
+        LV2_Atom_Forge_Frame staged_input_frame;
+
+        void MixOutput(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter);
+        void copyAtomBufferEventSequence(LV2_Atom_Sequence *sequence, LV2_Atom_Forge &outputForge);
+        void resetStagedInputAtomBuffer();
+
     public:
         Lv2Effect(
             IHost *pHost,
@@ -280,14 +312,14 @@ namespace pipedal
         virtual int GetNumberOfOutputAudioBuffers() const {return this->outputAudioBuffers.size(); }
 
         virtual void SetAudioInputBuffer(int index, float *buffer);
-        virtual float *GetAudioInputBuffer(int index) const { return this->inputAudioBuffers[index]; }
+        virtual float *GetAudioInputBuffer(int index) const;
 
 
         virtual void SetAudioInputBuffer(float *buffer);
         virtual void SetAudioInputBuffers(float *left, float *right);
 
         virtual void SetAudioOutputBuffer(int index, float *buffer);
-        virtual float *GetAudioOutputBuffer(int index) const { return this->outputAudioBuffers[index]; }
+        virtual float *GetAudioOutputBuffer(int index) const;
 
         virtual void SetAtomInputBuffer(int index, void *buffer) { this->inputAtomBuffers[index] = (char*)buffer;}
         virtual void *GetAtomInputBuffer(int index) const { return this->inputAtomBuffers[index]; }
@@ -345,6 +377,7 @@ namespace pipedal
 
         virtual void Activate();
         virtual void Run(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter);
+        virtual void RunWithBufferStaging(uint32_t samples, RealtimeRingBufferWriter *realtimeRingBufferWriter);
         virtual void Deactivate();
     };
 

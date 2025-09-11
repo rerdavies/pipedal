@@ -59,6 +59,7 @@ int Lv2Pedalboard::GetControlIndex(uint64_t instanceId, const std::string &symbo
     }
     return -1;
 }
+
 std::vector<float *> Lv2Pedalboard::PrepareItems(
     std::vector<PedalboardItem> &items,
     std::vector<float *> inputBuffers,
@@ -88,8 +89,8 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 
                 this->processActions.push_back(preMixAction);
 
-                std::vector<float *> topResult = PrepareItems(item.topChain(), topInputs, errorList,existingEffects);
-                std::vector<float *> bottomResult = PrepareItems(item.bottomChain(), bottomInputs, errorList,existingEffects);
+                std::vector<float *> topResult = PrepareItems(item.topChain(), topInputs, errorList, existingEffects);
+                std::vector<float *> bottomResult = PrepareItems(item.bottomChain(), bottomInputs, errorList, existingEffects);
 
                 this->processActions.push_back(
                     [pSplit](uint32_t frames)
@@ -114,11 +115,10 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
             {
                 std::shared_ptr<IEffect> pLv2Effect;
 
-                if (existingEffects && existingEffects->contains(item.instanceId())
-                )
+                if (existingEffects && existingEffects->contains(item.instanceId()))
                 {
                     pLv2Effect = existingEffects->at(item.instanceId());
-                    ((Lv2Effect*)pLv2Effect.get())->SetBorrowedEffect(true);
+                    ((Lv2Effect *)pLv2Effect.get())->SetBorrowedEffect(true);
                 }
                 else
                 {
@@ -177,16 +177,38 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                         }
                     }
 
-                    this->processActions.push_back(
-                        [pLv2Effect, this](uint32_t frames)
-                        {
-                            pLv2Effect->Run(frames, this->ringBufferWriter);
-                        });
-
-                    // Reset any trigger controls to default state after processing
+                    // check to see whether we need buffer staging.
+                    bool requiresBufferStaging = false;
                     if (pLv2Effect->IsLv2Effect())
                     {
                         Lv2Effect *lv2Effect = (Lv2Effect *)pLv2Effect.get();
+
+                        if (lv2Effect->RequiresBufferStaging())
+                        {
+                            requiresBufferStaging = true;
+                            this->processActions.push_back(
+                                [lv2Effect, this](uint32_t frames)
+                                {
+                                    lv2Effect->RunWithBufferStaging(frames, this->ringBufferWriter);
+                                });
+                        }
+                    }
+
+
+                    if (!requiresBufferStaging)
+                    {
+                        this->processActions.push_back(
+                            [pLv2Effect, this](uint32_t frames)
+                            {
+                                pLv2Effect->Run(frames, this->ringBufferWriter);
+                            });
+                    }
+
+                    // reset any trigger controls to default state after processing
+                    if (pLv2Effect->IsLv2Effect())
+                    {
+                        Lv2Effect *lv2Effect = (Lv2Effect *)pLv2Effect.get();
+
                         auto pluginInfo = pHost->GetPluginInfo(item.uri());
                         if (pluginInfo)
                         {
@@ -212,7 +234,8 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
             }
             if (pEffect)
             {
-                this->effects.push_back(pEffect);               // for ownership.
+                this->effects.push_back(pEffect); // for ownership.
+
                 this->realtimeEffects.push_back(pEffect.get()); // because std::shared_ptr is not threadsafe.
 
                 std::vector<float *> effectOutput;
@@ -326,7 +349,6 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
                     mapping.midiBinding = binding;
                     mapping.instanceId = pedalboardItem.instanceId();
 
-
                     if (pPortInfo->mod_momentaryOffByDefault() || pPortInfo->mod_momentaryOnByDefault())
                     {
                         mapping.mappingType = MidiControlType::MomentarySwitch;
@@ -397,14 +419,14 @@ void Lv2Pedalboard::UpdateAudioPorts()
         {
             Lv2Effect *lv2Effect = (Lv2Effect *)effect;
             lv2Effect->UpdateAudioPorts();
-        }   
+        }
     }
 }
 
 void Lv2Pedalboard::Activate()
 {
     CrashGuardLock crashGuardLock;
-    
+
     for (int i = 0; i < this->effects.size(); ++i)
     {
         this->realtimeEffects[i]->Activate();
@@ -435,7 +457,7 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
             return false;
         }
     }
-    
+
     for (size_t i = 0; i < samples; ++i)
     {
         float volume = this->inputVolume.Tick();
@@ -581,12 +603,13 @@ void Lv2Pedalboard::ProcessParameterRequests(RealtimePatchPropertyRequest *pPara
         else if (pEffect->IsVst3())
         {
             pParameterRequests->errorMessage = "Not supported for VST3 plugins";
-        } else if (pParameterRequests->sampleTimeout < 0)
+        }
+        else if (pParameterRequests->sampleTimeout < 0)
         {
             pParameterRequests->sampleTimeout = 0;
             pParameterRequests->errorMessage = "Timed out.";
         }
-        else 
+        else
         {
             if (pEffect->IsLv2Effect())
             {

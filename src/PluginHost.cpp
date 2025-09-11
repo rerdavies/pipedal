@@ -30,7 +30,6 @@
 #include "Pedalboard.hpp"
 #include "Lv2Effect.hpp"
 #include "Lv2Pedalboard.hpp"
-#include "OptionsFeature.hpp"
 #include "JackConfiguration.hpp"
 #include "lv2/urid/urid.h"
 #include "lv2/ui/ui.h"
@@ -303,8 +302,6 @@ PluginHost::PluginHost()
     lv2Features.push_back(mapFeature.GetMapFeature());
     lv2Features.push_back(mapFeature.GetUnmapFeature());
 
-    optionsFeature.Prepare(mapFeature, 44100, this->GetMaxAudioBufferSize(), this->GetAtomBufferSize());
-    lv2Features.push_back(optionsFeature.GetFeature());
 
     fileMetadataFeature.Prepare(mapFeature);
     lv2Features.push_back(fileMetadataFeature.GetFeature());
@@ -322,7 +319,6 @@ void PluginHost::OnConfigurationChanged(const JackConfiguration &configuration, 
         this->numberOfAudioInputChannels = settings.GetInputAudioPorts().size();
         this->numberOfAudioOutputChannels = settings.GetOutputAudioPorts().size();
         this->maxBufferSize = configuration.blockLength();
-        optionsFeature.Prepare(this->mapFeature, configuration.sampleRate(), configuration.blockLength(), GetAtomBufferSize());
     }
 }
 
@@ -941,6 +937,11 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
             isValid = false;
         }
     }
+    AutoLilvNode minBlockLength = lilv_world_get(pWorld,plugUri, lv2Host->lilvUris->buf_size__minBlockLength,nullptr);
+    this->minBlockLength_ = minBlockLength.AsFloat(-1);
+    AutoLilvNode maxBlockLength = lilv_world_get(pWorld,plugUri, lv2Host->lilvUris->buf_size__maxBlockLength,nullptr);
+    this->maxBlockLength_ = maxBlockLength.AsFloat(-1);
+
 
     std::sort(ports_.begin(), ports_.end(), ports_sort_compare);
     // Fetch patch properties.
@@ -2217,7 +2218,11 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
 
      json_map::enum_reference("units", &Lv2PortInfo::units_, get_units_enum_converter()),
      MAP_REF(Lv2PortInfo, custom_units),
-     MAP_REF(Lv2PortInfo, comment)}};
+     MAP_REF(Lv2PortInfo, comment),
+
+}};
+
+     
 
 json_map::storage_type<Lv2PortGroup> Lv2PortGroup::jmap{{
     MAP_REF(Lv2PortGroup, uri),
@@ -2249,6 +2254,8 @@ json_map::storage_type<Lv2PluginInfo> Lv2PluginInfo::jmap{{
     json_map::reference("modGui", &Lv2PluginInfo::modGui_),
     json_map::reference("patchProperties", &Lv2PluginInfo::patchProperties_),
     json_map::reference("hasDefaultState", &Lv2PluginInfo::hasDefaultState_),
+    json_map::reference("minBlockLength", &Lv2PluginInfo::minBlockLength_),
+    json_map::reference("maxBlockLength", &Lv2PluginInfo::maxBlockLength_),
 
 }};
 
