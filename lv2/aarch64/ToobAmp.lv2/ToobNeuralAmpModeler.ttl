@@ -133,12 +133,12 @@ making his optimizations work available as open-source code.
 Steve and Mike have done all of the hard work that was required to make NAM technology available through TooB Neural Amp Modeler. They 
 deserve all the credit.
 
-Code from the the NeuralAudio project (https://github.com/sdatkinson/NeuralAmpModelerCore) is provided 
+Code from the the NeuralAudio project (https://github.com/mikeoliphant/NeuralAudio) is provided 
 under the following license. 
 
 MIT License
 
-Copyright (c) 2024 Mike Oliphant
+Copyright (c) 2024, 2025 Mike Oliphant
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
