@@ -93,7 +93,7 @@ cabir:impulseFile3
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 68 ;
+        lv2:microVersion 70 ;
         rdfs:comment """
 
 TooB Cab IR is a convolution-based guitar cabinet impulse response simulator.
@@ -174,7 +174,7 @@ Limitations of Liability that apply to these works.
                 pg:group cabir:impulseFile1Group ;
 
 
-                lv2:default -10.0 ;
+                lv2:default -3.0 ;
                 lv2:minimum -40.0 ;
                 lv2:maximum 20.0 ;    
                 units:unit units:db ;
@@ -194,7 +194,7 @@ Limitations of Liability that apply to these works.
                 lv2:name "Volume";
                 pg:group cabir:impulseFile2Group ;
 
-                lv2:default -10.0 ;
+                lv2:default -3.0 ;
                 lv2:minimum -40.0 ;
                 lv2:maximum 20.0 ;    
                 units:unit units:db ;
@@ -214,7 +214,7 @@ Limitations of Liability that apply to these works.
                 lv2:name "Volume";
                 pg:group cabir:impulseFile3Group ;
 
-                lv2:default -10.0 ;
+                lv2:default -3.0 ;
                 lv2:minimum -40.0 ;
                 lv2:maximum 20.0 ;    
                 units:unit units:db ;
