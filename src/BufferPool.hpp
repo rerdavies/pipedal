@@ -49,7 +49,7 @@ public:
     void Clear() {
         for (int i = 0; i < allocatedBuffers.size(); ++i)
         {
-            delete[] (char*)allocatedBuffers[i];
+            delete[] (char*)(allocatedBuffers[i]);
         }
         allocatedBuffers.resize(0);
     }

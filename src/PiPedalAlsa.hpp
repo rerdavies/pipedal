@@ -1,4 +1,5 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E. R. Davies
+// Copyright (c) Gabriel Hernandez
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -31,6 +32,10 @@ namespace pipedal {
         std::string longName_;
         std::vector<uint32_t> sampleRates_;
         uint32_t minBufferSize_ = 0,maxBufferSize_ = 0;
+        bool supportsCapture_ = false;
+        bool supportsPlayback_ = false;
+        bool captureBusy_ = false;
+        bool playbackBusy_ = false;
 
         bool isDummyDevice() const {
             return id_.starts_with("dummy:");

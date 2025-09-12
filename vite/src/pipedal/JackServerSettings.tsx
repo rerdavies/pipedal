@@ -20,12 +20,13 @@
 
 
 export default class JackServerSettings {
-    deserialize(input: any) : JackServerSettings{
+    deserialize(input: any): JackServerSettings {
         this.valid = input.valid;
         this.isOnboarding = input.isOnboarding;
         this.isJackAudio = input.isJackAudio;
         this.rebootRequired = input.rebootRequired;
-        this.alsaDevice = input.alsaDevice?? "";
+        this.alsaInputDevice = input.alsaInputDevice ?? "";
+        this.alsaOutputDevice = input.alsaOutputDevice ?? "";
         this.sampleRate = input.sampleRate;
         this.bufferSize = input.bufferSize;
         this.numberOfBuffers = input.numberOfBuffers;
@@ -40,27 +41,54 @@ export default class JackServerSettings {
     //         this.valid = true;
     //     }
     // }
-    clone(): JackServerSettings
-    {
+    clone(): JackServerSettings {
         return new JackServerSettings().deserialize(this);
     }
     valid: boolean = false;
     isOnboarding: boolean = true;
     rebootRequired = false;
     isJackAudio = false;
-    alsaDevice: string = "";
+    alsaInputDevice: string = "";
+    alsaOutputDevice: string = "";
     sampleRate = 48000;
     bufferSize = 64;
     numberOfBuffers = 3;
 
-    getSummaryText() {
-        if (this.valid) {
-            let device = this.alsaDevice;
-            if (device.startsWith("hw:")) device = device.substring(3);
-            return device + " - Rate: " + this.sampleRate + " BufferSize: " + this.bufferSize + " Buffers: " + this.numberOfBuffers;
-        } else {
-            return "Not configured";
+    /**
+     * Configure this instance to use the dummy audio device. This mirrors the
+     * behaviour of the backend JackServerSettings::UseDummyAudioDevice method
+     * and is used when temporarily releasing ALSA devices.
+     * Needed when changing devices and when testing new settings with apply button.
+     */
+    useDummyAudioDevice() {
+        if (this.sampleRate === 0) {
+            this.sampleRate = 48000;
         }
+        this.valid = true;
+        this.alsaInputDevice = "__DUMMY_AUDIO__dummy:channels_2";
+        this.alsaOutputDevice = "__DUMMY_AUDIO__dummy:channels_2";
+    }
+
+    getSummaryText() {
+        if (!this.valid || !this.alsaInputDevice || !this.alsaOutputDevice) {
+            return "Not selected";
+        }
+
+        let inDev = this.alsaInputDevice.startsWith("hw:")
+            ? this.alsaInputDevice.substring(3)
+            : this.alsaInputDevice;
+        let outDev = this.alsaOutputDevice.startsWith("hw:")
+            ? this.alsaOutputDevice.substring(3)
+            : this.alsaOutputDevice;
+
+        let device: string;
+        if (inDev === outDev) {
+            device =  inDev;
+
+        } else {
+            device = inDev + "-> " + outDev;
+        }
+        return `${device} ${this.sampleRate} ${this.bufferSize}x${this.numberOfBuffers}`;
     }
 
 }

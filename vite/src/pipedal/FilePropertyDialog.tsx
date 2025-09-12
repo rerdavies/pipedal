@@ -22,6 +22,8 @@ import React from 'react';
 import { createStyles } from './WithStyles';
 
 // import Tone3000Dialog from './Tone3000Dialog';
+
+import TextInfoDialog from './TextInfoDialog';
 import Tone3000HelpDialog from './Tone3000HelpDialog';
 import GuitarMLHelpDialog from './GuitarMlHelpDialog';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -172,7 +174,9 @@ export interface FilePropertyDialogState {
     selectedFiles: string[],
     //openTone3000Dialog: boolean,
     openTone3000Help: boolean,
-    openGuitarMlHelp: boolean
+    openGuitarMlHelp: boolean,
+
+    textFileName? : string;
 
 };
 
@@ -702,7 +706,9 @@ export default withStyles(
             if (this.state.previousSelection == selectedItem) {
                 return;
             }
-            this.props.onApply(fileProperty, selectedItem);
+            if (!this.isLicenseFile(selectedItem) && !this.isFolderArtwork(selectedItem)) {
+                this.props.onApply(fileProperty, selectedItem);
+            }
             this.setState({previousSelection: selectedItem});
         }
 
@@ -1754,9 +1760,32 @@ export default withStyles(
                                 onClose={() => this.setState({ openGuitarMlHelp: false })}
                             />
                         )}
+                        {this.state.textFileName !== undefined && (
+                            <TextInfoDialog open={true} 
+                                title={pathFileNameOnly(this.state.textFileName)}
+                                fileName={this.state.textFileName} onClose={() => this.setState({ textFileName: undefined })} 
+                                />
+                        )}
                     </DialogEx>
                 );
         }
+        isLicenseFile(fileName: string) {
+            let extension = pathExtension(fileName);
+            if (extension === ".txt" || extension === ".md"){
+                return true;
+            } 
+            let fileNameOnly = pathFileNameOnly(fileName);
+            if (fileNameOnly === "LICENSE" || fileNameOnly === "README")
+            {
+                return true;
+            }
+            return false;
+
+        }
+        handleShowTextFile(fileName: string) {
+            this.setState({ textFileName: fileName });
+        }
+
         openSelectedFile(): void {
             if (this.state.multiSelect || this.state.reordering) {
                 return;
@@ -1768,7 +1797,11 @@ export default withStyles(
                 this.requestFiles(this.state.selectedFile);
                 this.setState({ navDirectory: this.state.selectedFile });
             } else {
-                this.props.onOk(this.props.fileProperty, this.state.selectedFile);
+                if (this.isLicenseFile(this.state.selectedFile)) {
+                    this.handleShowTextFile(this.state.selectedFile);
+                } else {
+                    this.props.onOk(this.props.fileProperty, this.state.selectedFile);
+                }
             }
         }
 

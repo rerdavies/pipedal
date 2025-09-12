@@ -312,7 +312,14 @@ public:
                 auto mimeType = GetMimeType(path);
                 if (mimeType.empty())
                 {
-                    throw PiPedalException("Can't download files of this type.");
+                    if (isInfoFile(path))
+                    {
+                        mimeType = "text/plain";
+                    }
+                    else
+                    {
+                        throw PiPedalException("Can't download files of this type.");
+                    }
                 }
                 res.set(HttpField::content_type, mimeType);
                 res.set(HttpField::cache_control, "no-cache");
@@ -403,6 +410,21 @@ public:
                                               path));
     }
 
+    bool isInfoFile(const fs::path &path)
+    {
+        auto extension = path.extension();
+        if (extension == ".md" || extension == ".txt")
+        {
+            return true;
+        }
+        auto filename = path.stem();
+        if (filename == "LICENSE" || filename == "README") {
+            return true;
+        }
+        return false;
+
+    }
+
     virtual void get_response(
         const uri &request_uri,
         HttpRequest &req,
@@ -417,9 +439,6 @@ public:
             {
                 fs::path path = request_uri.query("path");
 
-                bool t = this->model->IsInUploadsDirectory(path);
-                std::cout << (t ? "true" : "false") << std::endl;
-                (void)t;
                 if (!fs::exists(path) || !this->model->IsInUploadsDirectory(path) || HasDotDot(path))
                 {
                     throw PiPedalException("File not found.");
@@ -427,7 +446,14 @@ public:
                 auto mimeType = GetMimeType(path);
                 if (mimeType.empty())
                 {
-                    throw PiPedalException("Can't download files of this type.");
+                    if (isInfoFile(path))
+                    {
+                        mimeType = "text/plain";
+                    }
+                    else
+                    {
+                        throw PiPedalException("Can't download files of this type.");
+                    }
                 }
                 res.set(HttpField::content_type, mimeType);
                 res.set(HttpField::cache_control, "no-cache");
@@ -739,17 +765,19 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "Tone3000Auth") {
-                // https://www.tone3000.com/api/v1/auth?redirect_url=http://10.0.0.151:8080/var/Tone3000Auth&otp_only=true 
+            if (segment == "Tone3000Auth")
+            {
+                // https://www.tone3000.com/api/v1/auth?redirect_url=http://10.0.0.151:8080/var/Tone3000Auth&otp_only=true
                 std::string apiKey = request_uri.query("api_key");
 
                 model->SetTone3000Auth(apiKey);
 
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
-                
+
                 res.setBody("\"OK\"");
-            } else if (segment == "uploadPluginPresets")
+            }
+            else if (segment == "uploadPluginPresets")
             {
                 PluginPresets presets;
                 fs::path filePath = req.get_body_temporary_file();
@@ -921,7 +949,7 @@ public:
                                 {
                                     fs::path inputPath{inputFile};
                                     std::string extension = inputPath.extension();
-                                    if (extensionChecker.IsValidExtension(extension))
+                                    if (extensionChecker.IsValidExtension(extension) || isInfoFile(inputFile))
                                     {
                                         auto si = zipFile->GetFileInputStream(inputFile);
                                         std::string path = this->model->UploadUserFile(directory, instanceId, patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));

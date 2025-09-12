@@ -1,4 +1,5 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E. R. Davies
+// Copyright (c) Gabriel Hernandez
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -22,6 +23,8 @@
 #include "alsa/asoundlib.h"
 #include "Lv2Log.hpp"
 #include <mutex>
+#include <algorithm>
+#include "Finally.hpp"
 
 using namespace pipedal;
 
@@ -45,6 +48,111 @@ void PiPedalAlsaDevices::cacheDevice(const std::string &name, const AlsaDeviceIn
     cachedDevices[name] = deviceInfo;
 }
 
+static bool isSupportedAudioDevice(const AlsaDeviceInfo &d)
+{
+    std::string name = d.name_ + " " + d.longName_;
+    std::transform(name.begin(), name.end(), name.begin(), [](char c)
+                   { return std::tolower(c); });
+    if (name.find("hdmi") != std::string::npos) return false;
+//    if (name.find("bcm2835") != std::string::npos) return false;
+    return true;
+};
+
+
+struct ProcAlsaDevice {
+    int cardId; 
+    int subdeviceId;
+    bool audioCapture;
+    bool audioPlayback;
+    bool rawMidi;
+};
+
+static std::vector<ProcAlsaDevice> getProcAlsaDevices()
+{
+    std::vector<ProcAlsaDevice> result;
+
+    std::ifstream f {"/proc/asound/devices"};
+    if (f.is_open())
+    {
+        std::string line;
+        while (std::getline(f, line))
+        {
+            // Parse each line of /proc/alsa/devices
+            // Format: cardnum: [devicenum- subdevicenum]: type : name
+            std::istringstream iss(line);
+            std::string token;
+            
+            // Skip leading whitespace and get card number
+            if (!std::getline(iss, token, ':'))
+            {
+                continue;
+            }
+            try {
+                int cardId = std::stoi(token.substr(token.find_first_not_of(" \t")));
+                
+                // Get device-subdevice part
+                if (!std::getline(iss, token, ':'))
+                {
+                    continue;
+                }
+                size_t dashPos = token.find('-');
+                if (dashPos == std::string::npos)
+                {
+                    continue;
+                }
+                int deviceId = std::stoi(token.substr(token.find_first_not_of(" \t["), dashPos));
+                int subdeviceId = std::stoi(token.substr(dashPos + 1, token.find(']') - dashPos - 1));
+                        
+                // Get type
+                if (!std::getline(iss, token, ':'))
+                {
+                    continue;
+                }
+                std::string type = token.substr(token.find_first_not_of(" \t"));
+
+                ProcAlsaDevice *pDevice = nullptr;
+                for (size_t i = 0; i < result.size(); ++i)
+                {
+                    if (result[i].cardId == deviceId && result[i].subdeviceId == subdeviceId)
+                    {
+                        pDevice = &result[i];
+                        break;
+                    }
+                }
+                if (pDevice == nullptr)
+                {
+                    ProcAlsaDevice newDevice;
+                    newDevice.cardId = deviceId;
+                    newDevice.subdeviceId = subdeviceId;
+                    newDevice.audioCapture = false;
+                    newDevice.audioPlayback = false;
+                    newDevice.rawMidi = false;
+                    result.push_back(newDevice);
+                    pDevice = &(result[result.size()-1]);
+                }
+                if (type.find("digital audio capture") != std::string::npos)
+                {
+                    pDevice->audioCapture = true;
+                }
+                if ((type.find("digital audio playback") != std::string::npos))
+                {
+                    pDevice->audioPlayback = true;
+                }
+                if (type.find("rawmidi") != std::string::npos)
+                {
+                    pDevice->rawMidi = true;
+                }
+            } catch (const std::exception &e)
+            {
+                Lv2Log::error(SS("invalid ALSA proc entry: " << line));
+            }
+        }
+    }
+
+    return result;
+}
+
+
 std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 {
 
@@ -55,85 +163,111 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
     int cardNum = -1; // Start with first card
     int err;
 
-    for (;;)
+    std::vector<ProcAlsaDevice> procAlsaDevices = getProcAlsaDevices();
+
+    for (const auto &procAlsaDevice: procAlsaDevices)
     {
-        if ((err = snd_card_next(&cardNum)) < 0)
-        {
-            Lv2Log::error("Unexpected error enumerating ALSA devices.");
-            break;
+        std::stringstream ss;
+        if (!procAlsaDevice.audioCapture && !procAlsaDevice.audioPlayback) {
+            continue;
         }
-        if (cardNum < 0)
-            // No more cards
-            break;
+        ss << "hw:" << procAlsaDevice.cardId;
 
+        std::string cardId = ss.str();
+
+        snd_ctl_t *hDevice = nullptr;
+
+        if ((err = snd_ctl_open(&hDevice, cardId.c_str(), 0)) < 0)
         {
-            std::stringstream ss;
-            ss << "hw:" << cardNum;
-            std::string cardId = ss.str();
+            continue;
+        }
 
-            snd_ctl_t *hDevice = nullptr;
+        Finally ffhDevice{[hDevice]()
+                            { snd_ctl_close(hDevice); }};
 
-            if ((err = snd_ctl_open(&hDevice, cardId.c_str(), 0)) < 0)
+        snd_ctl_card_info_t *alsaInfo = nullptr;
+        if (snd_ctl_card_info_malloc(&alsaInfo) != 0)
+        {
+            Lv2Log::error("Failed to allocate ALSA card info");
+            continue;
+        }
+
+        Finally ffCardInfo{[alsaInfo]()
+                            { snd_ctl_card_info_free(alsaInfo); }};
+
+        err = snd_ctl_card_info(hDevice, alsaInfo);
+        if (err == 0)
+        {
+            AlsaDeviceInfo info;
+            info.cardId_ = cardNum;
+            info.id_ = std::string("hw:") + snd_ctl_card_info_get_id(alsaInfo);
+            const char *driver = snd_ctl_card_info_get_driver(alsaInfo);
+            (void)driver;
+
+            info.name_ = snd_ctl_card_info_get_name(alsaInfo);
+            info.longName_ = snd_ctl_card_info_get_longname(alsaInfo);
+
+            // we can't read our own device if it's open so use data that gets
+            // cached before we open audio devices.
+
+            AlsaDeviceInfo cachedInfo;
+            if (getCachedDevice(info.name_, &cachedInfo))
             {
+                // may have been plugged into a different USB connector.
+                cachedInfo.cardId_ = info.cardId_;
+                cachedInfo.id_ = info.id_;
+                result.push_back(cachedInfo);
                 continue;
             }
+            snd_pcm_t *captureDevice = nullptr;
+            snd_pcm_t *playbackDevice = nullptr;
+            auto rc = snd_pcm_open(&captureDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
+            bool captureOk =  rc == 0;
 
-            snd_ctl_card_info_t *alsaInfo;
-            if (snd_ctl_card_info_malloc(&alsaInfo) != 0)
+            Finally ffCaptureDevice{
+                [captureDevice]
+                { if (captureDevice) snd_pcm_close(captureDevice); }};
+
+            rc  = snd_pcm_open(&playbackDevice, cardId.c_str(), SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
+            bool playbackOk = rc == 0;
+
+            Finally ffPlaybackDevice{
+                [playbackDevice]
+                { if (playbackDevice) snd_pcm_close(playbackDevice); }};
+            if (procAlsaDevice.audioCapture && !captureOk)
             {
-                Lv2Log::error("Failed to allocate ALSA card info");
-                snd_ctl_close(hDevice);
-                continue;
+                info.captureBusy_ = true;
+            }
+            if (procAlsaDevice.audioPlayback && !playbackOk)
+            {
+                info.playbackBusy_ = true;
             }
 
-            err = snd_ctl_card_info(hDevice, alsaInfo);
-            if (err == 0)
+            info.supportsCapture_ = captureOk;
+            info.supportsPlayback_ = playbackOk;
+
+            if (captureOk || playbackOk)
             {
-                AlsaDeviceInfo info;
-                info.cardId_ = cardNum;
-                info.id_ = std::string("hw:") + snd_ctl_card_info_get_id(alsaInfo);
-                const char *driver = snd_ctl_card_info_get_driver(alsaInfo);
+                snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
+                snd_pcm_hw_params_t *params = nullptr;
+                err = snd_pcm_hw_params_malloc(&params);
 
-                info.name_ = snd_ctl_card_info_get_name(alsaInfo);
-                info.longName_ = snd_ctl_card_info_get_longname(alsaInfo);
-
-                snd_pcm_t *hDevice = nullptr;
-
-                // must support capture AND playback
-                err = snd_pcm_open(&hDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, 0);
                 if (err == 0)
                 {
-                    snd_pcm_close(hDevice);
-                }
-                if (err == 0)
-                {
-                    err = snd_pcm_open(&hDevice, cardId.c_str(), SND_PCM_STREAM_PLAYBACK, 0);
-                }
-                if (err == 0)
-                {
-                    snd_pcm_hw_params_t *params = nullptr;
-                    err = snd_pcm_hw_params_malloc(&params);
+                    Finally ffParams{[params]
+                                        { snd_pcm_hw_params_free(params); }};
+
+                    err = snd_pcm_hw_params_any(hDevice, params);
                     if (err == 0)
                     {
-                        err = snd_pcm_hw_params_any(hDevice, params);
+                        unsigned int minRate = 0, maxRate = 0;
+                        snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
+                        int dir;
+
+                        err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
                         if (err == 0)
                         {
-                            unsigned int minRate = 0, maxRate = 0;
-                            snd_pcm_uframes_t minBufferSize = 0, maxBufferSize = 0;
-                            int dir;
-                            err = snd_pcm_hw_params_get_rate_min(params, &minRate, &dir);
-                            if (err == 0)
-                            {
-                                err = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
-                            }
-                            if (err == 0)
-                            {
-                                err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
-                            }
-                            if (err == 0)
-                            {
-                                err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
-                            }
+                            err = snd_pcm_hw_params_get_rate_max(params, &maxRate, &dir);
                             if (err == 0)
                             {
                                 for (size_t i = 0; i < sizeof(RATES) / sizeof(RATES[0]); ++i)
@@ -144,42 +278,71 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                                         info.sampleRates_.push_back(rate);
                                     }
                                 }
-                                if (minBufferSize < 16)
-                                {
-                                    minBufferSize = 16;
-                                }
-
-                                info.minBufferSize_ = (uint32_t)minBufferSize;
-                                info.maxBufferSize_ = (uint32_t)maxBufferSize;
-                                cacheDevice(info.name_, info);
-                                result.push_back(info);
+                            }
+                            else
+                            {
+                                Lv2Log::warning(SS("Failed to get maximum sample rate for device '" << info.name_ << "'."));
                             }
                         }
+                        else
+                        {
+                            Lv2Log::warning(SS("Failed to get minimum sample rate for device '" << info.name_ << "'."));
+                        }
+
+                        if (err == 0)
+                        {
+                            err = snd_pcm_hw_params_get_buffer_size_min(params, &minBufferSize);
+                            if (err == 0)
+                            {
+                                err = snd_pcm_hw_params_get_buffer_size_max(params, &maxBufferSize);
+                            }
+                        }
+                        if (err == 0)
+                        {
+                            if (minBufferSize < 16)
+                            {
+                                minBufferSize = 16;
+                            }
+
+                            info.minBufferSize_ = (uint32_t)minBufferSize;
+                            info.maxBufferSize_ = (uint32_t)maxBufferSize;
+                        }
                     }
-                    if (params != nullptr)
-                        snd_pcm_hw_params_free(params);
-                    snd_pcm_close(hDevice);
                 }
-                else
+                if (!info.captureBusy_ && !info.playbackBusy_)
                 {
-                    if (getCachedDevice(info.name_, &info))
-                    {
-                        result.push_back(info);
-                    }
+                    cacheDevice(info.name_, info);
+                    result.push_back(info);
                 }
+            } else {
+                if (info.captureBusy_ || info.playbackBusy_)
+                {
+                    result.push_back(info);
+                }
+
             }
-            snd_ctl_card_info_free(alsaInfo);
-            snd_ctl_close(hDevice);
         }
     }
-    snd_config_update_free_global();
 
     Lv2Log::debug("GetAlsaDevices --");
+
+    std::vector<AlsaDeviceInfo> filtered;
     for (auto &device : result)
     {
-        Lv2Log::debug(SS("   " << device.name_ << " " << device.longName_ << " " << device.cardId_));
+        if (isSupportedAudioDevice(device))
+        {
+            filtered.push_back(device);
+            Lv2Log::debug(
+                SS("   "
+                   << device.name_ << " " << device.longName_ << " " << device.cardId_
+                   << (device.supportsCapture_ ? " in" : "")
+                   << (device.supportsPlayback_ ? " out" : "")
+                   << (device.captureBusy_ ? " in(busy)" : "")
+                   << (device.captureBusy_ ? " out(busy)" : "")
+                ));
+        }
     }
-    return result;
+    return filtered;
 }
 
 static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaMidiDeviceInfo::Direction direction, std::vector<AlsaMidiDeviceInfo> *result)
@@ -250,11 +413,12 @@ static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaM
         name = snd_rawmidi_info_get_name(info);
         sub_name = snd_rawmidi_info_get_subdevice_name(info);
         // get card name.
-        
+
         std::string cardName;
         snd_ctl_card_info_t *card_info = nullptr;
         snd_ctl_card_info_malloc(&card_info);
-        if (snd_ctl_card_info(ctl, card_info) == 0) {
+        if (snd_ctl_card_info(ctl, card_info) == 0)
+        {
             cardName = snd_ctl_card_info_get_name(card_info);
         }
         snd_ctl_card_info_free(card_info);
@@ -262,7 +426,7 @@ static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaM
         {
             return;
         }
-        
+
         if (sub == 0 && sub_name[0] == '\0')
         {
             AlsaMidiDeviceInfo info;
@@ -296,7 +460,8 @@ static void AddMidiCardDevicesToList(snd_ctl_t *ctl, int card, int device, AlsaM
         {
             AlsaMidiDeviceInfo info;
             info.name_ = SS("hw:CARD=" << cardName << ",DEV=" << device);
-            if (sub != 0) {
+            if (sub != 0)
+            {
                 info.name_ = SS(info.name_ << "," << sub);
             }
             info.description_ = sub_name;
@@ -480,6 +645,10 @@ JSON_MAP_REFERENCE(AlsaDeviceInfo, longName)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, sampleRates)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, minBufferSize)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, maxBufferSize)
+JSON_MAP_REFERENCE(AlsaDeviceInfo, supportsCapture)
+JSON_MAP_REFERENCE(AlsaDeviceInfo, supportsPlayback)
+JSON_MAP_REFERENCE(AlsaDeviceInfo, captureBusy)
+JSON_MAP_REFERENCE(AlsaDeviceInfo, playbackBusy)
 JSON_MAP_END()
 
 JSON_MAP_BEGIN(AlsaMidiDeviceInfo)

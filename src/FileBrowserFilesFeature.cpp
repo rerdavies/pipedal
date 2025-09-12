@@ -37,32 +37,14 @@ using namespace pipedal::implementation;
 namespace fs = std::filesystem;
 
 
-namespace pipedal::implementation {
-    class BrowserFilesVersionInfo
-    {
-    public:
-        bool Load(std::filesystem::path &path);
-        void Save(std::filesystem::path &path);
-        const std::vector<std::string> &InstalledFiles() const;
-        bool IsInstalled(const std::string &file) const;
-        void AddFile(const std::string &file);
-        uint32_t Version() const;
-        void Version(uint32_t value);
 
-    private:
-        uint32_t version = 0;
-        std::vector<std::string> installedFiles;
-        std::unordered_set<std::string> installedFileMap;
-    };
-};
+uint32_t BrowserFilesVersionInfo::Version() const { return version; }
+void BrowserFilesVersionInfo::Version(uint32_t value) { version = value; }
 
-inline uint32_t BrowserFilesVersionInfo::Version() const { return version; }
-inline void BrowserFilesVersionInfo::Version(uint32_t value) { version = value; }
-
-inline const std::vector<std::string> &BrowserFilesVersionInfo::InstalledFiles() const {
+const std::vector<std::string> &BrowserFilesVersionInfo::InstalledFiles() const {
     return installedFiles;
 }
-inline bool BrowserFilesVersionInfo::IsInstalled(const std::string &file) const
+bool BrowserFilesVersionInfo::IsInstalled(const std::string &file) const
 {
     return installedFileMap.contains(file);
 }
@@ -75,7 +57,7 @@ void BrowserFilesVersionInfo::AddFile(const std::string &file)
     }
 }
 
-bool BrowserFilesVersionInfo::Load(std::filesystem::path &path)
+bool BrowserFilesVersionInfo::Load(const std::filesystem::path &path)
 {
     std::ifstream f{path};
     if (!f.is_open())
@@ -102,7 +84,7 @@ FileBrowserFilesFeature::FileBrowserFilesFeature()
     feature.URI = LV2_FILEBROWSER__files;
     feature.data = &(this->featureData);
 }
-void BrowserFilesVersionInfo::Save(std::filesystem::path &path)
+void BrowserFilesVersionInfo::Save(const std::filesystem::path &path)
 {
     pipedal::ofstream_synced f{path};
     if (!f.is_open())
