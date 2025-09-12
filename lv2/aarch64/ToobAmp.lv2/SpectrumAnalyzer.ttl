@@ -57,7 +57,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 68 ;
+        lv2:microVersion 70 ;
         rdfs:comment "TooB spectrum analyzer" ;
 
         mod:brand "TooB";
