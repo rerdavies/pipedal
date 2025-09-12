@@ -31,13 +31,13 @@ export interface ToolTipExProps extends React.ComponentProps<typeof Tooltip> {
 /* ToolTipEx: a reimplementation of the MUI Tooltip that works with pointer events and long presses. */
 
 function ToolTipEx(props: ToolTipExProps) {
-    let {title, valueTooltip, ...extras} = props;
-    let [open,setOpen]= React.useState(false);
+    let { title, valueTooltip, ...extras } = props;
+    let [open, setOpen] = React.useState(false);
     let [isLongPress, setIsLongPress] = React.useState(false);
     let [longPressLeaving, setLongPressLeaving] = React.useState(false);
     let [timeout, setTimeout] = React.useState<number>(0);
     let [timeoutInstance, setTimeoutInstance] = React.useState<number>(0);
-    let [pointerDownPoint, setPointerdownPoint] = React.useState<{x: number, y: number} | null>(null);
+    let [pointerDownPoint, setPointerdownPoint] = React.useState<{ x: number, y: number } | null>(null);
 
     const hoverTimeout = 1250;
     const longpressTimeout = 500;
@@ -60,7 +60,7 @@ function ToolTipEx(props: ToolTipExProps) {
         setOpen(false);
         stopTimeout();
         setLongPressLeaving(false);
-    }   
+    }
 
     function handlePointerDownCapture(event: React.PointerEvent<HTMLDivElement>) {
         let pointerType = (event as any).pointerType || "n/a";
@@ -71,11 +71,11 @@ function ToolTipEx(props: ToolTipExProps) {
         } else { // pen, or touch.
             setTimeout(longpressTimeout);
             setOpen(false);
-            setPointerdownPoint({x: event.clientX, y: event.clientY});
+            setPointerdownPoint({ x: event.clientX, y: event.clientY });
         }
     }
 
-    React.useEffect(()=> {
+    React.useEffect(() => {
         let t = timeout;
         let handle: number | null = null;
         if (valueTooltip === undefined)  // no timeout if there's a value tooltip
@@ -84,7 +84,7 @@ function ToolTipEx(props: ToolTipExProps) {
                 // console.log("ToolTipEx: starting timeout for ", t);
                 handle = window.setTimeout(() => {
                     setOpen(true);
-                },t);
+                }, t);
             }
         }
         return () => {
@@ -93,9 +93,9 @@ function ToolTipEx(props: ToolTipExProps) {
                 window.clearTimeout(handle);
             }
         };
-    },[timeoutInstance]);
+    }, [timeoutInstance]);
 
-    React.useEffect(()=> {
+    React.useEffect(() => {
         if (longPressLeaving) {
             let handle: number | null = null;
             handle = window.setTimeout(() => {
@@ -110,7 +110,7 @@ function ToolTipEx(props: ToolTipExProps) {
         } else {
             return () => { };
         }
-    },[longPressLeaving]);
+    }, [longPressLeaving]);
 
     function handlePointerCancel(event: React.PointerEvent<HTMLDivElement>) {
         setOpen(false);
@@ -158,15 +158,17 @@ function ToolTipEx(props: ToolTipExProps) {
             if (isLongPress) {
                 // If this is a long press, we want to leave the tooltip open for a while.
                 setLongPressLeaving(true);
-            } 
+            }
         }
     }
-    
+
     let effectiveTitle: React.ReactNode | null = null;
     let placement: "top-start" | "right" = "top-start";
+    let popperOffset = 0;
     if (valueTooltip !== undefined && !isLongPress) {
         effectiveTitle = valueTooltip; // Show value tooltip if available
         placement = "right";
+        popperOffset = 16;
     }
     else {
         if (open || isLongPress) {
@@ -186,13 +188,13 @@ function ToolTipEx(props: ToolTipExProps) {
                 handleClickCapture(e);
             }}
 
-            onMouseEnter={(e)=> {
+            onMouseEnter={(e) => {
                 // console.log("ToolTipEx: onMouseEnter");
                 if (!longPressLeaving) {// Don't handle mouse enter if we're in a long press leaving state
                     handleMouseEnter(e);
                 }
             }}
-            onMouseLeave={(e)=> {
+            onMouseLeave={(e) => {
                 // console.log("ToolTipEx: onMouseLeave");
                 handleMouseLeave(e);
             }}
@@ -227,14 +229,26 @@ function ToolTipEx(props: ToolTipExProps) {
                 disableFocusListener={true}
 
                 title={effectiveTitle}
-                placement={ placement}  
-                arrow enterDelay={1500} enterNextDelay={1500} 
+                placement={placement}
+
+                arrow enterDelay={1500} enterNextDelay={1500}
                 slotProps={{
                     transition: {
                         timeout: 0 // Disable transition for the tooltip
+                    },
+                    popper: {
+                        modifiers: [
+                            {
+                                name: 'offset',
+                                options: {
+                                    offset: [0, popperOffset],
+                                },
+                            },
+                        ],
+
                     }
                 }}
-            />
+                    />
         </div>
     )
 }

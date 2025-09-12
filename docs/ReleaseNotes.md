@@ -1,5 +1,90 @@
 # Release Notes
 
+## PiPedal 1.5.92 Release
+
+### Major Features in This Build
+
+- New default presets that make better use of plugins that have been added since the original set of default presets were created.
+
+- The installer creates a new "Factory Presets" bank. If you are upgrading, you can access the new presets in the Factory Presets bank. New factory presets added in future PiPedal updates may add or modify presets in the Factory Presets bank. If you want to use or modify the new Factory Presets, you should copy them to a new bank, or copy individual presets to a bank you currently use for your own presets.
+
+- Stream between audio adapters. You can now select different audio adapters for input and output. (Thanks to Gabriel Hernandez)
+
+### Major Features (Since PiPedal 1.4.76 Release)
+
+- Support for Ubuntu 25.04. Compatibility fixes for Ubuntu 25.04 may also make it easier to build PiPedal on
+    other Debian-based Linux distros.
+
+- Code optimizations for Raspberry Pi 5 (Cortex-A76), providing substantial performance improvements for TooB Neural Amp Modeler. ToobAmp 
+automatically loads A72- or A76-optimized code depending on which processor you are using.
+
+- New "Threaded" button optionally executes TooB NAM computation on a separate thread. Allows up to 5 NAM instances on Pi 4, and practically unlimited NAM instances on Pi 5.
+
+- TooB Neural Amp Modeler: Input and output calibration. See [Using TooB Neural Amp Modeler](https://rerdavies.github.io/pipedal/UsingNAM.html) for guidance on how to 
+  use this feature.
+
+- TooB Convolution Reverb: Predelay, Stretch and Decay controls allow adjustments of impulse response characteristics.
+
+- TooB Convolution Reverb, Freeverb: New "Tails" control, which allows reverb tails to continue after bypassing the effect.
+
+- TooB Parametric EQ: New plugin providing a 4-band parametric EQ. A musically useful Parametric EQ that's suitable both for 
+    shaping guitar tone before amp models, or for shaping overall sound at the end of plugin chains. This should become your 
+    go-to EQ plugin when using PiPedal.
+
+- New TooB Player plugin that allows you to play (and loop) audio files (even large ones).
+
+- TooB 3 Band EQ: New plugin providing a simple 3-band EQ. (Replicates the EQ stage on Steve Atkinson's Windows and Mac-based 
+    Neural Amp Modeler plugin).
+
+- TooB CE-2 Chorus, TooB BF-2 Flanger, TooB Phaser: New "Wet/Dry" controls. 
+
+- Noise Gates threshold ranges have been increased in TooB NAM, TooB Input and TooB Noise Gate plugins.
+
+- MIDI bindings allow users to specify minimum and maximum control values, in order to better support expression pedals.
+
+- Editable plugin labels. You can now edit the labels of plugins in the PiPedal UI. Tap the plugin label to override
+    the default label with a custom label. Useful when you have multiple instances of the same plugin in a preset.
+
+- Multi-select support in file browser dialogs. Allows you to easily delete, copy or move multiple files at once.
+
+- long-press and hover Tooltips are now displayed for all controls in the PiPedal UI.
+
+- TooB Neural Amp Modeler: Switch to the NeuralAudio NAM Backend (Thanks to Mike Oliphant for providing 
+   MIT-licensed sources that provide significant performance improvements).
+
+- Support for custom MOD User Interfaces for plugins that provide a MOD UI.
+
+- Switch from ALSA rawmidi devices to ALSA sequencer devices for MIDI input. This provides
+      a number of useful improvements. PiPedal now supports Bluetooth MIDI controllers.
+      PiPedal provides better support for subdevices (multiple MIDI connections on the same device). 
+      Connections to the PiPedal MIDI input port can now be made at runtime by other applications, or 
+      by using`aconnect`. Changing MIDI devices does not require a restart of the audio stream. Disconnected
+      MIDI devices that have been selected will now be automatically reconnected when they are 
+      plugged in again.
+
+- Dial control values are displayed in a fly-out when editing, which makes it easier to determine the
+     current value of a control when using touch user interfaces.
+
+-  Direct link to TONE3000 website from the TooB Neural Amp Modeler file browser.
+
+- Double-tap gestures now supported in touch user interfaces.  Double-tap a dial to reset it to its default value. Double-tap
+    a file in the File Browser to select it. Double-tap a plugin label to edit it.
+
+- Improvements to long-press handling in touch and mouse user interfaces. Long-press a control to display
+     a tooltip for the control, and triggers multi-select in the file browser dialog.
+
+- Audio files in the Tracks directory (only) are displayed using audio-file metadata and artwork if available.
+
+### Minor features in This Build
+
+- Improved enumeration of available audio devices. ALSA devices that are currently in use by other applications are now shown in the list of available audio devices, but are disabled. 
+
+- Select README.md or LICENSE.md files in File Selection dialogs to view their contents inside the PiPedal UI.
+
+- PiPedal respects LV2 plugins' minimum-buffer-size requirements. If PiPedal is using a buffer size smaller than the plugin's minimum size, PiPedal will assemble buffers of the currect size before passing them to the plugin. This allows use of plugins written in Faust, including a number of useful plugins from Guitarix/Lv2 and Gx/Lv2 projects.
+
+Please refer to Beta release notes below for a more complete list of features and bug fixes since the last Release build.
+
 ## PiPedal 1.5.91 Beta (Release Candidate)
 
 #### Themes for this release
