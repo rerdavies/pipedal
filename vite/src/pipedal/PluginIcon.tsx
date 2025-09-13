@@ -68,6 +68,59 @@ import FxTerminalIcon from './svg/fx_terminal.svg?react';
 
 import { isDarkMode } from './DarkMode';
 
+export interface IconColorSelect {
+    key: string, 
+    value: string | undefined,
+};
+
+export const getIconColorSelections = (darkMode?: boolean): IconColorSelect[] => {
+    if (darkMode === undefined) darkMode = isDarkMode();
+    let result: IconColorSelect[] = [];
+
+    let l: number;
+    let c: number;
+    if (darkMode) {
+        l = 0.8;
+        c = 0.25;
+    } else {
+        l = 0.5;
+        c = 0.25;
+    }
+
+    for (let angle = 0; angle < 360; angle += 22.5) {
+        result.push(
+            {
+                key: "oklch" + Math.round(angle*10).toString(), 
+                value: ("oklch("  + l.toString() + " " + c.toString() + " " + (angle).toString() + ")")
+
+            }
+        );
+    }
+    return result;
+
+};
+
+
+function makeDefaultColorMap(): {[key:string]: string} {
+    let result: {[key:string]: string} = {};
+    for (let selection  of getIconColorSelections())
+    {
+        result[selection.key] = selection.value??"";
+    }
+    return result;
+}
+    
+const iconColors: {[key:string]: string} = makeDefaultColorMap();
+
+export const getIconColor = (key?: string): string| undefined => {
+    if (iconColors.hasOwnProperty(key!))
+    {
+        return iconColors[key!];
+    }
+    return undefined;
+}
+
+
 
 
 const styles = (theme: Theme) =>
@@ -86,13 +139,13 @@ const styles = (theme: Theme) =>
 export interface PluginIconProps extends WithStyles<typeof styles> {
     size?: number;
     opacity?: number;
+    color?: string;
     offsetY?: number;
     pluginType: PluginType;
     pluginMissing?: boolean;
 }
 
-export function SelectSvgIcon(plugin_type: PluginType, className: string, size: number = 24, opacity: number = 1.0, missingPlugin: boolean = false) {
-    let color = "";
+export function SelectSvgIcon(plugin_type: PluginType, className: string, size: number = 24, opacity: number = 1.0, missingPlugin: boolean = false, color = "") {
     if (missingPlugin) {
         color = isDarkMode() ? "#C00000" : "#B00000";
     }
@@ -268,7 +321,7 @@ export function SelectIconUri(plugin_type: PluginType) {
 }
 
 const PluginIcon = withStyles((props: PluginIconProps) => {
-    const { pluginType, opacity, pluginMissing } = props;
+    const { pluginType, opacity, pluginMissing,color } = props;
     const classes = withStyles.getClasses(props);
 
     let pluginMissing_: boolean = pluginMissing ?? false;
@@ -277,7 +330,7 @@ const PluginIcon = withStyles((props: PluginIconProps) => {
     if (props.size) size = props.size;
     let topVal: number = (props.offsetY ?? 0);
 
-    let svgIcon = SelectSvgIcon(pluginType, classes.icon, size, opacity, pluginMissing_);
+    let svgIcon = SelectSvgIcon(pluginType, classes.icon, size, opacity, pluginMissing_,color? color: "" );
     if (svgIcon) {
         return svgIcon;
     }

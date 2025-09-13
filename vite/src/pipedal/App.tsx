@@ -28,6 +28,7 @@ import { isDarkMode } from './DarkMode';
 import Tone3000AuthComplete from './Tone3000AuthComplete';
 import FontTest from './FontTest';
 
+import IconTest from './IconTest';
 
 declare module '@mui/material/styles' {
     interface Theme {
@@ -235,6 +236,11 @@ function isFontTest() {
     let param = url.searchParams.get("fontTest");
     return (param !== null)
 }
+function isIconTest() {
+    let url = new URL(window.location.href);
+    let param = url.searchParams.get("iconTest");
+    return (param !== null)
+}
 
 const App = (class extends React.Component {
     // Before the component mounts, we initialise our state
@@ -258,6 +264,7 @@ const App = (class extends React.Component {
                     {
                         isTone3000Auth() && (<Tone3000AuthComplete />)
                         || isFontTest() && (<FontTest />)
+                        || isIconTest() && (<IconTest />)
                         || (<AppThemed />)
                     }
                 </ThemeProvider>
