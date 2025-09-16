@@ -57,6 +57,7 @@ interface HoverProps extends WithStyles<typeof styles> {
     selected: boolean;
     showHover?: boolean;
     borderRadius?: number;
+    clipChildren?: boolean;
     children?: React.ReactNode;
 }
 

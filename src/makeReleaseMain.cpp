@@ -43,10 +43,11 @@ std::string psystem(const std::string &command)
     {
         throw std::runtime_error("popen() failed!");
     }
-    Finally ff{[pipe]() {
-        pclose(pipe);
-    }};
-    while (fgets(buffer.data(), buffer.size()-1, pipe) != nullptr)
+    Finally ff{[pipe]()
+               {
+                   pclose(pipe);
+               }};
+    while (fgets(buffer.data(), buffer.size() - 1, pipe) != nullptr)
     {
         result += buffer.data();
     }
@@ -68,7 +69,8 @@ void SignPackage()
     {
         packagePath = SS("build/pipedal_" << PROJECT_VER << "_amd64.deb");
         packagePath = fs::absolute(packagePath);
-        if (!fs::exists(packagePath)) {
+        if (!fs::exists(packagePath))
+        {
             packagePath = SS("build/pipedal_" << PROJECT_VER << "_*.deb");
             throw std::runtime_error(SS("File does not exist: " << packagePath));
         }
@@ -82,8 +84,8 @@ void SignPackage()
 
     std::string signCmd =
         SS("/usr/bin/gpg --pinentry-mode loopback --yes --default-key " << UPDATE_GPG_FINGERPRINT2
-                                               << " --armor --output " << packagePath << ".asc"
-                                               << " --detach-sign " << packagePath.c_str());
+                                                                        << " --armor --output " << packagePath << ".asc"
+                                                                        << " --detach-sign " << packagePath.c_str());
     int result = system(signCmd.c_str());
     if (result != EXIT_SUCCESS)
     {
@@ -226,6 +228,8 @@ public:
     bool draft = false, prerelease = false;
     std::vector<DownloadCountAsset> assets;
     std::string published_at;
+    double release_downloads = 0;
+    double average_daily_downloads = 0;
 };
 
 static std::string timePointToISO8601(const std::chrono::system_clock::time_point &tp)
@@ -233,11 +237,33 @@ static std::string timePointToISO8601(const std::chrono::system_clock::time_poin
     auto tt = std::chrono::system_clock::to_time_t(tp);
     std::tm tm = *std::gmtime(&tt);
     std::stringstream ss;
-    ss << std::put_time(&tm,"%Y-%m-%dT%H:%M:%S") << "Z";
+    ss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%S") << "Z";
     return ss.str();
-    
 }
 
+static std::chrono::system_clock::time_point iso8601ToTimePoint(const std::string&date)
+{
+    std::istringstream ss(date);
+    std::tm tm = {};
+    char zulu;
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S") >> zulu;
+    if (ss.fail()) {
+        throw std::runtime_error("Failed to parse ISO8601 date: " + date);
+    }
+    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
+}
+
+
+
+
+static bool endsWith(const std::string &value, const std::string &end)
+{
+    if (end.length() > value.length())
+    {
+        return false;
+    }
+    return value.compare(value.length() - end.length(), end.length(), end) == 0;
+}
 void GetDownloadCounts(bool gplotDownloads)
 {
     // error handling and temporary file use is different enough that it justifies
@@ -321,15 +347,65 @@ void GetDownloadCounts(bool gplotDownloads)
                         return left.published_at < right.published_at; // date ascending
                     });
 
-                for (size_t i = 0; i < releases.size()-1; ++i)
+                uint64_t cumulativeCount = 0;
+
+                for (auto i = releases.begin(); i != releases.end(); /**/)
                 {
-                    releases[i].published_at = releases[i+1].published_at;
+                    if (i->name.find("Experimental") != string::npos 
+                        || i->name.find("Retracted") != string::npos
+                        || i->name.find("Testing") != string::npos
+                    )
+                    {
+                        i = releases.erase(i);
+                    }
+                    else
+                    {
+                        ++i;
+                    }
+                }
+                for (auto &release : releases)
+                {
+                    size_t releaseDownloads = 0;
+                    for (const auto &asset : release.assets)
+                    {
+                        if (asset.name.ends_with(".deb"))
+                        {
+                            releaseDownloads += asset.downloads;
+                        }
+                    }
+                    release.release_downloads = releaseDownloads;
+                }
+
+
+
+                for (size_t i = 0; i < releases.size(); ++i)
+                {
+                    std::chrono::system_clock::time_point nextTime;
+                    if (i == releases.size()-1)
+                    {
+                        nextTime = std::chrono::system_clock::now();
+                    } else {
+                        nextTime = iso8601ToTimePoint(releases.at(i+1).published_at);
+                    }
+                    auto thisTime = iso8601ToTimePoint(releases.at(i).published_at);
+
+                    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(nextTime-thisTime).count();
+                    auto days = seconds/(60.0*60*24);
+
+
+                    releases[i].average_daily_downloads = releases[i].release_downloads/
+                        (days);
+                }
+
+                for (size_t i = 0; i < releases.size() - 1; ++i)
+                {
+                    releases[i].published_at = releases[i + 1].published_at;
                 }
                 if (releases.size() >= 1)
                 {
-                    releases[releases.size()-1].published_at = timePointToISO8601(std::chrono::system_clock::now());
+                    releases[releases.size() - 1].published_at = timePointToISO8601(std::chrono::system_clock::now());
                 }
-                uint64_t cumulativeCount = 0;
+
                 for (const auto &release : releases)
                 {
                     for (const auto &asset : release.assets)
@@ -339,7 +415,10 @@ void GetDownloadCounts(bool gplotDownloads)
                             cumulativeCount += asset.downloads;
                         }
                     }
-                    cout << release.published_at << " " << cumulativeCount << endl;
+                    cout << release.published_at << " " << cumulativeCount 
+                            << " " << release.average_daily_downloads
+                            << " " << "\"" << release.name << "\"" 
+                            << endl;
                 }
             }
             else
@@ -351,14 +430,49 @@ void GetDownloadCounts(bool gplotDownloads)
                     {
                         return left.published_at > right.published_at; // latest date first.
                     });
+
+                size_t total = 0;
+                size_t amdTotal = 0;
+                size_t amdAscTotal = 0;
+                size_t aarch64Total = 0;
+                size_t aarch64AscTotal = 0;
+                size_t otherTotal = 0;
+
                 for (const auto &release : releases)
                 {
-                    cout << release.name << endl;
+                    cout << release.name << " " << release.published_at << endl;
                     for (const auto &asset : release.assets)
                     {
+                        total += asset.downloads;
+                        if (endsWith(asset.name, "arm64.deb"))
+                        {
+                            aarch64Total += asset.downloads;
+                        }
+                        else if (endsWith(asset.name, "amd64.deb"))
+                        {
+                            amdTotal += asset.downloads;
+                        }
+                        else if (endsWith(asset.name, "arm64.deb.asc"))
+                        {
+                            aarch64AscTotal += asset.downloads;
+                        }
+                        else if (endsWith(asset.name, "amd64.deb.asc"))
+                        {
+                            amdAscTotal += asset.downloads;
+                        }
+                        else
+                        {
+                            otherTotal += asset.downloads;
+                        }
                         cout << "    " << asset.name << ": " << asset.downloads << endl;
                     }
                 }
+                cout << endl
+                     << "Total: " << total << endl;
+
+                cout << "arm64:" << aarch64Total << " asc: " << aarch64AscTotal << endl;
+                cout << "amd64:" << amdTotal << " asc: " << amdAscTotal << endl;
+                cout << "other:" << otherTotal << endl;
             }
         }
     }

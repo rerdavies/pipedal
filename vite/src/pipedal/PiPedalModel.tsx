@@ -491,6 +491,9 @@ export class PiPedalModel //implements PiPedalModel
     webSocket?: PiPedalSocket;
 
 
+    static getInstance(): PiPedalModel {
+        return PiPedalModelFactory.getInstance();
+    }
     hasTone3000Auth: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
 
     canKeepScreenOn: boolean = false;
@@ -3376,9 +3379,9 @@ export class PiPedalModel //implements PiPedalModel
                 this.cancelOnNetworkChanging();
             },
             30 * 1000);
-
     }
-    setPedalboardItemTitle(instanceId: number, title: string): void {
+
+    setPedalboardItemTitle(instanceId: number, title: string, iconColor: string): void {
         let pedalboard = this.pedalboard.get();
         if (!pedalboard) {
             throw new PiPedalStateError("Pedalboard not loaded.");
@@ -3386,13 +3389,14 @@ export class PiPedalModel //implements PiPedalModel
         let newPedalboard = pedalboard.clone();
         this.updateVst3State(newPedalboard);
         let item = newPedalboard.getItem(instanceId);
-        if (item.title === title) {
+        if (item.title === title && item.iconColor === iconColor) {
             return;
         }
         item.title = title;
+        item.iconColor = iconColor;
         this.pedalboard.set(newPedalboard);
         // notify the server.
-        this.webSocket?.send("setPedalboardItemTitle", { instanceId: instanceId, title: title });
+        this.webSocket?.send("setPedalboardItemTitle", { instanceId: instanceId, title: title, colorKey: iconColor });
     }
     setAlsaSequencerConfiguration(alsaSequencerConfiguration: AlsaSequencerConfiguration): void {
         this.webSocket?.send("setAlsaSequencerConfiguration", alsaSequencerConfiguration);

@@ -24,7 +24,7 @@ import { withStyles } from "tss-react/mui";
 import IconButtonEx from './IconButtonEx';
 import ButtonEx from './ButtonEx';
 import ButtonBase from '@mui/material/ButtonBase';
-import RenameDialog from './RenameDialog';
+import PluginIcon, { getIconColor } from './PluginIcon';
 
 import ToolTipEx from './ToolTipEx';
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
@@ -64,9 +64,11 @@ import PipedalUiIcon from './svg/pp_ui.svg?react';
 import SnapshotDialog from './SnapshotDialog';
 import { css } from '@emotion/react';
 import { setDefaultModGuiPreference } from './ModGuiHost';
+import PluginNameDialog from './PluginNameDialog';
 
 
 const SPLIT_CONTROLBAR_THRESHHOLD = 750;
+const SHOW_ICON_THRESHHOLD = 475;
 const DISPLAY_AUTHOR_THRESHHOLD = 750;
 const DISPLAY_AUTHOR_SPLIT_THRESHOLD = 500;
 const HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK = 500;
@@ -128,6 +130,7 @@ interface MainState {
     splitControlBar: boolean;
     displayAuthor: boolean;
     horizontalScrollLayout: boolean;
+    canDisplayPluginIcon: boolean;
     showMidiBindingsDialog: boolean;
     screenHeight: number;
     displayNameDialogOpen: boolean;
@@ -146,6 +149,9 @@ export const MainPage =
 
                 getSplitToolbar() {
                     return this.windowSize.width < SPLIT_CONTROLBAR_THRESHHOLD && this.windowSize.height >= HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK;
+                }
+                getShowPluginIcon() {
+                    return this.windowSize.width > SHOW_ICON_THRESHHOLD;
                 }
                 getDisplayAuthor() {
                     if (this.getSplitToolbar()) {
@@ -173,6 +179,7 @@ export const MainPage =
                         addMenuAnchorEl: null,
                         splitControlBar: this.getSplitToolbar(),
                         displayAuthor: this.getDisplayAuthor(),
+                        canDisplayPluginIcon: this.getShowPluginIcon(),
                         horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
                         showMidiBindingsDialog: false,
                         screenHeight: this.windowSize.height,
@@ -304,6 +311,7 @@ export const MainPage =
                     this.setState({
                         splitControlBar: this.getSplitToolbar(),
                         displayAuthor: this.getDisplayAuthor(),
+                        canDisplayPluginIcon: this.getShowPluginIcon(),
                         horizontalScrollLayout: this.windowSize.height < HORIZONTAL_CONTROL_SCROLL_HEIGHT_BREAK,
                         screenHeight: this.windowSize.height
                     });
@@ -415,6 +423,7 @@ export const MainPage =
                     return pedalboardItem.uri;
                 }
                 titleBar(pedalboardItem: PedalboardItem | null, canShowModUi: boolean): React.ReactNode {
+                    let uiPlugin = pedalboardItem ? this.model.getUiPlugin(pedalboardItem?.uri) : null;
                     let title = "";
                     let author = "";
                     let infoPluginUri = "";
@@ -489,21 +498,45 @@ export const MainPage =
                                                 this.handleEditPluginDisplayName();
                                             }}
                                         >
-                                            <div style={{ flex: "0 1 auto" }}>
-                                                <span>
-                                                    <span className={classes.title}>{title}</span>
-                                                    {this.state.displayAuthor && (
-                                                        <span className={classes.author}>{author}</span>
-                                                    )}
-                                                </span>
+                                            <div style={{ flex: "0 1 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center", overflow: "hidden" }}>
+                                                {this.state.canDisplayPluginIcon && uiPlugin && (
+                                                    <div style={{ flex: "0 0 auto", marginRight: 8 }}>
+                                                        <PluginIcon
+                                                            pluginType={uiPlugin.plugin_type}
+                                                            color={getIconColor(pedalboardItem?.iconColor ?? "")}
+                                                            size={24}
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div style={{ flex: "0 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                                                    <span>
+                                                        <span className={classes.title}>{title}</span>
+                                                        {this.state.displayAuthor && (
+                                                            <span className={classes.author}>{author}</span>
+                                                        )}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </ButtonBase>)
                                         : (
-                                            <div style={{ flex: "0 1 auto", paddingLeft: 8, paddingRight: 8, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
-                                                <span className={classes.title}>{title}</span>
-                                                {this.state.displayAuthor && (
-                                                    <span className={classes.author}>{author}</span>
+                                            <div style={{ flex: "0 1 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center", overflow: "hidden" }}>
+                                                {this.state.canDisplayPluginIcon && uiPlugin && (
+                                                    <div style={{ flex: "0 0 auto", marginRight: 8 }}>
+                                                        <PluginIcon
+                                                            pluginType={uiPlugin.plugin_type}
+                                                            color={getIconColor(pedalboardItem?.iconColor ?? "")}
+                                                            size={24}
+                                                        />
+                                                    </div>
                                                 )}
+                                                <div style={{ flex: "0 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                                                    <span>
+                                                        <span className={classes.title}>{title}</span>
+                                                        {this.state.displayAuthor && (
+                                                            <span className={classes.author}>{author}</span>
+                                                        )}
+                                                    </span>
+                                                </div>
                                             </div>
 
                                         )}
@@ -770,17 +803,14 @@ export const MainPage =
                                 <SnapshotDialog open={this.state.snapshotDialogOpen} onOk={() => this.onSnapshotDialogOk()} />
                             )}
                             {(this.state.displayNameDialogOpen) && (
-                                <RenameDialog open={this.state.displayNameDialogOpen}
+                                <PluginNameDialog open={this.state.displayNameDialogOpen}
+                                    pedalboardItem={pedalboardItem}
                                     allowEmpty={true}
-                                    defaultName={pedalboardItem?.title ?? ""}
-                                    title="Plugin Display Name"
-                                    acceptActionName="OK"
                                     onClose={() => this.setState({ displayNameDialogOpen: false })}
-                                    onOk={(newName: string) => {
+                                    onApply={(newName: string, color: string) => {
                                         if (pedalboardItem) {
-                                            this.model.setPedalboardItemTitle(pedalboardItem.instanceId, newName);
+                                            this.model.setPedalboardItemTitle(pedalboardItem.instanceId, newName, color);
                                         }
-                                        this.setState({ displayNameDialogOpen: false });
                                     }}
                                 />
                             )}

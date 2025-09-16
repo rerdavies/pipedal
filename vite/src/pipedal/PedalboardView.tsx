@@ -19,9 +19,9 @@
 
 import React, { ReactNode, Component, SyntheticEvent } from 'react';
 import { css } from '@emotion/react';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
-import WithStyles, {withTheme} from './WithStyles';
+import WithStyles, { withTheme } from './WithStyles';
 import { withStyles } from "tss-react/mui";
 
 
@@ -30,7 +30,7 @@ import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { PluginType } from './Lv2Plugin';
 import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
-import PluginIcon, { SelectIconUri } from './PluginIcon';
+import PluginIcon, { getIconColor, SelectIconUri } from './PluginIcon';
 import { SelectHoverBackground } from './SelectHoverBackground';
 import SvgPathBuilder from './SvgPathBuilder';
 import Draggable from './Draggable'
@@ -42,9 +42,9 @@ import {
     Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType
 } from './Pedalboard';
 
-import MidiIcon from './svg/ic_midi.svg?react';
-import { midiChannelBindingControlFeatureEnabled } from './MidiChannelBinding';
-
+// import MidiIcon from './svg/ic_midi.svg?react';
+// import { midiChannelBindingControlFeatureEnabled } from './MidiChannelBinding';
+// import CloseIcon from '@mui/icons-material/Close';
 
 const START_CONTROL = Pedalboard.START_CONTROL;
 const END_CONTROL = Pedalboard.END_CONTROL;
@@ -161,7 +161,24 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
-        border: isDarkMode() ? "1pt #AAA solid" : "1pt #666 solid",
+        border: isDarkMode() ? "1pt #555 solid" : "1pt #666 solid",
+        borderRadius: 6
+    }),
+    selectedIconFrame: css({
+
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+
+        background: theme.palette.background.default,
+        marginLeft: (CELL_WIDTH - FRAME_SIZE) / 2,
+        marginRight: (CELL_WIDTH - FRAME_SIZE) / 2,
+        marginTop: (CELL_HEIGHT - FRAME_SIZE) / 2,
+        marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
+        width: FRAME_SIZE,
+        height: FRAME_SIZE,
+        border: isDarkMode() ? "1pt #FFF solid" : "1pt #333 solid",
         borderRadius: 6
     }),
     borderlessIconFrame: css({
@@ -245,6 +262,7 @@ class PedalLayout {
     name: string = "";
     pluginType: PluginType = PluginType.Plugin;
     iconUrl: string = "";
+    iconColor: string = "";
 
     bounds: Rect = new Rect();
 
@@ -333,6 +351,7 @@ class PedalLayout {
                     pluginType = PluginType.NamPlugin;
                 }
                 this.iconUrl = SelectIconUri(pluginType);
+                this.iconColor = pedalItem.iconColor;
                 this.name = uiPlugin.label;
                 if (pedalItem.title !== "") {
                     this.name = pedalItem.title;
@@ -401,908 +420,932 @@ class LayoutParams {
 
 
 const PedalboardView =
-withTheme(
-withStyles(
-    class extends Component<PedalboardProps, PedalboardState> {
-        model: PiPedalModel;
+    withTheme(
+        withStyles(
+            class extends Component<PedalboardProps, PedalboardState> {
+                model: PiPedalModel;
 
-        frameRef: React.RefObject<HTMLDivElement | null>;
-        scrollRef: React.RefObject<HTMLDivElement | null>;
-        private bgColor: string;
+                frameRef: React.RefObject<HTMLDivElement | null>;
+                scrollRef: React.RefObject<HTMLDivElement | null>;
+                private bgColor: string;
 
-        constructor(props: PedalboardProps) {
-            super(props);
-            this.model = PiPedalModelFactory.getInstance();
+                constructor(props: PedalboardProps) {
+                    super(props);
+                    this.model = PiPedalModelFactory.getInstance();
 
-            this.bgColor = props.theme.palette.background.default
+                    this.bgColor = props.theme.palette.background.default
 
-            if (!props.selectedId) props.selectedId = -1;
-            this.state = {
-                pedalboard: this.model.pedalboard.get(),
-            };
-            this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
-            this.frameRef = React.createRef();
-            this.scrollRef = React.createRef();
-            this.handleTouchStart = this.handleTouchStart.bind(this);
-        }
+                    if (!props.selectedId) props.selectedId = -1;
+                    this.state = {
+                        pedalboard: this.model.pedalboard.get(),
+                    };
+                    this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
+                    this.frameRef = React.createRef();
+                    this.scrollRef = React.createRef();
+                    this.handleTouchStart = this.handleTouchStart.bind(this);
+                }
 
-        handleTouchStart(e: any) {
-            // just has to exist to allow Draggable to receive 
-            // touchyMove. :-/
-        }
+                handleTouchStart(e: any) {
+                    // just has to exist to allow Draggable to receive 
+                    // touchyMove. :-/
+                }
 
-        onDragEnd(instanceId: number, clientX: number, clientY: number) {
-            if (!this.props.enableStructureEditing) {
-                return;
-            }
-            if (!this.currentLayout) return;
-
-            if (!this.frameRef.current) return;
-
-            let currentLayout: PedalLayout[] = this.currentLayout;
-            let frameElement = this.frameRef.current;
-
-            let rc = frameElement.getBoundingClientRect();
-            clientX -= rc.left;
-            clientY -= rc.top;
-
-            let it = chainIterator(currentLayout);
-
-            while (true) {
-                let v = it.next();
-                if (v.done) break;
-                let item = v.value;
-
-                if (item.isSplitter() && item.pedalItem) {
-                    if (item.bounds.contains(clientX, clientY)) {
-                        if (clientX < item.bounds.x + CELL_WIDTH / 2) {
-                            this.model.movePedalboardItemBefore(instanceId, item.pedalItem.instanceId);
-                            this.setSelection(instanceId);
-                            return;
-                        } else if (clientX > item.bounds.right - CELL_WIDTH / 2) {
-                            this.model.movePedalboardItemAfter(instanceId, item.pedalItem.instanceId);
-                            this.setSelection(instanceId);
-                            return;
-
-                        }
-                    }
-                    let yMid = (item.bounds.y + item.bounds.bottom) / 2;
-                    if (clientX >= item.bounds.x
-                        && clientY < yMid && clientY >= item.topChildren[0].bounds.y
-
-                    ) {
-                        if (clientX < item.topChildren[0].bounds.x) {
-                            let topPedalItem = item.topChildren[0].pedalItem;
-                            if (topPedalItem) {
-                                this.model.movePedalboardItemBefore(instanceId, topPedalItem.instanceId);
-                                this.setSelection(instanceId);
-                                return;
-                            }
-                        }
-                        let lastTop = item.topChildren[item.topChildren.length - 1];
-                        if (clientX >= lastTop.bounds.right && clientX < item.bounds.right - CELL_WIDTH / 2) {
-                            if (lastTop.pedalItem) {
-                                this.model.movePedalboardItemAfter(instanceId, lastTop.pedalItem.instanceId);
-                                this.setSelection(instanceId);
-                                return;
-                            }
-                        }
-
-                    }
-                    if (clientX >= item.bounds.x
-                        && clientY > yMid && clientY < item.bottomChildren[0].bounds.bottom
-                    ) {
-                        if (clientX < item.bottomChildren[0].bounds.x) {
-                            let bottomPedalItem = item.bottomChildren[0].pedalItem;
-                            if (bottomPedalItem) {
-                                this.model.movePedalboardItemBefore(instanceId, bottomPedalItem.instanceId);
-                                this.setSelection(instanceId);
-                                return;
-                            }
-                        }
-                        let lastBottom = item.bottomChildren[item.bottomChildren.length - 1];
-                        if (clientX >= lastBottom.bounds.right && clientX < item.bounds.right - CELL_WIDTH / 2) {
-                            if (lastBottom.pedalItem) {
-                                this.model.movePedalboardItemAfter(instanceId, lastBottom.pedalItem.instanceId);
-                                this.setSelection(instanceId);
-                                return;
-                            }
-
-                        }
-
-                    }
-
-                } else if (item.bounds.contains(clientX, clientY)) {
-                    if (item.isStart()) {
-                        this.model.movePedalboardItemToStart(instanceId);
-                        this.setSelection(instanceId);
+                onDragEnd(instanceId: number, clientX: number, clientY: number) {
+                    if (!this.props.enableStructureEditing) {
                         return;
-                    } else if (item.isEnd()) {
-                        this.model.movePedalboardItemToEnd(instanceId);
-                        this.setSelection(instanceId);
-                        return;
-                    } else {
-                        if (item.pedalItem) {
-                            let margin = (CELL_WIDTH - FRAME_SIZE) / 2;
-                            if (clientX < item.bounds.x + margin) {
-                                this.model.movePedalboardItemBefore(instanceId, item.pedalItem.instanceId);
-                            } else if (clientX > item.bounds.right - margin) {
-                                this.model.movePedalboardItemAfter(instanceId, item.pedalItem.instanceId);
+                    }
+                    if (!this.currentLayout) return;
+
+                    if (!this.frameRef.current) return;
+
+                    let currentLayout: PedalLayout[] = this.currentLayout;
+                    let frameElement = this.frameRef.current;
+
+                    let rc = frameElement.getBoundingClientRect();
+                    clientX -= rc.left;
+                    clientY -= rc.top;
+
+                    let it = chainIterator(currentLayout);
+
+                    while (true) {
+                        let v = it.next();
+                        if (v.done) break;
+                        let item = v.value;
+
+                        if (item.isSplitter() && item.pedalItem) {
+                            if (item.bounds.contains(clientX, clientY)) {
+                                if (clientX < item.bounds.x + CELL_WIDTH / 2) {
+                                    this.model.movePedalboardItemBefore(instanceId, item.pedalItem.instanceId);
+                                    this.setSelection(instanceId);
+                                    return;
+                                } else if (clientX > item.bounds.right - CELL_WIDTH / 2) {
+                                    this.model.movePedalboardItemAfter(instanceId, item.pedalItem.instanceId);
+                                    this.setSelection(instanceId);
+                                    return;
+
+                                }
+                            }
+                            let yMid = (item.bounds.y + item.bounds.bottom) / 2;
+                            if (clientX >= item.bounds.x
+                                && clientY < yMid && clientY >= item.topChildren[0].bounds.y
+
+                            ) {
+                                if (clientX < item.topChildren[0].bounds.x) {
+                                    let topPedalItem = item.topChildren[0].pedalItem;
+                                    if (topPedalItem) {
+                                        this.model.movePedalboardItemBefore(instanceId, topPedalItem.instanceId);
+                                        this.setSelection(instanceId);
+                                        return;
+                                    }
+                                }
+                                let lastTop = item.topChildren[item.topChildren.length - 1];
+                                if (clientX >= lastTop.bounds.right && clientX < item.bounds.right - CELL_WIDTH / 2) {
+                                    if (lastTop.pedalItem) {
+                                        this.model.movePedalboardItemAfter(instanceId, lastTop.pedalItem.instanceId);
+                                        this.setSelection(instanceId);
+                                        return;
+                                    }
+                                }
+
+                            }
+                            if (clientX >= item.bounds.x
+                                && clientY > yMid && clientY < item.bottomChildren[0].bounds.bottom
+                            ) {
+                                if (clientX < item.bottomChildren[0].bounds.x) {
+                                    let bottomPedalItem = item.bottomChildren[0].pedalItem;
+                                    if (bottomPedalItem) {
+                                        this.model.movePedalboardItemBefore(instanceId, bottomPedalItem.instanceId);
+                                        this.setSelection(instanceId);
+                                        return;
+                                    }
+                                }
+                                let lastBottom = item.bottomChildren[item.bottomChildren.length - 1];
+                                if (clientX >= lastBottom.bounds.right && clientX < item.bounds.right - CELL_WIDTH / 2) {
+                                    if (lastBottom.pedalItem) {
+                                        this.model.movePedalboardItemAfter(instanceId, lastBottom.pedalItem.instanceId);
+                                        this.setSelection(instanceId);
+                                        return;
+                                    }
+
+                                }
+
+                            }
+
+                        } else if (item.bounds.contains(clientX, clientY)) {
+                            if (item.isStart()) {
+                                this.model.movePedalboardItemToStart(instanceId);
+                                this.setSelection(instanceId);
+                                return;
+                            } else if (item.isEnd()) {
+                                this.model.movePedalboardItemToEnd(instanceId);
+                                this.setSelection(instanceId);
+                                return;
                             } else {
-                                this.model.movePedalboardItem(instanceId, item.pedalItem.instanceId);
+                                if (item.pedalItem) {
+                                    let margin = (CELL_WIDTH - FRAME_SIZE) / 2;
+                                    if (clientX < item.bounds.x + margin) {
+                                        this.model.movePedalboardItemBefore(instanceId, item.pedalItem.instanceId);
+                                    } else if (clientX > item.bounds.right - margin) {
+                                        this.model.movePedalboardItemAfter(instanceId, item.pedalItem.instanceId);
+                                    } else {
+                                        this.model.movePedalboardItem(instanceId, item.pedalItem.instanceId);
+                                    }
+                                    this.setSelection(instanceId);
+                                    return;
+                                }
                             }
-                            this.setSelection(instanceId);
-                            return;
+
+                        }
+                    }
+                    // delete the plugin.
+                    let newId = this.model.setPedalboardItemEmpty(instanceId);
+                    this.setSelection(newId);
+
+                }
+
+                onPedalboardChanged(value?: Pedalboard) {
+                    this.setState({
+                        pedalboard: value,
+                    });
+                }
+
+                componentDidMount() {
+                    this.scrollRef.current!.addEventListener("touchstart", this.handleTouchStart, { passive: false });
+                    this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
+
+                }
+                componentWillUnmount() {
+                    this.scrollRef.current!.removeEventListener("touchstart", this.handleTouchStart);
+                    this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
+                }
+
+                offsetLayout_(layoutItems: PedalLayout[], offset: number): void {
+                    for (let i = 0; i < layoutItems.length; ++i) {
+                        let layoutItem = layoutItems[i];
+                        layoutItem.bounds.y += offset;
+                        if (layoutItem.isSplitter()) {
+                            layoutItem.topConnectorY += offset;
+                            layoutItem.bottomConnectorY += offset;
+                            this.offsetLayout_(layoutItem.topChildren, offset);
+                            this.offsetLayout_(layoutItem.bottomChildren, offset);
+                        }
+                    }
+                }
+
+                getSplitterIcon(layoutItem: PedalLayout): PluginType {
+                    if (layoutItem.pedalItem === undefined) {
+                        throw new Error("Invalid splitter");
+                    }
+                    let split = layoutItem.pedalItem as PedalboardSplitItem;
+                    if (split.getSplitType() === SplitType.Ab) {
+                        if (split.isASelected()) {
+                            return PluginType.SplitA;
+                        } else {
+                            return PluginType.SplitB;
+
+                        }
+                    } else if (split.getSplitType() === SplitType.Mix) {
+                        return PluginType.SplitMix; //"img/fx_dial.svg";
+                    } else {
+                        return PluginType.SplitLR; //"img/fx_lr.svg";
+                    }
+                }
+
+                doLayout2_(lp: LayoutParams, layoutItems: PedalLayout[]): Rect {
+                    let bounds = new Rect();
+                    for (let i = 0; i < layoutItems.length; ++i) {
+                        let layoutItem = layoutItems[i];
+                        if (layoutItem.isSplitter()) {
+                            let x0 = lp.cx;
+                            let y0 = lp.cy;
+
+                            layoutItem.bounds.x = x0;
+                            layoutItem.bounds.y = y0;
+                            layoutItem.bounds.height = CELL_HEIGHT;
+                            layoutItem.bounds.width = CELL_WIDTH;
+
+                            lp.cx += CELL_WIDTH;
+
+
+                            let topBounds = this.doLayout2_(lp, layoutItem.topChildren);
+                            if (topBounds.isEmpty()) {
+                                topBounds.x = lp.cx;
+                                topBounds.width = 0;
+                                topBounds.y = y0 - CELL_HEIGHT / 2;
+                                topBounds.height = CELL_HEIGHT;
+
+                            }
+
+
+                            let dyTop = (lp.cy + CELL_HEIGHT / 2) - (topBounds.y + topBounds.height);
+
+
+
+                            this.offsetLayout_(layoutItem.topChildren, dyTop);
+                            topBounds.offset(0, dyTop);
+                            bounds.accumulate(topBounds);
+
+                            let topCx = lp.cx;
+                            lp.cx = x0;
+                            lp.cx += CELL_WIDTH;
+
+                            let bottomBounds = this.doLayout2_(lp, layoutItem.bottomChildren);
+                            if (bottomBounds.isEmpty()) {
+                                bottomBounds.x = lp.cx; bottomBounds.width = 0;
+                                bottomBounds.y = lp.cy; bottomBounds.height = CELL_HEIGHT;
+                            }
+
+                            let dyBottom = (lp.cy + CELL_HEIGHT / 2) - bottomBounds.y;
+                            this.offsetLayout_(layoutItem.bottomChildren, dyBottom)
+                            bottomBounds.offset(0, dyBottom);
+                            bounds.accumulate(bottomBounds);
+
+                            lp.cx = Math.max(lp.cx, topCx) + CELL_WIDTH;
+                            lp.cy = y0;
+
+                            layoutItem.bounds.width = lp.cx - layoutItem.bounds.x;
+                            bounds.accumulate(layoutItem.bounds);
+
+                            if (layoutItem.topChildren.length === 0) {
+                                layoutItem.topConnectorY = bounds.y + CELL_HEIGHT / 2;
+                            } else {
+                                layoutItem.topConnectorY = layoutItem.topChildren[0].bounds.y + CELL_HEIGHT / 2;
+                            }
+                            if (layoutItem.bottomChildren.length === 0) {
+                                layoutItem.bottomConnectorY = bounds.y + bounds.height - CELL_HEIGHT / 2;
+                            } else {
+                                layoutItem.bottomConnectorY = layoutItem.bottomChildren[0].bounds.y + CELL_HEIGHT / 2;
+                            }
+                        } else {
+                            layoutItem.bounds.x = lp.cx;
+                            layoutItem.bounds.y = lp.cy;
+                            lp.cx += CELL_WIDTH;
+                            layoutItem.bounds.width = CELL_WIDTH;
+                            layoutItem.bounds.height = CELL_HEIGHT;
+                            bounds.accumulate(layoutItem.bounds);
+
+                        }
+                    }
+                    return bounds;
+                }
+                doLayout(layoutItems: PedalLayout[]): LayoutSize {
+                    const TWO_ROW_HEIGHT = 142 - 14;
+
+                    if (layoutItems.length === 0) {
+                        // if the current pedalboard is empty, reserve display space anyway.
+                        return { width: 1, height: TWO_ROW_HEIGHT };
+                    }
+
+                    let lp = new LayoutParams();
+
+                    let bounds = this.doLayout2_(lp, layoutItems);
+                    // shift everything down so there are no negative y coordinates.
+
+                    if (bounds.height < TWO_ROW_HEIGHT) {
+
+                        let extra = Math.floor((TWO_ROW_HEIGHT - Math.ceil(bounds.height)) / 2);
+                        this.offsetLayout_(layoutItems, Math.floor(-bounds.y + extra / 2));
+                        bounds.height += extra;
+
+                    } else {
+                        this.offsetLayout_(layoutItems, -bounds.y);
+                    }
+
+                    bounds.height += 14; // for labels that aren't accounted for.
+                    return { width: bounds.width, height: bounds.height };
+
+                }
+
+                onItemClick(e: SyntheticEvent, instanceId?: number): void {
+                    if (instanceId) {
+                        this.setSelection(instanceId);
+                    }
+                }
+                setSelection(instanceId: number) {
+                    if (this.props.onSelectionChanged) {
+                        this.props.onSelectionChanged(instanceId);
+                    }
+                }
+
+                onItemDoubleClick(event: SyntheticEvent, instanceId?: number): void {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    if (this.props.onDoubleClick && instanceId && this.props.enableStructureEditing) {
+                        this.props.onDoubleClick(instanceId);
+                    }
+
+                }
+
+                onItemLongClick(event: SyntheticEvent, instanceId?: number): void {
+                    if (!instanceId) {
+                        return;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    if (!this.props.enableStructureEditing) {
+                        this.setSelection(instanceId);
+                        return;
+                    }
+                    if (!Utility.needsZoomedControls()) {
+                        if (this.props.onDoubleClick && this.props.enableStructureEditing && instanceId) {
+                            this.props.onDoubleClick(instanceId);
                         }
                     }
 
                 }
-            }
-            // delete the plugin.
-            let newId = this.model.setPedalboardItemEmpty(instanceId);
-            this.setSelection(newId);
 
-        }
+                strokeConnector(output: ReactNode[], channels: number, enabled: Boolean, svgPath: string) {
+                    let color = enabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
 
-        onPedalboardChanged(value?: Pedalboard) {
-            this.setState({ 
-                pedalboard: value,
-             });
-        }
-
-        componentDidMount() {
-            this.scrollRef.current!.addEventListener("touchstart", this.handleTouchStart, { passive: false });
-            this.model.pedalboard.addOnChangedHandler(this.onPedalboardChanged);
-
-        }
-        componentWillUnmount() {
-            this.scrollRef.current!.removeEventListener("touchstart", this.handleTouchStart);
-            this.model.pedalboard.removeOnChangedHandler(this.onPedalboardChanged);
-        }
-
-        offsetLayout_(layoutItems: PedalLayout[], offset: number): void {
-            for (let i = 0; i < layoutItems.length; ++i) {
-                let layoutItem = layoutItems[i];
-                layoutItem.bounds.y += offset;
-                if (layoutItem.isSplitter()) {
-                    layoutItem.topConnectorY += offset;
-                    layoutItem.bottomConnectorY += offset;
-                    this.offsetLayout_(layoutItem.topChildren, offset);
-                    this.offsetLayout_(layoutItem.bottomChildren, offset);
-                }
-            }
-        }
-
-        getSplitterIcon(layoutItem: PedalLayout): PluginType {
-            if (layoutItem.pedalItem === undefined) {
-                throw new Error("Invalid splitter");
-            }
-            let split = layoutItem.pedalItem as PedalboardSplitItem;
-            if (split.getSplitType() === SplitType.Ab) {
-                if (split.isASelected()) {
-                    return PluginType.SplitA;
-                } else {
-                    return PluginType.SplitB;
-
-                }
-            } else if (split.getSplitType() === SplitType.Mix) {
-                return PluginType.SplitMix; //"img/fx_dial.svg";
-            } else {
-                return PluginType.SplitLR; //"img/fx_lr.svg";
-            }
-        }
-
-        doLayout2_(lp: LayoutParams, layoutItems: PedalLayout[]): Rect {
-            let bounds = new Rect();
-            for (let i = 0; i < layoutItems.length; ++i) {
-                let layoutItem = layoutItems[i];
-                if (layoutItem.isSplitter()) {
-                    let x0 = lp.cx;
-                    let y0 = lp.cy;
-
-                    layoutItem.bounds.x = x0;
-                    layoutItem.bounds.y = y0;
-                    layoutItem.bounds.height = CELL_HEIGHT;
-                    layoutItem.bounds.width = CELL_WIDTH;
-
-                    lp.cx += CELL_WIDTH;
-
-
-                    let topBounds = this.doLayout2_(lp, layoutItem.topChildren);
-                    if (topBounds.isEmpty()) {
-                        topBounds.x = lp.cx;
-                        topBounds.width = 0;
-                        topBounds.y = y0 - CELL_HEIGHT / 2;
-                        topBounds.height = CELL_HEIGHT;
-
+                    if (channels === 2) {
+                        output.push((
+                            <path key={this.renderKey++} d={svgPath} stroke={color} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
+                        ));
+                        output.push((
+                            <path key={this.renderKey++} d={svgPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
+                        ));
+                    } else if (channels === 1) {
+                        output.push((
+                            <path key={this.renderKey++} d={svgPath} stroke={color} strokeWidth={SVG_STROKE_WIDTH} />
+                        ));
                     }
+                }
 
+                renderConnector(output: ReactNode[], item: PedalLayout, enabled: boolean): void {
+                    // const classes = withStyles.getClasses(this.props);
+                    let x_ = item.bounds.x + CELL_WIDTH / 2;
+                    let y_ = item.bounds.y + CELL_HEIGHT / 2;
+                    let numberOfOutputs = item.numberOfOutputs;
+                    let color = enabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
+                    let stereoCenterColor = this.bgColor;
 
-                    let dyTop = (lp.cy + CELL_HEIGHT / 2) - (topBounds.y + topBounds.height);
+                    if (item.originalInputs === 0) {
+                        // break the input paths.
+                        let rx = item.bounds.x + CELL_WIDTH / 2 - FRAME_SIZE / 2 - 4;
+                        let ry = y_ - 4;
 
-
-
-                    this.offsetLayout_(layoutItem.topChildren, dyTop);
-                    topBounds.offset(0, dyTop);
-                    bounds.accumulate(topBounds);
-
-                    let topCx = lp.cx;
-                    lp.cx = x0;
-                    lp.cx += CELL_WIDTH;
-
-                    let bottomBounds = this.doLayout2_(lp, layoutItem.bottomChildren);
-                    if (bottomBounds.isEmpty()) {
-                        bottomBounds.x = lp.cx; bottomBounds.width = 0;
-                        bottomBounds.y = lp.cy; bottomBounds.height = CELL_HEIGHT;
+                        output.push((
+                            <rect key={this.renderKey++} x={rx} y={ry} width={4} height={8} fill={this.props.theme.palette.background.paper} />
+                        ));
                     }
+                    let svgPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_ + CELL_WIDTH, y_).toString();
 
-                    let dyBottom = (lp.cy + CELL_HEIGHT / 2) - bottomBounds.y;
-                    this.offsetLayout_(layoutItem.bottomChildren, dyBottom)
-                    bottomBounds.offset(0, dyBottom);
-                    bounds.accumulate(bottomBounds);
 
-                    lp.cx = Math.max(lp.cx, topCx) + CELL_WIDTH;
-                    lp.cy = y0;
-
-                    layoutItem.bounds.width = lp.cx - layoutItem.bounds.x;
-                    bounds.accumulate(layoutItem.bounds);
-
-                    if (layoutItem.topChildren.length === 0) {
-                        layoutItem.topConnectorY = bounds.y + CELL_HEIGHT / 2;
+                    if (numberOfOutputs === 2) {
+                        output.push((
+                            <path key={this.renderKey++} d={svgPath} stroke={color} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
+                        ));
+                        output.push((
+                            <path key={this.renderKey++} d={svgPath} stroke={stereoCenterColor} strokeWidth={SVG_STROKE_WIDTH} />
+                        ));
+                    } else if (numberOfOutputs === 1) {
+                        output.push((
+                            <path key={this.renderKey++} d={svgPath} stroke={color} strokeWidth={SVG_STROKE_WIDTH} />
+                        ));
                     } else {
-                        layoutItem.topConnectorY = layoutItem.topChildren[0].bounds.y + CELL_HEIGHT / 2;
+                        output.push((
+                            <path key={this.renderKey++} d={svgPath} stroke={DISABLED_CONNECTOR_COLOR} strokeWidth={SVG_STROKE_WIDTH} />
+                        ));
+
                     }
-                    if (layoutItem.bottomChildren.length === 0) {
-                        layoutItem.bottomConnectorY = bounds.y + bounds.height - CELL_HEIGHT / 2;
+                }
+                renderSplitConnectors(output: ReactNode[], item: PedalLayout, enabled: boolean, shortSplitOutput: boolean,): void {
+                    //const classes = withStyles.getClasses(this.props);
+                    let x_ = item.bounds.x + CELL_WIDTH / 2;
+                    let y_ = item.bounds.y + CELL_HEIGHT / 2;
+                    let yTop = item.topConnectorY;
+                    let yBottom = item.bottomConnectorY;
+                    //let isStereo = item.stereoOutput;
+                    let split = item.pedalItem as PedalboardSplitItem;
+
+                    let topEnabled = enabled && split.isASelected();
+                    let bottomEnabled = enabled && split.isBSelected();
+                    let topColor = topEnabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
+                    let bottomColor = bottomEnabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
+
+
+                    let topStartPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_, yTop).lineTo(x_ + CELL_WIDTH, yTop).toString();
+                    let bottomStartPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_, yBottom).lineTo(x_ + CELL_WIDTH, yBottom).toString();
+
+                    if (item.numberOfInputs === 2 && item.topChildren[0].numberOfInputs === 2) {
+                        output.push((<path key={this.renderKey++} d={topStartPath} stroke={topColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />));
+                        output.push((<path key={this.renderKey++} d={topStartPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />));
+                    } else if (item.numberOfInputs !== 0 && item.topChildren[0].numberOfInputs !== 0) {
+                        output.push((<path key={this.renderKey++} d={topStartPath} stroke={topColor} strokeWidth={SVG_STROKE_WIDTH} />));
+                    }
+
+                    if (item.numberOfInputs === 2 && item.bottomChildren[0].numberOfInputs === 2) {
+                        output.push((<path key={this.renderKey++} d={bottomStartPath} stroke={bottomColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />));
+                        output.push((<path key={this.renderKey++} d={bottomStartPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />));
+
+                    } else if (item.numberOfInputs !== 0 && item.bottomChildren[0].numberOfInputs !== 0) {
+                        output.push((<path key={this.renderKey++} d={bottomStartPath} stroke={bottomColor} strokeWidth={SVG_STROKE_WIDTH} />));
+                    }
+
+                    let lastTop = item.topChildren[item.topChildren.length - 1];
+                    let lastBottom = item.bottomChildren[item.bottomChildren.length - 1];
+
+                    let xTop = lastTop.bounds.right - CELL_WIDTH / 2;
+                    let xBottom = lastBottom.bounds.right - CELL_WIDTH / 2;
+
+                    let xEnd = shortSplitOutput ? item.bounds.right : item.bounds.right + CELL_WIDTH / 2;
+                    let xTee0 = item.bounds.right - CELL_WIDTH / 2;
+
+                    let firstPath: string;  // top or bottom depending on draw order.
+                    let secondPath: string;  // top or bottom depending on draw order.
+
+                    let firstPathStereo: boolean;
+                    let secondPathStereo: boolean;
+                    let firstPathAbsent: boolean;
+                    let secondPathAbsent: boolean;
+                    let firstPathEnabled: boolean;
+                    let secondPathEnabled: boolean;
+                    let xTee: number;
+
+                    let monoAdjustment = (STEREO_STROKE_WIDTH - STROKE_WIDTH) / 2;
+
+                    let bottomPathFirst = topEnabled && !bottomEnabled;
+                    let topPathFirst = bottomEnabled && !topEnabled;
+
+
+                    // Third case: L/R stereo output, when both outputs are mono, requires a third stroke.
+                    let thirdPath: string | null = null; // for L/R stereo output (which can be stereo even if both outputs are mono)
+                    let hasThirdPath = item.numberOfOutputs === 2 && (lastTop.numberOfOutputs !== 2) && (lastBottom.numberOfOutputs !== 2);
+
+                    if (hasThirdPath) {
+                        firstPathStereo = false;
+                        secondPathStereo = false;
+                        firstPathAbsent = lastTop.numberOfOutputs === 0 || item.numberOfOutputs === 0;
+                        secondPathAbsent = lastBottom.numberOfOutputs === 0 || item.numberOfOutputs === 0;
+                        xTee = xTee0 - monoAdjustment;
+                        firstPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).toString();
+
+                        secondPath = new SvgPathBuilder().moveTo(xTop, yTop).lineTo(xTee, yTop).lineTo(xTee, y_).toString();
+
+                        hasThirdPath = true;
+                        thirdPath = new SvgPathBuilder().moveTo(xTee0, y_).lineTo(xEnd, y_).toString();
+                        firstPathEnabled = bottomEnabled;
+                        secondPathEnabled = topEnabled;
+                    } else if (bottomPathFirst || (topEnabled && lastTop.numberOfOutputs === 2)) {
+                        // draw the bottom path first.
+                        firstPathStereo = item.numberOfOutputs === 2 && lastBottom.numberOfOutputs === 2;
+                        secondPathStereo = item.numberOfOutputs === 2 && lastTop.numberOfOutputs === 2;
+                        firstPathAbsent = item.numberOfOutputs === 0 || lastBottom.numberOfOutputs === 0;
+                        secondPathAbsent = item.numberOfOutputs === 0 || lastTop.numberOfOutputs === 0;
+
+                        xTee = firstPathStereo ? xTee0 : xTee0 - monoAdjustment;
+                        firstPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).toString();
+                        xTee = secondPathStereo ? xTee0 : xTee0 - monoAdjustment;
+
+                        secondPath = new SvgPathBuilder().moveTo(xTop, yTop).lineTo(xTee, yTop).lineTo(xTee, y_).lineTo(xEnd, y_).toString();
+                        firstPathEnabled = bottomEnabled;
+                        secondPathEnabled = topEnabled;
                     } else {
-                        layoutItem.bottomConnectorY = layoutItem.bottomChildren[0].bounds.y + CELL_HEIGHT / 2;
+                        // draw the top path first.
+                        firstPathStereo = item.numberOfOutputs === 2 && lastTop.numberOfOutputs === 2;
+                        secondPathStereo = item.numberOfOutputs === 2 && lastBottom.numberOfOutputs === 2;
+                        firstPathAbsent = item.numberOfOutputs === 0 || lastTop.numberOfOutputs === 0;
+                        secondPathAbsent = item.numberOfOutputs === 0 || lastBottom.numberOfOutputs === 0;
+
+                        xTee = firstPathStereo ? xTee0 : xTee0 - monoAdjustment;
+                        firstPath = new SvgPathBuilder().moveTo(xTop, yTop).lineTo(xTee, yTop).lineTo(xTee, y_).toString();
+
+                        xTee = secondPathStereo ? xTee0 : xTee0 - monoAdjustment;
+                        secondPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).lineTo(xEnd, y_).toString();
+
+                        firstPathEnabled = topEnabled;
+                        secondPathEnabled = bottomEnabled;
                     }
-                } else {
-                    layoutItem.bounds.x = lp.cx;
-                    layoutItem.bounds.y = lp.cy;
-                    lp.cx += CELL_WIDTH;
-                    layoutItem.bounds.width = CELL_WIDTH;
-                    layoutItem.bounds.height = CELL_HEIGHT;
-                    bounds.accumulate(layoutItem.bounds);
+                    let firstPathColor = firstPathEnabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
+                    let secondPathColor = secondPathEnabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
 
+                    if (bottomPathFirst || topPathFirst) {
+                        // display stereo strokes with cutoff line.
+                        if (firstPathStereo) {
+                            output.push((
+                                <path key={this.renderKey++} d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
+                            ));
+                            output.push((
+                                <path key={this.renderKey++} d={firstPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
+                            ));
+                        } else if (!firstPathAbsent) {
+                            output.push((
+                                <path key={this.renderKey++} d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STROKE_WIDTH} />
+                            ));
+                        }
+                        if (secondPathStereo) {
+                            output.push((
+                                <path key={this.renderKey++} d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
+                            ));
+                            output.push((
+                                <path key={this.renderKey++} d={secondPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
+                            ));
+                        } else if (!secondPathAbsent) {
+                            output.push((
+                                <path key={this.renderKey++} d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STROKE_WIDTH} />
+                            ));
+                        }
+
+                    } else {
+                        // stereo strokes merge.
+                        if (firstPathStereo) {
+                            output.push((
+                                <path key={this.renderKey++} d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
+                            ));
+                        } else if (!firstPathAbsent) {
+                            output.push((
+                                <path key={this.renderKey++} d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STROKE_WIDTH} />
+                            ));
+                        }
+                        if (secondPathStereo) {
+                            output.push((
+                                <path key={this.renderKey++} d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
+                            ));
+                        } else if (!secondPathAbsent) {
+                            output.push((
+                                <path key={this.renderKey++} d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STROKE_WIDTH} />
+                            ));
+                        }
+
+                        // draw stereo inner lines.
+                        if (firstPathStereo) {
+                            output.push((
+                                <path key={this.renderKey++} d={firstPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
+                            ));
+                        }
+                        if (secondPathStereo) {
+                            output.push((
+                                <path key={this.renderKey++} d={secondPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
+                            ));
+
+                        }
+                    }
+                    if (thirdPath != null) {
+                        // stereo output of L/R splitter
+                        output.push((
+                            <path key={this.renderKey++} d={thirdPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
+                        ));
+                        output.push((
+                            <path key={this.renderKey++} d={thirdPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
+                        ));
+
+
+                    }
                 }
-            }
-            return bounds;
-        }
-        doLayout(layoutItems: PedalLayout[]): LayoutSize {
-            const TWO_ROW_HEIGHT = 142 - 14;
-
-            if (layoutItems.length === 0) {
-                // if the current pedalboard is empty, reserve display space anyway.
-                return { width: 1, height: TWO_ROW_HEIGHT };
-            }
-
-            let lp = new LayoutParams();
-
-            let bounds = this.doLayout2_(lp, layoutItems);
-            // shift everything down so there are no negative y coordinates.
-
-            if (bounds.height < TWO_ROW_HEIGHT) {
-
-                let extra = Math.floor((TWO_ROW_HEIGHT - Math.ceil(bounds.height)) / 2);
-                this.offsetLayout_(layoutItems, Math.floor(-bounds.y + extra / 2));
-                bounds.height += extra;
-
-            } else {
-                this.offsetLayout_(layoutItems, -bounds.y);
-            }
-
-            bounds.height += 14; // for labels that aren't accounted for.
-            return { width: bounds.width, height: bounds.height };
-
-        }
-
-        onItemClick(e: SyntheticEvent, instanceId?: number): void {
-            if (instanceId) {
-                this.setSelection(instanceId);
-            }
-        }
-        setSelection(instanceId: number) {
-            if (this.props.onSelectionChanged) {
-                this.props.onSelectionChanged(instanceId);
-            }
-        }
-
-        onItemDoubleClick(event: SyntheticEvent, instanceId?: number): void {
-            event.preventDefault();
-            event.stopPropagation();
-
-            if (this.props.onDoubleClick && instanceId && this.props.enableStructureEditing) {
-                this.props.onDoubleClick(instanceId);
-            }
-
-        }
-
-        onItemLongClick(event: SyntheticEvent, instanceId?: number): void {
-            if (!instanceId) {
-                return;
-            }
-            event.preventDefault();
-            event.stopPropagation();
-
-            if (!this.props.enableStructureEditing) {
-                this.setSelection(instanceId);
-                return;
-            }
-            if (!Utility.needsZoomedControls()) {
-                if (this.props.onDoubleClick && this.props.enableStructureEditing && instanceId) {
-                    this.props.onDoubleClick(instanceId);
-                }
-            }
-
-        }
-
-        strokeConnector(output: ReactNode[], channels: number, enabled: Boolean, svgPath: string) {
-            let color = enabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
-
-            if (channels === 2) {
-                output.push((
-                    <path key={this.renderKey++} d={svgPath} stroke={color} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
-                ));
-                output.push((
-                    <path key={this.renderKey++} d={svgPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
-                ));
-            } else if (channels === 1) {
-                output.push((
-                    <path key={this.renderKey++} d={svgPath} stroke={color} strokeWidth={SVG_STROKE_WIDTH} />
-                ));
-            }
-        }
-
-        renderConnector(output: ReactNode[], item: PedalLayout, enabled: boolean): void {
-            // const classes = withStyles.getClasses(this.props);
-            let x_ = item.bounds.x + CELL_WIDTH / 2;
-            let y_ = item.bounds.y + CELL_HEIGHT / 2;
-            let numberOfOutputs = item.numberOfOutputs;
-            let color = enabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
-            let stereoCenterColor = this.bgColor;
-
-            if (item.originalInputs === 0) {
-                // break the input paths.
-                let rx = item.bounds.x + CELL_WIDTH / 2 - FRAME_SIZE / 2 - 4;
-                let ry = y_ - 4;
-
-                output.push((
-                    <rect key={this.renderKey++} x={rx} y={ry} width={4} height={8} fill={this.props.theme.palette.background.paper} />
-                ));
-            }
-            let svgPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_ + CELL_WIDTH, y_).toString();
-
-
-            if (numberOfOutputs === 2) {
-                output.push((
-                    <path key={this.renderKey++} d={svgPath} stroke={color} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
-                ));
-                output.push((
-                    <path key={this.renderKey++} d={svgPath} stroke={stereoCenterColor} strokeWidth={SVG_STROKE_WIDTH} />
-                ));
-            } else if (numberOfOutputs === 1) {
-                output.push((
-                    <path key={this.renderKey++} d={svgPath} stroke={color} strokeWidth={SVG_STROKE_WIDTH} />
-                ));
-            } else {
-                output.push((
-                    <path key={this.renderKey++} d={svgPath} stroke={DISABLED_CONNECTOR_COLOR} strokeWidth={SVG_STROKE_WIDTH} />
-                ));
-
-            }
-        }
-        renderSplitConnectors(output: ReactNode[], item: PedalLayout, enabled: boolean, shortSplitOutput: boolean,): void {
-            //const classes = withStyles.getClasses(this.props);
-            let x_ = item.bounds.x + CELL_WIDTH / 2;
-            let y_ = item.bounds.y + CELL_HEIGHT / 2;
-            let yTop = item.topConnectorY;
-            let yBottom = item.bottomConnectorY;
-            //let isStereo = item.stereoOutput;
-            let split = item.pedalItem as PedalboardSplitItem;
-
-            let topEnabled = enabled && split.isASelected();
-            let bottomEnabled = enabled && split.isBSelected();
-            let topColor = topEnabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
-            let bottomColor = bottomEnabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
-
-
-            let topStartPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_, yTop).lineTo(x_ + CELL_WIDTH, yTop).toString();
-            let bottomStartPath = new SvgPathBuilder().moveTo(x_, y_).lineTo(x_, yBottom).lineTo(x_ + CELL_WIDTH, yBottom).toString();
-
-            if (item.numberOfInputs === 2 && item.topChildren[0].numberOfInputs === 2) {
-                output.push((<path key={this.renderKey++} d={topStartPath} stroke={topColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />));
-                output.push((<path key={this.renderKey++} d={topStartPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />));
-            } else if (item.numberOfInputs !== 0 && item.topChildren[0].numberOfInputs !== 0) {
-                output.push((<path key={this.renderKey++} d={topStartPath} stroke={topColor} strokeWidth={SVG_STROKE_WIDTH} />));
-            }
-
-            if (item.numberOfInputs === 2 && item.bottomChildren[0].numberOfInputs === 2) {
-                output.push((<path key={this.renderKey++} d={bottomStartPath} stroke={bottomColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />));
-                output.push((<path key={this.renderKey++} d={bottomStartPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />));
-
-            } else if (item.numberOfInputs !== 0 && item.bottomChildren[0].numberOfInputs !== 0) {
-                output.push((<path key={this.renderKey++} d={bottomStartPath} stroke={bottomColor} strokeWidth={SVG_STROKE_WIDTH} />));
-            }
-
-            let lastTop = item.topChildren[item.topChildren.length - 1];
-            let lastBottom = item.bottomChildren[item.bottomChildren.length - 1];
-
-            let xTop = lastTop.bounds.right - CELL_WIDTH / 2;
-            let xBottom = lastBottom.bounds.right - CELL_WIDTH / 2;
-
-            let xEnd = shortSplitOutput ? item.bounds.right : item.bounds.right + CELL_WIDTH / 2;
-            let xTee0 = item.bounds.right - CELL_WIDTH / 2;
-
-            let firstPath: string;  // top or bottom depending on draw order.
-            let secondPath: string;  // top or bottom depending on draw order.
-
-            let firstPathStereo: boolean;
-            let secondPathStereo: boolean;
-            let firstPathAbsent: boolean;
-            let secondPathAbsent: boolean;
-            let firstPathEnabled: boolean;
-            let secondPathEnabled: boolean;
-            let xTee: number;
-
-            let monoAdjustment = (STEREO_STROKE_WIDTH - STROKE_WIDTH) / 2;
-
-            let bottomPathFirst = topEnabled && !bottomEnabled;
-            let topPathFirst = bottomEnabled && !topEnabled;
-
-
-            // Third case: L/R stereo output, when both outputs are mono, requires a third stroke.
-            let thirdPath: string | null = null; // for L/R stereo output (which can be stereo even if both outputs are mono)
-            let hasThirdPath = item.numberOfOutputs === 2 && (lastTop.numberOfOutputs !== 2) && (lastBottom.numberOfOutputs !== 2);
-
-            if (hasThirdPath) {
-                firstPathStereo = false;
-                secondPathStereo = false;
-                firstPathAbsent = lastTop.numberOfOutputs === 0 || item.numberOfOutputs === 0;
-                secondPathAbsent = lastBottom.numberOfOutputs === 0 || item.numberOfOutputs === 0;
-                xTee = xTee0 - monoAdjustment;
-                firstPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).toString();
-
-                secondPath = new SvgPathBuilder().moveTo(xTop, yTop).lineTo(xTee, yTop).lineTo(xTee, y_).toString();
-
-                hasThirdPath = true;
-                thirdPath = new SvgPathBuilder().moveTo(xTee0, y_).lineTo(xEnd, y_).toString();
-                firstPathEnabled = bottomEnabled;
-                secondPathEnabled = topEnabled;
-            } else if (bottomPathFirst || (topEnabled && lastTop.numberOfOutputs === 2)) {
-                // draw the bottom path first.
-                firstPathStereo = item.numberOfOutputs === 2 && lastBottom.numberOfOutputs === 2;
-                secondPathStereo = item.numberOfOutputs === 2 && lastTop.numberOfOutputs === 2;
-                firstPathAbsent = item.numberOfOutputs === 0 || lastBottom.numberOfOutputs === 0;
-                secondPathAbsent = item.numberOfOutputs === 0 || lastTop.numberOfOutputs === 0;
-
-                xTee = firstPathStereo ? xTee0 : xTee0 - monoAdjustment;
-                firstPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).toString();
-                xTee = secondPathStereo ? xTee0 : xTee0 - monoAdjustment;
-
-                secondPath = new SvgPathBuilder().moveTo(xTop, yTop).lineTo(xTee, yTop).lineTo(xTee, y_).lineTo(xEnd, y_).toString();
-                firstPathEnabled = bottomEnabled;
-                secondPathEnabled = topEnabled;
-            } else {
-                // draw the top path first.
-                firstPathStereo = item.numberOfOutputs === 2 && lastTop.numberOfOutputs === 2;
-                secondPathStereo = item.numberOfOutputs === 2 && lastBottom.numberOfOutputs === 2;
-                firstPathAbsent = item.numberOfOutputs === 0 || lastTop.numberOfOutputs === 0;
-                secondPathAbsent = item.numberOfOutputs === 0 || lastBottom.numberOfOutputs === 0;
-
-                xTee = firstPathStereo ? xTee0 : xTee0 - monoAdjustment;
-                firstPath = new SvgPathBuilder().moveTo(xTop, yTop).lineTo(xTee, yTop).lineTo(xTee, y_).toString();
-
-                xTee = secondPathStereo ? xTee0 : xTee0 - monoAdjustment;
-                secondPath = new SvgPathBuilder().moveTo(xBottom, yBottom).lineTo(xTee, yBottom).lineTo(xTee, y_).lineTo(xEnd, y_).toString();
-
-                firstPathEnabled = topEnabled;
-                secondPathEnabled = bottomEnabled;
-            }
-            let firstPathColor = firstPathEnabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
-            let secondPathColor = secondPathEnabled ? ENABLED_CONNECTOR_COLOR : DISABLED_CONNECTOR_COLOR;
-
-            if (bottomPathFirst || topPathFirst) {
-                // display stereo strokes with cutoff line.
-                if (firstPathStereo) {
-                    output.push((
-                        <path key={this.renderKey++} d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
-                    ));
-                    output.push((
-                        <path key={this.renderKey++} d={firstPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
-                    ));
-                } else if (!firstPathAbsent) {
-                    output.push((
-                        <path key={this.renderKey++} d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STROKE_WIDTH} />
-                    ));
-                }
-                if (secondPathStereo) {
-                    output.push((
-                        <path key={this.renderKey++} d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
-                    ));
-                    output.push((
-                        <path key={this.renderKey++} d={secondPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
-                    ));
-                } else if (!secondPathAbsent) {
-                    output.push((
-                        <path key={this.renderKey++} d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STROKE_WIDTH} />
-                    ));
+                getScrollContainer() {
+                    let el: HTMLElement | undefined | null = this.scrollRef.current;
+                    // actually not here anymore. :-/ It has a reactive definition in MainPage.tsx now.
+                    while (el) {
+                        if (el.id === "pedalboardScroll") {
+                            return el as HTMLDivElement;
+                        }
+                        el = el.parentElement;
+                    }
+                    throw new PiPedalStateError("scroll container not found.");
                 }
 
-            } else {
-                // stereo strokes merge.
-                if (firstPathStereo) {
-                    output.push((
-                        <path key={this.renderKey++} d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
-                    ));
-                } else if (!firstPathAbsent) {
-                    output.push((
-                        <path key={this.renderKey++} d={firstPath} stroke={firstPathColor} strokeWidth={SVG_STROKE_WIDTH} />
-                    ));
-                }
-                if (secondPathStereo) {
-                    output.push((
-                        <path key={this.renderKey++} d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
-                    ));
-                } else if (!secondPathAbsent) {
-                    output.push((
-                        <path key={this.renderKey++} d={secondPath} stroke={secondPathColor} strokeWidth={SVG_STROKE_WIDTH} />
-                    ));
-                }
+                pedalButton(
+                    instanceId: number,
+                    iconType: PluginType,
+                    iconColor: string,
+                    draggable: boolean,
+                    enabled: boolean,
+                    hasBorder: boolean = true,
+                    pluginNotFound: boolean,
+                    hasMidiConnector: boolean
+                )
+                    : ReactNode {
+                    const classes = withStyles.getClasses(this.props);
+                    let frameStyle = classes.iconFrame;
+                    if (!hasBorder) {
+                        frameStyle = classes.borderlessIconFrame;
+                    } else {
+                        if (instanceId === this.props.selectedId) {
+                            frameStyle = classes.selectedIconFrame;
+                        }
+                    }
 
-                // draw stereo inner lines.
-                if (firstPathStereo) {
-                    output.push((
-                        <path key={this.renderKey++} d={firstPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
-                    ));
-                }
-                if (secondPathStereo) {
-                    output.push((
-                        <path key={this.renderKey++} d={secondPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
-                    ));
+                    return (
+                        <div className={frameStyle} onContextMenu={(e) => { e.preventDefault(); }}
+                        >
+                            {/* {!enabled && (
+                                <div className={classes.midiConnectorDecoration} >
+                                    <CloseIcon style={{ width: 16, height: 16, opacity: 0.6, fill: this.props.theme.palette.text.secondary }} />
+                                </div>
 
-                }
-            }
-            if (thirdPath != null) {
-                // stereo output of L/R splitter
-                output.push((
-                    <path key={this.renderKey++} d={thirdPath} stroke={secondPathColor} strokeWidth={SVG_STEREO_STROKE_WIDTH} />
-                ));
-                output.push((
-                    <path key={this.renderKey++} d={thirdPath} stroke={this.bgColor} strokeWidth={SVG_STROKE_WIDTH} />
-                ));
+                            )} */}
 
-
-            }
-        }
-        getScrollContainer() {
-            let el: HTMLElement | undefined | null = this.scrollRef.current;
-            // actually not here anymore. :-/ It has a reactive definition in MainPage.tsx now.
-            while (el) {
-                if (el.id === "pedalboardScroll") {
-                    return el as HTMLDivElement;
-                }
-                el = el.parentElement;
-            }
-            throw new PiPedalStateError("scroll container not found.");
-        }
-
-        pedalButton(
-            instanceId: number,
-            iconType: PluginType,
-            draggable: boolean,
-            enabled: boolean,
-            hasBorder: boolean = true,
-            pluginNotFound: boolean,
-            hasMidiConnector: boolean
-        )
-            : ReactNode {
-            const classes = withStyles.getClasses(this.props);
-            return (
-                <div className={hasBorder ? classes.iconFrame : classes.borderlessIconFrame} onContextMenu={(e) => { e.preventDefault(); }}>
-                    {hasMidiConnector && midiChannelBindingControlFeatureEnabled && (
-                        <div className={classes.midiConnectorDecoration} >
-                            <MidiIcon style={{ width: 16, height: 16, fill: this.props.theme.palette.text.secondary }} />
-                        </div>
-
-                    )}
-
-                    <ButtonBase style={{ width: "100%", height: "100%" }}
-                        onClick={(e) => { this.onItemClick(e, instanceId); }}
-                        onDoubleClick={(e: SyntheticEvent) => { this.onItemDoubleClick(e, instanceId); }}
-                        onContextMenu={(e: SyntheticEvent) => { this.onItemLongClick(e, instanceId); }}
-                    >
-                        <SelectHoverBackground selected={instanceId === this.props.selectedId} showHover={true} borderRadius={6} >
-                            <Draggable draggable={draggable && (this.props.enableStructureEditing)} getScrollContainer={() => this.getScrollContainer()}
-                                onDragEnd={(x, y) => { this.onDragEnd(instanceId, x, y) }}
+                            <ButtonBase style={{ width: "100%", height: "100%" }}
+                                onClick={(e) => { this.onItemClick(e, instanceId); }}
+                                onDoubleClick={(e: SyntheticEvent) => { this.onItemDoubleClick(e, instanceId); }}
+                                onContextMenu={(e: SyntheticEvent) => { this.onItemLongClick(e, instanceId); }}
                             >
-                                <PluginIcon pluginType={iconType} size={24} pluginMissing={pluginNotFound} opacity={enabled ? 0.99 : 0.6} />
-                            </Draggable>
-                        </SelectHoverBackground>
-                    </ButtonBase>
-                </div>
-            );
+                                <SelectHoverBackground selected={instanceId === this.props.selectedId} showHover={true} borderRadius={6}
+                                    clipChildren={true}
+                                >
+                                    <Draggable draggable={draggable && (this.props.enableStructureEditing)} getScrollContainer={() => this.getScrollContainer()}
+                                        onDragEnd={(x, y) => { this.onDragEnd(instanceId, x, y) }}
+                                        style={{ opacity: enabled ? 0.99 : 0.3 }}
 
-        }
-        renderConnectors(output: ReactNode[], layoutChain: PedalLayout[], enabled: boolean, shortSplitOutput: boolean): void {
-            let length = layoutChain.length - 1;
-            if (layoutChain.length > 0 && layoutChain[layoutChain.length - 1].isSplitter()) {
-                ++length;
-            }
-            for (let i = 0; i < length; ++i) {
-                let item = layoutChain[i];
-                if (item.isSplitter()) {
-                    let splitter = item.pedalItem as PedalboardSplitItem;
-                    this.renderSplitConnectors(output, item, enabled, i === length - 1 && shortSplitOutput,);
-                    this.renderConnectors(output, item.topChildren, enabled && splitter.isASelected(), false);
-                    this.renderConnectors(output, item.bottomChildren, enabled && splitter.isBSelected(), false);
+                                    >
+                                        <div id="childIcon" style={{ position: "relative" }} >
+                                            <PluginIcon pluginType={iconType}
+                                                size={24}
+                                                color={getIconColor(iconColor)}
+                                                pluginMissing={pluginNotFound}
+                                            />
+                                        </div>
 
-                } else if (item.uri !== END_PEDALBOARD_ITEM_URI) {
-                    this.renderConnector(output, item, enabled);
+                                    </Draggable>
+                                </SelectHoverBackground>
+                            </ButtonBase>
+                        </div>
+                    );
 
                 }
-            }
-        }
-        renderConnectorFrame(layoutChain: PedalLayout[], layoutSize: LayoutSize): ReactNode {
-            let outputs: ReactNode[] = [];
-            this.renderConnectors(outputs, layoutChain, true, false);
-            return (
-                <div key="connectors" style={{ width: layoutSize.width, height: layoutSize.height, overflow: "hidden" }}>
-                    <svg width={layoutSize.width} height={layoutSize.height}
-                        xmlns="http://www.w3.org/2000/svg" viewBox={"0 0 " + layoutSize.width + " " + layoutSize.height}>
-                        <g fill="none">
-                            {
-                                outputs
-                            }
-                        </g>
-
-                    </svg>
-                </div>
-            );
-
-        }
-
-        renderChain(layoutChain: PedalLayout[], layoutSize: LayoutSize): ReactNode {
-
-            const classes = withStyles.getClasses(this.props);
-
-            let result: ReactNode[] = [];
-
-            result.push(this.renderConnectorFrame(layoutChain, layoutSize));
-
-            let it = chainIterator(layoutChain);
-            while (true) {
-                let v = it.next();
-                if (v.done) break;
-                let item = v.value;
-                switch (item.uri) {
-                    case START_PEDALBOARD_ITEM_URI:
-                        result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
-                            <div className={classes.splitStart} >
-
-                                {this.pedalButton(START_CONTROL, item.pluginType, false, true, false, false, false)}
-                            </div>
-                        </div>);
-                        break;
-                    case END_PEDALBOARD_ITEM_URI:
-                        result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
-                            <div className={classes.splitStart} >
-
-                                {this.pedalButton(END_CONTROL, item.pluginType, false, true, false, false, false)}
-                            </div>
-                        </div>);
-                        break;
-                    default:
+                renderConnectors(output: ReactNode[], layoutChain: PedalLayout[], enabled: boolean, shortSplitOutput: boolean): void {
+                    let length = layoutChain.length - 1;
+                    if (layoutChain.length > 0 && layoutChain[layoutChain.length - 1].isSplitter()) {
+                        ++length;
+                    }
+                    for (let i = 0; i < length; ++i) {
+                        let item = layoutChain[i];
                         if (item.isSplitter()) {
+                            let splitter = item.pedalItem as PedalboardSplitItem;
+                            this.renderSplitConnectors(output, item, enabled, i === length - 1 && shortSplitOutput,);
+                            this.renderConnectors(output, item.topChildren, enabled && splitter.isASelected(), false);
+                            this.renderConnectors(output, item.bottomChildren, enabled && splitter.isBSelected(), false);
 
-                            result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
-                                <div className={classes.splitStart} >
-                                    {this.pedalButton(item.pedalItem?.instanceId ?? -1, this.getSplitterIcon(item), false, true, true, false, false)}
-                                </div>
-                            </div>);
+                        } else if (item.uri !== END_PEDALBOARD_ITEM_URI) {
+                            this.renderConnector(output, item, enabled);
 
-                        } else {
-                            result.push(
-                                <div key={this.renderKey++} style={{
-                                    display: "flex", justifyContent: "flex-start", alignItems: "flex-start",
-                                    position: "absolute", left: item.bounds.x, width: CELL_WIDTH, top: item.bounds.bottom - 12, paddingLeft: 2, paddingRight: 2
-                                }}>
-                                    <Typography variant="caption" display="block" noWrap={true}
-                                        style={{ width: CELL_WIDTH - 4, textAlign: "center", flex: "0 1 auto" }}
-                                    >{item.name}</Typography>
-                                </div>
-                            )
-                            let uiPlugin = this.model.getUiPlugin(item.pedalItem?.uri ?? "");
-                            let pluginMissing = uiPlugin === null;
-                            let pluginType = item.pluginType;
-                            if (uiPlugin && uiPlugin.uri === "http://two-play.com/plugins/toob-nam")
-                            {   
-                                pluginType = PluginType.NamPlugin;
+                        }
+                    }
+                }
+                renderConnectorFrame(layoutChain: PedalLayout[], layoutSize: LayoutSize): ReactNode {
+                    let outputs: ReactNode[] = [];
+                    this.renderConnectors(outputs, layoutChain, true, false);
+                    return (
+                        <div key="connectors" style={{ width: layoutSize.width, height: layoutSize.height, overflow: "hidden" }}>
+                            <svg width={layoutSize.width} height={layoutSize.height}
+                                xmlns="http://www.w3.org/2000/svg" viewBox={"0 0 " + layoutSize.width + " " + layoutSize.height}>
+                                <g fill="none">
+                                    {
+                                        outputs
+                                    }
+                                </g>
 
+                            </svg>
+                        </div>
+                    );
+
+                }
+
+                renderChain(layoutChain: PedalLayout[], layoutSize: LayoutSize): ReactNode {
+
+                    const classes = withStyles.getClasses(this.props);
+
+                    let result: ReactNode[] = [];
+
+                    result.push(this.renderConnectorFrame(layoutChain, layoutSize));
+
+                    let it = chainIterator(layoutChain);
+                    while (true) {
+                        let v = it.next();
+                        if (v.done) break;
+                        let item = v.value;
+                        switch (item.uri) {
+                            case START_PEDALBOARD_ITEM_URI:
+                                result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
+                                    <div className={classes.splitStart} >
+
+                                        {this.pedalButton(START_CONTROL, item.pluginType, item.iconColor, false, true, false, false, false)}
+                                    </div>
+                                </div>);
+                                break;
+                            case END_PEDALBOARD_ITEM_URI:
+                                result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
+                                    <div className={classes.splitStart} >
+
+                                        {this.pedalButton(END_CONTROL, item.pluginType, "", false, true, false, false, false)}
+                                    </div>
+                                </div>);
+                                break;
+                            default:
+                                if (item.isSplitter()) {
+
+                                    result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
+                                        <div className={classes.splitStart} >
+                                            {this.pedalButton(item.pedalItem?.instanceId ?? -1, this.getSplitterIcon(item), "", false, true, true, false, false)}
+                                        </div>
+                                    </div>);
+
+                                } else {
+                                    result.push(
+                                        <div key={this.renderKey++} style={{
+                                            display: "flex", justifyContent: "flex-start", alignItems: "flex-start",
+                                            position: "absolute", left: item.bounds.x, width: CELL_WIDTH, top: item.bounds.bottom - 12, paddingLeft: 2, paddingRight: 2
+                                        }}>
+                                            <Typography variant="caption" display="block" noWrap={true}
+                                                style={{ width: CELL_WIDTH - 4, textAlign: "center", flex: "0 1 auto",
+                                                    opacity: item.pedalItem?.isEnabled??true ? 1.0 : 0.4
+                                                 }}
+                                            >{item.name}</Typography>
+                                        </div>
+                                    )
+                                    let uiPlugin = this.model.getUiPlugin(item.pedalItem?.uri ?? "");
+                                    let pluginMissing = uiPlugin === null;
+                                    let pluginType = item.pluginType;
+                                    if (uiPlugin && uiPlugin.uri === "http://two-play.com/plugins/toob-nam") {
+                                        pluginType = PluginType.NamPlugin;
+
+                                    }
+
+                                    result.push(<div key={this.renderKey++} className={classes.pedalItem} style={{ left: item.bounds.x, top: item.bounds.y }} >
+                                        {this.pedalButton(
+                                            item.pedalItem?.instanceId ?? -1,
+                                            pluginType,
+                                            item.pedalItem?.iconColor ?? "",
+                                            !item.isEmpty(),
+                                            item.pedalItem?.isEnabled ?? false,
+                                            true,
+                                            pluginMissing,
+                                            uiPlugin ? ((uiPlugin.has_midi_input !== 0) || (uiPlugin.has_midi_output !== 0)) : false)}
+
+                                    </div>);
+
+                                }
+                                break;
+                        }
+
+                    }
+                    return result;
+                }
+
+                canInputStero(item: PedalLayout): boolean {
+                    if (item.pedalItem) {
+                        let plugin = this.model.getUiPlugin(item.pedalItem.uri);
+                        if (plugin) {
+                            return plugin.audio_inputs === 2;
+                        }
+                    }
+                    return true;
+                }
+                getNumberOfInputs(item: PedalLayout): number {
+                    if (item.pedalItem) {
+                        let plugin = this.model.getUiPlugin(item.pedalItem.uri);
+                        if (plugin) {
+                            return plugin.audio_inputs;
+                        }
+                    }
+                    return 1;
+                }
+                getNumberOfOutputs(item: PedalLayout): number {
+                    if (item.pedalItem) {
+                        let plugin = this.model.getUiPlugin(item.pedalItem.uri);
+                        if (plugin) {
+                            return plugin.audio_outputs;
+                        }
+                    }
+                    return 1;
+                }
+
+                markStereoOutputs(layoutChain: PedalLayout[], numberOfInputs: number, numberOfOutputs: number) {
+                    // analyze forward flow.
+                    this.markStereoForward(layoutChain, numberOfInputs);
+                    // mark items that feed a mono effect as mono.
+                    this.markStereoBackward(layoutChain, numberOfOutputs);
+                }
+
+                markStereoBackward(layoutChain: PedalLayout[], numberOfOutputs: number): number {
+                    for (let i = layoutChain.length - 1; i >= 0; --i) {
+                        let item = layoutChain[i];
+                        if (item.isSplitter()) {
+                            item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs)
+
+                            this.markStereoBackward(item.topChildren, numberOfOutputs);
+                            this.markStereoBackward(item.bottomChildren, numberOfOutputs);
+                            let topInputs = item.topChildren[0].numberOfInputs;
+                            let bottomInputs = item.bottomChildren[0].numberOfInputs;
+
+                            let splitItem = item.pedalItem as PedalboardSplitItem;
+                            if (splitItem.getSplitType() !== SplitType.Lr) {
+                                item.numberOfInputs = CalculateConnection(item.numberOfInputs, Math.max(topInputs, bottomInputs));
                             }
+                        } else if (item.isEnd()) {
 
-                            result.push(<div key={this.renderKey++} className={classes.pedalItem} style={{ left: item.bounds.x, top: item.bounds.y }} >
-                                {this.pedalButton(
-                                    item.pedalItem?.instanceId ?? -1,
-                                    pluginType,
-                                    !item.isEmpty(),
-                                    item.pedalItem?.isEnabled ?? false,
-                                    true,
-                                    pluginMissing,
-                                    uiPlugin ? ((uiPlugin.has_midi_input !== 0) || (uiPlugin.has_midi_output !== 0)) : false)}
+                        } else if (item.isStart()) {
+                            item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs);
+                            return item.numberOfOutputs;
 
-                            </div>);
-
-                        }
-                        break;
-                }
-
-            }
-            return result;
-        }
-
-        canInputStero(item: PedalLayout): boolean {
-            if (item.pedalItem) {
-                let plugin = this.model.getUiPlugin(item.pedalItem.uri);
-                if (plugin) {
-                    return plugin.audio_inputs === 2;
-                }
-            }
-            return true;
-        }
-        getNumberOfInputs(item: PedalLayout): number {
-            if (item.pedalItem) {
-                let plugin = this.model.getUiPlugin(item.pedalItem.uri);
-                if (plugin) {
-                    return plugin.audio_inputs;
-                }
-            }
-            return 1;
-        }
-        getNumberOfOutputs(item: PedalLayout): number {
-            if (item.pedalItem) {
-                let plugin = this.model.getUiPlugin(item.pedalItem.uri);
-                if (plugin) {
-                    return plugin.audio_outputs;
-                }
-            }
-            return 1;
-        }
-
-        markStereoOutputs(layoutChain: PedalLayout[], numberOfInputs: number, numberOfOutputs: number) {
-            // analyze forward flow.
-            this.markStereoForward(layoutChain, numberOfInputs);
-            // mark items that feed a mono effect as mono.
-            this.markStereoBackward(layoutChain, numberOfOutputs);
-        }
-
-        markStereoBackward(layoutChain: PedalLayout[], numberOfOutputs: number): number {
-            for (let i = layoutChain.length - 1; i >= 0; --i) {
-                let item = layoutChain[i];
-                if (item.isSplitter()) {
-                    item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs)
-
-                    this.markStereoBackward(item.topChildren, numberOfOutputs);
-                    this.markStereoBackward(item.bottomChildren, numberOfOutputs);
-                    let topInputs = item.topChildren[0].numberOfInputs;
-                    let bottomInputs = item.bottomChildren[0].numberOfInputs;
-
-                    let splitItem = item.pedalItem as PedalboardSplitItem;
-                    if (splitItem.getSplitType() !== SplitType.Lr) {
-                        item.numberOfInputs = CalculateConnection(item.numberOfInputs, Math.max(topInputs, bottomInputs));
-                    }
-                } else if (item.isEnd()) {
-
-                } else if (item.isStart()) {
-                    item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs);
-                    return item.numberOfOutputs;
-
-                } else if (item.isEmpty()) {
-                    if (numberOfOutputs === 0) {
-                        item.numberOfOutputs = 0;
-                        item.numberOfInputs = CalculateConnection(item.numberOfInputs, 2);
-                    } else {
-                        item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs);
-                        item.numberOfInputs = CalculateConnection(item.numberOfInputs, numberOfOutputs);
-                    }
-                } else {
-                    item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs);
-                }
-                numberOfOutputs = item.numberOfInputs;
-            }
-            return numberOfOutputs;
-        }
-        markStereoForward(layoutChain: PedalLayout[], numberOfInputs: number): number {
-            if (layoutChain.length === 0) {
-                return numberOfInputs;
-            }
-            for (let i = 0; i < layoutChain.length; ++i) {
-                let item = layoutChain[i];
-                if (item.isSplitter()) {
-                    let splitter = item.pedalItem as PedalboardSplitItem;
-                    item.numberOfInputs = numberOfInputs;
-
-                    let chainInputs = numberOfInputs;
-                    if (splitter.getSplitType() === SplitType.Lr) {
-                        chainInputs = CalculateConnection(numberOfInputs, 1);
-                    }
-                    let topOutputs = this.markStereoForward(item.topChildren, chainInputs);
-                    let bottomOutputs = this.markStereoForward(item.bottomChildren, chainInputs);
-
-
-                    if (splitter.getSplitType() === SplitType.Ab) {
-                        if (splitter.isASelected()) {
-                            item.numberOfOutputs = topOutputs;
+                        } else if (item.isEmpty()) {
+                            if (numberOfOutputs === 0) {
+                                item.numberOfOutputs = 0;
+                                item.numberOfInputs = CalculateConnection(item.numberOfInputs, 2);
+                            } else {
+                                item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs);
+                                item.numberOfInputs = CalculateConnection(item.numberOfInputs, numberOfOutputs);
+                            }
                         } else {
-                            item.numberOfOutputs = bottomOutputs;
+                            item.numberOfOutputs = CalculateConnection(item.numberOfOutputs, numberOfOutputs);
                         }
-                    } else {
-                        item.numberOfOutputs = (topOutputs >= 1 || bottomOutputs >= 1) ? 2 : 1;
+                        numberOfOutputs = item.numberOfInputs;
                     }
-                } else if (item.isStart()) {
-                    item.numberOfOutputs = Math.min(PiPedalModelFactory.getInstance().jackSettings.get().inputAudioPorts.length, 2);
-                } else if (item.isEnd()) {
-                    item.numberOfInputs =
-                        CalculateConnection(
-                            Math.min(PiPedalModelFactory.getInstance().jackSettings.get().outputAudioPorts.length, 2),
-                            numberOfInputs);
-                    return item.numberOfInputs;
-                } else if (item.isEmpty()) {
-                    item.numberOfInputs = numberOfInputs;
-                    if (numberOfInputs === 0) {
-                        item.numberOfOutputs = 2;
-                    } else {
-                        item.numberOfOutputs = item.numberOfInputs;
-                    }
-                } else {
-                    if (item.numberOfInputs === 0) // zero-input plugins merge their output with the input.
-                    {
-                        item.numberOfInputs = numberOfInputs;
-                        item.numberOfOutputs = Math.max(item.numberOfOutputs, numberOfInputs);
-                    } else {
-                        item.numberOfInputs = CalculateConnection(numberOfInputs, this.getNumberOfInputs(item));
-                        item.numberOfOutputs = this.getNumberOfOutputs(item);
-                    }
+                    return numberOfOutputs;
                 }
-                numberOfInputs = item.numberOfOutputs;
-            }
-            return numberOfInputs;
-        }
+                markStereoForward(layoutChain: PedalLayout[], numberOfInputs: number): number {
+                    if (layoutChain.length === 0) {
+                        return numberOfInputs;
+                    }
+                    for (let i = 0; i < layoutChain.length; ++i) {
+                        let item = layoutChain[i];
+                        if (item.isSplitter()) {
+                            let splitter = item.pedalItem as PedalboardSplitItem;
+                            item.numberOfInputs = numberOfInputs;
 
-        currentLayout?: PedalLayout[];
-        private renderKey: number = 0;
-        render() {
-            const classes = withStyles.getClasses(this.props);
-            this.renderKey = 0;
-            let layoutChain = makeChain(this.model, this.state.pedalboard?.items);
-            let start = PedalLayout.Start();
-            let end = PedalLayout.End();
-            if (layoutChain.length !== 0) {
-                layoutChain.splice(0, 0, start);
-                layoutChain.splice(layoutChain.length, 0, end);
-                this.markStereoOutputs(layoutChain, 2, 2);
-            }
-
-            let layoutSize = this.doLayout(layoutChain);
+                            let chainInputs = numberOfInputs;
+                            if (splitter.getSplitType() === SplitType.Lr) {
+                                chainInputs = CalculateConnection(numberOfInputs, 1);
+                            }
+                            let topOutputs = this.markStereoForward(item.topChildren, chainInputs);
+                            let bottomOutputs = this.markStereoForward(item.bottomChildren, chainInputs);
 
 
-            this.currentLayout = layoutChain; // save for mouse processing &c.
+                            if (splitter.getSplitType() === SplitType.Ab) {
+                                if (splitter.isASelected()) {
+                                    item.numberOfOutputs = topOutputs;
+                                } else {
+                                    item.numberOfOutputs = bottomOutputs;
+                                }
+                            } else {
+                                item.numberOfOutputs = (topOutputs >= 1 || bottomOutputs >= 1) ? 2 : 1;
+                            }
+                        } else if (item.isStart()) {
+                            item.numberOfOutputs = Math.min(PiPedalModelFactory.getInstance().jackSettings.get().inputAudioPorts.length, 2);
+                        } else if (item.isEnd()) {
+                            item.numberOfInputs =
+                                CalculateConnection(
+                                    Math.min(PiPedalModelFactory.getInstance().jackSettings.get().outputAudioPorts.length, 2),
+                                    numberOfInputs);
+                            return item.numberOfInputs;
+                        } else if (item.isEmpty()) {
+                            item.numberOfInputs = numberOfInputs;
+                            if (numberOfInputs === 0) {
+                                item.numberOfOutputs = 2;
+                            } else {
+                                item.numberOfOutputs = item.numberOfInputs;
+                            }
+                        } else {
+                            if (item.numberOfInputs === 0) // zero-input plugins merge their output with the input.
+                            {
+                                item.numberOfInputs = numberOfInputs;
+                                item.numberOfOutputs = Math.max(item.numberOfOutputs, numberOfInputs);
+                            } else {
+                                item.numberOfInputs = CalculateConnection(numberOfInputs, this.getNumberOfInputs(item));
+                                item.numberOfOutputs = this.getNumberOfOutputs(item);
+                            }
+                        }
+                        numberOfInputs = item.numberOfOutputs;
+                    }
+                    return numberOfInputs;
+                }
 
-            return (
-                <div className={classes.scrollContainer} ref={this.scrollRef}
-                >
-                    <div className={classes.container} ref={this.frameRef}
-                        style={{
-                            width: layoutSize.width, height: layoutSize.height,
-                        }} >
-                        {this.renderChain(layoutChain, layoutSize)}
-                    </div>
-                </div>
-            );
-        }
+                currentLayout?: PedalLayout[];
+                private renderKey: number = 0;
+                render() {
+                    const classes = withStyles.getClasses(this.props);
+                    this.renderKey = 0;
+                    let layoutChain = makeChain(this.model, this.state.pedalboard?.items);
+                    let start = PedalLayout.Start();
+                    let end = PedalLayout.End();
+                    if (layoutChain.length !== 0) {
+                        layoutChain.splice(0, 0, start);
+                        layoutChain.splice(layoutChain.length, 0, end);
+                        this.markStereoOutputs(layoutChain, 2, 2);
+                    }
 
-    },
-    pedalboardStyles
-));
+                    let layoutSize = this.doLayout(layoutChain);
+
+
+                    this.currentLayout = layoutChain; // save for mouse processing &c.
+
+                    return (
+                        <div className={classes.scrollContainer} ref={this.scrollRef}
+                        >
+                            <div className={classes.container} ref={this.frameRef}
+                                style={{
+                                    width: layoutSize.width, height: layoutSize.height,
+                                }} >
+                                {this.renderChain(layoutChain, layoutSize)}
+                            </div>
+                        </div>
+                    );
+                }
+
+            },
+            pedalboardStyles
+        ));
 
 export default PedalboardView

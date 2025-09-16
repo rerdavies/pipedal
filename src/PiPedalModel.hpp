@@ -486,7 +486,7 @@ namespace pipedal
             int32_t from, 
             int32_t to);
 
-        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title);
+        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title, const std::string&iconColor);
 
         void SetTone3000Auth(const std::string &apiKey);
         bool HasTone3000Auth() const;

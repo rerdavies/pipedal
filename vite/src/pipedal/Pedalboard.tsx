@@ -80,6 +80,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
         this.lilvPresetUri = input.lilvPresetUri;
         this.pathProperties = input.pathProperties;
         this.useModUi = input.useModUi ?? false;
+        this.iconColor = input.iconColor??"";
 
         return this;
     }
@@ -215,6 +216,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     lilvPresetUri: string = "";
     pathProperties: {[Name: string]: string} = {};
     useModUi: boolean = false; // true if this item should use the mod-ui.
+    iconColor: string = "";
 };
 
 export class SnapshotValue {

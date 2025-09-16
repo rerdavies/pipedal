@@ -21,7 +21,7 @@
 import { Theme } from '@mui/material/styles';
 import SaveIconOutline from '@mui/icons-material/Save';
 import WithStyles from './WithStyles';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 import { PiPedalModel, PiPedalModelFactory, PresetIndex } from './PiPedalModel';
@@ -41,7 +41,7 @@ import { BankIndex } from './Banks';
 import SnapshotEditor from './SnapshotEditor';
 import { Snapshot } from './Pedalboard';
 import JackStatusView from './JackStatusView';
-import {IDialogStackable, popDialogStack, pushDialogStack} from './DialogStack';
+import { IDialogStackable, popDialogStack, pushDialogStack } from './DialogStack';
 import { css } from '@emotion/react';
 
 
@@ -75,7 +75,8 @@ interface PerformanceViewProps extends WithStyles<typeof styles> {
 }
 
 interface PerformanceViewState {
-    wrapSelects: boolean
+    wrapSelects: boolean;
+    largeAppBar: boolean;
     presets: PresetIndex;
     banks: BankIndex;
     showSnapshotEditor: boolean;
@@ -86,7 +87,7 @@ interface PerformanceViewState {
 
 
 export const PerformanceView =
-    withStyles( 
+    withStyles(
         class extends ResizeResponsiveComponent<PerformanceViewProps, PerformanceViewState> implements IDialogStackable {
             model: PiPedalModel;
 
@@ -100,6 +101,7 @@ export const PerformanceView =
                     presets: this.model.presets.get(),
                     banks: this.model.banks.get(),
                     wrapSelects: false,
+                    largeAppBar: this.updateAppBarZoom(),
                     showSnapshotEditor: false,
                     showStatusMonitor: this.model.showStatusMonitor.get(),
                     snapshotEditorIndex: 0,
@@ -112,6 +114,9 @@ export const PerformanceView =
 
             }
 
+            updateAppBarZoom() {
+                return this.windowSize.width > 700;
+            }
 
             showStatusMonitorHandler() {
                 this.setState({
@@ -119,7 +124,7 @@ export const PerformanceView =
                 });
             }
 
-            getTag() { return "performView"}
+            getTag() { return "performView" }
             isOpen() { return this.props.open }
             onDialogStackClose() {
                 this.props.onClose();
@@ -128,15 +133,13 @@ export const PerformanceView =
 
             private hasHooks: boolean = false;
 
-            updateHooks() : void {
+            updateHooks(): void {
                 let wantHooks = this.mounted && this.props.open;
 
-                if (wantHooks !== this.hasHooks)
-                {
+                if (wantHooks !== this.hasHooks) {
                     this.hasHooks = wantHooks;
-        
-                    if (this.hasHooks)
-                    {
+
+                    if (this.hasHooks) {
 
                         pushDialogStack(this);
                     } else {
@@ -144,9 +147,12 @@ export const PerformanceView =
                     }
                 }
             }
-        
+
             onWindowSizeChanged(width: number, height: number): void {
-                this.setState({ wrapSelects: width < 700 });
+                this.setState({
+                    wrapSelects: width < 700,
+                    largeAppBar: this.updateAppBarZoom(),
+                });
             }
 
             onPresetsChanged(newValue: PresetIndex) {
@@ -156,7 +162,7 @@ export const PerformanceView =
                 this.setState({ banks: this.model.banks.get() })
             }
             onPresetChangedChanged(newValue: boolean) {
-                this.setState({ presetModified:newValue});
+                this.setState({ presetModified: newValue });
             }
 
             private mounted: boolean = false;
@@ -216,28 +222,23 @@ export const PerformanceView =
                 });
                 return true;
             }
-            handleSnapshotEditOk(index: number, name: string, color: string,newSnapshots: (Snapshot|null)[])
-            {
+            handleSnapshotEditOk(index: number, name: string, color: string, newSnapshots: (Snapshot | null)[]) {
                 // results have been sent to the server. we would perform a  short-cut commit to our local state, to avoid laggy display updates.
                 // but we don't actually have that in our state.
 
             }
 
-            handlePreviousBank()
-            {
+            handlePreviousBank() {
                 this.model.previousBank();
             }
 
-            handleNextBank()
-            {
+            handleNextBank() {
                 this.model.nextBank();
             }
-            handlePreviousPreset()
-            {
+            handlePreviousPreset() {
                 this.model.previousPreset();
             }
-            handleNextPreset()
-            {
+            handleNextPreset() {
                 this.model.nextPreset();
             }
 
@@ -246,54 +247,42 @@ export const PerformanceView =
                 let wrapSelects = this.state.wrapSelects;
                 let presets = this.state.presets;
                 let banks = this.state.banks;
+                let appBarIconSize: "large" | undefined = this.state.largeAppBar ? undefined : "large";
                 return (
                     <div className={classes.frame} style={{ overflow: "clip", height: "100%" }} >
                         <div className={classes.frame} style={{ overflow: "clip", height: "100%" }} >
                             <AppBar id="select-plugin-dialog-title"
                                 style={{
-                                    position: "static", flex: "0 0 auto", height: wrapSelects ? 108 : 58,
+                                    position: "static", flex: "0 0 auto", height: undefined,
                                     display: this.state.showSnapshotEditor ? "none" : undefined
                                 }}
                             >
-                                <div style={{
-                                    display: "flex", flexFlow: "row nowrap", alignContent: "center",
-                                    paddingTop: 3, paddingBottom: 3, paddingRight: 8, paddingLeft: 8,
-                                    alignItems: "start"
-                                }}>
-                                    <IconButtonEx tooltip="Back" aria-label="menu" color="inherit"
-                                        onClick={() => {  this.props.onClose(); }} 
-                                        style={{ 
-                                            position: "relative",top: 3,
-                                            flex: "0 0 auto" }} >
-                                        <ArrowBackIcon />
-                                    </IconButtonEx>
-
+                                {this.state.largeAppBar ? (
                                     <div style={{
-                                        flex: "1 1 1px", display: "flex",
-                                        flexFlow: wrapSelects ? "column nowrap" : "row nowrap",
-                                        alignItems: wrapSelects ? "stretch" : undefined,
-                                        justifyContent: wrapSelects ? undefined : "space-evenly",
-                                        marginLeft: 8,
-                                        gap: 8
+                                        display: "flex", flexFlow: "row nowrap", alignContent: "center",
+                                        paddingTop: 3, paddingBottom: 3, paddingRight: 8, paddingLeft: 8,
+                                        alignItems: "start", justifyContent: "space-between",
 
                                     }}>
-                                        {/********* BANKS *******************/}
-                                        <div style={{ flex: "1 1 1px", display: "flex", flexFlow: "row nowrap", maxWidth: 500 }}>
-                                            <IconButtonEx tooltip="Previous bank"
-                                                aria-label="previous-bank"
-                                                onClick={() => { this.handlePreviousBank(); }}
-                                                size="medium"
-                                                color="inherit"
-                                                style={{
-                                                    borderTopRightRadius: "3px", borderBottomRightRadius: "3px", marginRight: 4
-                                                }}
-                                            >
-                                                <ArrowBackIosIcon style={{ opacity: 0.75 }} />
-                                            </IconButtonEx>
+                                        <IconButtonEx tooltip="Back" aria-label="menu" color="inherit"
+                                            onClick={() => { this.props.onClose(); }}
+                                            style={{
+                                                position: "relative", top: 3,
+                                                flex: "0 0 auto"
+                                            }} >
+                                            <ArrowBackIcon fontSize="large" />
+                                        </IconButtonEx>
 
+                                        {/********* BANKS *******************/}
+                                        <div style={{
+                                            flex: "1 1 auto", display: "flex", flexFlow: "row nowrap", maxWidth: 300, alignItems: "center",
+                                        }}>
                                             <Select variant="standard"
                                                 className={classes.select}
-                                                style={{ flex: "1 1 1px", width: "100%", position: "relative", top: 0, color: "#FFFFFF" }} disabled={false}
+                                                style={{
+                                                    flex: "1 1 1px", width: "100%", position: "relative", top: 0, color: "#FFFFFF",
+                                                    fontSize: "2.0rem",
+                                                }} disabled={false}
                                                 displayEmpty
                                                 onClose={(e) => this.handleBankSelectClose(e)}
                                                 value={banks.selectedBank === 0 ? undefined : banks.selectedBank}
@@ -312,17 +301,6 @@ export const PerformanceView =
                                                     })
                                                 }
                                             </Select>
-
-                                            <IconButtonEx tooltip="Next bank"
-                                                aria-label="next-bank"
-                                                onClick={() => { this.handleNextBank(); }}
-                                                color="inherit"
-                                                style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
-                                            >
-                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
-
-                                            </IconButtonEx>
-
                                             {/** spacer */}
                                             <IconButtonEx
                                                 tooltip="Next bank"
@@ -330,29 +308,31 @@ export const PerformanceView =
                                                 onClick={() => { this.handleNextBank(); }}
                                                 size="medium"
                                                 color="inherit"
-                                                style={{visibility: "hidden"}}
+                                                style={{ visibility: "hidden" }}
                                             >
-                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
+                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} fontSize="large" />
 
                                             </IconButtonEx>
 
-                                            
-
                                         </div>
                                         {/********* PRESETS *******************/}
-                                        <div style={{ flex: "1 1 1px", display: "flex", flexFlow: "row nowrap", maxWidth: 500 }}>
+                                        <div style={{
+                                            flex: "2 2 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center",
+
+                                        }}>
                                             <IconButtonEx tooltip="Previous preset"
                                                 aria-label="previous-preset"
                                                 onClick={() => { this.handlePreviousPreset(); }}
                                                 color="inherit"
                                                 style={{ borderTopRightRadius: "3px", borderBottomRightRadius: "3px", marginRight: 4 }}
                                             >
-                                                <ArrowBackIosIcon style={{ opacity: 0.75 }} />
+                                                <ArrowBackIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
                                             </IconButtonEx>
                                             <Select variant="standard"
                                                 className={classes.select}
                                                 style={{
-                                                    flex: "1 1 1px", width: "100%", color: "#FFFFFF"
+                                                    flex: "1 1 1px", width: "100%", color: "#FFFFFF",
+                                                    fontSize: (this.state.largeAppBar ? "2.0rem" : undefined),
                                                 }} disabled={false}
                                                 displayEmpty
                                                 onClose={(e) => this.handlePresetSelectClose(e)}
@@ -367,8 +347,7 @@ export const PerformanceView =
                                                 {
                                                     presets.presets.map((preset) => {
                                                         let name = preset.name;
-                                                        if (this.state.presets.selectedInstanceId === preset.instanceId && this.state.presetModified)
-                                                        {
+                                                        if (this.state.presets.selectedInstanceId === preset.instanceId && this.state.presetModified) {
                                                             name += "*";
                                                         }
                                                         return (
@@ -386,7 +365,7 @@ export const PerformanceView =
                                                 color="inherit"
                                                 style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
                                             >
-                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} />
+                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
                                             </IconButtonEx>
 
                                             <IconButtonEx tooltip="Save preset"
@@ -394,16 +373,150 @@ export const PerformanceView =
                                                 onClick={() => { this.model.saveCurrentPreset(); }}
                                                 size="medium"
                                                 color="inherit"
-                                                style={{flexShrink: 0,visibility: this.state.presetModified? "visible": "hidden"}}
+                                                style={{ flexShrink: 0, visibility: this.state.presetModified ? "visible" : "hidden" }}
                                             >
-                                                <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />
+                                                <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" fontSize={appBarIconSize} />
                                             </IconButtonEx>
-
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div style={{
+                                        display: "flex", flexFlow: "row nowrap", alignContent: "center",
+                                        paddingTop: 3, paddingBottom: 3, paddingRight: 8, paddingLeft: 8,
+                                        alignItems: "start",
+                                    }}>
+                                        <IconButtonEx tooltip="Back" aria-label="menu" color="inherit"
+                                            onClick={() => { this.props.onClose(); }}
+                                            style={{
+                                                position: "relative", top: 3,
+                                                flex: "0 0 auto"
+                                            }} >
+                                            <ArrowBackIcon fontSize={appBarIconSize} />
+                                        </IconButtonEx>
+
+                                        <div style={{
+                                            flex: "1 1 1px", display: "flex",
+                                            flexFlow: wrapSelects ? "column nowrap" : "row nowrap",
+                                            alignItems: wrapSelects ? "stretch" : undefined,
+                                            justifyContent: wrapSelects ? undefined : "space-evenly",
+                                            marginLeft: 8,
+                                            gap: 8
+
+                                        }}>
+                                            {/********* BANKS *******************/}
+                                            <div style={{
+                                                flex: "1 1 auto", display: "flex", flexFlow: "row nowrap", maxWidth: 500,
+                                            }}>
+                                                <Select variant="standard"
+                                                    className={classes.select}
+                                                    style={{
+                                                        flex: "1 1 1px", width: "100%", position: "relative", top: 0, color: "#FFFFFF",
+                                                        fontSize: (this.state.largeAppBar ? "2.0rem" : undefined),
+                                                    }} disabled={false}
+                                                    displayEmpty
+                                                    onClose={(e) => this.handleBankSelectClose(e)}
+                                                    value={banks.selectedBank === 0 ? undefined : banks.selectedBank}
+                                                    inputProps={{
+                                                        classes: { icon: classes.select_icon },
+                                                        'aria-label': "Select preset"
+                                                    }}
+                                                >
+                                                    {
+                                                        banks.entries.map((entry) => {
+                                                            return (
+                                                                <MenuItem key={entry.instanceId} value={entry.instanceId} >
+                                                                    {entry.name}
+                                                                </MenuItem>
+                                                            );
+                                                        })
+                                                    }
+                                                </Select>
+                                                {/** spacer */}
+                                                <IconButtonEx
+                                                    tooltip="Next bank"
+                                                    aria-label="next-bank"
+                                                    onClick={() => { this.handleNextBank(); }}
+                                                    size="medium"
+                                                    color="inherit"
+                                                    style={{ visibility: "hidden" }}
+                                                >
+                                                    <ArrowForwardIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
+
+                                                </IconButtonEx>
+
+
+
+                                            </div>
+                                            {/********* PRESETS *******************/}
+                                            <div style={{
+                                                flex: "2 2 auto", display: "flex", flexFlow: "row nowrap", maxWidth: 500,
+
+                                            }}>
+                                                <IconButtonEx tooltip="Previous preset"
+                                                    aria-label="previous-preset"
+                                                    onClick={() => { this.handlePreviousPreset(); }}
+                                                    color="inherit"
+                                                    style={{ borderTopRightRadius: "3px", borderBottomRightRadius: "3px", marginRight: 4 }}
+                                                >
+                                                    <ArrowBackIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
+                                                </IconButtonEx>
+                                                <Select variant="standard"
+                                                    className={classes.select}
+                                                    style={{
+                                                        flex: "1 1 1px", width: "100%", color: "#FFFFFF",
+                                                        fontSize: (this.state.largeAppBar ? "2.0rem" : undefined),
+                                                    }} disabled={false}
+                                                    displayEmpty
+                                                    onClose={(e) => this.handlePresetSelectClose(e)}
+                                                    value={presets.selectedInstanceId === 0 ? '' : presets.selectedInstanceId}
+
+                                                    inputProps={{
+                                                        classes: { icon: classes.select_icon },
+                                                        'aria-label': "Select preset"
+                                                    }
+                                                    }
+                                                >
+                                                    {
+                                                        presets.presets.map((preset) => {
+                                                            let name = preset.name;
+                                                            if (this.state.presets.selectedInstanceId === preset.instanceId && this.state.presetModified) {
+                                                                name += "*";
+                                                            }
+                                                            return (
+                                                                <MenuItem key={preset.instanceId} value={preset.instanceId} >
+                                                                    {name}
+                                                                </MenuItem>
+                                                            );
+                                                        })
+                                                    }
+                                                </Select>
+
+                                                <IconButtonEx tooltip="Next preset"
+                                                    aria-label="next-preset"
+                                                    onClick={() => { this.handleNextPreset(); }}
+                                                    color="inherit"
+                                                    style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
+                                                >
+                                                    <ArrowForwardIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
+                                                </IconButtonEx>
+
+                                                <IconButtonEx tooltip="Save preset"
+                                                    aria-label="save-preset"
+                                                    onClick={() => { this.model.saveCurrentPreset(); }}
+                                                    size="medium"
+                                                    color="inherit"
+                                                    style={{ flexShrink: 0, visibility: this.state.presetModified ? "visible" : "hidden" }}
+                                                >
+                                                    <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" fontSize={appBarIconSize} />
+                                                </IconButtonEx>
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                )}
                             </AppBar >
-                            <div style={{ flex: "1 0 auto", display: "flex", marginTop: 16,marginBottom: 20 }}>
+                            <div style={{ flex: "1 0 auto", display: "flex", marginTop: 16, marginBottom: 20 }}>
                                 <SnapshotPanel onEdit={(index) => { return this.handleOnEdit(index); }} />
                             </div>
 
@@ -413,15 +526,15 @@ export const PerformanceView =
                             )}
                         </div>
                         {this.state.showSnapshotEditor && (
-                            <SnapshotEditor snapshotIndex={this.state.snapshotEditorIndex} 
-                                onClose={() => { 
+                            <SnapshotEditor snapshotIndex={this.state.snapshotEditorIndex}
+                                onClose={() => {
                                     this.setState({ showSnapshotEditor: false });
                                 }}
-                                onOk={(index,name,color,newSnapshots)=>{
-                                    this.setState({ showSnapshotEditor: false});
-                                    this.handleSnapshotEditOk(index,name,color,newSnapshots);
+                                onOk={(index, name, color, newSnapshots) => {
+                                    this.setState({ showSnapshotEditor: false });
+                                    this.handleSnapshotEditOk(index, name, color, newSnapshots);
                                 }}
-                             />
+                            />
                         )}
                     </div >
                 )

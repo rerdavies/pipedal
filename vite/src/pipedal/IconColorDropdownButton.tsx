@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ButtonBase from '@mui/material/ButtonBase';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useTheme } from '@mui/material/styles';
-import { getIconColorSelections,getIconColor,IconColorSelect } from './PluginIcon';
+import PluginIcon, { getIconColorSelections, getIconColor, IconColorSelect } from './PluginIcon';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { PluginType } from './Lv2Plugin';
 
 
 export enum DropdownAlignment {
@@ -37,6 +38,7 @@ export enum DropdownAlignment {
 interface ColorListDropdownButtonProps {
     colorKey: string;
     colorList?: IconColorSelect[];
+    pluginType?: PluginType;
 
     onColorChange: (selection: IconColorSelect) => void;
     dropdownAlignment: DropdownAlignment;
@@ -71,19 +73,30 @@ const IconColorDropdownButton: React.FC<ColorListDropdownButtonProps> = (props: 
             <ButtonBase
                 onClick={handleClick}
                 style={{
-                    height: 48, padding: 12, borderRadius: 18
+                    height: 48, padding: 12, borderRadius: 8, margin: 4
                 }}
             >
                 <div style={{ display: "flex", flexFlow: "row nowrap", alignItems: "center", gap: 0 }} >
-                    <div style={{
-                        width: 24, height: 24,
-                        background: selectedColor,
-                        borderRadius: 6,
-                        borderColor: theme.palette.text.secondary,
-                        borderWidth: 1,
-                        borderStyle: "solid"
-                    }} />
-                    <ArrowDropDownIcon  />
+                    {props.pluginType ? (
+                        <div style={{ margin: 4 }}>
+                            <PluginIcon
+                                pluginType={props.pluginType}
+                                color={selectedColor}
+                                size={24}
+                            />
+                        </div>
+                    ) : (
+                        <div style={{
+                            width: 24, height: 24,
+                            background: selectedColor,
+                            borderRadius: 6,
+                            borderColor: theme.palette.text.secondary,
+                            borderWidth: 1,
+                            borderStyle: "solid"
+                        }} />
+
+                    )}
+                    <ArrowDropDownIcon />
                 </div>
 
             </ButtonBase>
@@ -93,20 +106,20 @@ const IconColorDropdownButton: React.FC<ColorListDropdownButtonProps> = (props: 
                 onClose={handleClose}
                 anchorOrigin={{
                     vertical: 'bottom',
-                    horizontal: (dropdownAlignment === DropdownAlignment.SW ?  'right' : 'left')
+                    horizontal: (dropdownAlignment === DropdownAlignment.SW ? 'right' : 'left')
                 }}
                 transformOrigin={{
                     vertical: 'top',
-                    horizontal: (dropdownAlignment === DropdownAlignment.SW ?  'right' : 'left'),
+                    horizontal: (dropdownAlignment === DropdownAlignment.SW ? 'right' : 'left'),
                 }}
             >
-                <div style={{display: "flex", flexFlow: "row nowrap", columnGap: 8,padding: 8}}>
+                <div style={{ display: "flex", flexFlow: "row nowrap", columnGap: 8, padding: 8 }}>
 
-                    <MenuItem key={"default"} onClick={() => handleColorSelect({key: "default", value: undefined})}
+                    <MenuItem key={"default"} onClick={() => handleColorSelect({ key: "default", value: undefined })}
                         style={{
                             width: 48, height: 48, borderRadius: 6, margin: 4,
                             borderStyle: "solid",
-                            borderWidth: colorKey ==="default" ? 2 : 0.25,
+                            borderWidth: colorKey === "default" ? 2 : 0.25,
                             borderColor: colorKey == "default" ?
                                 theme.palette.text.primary
                                 : theme.palette.text.secondary,

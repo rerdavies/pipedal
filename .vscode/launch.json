@@ -22,7 +22,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
-                "[ProfileThumbnails]"
+                "--gplot-downloads"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -153,12 +153,13 @@ bool Pedalboard::SetControlValue(int64_t pedalItemId, const std::string &symbol,
     return item->SetControlValue(symbol,value);
 }
 
-bool Pedalboard::SetItemTitle(int64_t pedalItemId, const std::string &title)
+bool Pedalboard::SetItemTitle(int64_t pedalItemId, const std::string &title, const std::string&iconColor)
 {
     PedalboardItem*item = GetItem(pedalItemId);
     if (!item) return false;
-    if (item->title() == title) return false; // no change.
+    if (item->title() == title && item->iconColor() == iconColor) return false; // no change.
     item->title(title);
+    item->iconColor(iconColor);
     return true;
 }
 
@@ -532,6 +533,7 @@ JSON_MAP_BEGIN(PedalboardItem)
     JSON_MAP_REFERENCE(PedalboardItem,pathProperties)
     JSON_MAP_REFERENCE(PedalboardItem,title)
     JSON_MAP_REFERENCE(PedalboardItem,useModUi)
+    JSON_MAP_REFERENCE(PedalboardItem,iconColor)
 JSON_MAP_END()
 
 

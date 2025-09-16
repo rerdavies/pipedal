@@ -3226,10 +3226,10 @@ void PiPedalModel::MoveAudioFile(
     AudioDirectoryInfo::Ptr dir = AudioDirectoryInfo::Create(directory);
     dir->MoveAudioFile(directory, fromPosition, toPosition);
 }
-void PiPedalModel::SetPedalboardItemTitle(int64_t instanceId, const std::string &title)
+void PiPedalModel::SetPedalboardItemTitle(int64_t instanceId, const std::string &title, const std::string &colorKey)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    if (!this->pedalboard.SetItemTitle(instanceId, title))
+    if (!this->pedalboard.SetItemTitle(instanceId, title, colorKey))
     {
         return;
     }

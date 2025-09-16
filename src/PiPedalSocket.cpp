@@ -179,12 +179,14 @@ class SetPedalboardItemTitleBody
 public:
     uint64_t instanceId_;
     std::string title_;
+    std::string colorKey_;
     DECLARE_JSON_MAP(SetPedalboardItemTitleBody);
 };
 
 JSON_MAP_BEGIN(SetPedalboardItemTitleBody)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, instanceId)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, title)
+JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, colorKey)
 JSON_MAP_END()
 
 
@@ -1569,7 +1571,7 @@ public:
         {
             SetPedalboardItemTitleBody body;
             pReader->read(&body);
-            model.SetPedalboardItemTitle(body.instanceId_, body.title_);
+            model.SetPedalboardItemTitle(body.instanceId_, body.title_, body.colorKey_);
         }
         else if (message == "getPatchProperty")
         {

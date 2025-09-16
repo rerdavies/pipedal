@@ -27,7 +27,7 @@ import { PiPedalStateError } from './PiPedalError';
 import { css } from '@emotion/react';
 
 
-const SELECT_SCALE = 1.5;
+const SELECT_SCALE = 1.2;
 
 const AUTOSCROLL_TICK_DELAY = 30;
 const AUTOSCROLL_THRESHOLD = 48;
@@ -58,6 +58,7 @@ export interface DraggableProps extends WithStyles<typeof styles> {
 
     children?: ReactNode | ReactNode[];
     draggable?: boolean;
+    style?: React.CSSProperties;
 
 
 }
@@ -149,6 +150,7 @@ const Draggable =
             startClientY: number = 0;
             dragStarted: boolean = false;
             savedIndex: string = "";
+            savedOpacity: string = "";
             lastPointerDown: number = 0;
             originalBounds?: DOMRect;
             captureElement?: HTMLDivElement;
@@ -244,6 +246,8 @@ const Draggable =
                     this.pointerId = e.pointerId;
                     this.pointerType = e.pointerType;
                     this.savedIndex = e.currentTarget.style.zIndex;
+                    this.savedOpacity = e.currentTarget.style.opacity;
+                    e.currentTarget.style.opacity = "0.9";
                     if (this.pointerType !== "touch") {
                         this.dragTarget.style.transform = "scale(" + SELECT_SCALE + ")";
                         this.dragTarget.style.zIndex = "3";
@@ -254,6 +258,7 @@ const Draggable =
             clearDragTransform(element: HTMLDivElement): void {
                 element.style.transform = "";
                 element.style.zIndex = this.savedIndex;
+                element.style.opacity = this.savedOpacity;
             }
 
             onPointerCancel(e: PointerEvent<HTMLDivElement>) {
@@ -486,7 +491,7 @@ const Draggable =
             render() {
                 const classes = withStyles.getClasses(this.props);
                 return (
-                    <div className={classes.frame} style={{ transform: "" }}
+                    <div className={classes.frame} style={{ transform: "", ...this.props.style    }}
                         onPointerDown={this.onPointerDown}
                         onPointerMove={this.onPointerMove}
                         onPointerCancel={this.onPointerCancel}
