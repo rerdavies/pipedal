@@ -562,7 +562,6 @@ void InstallAudioService()
 #endif
 }
 
-
 static bool IsP2pServiceEnabled()
 {
     WifiDirectConfigSettings settings;
@@ -742,7 +741,7 @@ void SetVarPermissions(
                     catch (const std::exception &e)
                     {
                         // spurious errors on pulse config files.
-                       // std::cout << "Error: failed to set permissions on file " << entry.path() << std::endl;
+                        // std::cout << "Error: failed to set permissions on file " << entry.path() << std::endl;
                     }
                 }
             }
@@ -926,26 +925,26 @@ void InstallPgpKey()
     }
 }
 
-
-static uint32_t autoSelectPorts[] = { 
+static uint32_t autoSelectPorts[] = {
     80,
-    81, // unofficial alternate 
-    8080, // unofficial alternate 
-    8081, // unofficial alternate 
-    8008, // unofficial alternate 
-    83  // Not official at all.
-    };
+    81,   // unofficial alternate
+    8080, // unofficial alternate
+    8081, // unofficial alternate
+    8008, // unofficial alternate
+    83    // Not official at all.
+};
 
-
-
-static bool isPortInUse(int port) {
+static bool isPortInUse(int port)
+{
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
+    if (sockfd < 0)
+    {
         throw std::runtime_error(SS("Socket creation failed: " << strerror(errno)));
     }
-    Finally ff{[sockfd]() {
-        close(sockfd);
-    }};
+    Finally ff{[sockfd]()
+               {
+                   close(sockfd);
+               }};
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -953,23 +952,27 @@ static bool isPortInUse(int port) {
     addr.sin_port = htons(port);
 
     // Try to bind to the port
-    int result = bind(sockfd, (struct sockaddr*)&addr, sizeof(addr));
+    int result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
 
-    if (result < 0) {
-        if (errno == EADDRINUSE) {
-            return true;  // Port is in use
-        } else {
+    if (result < 0)
+    {
+        if (errno == EADDRINUSE)
+        {
+            return true; // Port is in use
+        }
+        else
+        {
             cout << "Warning: Unexpected error  binding socket to port " << port << ": " << strerror(errno) << endl;
             return true;
         }
     }
 
-    return false;  // Port is free
+    return false; // Port is free
 }
 
-
-static std::string AutoSelectPort() {
-    constexpr size_t MAX_PORT = sizeof(autoSelectPorts)/sizeof(autoSelectPorts[0]);
+static std::string AutoSelectPort()
+{
+    constexpr size_t MAX_PORT = sizeof(autoSelectPorts) / sizeof(autoSelectPorts[0]);
 
     int32_t port = -1;
     for (size_t i = 0; i < MAX_PORT; ++i)
@@ -980,29 +983,32 @@ static std::string AutoSelectPort() {
             break;
         }
     }
-    if (port == -1) {
+    if (port == -1)
+    {
         cout << "Warning: Can't find an available HTTP port. Setting to port 80 anyway." << endl;
         port = 80;
-    } else if (port != 80)
+    }
+    else if (port != 80)
     {
-        cout << "Warning: Port 80 is already in use. Using port " << port << " instead." << endl; 
+        cout << "Warning: Port 80 is already in use. Using port " << port << " instead." << endl;
     }
 
     return SS(port);
-
 }
-
 
 bool SetWebServerPort(std::string portOption)
 {
 
-    try {
+    try
+    {
         auto nPos = portOption.find_last_of(':');
         std::string strPort;
         if (nPos != std::string::npos)
         {
-            strPort = portOption.substr(nPos+1);
-        } else {
+            strPort = portOption.substr(nPos + 1);
+        }
+        else
+        {
             strPort = portOption;
         }
         std::istringstream ss(strPort);
@@ -1021,7 +1027,8 @@ bool SetWebServerPort(std::string portOption)
         StartService(true);
 
         cout << "PiPedal web server is listening on port " << iPort << endl;
-    } catch (const std::exception&e)
+    }
+    catch (const std::exception &e)
     {
         cout << "Error: " << e.what() << endl;
         return false;
@@ -1031,7 +1038,8 @@ bool SetWebServerPort(std::string portOption)
 
 void CheckPreemptDynamicConfig()
 {
-    try {
+    try
+    {
         BootConfig bootConfig;
 
         if (bootConfig.KernelType() == "PREEMPT_DYNAMIC")
@@ -1044,12 +1052,11 @@ void CheckPreemptDynamicConfig()
                 cout << endl;
             }
         }
-
-    } catch(const std::exception& /* ignore */)
+    }
+    catch (const std::exception & /* ignore */)
     {
     }
 }
-
 
 void Install(const fs::path &programPrefix, const std::string endpointAddress)
 {
@@ -1058,10 +1065,10 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
     if (!UsingNetworkManager())
     {
         cout << "Warning: The current OS is not using the NetworkManager network stack." << endl;
-        cout << "   The PiPedal Auto-Hotspot feature will be disabled." << endl << endl;
+        cout << "   The PiPedal Auto-Hotspot feature will be disabled." << endl
+             << endl;
         cout << "   Consult PiPedal documentation to find out how to correct this " << endl;
         cout << "   issue on Ubuntu Server." << endl;
-
     }
     try
     {
@@ -1301,10 +1308,11 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
     if (endpointAddress.starts_with(ADDR_ANY))
     {
         cout << "PiPedal web server is listening on port " << endpointAddress.substr(ADDR_ANY.length()) << endl;
-    } else {
+    }
+    else
+    {
         cout << "PiPedal web server is listening on port " << endpointAddress << endl;
     }
-
 }
 
 static std::string GetCurrentWebServicePort()
@@ -1494,25 +1502,27 @@ void ListValidCountryCodes()
     if (ccs.size() == 0)
     {
         cout << "No regulatory domains found." << endl;
-    } else {
-        using pair = std::pair<std::string,std::string>;
+    }
+    else
+    {
+        using pair = std::pair<std::string, std::string>;
         std::vector<pair> list;
-        for (auto &cc: ccs)
+        for (auto &cc : ccs)
         {
-            list.push_back(pair(cc.first,cc.second));
+            list.push_back(pair(cc.first, cc.second));
         }
 
         auto collator = Locale::GetInstance()->GetCollator();
         auto compare = [&collator](
-                            pair &left,
-                            pair &right)
+                           pair &left,
+                           pair &right)
         {
             return collator->Compare(
-                        left.second, right.second) < 0;
+                       left.second, right.second) < 0;
         };
         std::sort(list.begin(), list.end(), compare);
 
-        for (const auto &entry: list)
+        for (const auto &entry : list)
         {
             cout << entry.first << " - " << entry.second << endl;
         }
@@ -1521,12 +1531,15 @@ void ListValidCountryCodes()
 
 static std::string ProcessPortOption(std::string portOption)
 {
-    if (portOption == "" || portOption == "0")  // allow testing of port autodetect.
+    if (portOption == "" || portOption == "0") // allow testing of port autodetect.
     {
         std::string t = GetCurrentWebServicePort();
-        if (portOption != "0")  {// allows easy debugging of port AutoSelectPort.
+        if (portOption != "0")
+        { // allows easy debugging of port AutoSelectPort.
             portOption = t;
-        } else {
+        }
+        else
+        {
             portOption = "";
         }
         if (portOption == "")
@@ -1569,7 +1582,7 @@ int main(int argc, char **argv)
     bool noWifi = false;
 
     parser.AddOption("--nosudo", &nosudo); // strictly a debugging aid. Run without sudo, until we fail because of permissions.
-    parser.AddOption("--list-wifi-country-codes",&list_wifi_country_codes);
+    parser.AddOption("--list-wifi-country-codes", &list_wifi_country_codes);
     parser.AddOption("--install", &install);
     parser.AddOption("--uninstall", &uninstall);
     parser.AddOption("--stop", &stop);
@@ -1589,15 +1602,17 @@ int main(int argc, char **argv)
     parser.AddOption("--alsa-devices", &alsaDevices);
     parser.AddOption("--alsa-device", &alsaDevice);
     parser.AddOption("--fix-permissions", &fix_permissions);
+
     try
     {
         parser.Parse(argc, (const char **)argv);
 
         int actionCount =
-            (!alsaDevice.empty()) + alsaDevices + help + get_current_port + install + 
-                uninstall + stop + start + enable + disable + enable_hotspot + 
-                disable_hotspot + restart + enable_p2p + disable_p2p + list_p2p_channels + 
-                fix_permissions + list_wifi_country_codes;
+            (!alsaDevice.empty()) + alsaDevices + help + get_current_port + install +
+            uninstall + stop + start + enable + disable + enable_hotspot +
+            disable_hotspot + restart + enable_p2p + disable_p2p + list_p2p_channels +
+            fix_permissions + list_wifi_country_codes;
+
         if (actionCount == 0 && portOption.length() != 0)
         {
             ++actionCount;
@@ -1615,6 +1630,12 @@ int main(int argc, char **argv)
 
             throw std::runtime_error("No action provided.");
         }
+
+        if (portOption.length() != 0 && !install)
+        {
+            throw std::runtime_error("The --port option can only be specified in conjunction with the --install option.");
+        }
+
         if ((!enable_p2p) && (!enable_hotspot) && (!list_p2p_channels))
         {
             if (parser.Arguments().size() != 0)
@@ -1744,7 +1765,6 @@ int main(int argc, char **argv)
 
                 Install(prefix, portOption);
                 FileSystemSync();
-
             }
             catch (const std::exception &e)
             {
