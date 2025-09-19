@@ -63,6 +63,7 @@
 #define PIPEDAL_UI__xLeft PIPEDAL_UI_PREFIX "xLeft"
 #define PIPEDAL_UI__xRight PIPEDAL_UI_PREFIX "xRight"
 #define PIPEDAL_UI__xLog PIPEDAL_UI_PREFIX "xLog"
+#define PIPEDAL_UI__yDb PIPEDAL_UI_PREFIX "yDb"
 #define PIPEDAL_UI__yTop PIPEDAL_UI_PREFIX "yTop"
 #define PIPEDAL_UI__yBottom PIPEDAL_UI_PREFIX "yBottom"
 #define PIPEDAL_UI__width PIPEDAL_UI_PREFIX "width"
@@ -196,6 +197,7 @@ namespace pipedal
         float yTop_ = 5;
         float yBottom_ = -30;
         bool xLog_ = true;
+        bool yDb_ = true;
         float width_ = 60;
 
     public:
@@ -213,6 +215,7 @@ namespace pipedal
         float yTop() const { return yTop_; }
         float yBottom() const { return yBottom_; }
         float width() const { return width_; }
+        bool yDb() const { return yDb_; }
 
     public:
         DECLARE_JSON_MAP(UiFrequencyPlot);

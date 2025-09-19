@@ -165,6 +165,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     pipedalUI__yTop = lilv_new_uri(pWorld, PIPEDAL_UI__yTop);
     pipedalUI__yBottom = lilv_new_uri(pWorld, PIPEDAL_UI__yBottom);
     pipedalUI__xLog = lilv_new_uri(pWorld, PIPEDAL_UI__xLog);
+    pipedalUI__yDb = lilv_new_uri(pWorld, PIPEDAL_UI__yDb);
     pipedalUI__width = lilv_new_uri(pWorld, PIPEDAL_UI__width);
     pipedalUI__graphicEq = lilv_new_uri(pWorld, PIPEDAL_UI__graphicEq);
 

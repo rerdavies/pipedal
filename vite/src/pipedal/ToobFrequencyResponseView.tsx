@@ -28,6 +28,7 @@ import { withStyles } from "tss-react/mui";
 import { PiPedalModelFactory, PiPedalModel, State } from "./PiPedalModel";
 import Utility from './Utility';
 import SvgPathBuilder from './SvgPathBuilder';
+import { UiFrequencyPlot } from './Lv2Plugin';
 
 
 const StandardItemSize = { width: 80, height: 110 };
@@ -50,6 +51,7 @@ interface ToobFrequencyResponseProps extends WithStyles<typeof styles> {
     instanceId: number;
     propertyName?: string;
     width?: number;
+    frequencyPlot?: UiFrequencyPlot
 
 }
 interface ToobFrequencyResponseState {
@@ -57,6 +59,8 @@ interface ToobFrequencyResponseState {
     maxDb: number;
     minF: number;
     maxF: number;
+    logX: boolean;
+    dbY: boolean;
     path: string;
 }
 
@@ -74,10 +78,12 @@ const ToobFrequencyResponseView =
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
                     path: "",
-                    minDb: -30,
-                    maxDb: 5,
-                    minF: 30,
-                    maxF: 20000
+                    minDb: this.props.frequencyPlot?.yBottom ?? -30,
+                    maxDb: this.props.frequencyPlot?.yTop ?? 5,
+                    minF: this.props.frequencyPlot?.xLeft ?? 30,
+                    maxF: this.props.frequencyPlot?.xRight ?? 20000,
+                    logX: this.props.frequencyPlot?.xLog ?? true,
+                    dbY: this.props.frequencyPlot?.yDb ??    true
                 };
 
                 this.pathRef = React.createRef();
@@ -140,16 +146,22 @@ const ToobFrequencyResponseView =
 
             }
             toY(value: number): number {
-                value = Math.abs(value);
+                if (this.state.dbY)
+                {
+                    value = Math.abs(value);
 
-                var db;
-                if (value < this.MIN_DB_AF) {
-                    db = -192.0;
+                    var db;
+                    if (value < this.MIN_DB_AF) {
+                        db = -192.0;
+                    } else {
+                        db = 20 * Math.log10(value);
+                    }
+                    var y = (db - this.dbMin) / (this.dbMax - this.dbMin) * (this.yMax - this.yMin) + this.yMin;
+                    return y;
                 } else {
-                    db = 20 * Math.log10(value);
+                    var y = value-this.dbMin /(this.dbMax-this.dbMin)*  (this.yMax - this.yMin) + this.yMin;
+                    return y;
                 }
-                var y = (db - this.dbMin) / (this.dbMax - this.dbMin) * (this.yMax - this.yMin) + this.yMin;
-                return y;
             }
 
             onFrequencyResponseUpdated(data: number[]) {
@@ -159,6 +171,7 @@ const ToobFrequencyResponseView =
                 let dbMin = data[2];
                 let dbMax = data[3];
                 let xMax = this.xMax();
+                let dbY = this.state.dbY;
 
                 let n = data.length-4;
 
@@ -166,16 +179,22 @@ const ToobFrequencyResponseView =
                     return (xMax - this.xMin) * bin/n;
     
                 };
-                let toY_ = (value: number): number => {
-   
-                    var db;
-                    if (value < this.MIN_DB_AF) {
-                        db = -192.0;
-                    } else {
-                        db = 20 * Math.log10(value);
+                let toY_ = dbY? 
+                     (value: number): number => {
+                        var db;
+                        if (value < this.MIN_DB_AF) {
+                            db = -192.0;
+                        } else {
+                            db = 20 * Math.log10(value);
+                        }
+                        var y = (db - dbMin) / (dbMax - dbMin) * (this.yMax - this.yMin) + this.yMin;
+                        return y;
                     }
-                    var y = (db - dbMin) / (dbMax - dbMin) * (this.yMax - this.yMin) + this.yMin;
-                    return y;
+                    : 
+                     (value: number): number => {
+                        var y = (value - dbMin) / (dbMax - dbMin) * (this.yMax - this.yMin) + this.yMin;
+                        return y;
+
                 };
     
 
@@ -242,7 +261,7 @@ const ToobFrequencyResponseView =
             }
             grid(): React.ReactNode[] {
                 let result: React.ReactNode[] = [];
-
+                if (!this.state.dbY) return result;
                 let xMax = this.xMax();
                 for (var db = Math.ceil(this.dbMax / this.dbTickSpacing) * this.dbTickSpacing; db < this.dbMin; db += this.dbTickSpacing) {
                     var y = (db - this.dbMin) / (this.dbMax - this.dbMin) * (this.yMax - this.yMin);
@@ -277,6 +296,7 @@ const ToobFrequencyResponseView =
 
             dbMin: number = 5;
             dbMax: number = -35;
+            dbY: boolean = true;
 
             private nextKey: number = 0;
             render() {
@@ -284,6 +304,7 @@ const ToobFrequencyResponseView =
                 this.nextKey = 0;
                 this.dbMax = this.state.minDb;
                 this.dbMin = this.state.maxDb;
+                this.dbY = this.state.dbY;
 
                 this.fMin = this.state.minF;
                 this.fMax = this.state.maxF;

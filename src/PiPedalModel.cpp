@@ -1745,15 +1745,18 @@ void PiPedalModel::SendSetPatchProperty(
     {
         std::shared_ptr<Lv2PluginInfo> pluginInfo = GetPluginInfo(pedalboardItem->uri_);
         auto pipedalUi = pluginInfo->piPedalUI();
-        auto fileProperty = pipedalUi->GetFileProperty(propertyUri);
-        if (fileProperty)
+        if (pipedalUi) 
         {
+            auto fileProperty = pipedalUi->GetFileProperty(propertyUri);
+            if (fileProperty)
+            {
 
-            json_variant abstractPath = pluginHost.AbstractPath(value);
-            std::string atomString = abstractPath.to_string();
-            pedalboardItem->pathProperties_[propertyUri] = atomString;
+                json_variant abstractPath = pluginHost.AbstractPath(value);
+                std::string atomString = abstractPath.to_string();
+                pedalboardItem->pathProperties_[propertyUri] = atomString;
+            }
+            this->SetPresetChanged(clientId, true);
         }
-        this->SetPresetChanged(clientId, true);
     }
     LV2_Atom *atomValue = atomConverter.ToAtom(value);
 

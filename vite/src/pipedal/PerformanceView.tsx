@@ -19,6 +19,8 @@
 
 
 import { Theme } from '@mui/material/styles';
+import BankIcon from './svg/ic_bank.svg?react';
+import Typography from '@mui/material/Typography';
 import SaveIconOutline from '@mui/icons-material/Save';
 import WithStyles from './WithStyles';
 import { createStyles } from './WithStyles';
@@ -48,6 +50,10 @@ import { css } from '@emotion/react';
 const selectColor = isDarkMode() ? "#888" : "#FFFFFF";
 
 const styles = (theme: Theme) => createStyles({
+    listIcon: css({
+        width: 24, height: 24,
+        opacity: 0.6, fill: theme.palette.text.primary
+    }),
     frame: css({
         position: "absolute", display: "flex", flexDirection: "column", flexWrap: "nowrap",
         justifyContent: "flex-start", left: "0px", top: "0px", bottom: "0px", right: "0px", overflow: "hidden"
@@ -251,17 +257,18 @@ export const PerformanceView =
                 return (
                     <div className={classes.frame} style={{ overflow: "clip", height: "100%" }} >
                         <div className={classes.frame} style={{ overflow: "clip", height: "100%" }} >
-                            <AppBar id="select-plugin-dialog-title"
+                            <div id="select-plugin-dialog-title"
                                 style={{
                                     position: "static", flex: "0 0 auto", height: undefined,
-                                    display: this.state.showSnapshotEditor ? "none" : undefined
+                                    display: this.state.showSnapshotEditor ? "none" : undefined,
+                                    background: "transparent"
                                 }}
                             >
                                 {this.state.largeAppBar ? (
                                     <div style={{
                                         display: "flex", flexFlow: "row nowrap", alignContent: "center",
                                         paddingTop: 3, paddingBottom: 3, paddingRight: 8, paddingLeft: 8,
-                                        alignItems: "start", justifyContent: "space-between",
+                                        alignItems: "center", justifyContent: "space-between"
 
                                     }}>
                                         <IconButtonEx tooltip="Back" aria-label="menu" color="inherit"
@@ -273,51 +280,9 @@ export const PerformanceView =
                                             <ArrowBackIcon fontSize="large" />
                                         </IconButtonEx>
 
-                                        {/********* BANKS *******************/}
-                                        <div style={{
-                                            flex: "1 1 auto", display: "flex", flexFlow: "row nowrap", maxWidth: 300, alignItems: "center",
-                                        }}>
-                                            <Select variant="standard"
-                                                className={classes.select}
-                                                style={{
-                                                    flex: "1 1 1px", width: "100%", position: "relative", top: 0, color: "#FFFFFF",
-                                                    fontSize: "2.0rem",
-                                                }} disabled={false}
-                                                displayEmpty
-                                                onClose={(e) => this.handleBankSelectClose(e)}
-                                                value={banks.selectedBank === 0 ? undefined : banks.selectedBank}
-                                                inputProps={{
-                                                    classes: { icon: classes.select_icon },
-                                                    'aria-label': "Select preset"
-                                                }}
-                                            >
-                                                {
-                                                    banks.entries.map((entry) => {
-                                                        return (
-                                                            <MenuItem key={entry.instanceId} value={entry.instanceId} >
-                                                                {entry.name}
-                                                            </MenuItem>
-                                                        );
-                                                    })
-                                                }
-                                            </Select>
-                                            {/** spacer */}
-                                            <IconButtonEx
-                                                tooltip="Next bank"
-                                                aria-label="next-bank"
-                                                onClick={() => { this.handleNextBank(); }}
-                                                size="medium"
-                                                color="inherit"
-                                                style={{ visibility: "hidden" }}
-                                            >
-                                                <ArrowForwardIosIcon style={{ opacity: 0.75 }} fontSize="large" />
-
-                                            </IconButtonEx>
-
-                                        </div>
                                         {/********* PRESETS *******************/}
                                         <div style={{
-                                            flex: "2 2 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center",
+                                            flex: "2 2 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center", marginLeft: 24
 
                                         }}>
                                             <IconButtonEx tooltip="Previous preset"
@@ -373,149 +338,188 @@ export const PerformanceView =
                                                 onClick={() => { this.model.saveCurrentPreset(); }}
                                                 size="medium"
                                                 color="inherit"
-                                                style={{ flexShrink: 0, visibility: this.state.presetModified ? "visible" : "hidden" }}
+                                                style={{ flexShrink: 0, visibility: this.state.presetModified ? "visible" : "hidden", marginRight: 16 }}
                                             >
                                                 <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" fontSize={appBarIconSize} />
                                             </IconButtonEx>
                                         </div>
+                                        {/********* BANKS *******************/}
+
+                                        <div style={{
+                                            flex: "1 1 auto", display: "flex", flexFlow: "row nowrap", maxWidth: 500, marginRight: 16
+                                        }}>
+                                            <Select variant="standard"
+                                                className={classes.select}
+                                                renderValue={(selected) => {
+                                                    let entry = banks.entries.find(e => e.instanceId === selected);
+                                                    return <div style={{
+                                                        display: "flex", flexFlow: "row nowrap", gap: 4,
+                                                        alignItems: "center", justifyContent: "stretch",
+                                                    }}>
+                                                        <BankIcon className={classes.listIcon} style={{ flex: "0 0 auto", width: 20, height: 20 }} />
+                                                        <Typography noWrap style={{ flex: "1 1 auto", textAlign: "left" }}
+                                                            variant="body2"
+                                                        >
+                                                            {entry ? entry.name : "-"}
+                                                        </Typography>
+                                                    </div>;
+                                                }}
+                                                style={{
+                                                    flex: "1 1 1px", width: "100%", position: "relative", top: 0, color: "#FFFFFF",
+                                                    fontSize: "1.0rem",
+                                                }} disabled={false}
+                                                displayEmpty
+                                                onClose={(e) => this.handleBankSelectClose(e)}
+                                                value={banks.selectedBank === 0 ? undefined : banks.selectedBank}
+                                                inputProps={{
+                                                    classes: { icon: classes.select_icon },
+                                                    'aria-label': "Select preset"
+                                                }}
+                                            >
+                                                {
+                                                    banks.entries.map((entry) => {
+                                                        return (
+                                                            <MenuItem key={entry.instanceId} value={entry.instanceId} >
+                                                                {entry.name}
+                                                            </MenuItem>
+                                                        );
+                                                    })
+                                                }
+                                            </Select>
+                                            {/** spacer */}
+
+
+                                        </div>
+
                                     </div>
                                 ) : (
+
                                     <div style={{
-                                        display: "flex", flexFlow: "row nowrap", alignContent: "center",
-                                        paddingTop: 3, paddingBottom: 3, paddingRight: 8, paddingLeft: 8,
-                                        alignItems: "start",
-                                    }}>
+                                            display: "grid",
+                                            gridTemplateColumns: "min-content min-content auto min-content min-content",
+                                        }}>
                                         <IconButtonEx tooltip="Back" aria-label="menu" color="inherit"
                                             onClick={() => { this.props.onClose(); }}
                                             style={{
                                                 position: "relative", top: 3,
                                                 flex: "0 0 auto"
                                             }} >
-                                            <ArrowBackIcon fontSize={appBarIconSize} />
+                                            <ArrowBackIcon fontSize="medium" />
                                         </IconButtonEx>
 
-                                        <div style={{
-                                            flex: "1 1 1px", display: "flex",
-                                            flexFlow: wrapSelects ? "column nowrap" : "row nowrap",
-                                            alignItems: wrapSelects ? "stretch" : undefined,
-                                            justifyContent: wrapSelects ? undefined : "space-evenly",
-                                            marginLeft: 8,
-                                            gap: 8
+                                        <div/>
+                                        {/********* BANKS *******************/}
+                                        <Select variant="standard"
+                                            className={classes.select}
+                                            renderValue={(selected) => {
+                                                let entry = banks.entries.find(e => e.instanceId === selected);
+                                                return <div style={{
+                                                    display: "flex", flexFlow: "row nowrap", gap: 4,
+                                                    alignItems: "center", justifyContent: "stretch",
+                                                }}>
+                                                    <BankIcon className={classes.listIcon} style={{ flex: "0 0 auto", width: 20, height: 20 }} />
+                                                    <Typography noWrap style={{ flex: "1 1 auto", textAlign: "left" }}
+                                                        variant="body2"
+                                                    >
+                                                        {entry ? entry.name : "-"}
+                                                    </Typography>
+                                                </div>;
+                                            }}
+                                            style={{
+                                                flex: "1 1 1px", width: "100%", position: "relative", top: 0, color: "#FFFFFF",
+                                                fontSize: "1.0rem",
+                                            }} disabled={false}
+                                            displayEmpty
+                                            onClose={(e) => this.handleBankSelectClose(e)}
+                                            value={banks.selectedBank === 0 ? undefined : banks.selectedBank}
+                                            inputProps={{
+                                                classes: { icon: classes.select_icon },
+                                                'aria-label': "Select preset"
+                                            }}
+                                        >
+                                            {
+                                                banks.entries.map((entry) => {
+                                                    return (
+                                                        <MenuItem key={entry.instanceId} value={entry.instanceId} >
+                                                            {entry.name}
+                                                        </MenuItem>
+                                                    );
+                                                })
+                                            }
+                                        </Select>
 
-                                        }}>
-                                            {/********* BANKS *******************/}
-                                            <div style={{
-                                                flex: "1 1 auto", display: "flex", flexFlow: "row nowrap", maxWidth: 500,
-                                            }}>
-                                                <Select variant="standard"
-                                                    className={classes.select}
-                                                    style={{
-                                                        flex: "1 1 1px", width: "100%", position: "relative", top: 0, color: "#FFFFFF",
-                                                        fontSize: (this.state.largeAppBar ? "2.0rem" : undefined),
-                                                    }} disabled={false}
-                                                    displayEmpty
-                                                    onClose={(e) => this.handleBankSelectClose(e)}
-                                                    value={banks.selectedBank === 0 ? undefined : banks.selectedBank}
-                                                    inputProps={{
-                                                        classes: { icon: classes.select_icon },
-                                                        'aria-label': "Select preset"
-                                                    }}
-                                                >
-                                                    {
-                                                        banks.entries.map((entry) => {
-                                                            return (
-                                                                <MenuItem key={entry.instanceId} value={entry.instanceId} >
-                                                                    {entry.name}
-                                                                </MenuItem>
-                                                            );
-                                                        })
+                                        <div/>
+
+
+                                        <div/>
+
+                                        {/**** 2nd row ****/}
+                                        <div/>
+                                        {/********* PRESETS *******************/}
+
+                                        <IconButtonEx tooltip="Previous preset"
+                                            aria-label="previous-preset"
+                                            onClick={() => { this.handlePreviousPreset(); }}
+                                            color="inherit"
+                                            style={{ borderTopRightRadius: "3px", borderBottomRightRadius: "3px", marginRight: 4 }}
+                                        >
+                                        
+                                            <ArrowBackIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
+                                        </IconButtonEx>
+                                        <Select variant="standard"
+                                            className={classes.select}
+                                            style={{
+                                                flex: "1 1 1px", width: "100%", color: "#FFFFFF",
+                                                fontSize: (this.state.largeAppBar ? "2.0rem" : undefined),
+                                            }} disabled={false}
+                                            displayEmpty
+                                            onClose={(e) => this.handlePresetSelectClose(e)}
+                                            value={presets.selectedInstanceId === 0 ? '' : presets.selectedInstanceId}
+
+                                            inputProps={{
+                                                classes: { icon: classes.select_icon },
+                                                'aria-label': "Select preset"
+                                            }
+                                            }
+                                        >
+                                            {
+                                                presets.presets.map((preset) => {
+                                                    let name = preset.name;
+                                                    if (this.state.presets.selectedInstanceId === preset.instanceId && this.state.presetModified) {
+                                                        name += "*";
                                                     }
-                                                </Select>
-                                                {/** spacer */}
-                                                <IconButtonEx
-                                                    tooltip="Next bank"
-                                                    aria-label="next-bank"
-                                                    onClick={() => { this.handleNextBank(); }}
-                                                    size="medium"
-                                                    color="inherit"
-                                                    style={{ visibility: "hidden" }}
-                                                >
-                                                    <ArrowForwardIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
+                                                    return (
+                                                        <MenuItem key={preset.instanceId} value={preset.instanceId} >
+                                                            {name}
+                                                        </MenuItem>
+                                                    );
+                                                })
+                                            }
+                                        </Select>
 
-                                                </IconButtonEx>
+                                        <IconButtonEx tooltip="Next preset"
+                                            aria-label="next-preset"
+                                            onClick={() => { this.handleNextPreset(); }}
+                                            color="inherit"
+                                            style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
+                                        >
+                                            <ArrowForwardIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
+                                        </IconButtonEx>
 
+                                        <IconButtonEx tooltip="Save preset"
+                                            aria-label="save-preset"
+                                            onClick={() => { this.model.saveCurrentPreset(); }}
+                                            size="medium"
+                                            color="inherit"
+                                            style={{ flexShrink: 0, visibility: this.state.presetModified ? "visible" : "hidden" }}
+                                        >
+                                            <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" fontSize={appBarIconSize} />
+                                        </IconButtonEx>
 
-
-                                            </div>
-                                            {/********* PRESETS *******************/}
-                                            <div style={{
-                                                flex: "2 2 auto", display: "flex", flexFlow: "row nowrap", maxWidth: 500,
-
-                                            }}>
-                                                <IconButtonEx tooltip="Previous preset"
-                                                    aria-label="previous-preset"
-                                                    onClick={() => { this.handlePreviousPreset(); }}
-                                                    color="inherit"
-                                                    style={{ borderTopRightRadius: "3px", borderBottomRightRadius: "3px", marginRight: 4 }}
-                                                >
-                                                    <ArrowBackIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
-                                                </IconButtonEx>
-                                                <Select variant="standard"
-                                                    className={classes.select}
-                                                    style={{
-                                                        flex: "1 1 1px", width: "100%", color: "#FFFFFF",
-                                                        fontSize: (this.state.largeAppBar ? "2.0rem" : undefined),
-                                                    }} disabled={false}
-                                                    displayEmpty
-                                                    onClose={(e) => this.handlePresetSelectClose(e)}
-                                                    value={presets.selectedInstanceId === 0 ? '' : presets.selectedInstanceId}
-
-                                                    inputProps={{
-                                                        classes: { icon: classes.select_icon },
-                                                        'aria-label': "Select preset"
-                                                    }
-                                                    }
-                                                >
-                                                    {
-                                                        presets.presets.map((preset) => {
-                                                            let name = preset.name;
-                                                            if (this.state.presets.selectedInstanceId === preset.instanceId && this.state.presetModified) {
-                                                                name += "*";
-                                                            }
-                                                            return (
-                                                                <MenuItem key={preset.instanceId} value={preset.instanceId} >
-                                                                    {name}
-                                                                </MenuItem>
-                                                            );
-                                                        })
-                                                    }
-                                                </Select>
-
-                                                <IconButtonEx tooltip="Next preset"
-                                                    aria-label="next-preset"
-                                                    onClick={() => { this.handleNextPreset(); }}
-                                                    color="inherit"
-                                                    style={{ borderTopLeftRadius: "3px", borderBottomLeftRadius: "3px", marginLeft: 4 }}
-                                                >
-                                                    <ArrowForwardIosIcon style={{ opacity: 0.75 }} fontSize={appBarIconSize} />
-                                                </IconButtonEx>
-
-                                                <IconButtonEx tooltip="Save preset"
-                                                    aria-label="save-preset"
-                                                    onClick={() => { this.model.saveCurrentPreset(); }}
-                                                    size="medium"
-                                                    color="inherit"
-                                                    style={{ flexShrink: 0, visibility: this.state.presetModified ? "visible" : "hidden" }}
-                                                >
-                                                    <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" fontSize={appBarIconSize} />
-                                                </IconButtonEx>
-
-                                            </div>
-                                        </div>
                                     </div>
 
                                 )}
-                            </AppBar >
+                            </div >
                             <div style={{ flex: "1 0 auto", display: "flex", marginTop: 16, marginBottom: 20 }}>
                                 <SnapshotPanel onEdit={(index) => { return this.handleOnEdit(index); }} />
                             </div>

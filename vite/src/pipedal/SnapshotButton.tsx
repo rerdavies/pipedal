@@ -75,15 +75,15 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
         if (this.is2x3Layout(width,height)) {
             uiScale = width / 400;
         } else {
-            uiScale = (width/3)/(400/2);
+            uiScale = (width/3)/(400/2)*1.5;
         }
         if (height < width) {
             // 1 at 400, 2 at 600
-            let hUiScale = (height-340)/(400-340);
-            hUiScale += (height-400)/(460-400);
+            let hUiScale = (height-200)/(400-200);
+            hUiScale += 1;
             uiScale = Math.min(hUiScale,uiScale);
         }
-        if (uiScale < 1) uiScale = 1;
+        if (uiScale < 1.3) uiScale = 1.3;
         if (uiScale > 4) uiScale = 4;
         this.setState({uiScale: uiScale});
     }
