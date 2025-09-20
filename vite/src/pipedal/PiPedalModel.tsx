@@ -2049,13 +2049,14 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    saveCurrentPresetAs(newName: string, saveAfterInstanceId = -1): Promise<number> {
+    saveCurrentPresetAs(bankInstanceId: number, newName: string, saveAfterInstanceId = -1): Promise<number> {
         // default behaviour is to save after the currently selected preset.
         if (saveAfterInstanceId === -1) {
             saveAfterInstanceId = this.presets.get().selectedInstanceId;
         }
         let request: any = {
             clientId: this.clientId,
+            bankInstanceId: bankInstanceId,
             name: newName,
             saveAfterInstanceId: saveAfterInstanceId
 
@@ -2064,7 +2065,9 @@ export class PiPedalModel //implements PiPedalModel
         return nullCast(this.webSocket)
             .request<number>("saveCurrentPresetAs", request)
             .then((newPresetId) => {
-                this.loadPreset(newPresetId);
+                if (bankInstanceId === this.banks.get().selectedBank) {
+                    this.loadPreset(newPresetId);
+                }
                 return newPresetId;
             });
     }
@@ -3538,6 +3541,13 @@ export class PiPedalModel //implements PiPedalModel
         // notify the server.
         this.webSocket?.send("setSelectedPedalboardPlugin", { clientId: this.clientId, pluginInstanceId: pluginId });
 
+    }
+    requestBankPresets(bankInstanceId: number): Promise<PresetIndexEntry[]> {
+        return nullCast(this.webSocket).request<PresetIndexEntry[]>("requestBankPresets", {bankInstanceId: bankInstanceId});
+    }   
+
+    importPresetsFromBank(bankInstanceId: number, presets: number[]): Promise<number> {
+        return nullCast(this.webSocket).request<number>("importPresetsFromBank", {bankInstanceId: bankInstanceId, presets: presets});
     }
 };
 

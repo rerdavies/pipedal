@@ -17,9 +17,12 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import React, { SyntheticEvent,Component } from 'react';
+import React, { SyntheticEvent, Component } from 'react';
+import ImportPresetFromBankDialog from './ImportPresetFromBankDialog';
+import Icon from '@mui/material/Icon';
+import Divider from '@mui/material/Divider';
 import { css } from '@emotion/react';
-import {isDarkMode} from './DarkMode';
+import { isDarkMode } from './DarkMode';
 import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, PresetIndexEntry, PresetIndex } from './PiPedalModel';
@@ -43,8 +46,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
 import RenameDialog from './RenameDialog';
 
-import Slide, {SlideProps} from '@mui/material/Slide';
-import {createStyles} from './WithStyles';
+import Slide, { SlideProps } from '@mui/material/Slide';
+import { createStyles } from './WithStyles';
 
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
@@ -66,9 +69,11 @@ interface PresetDialogState {
 
     showActionBar: boolean;
 
-    selectedItem: number;
+    currentItem: number;
+    selectedItems: Set<number>;
 
     renameOpen: boolean;
+    importOpen: boolean;
 
     moreMenuAnchorEl: HTMLElement | null;
     openUploadPresetDialog: boolean;
@@ -79,7 +84,7 @@ interface PresetDialogState {
 
 const styles = (theme: Theme) => createStyles({
     listIcon: css({
-         width: 24, height: 24, opacity: 0.6, fill: theme.palette.text.primary
+        width: 24, height: 24, opacity: 0.6, fill: theme.palette.text.primary
     }),
     dialogAppBar: css({
         position: 'relative',
@@ -146,19 +151,27 @@ const PresetDialog = withStyles(
             this.state = {
                 presets: presets,
                 showActionBar: false,
-                selectedItem: presets.selectedInstanceId,
+                currentItem: presets.selectedInstanceId,
+                selectedItems: new Set<number>(),
                 renameOpen: false,
+                importOpen: false,
                 moreMenuAnchorEl: null,
                 openUploadPresetDialog: false
 
             };
             this.handlePresetsChanged = this.handlePresetsChanged.bind(this);
-
+            
+        }
+        setSelection(instanceId: number) {
+            this.setState({ 
+                currentItem: instanceId,
+                selectedItems: new Set<number>([instanceId])
+             });
         }
 
         selectItemAtIndex(index: number) {
             let instanceId = this.state.presets.presets[index].instanceId;
-            this.setState({ selectedItem: instanceId });
+            this.setSelection(instanceId);
         }
         isEditMode() {
             return this.state.showActionBar || this.props.isEditDialog;
@@ -170,7 +183,7 @@ const PresetDialog = withStyles(
 
         handleDownloadPreset() {
             this.handleMoreClose();
-            this.model.download("downloadPreset", this.state.selectedItem);
+            this.model.download("downloadPreset", this.state.currentItem);
         }
         handleUploadPreset() {
             this.handleMoreClose();
@@ -189,8 +202,10 @@ const PresetDialog = withStyles(
             if (!presets.areEqual(this.state.presets, false)) // avoid a bunch of peculiar effects if we update while a drag is in progress
             {
                 // if we don't have a valid selection, then use the current preset.
-                if (this.state.presets.getItem(this.state.selectedItem) == null) {
-                    this.setState({ presets: presets, selectedItem: presets.selectedInstanceId });
+                if (this.state.presets.getItem(this.state.currentItem) == null) {
+                    this.setState({ presets: presets, currentItem: presets.selectedInstanceId,
+                        selectedItems: new Set<number>([presets.selectedInstanceId])
+                     });
                 } else {
                     this.setState({ presets: presets });
                 }
@@ -208,7 +223,7 @@ const PresetDialog = withStyles(
         }
 
         getSelectedIndex() {
-            let instanceId = this.isEditMode() ? this.state.selectedItem : this.state.presets.selectedInstanceId;
+            let instanceId = this.isEditMode() ? this.state.currentItem : this.state.presets.selectedInstanceId;
             let presets = this.state.presets;
             for (let i = 0; i < presets.presets.length; ++i) {
                 if (presets.presets[i].instanceId === instanceId) return i;
@@ -217,12 +232,12 @@ const PresetDialog = withStyles(
         }
 
         handleDeleteClick() {
-            if (!this.state.selectedItem) return;
-            let selectedItem = this.state.selectedItem;
-            if (selectedItem !== -1) {
-                this.model.deletePresetItem(selectedItem)
-                    .then((selectedItem: number) => {
-                        this.setState({ selectedItem: selectedItem });
+            if (this.state.currentItem === -1) return;
+            let currentItem = this.state.currentItem;
+            if (currentItem !== -1) {
+                this.model.deletePresetItem(currentItem)
+                    .then((currentItem: number) => {
+                        this.setSelection(currentItem);
                     })
                     .catch((error) => {
                         this.model.showAlert(error);
@@ -236,7 +251,7 @@ const PresetDialog = withStyles(
 
         handleItemClick(instanceId: number): void {
             if (this.isEditMode()) {
-                this.setState({ selectedItem: instanceId });
+                this.setSelection(instanceId);
             } else {
                 this.model.loadPreset(instanceId);
                 this.props.onDialogClose();
@@ -251,19 +266,21 @@ const PresetDialog = withStyles(
         mapElement(el: any): React.ReactNode {
             let presetEntry = el as PresetIndexEntry;
             const classes = withStyles.getClasses(this.props);
-            let selectedItem = this.isEditMode() ? this.state.selectedItem : this.state.presets.selectedInstanceId;
+            let selected = 
+                this.isEditMode() ? this.state.selectedItems.has(presetEntry.instanceId) : 
+                            (presetEntry.instanceId === this.state.presets.selectedInstanceId);
             return (
-                <div key={presetEntry.instanceId} className="itemBackground">
+                <div key={presetEntry.instanceId} id={"psetdlgItem_" + presetEntry.instanceId} className="itemBackground">
 
                     <ButtonBase style={{ width: "100%", height: 48 }}
                         onClick={() => this.handleItemClick(presetEntry.instanceId)}
                     >
-                        <SelectHoverBackground selected={presetEntry.instanceId === selectedItem} showHover={true} />
+                        <SelectHoverBackground selected={selected} showHover={true} />
                         <div className={classes.itemFrame}>
                             <div className={classes.iconFrame}>
-                                <img 
-                                    src={isDarkMode()? "img/ic_presets_white.svg": "img/ic_presets.svg"}
-                                 className={classes.itemIcon} alt="" />
+                                <img
+                                    src={isDarkMode() ? "img/ic_presets_white.svg" : "img/ic_presets.svg"}
+                                    className={classes.itemIcon} alt="" />
                             </div>
                             <div className={classes.itemLabel}>
                                 <Typography>
@@ -287,30 +304,33 @@ const PresetDialog = withStyles(
         moveElement(from: number, to: number): void {
             let newPresets = this.state.presets.clone();
             newPresets.movePreset(from, to);
+            let toInstanceId = newPresets.presets[to].instanceId;
             this.setState({
                 presets: newPresets,
-                selectedItem: newPresets.presets[to].instanceId
+                currentItem: toInstanceId,
+                selectedItems: new Set<number>([toInstanceId])
+
             });
             this.updateServerPresets(newPresets);
         }
 
         getSelectedName(): string {
-            let item = this.state.presets.getItem(this.state.selectedItem);
+            let item = this.state.presets.getItem(this.state.currentItem);
             if (item) return item.name;
             return "";
         }
 
         handleRenameClick() {
-            let item = this.state.presets.getItem(this.state.selectedItem);
+            let item = this.state.presets.getItem(this.state.currentItem);
             if (item) {
                 this.setState({ renameOpen: true });
             }
         }
         handleRenameOk(text: string) {
-            let item = this.state.presets.getItem(this.state.selectedItem);
+            let item = this.state.presets.getItem(this.state.currentItem);
             if (!item) return;
             if (item.name !== text) {
-                this.model.renamePresetItem(this.state.selectedItem, text)
+                this.model.renamePresetItem(this.state.currentItem, text)
                     .catch((error) => {
                         this.onError(error);
                     });
@@ -319,11 +339,14 @@ const PresetDialog = withStyles(
             this.setState({ renameOpen: false });
         }
         handleCopy() {
-            let item = this.state.presets.getItem(this.state.selectedItem);
+            let item = this.state.presets.getItem(this.state.currentItem);
             if (!item) return;
-            this.model.duplicatePreset(this.state.selectedItem)
+            this.model.duplicatePreset(this.state.currentItem)
                 .then((newId) => {
-                    this.setState({ selectedItem: newId });
+                    this.setState({ 
+                        currentItem: newId,
+                        selectedItems: new Set<number>([newId])
+                     });
                 }).catch((error) => {
                     this.onError(error);
                 });
@@ -333,6 +356,29 @@ const PresetDialog = withStyles(
             this.model?.showAlert(error);
         }
 
+        handleImportPresetsFromBank() 
+        {
+            this.handleMoreClose();
+            this.setState({ importOpen: true });
+        }
+        handleImportDialogOk(bankInstanceId: number, presets: number[]): void {
+            this.setState({ importOpen: false });
+            this.model.importPresetsFromBank(bankInstanceId, presets)
+                .then((instanceId) => {
+                    if (instanceId !== -1) {
+                        this.setSelection(instanceId);
+                        setTimeout(() => {
+                            let el = document.getElementById("psetdlgItem_" + instanceId);
+                            if (el) {
+                                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                            }
+                        },0);
+                    }
+                })
+                .catch((error) => {
+                    this.model.showAlert(error);
+                });
+        }
 
 
         render() {
@@ -344,9 +390,9 @@ const PresetDialog = withStyles(
             return (
                 <DialogEx tag="preset" fullScreen open={this.props.show}
                     onClose={() => { this.handleDialogClose() }} TransitionComponent={Transition}
-                    style={{userSelect: "none"}}
-                    onEnterKey={()=>{}}
-                    >
+                    style={{ userSelect: "none" }}
+                    onEnterKey={() => { }}
+                >
                     <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                         <div style={{ flex: "0 0 auto" }}>
                             <AppBar className={classes.dialogAppBar} style={{ display: this.isEditMode() ? "none" : "block" }} >
@@ -359,7 +405,7 @@ const PresetDialog = withStyles(
                                     <Typography variant="h6" className={classes.dialogTitle}>
                                         Presets
                                     </Typography>
-                                    <IconButtonEx tooltip="Edit"color="inherit" onClick={(e) => this.showActionBar(true)} >
+                                    <IconButtonEx tooltip="Edit" color="inherit" onClick={(e) => this.showActionBar(true)} >
                                         <EditIcon />
                                     </IconButtonEx>
                                 </Toolbar>
@@ -382,12 +428,13 @@ const PresetDialog = withStyles(
                                     <Typography variant="h6" className={classes.dialogTitle}>
                                         Presets
                                     </Typography>
-                                    {(this.state.presets.getItem(this.state.selectedItem) != null)
+                                    {(this.state.presets.getItem(this.state.currentItem) != null)
                                         && (
 
-                                            <div style={{ flex: "0 0 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center"
-                                                
-                                             }}>
+                                            <div style={{
+                                                flex: "0 0 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center"
+
+                                            }}>
                                                 <Button color="inherit" onClick={(e) => this.handleCopy()}>
                                                     Copy
                                                 </Button>
@@ -419,6 +466,26 @@ const PresetDialog = withStyles(
                                                     onClose={() => this.handleMoreClose()}
                                                     TransitionComponent={Fade}
                                                 >
+                                                    <MenuItem onClick={() => { this.handleDownloadPreset(); }} >
+                                                        <ListItemIcon>
+                                                            <Icon />
+                                                        </ListItemIcon>
+                                                        <ListItemText>
+                                                            Copy to bank...
+                                                        </ListItemText>
+
+                                                    </MenuItem>
+                                                    <MenuItem onClick={() => { this.handleImportPresetsFromBank(); }} >
+                                                        <ListItemIcon>
+                                                            <Icon />
+                                                        </ListItemIcon>
+                                                        <ListItemText>
+                                                            Import presets from bank...
+                                                        </ListItemText>
+
+                                                    </MenuItem>
+
+                                                    <Divider />
                                                     <MenuItem onClick={() => { this.handleDownloadPreset(); }} >
                                                         <ListItemIcon>
                                                             <DownloadIcon className={classes.listIcon} />
@@ -464,14 +531,21 @@ const PresetDialog = withStyles(
                             </DraggableGrid>
                         </div>
                     </div>
-                    <UploadPresetDialog 
-                            title='Upload preset'
-                            extension='.piPreset'
-                            uploadPage='uploadPreset'
-                            onUploaded={(instanceId) => this.setState({selectedItem: instanceId}) }
-                            uploadAfter={this.state.selectedItem} 
-                            open={this.state.openUploadPresetDialog} 
-                            onClose={() => { this.setState({ openUploadPresetDialog: false }) }} />
+                    <UploadPresetDialog
+                        title='Upload preset'
+                        extension='.piPreset'
+                        uploadPage='uploadPreset'
+                        onUploaded={(instanceId) => this.setSelection(instanceId)}
+                        uploadAfter={this.state.currentItem }
+                        open={this.state.openUploadPresetDialog}
+                        onClose={() => { this.setState({ openUploadPresetDialog: false }) }} />
+                        {this.state.importOpen && (
+                            <ImportPresetFromBankDialog
+                                open={this.state.importOpen}
+                                onClose={() => this.setState({ importOpen: false })}
+                                onOk={(bankInstanceId, presets) => this.handleImportDialogOk(bankInstanceId, presets)}
+                            />
+                        )}
 
                 </DialogEx>
 

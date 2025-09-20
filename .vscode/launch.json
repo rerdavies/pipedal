@@ -22,7 +22,8 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [ 
-                "--gplot-downloads"
+                "hw:M2",
+                "hw:M2"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

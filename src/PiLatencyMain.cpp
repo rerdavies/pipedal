@@ -33,6 +33,7 @@
 #include <iomanip>
 #include <chrono>
 #include <thread>
+#include <sched.h>
 
 using namespace pipedal;
 
@@ -59,7 +60,7 @@ void PrintHelp()
     pp << Indent(0) << "Syntax\n\n";
     pp << Indent(2) << "pipedal_latency_test [<options>] <input-device> [<output-device>]\n\n";
     pp << "where <input-device> is the name of an ALSA capture device and <output-device> is the name of a playback device. "
-         "If <output-device> is omitted, the input device will be used for both capture and playback. Typically the device names start with 'hw:'.\n\n";
+          "If <output-device> is omitted, the input device will be used for both capture and playback. Typically the device names start with 'hw:'.\n\n";
     pp << Indent(0) << "Options\n\n";
     pp << Indent(15);
 
@@ -85,13 +86,13 @@ void PrintHelp()
        << "PiPedal Latency Tester  measures internal buffer delays as well as operating system and  "
        << "signal delays in hardware peripherals. Latency figures will therefore be somewhat higher than  "
        << "most reported latency figures which typically only include internal buffer delays.\n\n";
-       
-    pp 
-       << "The tests run over a variety of buffer sizes. A nominal compute load is provided in order to put some "
-          "stress on the audio system.\n\n"
 
-       << "You may need to stop the pipedald audio service in order to access the ALSA device:\n\n"
-       << Indent(6) << "sudo systemctl stop pipedald\n\n";
+    pp
+        << "The tests run over a variety of buffer sizes. A nominal compute load is provided in order to put some "
+           "stress on the audio system.\n\n"
+
+        << "You may need to stop the pipedald audio service in order to access the ALSA device:\n\n"
+        << Indent(6) << "sudo systemctl stop pipedald\n\n";
 
     pp << Indent(0) << "Examples\n\n";
     pp << Indent(2) << "pipedal_latency_test --list\n\n";
@@ -122,7 +123,6 @@ void ListDevices()
         }
     }
 }
-
 
 using ChannelsT = std::vector<int>;
 
@@ -169,12 +169,13 @@ public:
         delete[] inputBuffers;
         delete[] outputBuffers;
     }
-    std::vector<std::string> SelectChannels(const std::vector<std::string>&available, const std::vector<int>& selection)
+    std::vector<std::string> SelectChannels(const std::vector<std::string> &available, const std::vector<int> &selection)
     {
-        if (selection.size() == 0) return available;
+        if (selection.size() == 0)
+            return available;
 
         std::vector<std::string> result;
-        for (int sel: selection)
+        for (int sel : selection)
         {
             if (sel < 0 || sel >= available.size())
             {
@@ -195,14 +196,13 @@ public:
             JackConfiguration jackConfiguration;
             jackConfiguration.AlsaInitialize(serverSettings);
 
-            auto & availableInputs = jackConfiguration.inputAudioPorts();
-            auto & availableOutputs = jackConfiguration.outputAudioPorts();
-
+            auto &availableInputs = jackConfiguration.inputAudioPorts();
+            auto &availableOutputs = jackConfiguration.outputAudioPorts();
 
             std::vector<std::string> inputAudioPorts, outputAudioPorts;
 
-            inputAudioPorts = SelectChannels(availableInputs,this->inputChannels);
-            outputAudioPorts = SelectChannels(availableOutputs,this->outputChannels);
+            inputAudioPorts = SelectChannels(availableInputs, this->inputChannels);
+            outputAudioPorts = SelectChannels(availableOutputs, this->outputChannels);
 
             JackChannelSelection channelSelection(
                 inputAudioPorts, outputAudioPorts,
@@ -360,7 +360,6 @@ public:
     }
     virtual void OnAudioTerminated()
     {
-        
     }
     virtual void OnProcess(size_t nFrames)
     {
@@ -413,7 +412,7 @@ TestResult RunLatencyTest(
     const ChannelsT &outputChannels,
     uint32_t sampleRate, int bufferSize, int buffers)
 {
-     AlsaTester tester(inputDeviceId, outputDeviceId, inputChannels, outputChannels, sampleRate, bufferSize, buffers);
+    AlsaTester tester(inputDeviceId, outputDeviceId, inputChannels, outputChannels, sampleRate, bufferSize, buffers);
     return tester.Test();
 }
 
@@ -432,6 +431,28 @@ static std::string overheadDisplay(float value)
     return s.str();
 }
 
+static bool testRealtimePriorityPrivileges()
+{
+
+    struct sched_param currentParam;
+    int currentPolicy = sched_getscheduler(0);
+    if (currentPolicy == -1) {
+        return false;
+    }
+    if (sched_getparam(0, &currentParam) != 0) {
+        return false;
+    }
+    struct sched_param param;
+    param.sched_priority = 85;
+    if (sched_setscheduler(0, SCHED_RR, &param) != 0)
+    {
+        return false;
+    }
+    // Restore normal priority
+    sched_setscheduler(0, currentPolicy, &currentParam);
+    return true;
+}
+
 void RunLatencyTest(
     const std::string &inputDeviceId,
     const std::string &outputDeviceId,
@@ -439,8 +460,20 @@ void RunLatencyTest(
     const ChannelsT &outputChannels,
     uint32_t sampleRate)
 {
+
     PrettyPrinter pp;
-     pp << "Input: " << inputDeviceId << "  Output: " << outputDeviceId << "  Rate: " << sampleRate << "\n\n";
+
+    if (!testRealtimePriorityPrivileges())
+    {
+        pp << "Unable to enable realtime scheduling. Add your user id to the pipedal_d group to fix this problem:" << "\n\n";
+        pp.AddIndent(4);
+        pp << "sudo usermod -a -G pipedal_d <your user id>" << "\n\n";
+        pp.AddIndent(-4);
+        pp << "You will need to log out or reboot your system in order for the change to take effect.\n\n";
+        throw std::runtime_error("Unable to set relatime thread priority.");
+    }
+
+    pp << "Input: " << inputDeviceId << "  Output: " << outputDeviceId << "  Rate: " << sampleRate << "\n\n";
 
     const int SIZE_COLUMN_WIDTH = 8;
     const int BUFFERS_COLUMN_WIDTH = 20;
@@ -467,7 +500,7 @@ void RunLatencyTest(
 
         for (auto bufferCount : bufferCounts)
         {
-             auto result = RunLatencyTest(inputDeviceId, outputDeviceId, inputChannels,outputChannels, sampleRate, bufferSize, bufferCount);
+            auto result = RunLatencyTest(inputDeviceId, outputDeviceId, inputChannels, outputChannels, sampleRate, bufferSize, bufferCount);
 
             pp.Column(column);
             column += BUFFERS_COLUMN_WIDTH;
@@ -495,8 +528,7 @@ void RunLatencyTest(
     }
 }
 
-
-ChannelsT ParseChannels(const std::string&channels)
+ChannelsT ParseChannels(const std::string &channels)
 {
     ChannelsT result;
     std::stringstream s(channels);
@@ -504,9 +536,11 @@ ChannelsT ParseChannels(const std::string&channels)
     while (true)
     {
         int c = s.peek();
-        if (c == -1) break;
+        if (c == -1)
+            break;
 
-        if (c == ',') {
+        if (c == ',')
+        {
             s.get();
             c = s.peek();
         }
@@ -518,14 +552,12 @@ ChannelsT ParseChannels(const std::string&channels)
         while (s.peek() >= '0' && s.peek() <= '9')
         {
             c = s.get();
-            v = v*10 + c-'0';
+            v = v * 10 + c - '0';
         }
         result.push_back(v);
     }
 
     return result;
-
-
 }
 
 int main(int argc, const char **argv)
@@ -567,7 +599,7 @@ std:
             inputChannels = ParseChannels(strInputChannels);
             outputChannels = ParseChannels(strOutputChannels);
 
-            std::string inDev  = parser.Arguments()[0];
+            std::string inDev = parser.Arguments()[0];
             std::string outDev = parser.Arguments().size() == 2 ? parser.Arguments()[1] : inDev;
             RunLatencyTest(inDev, outDev, inputChannels, outputChannels, sampleRate);
         }

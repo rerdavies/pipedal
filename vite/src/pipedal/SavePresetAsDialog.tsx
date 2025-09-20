@@ -18,9 +18,12 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
+import Select from '@mui/material/Select';
 import Button from '@mui/material/Button';
+import InputLabel from '@mui/material/InputLabel';
 import DialogEx from './DialogEx';
 import DialogTitle from '@mui/material/DialogTitle';
+import MenuItem from '@mui/material/MenuItem';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import { nullCast } from './Utility';
@@ -28,20 +31,20 @@ import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
 //import TextFieldEx from './TextFieldEx';
 import TextField from '@mui/material/TextField';
+import { BankIndex } from './Banks';
 
 
-export interface RenameDialogProps {
+export interface SavePresetAsDialogProps {
     open: boolean,
     defaultName: string,
-    acceptActionName: string,
-    title: string,
-    allowEmpty?: boolean,
-    label?: string,
-    onOk: (text: string) => void,
+    onOk: (bankInstanceId: number, text: string) => void,
     onClose: () => void
 };
 
-export interface RenameDialogState {
+export interface SavePresetAsDialogState {
+    selectedBank: number;
+    banks: BankIndex;
+    
     fullScreen: boolean;
 };
 
@@ -49,14 +52,19 @@ function isTouchUi()
 {
     return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 }
-export default class RenameDialog extends ResizeResponsiveComponent<RenameDialogProps, RenameDialogState> {
+export default class SavePresetAsDialog extends ResizeResponsiveComponent<SavePresetAsDialogProps, SavePresetAsDialogState> {
 
     refText: React.RefObject<HTMLInputElement|null>;
 
-    constructor(props: RenameDialogProps) {
+    model: PiPedalModel;
+    constructor(props: SavePresetAsDialogProps) {
         super(props);
+        this.model = PiPedalModel.getInstance();
         this.state = {
+            banks: this.model.banks.get(),
+            selectedBank: this.model.banks.get().selectedBank,
             fullScreen: false
+
         };
         this.refText = React.createRef<HTMLInputElement>();
     }
@@ -85,15 +93,11 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
     {
     }
     checkForIllegalCharacters(filename: string) {
-        if (filename.indexOf('/') !== -1)
-        {
-            throw new Error("Illegal character: '/'");
-        }
     }
 
     render() {
         let props = this.props;
-        let { open, defaultName, acceptActionName, onClose, onOk } = props;
+        let { open, defaultName, onClose, onOk } = props;
 
         const handleClose = () => {
             onClose();
@@ -110,8 +114,8 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                 model.showAlert(e.toString());
                 return;
             }
-            if (text.length === 0 && props.allowEmpty !== true) return;
-            onOk(text);
+            if (text.length === 0) return;
+            onOk(this.state.selectedBank,text);
         }
         const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
             // 'keypress' event misbehaves on mobile so we track 'Enter' key via 'keydown' event
@@ -122,37 +126,50 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
             }
         };
         return (
-            <DialogEx tag="nameDialog" open={open} fullWidth maxWidth="sm" onClose={handleClose} aria-labelledby="Rename-dialog-title" 
+            <DialogEx tag="savePresetAs" open={open} fullWidth maxWidth="xs" onClose={handleClose} aria-labelledby="Rename-dialog-title" 
                 fullScreen={this.state.fullScreen}
                 style={{userSelect: "none"}}
                 onEnterKey={()=>{}}
                 >
                     <DialogTitle>
-                        {props.title ?? "Rename"}
+                        Save Preset As
                     </DialogTitle>
 
                 <DialogContent >
+                    <InputLabel style={{ fontSize: "0.75rem", fontWeight: 400, marginTop: 16 }}>Bank</InputLabel>
+                    
+                    <Select variant="standard" fullWidth value={this.state.selectedBank} style={{marginBottom: 16}}
+                        onChange={(e) => this.setState({ selectedBank: e.target.value as number  })}>
+                        {this.state.banks.entries.map((bankEntry) => {
+                            return (
+                                <MenuItem key={bankEntry.instanceId} value={bankEntry.instanceId}
+                                selected={bankEntry.instanceId === this.state.selectedBank}
+                                >
+                                    {bankEntry.name}
+                                </MenuItem>
+                            );
+                        })}
+                    </Select>
+
                     <TextField
                         autoFocus={!isTouchUi()}
                         onKeyDown={handleKeyDown}
-                        variant="standard"
                         autoComplete="off"
                         autoCorrect="on"
                         autoCapitalize="on"
                         spellCheck={false}
-                        
+                        variant="standard"
                         slotProps={{
                             inputLabel: {
                                 shrink: true
                             },
-
                             input: {
                                 style: { scrollMargin: 24 }
                             }
                         }}
                         id="name"
                         type="text"
-                        label={props.label ?? "Name"}
+                        label={"Name"}
                         fullWidth
                         defaultValue={defaultName}
                         inputRef={this.refText}
@@ -163,7 +180,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                         Cancel
                     </Button>
                     <Button onClick={handleOk} variant="dialogPrimary"  >
-                        {acceptActionName}
+                        OK
                     </Button>
                 </DialogActions>
             </DialogEx>

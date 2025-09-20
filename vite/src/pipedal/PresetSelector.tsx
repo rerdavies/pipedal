@@ -25,7 +25,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
 import { withStyles } from "tss-react/mui";
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import PresetDialog from './PresetDialog';
 import Menu from '@mui/material/Menu';
@@ -33,9 +33,12 @@ import MenuItem from '@mui/material/MenuItem';
 import Fade from '@mui/material/Fade';
 import Divider from '@mui/material/Divider';
 import RenameDialog from './RenameDialog'
+import SavePresetAsDialog from './SavePresetAsDialog';
+import ImportPresetFromBankDialog from './ImportPresetFromBankDialog';
+
 import Select from '@mui/material/Select';
 import UploadPresetDialog from './UploadPresetDialog';
-import {isDarkMode} from './DarkMode';
+import { isDarkMode } from './DarkMode';
 
 interface PresetSelectorProps extends WithStyles<typeof styles> {
 
@@ -49,6 +52,9 @@ interface PresetSelectorState {
     showEditPresetsDialog: boolean;
     presetsMenuAnchorRef: HTMLElement | null;
 
+    saveAsDialogOpen: boolean;
+    importDialogOpen: boolean;
+    
     renameDialogOpen: boolean;
     renameDialogTitle: string;
     renameDialogDefaultName: string;
@@ -59,7 +65,7 @@ interface PresetSelectorState {
 }
 
 
-const selectColor = isDarkMode()? "#888": "#FFFFFF";
+const selectColor = isDarkMode() ? "#888" : "#FFFFFF";
 
 const styles = (theme: Theme) => createStyles({
     select: { // fu fu fu.Overrides for white selector on dark background.
@@ -96,6 +102,8 @@ const PresetSelector =
                     showEditPresetsDialog: false,
                     presetsMenuAnchorRef: null,
                     renameDialogOpen: false,
+                    saveAsDialogOpen: false,
+                    importDialogOpen: false,
                     renameDialogTitle: "",
                     renameDialogDefaultName: "",
                     renameDialogActionName: "",
@@ -115,6 +123,12 @@ const PresetSelector =
             }
             handlePresetsMenuClose(): void {
                 this.setState({ presetsMenuAnchorRef: null });
+            }
+
+            handlePresetsMenuImport(e: SyntheticEvent): void {
+                this.handlePresetsMenuClose();
+                e.stopPropagation();
+                this.setState({ importDialogOpen: true });
             }
 
             handleDownloadPreset(e: SyntheticEvent) {
@@ -144,21 +158,8 @@ const PresetSelector =
                 let currentPresets = this.model.presets.get();
                 let item = currentPresets.getItem(currentPresets.selectedInstanceId);
                 if (item == null) return;
-                let name = item.name;
 
-                this.renameDialogOpen(name, "Save Preset As", "OK")
-                    .then((newName) => {
-                        return this.model.saveCurrentPresetAs(newName);
-                    })
-                    .then((newInstanceId) => {
-
-                    })
-                    .catch((error) => {
-                        this.showError(error);
-                    })
-                    ;
-
-
+                this.setState({ saveAsDialogOpen: true });
             }
             handlePresetsMenuRename(e: SyntheticEvent): void {
                 this.handlePresetsMenuClose();
@@ -198,7 +199,7 @@ const PresetSelector =
             showError(error: string) {
                 this.model.showAlert(error);
             }
-            renameDialogOpen(defaultText: string, title: string,acceptButtonText: string): Promise<string> {
+            renameDialogOpen(defaultText: string, title: string, acceptButtonText: string): Promise<string> {
                 let result = new Promise<string>(
                     (resolve, reject) => {
                         this.setState(
@@ -217,6 +218,30 @@ const PresetSelector =
                     }
                 );
                 return result;
+            }
+
+            handleSaveAsDialogOk(bankInstanceId: number, name: string): void {
+                this.setState({ saveAsDialogOpen: false });
+
+                this.model.saveCurrentPresetAs(bankInstanceId, name)
+                    .then((instanceId) => {
+                        this.model.loadPreset(instanceId);
+                    })
+                    .catch((error) => {
+                        this.showError(error);
+                    });
+            }
+            handleImportDialogOk(bankInstanceId: number, presets: number[]): void {
+                this.setState({ importDialogOpen: false });
+                this.model.importPresetsFromBank(bankInstanceId, presets)
+                    .then((instanceId) => {
+                        if (instanceId !== -1) {
+                            this.model.loadPreset(instanceId);
+                        }
+                    })
+                    .catch((error) => {
+                        this.showError(error);
+                    });
             }
 
             handleRenameDialogClose(): void {
@@ -318,7 +343,7 @@ const PresetSelector =
                                 onChange={(e, extra) => this.handleChange(e, extra)}
                                 onClose={(e) => this.handleSelectClose(e)}
                                 displayEmpty
-                                value={presets.selectedInstanceId === 0? '' : presets.selectedInstanceId}
+                                value={presets.selectedInstanceId === 0 ? '' : presets.selectedInstanceId}
                                 inputProps={{
                                     classes: { icon: classes.icon },
                                     'aria-label': "Select preset"
@@ -339,13 +364,13 @@ const PresetSelector =
                                 }
                             </Select>
                         </div>
-                        <div style={{ flex: "0 0 auto"}}>
+                        <div style={{ flex: "0 0 auto" }}>
                             <IconButtonEx
                                 tooltip="More..."
-                                style={{ flex: "0 0 auto",  color: "#FFFFFF" }}
+                                style={{ flex: "0 0 auto", color: "#FFFFFF" }}
                                 onClick={(e) => this.handlePresetMenuClick(e)}
                                 size="large"
-                                >
+                            >
                                 <MoreVertIcon style={{ opacity: 0.75 }} color="inherit" />
                             </IconButtonEx>
                             <Menu
@@ -358,6 +383,7 @@ const PresetSelector =
                                 <MenuItem onClick={(e) => this.handlePresetsMenuSave(e)}>Save preset</MenuItem>
                                 <MenuItem onClick={(e) => this.handlePresetsMenuSaveAs(e)}>Save preset as...</MenuItem>
                                 <MenuItem onClick={(e) => this.handlePresetsMenuRename(e)}>Rename...</MenuItem>
+                                <MenuItem onClick={(e) => this.handlePresetsMenuImport(e)}>Import from bank...</MenuItem>
                                 <MenuItem onClick={(e) => this.handlePresetsMenuNew(e)}>New...</MenuItem>
                                 <Divider />
                                 <MenuItem onClick={(e) => { this.handleDownloadPreset(e); }} >Download preset</MenuItem>
@@ -366,7 +392,23 @@ const PresetSelector =
                                 <MenuItem onClick={(e) => this.handleMenuEditPresets()}>Manage presets...</MenuItem>
                             </Menu>
                         </div>
-                        <PresetDialog show={this.state.showPresetsDialog} isEditDialog={this.state.showEditPresetsDialog} onDialogClose={() => this.handleDialogClose()} />
+                        <PresetDialog show={this.state.showPresetsDialog} isEditDialog={this.state.showEditPresetsDialog} onDialogClose={() => this.handleDialogClose()}
+                        />
+                        {this.state.saveAsDialogOpen && (
+                            <SavePresetAsDialog open={this.state.saveAsDialogOpen}
+                                defaultName={presets.getItem(presets.selectedInstanceId)?.name ?? "My Preset"}
+                                onClose={() => { this.setState({ saveAsDialogOpen: false }) }}
+                                onOk={(bankInstanceId, name) => {
+                                    this.handleSaveAsDialogOk(bankInstanceId, name);
+                                }} />
+                        )}
+                        {this.state.importDialogOpen && (
+                            <ImportPresetFromBankDialog open={this.state.importDialogOpen}
+                                onClose={() => { this.setState({ importDialogOpen: false }) }}
+                                onOk={(bankInstanceId, presets) => {
+                                    this.handleImportDialogOk(bankInstanceId, presets);
+                                }} />
+                        )}
                         <RenameDialog open={this.state.renameDialogOpen}
                             title={this.state.renameDialogTitle}
                             defaultName={this.state.renameDialogDefaultName}
@@ -387,6 +429,6 @@ const PresetSelector =
 
             }
         },
-    styles);
+        styles);
 
 export default PresetSelector;

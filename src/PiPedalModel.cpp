@@ -887,7 +887,7 @@ int64_t PiPedalModel::SavePluginPresetAs(int64_t instanceId, const std::string &
     return presetId;
 }
 
-int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, const std::string &name, int64_t saveAfterInstanceId)
+int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, int64_t bankInstanceId,const std::string &name, int64_t saveAfterInstanceId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
@@ -897,7 +897,7 @@ int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, const std::string &n
 
     UpdateVst3Settings(pedalboard);
     pedalboard.name(name);
-    int64_t result = storage.SaveCurrentPresetAs(pedalboard, name, saveAfterInstanceId);
+    int64_t result = storage.SaveCurrentPresetAs(pedalboard, bankInstanceId, name, saveAfterInstanceId);
     FirePresetsChanged(clientId);
     return result;
 }
@@ -3256,4 +3256,24 @@ void PiPedalModel::SetTone3000Auth(const std::string &apiKey)
 bool PiPedalModel::HasTone3000Auth() const
 {
     return storage.GetTone3000Auth() != "";
+}
+
+std::vector<PresetIndexEntry> PiPedalModel::RequestBankPresets(int64_t bankInstanceId)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    return storage.RequestBankPresets(bankInstanceId);
+
+}
+
+int64_t PiPedalModel::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    uint64_t lastAdded =  storage.ImportPresetsFromBank(bankInstanceId, presets);
+    if (lastAdded != -1) {
+
+    }
+    FirePresetsChanged(-1);
+    return lastAdded;
+
 }

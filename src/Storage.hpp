@@ -149,7 +149,7 @@ public:
     int64_t GetBankByMidiBankNumber(uint8_t bankNumber);
     const Pedalboard& GetCurrentPreset();
     void SaveCurrentPreset(const Pedalboard&pedalboard);
-    int64_t SaveCurrentPresetAs(const Pedalboard&pedalboard, const std::string&namne,int64_t saveAfterInstanceId = -1);
+    int64_t SaveCurrentPresetAs(const Pedalboard&pedalboard, int64_t bankInstanceId,const std::string&namne,int64_t saveAfterInstanceId = -1);
     int64_t GetCurrentPresetId() const;
     
     void GetPresetIndex(PresetIndex*pResult);
@@ -268,6 +268,10 @@ public:
     void LoadTone3000Auth();
     void SetTone3000Auth(const std::string&apiKey);
     std::string GetTone3000Auth() const;
+
+    std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
+    int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
+
 };
 
 

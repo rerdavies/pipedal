@@ -378,8 +378,9 @@ namespace pipedal
         int64_t UploadPreset(const BankFile &bankFile, int64_t uploadAfter = -1);
         void UploadPluginPresets(const PluginPresets &pluginPresets);
         void SaveCurrentPreset(int64_t clientId);
-        int64_t SaveCurrentPresetAs(int64_t clientId, const std::string &name, int64_t saveAfterInstanceId = -1);
+        int64_t SaveCurrentPresetAs(int64_t clientId, int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId = -1);
         int64_t SavePluginPresetAs(int64_t instanceId, const std::string &name);
+
 
         void LoadPreset(int64_t clientId, int64_t instanceId);
         bool UpdatePresets(int64_t clientId, const PresetIndex &presets);
@@ -493,6 +494,8 @@ namespace pipedal
 
         void SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedalboardId);
 
+        std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
+        int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
     };
 
 } // namespace pipedal.

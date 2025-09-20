@@ -46,6 +46,27 @@
 using namespace std;
 using namespace pipedal;
 
+
+class ImportPresetsFromBankBody {
+    public: 
+    int64_t bankInstanceId_;
+    std::vector<int64_t> presets_;
+    DECLARE_JSON_MAP(ImportPresetsFromBankBody);
+};
+JSON_MAP_BEGIN(ImportPresetsFromBankBody)
+JSON_MAP_REFERENCE(ImportPresetsFromBankBody, bankInstanceId)
+JSON_MAP_REFERENCE(ImportPresetsFromBankBody, presets)
+JSON_MAP_END()
+
+class RequestBankPresetsBody {
+public:
+    int64_t bankInstanceId_;
+    DECLARE_JSON_MAP(RequestBankPresetsBody);
+};
+JSON_MAP_BEGIN(RequestBankPresetsBody)
+JSON_MAP_REFERENCE(RequestBankPresetsBody, bankInstanceId)
+JSON_MAP_END()
+
 class PathPatchPropertyChangedBody
 {
 public:
@@ -336,6 +357,7 @@ class SaveCurrentPresetAsBody
 {
 public:
     int64_t clientId_ = -1;
+    int64_t bankInstanceId_ = -1;
     std::string name_;
     int64_t saveAfterInstanceId_ = -1;
 
@@ -343,6 +365,7 @@ public:
 };
 JSON_MAP_BEGIN(SaveCurrentPresetAsBody)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, clientId)
+JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, bankInstanceId)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, name)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, saveAfterInstanceId)
 JSON_MAP_END()
@@ -1314,7 +1337,7 @@ public:
         {
             SaveCurrentPresetAsBody body;
             pReader->read(&body);
-            int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.name_, body.saveAfterInstanceId_);
+            int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.bankInstanceId_,body.name_, body.saveAfterInstanceId_);
             Reply(replyTo, "saveCurrentPresetsAs", result);
         }
         else if (message == "setSelectedPedalboardPlugin")
@@ -1794,6 +1817,19 @@ public:
         {
             std::vector<AlsaSequencerPortSelection> result = model.GetAlsaSequencerPorts();
             this->Reply(replyTo,"getAlsaSequencerPorts", result);
+        } else if (message == "requestBankPresets") {
+            
+            RequestBankPresetsBody    args;
+            pReader->read(&args);
+            auto result = this->model.RequestBankPresets(args.bankInstanceId_);
+            this->Reply(replyTo,"requestBankPresets",result);
+
+        }
+        else if (message == "importPresetsFromBank") {
+            ImportPresetsFromBankBody args;
+            pReader->read(&args);
+            auto result = this->model.ImportPresetsFromBank(args.bankInstanceId_, args.presets_);
+            this->Reply(replyTo,"importPresetsFromBank",result);
         }
         else
         {

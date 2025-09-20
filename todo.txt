@@ -1,9 +1,4 @@
-
-double select on double-click/ok in file dialog.
-sudo apt install libbz2-dev
-
-README, license files in file browser.
-
+Did we fix  Toob Tremolo stereo harmonic?
 
 
 ls 
