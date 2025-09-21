@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run a CMake build.
+# Run a Clean Production CMake build.
 
 set -e
 
@@ -13,4 +13,6 @@ cmake .. -D CMAKE_BUILD_TYPE=Release  -D CMAKE_VERBOSE_MAKEFILE=ON -G Ninja
 cd ..
 
 time cmake --build ./build --target all  --config Release -- -j 3
+
+./makePackage.sh
 

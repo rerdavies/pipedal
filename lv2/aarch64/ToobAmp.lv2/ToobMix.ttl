@@ -40,7 +40,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 70 ;
+        lv2:microVersion 71 ;
         rdfs:comment """
 Remix a stereo input signal.
 
