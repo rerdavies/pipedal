@@ -4,13 +4,13 @@
 
 ### Major Features in This Build
 
-- New TooB Tremolo plugin. Normal and harmonic tremolo in mono and stereo versions. Harmonic tremolo is tremolo variant that modultes the amplitude of high-frequency and low-frequency in opposite phase. It follows the led of many classic and modern Fender amps, which also provide harmonic tremolo. Stereo harmonic tremolo is particularly smooth and pretty.
+- **New TooB Tremolo plugin**. Normal and harmonic tremolo in mono and stereo versions. Harmonic tremolo is a tremolo variant that modulates the amplitude of high-frequency and low-frequency content in opposite phase. It follows the lead of many classic and modern Fender amps, which also provide harmonic tremolo. Stereo harmonic tremolo is particularly smooth and pleasant.
 
-- Colored plugin icons. Tap on the title of the plugin in the middle toolbar to edit the display name of the plugin, and choose a color for the icon. 
+- **Colored plugin icons**. Tap on the title of the plugin in the middle toolbar to edit the display name of the plugin and choose a color for the icon. 
 
-- Tools for copying presets between banks. You can now import presets from another bank using the Presets menu found at the top of the main screen; or you can import presets from another bank, or export presets in the current bank to another bank, using menu commands found in the "Manage Presets" dialog. 
+- **Tools for copying presets between banks**. You can now import presets from another bank using the Presets menu found at the top of the main screen, or you can import presets from another bank, or export presets from the current bank to another bank, using menu commands found in the "Manage Presets" dialog. 
 
-- Multi-select in the Manage Presets dialog makes it easier to perform bulk exports to another bank, or delete multiple plugins. To select multiple presets when using a mouse press the Ctrl key, and click on presets to toggle selection; or press the Shift key and click on a preset to select all presets from the last selected to the newly selected preset. On touch devices, long-press on a preset (without dragging) in order to  to start multi-select action mode (an Android touch-UI convention of sorts); then tap on individual presets to toggle selection.
+- **Multi-select in the Manage Presets dialog** makes it easier to perform bulk exports to another bank or delete multiple presets. To select multiple presets when using a mouse, press the Ctrl key and click on presets to toggle selection, or press the Shift key and click on a preset to select all presets from the last selected to the newly selected preset. On touch devices, long-press on a preset (without dragging) to start multi-select action mode (an Android touch-UI convention), then tap on individual presets to toggle selection.
 
 ### Bug fixes
 
