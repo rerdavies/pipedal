@@ -79,7 +79,7 @@ parametric_eq:hfGroup
 
 <http://two-play.com/plugins/toob-parametric-eq>
         a lv2:Plugin ,
-                lv2:EQPlugin  ;
+                lv2:ParaEQPlugin  ;
         doap:name "TooB Parametric EQ" ,
                 "TooB Parametric EQ"@en-gb 
                 ;
@@ -87,7 +87,7 @@ parametric_eq:hfGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 70 ;
+        lv2:microVersion 71 ;
 
         uiext:ui <http://two-play.com/plugins/toob-parametric-eq-ui>;                
 
