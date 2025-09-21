@@ -1174,12 +1174,12 @@ int64_t PiPedalModel::DeleteBank(int64_t clientId, int64_t instanceId)
     return newSelection;
 }
 
-int64_t PiPedalModel::DeletePreset(int64_t clientId, int64_t instanceId)
+int64_t PiPedalModel::DeletePresets(int64_t clientId, const std::vector<int64_t> &presetInstanceIds)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
     int64_t oldSelection = storage.GetCurrentPresetId();
-    int64_t newSelection = storage.DeletePreset(instanceId);
-    this->FirePresetsChanged(clientId); // fire now.
+    int64_t newSelection = storage.DeletePresets(presetInstanceIds);
+    this->FirePresetsChanged(clientId); // fire BEFORE we load a new preset.
     if (oldSelection != newSelection)
     {
         this->LoadPreset(
@@ -3270,10 +3270,15 @@ int64_t PiPedalModel::ImportPresetsFromBank(int64_t bankInstanceId, const std::v
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     uint64_t lastAdded =  storage.ImportPresetsFromBank(bankInstanceId, presets);
-    if (lastAdded != -1) {
 
-    }
     FirePresetsChanged(-1);
+    return lastAdded;
+
+}
+int64_t PiPedalModel::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    uint64_t lastAdded =  storage.CopyPresetsToBank(bankInstanceId, presets);
     return lastAdded;
 
 }

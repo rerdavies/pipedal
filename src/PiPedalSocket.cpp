@@ -46,6 +46,17 @@
 using namespace std;
 using namespace pipedal;
 
+class CopyPresetsToBankBody {
+    public: 
+    int64_t bankInstanceId_;
+    std::vector<int64_t> presets_;
+    DECLARE_JSON_MAP(CopyPresetsToBankBody);
+};
+JSON_MAP_BEGIN(CopyPresetsToBankBody)
+JSON_MAP_REFERENCE(CopyPresetsToBankBody, bankInstanceId)
+JSON_MAP_REFERENCE(CopyPresetsToBankBody, presets)
+JSON_MAP_END()
+
 
 class ImportPresetsFromBankBody {
     public: 
@@ -1470,12 +1481,12 @@ public:
             model.RequestShutdown(true);
             this->Reply(replyTo, "restart");
         }
-        else if (message == "deletePresetItem")
+        else if (message == "deletePresetItems")
         {
-            int64_t instanceId = 0;
-            pReader->read(&instanceId);
-            int64_t result = model.DeletePreset(this->clientId, instanceId);
-            this->Reply(replyTo, "deletePresetItem", result);
+            std::vector<int64_t> items;
+            pReader->read(&items);
+            int64_t result = model.DeletePresets(this->clientId, items);
+            this->Reply(replyTo, "deletePresetItems", result);
         }
         else if (message == "deleteBankItem")
         {
@@ -1830,6 +1841,12 @@ public:
             pReader->read(&args);
             auto result = this->model.ImportPresetsFromBank(args.bankInstanceId_, args.presets_);
             this->Reply(replyTo,"importPresetsFromBank",result);
+        }
+        else if (message == "copyPresetsToBank") {
+            CopyPresetsToBankBody args;
+            pReader->read(&args);
+            auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
+            this->Reply(replyTo,"copyPresetsToBank",result);
         }
         else
         {

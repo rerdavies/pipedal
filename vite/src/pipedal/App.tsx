@@ -39,6 +39,12 @@ declare module '@mui/material/styles' {
         mainBackground?: React.CSSProperties['color'];
         toolbarColor?: React.CSSProperties['color'];
     }
+    interface Palette {
+        actionBar: Palette['primary'];
+    }
+    interface PaletteOptions {
+        actionBar: PaletteOptions['primary'];
+    }
 
 }
 
@@ -143,7 +149,12 @@ const theme = createTheme(
                 },
                 secondary: {
                     main: "#FF6060"
+                },
+                actionBar: {
+                    main: '#130b22ff',
+                    contrastText: '#FFFFFF'
                 }
+
             },
             mainBackground: "#222",
             toolbarColor: '#222'
@@ -209,7 +220,13 @@ const theme = createTheme(
                 },
                 secondary: {
                     main: "#FF6060"
+                },
+                actionBar: {
+                    main: '#130b22ff',
+                    contrastText: '#FFFFFF'
                 }
+
+
 
             },
             mainBackground: "#FFFFFF",

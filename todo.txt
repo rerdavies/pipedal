@@ -1,4 +1,3 @@
-Did we fix  Toob Tremolo stereo harmonic?
 
 
 ls 

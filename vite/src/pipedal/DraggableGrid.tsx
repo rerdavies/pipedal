@@ -82,7 +82,7 @@ export interface DraggableGridProps
 
     defaultSelectedIndex?: number;
 
-    onLongPress?: (itemIndex: number) => void;
+    onLongPress?: (event: PointerEvent<HTMLDivElement>, itemIndex: number) => void;
 
     canDrag?: boolean;
 
@@ -209,7 +209,7 @@ const DraggableGrid =
             }
 
             bringSelectedItemIntoView() {
-                if (this.state.indexToSelect && this.state.indexToSelect >= 0)
+                if (this.state.indexToSelect !== undefined && this.state.indexToSelect >= 0)
                 {
                     let grid = this.refGrid.current;
                     if (grid)
@@ -295,6 +295,7 @@ const DraggableGrid =
             startClientX: number = 0;
             startClientY: number = 0;
             dragStarted: boolean = false;
+            dragThresholdWasExceeded: boolean = false;
             savedIndex: string = "";
             savedBackground: string = "";
             lastPointerDown: number = 0;
@@ -529,6 +530,11 @@ const DraggableGrid =
                         if (this.startIndex !== this.currentIndex) {
                             this.props.moveElement(this.startIndex, this.currentIndex);
                         }
+                        if (!this.dragThresholdWasExceeded) {
+                            if (this.props.onLongPress) {
+                                this.props.onLongPress(e,this.startIndex);
+                            }
+                        }
                     }
                     this.cancelDrag();
                 }
@@ -693,6 +699,7 @@ const DraggableGrid =
                     ///window.addEventListener("touchstart",this.handleTouchStart, {passive: false});
 
                     this.dragStarted = false;
+                    this.dragThresholdWasExceeded = false;
                     this.startX = e.clientX;
                     this.startY = e.clientY;
                     this.startClientX = e.clientX;
@@ -756,8 +763,11 @@ const DraggableGrid =
 
             handlePointerMove(e: PointerEvent<HTMLDivElement>): boolean {
                 if (this.isCapturedPointer(e)) {
-                    if (!this.dragStarted && this.dragThresholdExceeded(e)) {
-                        this.startDrag();
+                    if (this.dragThresholdExceeded(e)) {
+                        if (!this.dragStarted) {
+                            this.startDrag();
+                        }
+                        this.dragThresholdWasExceeded = true;
                     }
                     if (this.dragStarted) {
                         this.lastX = e.clientX;

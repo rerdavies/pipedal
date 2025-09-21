@@ -228,7 +228,11 @@ namespace pipedal
                     {
                         newSelection = presets_[i]->instanceId();
                     }
-                    else if (presets_.size() > 1)
+                    else if (i == presets_.size() && i != 0) {
+                        newSelection = presets_[i-1]->instanceId();
+
+                    }
+                    else if (presets_.size() >= 1)
                     {
                         newSelection = presets_[0]->instanceId();
                     }

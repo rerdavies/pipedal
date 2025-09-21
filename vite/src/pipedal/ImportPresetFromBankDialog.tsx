@@ -158,44 +158,78 @@ export default class ImportPresetFromBankDialog extends ResizeResponsiveComponen
                 onEnterKey={() => { }}
             >
                 <div style={{ display: "flex", flexFlow: "column nowrap", height: this.state.fullScreen ? "100vh" : "80vh" }}>
-                    {!this.state.fullScreen && (
-                        <DialogTitle style={{ paddingTop: 8, paddingBottom: 0 }}>
-                            <Toolbar style={{ padding: 0 }}>
-                                <IconButtonEx
-                                    tooltip="Close"
-                                    edge="start"
-                                    color="inherit"
-                                    aria-label="cancel"
-                                    style={{ opacity: 0.6 }}
-                                    onClick={() => { onClose(); }}
-                                >
-                                    <ArrowBackIcon style={{ width: 24, height: 24 }} />
-                                </IconButtonEx>
+                    {!this.state.fullScreen ? (
+                        <>
+                            <DialogTitle style={{ paddingTop: 8, paddingBottom: 0 }}>
+                                <Toolbar style={{ padding: 0 }}>
+                                    <IconButtonEx
+                                        tooltip="Close"
+                                        edge="start"
+                                        color="inherit"
+                                        aria-label="cancel"
+                                        style={{ opacity: 0.6 }}
+                                        onClick={() => { onClose(); }}
+                                    >
+                                        <ArrowBackIcon style={{ width: 24, height: 24 }} />
+                                    </IconButtonEx>
 
-                                <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
-                                    Import Presets from Bank
-                                </Typography>
+                                    <Typography noWrap component="div" sx={{ flexGrow: 1 }}>
+                                        Import Presets from Bank
+                                    </Typography>
 
-                            </Toolbar>
-                        </DialogTitle>
+                                </Toolbar>
+                            </DialogTitle>
+                            <DialogContent style={{ flex: "0 0 auto", paddingTop: 8, paddingBottom: 8, }}>
+                                <InputLabel style={{ fontSize: "0.75rem", fontWeight: 400, marginTop: 0 }}>Bank</InputLabel>
+
+                                <Select variant="standard" fullWidth value={this.state.selectedBank} style={{ marginBottom: 8 }}
+                                    onChange={(e) => { this.handleBankChanged(e.target.value as number); }}>
+                                    {this.state.banks.map((bankEntry) => {
+                                        return (
+                                            <MenuItem key={bankEntry.instanceId} value={bankEntry.instanceId}
+                                                selected={bankEntry.instanceId === this.state.selectedBank}
+                                            >
+                                                {bankEntry.name}
+                                            </MenuItem>
+                                        );
+                                    })}
+                                </Select>
+                            </DialogContent>
+                        </>
+                    ) : (
+                        <div style={{ display: "flex", flexFlow: "row nowrap", alignItems: "top", flex: "0 0 auto", paddingTop: 8, paddingBottom: 8, paddingLeft: 16, paddingRight: 16 }}>
+                            <IconButtonEx
+                                tooltip="Close"
+                                edge="start"
+                                color="inherit"
+                                aria-label="cancel"
+                                style={{ opacity: 0.6 }}
+                                onClick={() => { onClose(); }}
+                            >
+                                <ArrowBackIcon style={{ width: 24, height: 24 }} />
+                            </IconButtonEx>
+
+                            <div style={{ marginLeft: 24, display: "flex", flex: "0 0 auto", flexFlow: "column nowrap", justifyContent: "start" }}>
+                                <InputLabel style={{ fontSize: "0.75rem", fontWeight: 400, marginTop: 0 }}>Bank</InputLabel>
+
+                                <Select variant="standard" fullWidth value={this.state.selectedBank} style={{ marginBottom: 8 }}
+                                    onChange={(e) => { this.handleBankChanged(e.target.value as number); }}>
+                                    {this.state.banks.map((bankEntry) => {
+                                        return (
+                                            <MenuItem key={bankEntry.instanceId} value={bankEntry.instanceId}
+                                                selected={bankEntry.instanceId === this.state.selectedBank}
+                                            >
+                                                {bankEntry.name}
+                                            </MenuItem>
+                                        );
+                                    })}
+                                </Select>
+                            </div>
+                        </div>
+
+
                     )}
 
-                    <DialogContent style={{ flex: "0 0 auto", paddingTop: 8, paddingBottom: 8, }}>
-                        <InputLabel style={{ fontSize: "0.75rem", fontWeight: 400, marginTop: 0 }}>Bank</InputLabel>
-
-                        <Select variant="standard" fullWidth value={this.state.selectedBank} style={{ marginBottom: 8 }}
-                            onChange={(e) => { this.handleBankChanged(e.target.value as number); }}>
-                            {this.state.banks.map((bankEntry) => {
-                                return (
-                                    <MenuItem key={bankEntry.instanceId} value={bankEntry.instanceId}
-                                        selected={bankEntry.instanceId === this.state.selectedBank}
-                                    >
-                                        {bankEntry.name}
-                                    </MenuItem>
-                                );
-                            })}
-                        </Select>
-                    </DialogContent>
                     <Divider />
                     <List sx={{ flex: "1 1 auto", width: '100%', bgColor: 'background.paper', overflowX: 'auto' }}>
                         {this.state.bankPresets?.map((presetEntry) => {
@@ -242,7 +276,7 @@ export default class ImportPresetFromBankDialog extends ResizeResponsiveComponen
                         </Button>
                     </DialogActions>
                 </div>
-            </DialogEx>
+            </DialogEx >
         );
     }
 }

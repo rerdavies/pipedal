@@ -30,7 +30,6 @@ import { PiPedalModel, PiPedalModelFactory, PresetIndex } from './PiPedalModel';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButtonEx from './IconButtonEx';
-import AppBar from '@mui/material/AppBar';
 import SnapshotPanel from './SnapshotPanel';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -250,7 +249,6 @@ export const PerformanceView =
 
             render() {
                 const classes = withStyles.getClasses(this.props);
-                let wrapSelects = this.state.wrapSelects;
                 let presets = this.state.presets;
                 let banks = this.state.banks;
                 let appBarIconSize: "large" | undefined = this.state.largeAppBar ? undefined : "large";

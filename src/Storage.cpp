@@ -764,6 +764,35 @@ int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector
     SaveCurrentBank();
     return lastPresetId;
 }
+int64_t Storage::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+{
+    if (bankIndex.selectedBank() == bankInstanceId) {
+        throw std::runtime_error("Can't copy to self.");
+    }
+
+    auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
+    BankFile bankFile;
+    LoadBankFile(indexEntry.name(),&bankFile);
+
+    std::set<int64_t> presetsSet { presets.begin(), presets.end()};
+
+    std::set<std::string> existingNames;
+
+    for (auto&preset: bankFile.presets()) {
+        existingNames.insert(preset->preset().name());
+    }
+    for (auto &presetEntry: this->currentBank.presets()) {
+        if (presetsSet.contains(presetEntry->instanceId())) {
+            std::string uniqueName = makeUniqueName(presetEntry->preset().name(),existingNames);
+            existingNames.insert(uniqueName);
+            Pedalboard t = presetEntry->preset();
+            t.name(uniqueName);
+            bankFile.addPreset(t);
+        }
+    }
+    SaveBankFile(indexEntry.name(),bankFile);
+    return -1;
+}
 
 std::vector<PresetIndexEntry> Storage::RequestBankPresets(int64_t bankInstanceId)
 {
@@ -852,9 +881,12 @@ Pedalboard Storage::GetPreset(int64_t instanceId) const
     throw PiPedalException("Not found.");
 }
 
-int64_t Storage::DeletePreset(int64_t presetId)
+int64_t Storage::DeletePresets(const std::vector<int64_t> &presetInstanceIds)
 {
-    int64_t newSelection = currentBank.deletePreset(presetId);
+    int64_t newSelection = currentBank.selectedPreset();
+    for (auto presetId: presetInstanceIds) {
+        newSelection = currentBank.deletePreset(presetId);
+    }
     SaveCurrentBank();
     return newSelection;
 }

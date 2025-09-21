@@ -162,7 +162,7 @@ public:
 
     
     bool LoadPreset(int64_t presetId);
-    int64_t DeletePreset(int64_t presetId);
+    int64_t DeletePresets(const std::vector<int64_t>& presetInstanceIds);
     bool RenamePreset(int64_t presetId, const std::string&name);
     int64_t CopyPreset(int64_t fromId, int64_t toId = -1);
     int64_t CreateNewPreset();
@@ -271,6 +271,7 @@ public:
 
     std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
     int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
+    int64_t CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
 
 };
 

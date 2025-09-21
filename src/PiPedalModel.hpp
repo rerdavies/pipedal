@@ -385,7 +385,7 @@ namespace pipedal
         void LoadPreset(int64_t clientId, int64_t instanceId);
         bool UpdatePresets(int64_t clientId, const PresetIndex &presets);
         void UpdatePluginPresets(const PluginUiPresets &pluginPresets);
-        int64_t DeletePreset(int64_t clientId, int64_t instanceId);
+        int64_t DeletePresets(int64_t clientId, const std::vector<int64_t> &presetInstanceIds);
         bool RenamePreset(int64_t clientId, int64_t instanceId, const std::string &name);
         int64_t CopyPreset(int64_t clientId, int64_t fromIndex, int64_t toIndex);
         uint64_t CopyPluginPreset(const std::string &pluginUri, uint64_t presetId);
@@ -496,6 +496,7 @@ namespace pipedal
 
         std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
         int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
+        int64_t CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
     };
 
 } // namespace pipedal.

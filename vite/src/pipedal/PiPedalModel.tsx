@@ -2192,8 +2192,8 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    deletePresetItem(instanceId: number): Promise<number> {
-        return nullCast(this.webSocket).request<number>("deletePresetItem", instanceId);
+    deletePresetItems(instanceIds: Set<number>): Promise<number> {
+        return nullCast(this.webSocket).request<number>("deletePresetItems", Array.from(instanceIds));
 
     }
     deleteBankItem(instanceId: number): Promise<number> {
@@ -3548,6 +3548,9 @@ export class PiPedalModel //implements PiPedalModel
 
     importPresetsFromBank(bankInstanceId: number, presets: number[]): Promise<number> {
         return nullCast(this.webSocket).request<number>("importPresetsFromBank", {bankInstanceId: bankInstanceId, presets: presets});
+    }
+    copyPresetsToBank(bankInstanceId: number, presets: number[]): Promise<number> {
+        return nullCast(this.webSocket).request<number>("copyPresetsToBank", {bankInstanceId: bankInstanceId, presets: presets});
     }
 };
 
