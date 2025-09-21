@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E. R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -136,7 +136,16 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                         autoFocus={!isTouchUi()}
                         onKeyDown={handleKeyDown}
                         variant="standard"
+                        autoComplete="off"
+                        autoCorrect="on"
+                        autoCapitalize="on"
+                        spellCheck={false}
+                        
                         slotProps={{
+                            inputLabel: {
+                                shrink: true
+                            },
+
                             input: {
                                 style: { scrollMargin: 24 }
                             }

@@ -1,10 +1,4 @@
 
-double select on double-click/ok in file dialog.
-sudo apt install libbz2-dev
-
-README, license files in file browser.
-
-
 
 ls 
 Carla Project icons.

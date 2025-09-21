@@ -810,6 +810,7 @@ namespace pipedal
             AutoLilvNode pipedalUI__xLeft;
             AutoLilvNode pipedalUI__xRight;
             AutoLilvNode pipedalUI__xLog;
+            AutoLilvNode pipedalUI__yDb;
             AutoLilvNode pipedalUI__yTop;
             AutoLilvNode pipedalUI__yBottom;
             AutoLilvNode pipedalUI__width;

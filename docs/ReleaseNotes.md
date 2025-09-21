@@ -1,5 +1,26 @@
 # Release Notes
 
+## PiPedal 1.5.93 Release
+
+### Major Features in This Build
+
+- **New TooB Tremolo plugin**. Normal and harmonic tremolo in mono and stereo versions. Harmonic tremolo is a tremolo variant that modulates the amplitude of high-frequency and low-frequency content in opposite phase. It follows the lead of many classic and modern Fender amps, which also provide harmonic tremolo. Stereo harmonic tremolo is particularly smooth and pleasant.
+
+- **Colored plugin icons**. Tap on the title of the plugin in the middle toolbar to edit the display name of the plugin and choose a color for the icon. 
+
+- **Tools for copying presets between banks**. You can now import presets from another bank using the Presets menu found at the top of the main screen, or you can import presets from another bank, or export presets from the current bank to another bank, using menu commands found in the "Manage Presets" dialog. 
+
+- **Multi-select in the Manage Presets dialog** makes it easier to perform bulk exports to another bank or delete multiple presets. To select multiple presets when using a mouse, press the Ctrl key and click on presets to toggle selection, or press the Shift key and click on a preset to select all presets from the last selected to the newly selected preset. On touch devices, long-press on a preset (without dragging) to start multi-select action mode (an Android touch-UI convention), then tap on individual presets to toggle selection.
+
+### Bug fixes
+
+- several bugs relating to the new Factory Presets bank: preset amp model files were not getting properly installed; one preset used an amp model that is not included in factory installed presets. And a new preset showing off the new TooB Tremolo plugin has been added.
+
+- pipedal_config will no longer accept the --port option without also specifying the --install option. (It used to silently fail).
+
+- pipedal_latency_test now provides instructions on how to enable missing real-time scheduling permissions for non-root users. 
+
+
 ## PiPedal 1.5.92 Release
 
 ### Major Features in This Build

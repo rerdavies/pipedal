@@ -491,6 +491,9 @@ export class PiPedalModel //implements PiPedalModel
     webSocket?: PiPedalSocket;
 
 
+    static getInstance(): PiPedalModel {
+        return PiPedalModelFactory.getInstance();
+    }
     hasTone3000Auth: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
 
     canKeepScreenOn: boolean = false;
@@ -2046,13 +2049,14 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    saveCurrentPresetAs(newName: string, saveAfterInstanceId = -1): Promise<number> {
+    saveCurrentPresetAs(bankInstanceId: number, newName: string, saveAfterInstanceId = -1): Promise<number> {
         // default behaviour is to save after the currently selected preset.
         if (saveAfterInstanceId === -1) {
             saveAfterInstanceId = this.presets.get().selectedInstanceId;
         }
         let request: any = {
             clientId: this.clientId,
+            bankInstanceId: bankInstanceId,
             name: newName,
             saveAfterInstanceId: saveAfterInstanceId
 
@@ -2061,7 +2065,9 @@ export class PiPedalModel //implements PiPedalModel
         return nullCast(this.webSocket)
             .request<number>("saveCurrentPresetAs", request)
             .then((newPresetId) => {
-                this.loadPreset(newPresetId);
+                if (bankInstanceId === this.banks.get().selectedBank) {
+                    this.loadPreset(newPresetId);
+                }
                 return newPresetId;
             });
     }
@@ -2186,8 +2192,8 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    deletePresetItem(instanceId: number): Promise<number> {
-        return nullCast(this.webSocket).request<number>("deletePresetItem", instanceId);
+    deletePresetItems(instanceIds: Set<number>): Promise<number> {
+        return nullCast(this.webSocket).request<number>("deletePresetItems", Array.from(instanceIds));
 
     }
     deleteBankItem(instanceId: number): Promise<number> {
@@ -3376,9 +3382,9 @@ export class PiPedalModel //implements PiPedalModel
                 this.cancelOnNetworkChanging();
             },
             30 * 1000);
-
     }
-    setPedalboardItemTitle(instanceId: number, title: string): void {
+
+    setPedalboardItemTitle(instanceId: number, title: string, iconColor: string): void {
         let pedalboard = this.pedalboard.get();
         if (!pedalboard) {
             throw new PiPedalStateError("Pedalboard not loaded.");
@@ -3386,13 +3392,14 @@ export class PiPedalModel //implements PiPedalModel
         let newPedalboard = pedalboard.clone();
         this.updateVst3State(newPedalboard);
         let item = newPedalboard.getItem(instanceId);
-        if (item.title === title) {
+        if (item.title === title && item.iconColor === iconColor) {
             return;
         }
         item.title = title;
+        item.iconColor = iconColor;
         this.pedalboard.set(newPedalboard);
         // notify the server.
-        this.webSocket?.send("setPedalboardItemTitle", { instanceId: instanceId, title: title });
+        this.webSocket?.send("setPedalboardItemTitle", { instanceId: instanceId, title: title, colorKey: iconColor });
     }
     setAlsaSequencerConfiguration(alsaSequencerConfiguration: AlsaSequencerConfiguration): void {
         this.webSocket?.send("setAlsaSequencerConfiguration", alsaSequencerConfiguration);
@@ -3534,6 +3541,16 @@ export class PiPedalModel //implements PiPedalModel
         // notify the server.
         this.webSocket?.send("setSelectedPedalboardPlugin", { clientId: this.clientId, pluginInstanceId: pluginId });
 
+    }
+    requestBankPresets(bankInstanceId: number): Promise<PresetIndexEntry[]> {
+        return nullCast(this.webSocket).request<PresetIndexEntry[]>("requestBankPresets", {bankInstanceId: bankInstanceId});
+    }   
+
+    importPresetsFromBank(bankInstanceId: number, presets: number[]): Promise<number> {
+        return nullCast(this.webSocket).request<number>("importPresetsFromBank", {bankInstanceId: bankInstanceId, presets: presets});
+    }
+    copyPresetsToBank(bankInstanceId: number, presets: number[]): Promise<number> {
+        return nullCast(this.webSocket).request<number>("copyPresetsToBank", {bankInstanceId: bankInstanceId, presets: presets});
     }
 };
 

@@ -106,6 +106,14 @@
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobMix.ttl> .
 
+<http://two-play.com/plugins/toob-tremolo> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobTremolo.ttl> .
+
+<http://two-play.com/plugins/toob-tremolo-mono> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobTremoloMono.ttl> .
+
 <http://two-play.com/plugins/toob-player> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobPlayer.ttl> .

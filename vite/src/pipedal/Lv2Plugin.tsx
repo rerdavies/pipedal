@@ -223,6 +223,7 @@ export class UiFrequencyPlot {
         this.xLeft = input.xLeft;
         this.xRight = input.xRight;
         this.xLog = input.xLog;
+        this.yDb = input.yDb;
         this.yTop = input.yTop;
         this.yBottom = input.yBottom;
         this.width = input.width;
@@ -242,6 +243,7 @@ export class UiFrequencyPlot {
     xLeft: number = -1;
     xRight: number = -1;
     xLog: boolean = true;
+    yDb: boolean = true;
     yTop: number = -1;
     yBottom: number = -1;
     width: number = -1;

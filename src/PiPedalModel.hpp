@@ -378,13 +378,14 @@ namespace pipedal
         int64_t UploadPreset(const BankFile &bankFile, int64_t uploadAfter = -1);
         void UploadPluginPresets(const PluginPresets &pluginPresets);
         void SaveCurrentPreset(int64_t clientId);
-        int64_t SaveCurrentPresetAs(int64_t clientId, const std::string &name, int64_t saveAfterInstanceId = -1);
+        int64_t SaveCurrentPresetAs(int64_t clientId, int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId = -1);
         int64_t SavePluginPresetAs(int64_t instanceId, const std::string &name);
+
 
         void LoadPreset(int64_t clientId, int64_t instanceId);
         bool UpdatePresets(int64_t clientId, const PresetIndex &presets);
         void UpdatePluginPresets(const PluginUiPresets &pluginPresets);
-        int64_t DeletePreset(int64_t clientId, int64_t instanceId);
+        int64_t DeletePresets(int64_t clientId, const std::vector<int64_t> &presetInstanceIds);
         bool RenamePreset(int64_t clientId, int64_t instanceId, const std::string &name);
         int64_t CopyPreset(int64_t clientId, int64_t fromIndex, int64_t toIndex);
         uint64_t CopyPluginPreset(const std::string &pluginUri, uint64_t presetId);
@@ -486,13 +487,16 @@ namespace pipedal
             int32_t from, 
             int32_t to);
 
-        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title);
+        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title, const std::string&iconColor);
 
         void SetTone3000Auth(const std::string &apiKey);
         bool HasTone3000Auth() const;
 
         void SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedalboardId);
 
+        std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
+        int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
+        int64_t CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
     };
 
 } // namespace pipedal.

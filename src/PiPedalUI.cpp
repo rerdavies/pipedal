@@ -538,7 +538,8 @@ UiFrequencyPlot::UiFrequencyPlot(PluginHost*pHost, const LilvNode*node,
     this->xRight_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__xRight,22000);
     this->yTop_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__yTop,5);
     this->yBottom_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__yBottom,-35);
-    this->xLog_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__xLog,-35);
+    this->xLog_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__xLog,1);
+    this->yDb_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__yDb,1);
     this->width_ = GetFloat(pWorld,node,pHost->lilvUris->pipedalUI__width,176);
 }
 
@@ -727,6 +728,7 @@ JSON_MAP_REFERENCE(UiFrequencyPlot, portGroup)
 JSON_MAP_REFERENCE(UiFrequencyPlot, xLeft)
 JSON_MAP_REFERENCE(UiFrequencyPlot, xRight)
 JSON_MAP_REFERENCE(UiFrequencyPlot, xLog)
+JSON_MAP_REFERENCE(UiFrequencyPlot, yDb)
 JSON_MAP_REFERENCE(UiFrequencyPlot, yTop)
 JSON_MAP_REFERENCE(UiFrequencyPlot, yBottom)
 JSON_MAP_REFERENCE(UiFrequencyPlot, width)

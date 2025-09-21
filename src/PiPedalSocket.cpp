@@ -46,6 +46,38 @@
 using namespace std;
 using namespace pipedal;
 
+class CopyPresetsToBankBody {
+    public: 
+    int64_t bankInstanceId_;
+    std::vector<int64_t> presets_;
+    DECLARE_JSON_MAP(CopyPresetsToBankBody);
+};
+JSON_MAP_BEGIN(CopyPresetsToBankBody)
+JSON_MAP_REFERENCE(CopyPresetsToBankBody, bankInstanceId)
+JSON_MAP_REFERENCE(CopyPresetsToBankBody, presets)
+JSON_MAP_END()
+
+
+class ImportPresetsFromBankBody {
+    public: 
+    int64_t bankInstanceId_;
+    std::vector<int64_t> presets_;
+    DECLARE_JSON_MAP(ImportPresetsFromBankBody);
+};
+JSON_MAP_BEGIN(ImportPresetsFromBankBody)
+JSON_MAP_REFERENCE(ImportPresetsFromBankBody, bankInstanceId)
+JSON_MAP_REFERENCE(ImportPresetsFromBankBody, presets)
+JSON_MAP_END()
+
+class RequestBankPresetsBody {
+public:
+    int64_t bankInstanceId_;
+    DECLARE_JSON_MAP(RequestBankPresetsBody);
+};
+JSON_MAP_BEGIN(RequestBankPresetsBody)
+JSON_MAP_REFERENCE(RequestBankPresetsBody, bankInstanceId)
+JSON_MAP_END()
+
 class PathPatchPropertyChangedBody
 {
 public:
@@ -179,12 +211,14 @@ class SetPedalboardItemTitleBody
 public:
     uint64_t instanceId_;
     std::string title_;
+    std::string colorKey_;
     DECLARE_JSON_MAP(SetPedalboardItemTitleBody);
 };
 
 JSON_MAP_BEGIN(SetPedalboardItemTitleBody)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, instanceId)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, title)
+JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, colorKey)
 JSON_MAP_END()
 
 
@@ -334,6 +368,7 @@ class SaveCurrentPresetAsBody
 {
 public:
     int64_t clientId_ = -1;
+    int64_t bankInstanceId_ = -1;
     std::string name_;
     int64_t saveAfterInstanceId_ = -1;
 
@@ -341,6 +376,7 @@ public:
 };
 JSON_MAP_BEGIN(SaveCurrentPresetAsBody)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, clientId)
+JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, bankInstanceId)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, name)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, saveAfterInstanceId)
 JSON_MAP_END()
@@ -1312,7 +1348,7 @@ public:
         {
             SaveCurrentPresetAsBody body;
             pReader->read(&body);
-            int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.name_, body.saveAfterInstanceId_);
+            int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.bankInstanceId_,body.name_, body.saveAfterInstanceId_);
             Reply(replyTo, "saveCurrentPresetsAs", result);
         }
         else if (message == "setSelectedPedalboardPlugin")
@@ -1445,12 +1481,12 @@ public:
             model.RequestShutdown(true);
             this->Reply(replyTo, "restart");
         }
-        else if (message == "deletePresetItem")
+        else if (message == "deletePresetItems")
         {
-            int64_t instanceId = 0;
-            pReader->read(&instanceId);
-            int64_t result = model.DeletePreset(this->clientId, instanceId);
-            this->Reply(replyTo, "deletePresetItem", result);
+            std::vector<int64_t> items;
+            pReader->read(&items);
+            int64_t result = model.DeletePresets(this->clientId, items);
+            this->Reply(replyTo, "deletePresetItems", result);
         }
         else if (message == "deleteBankItem")
         {
@@ -1569,7 +1605,7 @@ public:
         {
             SetPedalboardItemTitleBody body;
             pReader->read(&body);
-            model.SetPedalboardItemTitle(body.instanceId_, body.title_);
+            model.SetPedalboardItemTitle(body.instanceId_, body.title_, body.colorKey_);
         }
         else if (message == "getPatchProperty")
         {
@@ -1792,6 +1828,25 @@ public:
         {
             std::vector<AlsaSequencerPortSelection> result = model.GetAlsaSequencerPorts();
             this->Reply(replyTo,"getAlsaSequencerPorts", result);
+        } else if (message == "requestBankPresets") {
+            
+            RequestBankPresetsBody    args;
+            pReader->read(&args);
+            auto result = this->model.RequestBankPresets(args.bankInstanceId_);
+            this->Reply(replyTo,"requestBankPresets",result);
+
+        }
+        else if (message == "importPresetsFromBank") {
+            ImportPresetsFromBankBody args;
+            pReader->read(&args);
+            auto result = this->model.ImportPresetsFromBank(args.bankInstanceId_, args.presets_);
+            this->Reply(replyTo,"importPresetsFromBank",result);
+        }
+        else if (message == "copyPresetsToBank") {
+            CopyPresetsToBankBody args;
+            pReader->read(&args);
+            auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
+            this->Reply(replyTo,"copyPresetsToBank",result);
         }
         else
         {

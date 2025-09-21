@@ -307,7 +307,7 @@ const PluginControl =
                 e.stopPropagation();
             }
 
-            isValidPointer(e: PointerEvent<SVGSVGElement>): boolean {
+            isValidPointer(e: PointerEvent): boolean {
                 if (e.pointerType === "mouse") {
                     return e.button === 0;
                 } else if (e.pointerType === "pen") {
@@ -347,7 +347,7 @@ const PluginControl =
             pointerId: number = 0;
             pointerType: string = "";
 
-            isCapturedPointer(e: PointerEvent<SVGSVGElement>): boolean {
+            isCapturedPointer(e: PointerEvent): boolean {
                 return this.mouseDown
                     && e.pointerId === this.pointerId
                     && e.pointerType === this.pointerType;
@@ -361,7 +361,7 @@ const PluginControl =
             pointersDown: number = 0;
             captureElement?: SVGSVGElement = undefined;
 
-            onPointerDown(e: PointerEvent<SVGSVGElement>): void {
+            onPointerDown(e: PointerEvent): void {
                 if (!this.mouseDown && this.isValidPointer(e)) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -387,7 +387,7 @@ const PluginControl =
                     this.mouseDown = true;
                     if (this.pointersDown === 1) {
                         this.isTap = true;
-                        this.tapStartMs = Date.now();
+                        this.tapStartMs = e.timeStamp;
                     } else {
                         this.isTap = false;
                     }
@@ -429,7 +429,7 @@ const PluginControl =
 
             }
 
-            onPointerLostCapture(e: PointerEvent<SVGSVGElement>) {
+            onPointerLostCapture(e: PointerEvent) {
                 if (this.isCapturedPointer(e)) {
                     if (this.pointersDown !== 0) {
                         --this.pointersDown;
@@ -442,7 +442,7 @@ const PluginControl =
 
             }
 
-            updateRange(e: PointerEvent<SVGSVGElement>): number {
+            updateRange(e: PointerEvent): number {
 
                 let ultraHigh = false;
                 let high = false;
@@ -486,9 +486,11 @@ const PluginControl =
                     }
                 }
             }
-            onPointerTap() {
-                let tapTime = Date.now();
+            onPointerTap(e: PointerEvent) {
+                let tapTime = e.timeStamp;
                 let dT = tapTime - this.lastTapMs;
+
+                
                 this.lastTapMs = tapTime;
 
                 if (dT < 500) {
@@ -497,7 +499,7 @@ const PluginControl =
             }
             private tapStartMs: number = 0;
 
-            onPointerUp(e: PointerEvent<SVGSVGElement>) {
+            onPointerUp(e: PointerEvent) {
 
                 if (this.isCapturedPointer(e)) {
                     if (this.pointersDown !== 0) {
@@ -514,9 +516,9 @@ const PluginControl =
 
                     this.releaseCapture(e);
                     if (this.isTap) {
-                        let ms = Date.now() - this.tapStartMs;
+                        let ms = e.timeStamp - this.tapStartMs;
                         if (ms < 200) {
-                            this.onPointerTap();
+                            this.onPointerTap(e);
                         }
                     }
                     // prevent click from firing on other elements 
@@ -531,7 +533,7 @@ const PluginControl =
                 }
             }
 
-            releaseCapture(e: PointerEvent<SVGSVGElement>) {
+            releaseCapture(e: PointerEvent) {
                 let img = this.imgRef.current;
 
                 if (img && img.style) {
@@ -556,7 +558,7 @@ const PluginControl =
             clickSlop() {
                 return 5;  // maybe larger on touch devices.
             }
-            onPointerMove(e: PointerEvent<SVGSVGElement>): void {
+            onPointerMove(e: PointerEvent): void {
                 if (this.isCapturedPointer(e)) {
                     e.preventDefault();
                     let dRange = this.updateRange(e)
@@ -1138,7 +1140,7 @@ const PluginControl =
                 );
             }
             /*
-            isSamePointer(PointerEvent<SVGSVGElement> e): boolean
+            isSamePointer(PointerEvent e): boolean
             {
                 return e.pointerId === this.pointerId
                     && e.pointerType === this.pointerType;

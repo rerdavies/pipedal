@@ -225,7 +225,6 @@ static void CopyDirectory(const std::filesystem::path &source, const std::filesy
     }
 }
 
-
 void Storage::MaybeCopyDefaultPresets()
 {
     auto presetsDirectory = this->GetPresetsDirectory();
@@ -239,13 +238,17 @@ void Storage::MaybeCopyDefaultPresets()
 }
 
 static void removeFileNoThrow(const std::filesystem::path &path)
-{ 
-    try {
+{
+    try
+    {
         fs::remove(path);
-    } catch (const std::exception&) 
+    }
+    catch (const std::exception &)
     {
     }
 }
+
+
 void Storage::UpgradeFactoryPresets()
 {
     auto presetsDirectory = this->GetPresetsDirectory();
@@ -520,7 +523,6 @@ void Storage::SavePluginPresetIndex()
     }
 }
 
-
 void Storage::SaveBankIndex()
 {
     pipedal::ofstream_synced os;
@@ -653,16 +655,161 @@ void Storage::SaveCurrentPreset(const Pedalboard &pedalboard)
     item.preset(pedalboard);
     SaveCurrentBank();
 }
-int64_t Storage::SaveCurrentPresetAs(const Pedalboard &pedalboard, const std::string &name, int64_t saveAfterInstanceId)
+int64_t Storage::SaveCurrentPresetAs(const Pedalboard &pedalboard, int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId)
 {
     Pedalboard newPedalboard = pedalboard;
     newPedalboard.name(name);
 
-    int64_t newInstanceId = currentBank.addPreset(newPedalboard, saveAfterInstanceId);
-    currentBank.selectedPreset(newInstanceId);
-    SaveCurrentBank();
-    return newInstanceId;
+    if (bankInstanceId == this->bankIndex.selectedBank())
+    {
+        int64_t newInstanceId = currentBank.addPreset(newPedalboard, saveAfterInstanceId);
+        currentBank.selectedPreset(newInstanceId);
+        SaveCurrentBank();
+        return newInstanceId;
+    }
+    else
+    {
+        auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
+
+        try
+        {
+            BankFile bankFile;
+            LoadBankFile(indexEntry.name(), &(bankFile));
+            int64_t newInstanceId = bankFile.addPreset(newPedalboard, -1);
+            SaveBankFile(indexEntry.name(), bankFile);
+            return -1;
+        }
+        catch (const std::exception &e)
+        {
+            throw std::logic_error(SS("Bank file corrupted. " << e.what() << "(" << GetBankFileName(indexEntry.name()) << ")"));
+        }
+    }
 }
+
+static std::string stripNumericSuffix(const std::string &name) {
+    // remove (digit*) from the end of the string.
+    // Find the last '(' character
+    size_t pos = name.find_last_of('(');
+    if (pos == std::string::npos) {
+        return name;
+    }
+
+    // Check if everything between '(' and ')' is digits
+    size_t len = name.length()-1;
+    if (name[len] != ')') 
+    {
+        return name;
+    }
+    bool allDigits = true;
+    for (size_t i = pos + 1; i < len - 1; ++i) {
+        if (name[i] < '0' || name[i] > '9') {
+            allDigits = false;
+            break;
+        }
+    }
+
+    if (!allDigits) {
+        return name;
+    }
+
+    // Remove trailing spaces before the '('
+    while (pos > 0 && name[pos - 1] == ' ') {
+        --pos;
+    }
+
+    return name.substr(0, pos);
+}
+static std::string makeUniqueName(const std::string &name, const std::set<std::string>&existingNames)
+{
+    if (!existingNames.contains(name))
+    {
+        return name;
+    }
+    std::string baseName = stripNumericSuffix(name);
+
+    size_t i = 2;
+    while (true) {
+        std::string newName = SS(baseName << " (" << i << ")");
+        if (!existingNames.contains(newName)) {
+            return newName;
+        }
+        ++i;
+    }
+}
+int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+{
+    if (bankIndex.selectedBank() == bankInstanceId) {
+        throw std::runtime_error("Can't import to self.");
+    }
+    std::set<int64_t> presetsSet { presets.begin(), presets.end()};
+    auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
+
+    std::set<std::string> existingNames;
+
+    for (auto&preset: this->currentBank.presets()) {
+        existingNames.insert(preset->preset().name());
+    }
+    BankFile bankFile;
+    LoadBankFile(indexEntry.name(),&bankFile);
+    int64_t lastPresetId = -1;
+    for (auto &presetEntry: bankFile.presets()) {
+        if (presetsSet.contains(presetEntry->instanceId())) {
+            std::string uniqueName = makeUniqueName(presetEntry->preset().name(),existingNames);
+            existingNames.insert(uniqueName);
+            Pedalboard t = presetEntry->preset();
+            t.name(uniqueName);
+            lastPresetId = this->currentBank.addPreset(t);
+        }
+    }
+    SaveCurrentBank();
+    return lastPresetId;
+}
+int64_t Storage::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+{
+    if (bankIndex.selectedBank() == bankInstanceId) {
+        throw std::runtime_error("Can't copy to self.");
+    }
+
+    auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
+    BankFile bankFile;
+    LoadBankFile(indexEntry.name(),&bankFile);
+
+    std::set<int64_t> presetsSet { presets.begin(), presets.end()};
+
+    std::set<std::string> existingNames;
+
+    for (auto&preset: bankFile.presets()) {
+        existingNames.insert(preset->preset().name());
+    }
+    for (auto &presetEntry: this->currentBank.presets()) {
+        if (presetsSet.contains(presetEntry->instanceId())) {
+            std::string uniqueName = makeUniqueName(presetEntry->preset().name(),existingNames);
+            existingNames.insert(uniqueName);
+            Pedalboard t = presetEntry->preset();
+            t.name(uniqueName);
+            bankFile.addPreset(t);
+        }
+    }
+    SaveBankFile(indexEntry.name(),bankFile);
+    return -1;
+}
+
+std::vector<PresetIndexEntry> Storage::RequestBankPresets(int64_t bankInstanceId)
+{
+    auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
+
+    std::vector<PresetIndexEntry> result;
+    BankFile bankFile;
+    LoadBankFile(indexEntry.name(),&bankFile);
+    for (auto &preset: bankFile.presets()) {
+        result.push_back(
+            PresetIndexEntry(preset->instanceId(),preset->preset().name())
+        );
+    }
+    return result;
+}
+
+
 
 void Storage::SetPresetIndex(const PresetIndex &presets)
 {
@@ -734,9 +881,12 @@ Pedalboard Storage::GetPreset(int64_t instanceId) const
     throw PiPedalException("Not found.");
 }
 
-int64_t Storage::DeletePreset(int64_t presetId)
+int64_t Storage::DeletePresets(const std::vector<int64_t> &presetInstanceIds)
 {
-    int64_t newSelection = currentBank.deletePreset(presetId);
+    int64_t newSelection = currentBank.selectedPreset();
+    for (auto presetId: presetInstanceIds) {
+        newSelection = currentBank.deletePreset(presetId);
+    }
     SaveCurrentBank();
     return newSelection;
 }
@@ -826,25 +976,30 @@ int64_t Storage::CreateNewPreset()
         }
     }
     newPedalboard.name(name);
-    return this->currentBank.addPreset(newPedalboard, -1);
+    auto t =  this->currentBank.addPreset(newPedalboard, -1);
+    SaveCurrentBank();
+    return t;
 }
 
 int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
 {
     auto &fromItem = this->currentBank.getItem(fromId);
+    int64_t result;
     if (toId == -1)
     {
         Pedalboard newPedalboard = fromItem.preset();
         std::string name = GetPresetCopyName(fromItem.preset().name());
         newPedalboard.name(name);
-        return this->currentBank.addPreset(newPedalboard, fromId);
+        result = this->currentBank.addPreset(newPedalboard, fromId);
     }
     else
     {
         auto &toItem = this->currentBank.getItem(toId);
         toItem.preset(fromItem.preset());
-        return toId;
+        result =  toId;
     }
+    SaveCurrentBank();
+    return result;
 }
 
 void Storage::SetJackChannelSelection(const JackChannelSelection &channelSelection)
@@ -2860,6 +3015,7 @@ std::string Storage::FromAbstractPathJson(const std::string &pathJson)
 
     return v.to_string();
 }
+
 
 JSON_MAP_BEGIN(UserSettings)
 JSON_MAP_REFERENCE(UserSettings, governor)

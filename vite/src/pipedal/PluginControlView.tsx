@@ -477,6 +477,7 @@ const PluginControlView =
                 return ((
                     <ToobFrequencyResponseView instanceId={this.props.instanceId}
                         propertyName={frequencyPlot.patchProperty}
+                        frequencyPlot={frequencyPlot}
                         width={frequencyPlot.width}
                     />
                 ));

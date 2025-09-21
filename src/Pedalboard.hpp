@@ -106,6 +106,7 @@ public:
     std::map<std::string,std::string> pathProperties_;
     std::string title_;
     bool useModUi_ = false;
+    std::string iconColor_;
 
     // non persistent state.
     PropertyMap patchProperties;
@@ -135,6 +136,7 @@ public:
     GETTER_SETTER(stateUpdateCount)
     GETTER_SETTER_REF(lv2State)
     GETTER_SETTER_REF(title)
+    GETTER_SETTER_REF(iconColor)
     GETTER_SETTER(useModUi)
     
     Lv2PluginState&lv2State() { return lv2State_; } // non-const version.
@@ -232,7 +234,7 @@ public:
     static constexpr int64_t INPUT_VOLUME_ID = -2; // synthetic PedalboardItem for input volume.
     static constexpr int64_t OUTPUT_VOLUME_ID = -3; // synthetic PedalboardItem for output volume.
     bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
-    bool SetItemTitle(int64_t pedalItemId, const std::string &title);
+    bool SetItemTitle(int64_t pedalItemId, const std::string &title, const std::string&iconColor);
     bool SetItemEnabled(int64_t pedalItemId, bool enabled);
     bool SetItemUseModUi(int64_t pedalItemId, bool enabled);
     void  SetCurrentSnapshotModified(bool modified);
