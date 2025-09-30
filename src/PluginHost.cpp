@@ -121,6 +121,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     enumeration_property_uri = lilv_new_uri(pWorld, LV2_CORE__enumeration);
     core__toggled = lilv_new_uri(pWorld, LV2_CORE__toggled);
     core__connectionOptional = lilv_new_uri(pWorld, LV2_CORE__connectionOptional);
+    core__isSideChain = lilv_new_uri(pWorld, LV2_CORE_PREFIX "isSideChain"); // missing in lv2.h
     portprops__not_on_gui_property_uri = lilv_new_uri(pWorld, LV2_PORT_PROPS__notOnGUI);
     portprops__trigger = lilv_new_uri(pWorld, LV2_PORT_PROPS__trigger);
     midi__event = lilv_new_uri(pWorld, LV2_MIDI__MidiEvent);
@@ -134,6 +135,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
 
     atom__bufferType = lilv_new_uri(pWorld, LV2_ATOM__bufferType);
     atom__Path = lilv_new_uri(pWorld, LV2_ATOM__Path);
+    atom__String = lilv_new_uri(pWorld, LV2_ATOM__String);
     presets__preset = lilv_new_uri(pWorld, LV2_PRESETS__Preset);
     state__state = lilv_new_uri(pWorld, LV2_STATE__state);
     rdfs__label = lilv_new_uri(pWorld, LILV_NS_RDFS "label");
@@ -214,6 +216,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     buf_size__maxBlockLength = lilv_new_uri(pWorld, LV2_BUF_SIZE__maxBlockLength);
     buf_size__fixedBlockLength = lilv_new_uri(pWorld, LV2_BUF_SIZE__fixedBlockLength);
     buf_size__coarseBlockLength = lilv_new_uri(pWorld, LV2_BUF_SIZE__coarseBlockLength);
+    port_groups__sideChainOf = lilv_new_uri(pWorld, LV2_PORT_GROUPS__sideChainOf);
 
 
 }
@@ -794,7 +797,12 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                 }
                 else
                 {
-                    unsupportedPatchProperty = true;
+                    if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->rdfs__range, lv2Host->lilvUris->atom__String))
+                    {
+                        
+                    } else {
+                        unsupportedPatchProperty = true;
+                    }
                 }
             }
         }
@@ -945,6 +953,60 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
 
 
     std::sort(ports_.begin(), ports_.end(), ports_sort_compare);
+
+
+    // Check the portgroup for audio inputs to see if they are sidechains.
+    std::string last_sidechain_title;
+    for (auto&port: this->ports_)
+    {
+        if (port->is_audio_port() && port->is_input()) {
+            if (!port->port_group().empty())
+            {
+                for (auto &pg: this->port_groups_)  
+                {
+                    if (pg->uri() == port->port_group())
+                    {
+                        if (!pg->sideChainOf().empty())
+                        {
+                            port->is_sidechain(true);
+                            audio_sidechain_title_ = pg->name();
+                            if (last_sidechain_title.empty()) {
+                                last_sidechain_title = pg->name();
+                            }
+                            else if (last_sidechain_title != pg->name()) {
+                                // multiple sidechain titles!
+                                isValid = false;
+                                Lv2Log::debug("Plugin %s (%s) has multiple sidechain titles (%s and %s).", 
+                                    this->name_.c_str(), 
+                                    this->uri_.c_str(),
+                                    last_sidechain_title.c_str(), 
+                                    pg->name().c_str());
+                            }   
+                        }
+                        break;
+                    }
+                }
+            } else {
+                if (port->is_sidechain()) {
+                    // port is marked as sidechain, but has no port group.
+                    if (last_sidechain_title.empty())
+                    {
+                        last_sidechain_title = port->name();
+                        this->audio_sidechain_title_ = port->name();
+                    }
+                    else if (last_sidechain_title != port->name()) {
+                        isValid = false;
+                        Lv2Log::debug("Plugin %s (%s) has multiple sidechain ports, but no portgroup. (%s)", 
+                            this->name_.c_str(), 
+                            this->uri_.c_str(),
+                            port->name().c_str());
+                    }
+                }   
+            }
+
+        }        
+    }
+
     // Fetch patch properties.
     {
         AutoLilvNodes patchWritables = lilv_world_find_nodes(pWorld, plugUri, lv2Host->lilvUris->patch__writable, nullptr);
@@ -1034,17 +1096,28 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
     }
 
     int nInputs = 0;
+    int nSideChains = 0;
     for (size_t i = 0; i < ports_.size(); ++i)
     {
         auto port = ports_[i];
         if (port->is_audio_port() && port->is_input())
         {
-            if (nInputs >= 2 && !port->connection_optional())
-            {
-                isValid = false;
-                break;
+            if (!port->is_sidechain()) {
+                if (nInputs >= 2)
+                {
+                    isValid = false;
+                    Lv2Log::debug("Plugin %s (%s) has more than 2 audio inputs.", this->name_.c_str(), this->uri_.c_str());
+                    break;
+                }
+                ++nInputs;
+            } else {
+                if (nSideChains >= 2) {
+                    Lv2Log::debug("Plugin %s (%s) has more than 2 audio sidechain inputs.", this->name_.c_str(), this->uri_.c_str());
+                    isValid = false;
+                    break;
+                }
+                ++nSideChains;
             }
-            ++nInputs;
         }
     }
     int nOutputs = 0;
@@ -1199,6 +1272,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     this->not_on_gui_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__not_on_gui_property_uri);
     this->connection_optional_ = lilv_port_has_property(plugin, pPort, host->lilvUris->core__connectionOptional);
     this->trigger_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__trigger);
+    this->is_sidechain_ = lilv_port_has_property(plugin,pPort,host->lilvUris->core__isSideChain);
 
     AutoLilvNode port_ledColor = lilv_port_get(plugin, pPort, host->lilvUris->pipedalUI__ledColor);
     if (port_ledColor)
@@ -1402,7 +1476,12 @@ Lv2PluginUiInfo::Lv2PluginUiInfo(PluginHost *pHost, const Lv2PluginInfo *plugin)
             }
             else if (port->is_audio_port())
             {
-                ++audio_inputs_;
+                if (port->is_sidechain()) {
+                    // sidechain outputs don't count.
+                    ++audio_side_chain_inputs_;
+                } else {
+                    ++audio_inputs_;
+                }
             }
         }
         else if (port->is_output())
@@ -1918,12 +1997,29 @@ Lv2PortGroup::Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri)
 {
     LilvWorld *pWorld = lv2Host->pWorld;
 
+    // Enumerate all Lilv nodes for groupUri that have an 'a' predicate
+
     this->uri_ = groupUri;
     AutoLilvNode uri = lilv_new_uri(pWorld, groupUri.c_str());
+
+
+    AutoLilvNode aPredicate = lilv_new_uri(pWorld, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+
+    AutoLilvNodes types = lilv_world_find_nodes(pWorld, uri, aPredicate, nullptr);
+    LILV_FOREACH(nodes, iNode, types)
+    {
+        AutoLilvNode typeNode = lilv_nodes_get(types, iNode);
+        std::string typeUri = nodeAsString(typeNode);
+        this->isA_.push_back(std::move(typeUri));
+    }
+
+
     AutoLilvNode symbolNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->lv2core__symbol, nullptr);
     symbol_ = nodeAsString(symbolNode);
     AutoLilvNode nameNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->lv2core__name, nullptr);
     name_ = nodeAsString(nameNode);
+    AutoLilvNode sideChainOfNode = lilv_world_get(pWorld, uri, lv2Host->lilvUris->port_groups__sideChainOf, nullptr);
+    sideChainOf_ = nodeAsString(sideChainOfNode);
 }
 
 bool Lv2PluginInfo::isSplit() const
@@ -2187,6 +2283,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
 
      json_map::reference("is_input", &Lv2PortInfo::is_input_),
      json_map::reference("is_output", &Lv2PortInfo::is_output_),
+     json_map::reference("is_sidechain", &Lv2PortInfo::is_sidechain_),
 
      json_map::reference("is_control_port", &Lv2PortInfo::is_control_port_),
      json_map::reference("is_audio_port", &Lv2PortInfo::is_audio_port_),
@@ -2226,7 +2323,11 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      
 
 json_map::storage_type<Lv2PortGroup> Lv2PortGroup::jmap{{
+    MAP_REF(Lv2PortGroup, isA),
     MAP_REF(Lv2PortGroup, uri),
+    MAP_REF(Lv2PortGroup, name),
+    MAP_REF(Lv2PortGroup, symbol),
+    MAP_REF(Lv2PortGroup, sideChainOf),
 
 }};
 
@@ -2281,6 +2382,7 @@ json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
     json_map::reference("name", &Lv2PluginUiPort::name_),
     MAP_REF(Lv2PluginUiPort, index),
     MAP_REF(Lv2PluginUiPort, is_input),
+    MAP_REF(Lv2PluginUiPort, is_sidechain),
     MAP_REF(Lv2PluginUiPort, min_value),
     MAP_REF(Lv2PluginUiPort, max_value),
     MAP_REF(Lv2PluginUiPort, default_value),
@@ -2324,7 +2426,9 @@ json_map::storage_type<Lv2PluginUiInfo>
             json_map::reference("author_name", &Lv2PluginUiInfo::author_name_),
             json_map::reference("author_homepage", &Lv2PluginUiInfo::author_homepage_),
             json_map::reference("audio_inputs", &Lv2PluginUiInfo::audio_inputs_),
+            json_map::reference("audio_side_chain_inputs", &Lv2PluginUiInfo::audio_side_chain_inputs_),
             json_map::reference("audio_outputs", &Lv2PluginUiInfo::audio_outputs_),
+            json_map::reference("audio_side_chain_title", &Lv2PluginUiInfo::audio_side_chain_title_),
             json_map::reference("description", &Lv2PluginUiInfo::description_),
             json_map::reference("has_midi_input", &Lv2PluginUiInfo::has_midi_input_),
             json_map::reference("has_midi_output", &Lv2PluginUiInfo::has_midi_output_),

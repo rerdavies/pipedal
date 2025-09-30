@@ -33,7 +33,7 @@
 #include <set>
 #include "ModGui.hpp"
 
-//#include "lv2.h"
+// #include "lv2.h"
 #include "Units.hpp"
 #include "PluginPreset.hpp"
 
@@ -206,6 +206,7 @@ namespace pipedal
 
         bool is_control_port_ = false;
         bool is_audio_port_ = false;
+        bool is_sidechain_ = false;
         bool is_atom_port_ = false;
         bool is_cv_port_ = false;
         bool connection_optional_ = false;
@@ -287,6 +288,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(is_output);
         LV2_PROPERTY_GETSET_SCALAR(is_control_port);
         LV2_PROPERTY_GETSET_SCALAR(is_audio_port);
+        LV2_PROPERTY_GETSET_SCALAR(is_sidechain);
         LV2_PROPERTY_GETSET_SCALAR(is_atom_port);
         LV2_PROPERTY_GETSET_SCALAR(connection_optional);
         LV2_PROPERTY_GETSET_SCALAR(is_cv_port);
@@ -321,7 +323,6 @@ namespace pipedal
             return Lv2BufferType::Unknown;
         }
 
-
     public:
         Lv2PortInfo() {}
         ~Lv2PortInfo() = default;
@@ -330,7 +331,8 @@ namespace pipedal
         static json_map::storage_type<Lv2PortInfo> jmap;
     };
 
-    class Lv2PatchPropertyInfo {
+    class Lv2PatchPropertyInfo
+    {
 
     private:
         std::string uri_;
@@ -343,9 +345,10 @@ namespace pipedal
         std::string shortName_;
         std::vector<std::string> fileTypes_;
         std::vector<std::string> supportedExtensions_;
+
     public:
         Lv2PatchPropertyInfo() {}
-        Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNode *propertyUri); 
+        Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNode *propertyUri);
 
         LV2_PROPERTY_GETSET(uri);
         LV2_PROPERTY_GETSET(writable);
@@ -359,21 +362,24 @@ namespace pipedal
         LV2_PROPERTY_GETSET(supportedExtensions);
 
         DECLARE_JSON_MAP(Lv2PatchPropertyInfo);
-
     };
 
     class Lv2PortGroup
     {
     private:
+        std::vector<std::string> isA_;
         std::string uri_;
         std::string symbol_;
         std::string name_;
+        std::string sideChainOf_;
 
     public:
+        LV2_PROPERTY_GETSET(isA);
         LV2_PROPERTY_GETSET(uri);
         LV2_PROPERTY_GETSET(symbol);
         LV2_PROPERTY_GETSET(name);
-
+        LV2_PROPERTY_GETSET(sideChainOf);
+        
         Lv2PortGroup() {}
         Lv2PortGroup(PluginHost *lv2Host, const std::string &groupUri);
 
@@ -389,10 +395,11 @@ namespace pipedal
         using ptr = std::shared_ptr<Lv2PluginInfo>;
         Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvPlugin *);
         Lv2PluginInfo() {}
-        bool isSplit() const ;
+        bool isSplit() const;
 
     private:
-        struct FindWritablePathPropertiesResult {
+        struct FindWritablePathPropertiesResult
+        {
             std::shared_ptr<PiPedalUI> pipedalUi;
             bool hasUnsupportedPatchProperties = false;
         };
@@ -406,7 +413,7 @@ namespace pipedal
         std::string name_;
         std::string plugin_class_;
         std::string brand_;
-        std::string label_;        
+        std::string label_;
         std::vector<std::string> supported_features_;
         std::vector<std::string> required_features_;
         std::vector<std::string> optional_features_;
@@ -420,9 +427,9 @@ namespace pipedal
         std::vector<std::shared_ptr<Lv2PortInfo>> ports_;
         std::vector<std::shared_ptr<Lv2PortGroup>> port_groups_;
         std::vector<Lv2PatchPropertyInfo> patchProperties_;
-
+        std::string audio_sidechain_title_;
         bool hasDefaultState_;
-        
+
         bool is_valid_ = false;
         PiPedalUI::ptr piPedalUI_;
         ModGui::ptr modGui_;
@@ -463,6 +470,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(minBlockLength)
         LV2_PROPERTY_GETSET(maxBlockLength)
         LV2_PROPERTY_GETSET(powerOf2BlockLength)
+        LV2_PROPERTY_GETSET(audio_sidechain_title)
 
         bool WantsWorkerThread() const;
 
@@ -529,9 +537,11 @@ namespace pipedal
     class Lv2PluginUiPortGroup
     {
     private:
+        std::vector<std::string> isA_;
         std::string uri_;
         std::string symbol_;
         std::string name_;
+        std::string sideChainOf_;
 
         std::string parent_group_;
         int32_t program_list_id_ = -1; // used by VST3.
@@ -546,9 +556,7 @@ namespace pipedal
     public:
         Lv2PluginUiPortGroup() {}
         Lv2PluginUiPortGroup(Lv2PortGroup *pPortGroup)
-            : symbol_(pPortGroup->symbol())
-            , name_(pPortGroup->name())
-            , uri_(pPortGroup->uri())
+            : isA_(pPortGroup->isA()), symbol_(pPortGroup->symbol()), name_(pPortGroup->name()), uri_(pPortGroup->uri()), sideChainOf_(pPortGroup->sideChainOf())
         {
         }
         Lv2PluginUiPortGroup(
@@ -570,14 +578,18 @@ namespace pipedal
         }
         Lv2PluginUiPort(const Lv2PluginInfo *pPlugin, const Lv2PortInfo *pPort)
             : symbol_(pPort->symbol()), index_(pPort->index()),
-              is_input_(pPort->is_input()), name_(pPort->name()), min_value_(pPort->min_value()), max_value_(pPort->max_value()),
+              is_input_(pPort->is_input()),
+              is_sidechain_(pPort->is_sidechain()),
+              name_(pPort->name()),
+              min_value_(pPort->min_value()),
+              max_value_(pPort->max_value()),
               default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()),
-              is_logarithmic_(pPort->is_logarithmic()), 
-              integer_property_(pPort->integer_property()), 
+              is_logarithmic_(pPort->is_logarithmic()),
+              integer_property_(pPort->integer_property()),
               mod_momentaryOffByDefault_(pPort->mod_momentaryOffByDefault()),
               mod_momentaryOnByDefault_(pPort->mod_momentaryOnByDefault()),
               pipedal_graphicEq_(pPort->pipedal_graphicEq()),
-              
+
               enumeration_property_(pPort->enumeration_property()),
               toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()),
               trigger_property_(pPort->trigger_property()),
@@ -606,7 +618,7 @@ namespace pipedal
                     }
                 }
             }
-            is_bypass_ = 
+            is_bypass_ =
                 pPort->is_bypass() ||
                 name_ == "bypass" || name_ == "Bypass" || symbol_ == "bypass" || symbol_ == "Bypass";
         }
@@ -616,6 +628,7 @@ namespace pipedal
         int index_;
         std::string name_;
         bool is_input_ = true;
+        bool is_sidechain_ = false;
         float min_value_ = 0, max_value_ = 1, default_value_ = 0;
         bool is_logarithmic_ = false;
         int display_priority_ = -1;
@@ -682,7 +695,8 @@ namespace pipedal
         std::string uri_;
         std::string name_;
         uint32_t minorVersion_ = 0;
-        uint32_t microVersion_ = 0;;
+        uint32_t microVersion_ = 0;
+        ;
         std::string brand_;
         std::string label_;
         std::string author_name_;
@@ -690,11 +704,16 @@ namespace pipedal
         PluginType plugin_type_;
         std::string plugin_display_type_;
         int audio_inputs_ = 0;
+        int audio_side_chain_inputs_ = 0;
         int audio_outputs_ = 0;
+        std::string audio_side_chain_title_;
         int has_midi_input_ = false;
         int has_midi_output_ = false;
         std::string description_;
         bool is_vst3_ = false;
+
+        int64_t side_chain_input_id = -1;
+
 
         std::vector<Lv2PluginUiPort> controls_;
         std::vector<Lv2PluginUiPortGroup> port_groups_;
@@ -703,7 +722,6 @@ namespace pipedal
         std::vector<UiPortNotification::ptr> uiPortNotifications_;
         ModGui::ptr modGui_;
         std::vector<Lv2PatchPropertyInfo> patchProperties_;
-
 
     public:
         LV2_PROPERTY_GETSET(uri)
@@ -718,6 +736,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(plugin_display_type)
         LV2_PROPERTY_GETSET_SCALAR(audio_inputs)
         LV2_PROPERTY_GETSET_SCALAR(audio_outputs)
+        LV2_PROPERTY_GETSET(audio_side_chain_title)
         LV2_PROPERTY_GETSET_SCALAR(has_midi_input)
         LV2_PROPERTY_GETSET_SCALAR(has_midi_output)
         LV2_PROPERTY_GETSET_SCALAR(description)
@@ -729,6 +748,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(uiPortNotifications)
         LV2_PROPERTY_GETSET(modGui)
         LV2_PROPERTY_GETSET(patchProperties)
+        LV2_PROPERTY_GETSET_SCALAR(audio_side_chain_inputs)
 
         static json_map::storage_type<Lv2PluginUiInfo> jmap;
     };
@@ -772,6 +792,7 @@ namespace pipedal
             AutoLilvNode enumeration_property_uri;
             AutoLilvNode core__toggled;
             AutoLilvNode core__connectionOptional;
+            AutoLilvNode core__isSideChain;
             AutoLilvNode portprops__not_on_gui_property_uri;
             AutoLilvNode portprops__trigger;
             AutoLilvNode midi__event;
@@ -782,9 +803,9 @@ namespace pipedal
             AutoLilvNode invada_units__unit;            // typo in invada plugins.
             AutoLilvNode invada_portprops__logarithmic; // typo in invada plugins.
 
-            
             AutoLilvNode atom__bufferType;
             AutoLilvNode atom__Path;
+            AutoLilvNode atom__String;
             AutoLilvNode presets__preset;
             AutoLilvNode state__state;
             AutoLilvNode rdfs__label;
@@ -816,7 +837,6 @@ namespace pipedal
             AutoLilvNode pipedalUI__width;
             AutoLilvNode pipedalUI__graphicEq;
 
-
             AutoLilvNode pipedalUI__outputPorts;
             AutoLilvNode pipedalUI__text;
 
@@ -846,7 +866,6 @@ namespace pipedal
             AutoLilvNode patch__readable;
             AutoLilvNode pipedal_patch__readable;
 
-            
             AutoLilvNode mod__brand;
             AutoLilvNode mod__label;
             AutoLilvNode mod__preferMomentaryOffByDefault;
@@ -861,11 +880,9 @@ namespace pipedal
             AutoLilvNode buf_size__maxBlockLength;
             AutoLilvNode buf_size__fixedBlockLength;
             AutoLilvNode buf_size__coarseBlockLength;
-
-
-            
+            AutoLilvNode port_groups__sideChainOf;
         };
-        LilvUris* lilvUris = nullptr;
+        LilvUris *lilvUris = nullptr;
 
     private:
         bool vst3Enabled = true;
@@ -896,7 +913,7 @@ namespace pipedal
         void free_world();
 
         std::vector<std::shared_ptr<Lv2PluginInfo>> plugins_;
-        std::map<std::string,std::shared_ptr<Lv2PluginInfo>> pluginsByUri;
+        std::map<std::string, std::shared_ptr<Lv2PluginInfo>> pluginsByUri;
         std::vector<Lv2PluginUiInfo> ui_plugins_;
 
         std::map<std::string, std::shared_ptr<Lv2PluginClass>> classesMap;
@@ -947,22 +964,19 @@ namespace pipedal
 
     public:
         virtual MapFeature &GetMapFeature() override { return this->mapFeature; }
-        void CheckForResourceInitialization(const std::string& pluginUri,const std::filesystem::path& pluginUploadDirectory);
+        void CheckForResourceInitialization(const std::string &pluginUri, const std::filesystem::path &pluginUploadDirectory);
 
-        
-
-        std::string MapResourcePath(const std::string&uri, const std::string&relativePath);
+        std::string MapResourcePath(const std::string &uri, const std::string &relativePath);
 
         void ReloadPlugins();
 
         // equivalent to LV2 MapPath AbstractPath features.
         std::string MapPath(const std::string &abstractPath);
-        std::string AbstractPath(const std::string&path);
-        json_variant MapPath(const json_variant&json);
-        json_variant AbstractPath(const json_variant&json);
+        std::string AbstractPath(const std::string &path);
+        json_variant MapPath(const json_variant &json);
+        json_variant AbstractPath(const json_variant &json);
 
     private:
-
         std::set<std::string> pluginsThatHaveBeenCheckedForResources;
 
         void CheckForResourceInitization(const std::string pluginUri);
@@ -973,12 +987,11 @@ namespace pipedal
         }
         static void PortValueCallback(const char *symbol, void *user_data, const void *value, uint32_t size, uint32_t type);
         static void StateRestoreCallback(
-            const char* port_symbol,
-            void*       user_data,
-            const void* value,
-            uint32_t    size,
-            uint32_t    type);
-
+            const char *port_symbol,
+            void *user_data,
+            const void *value,
+            uint32_t size,
+            uint32_t type);
 
         virtual IEffect *CreateEffect(PedalboardItem &pedalboardItem);
         void LoadPluginClassesFromLilv();
@@ -995,9 +1008,9 @@ namespace pipedal
 
         IHost *asIHost() { return this; }
 
-        virtual Lv2Pedalboard *CreateLv2Pedalboard(Pedalboard &pedalboard,Lv2PedalboardErrorList &errorList);
+        virtual Lv2Pedalboard *CreateLv2Pedalboard(Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList);
 
-        virtual Lv2Pedalboard *UpdateLv2PedalboardStructure(Pedalboard &pedalboard,Lv2Pedalboard *existingPedalboard,Lv2PedalboardErrorList &errorList);
+        virtual Lv2Pedalboard *UpdateLv2PedalboardStructure(Pedalboard &pedalboard, Lv2Pedalboard *existingPedalboard, Lv2PedalboardErrorList &errorList);
 
         void setSampleRate(double sampleRate)
         {
@@ -1010,9 +1023,8 @@ namespace pipedal
 
         class Urids;
 
-        Urids *urids = nullptr; 
-        ModGuiUris* mod_gui_uris = nullptr;
-
+        Urids *urids = nullptr;
+        ModGuiUris *mod_gui_uris = nullptr;
 
         void OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings);
 
@@ -1021,7 +1033,7 @@ namespace pipedal
 
         std::shared_ptr<Lv2PluginClass> GetLv2PluginClass() const;
 
-        const std::vector<std::shared_ptr<Lv2PluginInfo>>& GetPlugins() const { return plugins_; }
+        const std::vector<std::shared_ptr<Lv2PluginInfo>> &GetPlugins() const { return plugins_; }
         const std::vector<Lv2PluginUiInfo> &GetUiPlugins() const { return ui_plugins_; }
 
         virtual std::shared_ptr<Lv2PluginInfo> GetPluginInfo(const std::string &uri) const;

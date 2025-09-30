@@ -81,6 +81,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
         this.pathProperties = input.pathProperties;
         this.useModUi = input.useModUi ?? false;
         this.iconColor = input.iconColor??"";
+        this.sideChainInputId = input.sideChainInputId ?? -1;
 
         return this;
     }
@@ -217,6 +218,7 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     pathProperties: {[Name: string]: string} = {};
     useModUi: boolean = false; // true if this item should use the mod-ui.
     iconColor: string = "";
+    sideChainInputId: number = -1; // -1 means no sidechain input.
 };
 
 export class SnapshotValue {

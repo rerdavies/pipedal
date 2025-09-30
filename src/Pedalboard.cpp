@@ -534,6 +534,7 @@ JSON_MAP_BEGIN(PedalboardItem)
     JSON_MAP_REFERENCE(PedalboardItem,title)
     JSON_MAP_REFERENCE(PedalboardItem,useModUi)
     JSON_MAP_REFERENCE(PedalboardItem,iconColor)
+    JSON_MAP_REFERENCE(PedalboardItem,sideChainInputId)
 JSON_MAP_END()
 
 

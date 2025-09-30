@@ -550,19 +550,16 @@ export class PiPedalModel //implements PiPedalModel
         );
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
 
+    uiPluginsByUri: Map<string, UiPlugin> = new Map<string, UiPlugin>();
+
     svgImgUrl(svgImage: string): string {
-        //return this.varServerUrl + "img/" + svgImage;
+        // return this.varServerUrl + "img/" + svgImage;
         return "img/" + svgImage;
     }
 
 
     getUiPlugin(uri: string): UiPlugin | null {
-        let plugins: UiPlugin[] = this.ui_plugins.get();
-
-        for (let plugin of plugins) {
-            if (plugin.uri === uri) return plugin;
-        }
-        return null;
+        return this.uiPluginsByUri.get(uri) ?? null;
     }
 
     androidHost?: AndroidHostInterface;
@@ -1210,6 +1207,11 @@ export class PiPedalModel //implements PiPedalModel
             this.ui_plugins.set(
                 UiPlugin.deserialize_array(await this.getWebSocket().request<any>("plugins"))
             );
+            // index ui plugins.
+            this.uiPluginsByUri = new Map<string, UiPlugin>();
+            for (let i of this.ui_plugins.get()) {
+                this.uiPluginsByUri.set(i.uri, i);
+            }
             this.setModelPedalboard(
                 new Pedalboard().deserialize(
                     await this.getWebSocket().request<Pedalboard>("currentPedalboard")
@@ -3551,6 +3553,20 @@ export class PiPedalModel //implements PiPedalModel
     }
     copyPresetsToBank(bankInstanceId: number, presets: number[]): Promise<number> {
         return nullCast(this.webSocket).request<number>("copyPresetsToBank", {bankInstanceId: bankInstanceId, presets: presets});
+    }
+    setPedalboardSideChainInput(instanceId: number, sideChainInputId: number): void {
+        let pedalboard = this.pedalboard.get().clone();
+        let pedalboardItem = pedalboard.getItem(instanceId);
+        if (!pedalboardItem)
+        {
+            return;
+        }
+        pedalboardItem.sideChainInputId = sideChainInputId;
+        pedalboardItem.instanceId = ++pedalboard.nextInstanceId;
+        pedalboard.selectedPlugin = pedalboardItem.instanceId;
+        this.setModelPedalboard(pedalboard);
+        this.updateServerPedalboard();
+
     }
 };
 

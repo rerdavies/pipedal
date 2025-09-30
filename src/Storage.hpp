@@ -129,8 +129,9 @@ public:
 
     const std::filesystem::path &GetPluginUploadDirectory() const;
 
-    std::string ToAbstractPathJson(const std::string &jsonAtomPath);
+    std::string ToAbstractPathFromJson(const std::string &jsonAtomPath);
     std::string FromAbstractPathJson(const std::string &jsonAtomPath);
+    std::filesystem::path FromAbstractPathString(const std::string &stringPath);
 
 
     //std::vector<std::string> GetPedalboards();

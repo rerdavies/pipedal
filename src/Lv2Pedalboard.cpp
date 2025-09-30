@@ -176,6 +176,60 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                             auto bufferR = inputBuffers[1];
                         }
                     }
+                    // Connect sidechain buffers.
+
+                    if (pLv2Effect->GetNumberOfSidechainAudioBuffers() != 0)
+                    {
+                        if (item.sideChainInputId() == -2) // -2 means "use pedalboard inputs".
+                        {
+                            for (size_t i = 0; i < pLv2Effect->GetNumberOfSidechainAudioBuffers(); ++i)
+                            {
+                                if (i < this->pedalboardInputBuffers.size())
+                                {
+                                    pLv2Effect->SetAudioSidechainBuffer(i, this->pedalboardInputBuffers[i]);
+                                }
+                                else 
+                                {
+                                    // just use the first output buffer for all sidechain inputs.
+                                    pLv2Effect->SetAudioSidechainBuffer(i, this->pedalboardInputBuffers[0]);
+                                }
+                            }
+                        } else if (item.sideChainInputId() != -1) {
+                            IEffect *pSideChainInput = GetEffect(item.sideChainInputId());
+
+                            if (pSideChainInput)
+                            {
+                                for (size_t i = 0; i < pLv2Effect->GetNumberOfSidechainAudioBuffers(); ++i)
+                                {
+                                    if (i < pSideChainInput->GetNumberOfOutputAudioBuffers())
+                                    {
+                                        pLv2Effect->SetAudioSidechainBuffer(i, pSideChainInput->GetAudioOutputBuffer(i));
+                                    }
+                                    else 
+                                    {
+                                        // just use the first output buffer for all sidechain inputs.
+                                        pLv2Effect->SetAudioSidechainBuffer(i, pSideChainInput->GetAudioOutputBuffer(0));
+                                    }
+                                }
+                            } else {
+                                throw std::runtime_error("Internal error: Sidechain input IEffect not found.");
+                            }
+                        }
+                        else
+                        {
+                            // No sidechain input. Feed zero buffer to all sidechain audio ports..
+                            for (size_t i = 0; i < pLv2Effect->GetNumberOfSidechainAudioBuffers(); ++i)
+                            {
+
+                                // just use one buffer for all plugins
+                                if (!this->pedalboardSidechainBuffer)
+                                {
+                                    this->pedalboardSidechainBuffer = CreateNewAudioBuffer();
+                                }
+                                pLv2Effect->SetAudioSidechainBuffer(i, this->pedalboardSidechainBuffer);
+                            }
+                        }
+                    }
 
                     // check to see whether we need buffer staging.
                     bool requiresBufferStaging = false;
@@ -193,7 +247,6 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                                 });
                         }
                     }
-
 
                     if (!requiresBufferStaging)
                     {

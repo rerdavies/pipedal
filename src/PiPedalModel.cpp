@@ -2428,7 +2428,7 @@ void PiPedalModel::OnNotifyPathPatchPropertyReceived(
     auto i = pedalboardItem->pathProperties_.find(pathPatchPropertyUri);
     if (i != pedalboardItem->pathProperties_.end())
     {
-        std::string abstractAtomString = storage.ToAbstractPathJson(atomString);
+        std::string abstractAtomString = storage.ToAbstractPathFromJson(atomString);
         pedalboardItem->pathProperties_[pathPatchPropertyUri] = abstractAtomString;
 
         std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};

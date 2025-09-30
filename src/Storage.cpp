@@ -1717,7 +1717,7 @@ void Storage::ToAbstractPaths(PluginPreset &pluginPreset)
         std::map<std::string, std::string> newPathProperties;
         for (const auto &pair : pluginPreset.pathProperties_)
         {
-            newPathProperties[pair.first] = this->ToAbstractPathJson(pair.second);
+            newPathProperties[pair.first] = this->ToAbstractPathFromJson(pair.second);
         }
         pluginPreset.pathProperties_ = newPathProperties;
     }
@@ -2999,7 +2999,19 @@ std::string Storage::GetTone3000Auth() const
     return tone3000Auth;
 }
 
-std::string Storage::ToAbstractPathJson(const std::string &pathJson)
+std::filesystem::path Storage::FromAbstractPathString(const std::string &stringPath)
+{
+    if (stringPath.empty()) {
+        return "";
+    }
+    fs::path path { stringPath};
+    if (path.is_absolute()) {
+        return path;
+    }
+    return GetPluginUploadDirectory() / path;
+}
+
+std::string Storage::ToAbstractPathFromJson(const std::string &pathJson)
 {
     json_variant v = json_variant::parse(pathJson);
 

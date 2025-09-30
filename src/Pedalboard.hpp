@@ -107,6 +107,7 @@ public:
     std::string title_;
     bool useModUi_ = false;
     std::string iconColor_;
+    int64_t sideChainInputId_ = -1;
 
     // non persistent state.
     PropertyMap patchProperties;
@@ -138,6 +139,7 @@ public:
     GETTER_SETTER_REF(title)
     GETTER_SETTER_REF(iconColor)
     GETTER_SETTER(useModUi)
+    GETTER_SETTER(sideChainInputId)
     
     Lv2PluginState&lv2State() { return lv2State_; } // non-const version.
     GETTER_SETTER_REF(lilvPresetUri)

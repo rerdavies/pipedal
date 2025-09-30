@@ -47,6 +47,7 @@ export class Port implements Deserializable<Port> {
         this.scale_points = ScalePoint.deserialize_array(input.scale_points);
         this.is_input = input.is_input;
         this.is_output = input.is_output;
+        this.is_sidechain = input.is_sidechain;
         this.is_control_port = input.is_control_port;
         this.is_audio_port = input.is_audio_port;
         this.is_atom_port = input.is_atom_port;
@@ -80,6 +81,7 @@ export class Port implements Deserializable<Port> {
     is_output: boolean = false
     is_control_port: boolean = false;
     is_audio_port: boolean = false;
+    is_sidechain: boolean = false;
     is_atom_port: boolean = false;
     is_valid: boolean = false;
     supports_midi: boolean = false;
@@ -92,9 +94,11 @@ export class Port implements Deserializable<Port> {
 
 export class PortGroup {
     deserialize(input: any): PortGroup {
+        this.isA = input.isA;
         this.uri = input.uri;
         this.symbol = input.symbol;
         this.name = input.name;
+        this.sideChainof = input.sideChainOf;
         this.parent_group = input.parent_group;
         this.program_list_id = input.program_list_id ?? -1;
 
@@ -108,9 +112,12 @@ export class PortGroup {
         return result;
     }
 
+    isA: string[] = [];
     uri: string = "";
     symbol: string = "";
     name: string = "";
+    sideChainof: string = "";
+    
     parent_group: string = "";
     program_list_id: number = -1;
 };
@@ -967,6 +974,8 @@ export class UiPlugin implements Deserializable<UiPlugin> {
         this.author_name = input.author_name;
         this.author_homepage = input.author_homepage;
         this.audio_inputs = input.audio_inputs;
+        this.audio_side_chain_inputs = input.audio_side_chain_inputs ?? 0;
+        this.audio_side_chain_title = input.audio_side_chain_title ?? "";
         this.audio_outputs = input.audio_outputs;
         this.has_midi_input = input.has_midi_input;
         this.has_midi_output = input.has_midi_output;
@@ -1057,7 +1066,9 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     author_name: string = "";
     author_homepage: string = "";
     audio_inputs: number = 0;
+    audio_side_chain_inputs: number = 0;
     audio_outputs: number = 0;
+    audio_side_chain_title: string = "";
     has_midi_input: number = 0;
     has_midi_output: number = 0;
     description: string = "";
@@ -1084,6 +1095,7 @@ export function makeSplitUiPlugin(): UiPlugin {
         author_name: "",
         author_homepage: "",
         audio_inputs: 1,
+        audio_side_chain_inputs: 0,
         audio_outputs: 1,
         has_midi_input: 0,
         has_midi_output: 0,

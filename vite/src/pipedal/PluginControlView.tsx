@@ -37,6 +37,7 @@ import {
 } from './Pedalboard';
 import PluginControl from './PluginControl';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
+import SideChainSelectControl from './SideChainSelectControl';
 import VuMeter from './VuMeter';
 import { nullCast } from './Utility'
 import { PiPedalStateError } from './PiPedalError';
@@ -64,6 +65,11 @@ export interface ICustomizationHost {
     makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode;
     renderControlGroup(controlGroup: ControlGroup, key: string): ReactNode;
     isLandscapeGrid(): boolean;
+}
+
+interface SideChainSelectItem {
+    instanceId: number;
+    title: string;
 }
 
 function makeIoPluginInfo(name: string, uri: string): UiPlugin {
@@ -371,7 +377,7 @@ type PluginControlViewState = {
 
 const PluginControlView =
     withTheme(withStyles(
-        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState> implements ICustomizationHost {
+        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState>  {
             model: PiPedalModel;
 
             constructor(props: PluginControlViewProps) {
@@ -553,6 +559,68 @@ const PluginControlView =
                 }
             }
 
+            private getSidechainSelectItems(): SideChainSelectItem[] {
+                let myInstanceId = this.props.item.instanceId;
+
+                let items: SideChainSelectItem[] = [];
+                items.push({ instanceId: -1, title: "None" });
+                items.push({ instanceId: -2, title: "Input" });
+
+                let pedalboard = this.model.pedalboard.get();
+                if (!pedalboard) return items;
+
+                let it = pedalboard.itemsGenerator();
+
+                let found = false;
+                while (true) {
+                    let v = it.next();
+                    if (v.done) {
+                        break;
+                    }
+                    let pedalboardItem = v.value;
+                    if (pedalboardItem.isSplit()) {
+                        continue;
+                    }
+                    if (pedalboardItem.instanceId === myInstanceId) {
+                        found = true;
+                        break;
+                    }
+                    if (pedalboardItem.uri.length === 0) {
+                        continue;
+                    }
+                    let pluginInfo = this.model.getUiPlugin(pedalboardItem.uri);
+                    if (!pluginInfo) continue;
+                    let name = pluginInfo.name;
+                    if (pedalboardItem.title.length !== 0) {
+                        name = pedalboardItem.title;
+                    }
+                    items.push({ instanceId: pedalboardItem.instanceId, title: name });
+                }
+                if (!found) {
+                    return [{ instanceId: -1, title: "None" }];
+                }
+                return items;
+            }
+
+            private makeSideChainSelect(uiPlugin: UiPlugin) {
+                let items = this.getSidechainSelectItems();
+                let selectedInstanceId = this.props.item.sideChainInputId;
+                let title = uiPlugin.audio_side_chain_title ? uiPlugin.audio_side_chain_title : "Side chain";
+
+                return (
+                        <SideChainSelectControl 
+                        title={title}
+                        selectItems={items}
+                        selectedInstanceId={selectedInstanceId}
+                        onChanged={(instanceId: number) => {
+                            this.model.setPedalboardSideChainInput(this.props.item.instanceId, instanceId);
+                            
+                        }}
+                        />
+                );
+
+            }
+
             isLandscapeGrid(): boolean {
                 return this.state.landscapeGrid;
             }
@@ -575,7 +643,7 @@ const PluginControlView =
                 }
                 return (
                     <div key={key} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}
-                        style={{ borderWidth: (controlGroup.name === "" ? 0: undefined) }}
+                        style={{ borderWidth: (controlGroup.name === "" ? 0 : undefined) }}
                     >
                         {controlGroup.name !== "" && (
                             <div className={classes.portGroupTitle}>
@@ -710,6 +778,11 @@ const PluginControlView =
                             frequencyPlotUi
                         );
                     }
+                }
+                if (plugin.audio_side_chain_inputs !== 0) {
+
+                    result.push(this.makeSideChainSelect(plugin));
+
                 }
 
                 return result;
