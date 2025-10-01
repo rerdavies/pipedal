@@ -394,8 +394,19 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     pathProperties: {[Name: string]: string} = {};
     selectedPlugin: number = -1;
 
+    // yields all items in the pedalboard, including split items. Splits are yielded before their children.
     *itemsGenerator(): Generator<PedalboardItem, void, undefined> {
         let it = itemGenerator_(this.items);
+        while (true)
+        {
+            let v = it.next();
+            if (v.done) break;
+            yield v.value;
+        }
+    }
+    // same as itemsGenerator, but yields split items after their chains.
+    *itemsGeneratorSplitAfter(): Generator<PedalboardItem, void, undefined> {
+        let it = itemGeneratorSplitAfter_(this.items);
         while (true)
         {
             let v = it.next();
@@ -790,6 +801,30 @@ function* itemGenerator_(items: PedalboardItem[]): Generator<PedalboardItem, voi
                 yield v.value;
             }
         }
+    }
+}
+
+function* itemGeneratorSplitAfter_(items: PedalboardItem[]): Generator<PedalboardItem, void, undefined> {
+    for (let i = 0; i < items.length; ++i) {
+        let item = items[i];
+        if (item.uri === SPLIT_PEDALBOARD_ITEM_URI) {
+
+            let splitItem = item as PedalboardSplitItem;
+
+            let it = itemGenerator_(splitItem.topChain);
+            while (true) {
+                let v = it.next();
+                if (v.done) break;
+                yield v.value;
+            }
+            it = itemGenerator_(splitItem.bottomChain);
+            while (true) {
+                let v = it.next();
+                if (v.done) break;
+                yield v.value;
+            }
+        }
+        yield item;
     }
 }
 

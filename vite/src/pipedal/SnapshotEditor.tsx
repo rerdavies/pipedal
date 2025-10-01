@@ -24,7 +24,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import CssBaseline from '@mui/material/CssBaseline';
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import { withStyles } from "tss-react/mui";
 import IconButtonEx from './IconButtonEx';
@@ -148,10 +148,12 @@ const SnapshotEditor = withStyles(
 
             this.model_.zoomedUiControl.addOnChangedHandler(
                 () => {
-                    this.setState({
-                        zoomedControlOpen: this.model_.zoomedUiControl.get() !== undefined,
-                        zoomedControlInfo: this.model_.zoomedUiControl.get()
-                    });
+                    if (this.mounted93) {
+                        this.setState({
+                            zoomedControlOpen: this.model_.zoomedUiControl.get() !== undefined,
+                            zoomedControlInfo: this.model_.zoomedUiControl.get()
+                        });
+                    }
                 }
             );
 
@@ -182,9 +184,11 @@ const SnapshotEditor = withStyles(
             this.setState({ isFullScreen: !this.state.isFullScreen });
         }
 
+        private mounted93: boolean = false;
         componentDidMount() {
 
             super.componentDidMount();
+            this.mounted93 = true;
             this.model_.showStatusMonitor.addOnChangedHandler(this.showStatusMonitorHandler);
 
         }
@@ -206,6 +210,7 @@ const SnapshotEditor = withStyles(
         }
 
         componentWillUnmount() {
+            this.mounted93 = false;
             super.componentWillUnmount();
             this.model_.banks.removeOnChangedHandler(this.showStatusMonitorHandler);
         }
