@@ -26,6 +26,12 @@ import { Component } from 'react';
 import { Theme } from '@mui/material/styles';
 import { css } from '@emotion/react';
 
+import DialogEx from './DialogEx';
+import DialogTitle from '@mui/material/DialogTitle';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import Toolbar from '@mui/material/Toolbar';
+import DialogContent from '@mui/material/DialogContent';
+import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import Select from '@mui/material/Select';
@@ -164,3 +170,54 @@ const SideChainSelectControl =
     )
     ;
 export default SideChainSelectControl;
+
+export interface SideChainSelectDialogProps {
+    open: boolean,
+    onClose: () => void,
+
+    selectItems: { instanceId: number, title: string }[];
+    selectedInstanceId: number;
+    onChanged(instanceId: number): void;
+
+}
+export function SideChainSelectDialog(props: SideChainSelectDialogProps) {
+    let { open, onClose, selectItems, selectedInstanceId, onChanged } = props;
+    return (
+        <DialogEx tag="nameDialog" open={open} fullWidth maxWidth="xs" onClose={onClose} aria-labelledby="Rename-dialog-title"
+            style={{ userSelect: "none" }}
+            onEnterKey={() => { }}
+        >
+            <DialogTitle id="alert-dialog-title" style={{ userSelect: "none", padding: 0, margin: 0 }}>
+                <Toolbar style={{ paddingLeft: 24, paddingRight: 24, margin: 0 }} >
+                    <IconButtonEx
+                        tooltip="Back" edge="start" color="inherit" onClick={() => { onClose(); }} aria-label="back"
+                    >
+                        <ArrowBackIcon style={{opacity: 0.6}} />
+                    </IconButtonEx>
+
+                    <Typography noWrap variant="body1" style={{ flex: "1 1 auto" }}>Sidechain Input</Typography>
+                </Toolbar>
+            </DialogTitle>
+
+            <DialogContent >
+                <Select
+                    variant="standard"
+                    onChange={(event) => {
+                        onChanged(event.target.value as number);
+                    }}
+                    value={selectedInstanceId}
+                    style={{ width: "100%" }}
+                >
+                    {selectItems.map((item) => {
+                        return (
+                            <MenuItem key={item.instanceId} value={item.instanceId}
+                                selected={item.instanceId === selectedInstanceId}>
+                                {item.title}
+                            </MenuItem>
+                        );
+                    })}
+                </Select>
+            </DialogContent>
+        </DialogEx>
+    );
+}

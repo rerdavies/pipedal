@@ -22,6 +22,9 @@ import { Theme } from '@mui/material/styles';
 import WithStyles, { withTheme } from './WithStyles';
 import { createStyles } from './WithStyles';
 import { css } from '@emotion/react';
+import IconButtonEx from './IconButtonEx';
+
+import SidechainConnectIcon from './svg/ic_sidechain_open_48.svg?react';
 
 import AutoZoom from './AutoZoom';
 
@@ -37,7 +40,7 @@ import {
 } from './Pedalboard';
 import PluginControl from './PluginControl';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import SideChainSelectControl from './SideChainSelectControl';
+import SideChainSelectControl, {SideChainSelectDialog} from './SideChainSelectControl';
 import VuMeter from './VuMeter';
 import { nullCast } from './Utility'
 import { PiPedalStateError } from './PiPedalError';
@@ -373,11 +376,12 @@ type PluginControlViewState = {
     dialogFileValue: string,
     modGuiContentReady: boolean,
     showModGuiZoomed: boolean,
+    sidechainDialogOpen: boolean
 };
 
 const PluginControlView =
     withTheme(withStyles(
-        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState>  {
+        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState> {
             model: PiPedalModel;
 
             constructor(props: PluginControlViewProps) {
@@ -393,7 +397,8 @@ const PluginControlView =
                     dialogFileProperty: new UiFileProperty(),
                     dialogFileValue: "",
                     modGuiContentReady: false,
-                    showModGuiZoomed: false
+                    showModGuiZoomed: false,
+                    sidechainDialogOpen: false
 
                 }
                 this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
@@ -608,15 +613,15 @@ const PluginControlView =
                 let title = uiPlugin.audio_side_chain_title ? uiPlugin.audio_side_chain_title : "Side chain";
 
                 return (
-                        <SideChainSelectControl 
+                    <SideChainSelectControl
                         title={title}
                         selectItems={items}
                         selectedInstanceId={selectedInstanceId}
                         onChanged={(instanceId: number) => {
                             this.model.setPedalboardSideChainInput(this.props.item.instanceId, instanceId);
-                            
+
                         }}
-                        />
+                    />
                 );
 
             }
@@ -876,6 +881,9 @@ const PluginControlView =
                 return false;
             }
 
+            handleSelectSidechainInput() {
+                this.setState({sidechainDialogOpen: true});
+            }
 
             handleModGuiFileProperty(instanceId: number, filePropertyUri: string, selectedFile: string) {
                 let plugin = this.model.getUiPlugin(this.props.item.uri);
@@ -900,10 +908,30 @@ const PluginControlView =
                 if (!uiPlugin) {
                     return (<div />);
                 }
+                let toolBarChildren: ReactNode[] = [];
+                if (uiPlugin.audio_side_chain_inputs > 0) {
+                    toolBarChildren.push(
+                        <IconButtonEx tooltip="Select sidechain input"
+                            onClick={() => {
+                                this.handleSelectSidechainInput();
+                            }}
+                        >
+                            <SidechainConnectIcon
+                                style={{
+                                    opacity: 0.6,
+                                    width: 24,
+                                    height: 24,
+                                    fill: this.props.theme.palette.text.primary
+                                }}
+                            />
+                        </IconButtonEx>
+                    );
+                }
                 return (
                     <div style={{ width: "100%", height: "100%", }}>
                         <AutoZoom leftPad={36} rightPad={52} contentReady={this.state.modGuiContentReady}
                             showZoomed={this.state.showModGuiZoomed}
+                            toolbarChildren={toolBarChildren}
                             setShowZoomed={
                                 (value) => { this.setState({ showModGuiZoomed: value }); }
                             }
@@ -1083,6 +1111,16 @@ const PluginControlView =
                                     this.setState({ showFileDialog: false });
                                 }
                                 }
+                            />
+                        )}
+                        {this.state.sidechainDialogOpen && (
+                            <SideChainSelectDialog open={this.state.sidechainDialogOpen}
+                                onClose={()=>{ this.setState({sidechainDialogOpen: false});}}
+                            selectItems={this.getSidechainSelectItems()}
+                            selectedInstanceId={this.props.item.sideChainInputId}
+                            onChanged={(instanceId: number) => {
+                                this.model.setPedalboardSideChainInput(this.props.item.instanceId, instanceId);
+                            }}
                             />
                         )}
                         {/* xxx: I don't think we need this anyore. */}

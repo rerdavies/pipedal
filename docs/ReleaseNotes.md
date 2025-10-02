@@ -1,5 +1,12 @@
 # Release Notes
 
+## PiPedal 1.5.94 Beta
+
+### Major Features in This Build
+
+- **Sidechains**. You can now load plugins that have sidechain inputs. This allows you to use compressor and gate plugins that often have 
+sidechains. Plugins that have sidechain inputs will show a dropdown control in their control view which allows you to select the source of the sidechain input. The source plugin must for the sidechain must appear earlier in the signal chain.
+
 ## PiPedal 1.5.93 Release
 
 ### Major Features in This Build
