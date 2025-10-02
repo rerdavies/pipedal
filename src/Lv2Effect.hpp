@@ -81,6 +81,8 @@ namespace pipedal
         std::vector<int> inputAudioPortIndices;
         std::vector<int> outputAudioPortIndices;
 
+        std::vector<int> inputSidechainPortIndices;
+        
         std::vector<int> inputAtomPortIndices;
         std::vector<int> outputAtomPortIndices;
 
@@ -90,6 +92,7 @@ namespace pipedal
         std::vector<int> midiInputIndices;
 
         std::vector<float *> inputAudioBuffers;
+        std::vector<float *> inputSidechainBuffers;
         std::vector<float *> outputAudioBuffers;
 
         std::vector<char *> inputAtomBuffers;
@@ -212,7 +215,7 @@ namespace pipedal
 
         bool borrowedEffect = false;
         bool activated = false;
-        void EnableBufferStaging(size_t bufferSize, size_t nInputs, size_t nOutputs);
+        void EnableBufferStaging(size_t bufferSize);
         void CheckStagingBufferSentries();
 
     public:
@@ -262,8 +265,10 @@ namespace pipedal
         size_t stagingInputIx = 0;
         size_t stagingOutputIx = 0;
         std::vector<std::vector<float>> inputStagingBuffers;
+        std::vector<std::vector<float>> sidechainStagingBuffers;
         std::vector<std::vector<float>> outputStagingBuffers;
         std::vector<float*> inputStagingBufferPointers;
+        std::vector<float*> sidechainStagingBufferPointers;
         std::vector<float*> outputStagingBufferPointers;
 
         std::vector<uint8_t> stagedInputAtomBuffer;
@@ -297,22 +302,26 @@ namespace pipedal
 
         virtual void ResetAtomBuffers();
         virtual uint64_t GetInstanceId() const { return instanceId; }
-        virtual int GetNumberOfInputAudioPorts() const { return inputAudioPortIndices.size(); }
-        virtual int GetNumberOfOutputAudioPorts() const { return outputAudioPortIndices.size(); }
+        virtual int GetNumberOfInputAudioPorts() const override { return inputAudioPortIndices.size(); }
+        virtual int GetNumberOfOutputAudioPorts() const override { return outputAudioPortIndices.size(); }
 
-        virtual int GetNumberOfInputAtomPorts() const { return inputAtomPortIndices.size(); }
+        virtual int GetNumberOfInputAtomPorts() const  { return inputAtomPortIndices.size(); }
 
-        virtual int GetNumberOfOutputAtomPorts() const { return outputAtomPortIndices.size(); }
-        virtual int GetNumberOfMidiInputPorts() const { return inputMidiPortIndices.size(); }
-        virtual int GetNumberOfMidiOutputPorts() const { return outputMidiPortIndices.size(); }
+        virtual int GetNumberOfOutputAtomPorts() const  { return outputAtomPortIndices.size(); }
+        virtual int GetNumberOfMidiInputPorts() const  { return inputMidiPortIndices.size(); }
+        virtual int GetNumberOfMidiOutputPorts() const  { return outputMidiPortIndices.size(); }
 
 
 
-        virtual int GetNumberOfInputAudioBuffers() const { return this->inputAudioBuffers.size(); }
-        virtual int GetNumberOfOutputAudioBuffers() const {return this->outputAudioBuffers.size(); }
+        virtual int GetNumberOfInputAudioBuffers() const override { return this->inputAudioBuffers.size(); }
+        virtual int GetNumberOfSidechainAudioBuffers() const override { return this->inputSidechainBuffers.size(); }
+        virtual int GetNumberOfOutputAudioBuffers() const override {return this->outputAudioBuffers.size(); }
 
-        virtual void SetAudioInputBuffer(int index, float *buffer);
-        virtual float *GetAudioInputBuffer(int index) const;
+        virtual void SetAudioInputBuffer(int index, float *buffer) override;
+        virtual float *GetAudioInputBuffer(int index) const override;
+
+        virtual void SetAudioSidechainBuffer(int index, float *buffer) override;
+        virtual float *GetAudioSidechainBuffer(int index) const override;
 
 
         virtual void SetAudioInputBuffer(float *buffer);

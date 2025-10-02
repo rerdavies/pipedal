@@ -22,6 +22,9 @@ import { Theme } from '@mui/material/styles';
 import WithStyles, { withTheme } from './WithStyles';
 import { createStyles } from './WithStyles';
 import { css } from '@emotion/react';
+import IconButtonEx from './IconButtonEx';
+
+import SidechainConnectIcon from './svg/ic_sidechain_open_48.svg?react';
 
 import AutoZoom from './AutoZoom';
 
@@ -37,6 +40,7 @@ import {
 } from './Pedalboard';
 import PluginControl from './PluginControl';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
+import SideChainSelectControl, {SideChainSelectDialog} from './SideChainSelectControl';
 import VuMeter from './VuMeter';
 import { nullCast } from './Utility'
 import { PiPedalStateError } from './PiPedalError';
@@ -64,6 +68,11 @@ export interface ICustomizationHost {
     makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode;
     renderControlGroup(controlGroup: ControlGroup, key: string): ReactNode;
     isLandscapeGrid(): boolean;
+}
+
+interface SideChainSelectItem {
+    instanceId: number;
+    title: string;
 }
 
 function makeIoPluginInfo(name: string, uri: string): UiPlugin {
@@ -367,11 +376,12 @@ type PluginControlViewState = {
     dialogFileValue: string,
     modGuiContentReady: boolean,
     showModGuiZoomed: boolean,
+    sidechainDialogOpen: boolean
 };
 
 const PluginControlView =
     withTheme(withStyles(
-        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState> implements ICustomizationHost {
+        class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState> {
             model: PiPedalModel;
 
             constructor(props: PluginControlViewProps) {
@@ -387,7 +397,8 @@ const PluginControlView =
                     dialogFileProperty: new UiFileProperty(),
                     dialogFileValue: "",
                     modGuiContentReady: false,
-                    showModGuiZoomed: false
+                    showModGuiZoomed: false,
+                    sidechainDialogOpen: false
 
                 }
                 this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
@@ -553,6 +564,68 @@ const PluginControlView =
                 }
             }
 
+            private getSidechainSelectItems(): SideChainSelectItem[] {
+                let myInstanceId = this.props.item.instanceId;
+
+                let items: SideChainSelectItem[] = [];
+                items.push({ instanceId: -1, title: "None" });
+                items.push({ instanceId: -2, title: "Input" });
+
+                let pedalboard = this.model.pedalboard.get();
+                if (!pedalboard) return items;
+
+                let it = pedalboard.itemsGenerator();
+
+                let found = false;
+                while (true) {
+                    let v = it.next();
+                    if (v.done) {
+                        break;
+                    }
+                    let pedalboardItem = v.value;
+                    if (pedalboardItem.isSplit()) {
+                        continue;
+                    }
+                    if (pedalboardItem.instanceId === myInstanceId) {
+                        found = true;
+                        break;
+                    }
+                    if (pedalboardItem.uri.length === 0) {
+                        continue;
+                    }
+                    let pluginInfo = this.model.getUiPlugin(pedalboardItem.uri);
+                    if (!pluginInfo) continue;
+                    let name = pluginInfo.name;
+                    if (pedalboardItem.title.length !== 0) {
+                        name = pedalboardItem.title;
+                    }
+                    items.push({ instanceId: pedalboardItem.instanceId, title: name });
+                }
+                if (!found) {
+                    return [{ instanceId: -1, title: "None" }];
+                }
+                return items;
+            }
+
+            private makeSideChainSelect(uiPlugin: UiPlugin) {
+                let items = this.getSidechainSelectItems();
+                let selectedInstanceId = this.props.item.sideChainInputId;
+                let title = uiPlugin.audio_side_chain_title ? uiPlugin.audio_side_chain_title : "Side chain";
+
+                return (
+                    <SideChainSelectControl
+                        title={title}
+                        selectItems={items}
+                        selectedInstanceId={selectedInstanceId}
+                        onChanged={(instanceId: number) => {
+                            this.model.setPedalboardSideChainInput(this.props.item.instanceId, instanceId);
+
+                        }}
+                    />
+                );
+
+            }
+
             isLandscapeGrid(): boolean {
                 return this.state.landscapeGrid;
             }
@@ -575,7 +648,7 @@ const PluginControlView =
                 }
                 return (
                     <div key={key} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}
-                        style={{ borderWidth: (controlGroup.name === "" ? 0: undefined) }}
+                        style={{ borderWidth: (controlGroup.name === "" ? 0 : undefined) }}
                     >
                         {controlGroup.name !== "" && (
                             <div className={classes.portGroupTitle}>
@@ -711,6 +784,11 @@ const PluginControlView =
                         );
                     }
                 }
+                if (plugin.audio_side_chain_inputs !== 0) {
+
+                    result.push(this.makeSideChainSelect(plugin));
+
+                }
 
                 return result;
             }
@@ -803,6 +881,9 @@ const PluginControlView =
                 return false;
             }
 
+            handleSelectSidechainInput() {
+                this.setState({sidechainDialogOpen: true});
+            }
 
             handleModGuiFileProperty(instanceId: number, filePropertyUri: string, selectedFile: string) {
                 let plugin = this.model.getUiPlugin(this.props.item.uri);
@@ -827,10 +908,30 @@ const PluginControlView =
                 if (!uiPlugin) {
                     return (<div />);
                 }
+                let toolBarChildren: ReactNode[] = [];
+                if (uiPlugin.audio_side_chain_inputs > 0) {
+                    toolBarChildren.push(
+                        <IconButtonEx tooltip="Select sidechain input"
+                            onClick={() => {
+                                this.handleSelectSidechainInput();
+                            }}
+                        >
+                            <SidechainConnectIcon
+                                style={{
+                                    opacity: 0.6,
+                                    width: 24,
+                                    height: 24,
+                                    fill: this.props.theme.palette.text.primary
+                                }}
+                            />
+                        </IconButtonEx>
+                    );
+                }
                 return (
                     <div style={{ width: "100%", height: "100%", }}>
                         <AutoZoom leftPad={36} rightPad={52} contentReady={this.state.modGuiContentReady}
                             showZoomed={this.state.showModGuiZoomed}
+                            toolbarChildren={toolBarChildren}
                             setShowZoomed={
                                 (value) => { this.setState({ showModGuiZoomed: value }); }
                             }
@@ -1010,6 +1111,16 @@ const PluginControlView =
                                     this.setState({ showFileDialog: false });
                                 }
                                 }
+                            />
+                        )}
+                        {this.state.sidechainDialogOpen && (
+                            <SideChainSelectDialog open={this.state.sidechainDialogOpen}
+                                onClose={()=>{ this.setState({sidechainDialogOpen: false});}}
+                            selectItems={this.getSidechainSelectItems()}
+                            selectedInstanceId={this.props.item.sideChainInputId}
+                            onChanged={(instanceId: number) => {
+                                this.model.setPedalboardSideChainInput(this.props.item.instanceId, instanceId);
+                            }}
                             />
                         )}
                         {/* xxx: I don't think we need this anyore. */}

@@ -550,19 +550,16 @@ export class PiPedalModel //implements PiPedalModel
         );
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
 
+    uiPluginsByUri: Map<string, UiPlugin> = new Map<string, UiPlugin>();
+
     svgImgUrl(svgImage: string): string {
-        //return this.varServerUrl + "img/" + svgImage;
+        // return this.varServerUrl + "img/" + svgImage;
         return "img/" + svgImage;
     }
 
 
     getUiPlugin(uri: string): UiPlugin | null {
-        let plugins: UiPlugin[] = this.ui_plugins.get();
-
-        for (let plugin of plugins) {
-            if (plugin.uri === uri) return plugin;
-        }
-        return null;
+        return this.uiPluginsByUri.get(uri) ?? null;
     }
 
     androidHost?: AndroidHostInterface;
@@ -662,6 +659,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     private setModelPedalboard(pedalboard: Pedalboard) {
+        this.removeInvalidSidechains(pedalboard);
         this.pedalboard.set(pedalboard);
         this.selectedSnapshot.set(pedalboard.selectedSnapshot);
         this.updateEnabledItems(pedalboard);
@@ -1210,6 +1208,11 @@ export class PiPedalModel //implements PiPedalModel
             this.ui_plugins.set(
                 UiPlugin.deserialize_array(await this.getWebSocket().request<any>("plugins"))
             );
+            // index ui plugins.
+            this.uiPluginsByUri = new Map<string, UiPlugin>();
+            for (let i of this.ui_plugins.get()) {
+                this.uiPluginsByUri.set(i.uri, i);
+            }
             this.setModelPedalboard(
                 new Pedalboard().deserialize(
                     await this.getWebSocket().request<Pedalboard>("currentPedalboard")
@@ -1761,13 +1764,17 @@ export class PiPedalModel //implements PiPedalModel
         }
 
         let it = newPedalboard.itemsGenerator();
+        let oldInstanceId = -1;
+        let newInstanceId = -1;
         while (true) {
             let v = it.next();
             if (v.done) break;
             let item = v.value;
             if (item.instanceId === itemId) {
+                oldInstanceId = item.instanceId;
                 item.deserialize(new PedalboardItem()); // skeezy way to re-initialize.
                 item.instanceId = ++newPedalboard.nextInstanceId;
+                newInstanceId = item.instanceId;
                 item.uri = selectedUri;
                 item.pluginName = plugin.name;
                 item.controlValues = this.getDefaultValues(item.uri);
@@ -1782,6 +1789,9 @@ export class PiPedalModel //implements PiPedalModel
                     item.pathProperties[fileProperty.patchProperty] = "null";
                 }
                 newPedalboard.selectedPlugin = item.instanceId;
+                if (oldInstanceId !== -1) {
+                    this.updateSidechainReferences(newPedalboard, oldInstanceId, newInstanceId);
+                }
                 this.setModelPedalboard(newPedalboard);
                 this.updateServerPedalboard()
                 return item.instanceId;
@@ -1936,6 +1946,9 @@ export class PiPedalModel //implements PiPedalModel
         newPedalboard.replaceItem(fromInstanceId, emptyItem);
         newPedalboard.replaceItem(toInstanceId, fromItem);
         newPedalboard.selectedPlugin = fromItem.instanceId;
+        if (!toItem.isEmpty()) {
+            this.updateSidechainReferences(newPedalboard, toItem.instanceId, fromItem.instanceId);
+        }
         this.setModelPedalboard(newPedalboard);
         this.updateServerPedalboard();
 
@@ -3543,14 +3556,66 @@ export class PiPedalModel //implements PiPedalModel
 
     }
     requestBankPresets(bankInstanceId: number): Promise<PresetIndexEntry[]> {
-        return nullCast(this.webSocket).request<PresetIndexEntry[]>("requestBankPresets", {bankInstanceId: bankInstanceId});
-    }   
+        return nullCast(this.webSocket).request<PresetIndexEntry[]>("requestBankPresets", { bankInstanceId: bankInstanceId });
+    }
 
     importPresetsFromBank(bankInstanceId: number, presets: number[]): Promise<number> {
-        return nullCast(this.webSocket).request<number>("importPresetsFromBank", {bankInstanceId: bankInstanceId, presets: presets});
+        return nullCast(this.webSocket).request<number>("importPresetsFromBank", { bankInstanceId: bankInstanceId, presets: presets });
     }
     copyPresetsToBank(bankInstanceId: number, presets: number[]): Promise<number> {
-        return nullCast(this.webSocket).request<number>("copyPresetsToBank", {bankInstanceId: bankInstanceId, presets: presets});
+        return nullCast(this.webSocket).request<number>("copyPresetsToBank", { bankInstanceId: bankInstanceId, presets: presets });
+    }
+    setPedalboardSideChainInput(instanceId: number, sideChainInputId: number): void {
+        let pedalboard = this.pedalboard.get().clone();
+        let pedalboardItem = pedalboard.getItem(instanceId);
+        if (!pedalboardItem) {
+            return;
+        }
+        pedalboardItem.sideChainInputId = sideChainInputId;
+        let oldId = pedalboardItem.instanceId;
+        let newId = ++pedalboard.nextInstanceId;
+
+        pedalboardItem.instanceId = newId; // force reload of pedalboard.
+        pedalboard.selectedPlugin = pedalboardItem.instanceId;
+
+        this.updateSidechainReferences(pedalboard, oldId, newId);
+        this.setModelPedalboard(pedalboard);
+        this.updateServerPedalboard();
+
+    }
+
+    removeInvalidSidechains(pedalboard: Pedalboard) {
+        let it = pedalboard.itemsGeneratorSplitAfter();
+        let previousItemIds: Set<number> = new Set<number>();
+        previousItemIds.add(-2); // start is visible.
+        while (true) {
+            let r = it.next();
+            if (r.done) {
+                break;
+            }
+            let item = r.value;
+            if (item.sideChainInputId !== -1) {
+                if (!previousItemIds.has(item.sideChainInputId)) {
+                    item.sideChainInputId = -1;
+                }
+            }
+            if (!item.isEmpty()) { // empty items are not valid sidechain targets.
+                previousItemIds.add(item.instanceId);
+            }
+        }
+    }
+    updateSidechainReferences(pedalboard: Pedalboard, oldItemId: number, newItemId: number) {
+        let it = pedalboard.itemsGenerator();
+
+        while (true) {
+            let r = it.next();
+            if (r.done) break;
+            let item = r.value;
+            if (item.sideChainInputId === oldItemId) {
+                item.sideChainInputId = newItemId;
+            }
+        }
+        this.removeInvalidSidechains(pedalboard);
     }
 };
 

@@ -24,17 +24,40 @@ import { withStyles } from "tss-react/mui";
 import { createStyles } from './WithStyles';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import IconButtonEx from './IconButtonEx';
-import { isDarkMode } from './DarkMode';
 import Backdrop from '@mui/material/Backdrop';
-import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+
 import Rect from './Rect';
+import { css } from '@emotion/react';
+
 
 import { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 
 const styles = (theme: Theme) => createStyles({
-    pgraph: {
+    pgraph: css({
         paddingBottom: 16
-    }
+    }),
+    backdrop: css({
+        zIndex: 1101,
+        overflow: "clip",
+        background: theme.palette.background.default,
+
+    }),
+    noToolbar: css({
+        display: "none"
+    }),
+    topToolBar: css({
+        position: "absolute",
+        zIndex: 1101,
+        top: 0,
+        display: "flex", flexFlow: "row nowrap", justifyContent: "start", columnGap: 8,
+    }),
+    rightToolbar: css({
+        position: "absolute",
+        zIndex: 1101,
+        top: 24,
+        display: "flex", flexFlow: "column nowrap", rowGap: 8
+    })
 });
 
 
@@ -42,6 +65,7 @@ export interface AutoZoomProps extends WithStyles<typeof styles> {
     leftPad: number,
     rightPad: number,
     children?: React.ReactNode,
+    toolbarChildren?: React.ReactNode[],
     contentReady: boolean,
     showZoomed: boolean,
     setShowZoomed: (value: boolean) => void;
@@ -53,6 +77,15 @@ export interface AutoZoomState {
 }
 
 
+// non-react zoom state.
+class UnzoomedLayout {
+    horizontalToolbar = false;
+    effectiveClientRect: Rect = new Rect();
+    showToolbar = false;
+    zoom: number = 1;
+    showZoomButton = false;
+    contentRect: Rect = new Rect();
+}
 
 const AutoZoom = withStyles(
     class extends ResizeResponsiveComponent<AutoZoomProps, AutoZoomState> {
@@ -97,38 +130,43 @@ const AutoZoom = withStyles(
                 if (this.normalRef) {
                     this.updateZoom(this.normalRef);
                 }
-                if (this.maximizedRef) {
-                    this.updateMaximizedZoom();
-                }
             }
         }
 
         resizeObserver: ResizeObserver | null = null;
 
 
-        calculateZoomedClientRect(
+        calculateUnzoomedLayout(
             clientRect: Rect,
             contentWidth: number,
             contentHeight: number,
             buttonPadding: number
-        ): Rect {
+        ): UnzoomedLayout {
 
-            console.log("Zoom: " + clientRect.toString() + " content: " + contentWidth + "x" + contentHeight + " buttonPadding: " + buttonPadding);
+            let result = new UnzoomedLayout();
+
             let rightButtonZoom = Math.min((clientRect.width - buttonPadding) / contentWidth, clientRect.height / contentHeight);
             let topButtonZoom = Math.min((clientRect.width - buttonPadding) / contentWidth, (clientRect.height - buttonPadding) / contentHeight);
 
             let effectiveClientRect = clientRect.copy();
             if (rightButtonZoom > topButtonZoom) {
+                result.horizontalToolbar = false;
                 effectiveClientRect.width -= buttonPadding;
             } else {
+                result.horizontalToolbar = true;
                 effectiveClientRect.y += buttonPadding;
                 effectiveClientRect.height -= buttonPadding;
             }
+            result.effectiveClientRect = effectiveClientRect;
 
             let zoom = Math.min(effectiveClientRect.width / contentWidth, effectiveClientRect.height / contentHeight);
             if (zoom > 1) {
                 zoom = 1;
             }
+            result.zoom = zoom;
+            result.showZoomButton = zoom !== 1;
+            result.showToolbar = result.showZoomButton || !!this.props.toolbarChildren;
+
             let leftPad = (effectiveClientRect.width - contentWidth * zoom) / 2;
             if (leftPad < 0) {
                 leftPad = 0;
@@ -137,7 +175,8 @@ const AutoZoom = withStyles(
             if (topPad < 0) {
                 topPad = 0;
             }
-            return new Rect(effectiveClientRect.x + leftPad, effectiveClientRect.y + topPad, contentWidth * zoom, contentHeight * zoom);
+            result.contentRect = new Rect(effectiveClientRect.x + leftPad, effectiveClientRect.y + topPad, contentWidth * zoom, contentHeight * zoom);
+            return result;
         }
 
         updateZoom(ref: HTMLDivElement) {
@@ -145,59 +184,58 @@ const AutoZoom = withStyles(
                 return;
             }
             let content = ref.firstElementChild as HTMLElement | null;
+            const classes = withStyles.getClasses(this.props);
 
             if (content) {
                 const { leftPad, rightPad } = this.props;
                 let bounds = new Rect(leftPad, 0, ref.clientWidth - leftPad - rightPad, ref.clientHeight - 8);
-                let zoomedClientRect = this.calculateZoomedClientRect(
+                let layout = this.calculateUnzoomedLayout(
                     bounds, content.clientWidth, content.clientHeight, 48);
+
+                let contentRect = layout.contentRect;
+
                 content.style.left = "0px";
                 content.style.top = "0px";
                 content.style.transformOrigin = "0 0"; // top-left corner
                 content.style.transform =
-                    `translate(${zoomedClientRect.x}px, ${zoomedClientRect.y}px) scale(${zoomedClientRect.width / content.clientWidth}, ${zoomedClientRect.height / content.clientHeight})`;
+                    `translate(${contentRect.x}px, ${contentRect.y}px) scale(${layout.zoom}, ${layout.zoom})`;
 
-                if (this.zoomButton) {
-                    this.zoomButton.style.display = zoomedClientRect.width < content.clientWidth ? "block" : "none";
-                    let rightSizeSpace = ref.clientWidth - zoomedClientRect.right;
-                    if (rightSizeSpace - rightPad >= 48) {
-                        this.zoomButton.style.top = `${zoomedClientRect.y + 24}px`;
-                        this.zoomButton.style.left = `${zoomedClientRect.right + 4}px`;
+                if (this.zoomToolbar) {
+                    if (!layout.showToolbar) {
+
+                        this.zoomToolbar.className = classes.noToolbar;
+                    } else if (layout.horizontalToolbar) {
+                        this.zoomToolbar.className = classes.topToolBar;
+                        this.zoomToolbar.style.left = `${contentRect.x +16}px`
+                        this.zoomToolbar.style.top = `${contentRect.y - 48}px`;
+                        this.zoomToolbar.style.width = `${contentRect.width}px`;
                     } else {
-                        this.zoomButton.style.top = `${zoomedClientRect.y - 48}px`;
-                        this.zoomButton.style.left = `${zoomedClientRect.right - 64 - 12}px`;
+                        this.zoomToolbar.className = classes.rightToolbar;
+                        this.zoomToolbar.style.left = "";
+                        this.zoomToolbar.style.top = `${contentRect.y}px`;
+                        this.zoomToolbar.style.left = `${contentRect.right + 4}px`;
+                        this.zoomToolbar.style.width = "";
                     }
+                }
+                if (this.zoomButton) {
+                    this.zoomButton.style.display = layout.showZoomButton ? "block" : "none";
                 }
 
                 // save the position of the Mod UI in page coordinates for later zooming.
-                this.zoomStartRect = zoomedClientRect.copy();
+                this.zoomStartRect = layout.contentRect.copy();
                 let refBounds = ref.getBoundingClientRect();
                 this.zoomStartRect.x += refBounds.left;
                 this.zoomStartRect.y += refBounds.top;
+            } else {
+                if (this.zoomToolbar) {
+                    this.zoomToolbar.className = classes.noToolbar;
+                }
             }
         }
 
         updateMaximizedZoom() {
-            let ref = this.maximizedRef;
-            if (!this.mounted || !ref) {
-                return;
-            }
-            let content = ref.firstElementChild as HTMLElement | null;
-
-            if (content) {
-                let leftPad = 16; let rightPad = 16;
-                let topPad = 16, bottomPad = 16;
-                let bounds: Rect;
-                bounds = new Rect(leftPad, topPad, ref.clientWidth - leftPad - rightPad, ref.clientHeight - topPad - bottomPad);
-
-                let zoomedClientRect = this.calculateZoomedClientRect(
-                    bounds, content.clientWidth, content.clientHeight, 48);
-                content.style.left = "0px";
-                content.style.top = "0px";
-                content.style.transformOrigin = "0 0"; // top-left corner
-                content.style.transform = `translate(${zoomedClientRect.x}px, ${zoomedClientRect.y}px) scale(${zoomedClientRect.width / content.clientWidth}, ${zoomedClientRect.height / content.clientHeight})`;
-                //console.log("Zoomed to: ", zoomedClientRect.toString());
-
+            if (this.normalRef) {
+                this.updateZoom(this.normalRef);
             }
         }
 
@@ -234,20 +272,20 @@ const AutoZoom = withStyles(
             }
             this.maximizedAnimateFrameHandle = window.requestAnimationFrame(() => {
                 this.maximizedAnimateFrameHandle = null;
-                if (this.maximizedRef) {
-                    this.updateMaximizedZoom();
-                }
+                this.updateMaximizedZoom();
             });
         }
 
 
+        private zoomToolbar: HTMLElement | null = null;
         private zoomButton: HTMLElement | null = null;
         private normalRef: HTMLDivElement | null = null;
 
-        setNormalRef(ref: HTMLDivElement | null) {
+        setContentRef(ref: HTMLDivElement | null) {
             this.normalRef = ref;
             if (ref) {
-                this.zoomButton = ref.querySelector("#maximize-button") as HTMLDivElement | null;
+                this.zoomToolbar = ref.querySelector("#zoom-toolbar") as HTMLDivElement | null;
+                this.zoomButton = ref.querySelector("#zoom-button") as HTMLDivElement | null;
                 this.resizeObserver = new ResizeObserver(() => {
                     this.requestZoomUpdate();
                 });
@@ -261,35 +299,14 @@ const AutoZoom = withStyles(
                 if (this.resizeObserver) {
                     this.resizeObserver.disconnect();
                     this.resizeObserver = null;
-                    this.zoomButton = null;
+                    this.zoomToolbar = null;
                 }
                 this.zoomStartRect = null;
+                this.zoomToolbar = null;
+                this.zoomButton = null;
             }
         }
 
-
-        private maximizedRef: HTMLDivElement | null = null;
-        private maximedResizeObserver: ResizeObserver | null = null;
-
-        setMaximizedRef(ref: HTMLDivElement | null) {
-            this.maximizedRef = ref;
-            if (ref) {
-                this.maximedResizeObserver = new ResizeObserver(() => {
-                    this.requestMaximizedZoomUpdate();
-                });
-                this.maximedResizeObserver.observe(ref);
-                let child = ref.firstElementChild as HTMLElement | null;
-                if (child) {
-                    this.maximedResizeObserver.observe(child);
-                }
-                this.requestMaximizedZoomUpdate();
-            } else {
-                if (this.maximedResizeObserver) {
-                    this.maximedResizeObserver.disconnect();
-                    this.maximedResizeObserver = null;
-                }
-            }
-        }
 
         private zoomStartRect: Rect | null = null;
 
@@ -300,70 +317,77 @@ const AutoZoom = withStyles(
             this.props.setShowZoomed(true);
         }
 
-        render() {
+        content() {
             const classes = withStyles.getClasses(this.props);
             void classes; // suppress unused variable warning
-            const landscape = this.state.screenWidth > this.state.screenHeight;
-            return (<div style={{ overflow: "hidden", height: "100%", width: "100%" }} ref={(ref) => { this.setNormalRef(ref); }}>
-                <div style={{
-                    display: "inline-block",
-                    position: "absolute",
-                    visibility: this.props.contentReady ? "visible" : "hidden",
-
-                }}>
-                    {!this.props.showZoomed && this.props.children}
-                </div>
-                <div id="maximize-button" style={{
-                    display: "none", position: "absolute", left: 0, top: 0, width: 52, height: 64, zIndex: 1101,
-                    borderRadius: "0px 26px 26px 0px",
-
-                }}
+            return (
+                <div ref={(ref) => { this.setContentRef(ref); }}
+                    style={{ width: "100%", height: "100%" }}
                 >
-                    <IconButtonEx tooltip="Fullscreen view"
-                        style={{ margin: 2, background: isDarkMode() ? "#444" : "#eee" }}
-                        onClick={() => {
-                            this.startZoom();
+                    <div style={{
+                        display: "inline-block",
+                        position: "absolute",
+                        visibility: this.props.contentReady ? "visible" : "hidden"
+
+                    }}>
+                        {this.props.children}
+                    </div>
+                    <div id="zoom-toolbar" className={classes.noToolbar}
+                        style={{
+                            visibility: this.props.contentReady ? "visible" : "hidden"
                         }}
                     >
-                        <FullscreenIcon style={{ color: "white" }} />
-                    </IconButtonEx>
-                </div>
-                {this.props.showZoomed && (
-                    <Backdrop id="modGuiZoomBackdrop"
-                        sx={(theme) => ({
-                            zIndex: this.props.showZoomed ? 1101 : -1,
-                            overflow: "clip",
-                            background: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)'
-                        })}
-                        open={this.props.showZoomed}
-                    >
-                        <div ref={(ref) => { this.setMaximizedRef(ref); }}
-                            style={{
-                                position: "absolute", left: 0, top: 0, right: 0, bottom: 0, overflow: "hidden",
-                                visibility: this.props.contentReady ? "visible" : "hidden"
-                            }}>
-
-                            <div style={{ display: "inline-block", position: "relative" }}>
-                                {
-                                    this.props.showZoomed && this.props.children
-                                }
-                            </div>
-
-                            <IconButtonEx tooltip="Exit fullscreen"
-                                style={{
-                                    position: "absolute", 
-                                        right: landscape? 80: 16, // avoid potential cutout in landscape mode
-                                    top: 16, zIndex: 1104,
-
+                        {!this.props.showZoomed ? (
+                            <IconButtonEx id="zoom-button" tooltip="Fullscreen view"
+                                onClick={() => {
+                                    this.startZoom();
                                 }}
+                            >
+                                <FullscreenIcon style={{ opacity: 0.6 }}
+                                />
+                            </IconButtonEx>
+
+                        ) : (
+                            <IconButtonEx tooltip="Exit fullscreen"
+                                style={{}}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     this.props.setShowZoomed(false);
                                 }}
                             >
-                                <CloseIcon />
+                                <ArrowBackIcon style={{
+                                    opacity: 0.6,
+                                }} />
                             </IconButtonEx>
-                        </div>
+                        )}
+
+
+                        {this.props.toolbarChildren && this.props.toolbarChildren.map((child, index) => (
+                            <div key={index} style={{ display: "inline-block" }}>
+                                {child}
+                            </div>
+                        ))}
+                    </div>
+
+                </div>
+            );
+
+        }
+
+        render() {
+            const classes = withStyles.getClasses(this.props);
+            void classes; // suppress unused variable warning
+
+            return (<div style={{ overflow: "hidden", height: "100%", width: "100%" }} >
+                {!this.props.showZoomed && this.content()}
+
+                {this.props.showZoomed && (
+                    <Backdrop id="modGuiZoomBackdrop"
+                        className={classes.backdrop}
+                        open={this.props.showZoomed}
+                    >
+                        {this.content()}
+
                     </Backdrop>
                 )}
             </div>);

@@ -57,6 +57,7 @@ namespace pipedal
         BufferPool bufferPool;
         std::vector<float *> pedalboardInputBuffers;
         std::vector<float *> pedalboardOutputBuffers;
+        float *pedalboardSidechainBuffer = nullptr;
 
         std::vector<std::shared_ptr<IEffect>> effects;
         std::vector<IEffect *> realtimeEffects;
