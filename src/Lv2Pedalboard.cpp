@@ -188,13 +188,15 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                                 {
                                     pLv2Effect->SetAudioSidechainBuffer(i, this->pedalboardInputBuffers[i]);
                                 }
-                                else 
+                                else
                                 {
                                     // just use the first output buffer for all sidechain inputs.
                                     pLv2Effect->SetAudioSidechainBuffer(i, this->pedalboardInputBuffers[0]);
                                 }
                             }
-                        } else if (item.sideChainInputId() != -1) {
+                        }
+                        else if (item.sideChainInputId() != -1)
+                        {
                             IEffect *pSideChainInput = GetEffect(item.sideChainInputId());
 
                             if (pSideChainInput)
@@ -205,13 +207,15 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                                     {
                                         pLv2Effect->SetAudioSidechainBuffer(i, pSideChainInput->GetAudioOutputBuffer(i));
                                     }
-                                    else 
+                                    else
                                     {
                                         // just use the first output buffer for all sidechain inputs.
                                         pLv2Effect->SetAudioSidechainBuffer(i, pSideChainInput->GetAudioOutputBuffer(0));
                                     }
                                 }
-                            } else {
+                            }
+                            else
+                            {
                                 throw std::runtime_error("Internal error: Sidechain input IEffect not found.");
                             }
                         }
@@ -418,11 +422,14 @@ void Lv2Pedalboard::PrepareMidiMap(const PedalboardItem &pedalboardItem)
                     {
                         mapping.mappingType = MidiControlType::Select;
                     }
+                    else if (binding.bindingType() == BINDING_TYPE_TAP_TEMPO) {
+                        mapping.mappingType = MidiControlType::TapTempo;
+                    }
                     else
                     {
                         mapping.mappingType = MidiControlType::Dial;
                     }
-                    if (binding.bindingType() == BINDING_TYPE_NOTE)
+                    if (binding.bindingType() == BINDING_TYPE_NOTE || binding.bindingType() == BINDING_TYPE_TAP_TEMPO)
                     {
                         mapping.key = 0x9000 | binding.note(); // i.e. midi note on.
                     }
@@ -539,6 +546,8 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
             outputBuffers[c][i] = this->pedalboardOutputBuffers[c][i] * volume;
         }
     }
+    this->currentFrameOffset += samples;
+
     return true;
 }
 
@@ -715,14 +724,17 @@ void Lv2Pedalboard::GatherPatchProperties(RealtimePatchPropertyRequest *pParamet
     }
 }
 
-void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
-                                  void *callbackHandle,
-                                  MidiCallbackFn *pfnCallback)
+void Lv2Pedalboard::OnMidiMessage(
+    const MidiEvent&event,
+    void *callbackHandle,
+    MidiCallbackFn *pfnCallback)
 
 {
     if (midiMappings.size() == 0)
         return;
 
+    size_t size = event.size;
+    const uint8_t *message = event.buffer;
     if (size < 2)
         return;
     uint8_t cmd = message[0];
@@ -791,7 +803,7 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
 
         for (int i = min; i < midiMappings.size(); ++i)
         {
-            auto &mapping = midiMappings[i];
+            MidiMapping &mapping = midiMappings[i];
             if (mapping.key != searchKey)
                 break;
 
@@ -914,11 +926,93 @@ void Lv2Pedalboard::OnMidiMessage(size_t size, uint8_t *message,
                     }
                     break;
                 }
+                case MidiControlType::TapTempo:
+                {
+                    handleTapTempo(value, event.timeStamp, mapping,  callbackHandle, pfnCallback);
+                    break;
+                }
                 case MidiControlType::None:
                 default:
                     break;
                 }
             }
         }
+    }
+}
+
+void Lv2Pedalboard::handleTapTempo(uint8_t value, const MidiTimestamp& timestamp, MidiMapping &mapping, void *callbackHandle, MidiCallbackFn *pfnSetControlCallback)
+{
+    if (value != 0) // only on note on
+    {
+        if (!mapping.lastTapTimestamp.isEmpty())
+        {
+            double seconds = timestamp.timeDiff(mapping.lastTapTimestamp); 
+            if (seconds > 60.0/450.0) // debounce check. (~= 450bpm)
+            {
+                auto units = mapping.pPortInfo->units();
+                float controlValue = -1;
+                switch (units)
+                {
+                case Units::bpm:
+                {
+                    controlValue = 60.0f / (float)seconds;
+                    break;
+                }
+                case Units::hz:
+                {
+                    controlValue = 1.0f / (float)seconds;
+                    break;
+                }
+                case Units::s:
+                {
+                    controlValue = (float)(seconds);
+                    break;
+                }
+                case Units::ms:
+                {
+                    controlValue = (float)(seconds * 1000.0);
+                    break;
+                }
+                default:
+                {
+                    controlValue = -1;
+                }
+                }
+                if (mapping.pPortInfo->min_value() < mapping.pPortInfo->max_value())
+                {
+                    if (controlValue < mapping.pPortInfo->min_value())
+                    {
+                        controlValue = -1;
+                    }
+                    else if (controlValue > mapping.pPortInfo->max_value())
+                    {
+                        controlValue = -1;
+                    }
+                }
+                else
+                {
+                    if (controlValue > mapping.pPortInfo->min_value())
+                    {
+                        controlValue = -1;
+                    }
+                    else if (controlValue < mapping.pPortInfo->max_value())
+                    {
+                        controlValue = -1;
+                    }
+                }
+                if (controlValue != -1)
+                {
+
+                    IEffect *pEffect = this->realtimeEffects[mapping.effectIndex];
+                    if (pEffect->IsLv2Effect())
+                    {
+                        Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect *>(pEffect);
+                        pEffect->SetControl(mapping.controlIndex, controlValue);
+                        pfnSetControlCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), controlValue);
+                    }
+                }
+            }
+        }
+        mapping.lastTapTimestamp = timestamp;
     }
 }

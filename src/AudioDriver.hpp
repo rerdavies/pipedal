@@ -26,6 +26,7 @@
 #include "JackConfiguration.hpp"
 #include <functional>
 #include "AlsaSequencer.hpp"
+#include "MidiEvent.hpp"
 
 
 
@@ -33,15 +34,6 @@ namespace pipedal {
 
 
     using ProcessCallback = std::function<void (size_t)>;
-
-
-
-    struct MidiEvent
-    {
-        uint32_t    time;   /**< Sample frame at which event is valid */
-        uint32_t  size;   /**< Number of bytes of data in \a buffer */
-        uint8_t  *buffer; /**< Raw MIDI data */
-    };
 
 
     class AudioDriverHost {

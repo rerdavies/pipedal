@@ -19,6 +19,7 @@
 
 #pragma once
 #include "Pedalboard.hpp"
+#include "MidiEvent.hpp"
 #include "PluginHost.hpp"
 #include "Lv2Effect.hpp"
 #include "BufferPool.hpp"
@@ -49,8 +50,9 @@ namespace pipedal
 
     class Lv2Pedalboard
     {
+    private:
         IHost *pHost = nullptr;
-
+        size_t currentFrameOffset = 0;
         DbDezipper inputVolume;
         DbDezipper outputVolume;
 
@@ -82,7 +84,8 @@ namespace pipedal
             Dial,
             Toggle,
             Trigger,
-            MomentarySwitch
+            MomentarySwitch,
+            TapTempo
         };
         class MidiMapping
         {
@@ -93,6 +96,7 @@ namespace pipedal
             int effectIndex = -1;
             int controlIndex = -1;
             int key; // key to the note or control. internal use only.
+            MidiTimestamp lastTapTimestamp;
             bool hasLastValue = false;
             bool lastValueIncreasing = false;
             float lastValue = 0;
@@ -119,12 +123,10 @@ namespace pipedal
         Lv2Pedalboard() {}
         ~Lv2Pedalboard() {}
 
-
         void Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList, ExistingEffectMap *existingEffects = nullptr);
 
         std::vector<IEffect *> &GetEffects() { return realtimeEffects; }
         std::vector<std::shared_ptr<IEffect>> &GetSharedEffectList() { return effects; }
-
 
         int GetIndexOfInstanceId(uint64_t instanceId)
         {
@@ -149,7 +151,7 @@ namespace pipedal
         void Activate();
         void Deactivate();
         void UpdateAudioPorts();
-        
+
         bool Run(float **inputBuffers, float **outputBuffers, uint32_t samples, RealtimeRingBufferWriter *realtimeWriter);
 
         void ResetAtomBuffers();
@@ -172,9 +174,19 @@ namespace pipedal
         float GetControlOutputValue(int effectIndex, int portIndex);
 
         typedef void(MidiCallbackFn)(void *data, uint64_t intanceId, int controlIndex, float value);
-        void OnMidiMessage(size_t size, uint8_t *data,
-                           void *callbackHandle,
-                           MidiCallbackFn *pfnCallback);
+        void OnMidiMessage(
+            const MidiEvent&message,
+            void *callbackHandle,
+            MidiCallbackFn *pfnCallback);
+private:
+        void handleTapTempo(
+            uint8_t value, 
+            const MidiTimestamp& timestamp, 
+            MidiMapping &mapping,
+            void *callbackHandle,
+            MidiCallbackFn *pfnCallback);
+
+
     };
 
 } // namespace

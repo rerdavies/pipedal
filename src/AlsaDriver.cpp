@@ -1686,7 +1686,8 @@ namespace pipedal
                     continue;
                 }
                 MidiEvent *pEvent = midiEvents.data() + midiEventCount++;
-                pEvent->time = audioFrame;
+                pEvent->timeStamp = MidiTimestamp(message.realtime_sec, message.realtime_nsec);
+                pEvent->frame = audioFrame;
                 pEvent->size = messageSize;
                 pEvent->buffer = midiEventMemory.data() + midiEventMemoryIndex;
 
