@@ -42,7 +42,6 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import GraphicEqCtl, { UpdateGraphicEqPath } from './GraphicEqCtl';
-import Units from './Units';
 
 const MIN_ANGLE = -135;
 const MAX_ANGLE = 135;
