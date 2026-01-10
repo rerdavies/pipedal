@@ -17,7 +17,7 @@ Here is a brief list of other particularly recommended plugin collections.
 | Collection                      | To Install                            | Description      |
 |---------------------------------|---------------------------------------|------------------|
 | [Guitarix](https://guitarix.org) ★★★☆☆ | `sudo apt install guitarix-lv2`         | A large collection of guitar amplifiers and effects. Prior to the advent of neural network amplifier emulations, Guitarix was the go-to source for open-source amp modeling.|
-| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | `sudo apt install gxplugins` | Additional amps and effects from the the principle developer of Guitarix, many of which are significantly superior to the original Guitarix plugins. Most of these plugins 
+| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | On Raspberry Pi Os: `sudo apt install gxplugins`, on amd64/x64 download from [Github](https://github.com/brummer10/GxPlugins.lv2/releases)  | Additional amps and effects from the the principle developer of Guitarix, many of which are significantly superior to the original Guitarix plugins. Most of these plugins 
 use circuit simulation to directly model actual original circuits. The results are uniformly excellent.|
 | [DPF Plugins](https://github.com/DISTRHO/DPF-Plugins) ★★★★★   | `sudo apt install dpf-plugins-lv2` | Useful and interesting guitar effect plugins. Bit crusher, pitch shift, reverbs, 3-band EQ and more. |
 | [MDA Plugins](http://drobilla.net/software/mda-lv2.html) ★★★★☆ | `sudo apt install mda-lv2` | 36 high-quality plugs |

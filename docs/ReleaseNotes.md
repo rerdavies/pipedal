@@ -2,10 +2,14 @@
 
 ## PiPedal 1.5.94 Beta
 
-### Major Features in This Build
+A minor release that allows use of plugins with audio sidechains.
 
-- **Sidechains**. You can now load plugins that have sidechain inputs. This allows you to use compressor and gate plugins that often have 
-sidechains. Plugins that have sidechain inputs will show a dropdown control in their control view which allows you to select the source of the sidechain input. The source plugin must for the sidechain must appear earlier in the signal chain.
+### Features in this release
+
+- **Sidechains**. You can now load plugins that have sidechain inputs. This allows you to use compressor and gate plugins, particularly, that often have sidechains, but also enables a broad class of dynamics processing plugins that would not be loadable in previous versions of PiPedal. Plugins that have sidechain inputs will show a dropdown control in their control view which allows you to select the source of the sidechain input. The source plugin for the sidechain must appear earlier in the signal chain.
+
+    Although sidechain processing is occasionally useful in guitar effect pedalboards, the more important part of this feature is that it allows you to load plugins that were rejected by previous versions of PiPedal because they had optional sidechain inputs.
+
 
 ## PiPedal 1.5.93 Release
 
