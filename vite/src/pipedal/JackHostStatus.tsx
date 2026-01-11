@@ -27,6 +27,10 @@ const GREEN_COLOR = isDarkMode() ? "rgba(255,255,255,0.7)" : "#666";
 
 
 function tempDisplay(mC: number): string {
+    if (mC <= -40000) // no tempoerature available.
+    { 
+        return "";
+    }
     return (mC / 1000).toFixed(1) + "\u00B0C"; // degrees C.
 }
 function cpuDisplay(cpu: number): string {
