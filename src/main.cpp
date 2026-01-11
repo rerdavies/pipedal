@@ -277,8 +277,13 @@ int main(int argc, char *argv[])
     const std::filesystem::path webTempDirectory = "/var/pipedal/web_temp";
     if (!webTempDirectory.empty())
     {
-        std::filesystem::remove_all(webTempDirectory); //// user must belong to the pipedald grop when debugging.
-        std::filesystem::create_directories(webTempDirectory);
+        try {
+            std::filesystem::remove_all(webTempDirectory); //// user must belong to the pipedald grop when debugging.
+            std::filesystem::create_directories(webTempDirectory);
+        }
+        catch (const std::exception e) {
+            Lv2Log::warning(e.what());
+        }
     }
 
     // configure AudiDirectoryInfo to use the correct directories.

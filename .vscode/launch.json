@@ -7,7 +7,7 @@
 {
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
-    // For more information, visicat t: https://go.microsoft.com/fwlink/?linkid=830387
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
     
@@ -21,34 +21,6 @@
             "request": "launch",
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
-            "args": [ 
-                "hw:M2",
-                "hw:M2"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                }
-            ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) external console",
-            "type": "cppdbg",
-            "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "${command:cmake.launchTargetPath}",
             "args": [    ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -58,7 +30,7 @@
                     "value": "$PATH:${command:cmake.launchTargetDirectory}"
                 }
             ],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
                 {
@@ -104,7 +76,7 @@
             "request": "launch",
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
-            "args": [   "/etc/pipedal/config",  "${workspaceFolder}/vite/dist",  "-port", "0.0.0.0:8080", "-log-level","debug"  ],
+            "args": [   "/etc/pipedal/config",  "/etc/pipedal/react",  "-port", "0.0.0.0:8080"  ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [
@@ -115,8 +87,7 @@
                 {
                     "name": "LD_LIBRARY_PATH",
                     "value": "/usr/local/lib/aarch64-linux-gnu"
-                }, 
-
+                }
             ],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -141,11 +112,7 @@
                 //"[json_variants]"  // subtest of your choice, or none to run all of the tests.
                 //"[inverting_mutex_test]"
                 // "[utf8_to_utf32]"
-                //"[pipedal_alsa_test]"
-                // "[wifi_channels_test]"
-                // "[locale]"
-                //"[mod_gui_init]"
-                "[mod_gui_templates]"
+                "[wifi_channels_test]"
             ],
 
             "stopAtEntry": false,
@@ -180,7 +147,7 @@
             "args": [
                 //"[Dev]"  -- all dev-machine tests.
                 //"[promise]"  // subtest of your choice, or none to run all of the tests.
-                "[json_variants]"
+                "[atom_converter]"
             ],
 
             "stopAtEntry": false,
@@ -238,84 +205,6 @@
                 }
             ]
         },
-        {
-            "name": "(gdb) pipedalProfilePlugin",
-            "type": "cppdbg",
-            "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "${command:cmake.launchTargetPath}",
-
-            "args": [               
-                "--no-profile", "-w", 
-                // "TooB NAM"
-                "--preset-file", "/tmp/namPreset.preset"
-            ],
-
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                },
-                {
-                    "name": "OTHER_VALUE",
-                    "value": "Something something"
-                }
-            ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) pipedalconfigX",
-            "type": "cppdbg",
-            "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "/home/robin/src/pipedal/build/src/pipedalconfig",
-            "args": [ 
-                "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
-                //"--get-current-port"
-                // "--uninstall"
-                //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
-                // "--alsa-devices"
-                "--prefix", "/usr",
-                "--install", "--port", "0"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "$PATH:${command:cmake.launchTargetDirectory}"
-                },
-                {
-                    "name": "ASAN_OPTIONS",
-                    "value": "detect_leaks=0"
-
-                },
-               {
-                    "name": "OTHER_VALUE",
-                    "value": "Something something"
-                }
-            ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-
 
         {
             "name": "(gdb) processCopyrights Launch",
@@ -362,13 +251,17 @@
             ]
         },
         {
-            "name": "(gdb) pipedal_alsa_check",
+            "name": "(gdb) pipedalconfig",
             "type": "cppdbg",
             "request": "launch",
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
-            "args": [
-                //"hw:M2"
+            "args": [ 
+                "--nosudo", // run without sudo (which will fail because of perms, but allow us to debug deeper into install code.)
+                //"--get-current-port"
+                // "--uninstall"
+                //"--enable-p2p" , "CA", "PiPedalTest","12345678","14"
+                "--list-p2p-channels"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -376,6 +269,15 @@
                 {
                     "name": "PATH",
                     "value": "$PATH:${command:cmake.launchTargetDirectory}"
+                },
+                {
+                    "name": "ASAN_OPTIONS",
+                    "value": "detect_leaks=0"
+
+                },
+               {
+                    "name": "OTHER_VALUE",
+                    "value": "Something something"
                 }
             ],
             "externalConsole": false,
