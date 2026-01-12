@@ -16,7 +16,7 @@ You can create up to six snapshots for any given preset. A snapshot differs from
 - Loading a snapshot is much faster than loading a preset, because new plugins don't have to be created.
 - You can configure PiPedal to switch between snapshots in response to MIDI messages from a MIDI foot controller or other device.`
 
-Snapshots are useful if you have a USB or MIDI foot controller. You can configure PiPedal to switch between snapshots when you step on buttons on your foot controller. To configure MIDI bindings for snapshots, select <b><i>Settings</i></b> from the main menu, and tap on <b><i>System MIDI bindings</i></b>.
+Snapshots are particularly useful if you have a USB or MIDI foot controller. You can configure PiPedal to switch between snapshots when you step on buttons on your foot controller. To configure MIDI bindings for snapshots, select <b><i>Settings</i></b> from the main menu, and tap on <b><i>System MIDI bindings</i></b>.
 
 But snapshots are equally useful when you are using PiPedal's <b><i>Performance View</i></b>. To access the <b><i>Performance View</i></b> click on the <b><i>Performance View</i></b> menu item in the main PiPedal menu.
   

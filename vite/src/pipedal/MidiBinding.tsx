@@ -67,6 +67,7 @@ export default class MidiBinding {
     static  BINDING_TYPE_NONE: number = 0;
     static  BINDING_TYPE_NOTE: number = 1;
     static  BINDING_TYPE_CONTROL: number = 2;
+    static  BINDING_TYPE_TAP_TEMPO: number = 3;
 
     setBindingType(bindingType:number)
     {

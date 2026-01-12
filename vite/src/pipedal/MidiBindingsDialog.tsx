@@ -69,6 +69,17 @@ const styles = (theme: Theme) => createStyles({
     }),
 });
 
+function canDoTapTempo(uiPlugin: UiPlugin | undefined, symbol: string): boolean {
+    if (!uiPlugin) return false;
+    let port = uiPlugin.getControl(symbol);
+    if (!port) return false;
+
+    if (port.canDoTapTempo()) {
+        return true;
+    }
+    return false;
+}
+
 function not_null<T>(value: T | null) {
     if (!value) throw Error("Unexpected null value");
     return value;
@@ -200,7 +211,9 @@ export const MidiBindingDialog =
                                     </td>
                                     <td className={classes.bindingTd}>
                                         <MidiBindingView instanceId={item.instanceId} midiBinding={item.getMidiBinding("__bypass")}
-                                            midiControlType={ getMidiControlType(plugin, "__bypass") }
+                                            midiControlType={ getMidiControlType(plugin, "__bypass")
+                                             }
+                                             canDoTapTempo={false }
                                             onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
                                         />
                                     </td>
@@ -244,6 +257,7 @@ export const MidiBindingDialog =
                                         <MidiBindingView instanceId={item.instanceId}
                                             midiControlType={getMidiControlType(plugin, symbol)}
                                             midiBinding={item.getMidiBinding(symbol)}
+                                            canDoTapTempo={canDoTapTempo(plugin, symbol)}
                                             onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
                                         />
                                     </td>

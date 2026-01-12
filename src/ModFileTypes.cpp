@@ -50,7 +50,7 @@ static std::vector<ModFileTypes::ModDirectory> *CreateModDirectories()
         // extensions observed in the field.
         {"audio", "shared/audio", "Audio", {"audio/*"}},                              // all audio files (Ratatouille)
         {"nammodel", "NeuralAmpModels", "Neural Amp Models", {".nam" ,".aidax"}},              // Ratatouille, Mike's NAM.
-        {"aidadspmodel", "shared/aidaaix", "AIDA IAX Models", {".json", ".aidaiax"}}, // Ratatouille
+        {"aidadspmodel", "shared/aidaaix", "AIDA IAX Models", {".json", ".aidax",".aidaiax"}}, // Ratatouille
         {"mlmodel", "ToobMlModels", "ML Models", {".json"}},                         //
 
 

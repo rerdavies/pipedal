@@ -1,5 +1,21 @@
 # Release Notes
 
+## PiPedal 1.5.95 Beta
+
+Usability tweaks that have been blocked by a pending major feature, that needed to be released to satisfy commitments made to users. Now pushed out for general use. 
+
+### Major features
+-    **Tap Tempo MIDI Bindings.** Use MIDI events to set time-based controls  for any plugin using tap tempo. The Tap Tempo MIDI binding is only visible for controls that have been declared as having units of seconds, milliseconds, Hz, or BPM by their owning plugin, and also have value ranges that are suitable for tap tempo controls.<br/>
+    To use Tap Tempo, open the _Midi Bindings_ dialog, and scroll to find a suitable control.  If the control supports Tap Tempo, you will find a _Tap Tempo_ entry in the dropdown that controls the event type.<br/>
+    Consecutive MIDI Note ON events are measured, and the target control will be set to match the measured time between events, as long as the time fits within valid value ranges for the control (again, as declared by the owning plugin).<br/>
+    Tap Tempo is only implemented for MIDI bindings, because the HTML event system used in the PiPedal UI is not responsive enough to implement usable tap-tempo control in the UI.
+
+### Minor Features
+- **Mix Plugin Phase Controls**. The TooB Mix plugin has new controls that allow independent phase inversion of left and right input channels.
+
+- The maximum delay for the TooB Delay plugin has been increased from 1.2 seconds to 3 seconds, in order to make it suitable for use with the new Tap Tempo feature.
+
+
 ## PiPedal 1.5.94 Beta
 
 A minor release that allows use of plugins with audio sidechains.
@@ -8,7 +24,7 @@ A minor release that allows use of plugins with audio sidechains.
 
 - **Sidechains**. You can now load plugins that have sidechain inputs. This allows you to use compressor and gate plugins, particularly, that often have sidechains, but also enables a broad class of dynamics processing plugins that would not be loadable in previous versions of PiPedal. Plugins that have sidechain inputs will show a dropdown control in their control view which allows you to select the source of the sidechain input. The source plugin for the sidechain must appear earlier in the signal chain.
 
-    Although sidechain processing is occasionally useful in guitar effect pedalboards, the more important part of this feature is that it allows you to load plugins that were rejected by previous versions of PiPedal because they had optional sidechain inputs.
+Although sidechain processing is occasionally useful in guitar effect pedalboards, the more important part of this feature is that it allows you to load third-part plugins (compressors, particularly) that were ignored by previous versions of PiPedal because they had optional sidechain inputs.
 
 
 ## PiPedal 1.5.93 Release

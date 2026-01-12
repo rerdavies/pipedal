@@ -37,6 +37,15 @@ function isMobileDevice() {
     return (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
 }
 
+function defaultStep(min: number, max: number): number {
+    let range = Math.abs(max - min);
+    if (range <= 1) return 0.01;    
+    if (range <= 10) return 0.1;
+    if (range <= 100) return 1;
+    if (range <= 1000) return 10;
+    return 100;
+}
+
 interface NumericInputProps extends WithStyles<typeof styles> {
     ariaLabel: string;
     value: number;
@@ -155,7 +164,7 @@ export const NumericInput =
 
             render() {
                 //const classes = withStyles.getClasses(this.props);
-                return (<Input style={{ width: 50 }}
+                return (<Input style={{ width: 65 }}
                     inputProps={{
                         'aria-label': this.props.ariaLabel,
                         style: { textAlign: 'right' },
@@ -166,7 +175,7 @@ export const NumericInput =
                         autoCapitalize: "off",
                         min: this.props.min,
                         max: this.props.max,
-                        step: this.props.step
+                        step: this.props.step ? this.props.step: defaultStep(this.props.min, this.props.max)
                     }}
                     onFocus={(e) => {this.handleFocus(e);}}
                     onBlur= {(e) => { this.handleBlur(e); }}

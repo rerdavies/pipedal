@@ -499,6 +499,8 @@ const PluginControl =
             }
             private tapStartMs: number = 0;
 
+
+
             onPointerUp(e: PointerEvent) {
 
                 if (this.isCapturedPointer(e)) {
@@ -519,7 +521,7 @@ const PluginControl =
                         let ms = e.timeStamp - this.tapStartMs;
                         if (ms < 200) {
                             this.onPointerTap(e);
-                        }
+                        } 
                     }
                     // prevent click from firing on other elements 
                     // when the pointer goes up0.

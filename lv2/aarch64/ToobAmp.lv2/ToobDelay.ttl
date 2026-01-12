@@ -41,7 +41,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 71 ;
+        lv2:microVersion 72 ;
         rdfs:comment """
 A straightforward no-frills digital delay.
 
@@ -61,7 +61,7 @@ A straightforward no-frills digital delay.
                 lv2:name "Delay";
                 lv2:default 340 ;
                 lv2:minimum 5;
-                lv2:maximum 1200;
+                lv2:maximum 3000;
                 units:unit units:ms;
                 lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic>;
                 rdfs:comment "Delay in ms";

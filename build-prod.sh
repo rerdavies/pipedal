@@ -4,7 +4,11 @@
 set -e
 
 # clean build
-rm -rf build
+
+if [ "$1" != "--continue" ]; then
+    rm -rf build
+fi
+
 
 # configure for release
 mkdir -p build

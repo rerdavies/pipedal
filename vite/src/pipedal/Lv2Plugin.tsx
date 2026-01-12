@@ -35,6 +35,11 @@ function semitone12TETValue(value: number): string {
 
 }
 
+export const MIN_TAP_TEMPO_SECONDS = 0.2;
+export const MAX_TAP_TEMPO_SECONDS = 1.0;
+export const MIN_TAP_TEMPO_HZ = 0.1;
+export const MAX_TAP_TEMPO_HZ = 2.0;
+
 
 export class Port implements Deserializable<Port> {
     deserialize(input: any): Port {
@@ -117,7 +122,7 @@ export class PortGroup {
     symbol: string = "";
     name: string = "";
     sideChainof: string = "";
-    
+
     parent_group: string = "";
     program_list_id: number = -1;
 };
@@ -654,6 +659,10 @@ export class UiControl implements Deserializable<UiControl> {
                 this.controlType = ControlType.Trigger;
             }
         }
+        if (this.controlType === ControlType.Dial) {
+            if (this.canDoTapTempo()) {
+            }
+        }
         return this;
     }
 
@@ -714,6 +723,7 @@ export class UiControl implements Deserializable<UiControl> {
     scale_points: ScalePoint[] = [];
     port_group: string = "";
     units: Units = Units.none;
+    can_tap_tempo: boolean = false;
     comment: string = "";
     is_bypass: boolean = false;
     is_program_controller: boolean = true;
@@ -777,6 +787,34 @@ export class UiControl implements Deserializable<UiControl> {
     }
     isDial(): boolean {
         return this.controlType === ControlType.Dial;
+    }
+
+
+    canDoTapTempo(): boolean {
+        if (this.controlType === ControlType.Dial) {
+            let min_value = this.min_value;
+            let max_value = this.max_value;
+            if (min_value > max_value) {
+                let t = min_value;
+                min_value = max_value;
+                max_value = t;
+            }
+            switch (this.units) {
+                case Units.s:
+                    return min_value <= MIN_TAP_TEMPO_SECONDS && max_value >= MAX_TAP_TEMPO_SECONDS;
+                case Units.ms:
+                    return min_value <= MIN_TAP_TEMPO_SECONDS*1000 && max_value >= MAX_TAP_TEMPO_SECONDS*1000;
+
+                case Units.bpm:
+                    return true;
+                case Units.hz:
+                    return min_value <= MIN_TAP_TEMPO_HZ && max_value >= MAX_TAP_TEMPO_HZ;
+                default:
+                    return false;
+
+            }
+        }
+        return false;
     }
 
     isTuner(): boolean {
@@ -894,8 +932,8 @@ export class UiControl implements Deserializable<UiControl> {
                 break;
             case Units.unknown:
                 if (this.custom_units !== "") {
-                    text = this.custom_units.replace("%f",text);
-                } 
+                    text = this.custom_units.replace("%f", text);
+                }
                 break;
             default:
                 break;
@@ -950,7 +988,7 @@ export class Lv2PatchPropertyInfo {
         return result;
     }
     uri: string = "";
-    writable : boolean = false;
+    writable: boolean = false;
     readable: boolean = false;
     label: string = "";
     index: number = -1;
@@ -1045,8 +1083,7 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     }
 
     getFilePropertyByUri(patchPropertyUri: string): UiFileProperty | null {
-        for (let i = 0; i < this.fileProperties.length; ++i)
-        {
+        for (let i = 0; i < this.fileProperties.length; ++i) {
             let fileProperty = this.fileProperties[i];
             if (fileProperty.patchProperty === patchPropertyUri) {
                 return fileProperty;
@@ -1078,7 +1115,7 @@ export class UiPlugin implements Deserializable<UiPlugin> {
     frequencyPlots: UiFrequencyPlot[] = [];
     is_vst3: boolean = false;
     modGui: ModGui | null = null; // null if no mod gui.
-    patchProperties: Lv2PatchPropertyInfo[] = []; 
+    patchProperties: Lv2PatchPropertyInfo[] = [];
 }
 
 

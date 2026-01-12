@@ -57,6 +57,7 @@ export enum MidiControlType {
     MomentarySwitch
 }
 
+
 export function getMidiControlType(uiPlugin: UiPlugin | undefined, symbol: string): MidiControlType {
     if (symbol === "__bypass") {
         return MidiControlType.Toggle;
@@ -87,16 +88,14 @@ export function getMidiControlType(uiPlugin: UiPlugin | undefined, symbol: strin
     return MidiControlType.Dial;
 }
 
-export function canBindToNote(controlType: MidiControlType): boolean {
-    return controlType === MidiControlType.Toggle
-        || controlType === MidiControlType.Trigger
-        || controlType === MidiControlType.MomentarySwitch
-}
+
+
 
 interface MidiBindingViewProps extends WithStyles<typeof styles> {
     instanceId: number;
     midiBinding: MidiBinding;
     midiControlType: MidiControlType;
+    canDoTapTempo: boolean;
     onChange: (instanceId: number, newBinding: MidiBinding) => void;
 }
 
@@ -130,6 +129,21 @@ const MidiBindingView =
                     listenSnackbarOpen: false
                 };
             }
+
+            canDoTapTempo(): boolean {
+                let controlType = this.props.midiControlType;
+                if (controlType == MidiControlType.Dial && this.props.canDoTapTempo) {
+                    return true;
+                }
+                return false;
+            }
+            canBindToNote(): boolean {
+                let controlType = this.props.midiControlType;
+                return controlType === MidiControlType.Toggle
+                    || controlType === MidiControlType.Trigger
+                    || controlType === MidiControlType.MomentarySwitch
+            }
+
 
             handleBindingTypeChange(e: any, extra: any) {
                 let newValue = parseInt(e.target.value);
@@ -203,7 +217,7 @@ const MidiBindingView =
             generateMidiNoteSelects(): React.ReactNode[] {
                 let result: React.ReactNode[] = [];
 
-                for (let i = 0; i < 127; ++i) {
+                for (let i = 0; i <= 127; ++i) {
                     result.push(
                         <MenuItem key={"k" + i} value={i}>{i} {Utility.midiNoteName(i)}</MenuItem>
                     )
@@ -314,10 +328,13 @@ const MidiBindingView =
                 let binding = this.props.midiBinding;
                 let newBinding = binding.clone();
                 if (midiMessage.isNote()) {
-                    if (!canBindToNote(this.props.midiControlType)) {
+                    if (!this.canBindToNote() && !this.props.canDoTapTempo) {
                         return;
                     }
-                    newBinding.bindingType = MidiBinding.BINDING_TYPE_NOTE
+                    newBinding.bindingType =
+                        this.props.canDoTapTempo ?
+                            MidiBinding.BINDING_TYPE_TAP_TEMPO
+                            : MidiBinding.BINDING_TYPE_NOTE
                     newBinding.note = midiMessage.cc1;
                 } else if (midiMessage.isControl()) {
                     newBinding.bindingType = MidiBinding.BINDING_TYPE_CONTROL
@@ -413,23 +430,28 @@ const MidiBindingView =
                     <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", justifyContent: "left", alignItems: "center", minHeight: 48 }}>
                         <div className={classes.controlDiv} >
                             <Select variant="standard"
-                                style={{ width: 80, }}
+                                style={{ width: undefined, }}
                                 onChange={(e, extra) => this.handleBindingTypeChange(e, extra)}
                                 value={midiBinding.bindingType}
                             >
                                 <MenuItem value={0}>None</MenuItem>
-                                {(canBindToNote(this.props.midiControlType)) && (
-                                    <MenuItem value={1}>Note</MenuItem>
+                                {(this.canBindToNote()) && (
+                                    <MenuItem key="1" value={1}>Note</MenuItem>
                                 )}
-                                <MenuItem value={2}>Control</MenuItem>
+                                <MenuItem key="2" value={2}>Control</MenuItem>
+                                {(this.canDoTapTempo()) && (
+                                    <MenuItem key="3" value={3}>Tap Tempo</MenuItem>
+                                )}
                             </Select>
                         </div>
                         {
-                            (midiBinding.bindingType === MidiBinding.BINDING_TYPE_NOTE) &&
+                            (midiBinding.bindingType === MidiBinding.BINDING_TYPE_NOTE
+                                || midiBinding.bindingType === MidiBinding.BINDING_TYPE_TAP_TEMPO
+                            ) &&
                             (
                                 <div className={classes.controlDiv2} >
                                     <Select variant="standard"
-                                        style={{ width: 80 }}
+                                        style={{}}
                                         onChange={(e, extra) => this.handleNoteChange(e, extra)}
                                         value={midiBinding.note}
 
@@ -569,7 +591,7 @@ const MidiBindingView =
                             (
                                 <div className={classes.controlDiv} >
                                     <Select variant="standard"
-                                        style={{ width: 120 }}
+                                        style={{}}
                                         onChange={(e, extra) => this.handleLinearControlTypeChange(e, extra)}
                                         value={midiBinding.linearControlType}
                                     >

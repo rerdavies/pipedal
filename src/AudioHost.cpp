@@ -365,6 +365,7 @@ bool SystemMidiBinding::IsMatch(const MidiEvent &event)
     switch (currentBinding.bindingType())
     {
     case BINDING_TYPE_NOTE:
+    case BINDING_TYPE_TAP_TEMPO:
     {
         if (event.size != 3)
             return false;
@@ -926,7 +927,8 @@ private:
     {
         // eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
 
-        this->realtimeActivePedalboard->OnMidiMessage(event.size, event.buffer, this, fnMidiValueChanged);
+        this->realtimeActivePedalboard->OnMidiMessage(
+            event, this, fnMidiValueChanged);
         if (listenForMidiEvent)
         {
             if (event.size >= 3)
@@ -1077,7 +1079,7 @@ private:
                 int8_t messageCount = deferredMidiMessages[i++];
                 event.size = messageCount;
                 event.buffer = deferredMidiMessages + i;
-                event.time = 0;
+                event.frame = 0;
 
                 ProcessMidiEvent(eventBufferWriter, iterator, event);
 

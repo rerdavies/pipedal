@@ -34,6 +34,7 @@ function SystemMidiBindingView(props: SystemMidiBindingViewProps) {
     return (
         <MidiBindingView
             instanceId={props.instanceId}
+            canDoTapTempo={false}
             midiBinding={props.midiBinding}
             onChange={props.onChange}
             midiControlType={MidiControlType.Trigger}

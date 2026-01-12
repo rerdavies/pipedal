@@ -704,6 +704,9 @@ namespace pipedal
                 queueId = -1;
                 throw std::runtime_error(SS("Failed to set port timestamping: " << snd_strerror(rc)));
             }
+
+            // Flush the output buffer to start the queue and apply port settings
+            snd_seq_drain_output(seqHandle);
         }
 
         return queueId;
