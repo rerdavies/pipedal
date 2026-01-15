@@ -327,6 +327,21 @@ void SplitEffect::mixTo(float value)
     this->targetBlendLBottom = this->targetBlendRBottom = blend;
     mixToTarget();
 }
+static inline float applyPan(float pan, float*left, float*right) {
+    float panClipped = pan;
+    if (panClipped < -1) panClipped = -1;
+    if (panClipped > 1) panClipped = 1;
+    if (pan <= 0) {
+        *left = 1.0f;
+        *right = 1.0f + panClipped;
+    } else {
+        *left = 1.0f - panClipped;
+        *right = 1.0f;
+    }
+    return panClipped;
+
+}
+
 void SplitEffect::mixTo(float panL, float volL, float panR, float volR)
 {
     float aTop = (volL <= SPLIT_DB_MIN) ? 0 : db2a(volL);
@@ -339,12 +354,15 @@ void SplitEffect::mixTo(float panL, float volL, float panR, float volR)
     }
     else
     {
-        float blendTop = (panL + 1) * 0.5;
-        float blendBottom = (panR + 1) * 0.5;
-        this->targetBlendLTop = (1 - blendTop) * aTop;
-        this->targetBlendRTop = (blendTop)*aTop;
-        this->targetBlendLBottom = (1 - blendBottom) * aBottom;
-        this->targetBlendRBottom = (blendBottom)*aBottom;
+        float panTopL, panTopR;
+        applyPan(panL,&panTopL, &panTopR);
+        float panBottomL, panBottomR;
+        applyPan(panR,&panBottomL, &panBottomR);
+
+        this->targetBlendLTop = panTopL * aTop;
+        this->targetBlendRTop = panTopR*aTop;
+        this->targetBlendLBottom = panBottomL * aBottom;
+         this->targetBlendRBottom = panBottomR * aBottom;
     }
     mixToTarget();
 }
