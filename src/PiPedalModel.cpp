@@ -671,6 +671,17 @@ void PiPedalModel::SetPedalboardItemEnable(int64_t clientId, int64_t pedalItemId
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
         this->pedalboard.SetItemEnabled(pedalItemId, enabled);
+        PedalboardItem * pPedalboardItem = this->pedalboard.GetItem(pedalItemId);
+        if (pPedalboardItem) {
+            Lv2PluginInfo::ptr pluginInfo = GetPluginInfo(pPedalboardItem->uri());
+            if (pluginInfo) {
+                for (auto &port: pluginInfo->ports()) {
+                    if (port->is_bypass()) {
+                        pPedalboardItem->SetControlValue(port->symbol(), enabled? 1.0: 0.0f);
+                    }
+                }
+            } 
+        }
 
         // Notify clients.
         std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
