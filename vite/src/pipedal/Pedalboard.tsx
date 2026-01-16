@@ -686,9 +686,9 @@ export class Pedalboard implements Deserializable<Pedalboard> {
             new ControlValue(PedalboardSplitItem.SELECT_KEY,0),
             new ControlValue(PedalboardSplitItem.MIX_KEY,0),
             new ControlValue(PedalboardSplitItem.PANL_KEY,0),
-            new ControlValue(PedalboardSplitItem.VOLL_KEY,-3),
+            new ControlValue(PedalboardSplitItem.VOLL_KEY,0),
             new ControlValue(PedalboardSplitItem.PANR_KEY,0),
-            new ControlValue(PedalboardSplitItem.VOLR_KEY,-3)
+            new ControlValue(PedalboardSplitItem.VOLR_KEY,0)
         ];
 
 

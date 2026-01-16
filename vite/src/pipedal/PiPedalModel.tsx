@@ -1721,11 +1721,19 @@ export class PiPedalModel //implements PiPedalModel
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalboard = pedalboard.clone();
 
-        let item = newPedalboard.getItem(instanceId);
+        let item: PedalboardItem = newPedalboard.getItem(instanceId);
 
         let changed = value !== item.isEnabled;
         if (changed) {
             item.isEnabled = value;
+            let pluginInfo: UiPlugin | null = this.getUiPlugin(item.uri);
+            if (pluginInfo !== null) {
+                for (let uiControl of pluginInfo.controls) {
+                    if (uiControl.is_bypass) {
+                        this._setPedalboardControlValue(instanceId, uiControl.symbol, value ? 0.0 : 1.0, false);
+                    }
+                }
+            }
             this.setModelPedalboard(newPedalboard);
             if (notifyServer) {
                 let body: PedalboardItemEnableBody = {
