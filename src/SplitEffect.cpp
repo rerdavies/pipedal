@@ -126,7 +126,7 @@ static Lv2PluginInfo makeSplitterPluginInfo()
     volLControl->index(4);
     volLControl->min_value(-60);
     volLControl->max_value(12);
-    volLControl->default_value(-3);
+    volLControl->default_value(0);
     volLControl->scale_points().push_back(
         Lv2ScalePoint(-60, "-INF"));
 
@@ -152,7 +152,7 @@ static Lv2PluginInfo makeSplitterPluginInfo()
     volRControl->index(6);
     volRControl->min_value(-60);
     volRControl->max_value(12);
-    volRControl->default_value(-3);
+    volRControl->default_value(0);
     volRControl->scale_points().push_back(
         Lv2ScalePoint(-60, "-INF"));
 
@@ -327,18 +327,26 @@ void SplitEffect::mixTo(float value)
     this->targetBlendLBottom = this->targetBlendRBottom = blend;
     mixToTarget();
 }
-static inline float applyPan(float pan, float*left, float*right) {
+static inline void applyPan(float pan, float*left, float*right) {
     float panClipped = pan;
     if (panClipped < -1) panClipped = -1;
     if (panClipped > 1) panClipped = 1;
-    if (pan <= 0) {
-        *left = 1.0f;
-        *right = 1.0f + panClipped;
-    } else {
-        *left = 1.0f - panClipped;
-        *right = 1.0f;
-    }
-    return panClipped;
+    panClipped = (panClipped + 1) * 0.5f; // 0..1
+    // linear panning law.
+    *left = 1.0f - panClipped;
+    *right = panClipped;
+    
+        // float panClipped = pan;
+    // if (panClipped < -1) panClipped = -1;
+    // if (panClipped > 1) panClipped = 1;
+    // if (pan <= 0) {
+    //     *left = 1.0f;
+    //     *right = 1.0f + panClipped;
+    // } else {
+    //     *left = 1.0f - panClipped;
+    //     *right = 1.0f;
+    // }
+    // return panClipped;
 
 }
 
