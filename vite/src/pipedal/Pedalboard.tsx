@@ -514,7 +514,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         }
         return null;
     }
-    deleteItem_(instanceId: number,items: PedalboardItem[]): number | null
+    private deleteItem_(instanceId: number,items: PedalboardItem[]): number | null
     {
         for (let i = 0; i < items.length; ++i)
         {

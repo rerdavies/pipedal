@@ -1538,15 +1538,39 @@ export class PiPedalModel //implements PiPedalModel
     selectSnapshot(index: number) {
         this.webSocket?.send("setSnapshot", index);
     }
+
+    private pruneSnapshotValues(pedalboard: Pedalboard)
+    {
+        let validPluginIds: Set<number> = new Set<number>();
+
+        for (let item of pedalboard.items) {
+            validPluginIds.add(item.instanceId);
+        }
+        for (let snapshot of pedalboard.snapshots) {
+            if (snapshot) {
+                let ix = 0;
+                while (ix < snapshot.values.length) {
+                    let value = snapshot.values[ix];
+                    if (validPluginIds.has(value.instanceId)) {
+                        ix++;
+                    } else {
+                        snapshot.values.splice(ix, 1);
+                    }
+                }
+            }
+        }
+    }
     setSnapshots(snapshots: (Snapshot | null)[], selectedSnapshot: number) {
         let pedalboard = this.pedalboard.get().clone();
         pedalboard.snapshots = snapshots;
         if (selectedSnapshot !== -1) {
             pedalboard.selectedSnapshot = selectedSnapshot;
         }
+        this.pruneSnapshotValues(pedalboard);
+        
         this.setModelPedalboard(pedalboard);
 
-        this.webSocket?.send("setSnapshots", { snapshots: snapshots, selectedSnapshot: selectedSnapshot });
+        this.webSocket?.send("setSnapshots", { snapshots: pedalboard.snapshots, selectedSnapshot: selectedSnapshot });
     }
 
     setInputVolume(volume_db: number): void {
@@ -1841,6 +1865,7 @@ export class PiPedalModel //implements PiPedalModel
         let result = newPedalboard.deleteItem(instanceId);
         if (result !== null) {
             newPedalboard.selectedPlugin = result;
+            this.pruneSnapshotValues(newPedalboard);
             this.setModelPedalboard(newPedalboard);
             this.updateServerPedalboard();
         }
