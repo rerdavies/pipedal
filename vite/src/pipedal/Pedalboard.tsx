@@ -226,7 +226,7 @@ export class SnapshotValue {
         this.isEnabled = input.isEnabled;
         this.instanceId = input.instanceId;
         this.controlValues = ControlValue.deserializeArray(input.controlValues);
-        this.lv2State = input.lv2state;
+        this.lv2State = input.lv2State;
         this.pathProperties = input.pathProperties;
         return this;
     }

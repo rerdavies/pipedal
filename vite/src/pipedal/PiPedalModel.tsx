@@ -1543,9 +1543,14 @@ export class PiPedalModel //implements PiPedalModel
     {
         let validPluginIds: Set<number> = new Set<number>();
 
-        for (let item of pedalboard.items) {
-            validPluginIds.add(item.instanceId);
+        let it = pedalboard.itemsGenerator();
+        while (true) {
+            let v = it.next();
+            if (v.done) break;
+            validPluginIds.add(v.value.instanceId);
+
         }
+
         for (let snapshot of pedalboard.snapshots) {
             if (snapshot) {
                 let ix = 0;
