@@ -1,5 +1,22 @@
 # Release Notes
 
+## PiPedal 1.5.96 Beta
+A very minor feature, and a series of small but important bug fixes.
+
+### Minor Features
+
+- Added a Start Offset control to the TooB Convolution Reverbs.
+
+### Bug Fixes
+
+- TooB 3 Band Eq has no effect.
+- Split controls do not reset to default when double-tapped/-clicked.
+- L/R Split volume controls should default to 0Db instead of -3dB.
+- Split controls behave unpredictably if the type of a Split is changed by a snapshot change.
+- Split controls behave unpredictably if the type of a Split is changed when switching between presets that have otherwise identical structure.
+- File selections are lost when switching between presets that have identical structure.
+- Snapshot plugin states are not trimmed when a plugin is removed.
+
 ## PiPedal 1.5.95 Beta
 
 Usability tweaks that have been blocked by a pending major feature, that needed to be released to satisfy commitments made to users. Now pushed out for general use. 
