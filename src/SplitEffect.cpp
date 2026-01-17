@@ -327,27 +327,26 @@ void SplitEffect::mixTo(float value)
     this->targetBlendLBottom = this->targetBlendRBottom = blend;
     mixToTarget();
 }
-static inline void applyPan(float pan, float*left, float*right) {
+static inline void applyHardPan(float pan, float*left, float*right) {
+    // linear panning law.
+    // float panClipped = pan;
+    // if (panClipped < -1) panClipped = -1;
+    // if (panClipped > 1) panClipped = 1;
+    // panClipped = (panClipped + 1) * 0.5f; // 0..1
+    // *left = 1.0f - panClipped;
+    // *right = panClipped;
+    
+    // Hard pan law
     float panClipped = pan;
     if (panClipped < -1) panClipped = -1;
     if (panClipped > 1) panClipped = 1;
-    panClipped = (panClipped + 1) * 0.5f; // 0..1
-    // linear panning law.
-    *left = 1.0f - panClipped;
-    *right = panClipped;
-    
-        // float panClipped = pan;
-    // if (panClipped < -1) panClipped = -1;
-    // if (panClipped > 1) panClipped = 1;
-    // if (pan <= 0) {
-    //     *left = 1.0f;
-    //     *right = 1.0f + panClipped;
-    // } else {
-    //     *left = 1.0f - panClipped;
-    //     *right = 1.0f;
-    // }
-    // return panClipped;
-
+    if (pan <= 0) {
+        *left = 1.0f;
+        *right = 1.0f + panClipped;
+    } else {
+        *left = 1.0f - panClipped;
+        *right = 1.0f;
+    }
 }
 
 void SplitEffect::mixTo(float panL, float volL, float panR, float volR)
@@ -363,9 +362,9 @@ void SplitEffect::mixTo(float panL, float volL, float panR, float volR)
     else
     {
         float panTopL, panTopR;
-        applyPan(panL,&panTopL, &panTopR);
+        applyHardPan(panL,&panTopL, &panTopR);
         float panBottomL, panBottomR;
-        applyPan(panR,&panBottomL, &panBottomR);
+        applyHardPan(panR,&panBottomL, &panBottomR);
 
         this->targetBlendLTop = panTopL * aTop;
         this->targetBlendRTop = panTopR*aTop;
