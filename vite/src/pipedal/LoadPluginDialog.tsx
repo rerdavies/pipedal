@@ -44,7 +44,6 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import {createStyles} from './WithStyles';
-import CloseIcon from '@mui/icons-material/Close';
 
 import { Theme } from '@mui/material/styles';
 import WithStyles, {withTheme} from './WithStyles';
@@ -180,7 +179,6 @@ type PluginGridState = {
     grid_cell_columns: number,
     minimumItemWidth: number,
     favoritesList: FavoritesList,
-    descriptionOpen: boolean;
     uiPlugins: UiPlugin[]
     //gridItems: UiPlugin[];
 
@@ -217,8 +215,7 @@ export const LoadPluginDialog =
                     grid_cell_columns: this.getCellColumns(document.documentElement.clientWidth),
                     minimumItemWidth: props.minimumItemWidth ? props.minimumItemWidth : 220,
                     favoritesList: this.model.favorites.get(),
-                    uiPlugins: this.model.ui_plugins.get(),
-		    descriptionOpen: false
+                    uiPlugins: this.model.ui_plugins.get()
 
                 };
 
@@ -422,7 +419,7 @@ export const LoadPluginDialog =
                 e.preventDefault();
 
 
-                this.setState({ selected_uri: uri, descriptionOpen: true });
+                this.setState({ selected_uri: uri });
 
                 // a better doubleclick: tracks how many recent clicks in the same area.
                 // regardless of whether we re-rendered in the interrim. 
@@ -693,42 +690,12 @@ export const LoadPluginDialog =
                 );
 
             }
-
-            renderDescriptionPanel(selectedPlugin?: UiPlugin) {
-                if (!this.state.descriptionOpen || !selectedPlugin) return null;
-                    const text = (selectedPlugin.description && selectedPlugin.description.trim().length > 0)
-                    ? selectedPlugin.description : "No description available.";
-                    
-                return (<div style={{width: "100%", padding: "8px 32px 8px 24px", display: "flex", alignItems: "flex-start", gap: 12, boxSizing: "border-box",}}>
-
-            <div style={{ flex: "1 1 auto", minWidth: 0, overflow: "hidden" }}>
-
-            <Typography variant="subtitle2" noWrap title={selectedPlugin.name}>
-                {selectedPlugin.name}
-            </Typography>
-
-                <div style={{marginTop: 4, maxHeight: 140, overflowY: "auto", overflowX: "hidden", paddingRight: 8,}}>
-
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
-                    {text}
-                </Typography>
-                </div>
-            </div>
-
-            <div style={{ flex: "0 0 auto", paddingTop: 2 }}>
-                <IconButtonEx tooltip="Close" onClick={() => this.setState({ descriptionOpen: false })} style={{ marginRight: 0 }}>
-                    <CloseIcon />
-                </IconButtonEx>
-                </div>
-            </div>
-  );
-}
-
             setFavorite(pluginUri: string | undefined, isFavorite: boolean): void {
                 if (!pluginUri) return;
                 this.model.setFavorite(pluginUri, isFavorite);
             }
             gridColumnCount: number = 1;
+
 
             render() {
                 const classes= withStyles.getClasses(this.props);
@@ -899,9 +866,7 @@ export const LoadPluginDialog =
                                 </DialogContent>
                                 {(this.state.client_width >= NARROW_DISPLAY_THRESHOLD) ? (
                                     <DialogActions style={{ flex: "0 0 auto" }} >
-                                        <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
-						                    {this.renderDescriptionPanel(selectedPlugin)}
-					                    <div className={classes.bottom}>
+                                        <div className={classes.bottom}>
                                             <div style={{ display: "flex", textOverflow: "ellipsis", justifyContent: "start", alignItems: "center", flex: "1 1 auto", height: "100%", overflow: "hidden" }} >
                                                 <PluginInfoDialog plugin_uri={this.state.selected_uri ?? ""} />
                                                 {this.info_string(selectedPlugin)}
@@ -920,14 +885,12 @@ export const LoadPluginDialog =
                                             <div style={{ position: "relative", float: "right", flex: "0 1 200px", width: 200, display: "flex", alignItems: "center" }}>
                                                 <Button variant="dialogSecondary" onClick={this.handleCancel} style={{ width: 120 }} >Cancel</Button>
                                                 <Button variant="dialogPrimary" onClick={this.handleOk} disabled={selectedPlugin === null} style={{ width: 180 }} >SELECT</Button>
-                                                </div>
                                             </div>
-					                    </div>
+                                        </div>
                                     </DialogActions>
                                 ) : (
                                     <DialogActions style={{ flex: "0 0 auto", display: "block" }} >
-                                        {this.renderDescriptionPanel(selectedPlugin)}
-					                    <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", overflow: "hidden" }} >
+                                        <div style={{ display: "flex", justifyContent: "start", alignItems: "center", flex: "1 1 auto", overflow: "hidden" }} >
                                             <PluginInfoDialog plugin_uri={this.state.selected_uri ?? ""} />
                                             <div style={{ width: 1, height: 48 }} />
                                             {this.info_string(selectedPlugin)}
