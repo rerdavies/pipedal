@@ -2060,6 +2060,26 @@ void PiPedalModel::UpdateDefaults(SnapshotValue&snapshotValue, const PedalboardI
     }
     if (pPlugin)
     {
+        // Fix incorrect bypass settings presint in Pipedal < 1.5.96
+        for (size_t i = 0; i < pPlugin->ports().size(); ++i)
+        {
+            auto& port = pPlugin->ports()[i];
+            if (port->is_bypass() && port->is_control_port() && port->is_input())
+            {
+                ControlValue* pValue = snapshotValue.GetControlValue(port->symbol());
+                float value = snapshotValue.isEnabled_  ? 1.0f : 0.0f;
+
+                if (pValue == nullptr)
+                {
+                    snapshotValue.controlValues_.push_back(
+                        pipedal::ControlValue(port->symbol().c_str(), value));
+                }
+                else
+                {
+                    pValue->value(value);
+                }
+            }
+        }
         //////// PLUGIN SPECIFIC UPGRADES //////////////////////
         if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
         {
@@ -2172,12 +2192,29 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
 
             if (port->is_control_port() && port->is_input())
             {
-                ControlValue *pValue = pedalboardItem->GetControlValue(port->symbol());
-                if (pValue == nullptr)
+                if (port->is_bypass())
                 {
-                    // Missing? Set it to default value.
-                    pedalboardItem->controlValues().push_back(
-                        pipedal::ControlValue(port->symbol().c_str(), port->default_value()));
+                    // retroactively correct bug in version of PiPedal prior to 1.5.96.
+                    ControlValue *pValue = pedalboardItem->GetControlValue(port->symbol());
+                    float value = pedalboardItem->isEnabled() ? 1.0f:  0.0f;
+
+                    if (pValue == nullptr)
+                    {
+                        pedalboardItem->controlValues().push_back(
+                            pipedal::ControlValue(port->symbol().c_str(), value));
+                    } else {
+                        pValue->value(value);
+                    }
+
+
+                } else {
+                    ControlValue *pValue = pedalboardItem->GetControlValue(port->symbol());
+                    if (pValue == nullptr)
+                    {
+                        // Missing? Set it to default value.
+                        pedalboardItem->controlValues().push_back(
+                            pipedal::ControlValue(port->symbol().c_str(), port->default_value()));
+                    }
                 }
             }
         }

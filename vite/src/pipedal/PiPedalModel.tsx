@@ -1759,7 +1759,7 @@ export class PiPedalModel //implements PiPedalModel
             if (pluginInfo !== null) {
                 for (let uiControl of pluginInfo.controls) {
                     if (uiControl.is_bypass) {
-                        this._setPedalboardControlValue(instanceId, uiControl.symbol, value ? 0.0 : 1.0, false);
+                        this._setPedalboardControlValue(instanceId, uiControl.symbol, value ? 1.0 : 0.0, false);
                     }
                 }
             }
