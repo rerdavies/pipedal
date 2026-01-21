@@ -1,16 +1,18 @@
 # Release Notes
 
-## PiPedal 1.5.96 Beta
-A very minor feature, and a series of small but important bug fixes.
+## PiPedal 1.5.97 Beta
 
-### Minor Features
+### Features
 
+- Stereo versions of TooB 3 Band EQ and TooB Parameteric EQ
 - Added a Start Offset control to the TooB Convolution Reverbs.
 
 ### Bug Fixes
 
 - TooB 3 Band Eq has no effect.
+- TooB Convolution Reveb Bypass not saved in Snapshots.
 - Split controls do not reset to default when double-tapped/-clicked.
+- Convolution Reverb: Default values changed.  Direct control defaults to 0dB, Reverb control defaults to -12dB
 - L/R Split volume controls should default to 0Db instead of -3dB.
 - Split controls behave unpredictably if the type of a Split is changed by a snapshot change.
 - Split controls behave unpredictably if the type of a Split is changed when switching between presets that have otherwise identical structure.
