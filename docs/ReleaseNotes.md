@@ -1,6 +1,6 @@
 # Release Notes
 
-## PiPedal 1.5.97 Beta
+## PiPedal 1.5.98 Beta
 
 ### Features
 
@@ -19,6 +19,7 @@
 - File selections are lost when switching between presets that have identical structure.
 - Snapshot plugin states are not trimmed when a plugin is removed.
 - Allow license.txt/.md and readme.txt/.md files to be uploaded via .zip files.
+- Reissued v.5.97 due to missing x64 TooB Amp package.
 
 ## PiPedal 1.5.95 Beta
 
